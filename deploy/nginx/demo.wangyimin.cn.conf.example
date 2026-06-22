@@ -1,0 +1,31 @@
+# Baota/Nginx site example for demo.wangyimin.cn.
+# Configure SSL in Baota. This file is an example only; do not paste over
+# existing Baota-managed directives without reviewing them first.
+
+server {
+    listen 80;
+    server_name demo.wangyimin.cn;
+
+    client_max_body_size 10m;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:13000/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:18080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+}
+
