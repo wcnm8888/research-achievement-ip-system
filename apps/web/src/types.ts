@@ -1,0 +1,427 @@
+export type DashboardBucket = {
+  key: string;
+  count: number;
+};
+
+export type DashboardMetric<Value> = {
+  key: string;
+  section: string;
+  value: Value;
+};
+
+export type DashboardDistribution = {
+  buckets: DashboardBucket[];
+};
+
+export type DashboardSummary = {
+  generatedAt: string;
+  scope: {
+    userId: string;
+    departmentId: string;
+  };
+  achievement: {
+    total: DashboardMetric<{ count: number }>;
+    byType: DashboardMetric<DashboardDistribution>;
+    byStatus: DashboardMetric<DashboardDistribution>;
+  };
+  fee: {
+    byPayStatus: DashboardMetric<DashboardDistribution>;
+    deadline: DashboardMetric<{
+      overdue: DashboardBucket;
+      dueSoon: DashboardBucket;
+    }>;
+  };
+  workflowTasks: {
+    byStatus: DashboardMetric<DashboardDistribution>;
+  };
+  reminderTasks: {
+    byStatus: DashboardMetric<DashboardDistribution>;
+  };
+};
+
+export type WorkflowTaskStatusCode =
+  | "PENDING"
+  | "CLAIMED"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export type WorkflowInstanceStatusCode = "ACTIVE" | "COMPLETED" | "CANCELLED";
+
+export type WorkflowTargetTypeCode = "ACHIEVEMENT";
+
+export type WorkflowStepCode = "DEPARTMENT_REVIEW" | "ARCHIVE";
+
+export type WorkflowActionKind = "approve" | "reject";
+
+export type WorkflowTaskInstance = {
+  targetType: WorkflowTargetTypeCode | string;
+  targetId: string;
+  status: WorkflowInstanceStatusCode | string;
+  currentStep?: WorkflowStepCode | string | null;
+};
+
+export type WorkflowTask = {
+  id: string;
+  instanceId: string;
+  assigneeId: string;
+  stepCode: WorkflowStepCode | string;
+  status: WorkflowTaskStatusCode | string;
+  createdAt: string;
+  updatedAt: string;
+  claimedAt?: string | null;
+  completedAt?: string | null;
+  instance?: WorkflowTaskInstance;
+};
+
+export type WorkflowTaskListResult = {
+  items: WorkflowTask[];
+  total?: number;
+};
+
+export type WorkflowTaskQuery = {
+  status?: WorkflowTaskStatusCode;
+  achievementId?: string;
+};
+
+export type ApproveWorkflowTaskPayload = {
+  comment?: string;
+};
+
+export type RejectWorkflowTaskPayload = {
+  comment: string;
+};
+
+export type WorkflowTaskActionResult = {
+  task: WorkflowTask;
+  achievement?: {
+    id: string;
+    status: string;
+    updatedAt?: string;
+  };
+};
+
+export type AchievementTypeCode = "PAPER" | "PATENT" | "SOFTWARE_COPYRIGHT";
+
+export type AchievementStatusCode =
+  | "DRAFT"
+  | "PENDING_DEPARTMENT_REVIEW"
+  | "DEPARTMENT_REJECTED"
+  | "PENDING_ARCHIVE"
+  | "ARCHIVED"
+  | "VOIDED";
+
+export type SecretLevelCode = "PUBLIC" | "INTERNAL" | "SECRET" | "CONFIDENTIAL";
+
+export type ContributorTypeCode = "AUTHOR" | "INVENTOR" | "COPYRIGHT_OWNER";
+
+export type ContributorRoleCode =
+  | "FIRST_AUTHOR"
+  | "CORRESPONDING_AUTHOR"
+  | "PRIMARY_INVENTOR"
+  | "PARTICIPANT"
+  | "OWNER"
+  | "OTHER";
+
+export type PatentTypeCode =
+  | "INVENTION"
+  | "UTILITY_MODEL"
+  | "DESIGN"
+  | "NATIONAL_DEFENSE"
+  | "OTHER";
+
+export type PatentLegalStatusCode =
+  | "PENDING"
+  | "GRANTED"
+  | "REJECTED"
+  | "EXPIRED"
+  | "TERMINATED"
+  | "TRANSFERRED"
+  | "UNKNOWN";
+
+export type SoftwareTypeCode = "APPLICATION" | "SYSTEM" | "TOOL" | "EMBEDDED" | "OTHER";
+
+export type AchievementContributor = {
+  id?: string;
+  name: string;
+  userId?: string | null;
+  organization?: string | null;
+  contributorType: ContributorTypeCode;
+  contributorRole?: ContributorRoleCode | null;
+  sortOrder: number;
+};
+
+export type PaperDetail = {
+  doi?: string | null;
+  journal?: string | null;
+  issnCn?: string | null;
+  publishYear?: number | null;
+  includedType?: string | null;
+  impactFactor?: number | string | null;
+  partition?: string | null;
+  abstract?: string | null;
+};
+
+export type PatentDetail = {
+  applicationNo?: string | null;
+  grantNo?: string | null;
+  patentType?: PatentTypeCode | null;
+  filingDate?: string | null;
+  grantDate?: string | null;
+  nextFeeDate?: string | null;
+  feeAmount?: number | string | null;
+  legalStatus?: PatentLegalStatusCode | null;
+};
+
+export type SoftwareCopyrightDetail = {
+  registrationNo?: string | null;
+  softwareVersion?: string | null;
+  softwareType?: SoftwareTypeCode | null;
+  publishDate?: string | null;
+  registerDate?: string | null;
+  runEnv?: string | null;
+};
+
+export type AchievementListItem = {
+  id: string;
+  type: AchievementTypeCode;
+  status: AchievementStatusCode;
+  secretLevel: SecretLevelCode;
+  departmentId: string;
+  ownerUserId: string;
+  title: string | null;
+  createdAt: string;
+  updatedAt: string;
+  submittedAt: string | null;
+  archivedAt: string | null;
+  voidedAt: string | null;
+  isRestricted: boolean;
+  isRedacted: boolean;
+};
+
+export type AchievementListResult = {
+  items: AchievementListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type AchievementListQuery = {
+  status?: AchievementStatusCode;
+  type?: AchievementTypeCode;
+  keyword?: string;
+  page: number;
+  pageSize: number;
+};
+
+export type AchievementDetail = AchievementListItem & {
+  submittedById?: string | null;
+  updatedById?: string | null;
+  archivedById?: string | null;
+  voidedById?: string | null;
+  version?: number;
+  createdById?: string;
+  paperDetail?: PaperDetail | null;
+  patentDetail?: PatentDetail | null;
+  softwareCopyrightDetail?: SoftwareCopyrightDetail | null;
+  contributors: AchievementContributor[];
+};
+
+export type AttachmentStatusCode = "ACTIVE" | "ARCHIVED" | "BLOCKED";
+
+export type AttachmentRelationTypeCode = "ACHIEVEMENT" | "FEE_RECORD" | "WORKFLOW_ACTION";
+
+export type AttachmentMetadata = {
+  id: string;
+  relationType: AttachmentRelationTypeCode | string;
+  relationId: string;
+  fileName: string;
+  version: number;
+  uploaderId: string;
+  secretLevel: SecretLevelCode | string;
+  status: AttachmentStatusCode | string;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt: string | null;
+};
+
+export type AttachmentDetailMetadata = AttachmentMetadata;
+
+export type AttachmentListQuery = {
+  status?: AttachmentStatusCode;
+  take?: number;
+};
+
+export type FeeTypeCode =
+  | "PATENT_APPLICATION"
+  | "PATENT_ANNUAL"
+  | "SOFTWARE_COPYRIGHT"
+  | "AGENCY"
+  | "OTHER";
+
+export type FundSourceCode = "PROJECT" | "DEPARTMENT" | "INSTITUTE" | "OTHER";
+
+export type PayStatusCode = "PENDING" | "PAID" | "OVERDUE" | "WAIVED" | "CANCELLED";
+
+export type FeeRecord = {
+  id: string;
+  achievementId: string;
+  departmentId: string;
+  feeType: FeeTypeCode;
+  fundSource: FundSourceCode | null;
+  amount: number | string;
+  dueDate: string;
+  paidDate: string | null;
+  payStatus: PayStatusCode;
+  voucherNo: string | null;
+  createdById: string | null;
+  updatedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt: string | null;
+};
+
+export type FeeQuery = {
+  achievementId?: string;
+  feeType?: FeeTypeCode;
+  payStatus?: PayStatusCode;
+  take?: number;
+};
+
+export type CreateFeeRecordInput = {
+  achievementId: string;
+  feeType: FeeTypeCode;
+  fundSource?: FundSourceCode;
+  amount: number;
+  dueDate: string;
+  voucherNo?: string | null;
+};
+
+export type MarkFeePaidInput = {
+  paidDate?: string;
+  voucherNo?: string | null;
+};
+
+export type FeeStateRecord = Pick<
+  FeeRecord,
+  | "id"
+  | "achievementId"
+  | "departmentId"
+  | "feeType"
+  | "dueDate"
+  | "paidDate"
+  | "payStatus"
+  | "voucherNo"
+  | "updatedById"
+  | "archivedAt"
+>;
+
+export type SearchTargetTypeCode = "ACHIEVEMENT" | "FEE_RECORD";
+
+export type SearchQuery = {
+  keyword?: string;
+  targetTypes?: readonly SearchTargetTypeCode[];
+  achievementType?: AchievementTypeCode;
+  achievementStatus?: AchievementStatusCode;
+  feeType?: FeeTypeCode;
+  payStatus?: PayStatusCode;
+  departmentId?: string;
+  take?: number;
+};
+
+export type SearchAchievementIdentifiers = {
+  doi?: string;
+  patentApplicationNo?: string;
+  patentGrantNo?: string;
+  softwareRegistrationNo?: string;
+};
+
+export type SearchAchievementResultItem = {
+  targetType: "ACHIEVEMENT";
+  id: string;
+  type: AchievementTypeCode;
+  status: AchievementStatusCode;
+  departmentId: string;
+  secretLevel: SecretLevelCode;
+  title: string | null;
+  identifiers: SearchAchievementIdentifiers;
+  redacted: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SearchFeeResultItem = {
+  targetType: "FEE_RECORD";
+  id: string;
+  achievementId: string;
+  departmentId: string;
+  feeType: FeeTypeCode;
+  payStatus: PayStatusCode;
+  dueDate: string;
+  paidDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SearchResultItem = SearchAchievementResultItem | SearchFeeResultItem;
+
+export type SearchResult = {
+  items: SearchResultItem[];
+  total: number;
+};
+
+export type AuditActionCode =
+  | "CREATE"
+  | "UPDATE"
+  | "SUBMIT"
+  | "APPROVE"
+  | "REJECT"
+  | "ARCHIVE"
+  | "VOID"
+  | "UPLOAD_ATTACHMENT"
+  | "DOWNLOAD_ATTACHMENT"
+  | "MARK_FEE_PAID"
+  | "CONFIRM_REMINDER"
+  | "CONFIG_UPDATE";
+
+export type AuditTargetTypeCode =
+  | "ACHIEVEMENT"
+  | "WORKFLOW_INSTANCE"
+  | "WORKFLOW_TASK"
+  | "WORKFLOW_ACTION"
+  | "ATTACHMENT"
+  | "FEE_RECORD"
+  | "REMINDER_TASK"
+  | "NOTIFICATION"
+  | "SYSTEM_CONFIG"
+  | "AUDIT_LOG";
+
+export type MaskedAuditLog = {
+  id: string;
+  actorUserId?: string | null;
+  actorDepartmentId?: string | null;
+  action: AuditActionCode | string;
+  targetType: AuditTargetTypeCode | string;
+  targetId?: string | null;
+  targetDepartmentId?: string | null;
+  targetSecretLevel?: SecretLevelCode | string | null;
+  traceId?: string | null;
+  createdAt: string;
+  oldValueMasked?: unknown;
+  newValueMasked?: unknown;
+  ipAddressMasked?: string;
+  userAgentMasked?: string;
+};
+
+export type AuditLogListResult = {
+  items: MaskedAuditLog[];
+};
+
+export type AuditLogQuery = {
+  actorUserId?: string;
+  action?: AuditActionCode;
+  targetType?: AuditTargetTypeCode;
+  targetId?: string;
+  traceId?: string;
+  take?: number;
+};

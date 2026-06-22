@@ -1,0 +1,4147 @@
+# Implementation Plan - 科研成果与知识产权管理系统
+
+## 关联文档
+
+- Product brief: `memory-bank/product-brief.md`
+
+## Current Phase 1 Remaining Work Roadmap Review Archive - 2026-06-22
+
+- Archive name:
+  - `Phase 1 remaining work roadmap review closure`.
+- Archive type:
+  - Documentation-only planning archive.
+  - This records the Phase 1 remaining-work review conclusion and does not complete any product capability.
+  - This does not execute Step 31.
+- Current carried-forward status:
+  - Step 28 Archive: DONE as `Fee HTTP surface misuse regression coverage closure`.
+  - Step 29: ADJUST / PAUSE; settings/config readonly research is not started because existing records are sufficient.
+  - Step 30: ADJUST / PAUSE; attachment readonly inventory is not started because existing records are sufficient.
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent, blocked, unadvanced, and unarchived.
+- Phase 1 overall judgment:
+  - The main Phase 1 chain is broadly closed as a local/frontend/readonly/controlled-entry implementation set with explicit risk labels.
+  - Phase 1 must not be represented as fully live-smoked or production-accepted.
+  - Remaining labels include DataGap risk, real-write acceptance risk, mock-browser risk, and live-smoke blockers.
+  - Low-risk inventory/research routes should not be mechanically continued unless they change a real closure decision.
+- Completed capability summary:
+  - App shell / demo context.
+  - Achievement management.
+  - Workflow approval.
+  - Fee management frontend loop.
+  - Search center.
+  - Dashboard readonly.
+  - Audit readonly.
+  - Attachment metadata/detail readonly.
+  - Settings boundary.
+  - Warnings API boundary hardening.
+- Main remaining risks:
+  - Step 22 live backend smoke remains BLOCKED until approved live backend URL, approved live demo user context, and `X-Demo-User-Id` confirmation are provided.
+  - Step 14 linked achievement real success path remains `DONE_WITH_DATAGAP_RISK`; suitable real workflow task / linked achievement data is still missing.
+  - Step 15 real fee write acceptance remains unproven under `DONE_WITHOUT_REAL_WRITE_RISK`.
+  - Step 18 keeps `DONE_WITH_MOCK_BROWSER_RISK`; live browser/database audit-log smoke was not completed.
+- Deferred or separately confirmed later routes:
+  - warnings API implementation.
+  - settings/config CRUD.
+  - attachment upload/download/object storage.
+  - fee voucher attachment.
+  - `search_logs` / Meilisearch.
+  - seed/migrate/import/data cleanup.
+- Boundaries:
+  - No product code, test code, frontend code, backend code, schema, migration, seed, package, lockfile, config, or `memory-bank/decisions.md` change is included in this archive.
+  - No test/typecheck/build/lint command is run.
+  - No frontend, backend, browser, service, live backend, database, or sensitive config is accessed.
+  - No `.env`, token, cookie, certificate, private key, or full connection string is read or displayed.
+  - Step 22 is not resumed, advanced, or archived.
+- Recommended next:
+  - Step 31 - Phase 1 Closure Readiness Audit.
+  - Step 31 should remain readonly audit only.
+  - Do not generate an execution-code prompt from this archive.
+  - If the user does not want the closure audit, pause until Step 22 live backend/demo context or real data acceptance boundaries are provided.
+
+## Current Step 28 Archive Fee HTTP Surface Misuse Regression Coverage Closure - 2026-06-22
+
+- Archive name:
+  - `Fee HTTP surface misuse regression coverage closure`.
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent and unarchived; it is still blocked by missing approved live backend URL, approved live demo user context, and confirmation for passing demo user context with `X-Demo-User-Id`.
+- Step 26 overall / Archive:
+  - DONE as `warnings API readonly contract research closure`.
+  - Step 26 confirmed no backend `GET /fees/warnings` implementation and no frontend `/fees/warnings` call.
+- Step 27 overall / Archive:
+  - DONE as `fee warning classification helper consistency closure`.
+- Step 28 status:
+  - Step 28 execution: DONE.
+  - Step 28 overall / Archive: DONE.
+- Archived scope:
+  - Added one AppModule-level backend regression test in `apps/api/src/fees/fee.app-module.spec.ts`.
+  - The test requests `GET /fees/warnings` with fee read permission and asserts the current response remains HTTP 400.
+  - The test asserts `FeeService.listFees`, `FeeService.getFee`, `FeeService.createFee`, and `FeeService.markFeePaid` are not called.
+  - This is test hardening only, not an API implementation, and locks the current fee HTTP surface without adding a warnings API.
+- Archive execution:
+  - Documentation-only archive pass.
+  - Updated memory-bank archive records only.
+  - Reused Step 28 execution-stage gate evidence.
+  - Did not rerun test/typecheck/build/lint because this archive changed no product code or test code.
+  - Did not start frontend, backend, browser, service, or database.
+- Verification reused:
+  - `corepack pnpm --filter @research-ip/api test -- fee.app-module.spec.ts`: passed, 1 file / 7 tests.
+- Boundaries:
+  - No `GET /fees/warnings` implementation.
+  - No frontend `/fees/warnings` call.
+  - No product-code change, including controller, service, repository, DTO, schema, migration, seed, package, lockfile, or config.
+  - No `memory-bank/decisions.md` change; D070 / D071 remain sufficient.
+  - No live backend, database, sensitive-config, `.env`, token, cookie, certificate, private key, fee write, voucher attachment, real create, or real mark-paid access.
+  - Step 22 was not resumed, advanced, or archived.
+  - Git status / diff evidence is unavailable because `E:\研究院科研成果管理系统` is not a Git repository; this does not block archive, and evidence is recorded by changed-file list plus test and memory-bank record locations.
+- Next:
+  - Stop at Step 28 archive.
+
+## Current Step 27 Archive Fee Warning Classification Helper Consistency Closure - 2026-06-22
+
+- Archive name:
+  - `fee warning classification helper consistency closure`.
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent and unarchived; it is still blocked by missing approved live backend URL, approved live demo user context, and confirmation for passing demo user context with `X-Demo-User-Id`.
+- Step 26 overall / Archive: DONE.
+  - Archive name: `warnings API readonly contract research closure`.
+- Step 27 status:
+  - Step 27A: DONE.
+  - Step 27B: DONE.
+  - Step 27 overall / Archive: DONE.
+- Archived scope:
+  - Completed frontend fee-warning classification helper consistency in `apps/web/src/Fees.tsx`.
+  - Added `classifyFeeWarningRecords(...)` as the shared classification path.
+  - Reused the shared classification result from both `deriveFeeWarningSummary(...)` and `groupFeeWarnings(...)`.
+  - Reduced drift risk between fee warning summary and warning groups while preserving frontend-derived warnings from the current `GET /fees` list.
+  - Covered backend `OVERDUE`, pending overdue, pending due-soon, pending later, invalid date, `PAID`, `WAIVED`, `CANCELLED`, and summary/group consistency in `apps/web/src/Fees.test.ts`.
+- Step 27B archive execution:
+  - Documentation-only archive pass.
+  - Updated memory-bank archive records only.
+  - Reused Step 27A gate evidence.
+  - Did not rerun test/typecheck/build/lint because no product code or test code changed in Step 27B.
+- Verification reused from Step 27A:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts`: passed, 1 file / 36 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Boundaries:
+  - No `memory-bank/decisions.md` change.
+  - No `apps/**` product-code or test change in Step 27B.
+  - No backend, schema, migration, seed, package, lockfile, script, or config change.
+  - No `GET /fees/warnings` implementation.
+  - No frontend `/fees/warnings` call.
+  - No fee write, voucher attachment, real create / mark-paid acceptance, live backend, database, or sensitive-config access.
+- Next:
+  - Stop at Step 27B archive.
+  - Do not generate a next-step Prompt from this archive.
+
+## Current Step 27A Fee Warning Classification Helper Consistency - 2026-06-22
+
+- Step name:
+  - `Step 27A - Fee warning classification helper consistency`.
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent and unarchived.
+- Step 26 overall / Archive: DONE.
+  - Archive name: `warnings API readonly contract research closure`.
+- Step 27A status:
+  - DONE.
+- Completed scope:
+  - Added one shared frontend fee-warning classification helper inside `apps/web/src/Fees.tsx`.
+  - Reused the shared classification result from both `deriveFeeWarningSummary` and `groupFeeWarnings`.
+  - Preserved the existing frontend-derived warnings boundary over the current `GET /fees` list.
+  - Added unit coverage in `apps/web/src/Fees.test.ts` for overdue, due-soon, pending-later, and terminal classifications plus summary/group consistency.
+- Boundaries:
+  - No `GET /fees/warnings` implementation.
+  - No frontend `/fees/warnings` call.
+  - No backend API, controller, service, repository, schema, migration, seed, package, or lockfile change.
+  - No fee write, voucher attachment, real create / mark-paid acceptance, live backend, database, or sensitive-config access.
+  - No `memory-bank/decisions.md` update.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts`: passed, 1 file / 36 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Next:
+  - Stop at Step 27A.
+  - Do not generate an archive Prompt from this execution record.
+
+## Current Step 26 Archive Warnings API Readonly Contract Research Closure - 2026-06-22
+
+- Archive name:
+  - `warnings API readonly contract research closure`.
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent and unarchived.
+- Step 25 overall / Archive: DONE.
+  - Archive name: `DataGap / deferred routes readonly inventory closure`.
+- Step 26 status:
+  - Step 26 plan confirmation: ACCEPT.
+  - Step 26A warnings API / `GET /fees/warnings` readonly contract research: DONE.
+  - Step 26B plan confirmation: ACCEPT.
+  - Step 26 overall / Archive: DONE.
+- Step 26A readonly research conclusions:
+  - Backend implementation: no `GET /fees/warnings` implementation found.
+  - Frontend call: no `/fees/warnings` call found.
+  - Test coverage: negative boundary coverage only; no positive warnings API contract or implementation tests.
+  - Documentation / design expectation: present; early `memory-bank/design-spec.md` listed `GET /fees/warnings`.
+- Step 15 warning boundary:
+  - D070 / D071 still control warning behavior as frontend-derived from the current `GET /fees` list.
+  - Do not add or pretend to call an independent `GET /fees/warnings`.
+- Not Step 26 scope:
+  - No warnings API implementation.
+  - No new warnings API contract spec.
+  - No backend or frontend product-code change.
+  - No tests, config, schema, scripts, package, or lockfile change.
+  - No live backend, database, Prisma, migration, seed, import, data cleanup, or sensitive-config access.
+  - No test/typecheck/build/lint run.
+- Follow-up candidates:
+  - warnings API contract spec can be a future independent Step.
+  - warnings API implementation must be a separate Step with newly confirmed backend contract, permissions, DTOs, service/repository semantics, test scope, and acceptance boundary.
+  - Documentation consistency cleanup can also be a future independent Step.
+
+## Current Step 25 Archive DataGap / Deferred Routes Readonly Inventory Closure - 2026-06-21
+
+- Archive name:
+  - `DataGap / deferred routes readonly inventory closure`.
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent and unarchived; it is still blocked by missing approved live backend URL, approved live demo user context, and confirmation for passing demo user context with `X-Demo-User-Id`.
+- Step 23 overall / Archive: DONE.
+  - Archive name: `targetTypes array query contract closure`.
+- Step 24 overall / Archive: DONE.
+  - Archive name: `search UI multi-target request boundary closure`.
+- Step 25 status:
+  - Step 25 plan confirmation: ACCEPT.
+  - Step 25A: DONE.
+  - Step 25B: DONE.
+  - Step 25C: DONE.
+  - Step 25 overall / Archive: DONE.
+- Archived scope:
+  - Completed a readonly inventory of Step 14 DataGap fact source, evidence status, and remaining non-closure reason.
+  - Completed readonly deferred-route classification for warnings API, settings/config, attachments, fee voucher attachments, Step 15 real fee write, `search_logs`, Meilisearch/external sync, live backend smoke, and seed/migrate/import/data cleanup.
+  - Completed Step 25A inventory quality review.
+  - Confirmed Step 14 remains `DONE_WITH_DATAGAP_RISK` and the remaining path is real approval task detail -> linked achievement success acceptance blocked by missing suitable real data/context.
+  - Confirmed future candidate route grouping:
+    - Low-risk readonly research: warnings API contract research, settings/config readonly contract/spec research, existing attachment readonly contract inventory.
+    - Requires approved live/demo context: Step 14 DataGap real success-path acceptance, Step 22 / live backend smoke, future readonly live smoke routes with explicit no-write boundaries.
+    - Deferred high-risk routes: attachment upload/download/object storage, complete attachment management, fee voucher attachments, Step 15 real fee write, `search_logs`, Meilisearch/external sync, seed/migrate/import/data cleanup, settings/config CRUD, and warnings API implementation.
+- Evidence reused:
+  - Step 25A evidence:
+    - Reviewed scoped rules and memory-bank context.
+    - Reconfirmed D065 / D066 / D089 boundaries.
+    - Classified deferred routes without implementation.
+    - Recorded that no deferred capability was completed.
+  - Step 25B evidence:
+    - Quality-reviewed Step 25A and found no deferred gap was mis-marked as complete.
+    - Reconfirmed Step 14 DataGap classification.
+    - Reconfirmed candidate route grouping.
+    - Determined no new `memory-bank/decisions.md` entry was needed.
+- Not Step 25 scope:
+  - No `GET /fees/warnings` or warnings API implementation.
+  - No settings/config API or CRUD.
+  - No attachment upload/download/object storage or complete attachment management.
+  - No fee voucher attachments.
+  - No fee write or Step 15 real fee write.
+  - No `search_logs` writes.
+  - No Meilisearch or external search-engine sync.
+  - No live backend smoke.
+  - No database access.
+  - No seed / migrate / import / data cleanup.
+  - No `apps/api/**`, `apps/web/**`, Prisma schema, scripts, tests, config, package file, lockfile, dependency, or product-code change.
+  - No `memory-bank/decisions.md` change.
+  - No Step 22 recovery and no Step 22 overall archive.
+- Step 25C archive execution:
+  - Documentation-only archive pass.
+  - Updated memory-bank archive records only.
+  - Reused Step 25A / Step 25B evidence.
+  - Did not run test/typecheck/build/lint because Step 25C only archives documentation and changes no product code.
+  - Did not start frontend, backend, browser, or database.
+  - Did not access live backend, database, real business writes, or sensitive configuration.
+  - Did not read or display `.env`, `DATABASE_URL`, tokens, cookies, certificates, private keys, or full connection strings.
+- Residual risk:
+  - Step 25 completes inventory and quality review only; it does not complete any deferred capability.
+  - Step 14 real success-path acceptance remains uncovered until approved real data/integrated acceptance exists.
+  - Step 22 remains independently blocked and unarchived.
+  - Backend warnings/settings/attachments/fees/search logging/external indexing/live smoke/data setup semantics remain unproven.
+- Next:
+  - Stop at Step 25C archive.
+  - Do not enter Step 26 automatically.
+  - Do not generate a next-step prompt from this archive.
+
+## Current Step 25B DataGap Inventory Quality Review - 2026-06-21
+
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent and unarchived; it is still blocked by missing approved live backend URL, approved live demo user context, and confirmation for passing demo user context with `X-Demo-User-Id`.
+- Step 23 overall / Archive: DONE.
+  - Archive name: `targetTypes array query contract closure`.
+- Step 24 overall / Archive: DONE.
+  - Archive name: `search UI multi-target request boundary closure`.
+- Step 25 status:
+  - Step 25 plan confirmation: ACCEPT.
+  - Step 25A: DONE.
+  - Step 25B: DONE.
+  - Step 25C: NOT_STARTED.
+  - Step 25 overall / Archive: NOT_STARTED.
+- Step 25B purpose:
+  - Quality-review Step 25A's DataGap inventory.
+  - Confirm Step 25A did not mark deferred gaps as completed.
+  - Confirm Step 14 DataGap remains correctly classified.
+  - Decide whether a stable `memory-bank/decisions.md` decision is needed.
+  - Keep Step 25 overall archive for Step 25C.
+- Quality review result:
+  - PASS: Step 25A is an inventory/documentation pass only.
+  - PASS: Step 25A did not mark warnings API / `GET /fees/warnings` as implemented or completed.
+  - PASS: Step 25A did not mark settings/config API or CRUD as implemented or completed.
+  - PASS: Step 25A did not mark attachment upload/download/object storage or complete attachment management as implemented or completed.
+  - PASS: Step 25A did not mark fee voucher attachments as implemented or completed.
+  - PASS: Step 25A did not mark Step 15 real fee write as completed.
+  - PASS: Step 25A did not mark `search_logs` writes as completed.
+  - PASS: Step 25A did not mark Meilisearch or external search sync as connected or completed.
+  - PASS: Step 25A did not mark live backend smoke as completed.
+  - PASS: Step 25A did not mark seed / migrate / import / data cleanup as completed.
+- Step 14 DataGap review:
+  - PASS: Step 14 remains `DONE_WITH_DATAGAP_RISK` per D066.
+  - PASS: The remaining uncovered path is still real approval task detail -> linked achievement success acceptance.
+  - PASS: The cause remains lack of suitable real workflow task / linked achievement data in the approved context.
+  - PASS: It is not reclassified as completed, API500, backend business failure, or something that can be resolved with fake/mock/seed evidence.
+  - PASS: Future coverage still requires phase-one integrated acceptance or a separately confirmed real data route.
+- Candidate route grouping confirmed:
+  - Low-risk readonly research:
+    - warnings API contract research only.
+    - settings/config readonly contract/spec research only.
+    - existing attachment readonly contract inventory only.
+  - Requires approved live/demo context:
+    - Step 14 DataGap real success-path acceptance.
+    - Step 22 / live backend smoke.
+    - Future readonly live smoke routes with explicit no-write boundaries.
+  - Deferred high-risk routes:
+    - attachment upload/download/object storage and complete attachment management.
+    - fee voucher attachments.
+    - Step 15 real fee write.
+    - `search_logs` writes.
+    - Meilisearch / external search sync.
+    - seed / migrate / import / data cleanup.
+    - settings/config CRUD or operational implementation.
+    - warnings API implementation beyond readonly research/spec.
+- Decision record:
+  - No new `memory-bank/decisions.md` entry added in Step 25B.
+  - Reason: Step 25B confirms the Step 25A inventory rather than creating a new stable architecture or product decision.
+  - Existing D066 already controls Step 14 DataGap treatment.
+  - Existing D089 already controls the array search query contract and defers search logging, external sync, live smoke, and write/data setup.
+  - Existing settings/attachment/fee decisions already preserve those deferred-route boundaries.
+- Boundary:
+  - No product code changed.
+  - No `apps/api/**`, `apps/web/**`, Prisma schema, scripts, tests, config, package file, lockfile, or dependency change.
+  - No test/typecheck/build/lint command was run.
+  - No frontend, backend, browser, or database was started.
+  - No live backend request, database access, business write, seed, migrate, import, data backfill, or data cleanup occurred.
+  - Did not read or display `.env`, `DATABASE_URL`, tokens, cookies, certificates, private keys, or full connection strings.
+  - Step 22 was not resumed and Step 22 overall was not archived.
+  - Step 25 overall was not archived.
+- Residual risk:
+  - No deferred gap is completed by Step 25B.
+  - Step 14 real success-path acceptance remains uncovered until approved context/data exists.
+  - Step 22 remains independently blocked.
+  - Step 25C still needs to archive Step 25 overall if accepted later.
+- Next:
+  - Stop at Step 25B.
+  - Do not enter Step 25C automatically.
+  - Do not generate a Step 25C prompt from this step.
+
+## Current Step 25A DataGap Readonly Inventory - 2026-06-21
+
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent and unarchived; it is still blocked by missing approved live backend URL, approved live demo user context, and confirmation for passing demo user context with `X-Demo-User-Id`.
+- Step 23 overall / Archive: DONE.
+  - Archive name: `targetTypes array query contract closure`.
+- Step 24 overall / Archive: DONE.
+  - Archive name: `search UI multi-target request boundary closure`.
+- Step 25 status:
+  - Step 25 plan confirmation: ACCEPT.
+  - Step 25A: DONE.
+  - Step 25B: NOT_STARTED.
+  - Step 25C: NOT_STARTED.
+  - Step 25 overall / Archive: NOT_STARTED.
+- Step 25A purpose:
+  - Perform a readonly DataGap and deferred-gap inventory after Step 23 / Step 24 closed the search `targetTypes` array contract and Search UI request boundary route.
+  - Reconfirm that Step 14's remaining uncovered real approval-task detail -> linked achievement success path is a DataGap, not a completed capability, API500 issue, or backend business failure.
+  - Classify repeatedly deferred routes without implementing any of them.
+- Step 14 DataGap fact source:
+  - D065 records Step 14's readonly approval-task achievement-detail direction over the existing `GET /achievements/:id` contract.
+  - D066 records Step 14 as `DONE_WITH_DATAGAP_RISK`.
+  - The remaining Step 14 evidence gap is that real local `/api/workflow/tasks/my?status=PENDING` returned HTTP 200 with empty `items`, so no real approval task existed to open for the linked-achievement success path.
+  - D066 explicitly defers that path to phase-one integrated acceptance or a separately confirmed data route.
+  - D066 also forbids creating workflow task data, running seed/migrate, or using fake/mock/seed data as real success-path evidence.
+- Gap classification:
+  - Low-risk readonly research routes:
+    - `GET /fees/warnings` / warnings API contract research only, with no implementation and no claim that the endpoint exists.
+    - settings/config readonly contract research and spec only, because Step 20 records only a settings boundary/capability inventory page and no real settings/config API.
+    - Existing attachment readonly contract inventory only, limited to known metadata list/detail surfaces; not upload/download/object-storage execution.
+  - Routes that need approved live/demo context before continuing:
+    - Step 14 DataGap real success-path acceptance, because it requires suitable real workflow task and linked achievement data through an approved environment/data route.
+    - Any live backend smoke route, including Step 22, because Step 22 remains blocked on approved live backend URL, approved live demo user context, and `X-Demo-User-Id` confirmation.
+    - Readonly live attachment/search/audit/dashboard smoke routes if later selected, because they still need approved live/demo context and clear no-write request boundaries.
+  - Deferred higher-risk routes:
+    - Attachment upload/download/object storage and complete attachment management.
+    - Fee voucher attachments.
+    - Step 15 real fee write, including real `POST /fees` or `POST /fees/:id/mark-paid` acceptance.
+    - `search_logs` writes.
+    - Meilisearch or external search-engine sync.
+    - seed / migrate / import / data cleanup, including any workflow task data creation/import path.
+    - settings/config implementation or CRUD.
+    - warnings API implementation if it requires backend API work beyond readonly contract research.
+- Non-goals:
+  - Did not implement `GET /fees/warnings`.
+  - Did not implement settings/config API or CRUD.
+  - Did not implement attachment upload/download/object storage.
+  - Did not implement fee voucher attachments.
+  - Did not implement fee writes or Step 15 real fee write.
+  - Did not write `search_logs`.
+  - Did not connect Meilisearch or any external search engine.
+  - Did not run live backend smoke.
+  - Did not access the database.
+  - Did not run seed, migrate, import, data backfill, or data cleanup.
+  - Did not modify `apps/api/**`, `apps/web/**`, Prisma schema, scripts, tests, config, package files, lockfiles, or product code.
+  - Did not resume Step 22 or archive Step 22 overall.
+  - Did not update `memory-bank/decisions.md`; decision consolidation remains available for Step 25B if needed.
+- Residual risk:
+  - This is a documentation and inventory pass only; no deferred gap is completed by Step 25A.
+  - Step 14's real success-path evidence remains uncovered until an approved real data or integrated acceptance route exists.
+  - Step 22 remains independently blocked and unarchived.
+  - Backend search semantics, live backend behavior, warnings semantics, settings/config contracts, real attachment lifecycle, real fee writes, search logging, external indexing, and data setup/cleanup remain unproven.
+- Next:
+  - Stop at Step 25A.
+  - Do not enter Step 25B automatically.
+  - Do not generate a Step 25B execution prompt from this step.
+
+## Current Step 24 Archive Search UI Multi-target Request Boundary Closure - 2026-06-21
+
+- Archive name:
+  - `search UI multi-target request boundary closure`.
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains independent and unarchived; it is still blocked by missing approved live backend URL, approved live demo user context, and confirmation for passing demo user context with `X-Demo-User-Id`.
+- Step 23 overall / Archive: DONE.
+  - Archive name: `targetTypes array query contract closure`.
+- Step 24 status:
+  - Step 24 plan confirmation: DONE.
+  - Step 24A: DONE.
+  - Step 24B plan confirmation: ACCEPT.
+  - Step 24B: DONE.
+  - Step 24C: DONE.
+  - Step 24 overall / Archive: DONE.
+- Archived capability:
+  - Search UI supports multi-target result-type filtering.
+  - Real user UI selection of `ACHIEVEMENT` and `FEE_RECORD` flows into `SearchFilters.targetTypes` / `SearchQuery.targetTypes`.
+  - Empty result-type selection keeps all-results semantics by omitting `targetTypes`.
+  - Existing single-value `targetType` compatibility remains.
+  - The API client still follows D089: array query values serialize as repeated query parameters.
+  - Route-mock browser acceptance observed real Search UI interaction producing `targetTypes=ACHIEVEMENT&targetTypes=FEE_RECORD`.
+  - No-demo-user and invalid `departmentId` states do not send `GET /search`.
+  - Request boundary remains GET-only, with no forbidden request classes observed.
+  - 390px viewport has no horizontal overflow.
+- Evidence reused:
+  - Step 24A focused test: `corepack pnpm --filter @research-ip/web test -- Search`: PASS, 1 file / 24 tests.
+  - Step 24B full web test: `corepack pnpm --filter @research-ip/web test`: PASS, 12 files / 169 tests.
+  - Step 24B typecheck: initial readonly-array Select value mismatch was fixed in `apps/web/src/Search.tsx`; rerun PASS.
+  - Step 24B build: PASS, with the existing Vite large chunk warning.
+  - Step 24B root lint: PASS after narrow lint-compatibility comments in the Step 24B Playwright acceptance artifact.
+  - Step 24B route-mock browser/request boundary observed `GET /api/search?take=20` and `GET /api/search?targetTypes=ACHIEVEMENT&targetTypes=FEE_RECORD&take=20`.
+  - Parsed `targetTypes`: `["ACHIEVEMENT", "FEE_RECORD"]`.
+  - `noDemoSearchRequests=[]`, `invalidDepartmentSearchRequests=[]`, `nonGetRequests=[]`, `forbiddenRequests=[]`, `consoleErrors=[]`, `pageErrors=[]`, and 390px `overflow=false`.
+- Not Step 24 scope:
+  - Backend search semantic completion.
+  - Live backend smoke.
+  - `search_logs`.
+  - Meilisearch or external search engine sync.
+  - settings/config.
+  - warnings API.
+  - Attachment upload/download/object storage.
+  - Fee write or Step 15 real fee write.
+  - seed/migrate/import/data cleanup.
+  - Step 22 live audit smoke closure.
+- Step 24C archive execution:
+  - Documentation-only archive pass.
+  - Updated memory-bank archive records only.
+  - Did not run test/typecheck/build/lint/browser/backend/frontend/database/business-request commands because Step 24C only archives prior evidence.
+  - Did not start frontend, backend, browser, or database.
+  - Did not access live backend, database, or real business writes.
+  - Did not read or display `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Residual risk:
+  - Step 24 proves frontend UI/request boundary behavior, not backend search semantic behavior.
+  - Live backend smoke remains unrun.
+  - Step 22 live backend/demo user blocker remains independent and unarchived.
+- Next:
+  - Step 24 is archived.
+  - Do not enter Step 25 automatically.
+
+## Current Step 24B Full Gates and Route-mock Browser Request Boundary - 2026-06-21
+
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains blocked by missing approved live backend URL, approved live demo user context, and confirmation for passing demo user context with `X-Demo-User-Id`.
+- Step 23 overall / Archive: DONE.
+  - Archive name: `targetTypes array query contract closure`.
+- Step 24 plan confirmation: DONE.
+- Step 24A: DONE.
+- Step 24B plan confirmation: ACCEPT.
+- Step 24B: DONE.
+- Step 24C: NOT_STARTED.
+- Step 24 overall / Archive: NOT_STARTED.
+- Purpose:
+  - Verify the Step 24A Search UI multi-target request-shaping work with complete web gates and route-mock browser/request boundary acceptance.
+- Step 24B small fix:
+  - `corepack pnpm --filter @research-ip/web typecheck` initially failed because Ant Design `Select` expected a mutable `SearchTargetTypeCode[]` value while `getSearchTargetTypes(...)` returns a readonly array.
+  - Fixed `apps/web/src/Search.tsx` by passing a shallow mutable array copy to the Select `value`.
+  - This fix is limited to Step 24A's allowed Search UI scope and does not change query/request semantics.
+  - After adding `memory-bank/step24b-browser-acceptance.js`, root lint initially failed on the Playwright CLI artifact's top-level async function expression and browser globals.
+  - Added narrow ESLint/browser-global comments to the Step 24B acceptance artifact without changing acceptance logic, then reran root lint successfully.
+- Complete gate results:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 12 files / 169 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS after the small Select value fix.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS after the acceptance artifact lint-compatibility comments.
+- Route-mock browser/request boundary:
+  - Temporary Vite dev server was started on port 5173 and stopped after acceptance.
+  - Playwright CLI session `step24b` was opened and closed after acceptance.
+  - `memory-bank/step24b-browser-acceptance.js` records the route-mock acceptance script.
+  - `memory-bank/step24b-browser-acceptance.txt` records the acceptance result summary.
+  - Acceptance used local route mock for `**/api/**`; no live backend was used.
+  - Real Search UI interaction selected `ACHIEVEMENT` and `FEE_RECORD`, then triggered search.
+  - Observed search requests:
+    - `GET /api/search?take=20`.
+    - `GET /api/search?targetTypes=ACHIEVEMENT&targetTypes=FEE_RECORD&take=20`.
+  - Parsed `targetTypes` as `["ACHIEVEMENT", "FEE_RECORD"]`.
+  - `noDemoSearchRequests=[]`.
+  - `invalidDepartmentSearchRequests=[]`.
+  - `nonGetRequests=[]`.
+  - `forbiddenRequests=[]`.
+  - `consoleErrors=[]`.
+  - `pageErrors=[]`.
+  - 390px metrics: `body=390`, `doc=390`, `client=390`, `inner=390`, `overflow=false`.
+  - Boundary acceptance result: PASS.
+- Boundary:
+  - No `apps/api/**` change.
+  - No backend source, backend search semantic, backend API, Prisma schema, migration, seed, import, data backfill, data cleanup, package/dependency, lockfile, object storage, CI/CD, or environment-file change.
+  - No live backend request, database access, real business write, `search_logs`, Meilisearch/external sync, settings/config CRUD, warnings API, attachment upload/download/object storage, fee write, or Step 15 real fee write.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Execution artifacts:
+  - `apps/web/dist/**` was refreshed by the Step 24B web build.
+  - `memory-bank/step24b-web-dev.out.log` and `memory-bank/step24b-web-dev.err.log` record temporary Vite server output.
+  - `memory-bank/step24b-browser-acceptance.js` records the route-mock browser acceptance script.
+  - `memory-bank/step24b-browser-acceptance.txt` records the route-mock browser acceptance result.
+- Residual risk:
+  - Step 24B proves frontend UI/request boundary behavior under route mock, not backend search semantic behavior.
+  - Live backend smoke remains unrun and remains outside Step 24B.
+- Next:
+  - Stop at Step 24B.
+  - Do not enter Step 24C automatically.
+  - Step 24C still needs a separate Prompt to archive Step 24 overall.
+
+## Current Step 24A Search UI Multi-target Request Shaping - 2026-06-21
+
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains blocked by missing approved live backend URL, approved live demo user context, and confirmation for passing demo user context with `X-Demo-User-Id`.
+- Step 23 overall / Archive: DONE.
+  - Archive name: `targetTypes array query contract closure`.
+- Step 24 plan confirmation: DONE.
+- Step 24A: DONE.
+- Step 24B: NOT_STARTED.
+- Step 24C: NOT_STARTED.
+- Step 24 overall / Archive: NOT_STARTED.
+- Purpose:
+  - Strengthen the Step 23 frontend array `targetTypes` contract from direct API-client/request shaping proof to a real Search UI user-flow request-shaping foundation.
+- Completed scope:
+  - Updated `apps/web/src/Search.tsx` so the Search result type control is a controlled multi-select.
+  - User-selected `ACHIEVEMENT` + `FEE_RECORD` now flows through `SearchFilters.targetTypes` and `SearchQuery.targetTypes`.
+  - Empty result-type selection preserves the "all results" semantics by omitting `targetTypes`.
+  - Existing single-value `targetType` compatibility remains for older helper/filter call sites.
+  - Search filter summary now renders multi-target selections readably and labels the multi-target path as frontend request shaping, not backend semantic proof.
+  - Updated focused tests in `apps/web/src/Search.test.ts`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Search`: PASS, 1 file / 24 tests.
+- Decision record:
+  - No D090 added.
+  - Reuses D089 because Step 24A is a UI/request-shaping follow-up to the already recorded array query contract decision.
+- Boundary:
+  - No `apps/api/**` change.
+  - No backend search semantic change.
+  - No new backend API.
+  - No live backend smoke.
+  - No database access or real business write.
+  - No `search_logs`, Meilisearch/external sync, settings/config CRUD, warnings API, attachments/upload/download/object storage, fee write, Step 15 real fee write, seed/migrate/import/data cleanup, dependency, or environment-secret change.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Not run in Step 24A:
+  - Full web gates.
+  - Root lint.
+  - Web build.
+  - Route-mock browser/request boundary acceptance.
+  - Backend semantic/live smoke.
+- Residual risk:
+  - Step 24A proves focused Search UI request shaping and helper/request boundaries only.
+  - Step 24B still needs complete gates plus route-mock browser/request boundary acceptance from real UI interaction.
+- Next:
+  - Stop at Step 24A.
+  - Do not enter Step 24B automatically.
+
+## Current Step 23 Archive targetTypes Array Query Contract Closure - 2026-06-21
+
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+- Step 23 plan confirmation: DONE.
+- Step 23A: DONE.
+- Step 23B plan confirmation: DONE.
+- Step 23B execution: DONE.
+- Step 23B blocker fix: DONE.
+- Step 23C: DONE.
+- Step 23 overall / Archive: DONE.
+- Archive name:
+  - `targetTypes array query contract closure`.
+- Archived capability:
+  - The web API client GET query model supports scalar string/number/boolean values and readonly arrays of those scalars.
+  - Array query values serialize as repeated query parameters, for example `targetTypes=ACHIEVEMENT&targetTypes=FEE_RECORD`.
+  - Existing scalar query behavior remains preserved.
+  - Undefined, null, empty string, and empty array values remain omitted from query serialization.
+  - `SearchQuery.targetTypes` is aligned to a readonly array contract.
+  - Search request shaping can pass multiple `targetTypes` values to `GET /search`.
+  - D089 records the Step 23 array query contract decision.
+- Verification basis:
+  - Step 23A focused tests:
+    - `corepack pnpm --filter @research-ip/web test -- api-client`: PASS, 1 file / 9 tests.
+    - `corepack pnpm --filter @research-ip/web test -- Search`: PASS, 1 file / 22 tests.
+  - Step 23B complete gates:
+    - `corepack pnpm --filter @research-ip/web test`: PASS, 12 files / 167 tests.
+    - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+    - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+    - `corepack pnpm lint`: PASS after historical artifact lint-clean fix.
+  - Step 23B route-mock browser/request boundary:
+    - Observed `GET /api/search?keyword=step23b&targetTypes=ACHIEVEMENT&targetTypes=FEE_RECORD&take=20`.
+    - Parsed `targetTypes` as `["ACHIEVEMENT", "FEE_RECORD"]`.
+    - `nonGetRequests=[]`.
+    - `forbiddenRequests=[]`.
+    - 390px `overflow=false`.
+  - Historical artifact lint-clean fix:
+    - Limited to ESLint compatibility comments in `memory-bank/step21b-browser-acceptance.js`.
+    - Did not change Step 21B browser acceptance semantics.
+- Archive execution:
+  - Updated memory-bank archive records only.
+  - Did not rerun test/typecheck/build/lint because Step 23C is documentation-only and reuses Step 23A/23B/blocker-fix evidence.
+  - Did not start the frontend, backend, browser, or database.
+  - Did not issue business requests.
+- Boundary:
+  - No backend search semantic change.
+  - No new backend API.
+  - No live backend smoke.
+  - No real business write.
+  - No `search_logs`.
+  - No Meilisearch / external sync.
+  - No settings/config.
+  - No warnings API.
+  - No attachments/object storage.
+  - No fees write.
+  - No seed/migrate/import/data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Residual risk:
+  - Step 23 proves the frontend query contract and request boundary, not backend search semantic behavior.
+  - Step 22 live backend/demo user blocker remains independent and unarchived.
+- Next:
+  - Stop at Step 23C archive.
+  - Do not enter Step 24 automatically.
+
+## Current Step 23B Array targetTypes Full Gates and Browser Request Boundary - 2026-06-21
+
+- Step 22 status carried forward:
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+- Step 23 plan confirmation: DONE.
+- Step 23A status: DONE.
+- Step 23B plan confirmation: DONE.
+- Step 23B execution status: BLOCKED.
+- Step 23C status: NOT_STARTED.
+- Verification target:
+  - Verify the Step 23A frontend array `targetTypes` / API client array query foundation with full gates and route-mock browser/request boundary acceptance.
+- Gate results:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 12 files / 167 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: BLOCKED / FAIL.
+    - Failure is from pre-existing `memory-bank/step21b-browser-acceptance.js`, not from Step 23A source changes.
+    - Errors include `@typescript-eslint/no-unused-expressions` at line 1 and `no-undef` for `window` / `document`.
+    - No Step 23A source fix was made because this is a historical artifact issue outside the Step 23A small-defect scope.
+- Browser/request boundary:
+  - Temporary Vite dev server was started on port 5173 and stopped after acceptance.
+  - Playwright CLI session `step23b` was opened and closed after acceptance.
+  - `memory-bank/step23b-browser-acceptance.txt` records the route-mock acceptance script.
+  - Acceptance used local route mock for `/api/search`; no live backend was used.
+  - The script dynamically imported `/src/api-client.ts` from the running Vite app and called the real `createApiClient(...).get("/search", { targetTypes: ["ACHIEVEMENT", "FEE_RECORD"], ... })`.
+  - Observed search request:
+    - `GET /api/search?keyword=step23b&targetTypes=ACHIEVEMENT&targetTypes=FEE_RECORD&take=20`.
+  - Parsed target types were `["ACHIEVEMENT", "FEE_RECORD"]`.
+  - `nonGetRequests=[]`.
+  - `forbiddenRequests=[]`.
+  - 390px metrics: `body=390`, `doc=390`, `client=390`, `inner=390`, `overflow=false`.
+  - Boundary acceptance result: PASS.
+- Boundary:
+  - No backend source, backend search semantic, backend API, Prisma schema, migration, seed, import, data backfill, data cleanup, package, lockfile, object storage, CI/CD, environment-file, `search_logs`, Meilisearch/external sync, settings/config, warnings API, attachment upload/download/object storage, fee write, or Step 15 real fee write change.
+  - No live backend request, database access, or business write.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Execution artifacts:
+  - `apps/web/dist/**` was refreshed by the Step 23B web build.
+  - `memory-bank/step23b-web-dev.out.log` and `memory-bank/step23b-web-dev.err.log` record temporary Vite server output.
+  - `memory-bank/step23b-browser-acceptance.txt` records the route-mock browser acceptance script.
+- Step 23B result:
+  - BLOCKED because root lint did not pass.
+  - Step 23A array query implementation itself passed full web tests, web typecheck, web build, and route-mock browser/request boundary acceptance.
+- Next:
+  - Do not enter Step 23C archive until the root lint blocker is explicitly handled.
+  - A separate confirmation should decide whether to fix or exclude the historical Step 21B browser artifact from root lint.
+
+## Current Step 23A Array targetTypes / API Client Array Query Foundation - 2026-06-21
+
+- Step 22 status carried forward:
+  - Step 22 plan confirmation: DONE.
+  - Step 22A: DONE.
+  - Step 22B: BLOCKED.
+  - Step 22C: NOT_STARTED.
+  - Step 22 overall / Archive: NOT_STARTED.
+  - Step 22 remains blocked and unarchived; its live backend URL / demo user context blocker is not part of Step 23.
+- Step 23 plan confirmation: DONE.
+- Step 23A status: DONE.
+- Step 23B status: NOT_STARTED.
+- Step 23C status: NOT_STARTED.
+- Direction:
+  - Align frontend search request shaping with the backend array `targetTypes` contract.
+  - Extend the web API client GET query model to support scalar string/number/boolean values and readonly arrays of those scalars.
+  - Serialize array query values as repeated query parameters, for example `targetTypes=ACHIEVEMENT&targetTypes=FEE_RECORD`.
+- Completed scope:
+  - Added `ApiQueryPrimitive`, `ApiQueryValue`, and `ApiQuery` to `apps/web/src/api-client.ts`.
+  - Updated `ApiClient.get`, request options, `serializeQuery`, and URL building to accept scalar, boolean, array, null, and undefined query values.
+  - Preserved scalar query behavior and existing omission of unsafe empty values.
+  - Omitted undefined, null, empty string, and empty array values from query serialization.
+  - Changed `SearchQuery.targetTypes` in `apps/web/src/types.ts` from a single value to a readonly array.
+  - Updated `apps/web/src/Search.tsx` so existing single target filter shaping emits a one-item `targetTypes` array, while explicit multi-target arrays can pass through to `GET /search`.
+  - Updated focused tests in `apps/web/src/api-client.test.ts` and `apps/web/src/Search.test.ts`.
+  - Added D089 for the frontend array-query boundary decision.
+- Focused validation:
+  - `corepack pnpm --filter @research-ip/web test -- api-client`: PASS, 1 file / 9 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Search`: PASS, 1 file / 22 tests.
+- Boundary:
+  - No backend source, backend API contract, backend search semantic, Prisma schema, migration, seed, import, data backfill, data cleanup, package, lockfile, object storage, CI/CD, or environment-file change.
+  - No live backend request, frontend server start, browser session, database access, business write, `search_logs`, Meilisearch/external search sync, settings/config CRUD, warnings API, attachment upload/download/object storage, fee write, or Step 15 real fee write.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Not run in Step 23A:
+  - Full web test suite, web typecheck, web build, root lint, and browser/API boundary acceptance.
+  - Reason: Step 23A is scoped to implementation plus focused tests; Step 23B owns full gates and request/browser boundary acceptance.
+- Step 23B remaining:
+  - Run full Step 23 quality gates.
+  - Confirm broader TypeScript compatibility after widening `ApiClient.get` query types.
+  - Run request/browser boundary acceptance for GET-only `/search` with repeated `targetTypes`.
+  - Confirm no POST/PATCH/DELETE, `search_logs`, Meilisearch, settings/config, attachments, warnings, or fee-write request appears.
+
+## Current Step 21 Archive Attachment Detail Metadata Readonly Frontend Closure - 2026-06-21
+
+- Step 21 plan confirmation: DONE / ACCEPT.
+- Step 21A status: DONE.
+- Step 21B status: DONE.
+- Step 21C status: DONE.
+- Step 21 overall / Archive: DONE.
+- Archive scope:
+  - Archive Step 21 as `attachment detail metadata readonly frontend closure`.
+  - Step 21 closes the frontend readonly attachment detail metadata loop.
+  - Step 21 is not complete attachment management.
+- Completed capability:
+  - The frontend supports readonly attachment detail metadata viewing.
+  - The frontend reuses the existing `GET /achievements/:achievementId/attachments/:attachmentId` contract.
+  - Detail metadata is requested only after the user clicks `查看 metadata 详情`.
+  - No-demo-user, missing achievement ID, and missing attachment ID states do not issue attachment detail requests.
+  - The detail metadata panel displays safe metadata fields only: id, fileName, relationType, relationId, version, uploaderId, secretLevel, status, createdAt, updatedAt, and archivedAt.
+  - The UI does not display `storageKey`, `checksum`, object body, download URL, raw storage path, object-storage path, or file content.
+  - 401/403/404/400/422/500/network failures map to attachment-detail-specific readonly states.
+- Boundary:
+  - Step 21 is not complete attachment management.
+  - No `apps/api/**` change.
+  - No `apps/web/**` product code change in Step 21C.
+  - No backend API, schema, migration, seed, permission seed, object storage, configuration, or CI/CD change.
+  - No upload, download, delete, archive action, version-change, save, sync, import, export, object-storage, fee voucher attachment, warnings API, `search_logs`, Meilisearch/external sync, settings/config, Step 14 DataGap, Step 15 real fee write, seed, migrate, data backfill, or data cleanup.
+  - No `GET /achievements/:achievementId/attachments/:attachmentId/download` call.
+  - No POST, PATCH, or DELETE request was introduced.
+  - No `/download`, `/fees/warnings`, `search_logs`, Meilisearch, or settings/config request was observed in Step 21B browser/API boundary acceptance.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Verification basis:
+  - Reuse Step 21A implementation evidence:
+    - `fetchAchievementAttachmentDetailMetadata` calls `/achievements/:achievementId/attachments/:attachmentId`.
+    - `shouldLoadAttachmentDetailMetadata` prevents no-demo-user, missing achievement ID, and missing attachment ID detail loads.
+    - Detail metadata loads only after the user selects an attachment from the metadata list.
+    - Detail view model exposes safe metadata fields only.
+  - Reuse Step 21B quality gate evidence:
+    - `corepack pnpm --filter @research-ip/web test -- AchievementDetail`: PASS, 1 file / 24 tests.
+    - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+    - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+    - `corepack pnpm lint`: PASS.
+  - Reuse Step 21B browser/API boundary acceptance:
+    - Route-mock acceptance passed no-demo-user no-request.
+    - Before clicking `查看 metadata 详情`, detail request count was `0`.
+    - After clicking `查看 metadata 详情`, only GET attachment detail requests were observed; React dev/StrictMode duplicated the readonly GET.
+    - 403/404/500 readonly error states displayed the expected copy.
+    - Request scan found no POST/PATCH/DELETE, `/download`, `/fees/warnings`, `search_logs`, Meilisearch, or settings/config request.
+    - Entry scan found no upload/download/delete/archive/version-change/save/sync/import/export action entry.
+    - 390px check returned `body=390`, `doc=390`, `client=390`, `inner=390`, and `overflow=false`.
+    - Unexpected console errors and page errors were empty; mocked 4xx/5xx resource errors were expected.
+  - Step 21C does not rerun test/typecheck/build/lint or browser checks because it updates only memory-bank archive records and reuses Step 21B evidence.
+- Execution artifacts:
+  - Step 21A changed `apps/web/src/AchievementDetail.tsx`, `apps/web/src/AchievementDetail.test.ts`, `apps/web/src/types.ts`, and `apps/web/src/App.css`.
+  - `apps/web/dist/**` was refreshed by the Step 21B web build.
+  - `memory-bank/step21b-browser-acceptance.js` records the route-mock browser acceptance script.
+  - `memory-bank/step21b-web-dev.out.log` and `memory-bank/step21b-web-dev.err.log` record temporary Step 21B dev server output.
+  - Step 21C updates memory-bank archive records only.
+- Known residual risk:
+  - Live backend/database attachment detail smoke was not run.
+  - Browser success/error states were route-mocked for frontend/API boundary acceptance.
+  - React dev/StrictMode duplicates readonly attachment detail GETs during browser acceptance; request boundary remains GET-only.
+- Next:
+  - Stop at Step 21C.
+  - Do not automatically enter Step 22.
+  - Future live backend smoke, upload/download/object storage, fee voucher attachment, warnings API, `search_logs`, Meilisearch/external sync, settings/config, real writes, seed/migrate, data backfill, or data cleanup require separate confirmation.
+
+## Current Step 21B Attachment Detail Metadata Quality Gates and Browser/API Boundary Acceptance - 2026-06-21
+
+- Step 21 plan confirmation: DONE / ACCEPT.
+- Step 21A status: DONE.
+- Step 21B plan confirmation: DONE.
+- Step 21B execution status: DONE.
+- Step 21C status: NOT_STARTED.
+- Purpose:
+  - Verify the Step 21A attachment detail metadata readonly frontend foundation through quality gates and browser/API boundary acceptance.
+  - Keep this step verification-only except for memory-bank evidence and browser acceptance script artifact.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail`: PASS, 1 file / 24 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API boundary acceptance:
+  - Temporary Vite dev server was started for Step 21B and stopped after acceptance.
+  - Playwright session `step21b` was opened and closed after acceptance.
+  - Browser acceptance used route mocks for achievement list/detail, attachment list, and attachment detail success/403/404/500 states.
+  - Mock acceptance is frontend/API boundary acceptance only; it is not live backend/database smoke.
+  - No-demo-user achievements flow produced `apiRequestCount=0` and `attachmentRequestCount=0`.
+  - Demo-user flow requested the achievement list and opened achievement detail.
+  - Before clicking `查看 metadata 详情`, attachment detail request count was `0`.
+  - After clicking `查看 metadata 详情`, only GET detail requests were observed; React dev/StrictMode duplicated the readonly detail GET.
+  - Success state displayed `step21b-detail-success.pdf`.
+  - Safe-field scan found no `storageKey`, `checksum`, `objectBody`, `downloadUrl`, raw storage path, or object-storage path leak.
+  - 403 state displayed `当前角色无附件 detail metadata 读取权限`.
+  - 404 state displayed `附件 detail metadata 不存在或不可用`.
+  - 500 state displayed `附件 detail metadata 服务暂不可用`.
+  - Request scan found no non-GET API request and no `/download`, `/fees/warnings`, `search_logs`, Meilisearch, or `settings/config` request.
+  - Entry scan found no upload/download/delete/archive/version-change/save/sync/import/export action entry.
+  - 390px check returned `body=390`, `doc=390`, `client=390`, `inner=390`, and `overflow=false`.
+  - Console errors were limited to expected mocked 403/404/500 resource errors; unexpected console errors and page errors were empty.
+- Boundary:
+  - No `apps/api/**` change.
+  - No backend API, schema, migration, seed, permission seed, object storage, configuration, or CI/CD change.
+  - No frontend feature change was required.
+  - No upload, download, delete, archive action, version-change, object-storage, fee voucher attachment, warnings API, `search_logs`, Meilisearch/external sync, settings/config, Step 14 DataGap, Step 15 real fee write, seed, migrate, data backfill, or data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Execution artifacts:
+  - `apps/web/dist/**` was refreshed by the Step 21B web build.
+  - `memory-bank/step21b-browser-acceptance.js` records the Playwright route-mock acceptance script.
+  - `memory-bank/step21b-web-dev.out.log` and `memory-bank/step21b-web-dev.err.log` record temporary dev server output.
+- Known residual risk:
+  - Live backend/database attachment detail smoke was not run.
+  - Browser success/error states were route-mocked for frontend/API boundary acceptance.
+  - React dev/StrictMode duplicates readonly attachment detail GETs during browser acceptance; request boundary remains GET-only.
+- Next:
+  - Stop at Step 21B.
+  - Do not automatically enter Step 21C or archive Step 21 overall.
+
+## Current Step 21A Attachment Detail Metadata Readonly Frontend Foundation - 2026-06-21
+
+- Step 21 plan confirmation: DONE / ACCEPT.
+- Step 21 direction: attachment detail metadata readonly frontend closure.
+- Step 21A status: DONE.
+- Step 21B status: NOT_STARTED.
+- Step 21C status: NOT_STARTED.
+- Direction:
+  - Implement only the frontend readonly attachment detail metadata foundation.
+  - Reuse existing backend `GET /achievements/:achievementId/attachments/:attachmentId`.
+  - Keep attachment detail metadata safe-field-only and readonly.
+- Completed scope:
+  - Added frontend attachment detail metadata type alias over the existing safe metadata shape.
+  - Added `fetchAchievementAttachmentDetailMetadata(client, achievementId, attachmentId)`.
+  - Added no-demo-user / missing-id guard through `shouldLoadAttachmentDetailMetadata`.
+  - Added Step 21A readonly boundary model for the detail metadata endpoint.
+  - Added attachment detail metadata error mapping for 401, 403, 404, 400/422, 500, and network failures.
+  - Added safe detail metadata view model and an explicit "查看 metadata 详情" entry from attachment metadata cards.
+  - Detail metadata is loaded only after the user explicitly selects an attachment.
+  - Detail display includes safe metadata fields only: id, fileName, relationType, relationId, version, uploaderId, secretLevel, status, createdAt, updatedAt, and archivedAt.
+- Boundary:
+  - No `apps/api/**` change.
+  - No backend API, schema, migration, seed, permission seed, object storage, configuration, or CI/CD change.
+  - No `POST /achievements/:id/attachments`.
+  - No `GET /achievements/:id/attachments/:attachmentId/download`.
+  - No upload, download, delete, archive action, version-change, object-storage, fee voucher attachment, warnings API, `search_logs`, Meilisearch/external sync, settings/config, Step 14 DataGap, Step 15 real fee write, seed, migrate, data backfill, or data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail`: PASS, 1 file / 24 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Browser/API boundary acceptance:
+  - Not run in Step 21A by instruction.
+  - Deferred to Step 21B.
+- Known residual risk:
+  - Step 21A is covered by unit/type gates only; browser request scanning and responsive checks remain Step 21B.
+  - Live backend/database attachment detail smoke was not run.
+- Next:
+  - Stop at Step 21A.
+  - Do not automatically enter Step 21B.
+
+## Current Step 20 Archive System Configuration Boundary Readonly Capability Inventory Closure - 2026-06-21
+
+- Step 20 plan confirmation: DONE.
+- Step 20A status: DONE.
+- Step 20B status: DONE.
+- Step 20C status: DONE.
+- Step 20 overall / Archive: DONE.
+- Archive scope:
+  - Archive Step 20 as the system configuration boundary / readonly capability inventory closure.
+  - Step 20 selected the low-risk phase-one route of closing the remaining `settings` main-navigation BoundaryPage gap without claiming real configuration management.
+  - Step 20B completed the frontend-only dedicated settings boundary page.
+- Completed capability:
+  - `settings` navigation no longer falls through to the generic BoundaryPage.
+  - `settings` renders a dedicated `系统配置边界 / 只读能力盘点` page.
+  - The page inventories five phase-one configuration areas: 角色权限、部门、字典、预警规则、接口 adapter.
+  - The page states that `system:config` is only a permission-code/future boundary signal, not a completed `settings/config` backend API.
+  - The page states that it is not configuration CRUD and does not mean real configuration management is complete.
+  - The page sends no business API request.
+  - The page provides no create, edit, delete, save, sync, import, export, or download entry point.
+- Boundary:
+  - Step 20 is not real system configuration management.
+  - No `apps/api/**` source change.
+  - No `settings/config` backend API.
+  - No role, department, dictionary, reminder-rule, or interface-configuration CRUD.
+  - No backend API, Prisma schema, migration, seed, permission seed, real SSO, external interface, object storage, Meilisearch, configuration, CI/CD, or environment-file change.
+  - No attachment upload/download/detail, fee voucher attachment, warnings API, `search_logs`, Step 14 DataGap, Step 15 real fee write, seed, migrate, data backfill, or data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Verification basis:
+  - Reuse Step 20B quality gate evidence:
+    - `corepack pnpm --filter @research-ip/web test`: PASS, 12 files / 160 tests.
+    - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+    - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+    - `corepack pnpm lint`: PASS.
+  - Reuse Step 20B browser/API boundary acceptance:
+    - settings page displayed `系统配置边界 / 只读能力盘点`, `当前不是配置管理实现`, `NO API`, and `system:config`.
+    - desktop settings check produced `requests=[]`, `consoleErrors=[]`, and `pageErrors=[]`.
+    - desktop button/link scan found no create/edit/delete/save/sync/import/export/download entry.
+    - 390px settings check produced `requests=[]`, `consoleErrors=[]`, `pageErrors=[]`, and no action entries.
+    - 390px width metrics were `body=390`, `doc=390`, `client=390`, `inner=390`, and `overflow=false`.
+  - Step 20C does not rerun gates because this pass updates memory-bank archive records only and reuses Step 20B evidence.
+- Execution artifacts:
+  - `apps/web/dist/**` was refreshed by the Step 20B web build.
+  - `.playwright-cli/**` contains Step 20B browser diagnostic artifacts.
+  - `memory-bank/step20b-web-dev.out.log` and `memory-bank/step20b-web-dev.err.log` record temporary dev server output.
+  - Step 20C records these artifacts only and does not delete, clean, or move them.
+- Known residual risk:
+  - Step 20 is a boundary/capability inventory closure only; it does not prove or implement a real `settings/config` API or real configuration management.
+- Next:
+  - Stop here and return to Prompt orchestration.
+  - Do not automatically enter Step 21, real configuration CRUD, settings/config API, permission seed work, real SSO, external interfaces, object storage, Meilisearch, attachments, warnings API, `search_logs`, Step 14 DataGap, Step 15 real fee writes, seed/migrate, or data cleanup.
+
+## Current Step 20B System Configuration Boundary Readonly Capability Inventory - 2026-06-21
+
+- Step 20 plan confirmation: DONE.
+- Step 20A status: DONE.
+- Step 20B status: DONE.
+- Step 20C status: NOT_STARTED.
+- Direction:
+  - Implement only the frontend system configuration boundary / readonly capability inventory.
+  - Replace the generic `settings` BoundaryPage route with a dedicated settings boundary page.
+  - Keep the page API-free and do not claim a real `settings/config` backend contract.
+- Completed scope:
+  - Added `apps/web/src/SettingsBoundary.tsx`.
+  - Connected `activeKey === "settings"` in `apps/web/src/App.tsx`.
+  - Added `apps/web/src/SettingsBoundary.test.ts` for no business API request policy, five capability categories, no configuration CRUD claim, and no write/download/import/export entry points.
+  - Added minimal responsive settings boundary styles in `apps/web/src/App.css`.
+  - Added D087 for the Step 20B boundary-only decision.
+- Boundary:
+  - No `apps/api/**` changes.
+  - No settings/config backend controller, database schema, migration, seed, permission seed, real SSO, external interface, object storage, or Meilisearch work.
+  - No attachment upload/download/detail, fee voucher attachment, warnings API, `search_logs`, Step 14 DataGap, Step 15 real fee write, seed/migrate, data backfill, or data cleanup.
+  - Do not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 12 files / 160 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+  - Browser/API boundary acceptance:
+    - settings route showed `系统配置边界 / 只读能力盘点`, `当前不是配置管理实现`, `NO API`, and `system:config`.
+    - desktop settings navigation after listener install produced `requests=[]`.
+    - 390px recheck produced `requests=[]`.
+    - no POST/PATCH/DELETE or other business API request was observed during settings checks.
+    - button/link scan found no create/edit/delete/save/sync/import/export/download entry text.
+    - console errors and page errors were empty.
+    - 390px check returned `body=390`, `doc=390`, `client=390`, `inner=390`, `overflow=false`.
+- Execution artifacts:
+  - `apps/web/dist/**` was refreshed by the Step 20B web build.
+  - `.playwright-cli/**` contains Step 20B browser diagnostic artifacts.
+  - `memory-bank/step20b-web-dev.out.log` and `memory-bank/step20b-web-dev.err.log` record temporary dev server output.
+- Next:
+  - Stop at Step 20B.
+  - Do not archive Step 20 overall; leave archive to Step 20C.
+
+## Current Step 19 Archive Achievement Attachment Metadata Readonly Frontend Closure - 2026-06-21
+
+- Step 19 plan confirmation: DONE.
+- Step 19A status: DONE.
+- Step 19 overall / Archive: DONE.
+- Archive scope:
+  - Archive Step 19 as the achievement attachment metadata readonly frontend closure.
+  - Step 19 selected the low-risk phase-one route of exposing achievement attachment metadata in the frontend over the existing readonly backend contract.
+  - Step 19A completed the frontend foundation inside achievement detail.
+- Completed capability:
+  - Frontend attachment metadata types exist.
+  - Achievement detail shows a readonly attachment metadata section.
+  - The section calls only `GET /achievements/:achievementId/attachments?take=50`.
+  - The section displays safe metadata fields only: `id`, `fileName`, `version`, `uploaderId`, `relationId`, `secretLevel`, `status`, `createdAt`, `updatedAt`, and `archivedAt`.
+  - Management, search, and approval achievement detail contexts pass `demoUserId` through so no-demo-user no-request behavior is enforced.
+  - Empty, loading, success, 403/error, no-demo-user boundary, and responsive states are covered.
+- Boundary:
+  - Step 19 is not a complete attachment management capability.
+  - No `apps/api/**` source change.
+  - No backend API, schema, migration, seed, permission seed, object storage, or configuration change.
+  - No `POST /achievements/:id/attachments`.
+  - No `GET /achievements/:id/attachments/:attachmentId/download`.
+  - No attachment detail GET.
+  - No upload, download, delete, archive, version-change, object-storage, fee voucher attachment, settings, Step 14 DataGap, Step 15 real fee write, warnings API, `search_logs`, Meilisearch/external sync, array `targetTypes`, seed, migrate, data backfill, or data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Verification basis:
+  - Reuse Step 19A quality gate evidence:
+    - `corepack pnpm --filter @research-ip/web test`: PASS, 11 files / 155 tests.
+    - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+    - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+    - `corepack pnpm lint`: PASS.
+  - Reuse Step 19A supplemental clean browser/API readonly acceptance:
+    - no-demo-user produced zero `/api/` requests and zero `/attachments` requests.
+    - demo success used only readonly GETs for achievements list, achievement detail, and achievement attachment metadata.
+    - mocked 403 displayed `当前角色无附件 metadata 读取权限`.
+    - request scan found no non-GET request and no `/download`, `/fees/warnings`, `search_logs`, or Meilisearch request.
+    - entry scan found no upload, download, delete, version-change, POST, PATCH, or DELETE entry.
+    - console had no unrelated default workbench 404 entries; `pageErrors=[]`.
+    - 390px check returned no document-level horizontal overflow.
+  - Step 19 Archive does not rerun gates because this pass updates memory-bank records only.
+- Known residual risk:
+  - Browser success and 403 checks used Playwright route mocks for attachment metadata, not a live backend/database attachment dataset.
+  - React dev/StrictMode duplicates readonly detail/attachment GETs during browser checks; the request boundary remains GET-only.
+- Execution artifacts:
+  - `apps/web/dist/**` was refreshed by Step 19A web build.
+  - `.playwright-cli/**` contains Step 19A browser diagnostic artifacts.
+  - `memory-bank/step19a-web-dev.out.log`, `memory-bank/step19a-web-dev.err.log`, `memory-bank/step19a-clean-web-dev.out.log`, and `memory-bank/step19a-clean-web-dev.err.log` record temporary dev server output.
+  - Step 19 Archive records these artifacts only and does not delete, clean, or move them.
+- Next:
+  - Return to Prompt orchestration.
+  - Do not automatically continue into Step 19B / Step 19C, attachment detail/download/upload, object storage, fee voucher attachment, settings, real writes, seed/migrate, data cleanup, or any next feature route.
+
+## Current Step 19A Achievement Attachment Metadata Readonly Frontend Foundation - 2026-06-21
+
+- Step 19 plan confirmation: DONE.
+- Step 19A status: DONE.
+- Direction:
+  - Implement only the frontend readonly achievement attachment metadata foundation.
+  - Reuse existing backend `GET /achievements/:achievementId/attachments`.
+  - Keep attachment capability metadata-only and readonly.
+- Scope:
+  - Added frontend attachment metadata types.
+  - Added `fetchAchievementAttachmentMetadata(client, achievementId)` over `GET /achievements/:achievementId/attachments?take=50`.
+  - Passed `demoUserId` into management/search/approval achievement detail drawers so attachment metadata loading can respect no-user no-request behavior.
+  - Added an attachment metadata section inside achievement detail content.
+  - Displayed safe metadata fields only: `id`, `fileName`, `version`, `uploaderId`, `relationId`, `secretLevel`, `status`, `createdAt`, `updatedAt`, and `archivedAt`.
+  - Added loading, empty, success, 403/error, no-demo-user boundary, and responsive card states.
+  - Added tests for request shaping, no-user guard, error mapping, safe view model, and readonly boundary.
+- Boundary:
+  - No `apps/api/**` source change.
+  - No backend API, schema, migration, seed, permission seed, object storage, or configuration change.
+  - No `POST /achievements/:id/attachments`.
+  - No `GET /achievements/:id/attachments/:attachmentId/download`.
+  - No attachment detail GET.
+  - No upload, download, delete, archive, version-change, object-storage, fee voucher attachment, settings, Step 14 DataGap, Step 15 real fee write, warnings API, `search_logs`, Meilisearch/external sync, array `targetTypes`, seed, migrate, data backfill, or data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 11 files / 155 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Temporary frontend dev server was started and stopped after checks.
+  - Playwright route mocking was used for `GET /api/achievements`, `GET /api/achievements/:id`, and `GET /api/achievements/:id/attachments`.
+  - A supplemental clean browser recheck entered the achievements route without a demo user and then applied the demo user in-page, avoiding default workbench setup traffic.
+  - No-demo-user achievements page produced zero `/api/` requests and zero `/attachments` requests.
+  - Demo user success flow displayed mocked `step19a-clean-metadata.pdf`.
+  - Success flow requested only `GET /api/achievements`, `GET /api/achievements/:id`, and `GET /api/achievements/:id/attachments?take=50`; React dev/StrictMode produced duplicate readonly detail/attachment GETs.
+  - 403 mocked flow displayed `当前角色无附件 metadata 读取权限`.
+  - Button/link scan found no upload, download, delete, version-change, POST, PATCH, or DELETE entry.
+  - Request scan found no non-GET request and no `/download`, `/fees/warnings`, `search_logs`, or Meilisearch request.
+  - Console recheck had no unrelated default workbench 404 entries; console errors were limited to the intentional mocked 403 attachment metadata response, and `pageErrors=[]`.
+  - 390px check returned `body=390`, `doc=390`, `client=390`, `inner=390`, and `overflow=false`.
+- Known residual risk:
+  - Browser success and 403 checks used Playwright route mocks for attachment metadata, not a live backend/database attachment dataset.
+  - React dev/StrictMode duplicates readonly detail/attachment GETs during the browser check; the request boundary remains GET-only.
+- Next:
+  - Stop here and return to Prompt orchestration.
+  - Do not automatically continue into Step 19B / Step 19C, upload/download, attachment detail, fee voucher attachment, settings, real writes, seed/migrate, or data cleanup.
+
+## Current Step 18 Archive Masked Readonly Audit Log Closure - 2026-06-21
+
+- Step 18 plan confirmation: DONE.
+- Step 18A status: DONE.
+- Step 18B status: DONE.
+- Step 18C plan confirmation: DONE.
+- Step 18C archive status: DONE.
+- Step 18 overall / Archive: DONE_WITH_MOCK_BROWSER_RISK.
+- Archive scope:
+  - Archive Step 18 as the phase-one masked readonly audit-log closure.
+  - Step 18A exposed the backend masked readonly `GET /audit-logs` contract.
+  - Step 18B connected the frontend `AuditLogs` page and moved the `audit` navigation item out of BoundaryPage.
+  - The completed loop is backend-authorized, frontend-readonly, and masked-only.
+- Completed capability:
+  - Backend route: `GET /audit-logs`.
+  - Backend permission: `audit:read_masked`.
+  - Backend service path: `AuditService.listMasked(context, query)`.
+  - Backend query support: `actorUserId`, `actorDepartmentId`, `action`, `targetType`, `targetId`, `targetDepartmentId`, `traceId`, `createdFrom`, `createdTo`, and `take`.
+  - Backend validation: enum/date/UUID validation and `take` constrained to 1..100.
+  - Frontend page: `AuditLogs`.
+  - Frontend filters: `action`, `targetType`, `targetId`, `actorUserId`, `traceId`, and `take`.
+  - Frontend safety: no-demo-user no request, masked display only, raw audit fields ignored, 403/error/empty/loading/success states, and 390px responsive acceptance.
+- Boundary:
+  - Step 18 is not a complete audit platform.
+  - No export, download, raw JSON copy, unmasked audit read, audit analytics, cache, settings, attachment work, Step 14 DataGap, Step 15 real fee write, warnings API, search log write, Meilisearch/external sync, schema, migration, seed, data backfill, or data cleanup.
+  - No `POST`, `PATCH`, or `DELETE`.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Verification basis:
+  - Step 18A API gates already passed: API test, typecheck, build, and root lint.
+  - Step 18B web gates already passed: web test, typecheck, build, and root lint.
+  - Step 18B browser/API acceptance covered no-user no request, mocked success, mocked 403, query shaping, absence of sensitive action entry points, and 390px layout.
+  - Step 18C does not rerun gates because it only updates memory-bank records.
+- Known residual risk:
+  - Step 18B browser success and 403 checks used Playwright route mocks for `/api/audit-logs`, not a live backend/database dataset.
+  - Live readonly smoke can be planned separately if a running backend and approved demo user context are available; do not mix it with seed/migrate/data cleanup or write requests.
+- Execution artifacts:
+  - `apps/api/dist/**` was refreshed by Step 18A API build.
+  - `apps/web/dist/**` was refreshed by Step 18B web build.
+  - `.playwright-cli/**` contains browser diagnostic artifacts from Step 18B acceptance.
+  - `memory-bank/backend-dev-20260621.out.log` had route-mapping lines appended during prior backend work.
+  - Step 18C records these artifacts only and does not delete or clean them.
+- Next:
+  - Return to Prompt orchestration.
+  - Future audit export/download, unmasked review, live smoke, advanced filters, analytics, settings, attachments, real write validation, Step 14 DataGap closure, seed/migrate, or data cleanup require separate confirmation.
+
+## Current Step 18B Masked Readonly Audit Log Frontend - 2026-06-21
+
+- Step 18 plan confirmation: DONE.
+- Step 18A plan confirmation and execution: DONE.
+- Step 18B plan confirmation: DONE.
+- Step 18B status: DONE.
+- Direction:
+  - Implement only the frontend masked readonly audit-log page.
+  - Reuse Step 18A `GET /audit-logs`.
+  - Keep backend API contract, schema, data, settings, attachments, and write flows unchanged.
+- Scope:
+  - Added `AuditLogs` page.
+  - Connected `activeKey === "audit"` in `apps/web/src/App.tsx`.
+  - Updated the audit navigation copy from boundary-page wording to Step 18B masked readonly wording.
+  - Added frontend audit types for `AuditActionCode`, `AuditTargetTypeCode`, `MaskedAuditLog`, `AuditLogListResult`, and `AuditLogQuery`.
+  - Added filters for `action`, `targetType`, `targetId`, `actorUserId`, `traceId`, and `take`.
+  - Validated UUID filters, traceId length, and `take` 1..100 before sending requests.
+  - Kept no-demo-user behavior silent: no `GET /audit-logs` request without `X-Demo-User-Id`.
+  - Rendered only masked fields and safe summary fields.
+  - Added a frontend defensive masked-value formatter so sensitive-key plaintext in malformed masked payloads is redacted before display.
+  - Added responsive audit page styles for filter controls and log cards.
+- Boundary:
+  - No `apps/api/**` change.
+  - No backend semantic/API contract change.
+  - No `POST`, `PATCH`, `DELETE`, export, download, raw JSON copy, unmasked audit read, settings, attachment work, Step 14 DataGap, Step 15 real fee write, warnings API, search log write, Meilisearch/external sync, schema, migration, seed, data backfill, or data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 11 files / 150 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Temporary frontend dev server was started and stopped after checks.
+  - Playwright route mocking was used for `/api/audit-logs`; no real backend write, seed, migrate, or data cleanup occurred.
+  - No-demo-user audit page produced zero `/api/audit-logs` requests.
+  - Admin demo user flow issued `GET /api/audit-logs?take=50` and displayed the mocked masked audit record.
+  - Filter flow issued `GET /api/audit-logs?action=UPDATE&targetType=ACHIEVEMENT&targetId=...&actorUserId=...&traceId=trace-step-18b&take=10`.
+  - 403 mocked flow displayed the audit permission error state.
+  - Button/link scan found no export, download, unmasked, write, POST, PATCH, or DELETE entry.
+  - 390px audit-page check showed `document.documentElement.scrollWidth=390` and `clientWidth=390`.
+- Next:
+  - Return to Prompt orchestration.
+  - Do not continue automatically into Step 18C, unmasked audit, export/download, settings, attachments, real writes, seed/migrate, or data cleanup.
+
+## Current Step 18A Masked Readonly Audit Log API - 2026-06-21
+
+- Step 18 plan confirmation: DONE.
+- Step 18A plan confirmation: DONE.
+- Step 18A status: DONE.
+- Direction:
+  - Implement only the backend masked readonly audit-log API contract.
+  - Leave the frontend audit-log page for Step 18B.
+- Scope:
+  - Added `AuditController` with `GET /audit-logs`.
+  - Reused existing `AuditService.listMasked(context, query)`.
+  - Required `UserContextGuard`, `PermissionGuard`, `@CurrentUser()`, and static `audit:read_masked`.
+  - Converted audit query DTO into an HTTP validation / transform DTO while preserving the service input shape.
+  - Supported first-pass filters: `actorUserId`, `actorDepartmentId`, `action`, `targetType`, `targetId`, `targetDepartmentId`, `traceId`, `createdFrom`, `createdTo`, and `take`.
+  - Constrained `take` to 1..100.
+  - Validated `createdFrom` / `createdTo` as ISO date strings and converted them to `Date` before service calls.
+  - Registered `AuditController` in `AuditModule` and explicitly imported `AuditModule` in root `AppModule`.
+  - Added AppModule route coverage for success, 401, 403, invalid query 400, health reachability, masked response shape, and no raw audit field exposure.
+  - Strengthened `AuditService.listMasked` coverage for token, cookie, password, api key, storage key, checksum, and config ref redaction.
+- Boundary:
+  - No frontend page or `apps/web/**` change.
+  - No `POST`, `PATCH`, `DELETE`, unmasked audit read, export, download, settings, attachment work, Step 14 DataGap, Step 15 real fee write, warnings API, search log write, Meilisearch/external sync, schema, migration, seed, data backfill, or data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/api test`: PASS, 52 files / 470 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - `corepack pnpm lint`: PASS.
+- Next:
+  - Return to Prompt orchestration for Step 18B planning/execution.
+  - Step 18B should build the frontend audit-log page over the new `GET /audit-logs` only after separate confirmation.
+  - Do not continue automatically into frontend, export, unmasked audit, settings, attachments, real writes, seed/migrate, or data cleanup.
+
+## Current Step 17 Archive Dashboard Frontend Readonly Completion - 2026-06-21
+
+- Step 17A status: DONE.
+- Step 17B status: DONE.
+- Step 17C plan confirmation: DONE.
+- Step 17C status: DONE.
+- Step 17 overall status: DONE.
+- Archive scope:
+  - Archived the statistics dashboard frontend as the Step 17 readonly completion.
+  - Finalized dashboard navigation and page copy from Step 17A / Step 17B sub-step wording to Step 17 overall wording.
+  - Confirmed the completed capability set: readonly `GET /dashboard/summary`, default `dueSoonDays=30`, 7 / 30 / 90 day window control, no-demo-user no business request, refresh preserving the selected window, generated time, user scope, department scope, five basic summary metrics, and five existing bucket distributions.
+  - Confirmed empty buckets keep an explicit empty state and unknown bucket keys fall back safely.
+  - Confirmed permission/data cropping remains backend-authoritative.
+- Boundary:
+  - No new feature, backend Dashboard API/source change, backend dashboard semantic change, new dashboard endpoint, `today` custom input, Prisma schema, migration, seed, dependency, lockfile, write endpoint, audit-log page, settings page, Step 14 DataGap, Step 15 real writes, voucher attachment, warnings API, `search_logs`, Meilisearch/external search sync, API client array query work, annual trend, department ranking, amount summary, patent legal-status statistic, drilldown, export, cache, full reporting-platform work, data backfill, or data cleanup.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 10 files / 136 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Existing backend on port 3000 was reused; `GET /api/health` returned HTTP 200.
+  - Temporary frontend dev server was started on port 5173 and stopped after browser checks; port 5173 had no listening process afterward.
+  - Browser localStorage was cleared before no-user acceptance.
+  - No-user dashboard showed Step 17 overall copy and produced no business request.
+  - Demo user `40000000-0000-4000-8000-000000000002` loaded `GET /api/dashboard/summary?dueSoonDays=30`.
+  - Switching to 7 days loaded `GET /api/dashboard/summary?dueSoonDays=7`.
+  - Switching to 90 days loaded `GET /api/dashboard/summary?dueSoonDays=90`.
+  - Refresh on the 90-day window issued another `GET /api/dashboard/summary?dueSoonDays=90`.
+  - Browser request log showed no `POST`, `PATCH`, `DELETE`, `/audit-logs`, `/fees/warnings`, attachment, `search_logs`, or Meilisearch-related request.
+  - Browser text check found no `Step 17A`, no `Step 17B`, and no stale "计划确认后再实现" copy in the dashboard page.
+  - Browser text check found all five distribution section titles.
+  - 390px check showed `body.scrollWidth=390`, `documentElement.scrollWidth=390`, `clientWidth=390`, `innerWidth=390`.
+- Next:
+  - Step 17 is archived as readonly dashboard frontend completion.
+  - Do not continue into backend/API changes, writes, audit logs, settings, `today`, reporting-platform expansion, data setup, search logging, or external search automatically.
+
+## Current Step 17B Dashboard Distribution and Window Control - 2026-06-21
+
+- Step 17A status: DONE.
+- Step 17B plan confirmation: DONE.
+- Step 17B status: DONE.
+- Direction:
+  - Statistics dashboard frontend remains a readonly frontend enhancement over existing `GET /dashboard/summary`.
+  - Step 17B adds summary bucket distribution display and a constrained `dueSoonDays` control.
+- Scope:
+  - Added a 7 / 30 / 90 day due-soon window control, defaulting to 30.
+  - Switching the due-soon window reloads `GET /dashboard/summary?dueSoonDays=<value>`.
+  - Refresh preserves the currently selected due-soon window.
+  - Added helper normalization so unsupported dueSoonDays values fall back to 30 instead of being sent.
+  - Rendered five existing summary bucket dimensions:
+    - `achievement.byType.value.buckets`.
+    - `achievement.byStatus.value.buckets`.
+    - `fee.byPayStatus.value.buckets`.
+    - `workflowTasks.byStatus.value.buckets`.
+    - `reminderTasks.byStatus.value.buckets`.
+  - Added lightweight distribution cards with labels, counts, percentages, and bars.
+  - Empty bucket collections show "暂无该维度数据"; unknown bucket keys fall back to raw keys.
+  - Updated boundary copy to state Step 17B uses only dashboard summary count/bucket metrics and does not provide `today` input.
+- Boundary:
+  - No backend Dashboard API/source change, backend dashboard semantic change, new endpoint, Prisma schema, migration, seed, dependency, lockfile, write endpoint, audit-log page, settings page, Step 17C archive, Step 14 DataGap, Step 15 real writes, voucher attachment, warnings API, `search_logs`, Meilisearch/external search sync, API client array query work, annual trend, department ranking, amount summary, patent legal-status statistic, drilldown, export, cache, or full reporting-platform work.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 10 files / 136 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Existing backend on port 3000 was reused; `GET /api/health` returned 200 before browser acceptance.
+  - Temporary frontend dev server was started on port 5173 and stopped after browser checks; port 5173 had no listening process afterward.
+  - No-user dashboard produced no business request.
+  - Demo user `40000000-0000-4000-8000-000000000002` loaded `GET /api/dashboard/summary?dueSoonDays=30`.
+  - Switching to 7 days loaded `GET /api/dashboard/summary?dueSoonDays=7`.
+  - Switching to 90 days loaded `GET /api/dashboard/summary?dueSoonDays=90`.
+  - Refresh on the 90-day window issued another `GET /api/dashboard/summary?dueSoonDays=90`.
+  - Browser request log showed only dashboard summary GETs for the dashboard flow after selecting the demo user; no `POST`, `PATCH`, `DELETE`, `/audit-logs`, `/fees/warnings`, attachment, `search_logs`, or Meilisearch-related request appeared.
+  - Browser text check found all five distribution section titles.
+  - 390px check showed `body.scrollWidth=390`, `documentElement.scrollWidth=390`, `clientWidth=390`, `innerWidth=390`.
+- Next:
+  - Step 17C archive/finalization must be separately planned and confirmed.
+  - Do not continue into Step 17C, backend/API changes, writes, audit logs, settings, data setup, search logging, external search, drilldowns, exports, or reporting-platform expansion automatically.
+
+## Current Step 17A Dashboard Frontend Foundation - 2026-06-21
+
+- Step 16 overall / Archive status remains: DONE.
+- Step 17 plan confirmation: DONE.
+- Step 17 direction: statistics dashboard frontend over existing readonly `GET /dashboard/summary`.
+- Step 17A status: DONE.
+- Scope:
+  - Added a dedicated frontend statistics dashboard page.
+  - Wired `activeKey === "dashboard"` to render the new Dashboard page instead of the generic BoundaryPage.
+  - Reused only the existing backend `GET /dashboard/summary` endpoint with default `dueSoonDays=30`.
+  - Added no-demo-user no-request behavior.
+  - Added loading, empty, error, permission-aware display, refresh, generated time, user scope, department scope, and five Step 17A summary metrics: achievement total, overdue fees, due-soon fees, pending workflow tasks, and pending reminders.
+  - Added small pure helpers for dashboard summary loading, bucket counting, date formatting, error copy, and metric extraction.
+  - Added frontend tests for the readonly endpoint boundary and basic metric extraction.
+- Boundary:
+  - No backend API/source change, backend dashboard semantic change, Prisma schema, migration, seed, dependency, lockfile, write endpoint, audit-log page, settings page, Step 17B distribution/slicing UI, Step 17C archive, Step 14 DataGap, Step 15 real writes, voucher attachment, warnings API, `search_logs`, Meilisearch/external search sync, or API client array query work.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 10 files / 130 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Existing backend on port 3000 was reused; `GET /api/health` returned 200 before browser acceptance.
+  - Temporary frontend dev server was started on port 5173 and stopped after browser checks; port 5173 was clear afterward.
+  - No-user dashboard produced no business request.
+  - Demo user `40000000-0000-4000-8000-000000000002` loaded only `GET /api/dashboard/summary?dueSoonDays=30`.
+  - Refresh issued another `GET /api/dashboard/summary?dueSoonDays=30`.
+  - Browser request log showed only dashboard summary GETs after selecting the demo user; no `POST`, `PATCH`, `DELETE`, `/audit-logs`, `/fees/warnings`, attachment, `search_logs`, or Meilisearch-related request appeared.
+  - 390px check showed `body.scrollWidth=390`, `documentElement.scrollWidth=390`, `clientWidth=390`, `innerWidth=390`.
+- Next:
+  - Step 17B distribution display and filtering/slicing experience must be separately planned and confirmed.
+  - Do not continue into Step 17B, Step 17C, audit logs, settings, backend/API changes, writes, data setup, search logging, or external search automatically.
+
+## Current Step 16 Archive - 2026-06-21
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15 overall status remains: DONE_WITHOUT_REAL_WRITE_RISK.
+- Step 15A status: DONE.
+- Step 15B status: DONE.
+- Step 15C status: DONE_WITHOUT_REAL_WRITE.
+- Step 15D status: DONE.
+- Step 16 direction: search center frontend.
+- Step 16A status: DONE.
+- Step 16B status: DONE.
+- Step 16C status: DONE.
+- Step 16D status: DONE.
+- Step 16 overall status: DONE.
+- Archive scope:
+  - Archived the search center frontend as the Step 16 readonly completion.
+  - Finalized search navigation and page boundary copy from Step 16C / Step 16D sub-step wording to Step 16 overall wording.
+  - Confirmed the completed capability set: readonly `GET /search`, keyword search, single-value `targetTypes`, advanced filters, department UUID guard, result summary, result grouping, ACHIEVEMENT readonly detail through `GET /achievements/:id`, and FEE_RECORD readonly-only detail through `GET /fees/:id`.
+  - Confirmed fee search cards remain index-field only and fee detail keeps mark-paid, create-fee, voucher attachment, warnings, and write-route capabilities isolated from the search center.
+- Boundary:
+  - No new feature, backend API or semantic change, API client array serialization, `POST`, `PATCH`, `DELETE`, fee create, fee mark-paid, voucher attachment upload/download, independent `GET /fees/warnings`, search log write, Meilisearch/external search sync, dashboard, audit-log page, settings page, Step 14 DataGap, seed/migrate, data backfill, or data cleanup work.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 9 files / 123 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Existing backend on port 3000 was reused and not stopped.
+  - Temporary frontend dev server was started on port 5173 and stopped after browser checks; port 5173 was clear afterward.
+  - No-user search center showed the Step 16 readonly archive boundary and no business request.
+  - Demo user `40000000-0000-4000-8000-000000000002` loaded search through `GET /api/search?take=20` and searched `demo` through `GET /api/search?keyword=demo&take=20`.
+  - ACHIEVEMENT result detail opened via `GET /api/achievements/50000000-0000-4000-8000-000000000001` and returned expected backend permission 403 in the readonly drawer.
+  - FEE_RECORD result detail opened via `GET /api/fees/60000000-0000-4000-8000-000000000001` and displayed the readonly-only fee detail drawer.
+  - Browser request log showed only `GET /api/search`, `GET /api/achievements/:id`, and `GET /api/fees/:id` business requests; React dev mode duplicated readonly detail GETs, with no non-GET request.
+  - No `POST`, `PATCH`, `DELETE`, `/fees/warnings`, attachment, upload, or download endpoint appeared.
+  - 390px check showed `body.scrollWidth=390`, `documentElement.scrollWidth=390`, `clientWidth=390`, `innerWidth=390`.
+- Next:
+  - Any follow-up must be a separately confirmed route.
+  - Do not continue into fee writes, voucher attachments, warnings API, search_logs, Meilisearch, dashboard, audit logs, settings, Step 14 DataGap, seed/migrate, data backfill, or data cleanup automatically.
+
+## Current Step 16D Search Fee Detail Link - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15 overall status remains: DONE_WITHOUT_REAL_WRITE_RISK.
+- Step 15A status: DONE.
+- Step 15B status: DONE.
+- Step 15C status: DONE_WITHOUT_REAL_WRITE.
+- Step 15D status: DONE.
+- Step 16 direction remains: search center frontend.
+- Step 16A status: DONE.
+- Step 16B status: DONE.
+- Step 16C status: DONE.
+- Step 16D status: DONE.
+- Scope:
+  - Added a readonly "view detail" entry for FEE_RECORD search results.
+  - Reused existing `GET /fees/:id` detail loading through the existing fee detail helper path.
+  - Added a search-readonly fee detail drawer mode so search-opened fee details do not expose mark-paid, create-fee, voucher attachment, warnings, or write-route capabilities.
+  - Kept fee search result cards limited to search-index fields; amount and `voucherNo` are shown only inside the readonly detail drawer when returned by `GET /fees/:id`.
+  - Preserved Step 16C ACHIEVEMENT readonly detail linking.
+- Boundary:
+  - No backend API or semantic change, API client array serialization, `POST`, `PATCH`, `DELETE`, fee create, fee mark-paid, voucher attachment upload/download, independent `GET /fees/warnings`, search log write, Meilisearch/external search sync, dashboard, audit-log page, settings page, Step 14 DataGap, seed/migrate, data backfill, or data cleanup work.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 9 files / 123 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Existing backend on port 3000 was reused and not stopped.
+  - Temporary frontend dev server was started on port 5173 and stopped after browser checks; port 5173 was clear afterward.
+  - No-user search center showed the boundary state and no business request.
+  - Demo user `40000000-0000-4000-8000-000000000002` loaded search results through `GET /api/search?take=20`.
+  - Clicking a fee result opened the readonly fee detail drawer through `GET /api/fees/60000000-0000-4000-8000-000000000001`; React dev mode issued a duplicate GET, with no non-GET request.
+  - The drawer showed `amount` and `voucherNo` from the readonly detail response, with copy clarifying `voucherNo` is only a voucher number and not an attachment file.
+  - Request log showed only `GET /api/search` and `GET /api/fees/:id` business requests; no write, warnings, attachment, upload, or download endpoint.
+  - 390px check showed `body.scrollWidth=390`, `documentElement.scrollWidth=390`, `clientWidth=390`, `innerWidth=390`.
+- Next:
+  - Step 16 archive should be separately planned and confirmed.
+  - Do not continue into fee writes, voucher attachments, warnings API, search_logs, Meilisearch, dashboard, audit logs, settings, Step 14 DataGap, seed/migrate, or data cleanup automatically.
+
+## Current Step 16C Search Achievement Detail Link - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15 overall status remains: DONE_WITHOUT_REAL_WRITE_RISK.
+- Step 15A status: DONE.
+- Step 15B status: DONE.
+- Step 15C status: DONE_WITHOUT_REAL_WRITE.
+- Step 15D status: DONE.
+- Step 16 direction remains: search center frontend.
+- Step 16A status: DONE.
+- Step 16B status: DONE.
+- Step 16C status: DONE.
+- Scope:
+  - Added a readonly "view detail" entry for ACHIEVEMENT search results.
+  - Reused existing `ReadonlyAchievementDetail` and `GET /achievements/:id`.
+  - Added a search-context readonly detail mode so the drawer no longer shows approval-context copy when opened from the search center.
+  - Updated search center and navigation copy from Step 16A / Step 16B wording to Step 16C readonly-search wording.
+  - Kept fee search results as readonly index-field cards and left fee detail linking to Step 16D or a separate confirmed plan.
+- Boundary:
+  - No fee detail linking, fee write, fee mark-paid, voucher attachment upload/download, independent `GET /fees/warnings`, search log write, Meilisearch/external search sync, backend API/semantic change, API client array serialization, dashboard, audit-log page, settings page, Step 14 DataGap, seed/migrate, data补录, or data cleanup work.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 9 files / 121 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Existing backend on port 3000 was reused and not stopped.
+  - Temporary frontend dev server was started on port 5173 and stopped after browser checks; port 5173 was clear afterward.
+  - No-user search center showed the boundary state and `playwright-cli requests` showed no business request.
+  - Demo user `40000000-0000-4000-8000-000000000002` searched `demo`; results loaded via `GET /api/search?keyword=demo&take=20`.
+  - Clicking an achievement result opened the readonly detail drawer and requested only `GET /api/achievements/:id`; a forbidden detail returned 403 with search-context readonly copy.
+  - Demo user `40000000-0000-4000-8000-000000000001` opened a readable achievement detail successfully with `GET /api/achievements/50000000-0000-4000-8000-000000000003`.
+  - Request log showed only `GET /api/search` and `GET /api/achievements/:id` business requests; no write, warnings, attachment, upload, or download endpoint.
+  - 390px check showed `body.scrollWidth=390`, `documentElement.scrollWidth=390`, `clientWidth=390`, `innerWidth=390`.
+- Next:
+  - Step 16D should be separately planned before fee detail linking or Step 16 archive.
+  - Do not continue into fee writes, voucher attachments, warnings API, search_logs, Meilisearch, dashboard, audit logs, settings, Step 14 DataGap, seed/migrate, or data cleanup automatically.
+
+## Current Step 16B Search Center Advanced Filters and Result Experience - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15 overall status remains: DONE_WITHOUT_REAL_WRITE_RISK.
+- Step 15A status: DONE.
+- Step 15B status: DONE.
+- Step 15C status: DONE_WITHOUT_REAL_WRITE.
+- Step 15D status: DONE.
+- Step 16 direction remains: search center frontend.
+- Step 16A status: DONE.
+- Step 16B status: DONE.
+- Scope:
+  - Strengthened the existing readonly search center page on top of `GET /search`.
+  - Added advanced frontend filters for `achievementType`, `achievementStatus`, `feeType`, `payStatus`, manual `departmentId`, and `take`.
+  - Kept `targetTypes` single-value or omitted; did not extend API client array query serialization.
+  - Added frontend UUID validation for `departmentId`; invalid nonblank values show a boundary error and do not call `GET /search`.
+  - Added result summary metrics for total, achievement count, fee count, and redacted achievement count.
+  - Added current-filter summary tags and grouped result sections for achievement results and fee results.
+  - Added an explicit Step 16B detail-link boundary: achievement and fee detail opening is deferred to Step 16C or a separate plan.
+- Boundary:
+  - No backend search semantics, backend API, schema, migration, seed, package/lockfile/dependency, business data, permission policy, API client array serialization, or detail-drawer integration changed.
+  - No `POST`, `PATCH`, fee write, fee mark-paid, voucher attachment upload/download, `GET /fees/warnings`, search log write, Meilisearch/external search sync, dashboard, audit-log page, settings page, or Step 14 DataGap work.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 9 files / 118 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Existing backend on port 3000 was reused and not stopped.
+  - Temporary frontend dev server was started on port 5173 and stopped after browser checks; port 5173 was clear afterward.
+  - No-user search center showed the no-request boundary and `playwright-cli requests` showed no business request.
+  - Demo user `40000000-0000-4000-8000-000000000002` opened the search center and loaded `GET /api/search?take=20`.
+  - Advanced filter browser request: `GET /api/search?keyword=demo&achievementType=PATENT&achievementStatus=PENDING_ARCHIVE&feeType=PATENT_ANNUAL&payStatus=PENDING&departmentId=10000000-0000-4000-8000-000000000002&take=8` returned HTTP 200.
+  - Invalid `departmentId=not-a-uuid` showed "部门 ID 必须是 UUID" and did not add another search request.
+  - Browser request log showed only `GET /api/search` business requests; no write, warnings, attachment, upload, or download endpoint.
+  - 390px check showed `body.scrollWidth=390`, `documentElement.scrollWidth=390`, `clientWidth=390`.
+  - Readonly API smoke through the frontend proxy with the advanced filter query returned `total=1`, `itemCount=1`, `targetTypes=ACHIEVEMENT`.
+- Next:
+  - Step 16C should be separately planned and confirmed before implementing achievement-detail or fee-detail linking from search results, array `targetTypes`, or final Step 16 archive.
+  - Do not continue into dashboard, audit logs, settings, search_logs, Meilisearch, Step 14 DataGap, fee real writes, fee voucher attachments, warnings API, seed/migrate, or data cleanup automatically.
+
+## Current Step 16A Search Center Readonly Frontend Foundation - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15 overall status remains: DONE_WITHOUT_REAL_WRITE_RISK.
+- Step 15A status: DONE.
+- Step 15B status: DONE.
+- Step 15C status: DONE_WITHOUT_REAL_WRITE.
+- Step 15D status: DONE.
+- Step 16 plan confirmation status: DONE, direction is search center frontend.
+- Step 16A status: DONE.
+- Scope:
+  - Added a readonly frontend search center page backed by the existing backend `GET /search` contract.
+  - Connected the `search` navigation item to the new page and updated its Step 16A description.
+  - Added frontend search query/result types for `ACHIEVEMENT` and `FEE_RECORD`.
+  - Supported keyword search, single-value target type filtering (`ALL` / `ACHIEVEMENT` / `FEE_RECORD`), default `take=20`, loading, empty, error, and ready states.
+  - Displayed achievement result metadata, backend redaction state, visible titles/identifiers only when returned, and fee search fields limited to readonly backend response fields.
+  - Added tests for no-user no request, query shaping, state/error mapping, redacted achievement display, fee-result field boundary, and readonly endpoint boundaries.
+- Boundary:
+  - No backend search semantics, backend API, schema, migration, seed, package/lockfile/dependency, business data, or permission policy changed.
+  - No `POST`, `PATCH`, fee write, fee mark-paid, voucher attachment upload/download, `GET /fees/warnings`, search log write, Meilisearch/external search sync, dashboard, audit-log page, settings page, or Step 14 DataGap work.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 9 files / 112 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser/API readonly acceptance:
+  - Existing backend on port 3000 was reused and not stopped.
+  - Temporary frontend dev server was started on port 5173 and stopped after browser checks; port 5173 was clear afterward.
+  - No-user search center showed the no-request boundary and `playwright-cli requests` showed no business request.
+  - Demo user `40000000-0000-4000-8000-000000000002` opened the search center and loaded `GET /api/search?take=20`.
+  - Searching `demo` loaded `GET /api/search?keyword=demo&take=20`.
+  - Switching target type loaded single-value readonly requests for `targetTypes=ACHIEVEMENT` and `targetTypes=FEE_RECORD`.
+  - Browser result display showed redacted achievement copy, visible achievement title/DOI, and fee record readonly fields without amount, voucher, upload, or download capability.
+  - 390px check showed `body.scrollWidth=390`, `documentElement.scrollWidth=390`, `clientWidth=390`.
+  - Readonly API smoke through the frontend proxy: `GET /api/search?keyword=demo&take=5` returned HTTP 200-equivalent data with `total=2`, `itemCount=2`, `targetTypes=ACHIEVEMENT`.
+- Next:
+  - Step 16B should be separately planned and confirmed before adding advanced filters, richer result experience, detail linking, or any wider search behavior.
+  - Do not continue into dashboard, audit logs, settings, search_logs, Meilisearch, Step 14 DataGap, fee real writes, fee voucher attachments, warnings API, seed/migrate, or data cleanup automatically.
+
+## Current Step 15D Fee Voucher Attachment Boundary and Step 15 Archive - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15A status: DONE.
+- Step 15B status: DONE.
+- Step 15C status: DONE_WITHOUT_REAL_WRITE.
+- Step 15D status: DONE.
+- Step 15 overall status: DONE_WITHOUT_REAL_WRITE_RISK.
+- Scope:
+  - Closed the fee voucher attachment boundary in the fee page, fee detail drawer, create-fee drawer, and mark-paid drawer.
+  - Standardized `voucherNo` copy as a voucher-number field, not a file attachment capability.
+  - Kept the Step 15 fee loop to ledger, detail, frontend-derived warning groups, frontend create / mark-paid entries, and explicit attachment boundary copy.
+  - Added tests that verify no fake voucher upload/download success copy, no attachment endpoint calls, no `GET /fees/warnings`, and no real write helper calls during readonly paths.
+- Boundary:
+  - No real `POST /fees` or `POST /fees/:id/mark-paid` was triggered.
+  - No voucher attachment upload/download, generated download link, attachment API reuse, backend API addition, schema/migration/seed/dependency/package change, or business data mutation occurred.
+  - Step 14 DataGap remains intentionally out of scope.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 8 files / 99 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser readonly acceptance:
+  - Started a temporary frontend dev server on port 5173; reused the existing backend on port 3000 and did not stop it.
+  - No-user fee page showed the Step 15 closed boundary and did not expose business write behavior.
+  - Demo user fee page showed Step 15D attachment boundary copy, frontend-derived warning groups, and no fake upload/download success wording.
+  - Opened fee detail, create-fee drawer, and mark-paid drawer; verified voucher-number / attachment-boundary copy; closed without clicking final submit.
+  - 390px checks covered fee page, fee-detail drawer, create-fee drawer, and mark-paid drawer without document-level horizontal overflow.
+  - Temporary frontend process was stopped after browser checks; port 5173 was clear.
+- Next:
+  - Any real write acceptance, real voucher attachment upload/download capability, API smoke that posts data, seed/migrate, data route, data cleanup, or Step 14 DataGap route must be separately confirmed by the user.
+  - Do not continue into a real-write or attachment implementation route automatically.
+
+## Current Step 15C Fee Create and Mark-Paid Frontend Entries - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15A status: DONE.
+- Step 15B status: DONE.
+- Step 15C status: DONE_WITHOUT_REAL_WRITE.
+- Scope:
+  - Added frontend fee-create entry and form for the existing `POST /fees` contract.
+  - Added frontend mark-paid entry and form for the existing `POST /fees/:id/mark-paid` contract.
+  - Added frontend input types, fake-client helpers, payload shaping, validation, mutation error mapping, success refresh orchestration, and UI states.
+  - Mark-paid entry is shown only for `PENDING` / `OVERDUE`; `PAID` / `WAIVED` / `CANCELLED` remain readonly.
+  - Browser acceptance only opened, filled, closed, and checked responsive layout for forms; it did not submit write operations.
+- Boundary:
+  - No real `POST /fees` or `POST /fees/:id/mark-paid` was triggered in browser/API acceptance.
+  - No fee was created, no fee was marked paid, no voucher attachment upload/download was implemented, and no business data was intentionally changed.
+  - No new backend API, `GET /fees/warnings`, backend business semantic change, controller contract change, schema, migration, seed, package/lockfile/dependency change, or Step 14 DataGap work.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 8 files / 97 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser acceptance:
+  - Started a temporary frontend dev server on port 5173; reused the existing backend on port 3000.
+  - No-user fee page showed boundary copy and no create entry; no document-level horizontal overflow.
+  - Demo user fee page showed create and mark-paid entries.
+  - Opened and filled the create-fee drawer, verified no-write boundary copy and no voucher upload/download text, then closed without submitting.
+  - Opened and filled the mark-paid drawer, verified no-write boundary copy and no voucher upload/download text, then closed without submitting.
+  - 390px checks covered mark-paid drawer, create-fee drawer, and fee-detail drawer without document-level horizontal overflow.
+  - The temporary frontend process was stopped after browser checks; port 5173 was clear.
+- Next:
+  - Any real write acceptance, API smoke that posts data, voucher attachment entry, Step 15D, seed/migrate, data cleanup, or Step 14 DataGap route must be separately confirmed by the user.
+  - Do not enter Step 15D automatically.
+
+## Current Step 15B Fee Detail and Warning Group Experience - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15A status: DONE.
+- Step 15B status: DONE.
+- Scope:
+  - Added a readonly fee detail entry from the fee ledger rows and warning-group items.
+  - Connected fee detail to the existing backend `GET /fees/:id` contract.
+  - Ensured detail opens by fee record `id`, not `achievementId`.
+  - Displayed only backend-returned fee fields: fee id, achievement id, department id, fee type, fund source, amount, due date, paid date, pay status, voucher no, created / updated actor ids, created / updated time, and archived state.
+  - Added detail loading, empty, error, and ready states with explicit 403 / 404 / 500 / network copy.
+  - Enhanced the current-list warning experience into frontend-derived groups: overdue, due within 30 days, pending later, and completed / terminal.
+  - Kept all warning grouping copy explicit that it is derived from current `GET /fees` list `dueDate` / `payStatus`, not a separate warnings API.
+- Boundary:
+  - No fee creation, mark-paid action, voucher attachment upload/download, new `GET /fees/warnings`, backend API change, backend business semantic change, controller contract change, schema, migration, seed, package/lockfile/dependency change, or business data mutation.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+  - Did not solve Step 14 DataGap or create/import workflow task data.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 8 files / 86 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser acceptance:
+  - Started a temporary frontend dev server on port 5173; reused the existing backend on port 3000.
+  - No-user fee page showed boundary copy and no detail drawer; no document-level horizontal overflow.
+  - Demo user fee page displayed fee ledger, four warning groups, frontend-derived warnings copy, and one available detail entry.
+  - Clicking `查看详情` opened the detail drawer and showed readonly fields from `GET /fees/:id`.
+  - 390px check showed fee page, warning groups, and detail drawer without document-level horizontal overflow.
+  - 403 / 404 / 500 / network were not forced in browser because doing so safely would require backend/data manipulation or stopping a pre-existing backend; frontend tests cover their display model.
+  - The temporary frontend process was stopped after browser checks; port 5173 was clear.
+- Next:
+  - Step 15C must be separately planned and confirmed before any write action, local business data write, mark-paid flow, fee creation, voucher handling, seed/migrate, or data route.
+  - Do not enter Step 15C automatically.
+
+## Current Step 15A Fee Management Readonly Frontend Foundation - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: DONE.
+- Step 15 direction: fee management frontend / phase-one loop.
+- Step 15A status: DONE.
+- Scope:
+  - Replaced the frontend fee-management boundary page with a readonly fee ledger page.
+  - Connected the fee page to the existing backend `GET /fees` contract only.
+  - Added frontend fee record types matching the real array response shape from `GET /fees`; did not assume achievement-style pagination.
+  - Added readonly status / fee-type / achievement-id filters using the backend-supported query fields.
+  - Added a basic warning summary derived in the frontend from the current `GET /fees` list `dueDate` and `payStatus`.
+  - Added no-user, loading, empty, error, list, and 390px responsive handling.
+- Boundary:
+  - No fee creation, mark-paid action, voucher attachment upload/download, new warnings API, backend API change, backend business semantic change, schema, migration, seed, package/lockfile/dependency change, or business data mutation.
+  - Did not read `.env`, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, or full connection strings.
+  - Did not solve Step 14 DataGap or create/import workflow task data.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 8 files / 75 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: PASS.
+- Browser acceptance:
+  - Started a temporary frontend dev server on port 5173; reused the existing backend on port 3000.
+  - No-user fee page showed the no-request boundary copy and no document-level horizontal overflow.
+  - Demo user fee page displayed the fee ledger, `GET /fees` boundary tag, frontend-derived summary, and fee status labels without document-level horizontal overflow.
+  - 390px fee page check showed fee page and summary visible with no document-level horizontal overflow.
+  - Backend-unavailable browser state was not forced because the backend process on port 3000 pre-existed this step; Step 15A did not stop it. Error state is covered by frontend state tests.
+  - The temporary frontend process was stopped after browser checks; port 5173 was clear.
+- Next:
+  - Step 15B can plan fee detail / warning-list experience after user confirmation.
+  - Do not enter Step 15B automatically.
+
+## Current Step 14E-4 Final Gates and Readonly Smoke - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E overall status: DONE.
+- Step 14E-1 status: DONE.
+- Step 14E-2 status: DONE.
+- Step 14E-3 status: DONE.
+- Step 14E-4 status: DONE.
+- Step 15 status: not started.
+- Scope:
+  - Re-ran final API quality gates after the Step 14E explicit-injection audits.
+  - Connected to an existing backend dev server on port 3000 for readonly API smoke.
+  - Did not change DI code, application code, business semantics, controller contracts, repository queries, schema, migration, seed, package files, lockfiles, dependencies, sensitive config, or business data.
+- Final gates:
+  - `corepack pnpm --filter @research-ip/api test`: PASS, 51 files / 465 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - `corepack pnpm lint`: PASS.
+- Readonly API smoke:
+  - Existing port 3000 backend service was used; Step 14E-4 did not start or stop it.
+  - Required smoke:
+    - `GET /api/health`: HTTP 200.
+    - `GET /api/achievements?page=1&pageSize=5`: HTTP 200, `items=2`.
+    - `GET /api/workflow/tasks/my?status=PENDING`: HTTP 200, `items=0`.
+  - Optional safe readonly smoke:
+    - `GET /api/dashboard/summary`: HTTP 200.
+    - `GET /api/search?keyword=demo&take=5`: HTTP 200, `items=2`.
+    - `GET /api/fees?take=5`: HTTP 200, `items=1`.
+    - `GET /api/achievements/:achievementId/attachments`: HTTP 403, confirming backend permission boundary for the demo user.
+    - Reminders readonly smoke was not run because no safe GET route was exposed by `reminders.controller.ts`.
+- DataGap:
+  - Workflow tasks still return empty `items`.
+  - Step 14 DataGap remains unresolved and is deferred to phase-one integrated acceptance or a separately confirmed data route.
+- Boundary:
+  - No migrate/seed, database write, data creation/import/update, service startup by this step, code change, package/lockfile change, schema/migration/seed change, or sensitive config read occurred.
+  - Step 15 was not entered.
+- Next:
+  - Step 15 plan confirmation can proceed after user confirmation.
+
+## Current Step 14E-3 Service Controller Adapter Explicit Inject Audit - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: in progress as a post-Step-14 quality / technical-debt audit before Step 15.
+- Step 14E-1 status: DONE.
+- Step 14E-2 status: DONE.
+- Step 14E-3 status: DONE.
+- Step 14E-4 status: not started.
+- Step 15 status: not started.
+- Scope:
+  - Audited service / controller / adapter provider constructors outside the already completed repository and authorization policy scopes.
+  - Converted remaining implicit service provider constructor dependencies to explicit `@Inject(...)`.
+  - Added a focused service metadata / DI regression spec for the modified providers.
+  - Did not change service method logic, controller route decorators, guards, permissions, DTOs, response contracts, adapter behavior, repository queries, permission/policy/redaction semantics, workflow state machine, schema, migration, seed, package, or lockfile semantics.
+- Scan result:
+  - Required service changes: `attachment.service.ts`, `audit.service.ts`, `dashboard.service.ts`, `fee.service.ts`, `notification.service.ts`, `reminder.service.ts`, `search.service.ts`.
+  - Controller changes: none required; scanned controllers already used explicit injection.
+  - Adapter changes: none required; scanned adapters already used explicit injection or had no constructor provider dependency.
+  - Post-change scan found no service / controller / adapter constructor parameter count exceeding explicit `@Inject(...)` token count.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/api test`: PASS, 51 files / 465 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - `corepack pnpm lint`: PASS.
+- Boundary:
+  - No migrate/seed, database write, service startup, API smoke, frontend change, business data change, dependency change, package/lockfile change, schema/migration/seed change, controller contract change, adapter behavior change, service method body change, repository query change, or sensitive config read occurred.
+  - Step 14 DataGap remains unresolved and deferred to phase-one integrated acceptance or a separately confirmed data route.
+- Next:
+  - Continue with Step 14E-4 final gates and readonly smoke after user confirmation; do not enter Step 15 yet.
+
+## Current Step 14E-2 Authorization Policy Explicit Inject Audit - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: in progress as a post-Step-14 quality / technical-debt audit before Step 15.
+- Step 14E-1 status: DONE.
+- Step 14E-2 status: DONE.
+- Step 14E-3 status: not started.
+- Step 14E-4 status: not started.
+- Step 15 status: not started.
+- Scope:
+  - Audited `apps/api/src/authorization/policy` provider constructors.
+  - Converted remaining implicit authorization policy provider constructor dependencies to explicit `@Inject(...)`.
+  - Added metadata / DI regression tests for the modified policy providers.
+  - Did not change permission, policy, redaction, scope, grant, audit-read, DTO, repository query, workflow state machine, schema, migration, seed, package, or lockfile semantics.
+- Scan result:
+  - Required changes: `department-scope.service.ts`, `audit-read-policy.service.ts`, `attachment-access-policy.service.ts`.
+  - Already explicit / excluded from changes: `policy-query.factory.ts`, `secret-access-policy.service.ts`.
+  - Post-change scan found no remaining authorization policy provider constructor with service/provider dependencies lacking explicit `@Inject(...)`.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/api test`: PASS, 50 files / 458 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - `corepack pnpm lint`: PASS.
+- Boundary:
+  - No migrate/seed, database write, service startup, API smoke, frontend change, business data change, dependency change, package/lockfile change, schema/migration/seed change, repository query change, or sensitive config read occurred.
+  - Step 14 DataGap remains unresolved and deferred to phase-one integrated acceptance or a separately confirmed data route.
+- Next:
+  - Continue with Step 14E-3 service/controller/adapter explicit inject audit or a user-confirmed Step 14E substep; do not enter Step 15 yet.
+
+## Current Step 14E-1 Repository PrismaService Explicit Inject Audit - 2026-06-20
+
+- Step 14 overall status remains: DONE_WITH_DATAGAP_RISK.
+- Step 14E status: in progress as a post-Step-14 quality / technical-debt audit before Step 15.
+- Step 14E-1 status: DONE.
+- Step 14E-2 status: not started.
+- Step 14E-3 status: not started.
+- Step 14E-4 status: not started.
+- Step 15 status: not started.
+- Scope:
+  - Audited repository constructors that inject `PrismaService`.
+  - Converted remaining implicit repository `PrismaService` constructor injection to explicit `@Inject(PrismaService)`.
+  - Added repository metadata / DI regression tests for the modified repositories.
+  - Did not change repository method logic, Prisma query shape, include/select/filter/order/transaction semantics, DTOs, permission/policy/redaction semantics, workflow state machine, schema, migration, seed, package files, or lockfiles.
+- Scan result:
+  - Required changes: `attachments/attachment.repository.ts`, `audit/audit.repository.ts`, `fees/fee.repository.ts`, `notifications/notification.repository.ts`, `reminders/reminder.repository.ts`.
+  - Already explicit / excluded from changes: `achievements/achievement.repository.ts`, `workflow/workflow.repository.ts`, `dashboard/dashboard.repository.ts`, `search/search.repository.ts`.
+  - Post-change scan found no repository constructor that injects `PrismaService` without `@Inject(PrismaService)`.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/api test`: PASS, 50 files / 455 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - `corepack pnpm lint`: PASS.
+- Boundary:
+  - No migrate/seed, database write, service startup, API smoke, frontend change, business data change, dependency change, package/lockfile change, schema/migration/seed change, or sensitive config read occurred.
+  - Step 14 DataGap remains unresolved and deferred to phase-one integrated acceptance or a separately confirmed data route.
+- Next:
+  - Continue with Step 14E-2 authorization policy explicit inject audit or a user-confirmed Step 14E substep; do not enter Step 15 yet.
+
+## Current Step 14D Final Closure - 2026-06-20
+
+- Step 14 overall status: DONE_WITH_DATAGAP_RISK.
+- Step 14 direction: approval task linked achievement detail.
+- Step 14A status: DONE.
+- Step 14B status: DONE.
+- Step 14B API500 DI repair status: DONE; tracked real backend API500 failures were cleared.
+- Step 14C status: DONE.
+- Step 14C-Browser-Recheck status: PASS / PARTIAL.
+- Step 14D status: DONE.
+- Step 14E status: not started; user confirmed it is the preferred next quality step before Step 15.
+- Step 15 status: not started.
+- Final closure:
+  - Step 14A followed D065: reuse existing `GET /achievements/:id`, keep approval context read-only, and do not add backend semantics, schema, migration, seed, dependency, package, or lockfile changes.
+  - Step 14B delivered the approval task detail linked-achievement readonly foundation without fabricating `AchievementListItem` or bringing achievement submit / void / archive actions into approval context.
+  - Step 14B API500 repairs were limited to backend DI/runtime wiring and did not change permission, redaction, policy, repository query, DTO, workflow state machine, Prisma schema, migration, seed, package, or lockfile semantics.
+  - Step 14C completed frontend state/error/empty/no-linked-achievement/mobile experience hardening.
+  - Step 14C-Browser-Recheck used real local API for no-user, empty workflow list, backend-unavailable, and 390px checks, and clearly separated PASS states from the remaining DataGap.
+- Reused quality evidence:
+  - Step 14C web test passed: 7 files / 66 tests.
+  - Step 14C web typecheck passed.
+  - Step 14C web build passed with only the Vite large chunk warning.
+  - Step 14C / API500 root lint evidence passed.
+  - API500 DI repair chain API tests passed: 50 files / 450 tests.
+  - API500 DI repair chain API typecheck passed.
+  - API500 DI repair chain API build passed.
+  - Step 14D did not rerun test/typecheck/build/lint by user confirmation; full web/api gates remain recommended before phase-one integrated acceptance.
+- Browser acceptance:
+  - PASS: no-user approval page made no workflow/achievement business requests.
+  - PASS: real backend workflow tasks returned HTTP 200 with empty `items`; page showed empty state and no fake task table.
+  - PASS: backend-unavailable state showed approval-service error and no fake data.
+  - PASS: no-user, empty-list, and backend-unavailable states had no 390px document-level horizontal overflow.
+  - PARTIAL: real task detail -> linked achievement success path remains uncovered because the local real workflow task list is empty.
+- DataGap:
+  - User accepted Step 14 as DONE_WITH_DATAGAP_RISK.
+  - The remaining real success path is deferred to phase-one integrated acceptance or a separately confirmed data route.
+  - Step 14D did not create data, run seed/migrate, or use fake/mock/seed data as real success evidence.
+- Boundary:
+  - No application source, backend business code, workflow state machine, Prisma schema, migration, seed, package file, lockfile, dependency, sensitive config, or business data was modified in Step 14D.
+  - No migrate/seed, database write, test, build, lint, or typecheck command was run in Step 14D.
+  - Step 14E / Step 15 were not entered.
+
+## Current Step 14C-Browser-Recheck - 2026-06-20
+
+- Step 14A status: DONE.
+- Step 14B status: DONE.
+- API500 DI repair status: DONE.
+- Step 14C implementation status: DONE.
+- Step 14C browser recheck result: PASS for real API empty/error/no-user/mobile states; PARTIAL for the full linked-achievement success path because DataGap remains.
+- Step 14D status: TODO / not started.
+- Step 14E status: not started.
+- Step 15 status: not started.
+- Services:
+  - Backend was started with `corepack pnpm --filter @research-ip/api dev` because port 3000 was initially clear.
+  - Frontend was started with `corepack pnpm --filter @research-ip/web dev` because port 5173 was initially clear.
+  - Edge CDP was started for real browser checks.
+  - Backend, frontend, and Edge processes started in this round were stopped afterward; ports 3000, 5173, and 9223 were clear after cleanup.
+- Real API smoke:
+  - `GET /api/health`: HTTP 200.
+  - `GET /api/achievements?page=1&pageSize=5`: HTTP 200 with real backend rows.
+  - `GET /api/workflow/tasks/my?status=PENDING`: HTTP 200 with empty `items`.
+- Browser recheck:
+  - No-user approval page: browser network listener observed no `/api/workflow/tasks/my`, `/api/workflow/tasks/:id`, or `/api/achievements/:id` requests.
+  - Real backend empty workflow list: browser observed `/api/workflow/tasks/my?status=PENDING` responses with HTTP 200 and `items.length = 0`; page showed the approval empty state and no fake task table.
+  - Backend unavailable: after stopping only the backend started in this round, browser observed `/api/workflow/tasks/my?status=PENDING` returning HTTP 500 through the frontend proxy; page showed approval-service unavailable error and no fake table data.
+  - 390px checks for no-user, empty-list, and backend-unavailable states had no document-level horizontal overflow.
+- Boundary:
+  - No code, backend business semantics, workflow state machine, Prisma schema, migration, seed, package file, lockfile, sensitive config, or business data was changed.
+  - No migrate/seed or database write command was run.
+  - Step 14D / Step 14E / Step 15 were not entered.
+- Remaining DataGap:
+  - Because the real local workflow task list is empty, the real task detail -> linked achievement drawer success path is still not covered and remains deferred to phase-one integrated acceptance or a separately confirmed data route.
+
+## Current Step 14C Experience Completion - 2026-06-20
+
+- Step 14A status: DONE.
+- Step 14B implementation status: DONE.
+- Step 14B API500 DI repair status: DONE; local smoke had restored `GET /api/health`, `GET /api/achievements?page=1&pageSize=5`, and `GET /api/workflow/tasks/my?status=PENDING` to HTTP 200.
+- Step 14C status: DONE.
+- Step 14D status: TODO / not started.
+- Step 14E status: not started; remains a later quality step only.
+- Step 15 status: not started.
+- Delivered:
+  - Added an explicit linked-achievement availability state for workflow task detail.
+  - Approval task detail now shows a clear linked-achievement boundary when the task is non-`ACHIEVEMENT`, missing workflow instance target data, or missing `targetId`; it does not invent a target id.
+  - Readonly linked achievement detail now maps 401/403/404/400/422/500/network failures to safe retryable messages without surfacing backend internals.
+  - Drawer width and linked-achievement alert behavior were tightened for narrow screens.
+- Quality gates:
+  - Web tests passed.
+  - Web typecheck passed.
+  - Web build passed.
+  - Root lint passed.
+- Browser acceptance:
+  - Frontend dev server was started for local browser checks and stopped after verification.
+  - No-user state made no business API calls.
+  - Stubbed empty workflow tasks displayed a state block and no task table.
+  - Stubbed backend-down workflow tasks displayed an error result and no fake table data.
+  - 390px checks for the exercised workflow states reported no document-level horizontal overflow.
+  - Fixture-based linked-task browser check opened the task detail and showed the linked-achievement entry; unit tests cover readonly achievement detail error/action behavior.
+- Boundary:
+  - No backend business code, workflow state machine, Prisma schema, migration, seed, package file, lockfile, sensitive config, or business data was changed.
+  - No migrate/seed or database write command was run.
+  - Step 14D / Step 14E / Step 15 were not entered.
+- Remaining risk:
+  - DataGap remains: the local workflow task endpoint returns empty items with the real database, so the real approval task -> linked achievement success path is still deferred to the phase-one integrated acceptance flow or a separately confirmed data route.
+
+## Current Step 14B-API500 SecretAccessPolicy DI Fix Execution - 2026-06-20
+
+- Step 14A status: DONE.
+- Step 14B implementation status: DONE.
+- Service / PolicyFactory DI repair status: DONE.
+- Repository DI repair status: DONE.
+- SecretAccessPolicy DI repair status: DONE.
+- Overall API500 tracked DI failures: cleared in local smoke.
+- Step 14C status: TODO / not started.
+- Step 14D status: TODO / not started.
+- Step 15 status: not started.
+- Delivered:
+  - Added explicit `@Inject(ResourceGrantPolicyService)` to `SecretAccessPolicyService`.
+  - Added SecretAccessPolicy metadata regression test.
+- Quality gates:
+  - API tests passed.
+  - API typecheck passed.
+  - API build passed.
+  - Root lint passed.
+- Real API smoke:
+  - `GET /api/health`: HTTP 200.
+  - `GET /api/achievements?page=1&pageSize=5`: HTTP 200.
+  - `GET /api/workflow/tasks/my?status=PENDING`: HTTP 200 with empty `items`.
+  - Achievement list no longer fails on `resourceGrantPolicy` undefined.
+  - Workflow task empty result remains the known local data gap, not an API500 failure.
+- Boundary:
+  - No secret access, resource grant, redaction, permission/policy, repository query, DTO, workflow state machine, Prisma schema, migration, seed, package file, or lockfile semantics were changed.
+  - No migrate/seed was run and no workflow data was added.
+  - Step 14C / Step 14D / Step 15 were not entered.
+- Remaining risk:
+  - The real approval task -> linked achievement success path still requires suitable workflow task data; this local database currently returns no workflow tasks for the research-secretary demo user.
+
+## Current Step 14B-API500 Repository DI Fix Execution - 2026-06-20
+
+- Step 14A status: DONE.
+- Step 14B implementation status: DONE.
+- Step 14B-API500 service/policy fix attempt status: BLOCKED previously, with service/policy provider injection advanced.
+- Repository DI fix status: DONE within the allowed repository scope.
+- Overall API500 real smoke status: PARTIAL / still blocked by out-of-scope provider DI.
+- Step 14C status: TODO / not started.
+- Step 14D status: TODO / not started.
+- Step 15 status: not started.
+- Delivered:
+  - Added explicit `@Inject(PrismaService)` to `AchievementRepository`.
+  - Added explicit `@Inject(PrismaService)` to `WorkflowRepository`.
+  - Added repository metadata regression tests for both repositories.
+- Quality gates:
+  - API tests passed.
+  - API typecheck passed.
+  - API build passed.
+  - Root lint passed.
+- Real API smoke:
+  - `GET /api/health`: HTTP 200.
+  - `GET /api/workflow/tasks/my?status=PENDING`: HTTP 200 with empty `items`.
+  - `GET /api/achievements?page=1&pageSize=5`: HTTP 500.
+  - Repository `PrismaService` undefined no longer appears in the fresh smoke stack.
+  - The remaining achievement-list 500 is now in `SecretAccessPolicyService.canReadResource`, where `resourceGrantPolicy` is undefined.
+- Boundary:
+  - No query semantics, permission/policy logic, workflow state machine, DTO, Prisma schema, migration, seed, package file, or lockfile was changed.
+  - No migrate/seed was run and no workflow data was added.
+  - Step 14C / Step 14D / Step 15 were not entered.
+- Next-step recommendation:
+  - Confirm a separate, narrow authorization-policy provider DI repair scope if continuing API500 work.
+  - Continue to forbid schema/migration/seed/package/lockfile changes unless separately confirmed.
+  - Treat workflow task empty results as the known local data gap, not as repository DI failure.
+
+## Current Step 14B-API500 Backend DI Fix Attempt - 2026-06-20
+
+- Step 14A status: DONE.
+- Step 14B implementation status: DONE.
+- Step 14B-Verify result: PARTIAL.
+- Step 14B-API500 investigation result: CONFIRMED.
+- Step 14B-API500 fix attempt status: BLOCKED / not DONE.
+- Step 14C status: TODO / not started.
+- Step 14D status: TODO / not started.
+- Step 15 status: not started.
+- Delivered within allowed scope:
+  - Added explicit Nest constructor `@Inject(...)` tokens to `WorkflowService`.
+  - Added explicit Nest constructor `@Inject(...)` tokens to `AchievementService`.
+  - Added explicit Nest constructor `@Inject(...)` tokens to `PolicyQueryFactory`.
+  - Added backend regression tests asserting explicit constructor injection metadata for those providers.
+- Quality gates:
+  - API tests passed.
+  - API typecheck passed.
+  - API build passed.
+  - Root lint passed.
+- Real API smoke result:
+  - Fresh backend dev server health check returned HTTP 200.
+  - Achievement list still returned HTTP 500.
+  - Workflow task list still returned HTTP 500.
+  - The original service-level undefined dependencies were no longer the failing frames.
+  - New sanitized failing frames show repository constructor DI is also affected:
+    - `AchievementRepository.list`: repository `prisma` is undefined.
+    - `WorkflowRepository.findTasksForAssigneeInTransaction`: repository `prisma` is undefined.
+- Blocker:
+  - Completing the API500 fix requires explicit DI repair in repository files, at least `AchievementRepository` and `WorkflowRepository`.
+  - Repository files were not included in this round's allowed modification range.
+  - No further code changes should be made until the user confirms an expanded repository DI repair scope.
+- Boundaries:
+  - No backend business semantics, permission/policy logic, workflow state machine, DTO, repository query behavior, Prisma schema, migration, seed, package file, or lockfile was changed.
+  - No migrate or seed command was run.
+  - No workflow data was added.
+  - No fake/mock/seed data was used to force a success path.
+  - Sensitive configuration and `.env` content were not read or displayed.
+- Next-step recommendation:
+  - Confirm a narrow follow-up repair scope that permits explicit DI injection in repository constructors required by these two endpoints.
+  - Continue to forbid schema/migration/seed/package/lockfile changes unless separately confirmed.
+
+## Current Step 14B-API500 Real Backend 500 Investigation - 2026-06-20
+
+- Step 14A status: DONE.
+- Step 14B implementation status: DONE.
+- Step 14B-Verify result: PARTIAL.
+- Step 14B-API500 investigation status: DONE.
+- Step 14B-API500 investigation result: CONFIRMED for the immediate 500 cause.
+- Step 14C status: TODO / not started.
+- Step 14D status: TODO / not started.
+- Step 15 status: not started.
+- Scope:
+  - Investigated only the real backend 500s from:
+    - `GET /api/workflow/tasks/my?status=PENDING`.
+    - `GET /api/achievements?page=1&pageSize=5`.
+  - No fix was implemented.
+  - No business code, backend semantics, workflow state machine, Prisma schema, migration, seed, package file, or lockfile was changed.
+- Reproduction:
+  - Started backend with `corepack pnpm --filter @research-ip/api dev`.
+  - Health endpoint stayed healthy: `GET /api/health` returned HTTP 200.
+  - Workflow task list returned HTTP 500 for the research-secretary demo user.
+  - Achievement list returned HTTP 500 for the same demo user.
+  - Backend listener started for this investigation was stopped after evidence collection, and port 3000 was clear afterward.
+- Root-cause finding:
+  - The immediate workflow 500 is caused by `WorkflowService.assertReviewContext` trying to read `hasPermission` from an undefined dependency.
+  - The immediate achievement-list 500 is caused by `AchievementService.list` trying to read `achievementReadableWhere` from an undefined dependency.
+  - Both errors occur before their repository/Prisma business queries.
+  - This points to backend Nest dependency injection/runtime wiring in the dev server path, not to missing tables, missing demo user, or missing demo permissions.
+- Read-only database finding:
+  - Expected project tables exist.
+  - Demo research-secretary user exists, is active, has an active department-scoped `RESEARCH_SECRETARY` role, and has the required user-context, achievement-read-department, and achievement-review-department permissions.
+  - The database has achievements, but no workflow instances and no workflow tasks.
+  - After the API 500 is fixed, real approval task -> linked achievement success acceptance will still need existing real workflow task data or a separately confirmed data setup path.
+- Boundary:
+  - No migrate or seed command was run.
+  - No fake/mock/seed data was used to force a success path.
+  - No INSERT / UPDATE / DELETE / TRUNCATE / DROP was executed.
+  - `.env` content, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, and full connection strings were not read or displayed.
+- Next-step recommendation:
+  - Before Step 14C, do a separate API500 repair plan confirmation.
+  - If the repair requires only backend DI/runtime wiring and no schema change, it can be handled as a bounded backend fix.
+  - If the remaining acceptance gap requires workflow data, pause for user confirmation before any seed/migration/data setup path.
+
+## Current Step 14B-Verify Real Backend Acceptance Follow-up - 2026-06-20
+
+- Step 14A status: DONE.
+- Step 14B status: DONE.
+- Step 14B-Verify result: PARTIAL.
+- Step 14C status: TODO / not started.
+- Step 14D status: TODO / not started.
+- Step 15 status: not started.
+- Verification goal:
+  - Connect to the real local backend and PostgreSQL database and try to cover the approval task detail -> linked achievement detail success path.
+- Runtime availability:
+  - Frontend dev server was already available at `http://127.0.0.1:5173`.
+  - PostgreSQL is the project database provider.
+  - Local PostgreSQL container `research-achievement-postgres-dev` was healthy and published on `127.0.0.1:55432`.
+  - Backend dev server was started with `corepack pnpm --filter @research-ip/api dev`.
+  - Backend health check `GET /api/health` returned `{"service":"research-achievement-ip-api","status":"ok"}`.
+- Real-path result:
+  - `GET /api/workflow/tasks/my?status=PENDING` with the research-secretary demo user returned HTTP 500.
+  - `GET /api/achievements?page=1&pageSize=5` with the same demo user also returned HTTP 500.
+  - Browser approval-management page with the research-secretary demo user displayed `审批服务不可用` / `Internal server error`.
+  - Browser page did not show fake data.
+  - Browser page did not show achievement owner actions (`submit`, `void`, `archive`) in the approval context.
+  - Because the workflow list endpoint returned 500, no real workflow task could be opened and the linked achievement success path could not be covered.
+- Boundary:
+  - No migrate or seed command was run.
+  - No fake, mock, or seeded data was used to force success.
+  - No business code, backend semantics, workflow state machine, Prisma schema, package file, or lockfile was changed.
+  - `.env` existence was checked, but `.env` content, `DATABASE_URL`, passwords, tokens, cookies, certificates, private keys, and full connection strings were not read or displayed.
+  - The backend processes started for this verification were stopped after the check.
+- Step 14B status after verify:
+  - Step 14B remains DONE for implementation and code-level gates.
+  - Real success-path acceptance remains an uncovered/blocking runtime-data/backend issue for this verification pass.
+  - Step 14C must not start until separately confirmed.
+
+## Current Step 14B Approval-Task Linked Achievement Readonly Foundation - 2026-06-19
+
+- Step 13 overall status: DONE.
+- Step 13E status: DONE.
+- Step 14A status: DONE.
+- Step 14B status: DONE.
+- Step 14C status: TODO / not started.
+- Step 14D status: TODO / not started.
+- Step 15 status: not started.
+- Step 14 direction: approval-task achievement detail linking.
+- Step 14B delivered scope:
+  - Added a read-only linked-achievement entry in the approval task detail drawer when the workflow instance target is an achievement.
+  - The entry is enabled only when `task.instance.targetType === "ACHIEVEMENT"` and a trimmed `targetId` exists.
+  - Added `getWorkflowTaskLinkedAchievementId(task)` as a small pure helper for the workflow target contract.
+  - Added a `ReadonlyAchievementDetail` drawer that loads by `achievementId` using the existing `GET /achievements/:id` contract.
+  - Reused existing achievement detail display fields while keeping the approval-task context read-only.
+  - Preserved the existing achievement-management `AchievementDetail` behavior, including its owner/state actions where already supported.
+  - Did not fake an `AchievementListItem`; the approval task path loads detail directly from `targetId`.
+- Step 14B quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: passed, 7 files / 62 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed. Vite emitted the existing large-chunk warning; it did not block the build.
+  - `corepack pnpm lint`: passed.
+- Step 14B browser acceptance:
+  - Existing frontend dev server was available at `http://127.0.0.1:5173`.
+  - Approval-management backend-unavailable path displayed the workflow service-unavailable state.
+  - Backend-unavailable path did not display fake data.
+  - Backend-unavailable path did not display achievement owner actions (`submit`, `void`, `archive`) in the approval context.
+  - No-user state displayed the no demo-user boundary and did not display the workflow service-unavailable state.
+  - Real linked-achievement success path was not covered because no running backend with suitable workflow/achievement data was available; no migrate, seed, or fake data was used.
+- Step 14B boundaries:
+  - No backend business semantics or workflow state-machine behavior was changed.
+  - No Prisma schema, migration, seed, package file, lockfile, or dependency was changed.
+  - No files under `packages/`, `prisma/`, or `scripts/` were modified.
+  - No migrate or seed command was run.
+  - No `.env`, credential, token, cookie, certificate, private key, or connection string was read or displayed.
+  - Step 14C / Step 14D / Step 15 were not entered.
+  - The project directory is not a Git repository, so `git status` / `git diff` evidence is unavailable.
+- Next-step startup control:
+  - Step 14C must start only after a separate plan-confirmation prompt.
+  - Step 14C remains limited to state, error, permission, no-linked-achievement, backend-unavailable, and mobile-experience completion.
+
+## Current Step 14A Approval-Task Achievement Detail Scope Archive - 2026-06-19
+
+- Step 13 overall status: DONE.
+- Step 13E status: DONE.
+- Step 14 direction: confirmed as approval-task achievement detail linking.
+- Step 14 overall task level: M.
+- Step 14A status: DONE.
+- Step 14B status: TODO / not started.
+- Step 14C status: TODO / not started.
+- Step 14D status: TODO / not started.
+- Step 15 status: not started.
+- Step 14 minimum closed-loop goal:
+  - Approval task list -> open task detail -> when the workflow instance `targetType` is `ACHIEVEMENT` and `targetId` exists, the approver can read the linked achievement detail in a read-only approval context.
+- Existing contract evidence confirmed for Step 14 planning:
+  - Workflow task detail data includes workflow instance `targetType` and `targetId`.
+  - Workflow task list query already has `achievementId` for exact achievement filtering.
+  - Existing achievement detail capability reads `GET /achievements/:id` and uses the existing `AchievementDetail` frontend type / display capability.
+  - Current Step 13 workflow task drawer explicitly does not display achievement detail, approval history, or audit logs.
+- Step 14 reuse and boundary decision:
+  - Prefer reusing the existing achievement detail read/display contract.
+  - In the approval-task context, achievement detail must be read-only.
+  - Do not bring achievement `submit`, `void`, or `archive` actions into the workflow task drawer.
+  - Authorization, redaction, 403, and 404 behavior remain owned by the backend response.
+- Step 14 non-goals:
+  - No approval history full page.
+  - No audit-log page.
+  - No attachment upload/download.
+  - No fee management.
+  - No search-center or dashboard expansion.
+  - No bulk approval.
+  - No custom workflow designer.
+  - No workflow state-machine change.
+  - No backend business semantic change.
+  - No Prisma schema, migration, or seed change.
+  - No new dependency.
+  - No package file or lockfile change.
+  - No fake data or mock data used as a substitute for real backend capability.
+- Step 14 planned split:
+  - Step 14A: scope and contract confirmation.
+  - Step 14B: approval-task detail achievement-link entry and read-only display foundation.
+  - Step 14C: state, error, permission, no-linked-achievement, backend-unavailable, and mobile-experience completion.
+  - Step 14D: audit, quality gates, browser acceptance, and memory-bank archive.
+- Step 14 future quality-gate plan:
+  - Web tests.
+  - Web typecheck.
+  - Web build.
+  - Lint.
+  - Browser acceptance for no-user, backend-unavailable, linked achievement open, 403/404, and mobile no-horizontal-overflow paths.
+  - If real backend/data is unavailable, record replacement evidence and decide whether the real success path is blocking in Step 14D.
+- Step 14A boundary:
+  - This archive is memory-bank-only.
+  - No UI, API, backend, Prisma, package, lockfile, migrate, seed, test, build, or lint work is part of Step 14A.
+  - Step 14B must start only after a separate user-confirmed execution round.
+
+## Current Step 13 Final Audit Closure - 2026-06-19
+
+- Step 11 overall status: DONE.
+- Step 12 overall status: DONE.
+- Step 13 overall status: DONE.
+- Step 13A status: DONE and audit PASS.
+- Step 13B status: DONE.
+- Step 13C status: DONE.
+- Step 13D status: DONE.
+- Step 14 / Step 15 status: not started.
+- Step 13 final audit result:
+  - PASS. Step 13 is accepted as overall DONE.
+  - Step 13A delivered the Workflow frontend contract and foundation: types, list compatibility with backend `{ items }`, query builder, approve/reject payload builders, action availability, detail display model, error mapping, API wrappers, and pure tests.
+  - Step 13B delivered the approval-management "my workflow tasks" list page: `WorkflowTasks` rendering, `GET /workflow/tasks/my`, default `status=PENDING`, status / `achievementId` filters, no `page` / `pageSize`, no-user/loading/empty/error/refresh states, and Workbench entry.
+  - Step 13C delivered task detail and actions: row-to-detail drawer, `fetchWorkflowTaskDetail`, task/instance-only display, approve/reject action visibility via `getWorkflowActionAvailability`, optional approve comment, required reject comment, `comment`-only payloads, success refresh/close behavior, and failure input preservation.
+- Step 13 final quality gates:
+  - `corepack pnpm --filter @research-ip/web test`: passed, 7 files / 57 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed. Vite emitted the existing large-chunk warning for the web bundle; it did not block the build.
+  - `corepack pnpm lint`: passed.
+- Step 13 final browser acceptance:
+  - Used the existing frontend dev server at `http://127.0.0.1:5173`.
+  - No-user state: approval management sent no workflow business request.
+  - Demo-user recovery: secretary demo user was restored from localStorage.
+  - Workbench entry: "enter approval management" navigated to the workflow page.
+  - Approval-management list: page requested `/api/workflow/tasks/my?status=PENDING`.
+  - Backend-unavailable path: page displayed the workflow service-unavailable error and did not show fake data.
+  - 390px workflow page check: no horizontal overflow.
+  - Real detail drawer, approve success, reject success, and action failure-with-modal-preserved paths were not covered because backend/data was unavailable; no migrate/seed/fake data was used. This is recorded as non-blocking because frontend contracts, state handling, wrappers, pure tests, and failure rendering are complete.
+- Step 13 final boundary audit:
+  - No approval history full page, audit-log page, bulk approval, custom workflow designer, achievement-detail cross-module entry, Step 14, or Step 15 implementation was added.
+  - No backend business semantics, workflow state machine, Prisma schema, migration, seed, package file, lockfile, dependency, `.env`, credential, token, cookie, certificate, private key, or connection string was modified or displayed.
+  - No backend tests were run.
+  - No migrate or seed command was run.
+  - The project directory is still not a Git repository, so `git status` / `git diff` evidence is unavailable.
+  - Step 13E follow-up resolved the non-blocking stale copy risk recorded in Step 13D: `App.tsx` navigation description and the `WorkflowTasks` no-user / boundary hints now use Step 13 completion wording instead of saying detail/action work is left to Step 13C.
+- Next-step startup control:
+  - Step 13 is closed.
+  - Any Step 14 / Step 15 work must start with a separate plan-confirmation prompt.
+
+## Current Step 13C Workflow Task Detail / Actions Closure - 2026-06-19
+
+- Step 11 overall status: DONE.
+- Step 12 overall status: DONE.
+- Step 13A status: DONE and audit PASS.
+- Step 13B status: DONE.
+- Step 13C status: DONE.
+- Step 13D status: TODO / not started.
+- Step 13C delivered scope:
+  - Extended `apps/web/src/WorkflowTasks.tsx` with a task-detail drawer opened from the Step 13B list page.
+  - Detail loading calls Step 13A `fetchWorkflowTaskDetail(client, taskId)` and displays only workflow task / workflow instance stable fields.
+  - Detail drawer displays task id, instance id, assignee id, step label, status label, created/updated/claimed/completed timestamps, instance target type, target id, instance status, and current step.
+  - Added detail loading, error, retry, 403-compatible, network/server error display through `mapWorkflowErrorToDisplay`.
+  - Added approve/reject action entries only when Step 13A `getWorkflowActionAvailability(task)` allows them.
+  - Added readonly reason display for non-actionable tasks.
+  - Added approve modal with optional `comment`; empty comment follows Step 13A behavior and does not send a `comment` field.
+  - Added reject modal with required trimmed `comment`; empty comment is blocked in the frontend before any API call.
+  - Approve/reject submissions call Step 13A `approveWorkflowTask` / `rejectWorkflowTask`; payload helpers only emit `comment` and never emit `reason`.
+  - Added action success handling: success feedback, close action modal, clear action error/comment, close current detail, and refresh the current filtered list.
+  - Added action failure handling: keep action modal open, preserve comment input, show mapped error, and allow retry.
+  - Preserved Step 13B list behavior: `GET /workflow/tasks/my`, current filters, refresh, no-user, loading, empty, error, and Workbench entry.
+  - Added Step 13C helper tests in `apps/web/src/WorkflowTasks.test.ts`.
+  - Added minimal drawer/table CSS in `apps/web/src/App.css`.
+- Step 13C validation:
+  - First `corepack pnpm --filter @research-ip/web test`: passed, 7 files / 57 tests.
+  - First `corepack pnpm --filter @research-ip/web typecheck`: failed because `getWorkflowActionSuccessMessage` was referenced before being added.
+  - Added the missing success-message helper and re-ran typecheck.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed. Vite emitted the existing large-chunk warning for the web bundle; it did not block the build.
+  - `corepack pnpm lint`: passed.
+  - Final `corepack pnpm --filter @research-ip/web test`: passed, 7 files / 57 tests.
+- Step 13C browser acceptance:
+  - Used the existing frontend dev server at `http://127.0.0.1:5173`.
+  - No-user state: navigating to approval management sent no workflow business request.
+  - Secretary demo user state: page requested `/api/workflow/tasks/my?status=PENDING`.
+  - Backend-unavailable path: page displayed the workflow service-unavailable error and did not show fake data.
+  - Real detail drawer, approve success, and reject success paths were not covered because the backend/data path was unavailable; no migrate/seed/fake data was used.
+  - 390px workflow page check: no horizontal overflow.
+- Step 13C boundaries:
+  - No approval history full page, audit-log page, bulk approval, custom workflow designer, achievement detail read/display, or cross-module "open achievement detail" entry was implemented.
+  - No backend business semantics, workflow state machine, Prisma schema, migration, seed, package file, lockfile, dependency, `.env`, credential, token, cookie, certificate, private key, or connection string was modified or displayed.
+  - No backend tests were run.
+  - No migrate or seed command was run.
+  - Step 13D was not entered.
+  - The project directory is still not a Git repository, so `git status` / `git diff` evidence is unavailable.
+- Next-step startup control:
+  - The next Step 13 action must be Step 13C execution-result audit or Step 13D plan confirmation.
+  - Do not directly implement Step 13D without a separate plan-confirmation prompt.
+
+## Current Step 13B Workflow Task List Page Closure - 2026-06-19
+
+- Step 11 overall status: DONE.
+- Step 12 overall status: DONE.
+- Step 13A status: DONE and audit PASS.
+- Step 13B status: DONE.
+- Step 13C / Step 13D status: TODO / not started.
+- Step 13B delivered scope:
+  - Added `apps/web/src/WorkflowTasks.tsx` as the real approval-management "my workflow tasks" list page.
+  - Replaced the previous approval-management boundary page in `apps/web/src/App.tsx`; `activeKey === "workflow"` now renders `WorkflowTasks`.
+  - Updated the approval-management navigation copy so it no longer describes the page as an unimplemented boundary.
+  - Consumes only `GET /workflow/tasks/my` through the Step 13A `fetchMyWorkflowTasks` wrapper.
+  - Uses default `status=PENDING`.
+  - Supports task-status filtering and exact `achievementId` filtering.
+  - Trims `achievementId`, omits empty values, and does not emit `page` / `pageSize`.
+  - Renders task id, step label, task status label, created/updated time, instance target-type label, target id, instance status label, current-step label, and instance id.
+  - Provides fallback display when `instance` is missing.
+  - Covers no-user, loading, empty, error, and refresh states.
+  - Uses `mapWorkflowErrorToDisplay` for workflow-specific display errors without changing the base API client semantics.
+  - Updated `apps/web/src/Workbench.tsx` so the "my approval tasks" card reuses `fetchMyWorkflowTasks` and provides an entry to the workflow page with navigation key `workflow`.
+  - Added focused Step 13B tests in `apps/web/src/WorkflowTasks.test.ts`.
+  - Added minimal responsive/table/filter CSS in `apps/web/src/App.css`.
+- Step 13B validation:
+  - `corepack pnpm --filter @research-ip/web test`: passed, 7 files / 48 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed. Vite emitted the existing large-chunk warning for the web bundle; it did not block the build.
+  - `corepack pnpm lint`: passed.
+- Step 13B browser acceptance:
+  - Started the existing frontend dev server at `http://127.0.0.1:5173`.
+  - No-user state: approval-management page did not send a workflow business request.
+  - Demo-user recovery: secretary demo user persisted in localStorage and the workflow page loaded after refresh.
+  - Workflow request evidence: page requested `/api/workflow/tasks/my?status=PENDING`.
+  - Backend-unavailable path: page displayed the workflow service-unavailable error and did not show fake data.
+  - `achievementId` filter evidence: input with surrounding spaces produced `/api/workflow/tasks/my?status=PENDING&achievementId=achievement-id`, with no `page` or `pageSize`.
+  - Workbench entry evidence: "enter approval management" navigated to the workflow page.
+  - Narrow viewport evidence: at 390px width the workflow page did not horizontally overflow.
+  - Browser status-select interaction was not fully covered because the Ant Design select automation timed out; the status query behavior is covered by focused Vitest tests.
+- Step 13B boundaries:
+  - No `GET /workflow/tasks/:taskId` detail drawer was implemented or opened.
+  - No approve/reject action, modal, or approval-comment input was implemented.
+  - No achievement detail, approval history page, audit-log page, bulk approval, or custom workflow designer was implemented.
+  - No backend business semantics, workflow state machine, Prisma schema, migration, seed, package file, lockfile, dependency, `.env`, credential, token, cookie, certificate, private key, or connection string was modified or displayed.
+  - No backend tests were run.
+  - No migrate or seed command was run.
+  - Step 13C / Step 13D were not entered.
+  - The project directory is still not a Git repository, so `git status` / `git diff` evidence is unavailable.
+- Next-step startup control:
+  - The next Step 13 action must be Step 13B execution-result audit or Step 13C plan confirmation.
+  - Do not directly implement Step 13C without a separate plan-confirmation prompt.
+
+## Current Step 13A Workflow Frontend Contract / Foundation Closure - 2026-06-19
+
+- Step 11 overall status: DONE.
+- Step 12 overall status: DONE.
+- Step 13A status: DONE.
+- Step 13B / Step 13C / Step 13D status: TODO / not started.
+- Step 13A delivered scope:
+  - Added frontend Workflow contract types in `apps/web/src/types.ts`:
+    - `WorkflowTaskStatusCode`.
+    - `WorkflowInstanceStatusCode`.
+    - `WorkflowTargetTypeCode`.
+    - `WorkflowStepCode`.
+    - `WorkflowActionKind`.
+    - `WorkflowTaskQuery`.
+    - `ApproveWorkflowTaskPayload`.
+    - `RejectWorkflowTaskPayload`.
+    - `WorkflowTaskActionResult`.
+  - Updated `WorkflowTaskListResult` so the frontend no longer strongly depends on backend `total`, because `GET /workflow/tasks/my` currently returns `{ items }`.
+  - Added `apps/web/src/workflow-tasks.ts` as a Step 13A-only frontend foundation helper/API wrapper module.
+  - Added Workflow API wrappers:
+    - `fetchMyWorkflowTasks(client, query)`.
+    - `fetchWorkflowTaskDetail(client, taskId)`.
+    - `approveWorkflowTask(client, taskId, comment)`.
+    - `rejectWorkflowTask(client, taskId, comment)`.
+  - Added pure helpers:
+    - `buildWorkflowTaskQuery`.
+    - `buildApproveWorkflowTaskPayload`.
+    - `buildRejectWorkflowTaskPayload`.
+    - workflow task / step / instance / target label mapping.
+    - `getWorkflowActionAvailability`.
+    - `buildWorkflowTaskDetailDisplayModel`.
+    - `mapWorkflowErrorToDisplay`.
+  - Added `apps/web/src/workflow-tasks.test.ts` covering query, payload, action availability, label fallback, display model, error mapping, and API wrapper behavior.
+- Step 13A validation:
+  - First `corepack pnpm --filter @research-ip/web test`: failed because `workflow-tasks.ts` mixed `??` and `||` without parentheses in label fallback expressions.
+  - Fixed the fallback expressions and re-ran the gate.
+  - `corepack pnpm --filter @research-ip/web test`: passed, 6 files / 42 tests.
+  - First `corepack pnpm --filter @research-ip/web typecheck`: failed because one test assertion accessed a possibly undefined mock call.
+  - Fixed the test assertion and re-ran the gate.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - First `corepack pnpm lint`: failed because `WorkflowActionKind` was imported but unused in `workflow-tasks.ts`.
+  - Removed the unused import and re-ran the gate.
+  - `corepack pnpm lint`: passed.
+  - Final `corepack pnpm --filter @research-ip/web typecheck`: passed after the lint cleanup.
+- Step 13A boundaries:
+  - No approval-management page was mounted or replaced.
+  - No todo-list UI, task-detail drawer, approve modal, reject modal, browser main-flow acceptance, Step 13B, Step 13C, Step 13D, Step 14, or Step 15 implementation was added.
+  - No backend business semantics, workflow state machine, Prisma schema, migration, seed, package file, lockfile, dependency, `.env`, credential, token, cookie, certificate, private key, or connection string was modified or displayed.
+  - No migrate or seed command was run.
+  - No backend tests were run.
+  - Browser main-flow acceptance was intentionally not run because Step 13A adds no mounted page or UI flow.
+  - The project directory is still not a Git repository, so `git status` / `git diff` evidence is unavailable.
+- Next-step startup control:
+  - The next Step 13 action must be Step 13A execution-result audit / Step 13B plan confirmation only.
+  - Do not directly implement Step 13B until a separate plan-confirmation prompt is provided.
+
+## Current Step 12 Final Audit Closure - 2026-06-19
+
+- Audit purpose:
+  - Perform a read-mostly Step 12 final closure audit after Step 12A / 12B / 12C / 12D were marked DONE.
+  - Confirm whether Step 12 overall DONE is still acceptable under the Vibe Coding loop of plan -> execute -> verify -> record.
+  - Do not add features, modify business code, enter Step 13, run migrate/seed, read `.env`, or create fake data.
+- Audit result:
+  - Step 12 overall DONE is accepted.
+  - Step 12A has a bounded backend list API closure with tests, permission policy notes, redaction notes, and no frontend / later-step implementation.
+  - Step 12B has a bounded frontend list closure consuming real `GET /achievements`, with UI state evidence and browser limitations recorded.
+  - Step 12C has a bounded create/edit draft form closure using existing POST / GET detail / PATCH APIs, with rejected-state and contributor-edit limitations recorded.
+  - Step 12D has a bounded detail/action closure using existing detail and submit/void/archive APIs, with approve/reject, attachments, fee, search, dashboard, and audit explicitly out of scope.
+- Current audit gates:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 50 files / 444 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web test`: passed, 5 files / 26 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Remaining non-blocking risks:
+  - Browser real-success paths remain dependent on a running backend and suitable data: real list rows, real detail success, real create/update/action success, action failure status display, and restricted-detail 403.
+  - These are integration acceptance risks for a running local environment, not blockers to Step 12 DONE because Step 12 code paths, tests, boundary records, and non-database gates are in place.
+- Next-step startup control:
+  - The next action must be Step 13 plan confirmation only.
+  - Do not directly implement Step 13.
+
+## Current Step 12D Achievement Detail / Actions Final Closure - 2026-06-19
+
+- Step 9 overall status: DONE.
+- Step 10 overall status: DONE.
+- Step 11 overall status: DONE.
+- Step 12 overall status: DONE.
+- Step 12A status: DONE.
+- Step 12B status: DONE.
+- Step 12C status: DONE.
+- Step 12D status: DONE.
+- Step 12D delivered scope:
+  - Added a real frontend achievement detail drawer using `GET /achievements/:id`.
+  - Replaced the previous Step 12D detail boundary modal with a real `查看详情` drawer entry from the achievement list.
+  - Displayed base fields, paper / patent / software-copyright detail fields, and contributors from the detail response.
+  - Added action entries for current backend-supported states:
+    - `DRAFT`: submit approval through `POST /achievements/:id/submit`.
+    - `DRAFT`: void through `POST /achievements/:id/void` with required `reason`.
+    - `PENDING_ARCHIVE`: archive through `POST /achievements/:id/archive`.
+  - Kept `DEPARTMENT_REJECTED`, `PENDING_DEPARTMENT_REVIEW`, `ARCHIVED`, and `VOIDED` read-only in the Step 12D frontend.
+  - Added action confirmation modal, void-reason validation, action error display, and success refresh for detail and list.
+  - Added pure tests for action availability, confirmation labels, void payload construction, redacted title display, and type-detail display fields.
+  - Added API client tests proving submit/archive action POST requests omit bodies and void POST sends `{ reason }`.
+  - Updated Step 12 entry copy in the app shell and workbench so the UI no longer describes detail/actions as future Step 12 work.
+- Step 12D validation:
+  - `corepack pnpm --filter @research-ip/web test`: passed, 5 files / 26 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: passed.
+  - Browser acceptance on existing `http://127.0.0.1:5173`: updated Step 12 copy, demo-user refresh recovery, no-user state, backend-unavailable achievement list state, absence of detail/action buttons without real rows, and 390px narrow viewport without horizontal overflow were checked.
+- Step 12D boundaries:
+  - No backend business semantics, Prisma schema, migration, seed, package file, lockfile, permission seed, `.env`, credential, token, cookie, certificate, private key, or connection string was modified or displayed.
+  - No migrate or seed command was run.
+  - No real SSO, email, object storage, or Meilisearch integration was added.
+  - No approve/reject, attachment upload/download, fee CRUD, search-center expansion, dashboard expansion, audit-log page, Step 13, Step 14, or Step 15 implementation was added.
+  - Backend port 3000 was not listening during browser acceptance, so real detail success, real DRAFT action buttons, real submit/void/archive success, real backend action failures, real SECRET / CONFIDENTIAL 403 detail state, and real post-action refresh paths were not covered in browser.
+- Step 12 final status:
+  - Step 12 overall is DONE for the planned frontend achievement-management first loop: list, filters, pagination, redaction display, create draft, edit draft, detail viewing, and supported action entries.
+  - Remaining future work belongs to later separately planned steps: workflow approve/reject, attachments, fee CRUD, search center, dashboard, audit log, and any backend state-machine expansion.
+- Next-step startup control:
+  - The next action must be Step 13 plan confirmation only.
+  - Do not implement Step 13 until after a separate Step 13 plan-confirmation turn.
+
+## Current Step 12C Achievement Draft Form Frontend Closure - 2026-06-19
+
+- Step 9 overall status: DONE.
+- Step 10 overall status: DONE.
+- Step 11 overall status: DONE.
+- Step 12 overall status: IN PROGRESS.
+- Step 12A status: DONE.
+- Step 12B status: DONE.
+- Step 12C status: DONE.
+- Step 12D status: TODO / not started.
+- Step 12C delivered scope:
+  - Added a frontend achievement draft form drawer for creating drafts through `POST /achievements`.
+  - Added draft edit support through `GET /achievements/:id` and `PATCH /achievements/:id`.
+  - Integrated the form from the Step 12B `Achievements` page: `登记成果` opens create mode, and `DRAFT` list rows expose an `编辑草稿` entry.
+  - Kept `DEPARTMENT_REJECTED` editing disabled because the current backend `updateDraft` contract only supports `DRAFT`.
+  - Kept contributors editable during create but read-only during edit, because the backend PATCH path rejects contributor updates.
+  - Added typed frontend payload helpers for paper, patent, and software copyright detail payloads without changing backend business semantics.
+  - Extended the API client with JSON `POST` / `PATCH` helpers while preserving existing GET query serialization and error mapping.
+  - Added Vitest coverage for form payload construction, edit payload exclusions, detail initial-value mapping, editable-status boundaries, POST/PATCH request serialization, and 404/409/422 error mapping.
+- Step 12C validation:
+  - `corepack pnpm --filter @research-ip/web test`: passed, 4 files / 17 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: passed.
+  - Browser acceptance on existing `http://127.0.0.1:5173`: create drawer, required-field validation, paper / patent / software-copyright type switching, backend-unavailable submit handling, no-user state, demo-user refresh recovery, and 390px drawer layout were checked.
+- Step 12C boundaries:
+  - No backend business semantics, Prisma schema, migration, seed, package file, lockfile, permission seed, `.env`, credential, token, cookie, certificate, private key, or connection string was modified or displayed.
+  - No migrate or seed command was run.
+  - No real SSO, email, object storage, or Meilisearch integration was added.
+  - No submit, void, archive, approval, attachment, real detail page, Step 12D, Step 13, Step 14, or Step 15 implementation was added.
+  - Backend port 3000 was not listening during browser acceptance, so real create success, real update success, real DRAFT row editing, real DEPARTMENT_REJECTED row display, and backend 400 / 403 / 409 / 422 browser paths were not covered.
+- Next-step startup control:
+  - The next action must be Step 12D plan confirmation only.
+  - Do not implement Step 12D until after a separate Step 12D plan-confirmation turn.
+
+## Current Step 12B Achievement List Frontend Closure - 2026-06-19
+
+- Step 9 overall status: DONE.
+- Step 10 overall status: DONE.
+- Step 11 overall status: DONE.
+- Step 12 overall status: IN PROGRESS.
+- Step 12A status: DONE.
+- Step 12B status: DONE.
+- Step 12C / 12D status: TODO / not started.
+- Step 12B delivered scope:
+  - Replaced the frontend achievement boundary page with a real `Achievements` list page mounted from `App.tsx`.
+  - Consumed the Step 12A `GET /achievements` API through the existing `createApiClient(demoUserId)` and `X-Demo-User-Id` flow.
+  - Added frontend list types for achievement type, status, secret level, list item, list result, and list query.
+  - Added keyword, type, status, page, and pageSize query construction.
+  - Added filter, reset, refresh, loading, no-user, error, empty, filtered-empty, and backend-redaction display paths.
+  - Kept registration and detail actions as explicit Step 12C / Step 12D boundary modals; no POST/PATCH/action API calls were added.
+  - Updated the workbench achievement entry copy so it points to the real Step 12B list without claiming registration or detail capability.
+  - Added Vitest coverage for query serialization, blank query omission, list query construction, and redacted-title display logic.
+- Step 12B validation:
+  - `corepack pnpm --filter @research-ip/web test`: passed, 3 files / 8 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed with the existing Vite large chunk warning.
+  - `corepack pnpm lint`: passed.
+  - Browser acceptance on existing `http://127.0.0.1:5173`: no-user state, researcher / secretary / admin context display, service-unavailable error path, filter/reset/refresh controls, Step 12C boundary modal, localStorage demo-user recovery, and desktop/mobile layout were checked.
+- Step 12B boundaries:
+  - No backend business semantics, Prisma schema, migration, seed, package file, lockfile, permission seed, `.env`, credential, token, cookie, certificate, private key, or connection string was modified or displayed.
+  - No migrate or seed command was run.
+  - No real SSO, email, object storage, or Meilisearch integration was added.
+  - No Step 12C, Step 12D, Step 13, Step 14, or Step 15 implementation was added.
+  - Backend port 3000 was not listening during browser acceptance, so real success, empty, 400, 403, and real restricted-data redaction paths were not covered in browser; pure tests and UI states cover the frontend fallback logic.
+- Next-step startup control:
+  - The next action must be Step 12C plan confirmation only.
+  - Do not implement Step 12C until after a separate Step 12C plan-confirmation turn.
+
+## Current Step 12A Achievement List API Closure - 2026-06-19
+
+- Step 9 overall status: DONE.
+- Step 10 overall status: DONE.
+- Step 11 overall status: DONE.
+- Step 12 overall status: IN PROGRESS.
+- Step 12A status: DONE.
+- Step 12B / 12C / 12D status: TODO / not started.
+- Step 12A delivered scope:
+  - Added real `GET /achievements` backend API for minimal achievement list access.
+  - Added `AchievementListQueryDto` for `status`, `type`, `keyword`, `page`, and `pageSize`.
+  - Added list response shape `{ items, total, page, pageSize }`.
+  - Added repository summary select and list/count query using caller-provided policy where, optional filters, `updatedAt desc` / `createdAt desc` order, skip/take pagination, and no detail/contributor include.
+  - Added service orchestration that uses `PolicyQueryFactory.achievementReadableWhere(context)` as the final business visibility boundary.
+  - Used `@RequirePermissions(PermissionCode.userContextRead)` as the controller static permission because `PermissionGuard` uses all-permissions semantics and cannot express `achievement:read_own OR achievement:read_department`.
+  - Implemented restricted-level list redaction for `SECRET` / `CONFIDENTIAL` achievements without effective secret read grant.
+  - Added repository, service, controller, and AppModule-level tests for list access, filters, pagination, static permission, empty permission scope, own/department/union policy propagation, and redaction.
+- Step 12A validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 50 files / 444 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 12A boundaries:
+  - No frontend page, registration/edit form, detail/action frontend, Step 12B, Step 12C, Step 12D, Step 13, Step 14, or Step 15 implementation was added.
+  - No Prisma schema, migration, seed, package file, lockfile, permission seed, `.env`, credential, token, cookie, certificate, private key, or connection string was modified or displayed.
+  - No migrate or seed command was run.
+  - No real SSO, email, object storage, or Meilisearch integration was added.
+- Next-step startup control:
+  - The next action must be Step 12B plan confirmation only.
+  - Do not implement Step 12B until after a separate Step 12B plan-confirmation turn.
+
+## Current Step 11 Process Audit / Remediation Closure - 2026-06-19
+
+- Step 11 overall status: DONE and still acceptable after process audit.
+- Step 11A audit status: PASS.
+- Step 11B audit status: PASS with process caveat.
+- Step 11C audit status: PASS with process caveat.
+- Step 11D audit status: PASS with process caveat.
+- Process deviation:
+  - Step 11A / 11B / 11C / 11D were executed and archived in one continuous implementation round.
+  - This did not match the intended Vibe Coding sub-step cadence of plan -> execute -> verify -> record per sub-step.
+  - The deviation is recorded as process granularity debt, not as a functional failure requiring rollback.
+- Remediation:
+  - Added process audit / remediation records to `progress.md`.
+  - Added split Step 11A / 11B / 11C / 11D evidence to `evidence.md`.
+  - Added D060 to `decisions.md`.
+  - Re-ran Step 11 frontend quality gates and browser DOM acceptance without starting backend, running migrate/seed, reading `.env`, or accessing a real database.
+- Remediation validation:
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web test`: passed, 2 files / 2 tests.
+  - `corepack pnpm --filter @research-ip/web build`: passed with known Vite chunk-size warning.
+  - `corepack pnpm lint`: passed.
+  - Browser acceptance re-verified no-user state, researcher context, research-secretary context, system-admin context, refresh recovery, 成果管理 Step 12 boundary, and no Step 12 / 13 / 14 / 15 implementation.
+- Next-step startup control:
+  - Step 12 remains TODO / not started.
+  - The next action must be Step 12A plan confirmation only.
+  - Do not implement Step 12A in the same turn as plan confirmation unless the user explicitly starts a separate execution turn after accepting the plan.
+  - Do not plan-confirm and execute Step 12B / 12C / 12D until the prior sub-step is executed, validated, reviewed, and archived.
+  - Future Step 12 prompts should explicitly say: "only read context directly related to Step 12A; do not execute Step 12B/12C/12D or batch sub-steps."
+
+## Current Step 11 Final Closure - 2026-06-19
+
+- Step 8 status: DONE.
+- Step 9 status: DONE.
+- Step 10 status: DONE.
+- Step 11 status: DONE.
+- Step 11A status: DONE.
+- Step 11B status: DONE.
+- Step 11C status: DONE.
+- Step 11D status: DONE.
+- Step 11 delivered scope:
+  - Confirmed `apps/web` was a minimal Vite / React / Ant Design scaffold before implementation.
+  - Confirmed Step 11 backend boundaries and kept backend source read-only.
+  - Built a runnable management-system frontend shell with top bar, side navigation, content area, and user information area.
+  - Added non-router navigation for 工作台, 成果管理, 审批管理, 费用管理, 检索中心, 统计看板, 审计日志, and 系统配置.
+  - Added shared loading, error, empty, permission hint, section header, and boundary notice components.
+  - Added demo user context selection / custom input, local storage recovery, and explicit "本地演示上下文 / 非真实 SSO" UI labeling.
+  - Added a frontend API client that sends `X-Demo-User-Id` and maps 401 / 403 / 400 / 5xx / network errors.
+  - Added workbench cards for dashboard summary, my approval tasks, my achievements boundary, fee warning summary, and system-message boundary.
+  - Added a Vite dev-server `/api` proxy for local backend development without adding dependencies.
+- Step 11 validation:
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web test`: passed, 2 files / 2 tests.
+  - `corepack pnpm --filter @research-ip/web build`: passed with Vite chunk-size warning.
+  - `corepack pnpm lint`: passed.
+  - Browser DOM acceptance covered no-user state, researcher context, research-secretary context, system-admin context, refresh recovery, navigation, API error state, and Step 12 boundary pages.
+- Step 11 final boundaries:
+  - No backend source, Prisma schema, migration, seed, package file, lockfile, `.env`, credential file, certificate file, private key, or connection string was modified.
+  - No migrate or seed command was run.
+  - No backend dev server was started during browser acceptance, and no real database access was triggered.
+  - No React Router, new npm dependency, real SSO, real mail/SMS, object storage, Meilisearch, SearchLog write, queue, scheduler, cron, Step 12, Step 13, Step 14, or Step 15 implementation was added.
+  - `apps/web/dist/**` was refreshed only as a web build quality gate byproduct.
+- Step 11 known limitations:
+  - Browser screenshot capture failed with in-app browser `Page.captureScreenshot` timeouts; DOM/text browser checks were used as acceptance evidence.
+  - The project directory is not a Git repository, so final `git status` / `git diff` evidence was unavailable.
+  - Live successful dashboard/task data and live empty states were not validated because the backend was intentionally not started to avoid real database access.
+  - Vite build reports a chunk-size warning for the bundled frontend.
+- Next planning boundary:
+  - Step 12 remains TODO / not started.
+  - Step 12 must begin with a separate plan confirmation before implementation, command execution, or memory-bank update.
+
+## Current Step 10 Final Closure - 2026-06-19
+
+- Step 8 status: DONE.
+- Step 9 status: DONE.
+- Step 10 status: DONE.
+- Step 10A status: DONE.
+- Step 10B status: DONE.
+- Step 10C status: DONE.
+- Step 10D status: DONE.
+- Step 10A delivered scope:
+  - Locked the final quality gate command list.
+  - Locked the Step 10 evidence package and memory-bank archival plan.
+  - Confirmed that Step 10 would not modify application source, schema, migrations, seed files, package files, lockfile, runtime configuration, or credential files.
+- Step 10B delivered scope:
+  - Ran the final quality gates.
+  - `corepack pnpm --filter @research-ip/api test`: passed, 50 files / 432 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+  - API build may have refreshed `apps/api/dist`; this is an approved quality gate byproduct.
+  - Prisma validate loaded `.env` automatically without displaying sensitive values, running migrate/seed, or accessing a real database.
+- Step 10C delivered scope:
+  - Confirmed memory-bank top sections were consistent before Step 10D archival: Step 9 overall DONE, Step 10 TODO.
+  - Confirmed Step 10A and Step 10B had not been written to memory-bank before Step 10D.
+  - Confirmed Dashboard permission stayed `user_context:read` / `PermissionCode.userContextRead`; no `dashboard:read_institute`.
+  - Confirmed Search and Dashboard stayed limited to `GET /search` and `GET /dashboard/summary`.
+  - Confirmed no planned-scope breach in Search/Dashboard routes, permissions, external services, migrate/seed execution, real database access, sensitive credential raw value exposure, or destructive-operation traces.
+- Step 10D delivered scope:
+  - Archived final evidence package in memory-bank.
+  - Marked Step 10A, Step 10B, Step 10C, Step 10D, and Step 10 overall as DONE.
+  - Added next-step startup control.
+- Step 10 final boundaries:
+  - No application source, tests, runtime configuration, schema, migrations, seed files, package files, lockfile, credential files, connection-string files, or `apps/api/dist` were modified by Step 10D.
+  - No test, lint, typecheck, build, Prisma validate, migrate, seed, or database command was run in Step 10D.
+  - No future step was started.
+- Step 10 known limitations:
+  - The project directory is not a Git repository, so final `git status` / `git diff` boundary verification was unavailable.
+  - Step 10C completed without a separate pre-execution plan-confirmation turn; future steps should restore the plan-confirmation-then-execution rhythm.
+- Next planning boundary:
+  - Future steps remain TODO / not started.
+  - The next step must begin with a separate plan confirmation before implementation, command execution, or memory-bank update.
+
+## Current Step 9D-2 Dashboard Root AppModule Wiring And Step 9 Final Closure - 2026-06-18
+
+- Step 8 status: DONE.
+- Step 9 status: DONE.
+- Step 9A status: DONE.
+- Step 9B status: DONE.
+- Step 9C status: DONE.
+- Step 9D status: DONE.
+- Step 9D-1 status: DONE.
+- Step 9D-2 status: DONE.
+- Step 10 status: TODO.
+- Step 9D-2 delivered scope:
+  - Root `AppModule` now explicitly imports `DashboardModule`.
+  - `DashboardModule` is registered in the root imports array after `SearchModule`.
+  - `GET /dashboard/summary` is root reachable.
+  - Added Dashboard AppModule-level HTTP tests.
+  - AppModule-level tests override `DashboardService`, `PrismaService`, and `IDENTITY_ADAPTER`.
+  - AppModule-level tests preserve real `UserContextGuard`, `PermissionGuard`, route permission metadata, and controller validation.
+  - AppModule-level tests cover `/health`, root Dashboard summary 200 delegation, 401, 403, query transform, and invalid query 400.
+- Step 9 final closure:
+  - Step 9A Search foundation: DONE.
+  - Step 9B Search HTTP/root wiring: DONE.
+  - Step 9C Dashboard foundation: DONE.
+  - Step 9D Dashboard HTTP/root wiring: DONE.
+  - Step 9 overall: DONE.
+- Step 9D-2 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 50 files / 432 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 9D-2 boundaries:
+  - No new Dashboard endpoint beyond `GET /dashboard/summary`.
+  - No `dashboard:read_institute`, permission seed, SearchLog write, Meilisearch, queue, scheduler, cron, frontend, export, detail/list/drilldown route, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+- Next planning boundary:
+  - Step 10 remains TODO and must start with quality gate and evidence package plan confirmation.
+  - Step 10 is not implemented in Step 9D-2.
+
+## Current Step 9D-1 Dashboard Module-Local HTTP Boundary - 2026-06-18
+
+- Step 8 status: DONE.
+- Step 9 status: IN PROGRESS.
+- Step 9A status: DONE.
+- Step 9B status: DONE.
+- Step 9C status: DONE.
+- Step 9D status: IN PROGRESS.
+- Step 9D-1 status: DONE.
+- Step 9D-2 status: TODO.
+- Step 10 status: TODO.
+- Step 9D-1 delivered scope:
+  - Added module-local `DashboardController`.
+  - Exposed only `GET /dashboard/summary`.
+  - Added `DashboardSummaryQueryDto` for `today` and `dueSoonDays` query validation.
+  - Mapped validated query into `DashboardRequestOptions`.
+  - Used `UserContextGuard`, `PermissionGuard`, `@CurrentUser()`, and `@RequirePermissions(PermissionCode.userContextRead)`.
+  - Mapped `DashboardAccessDeniedError` to HTTP 403.
+  - Registered the controller only inside standalone `DashboardModule`.
+  - Imported `IdentityModule` into `DashboardModule` so module-local guard composition can resolve `IDENTITY_ADAPTER`.
+  - Added module-local Dashboard HTTP tests with provider overrides for `DashboardService`, `PrismaService`, and `IDENTITY_ADAPTER`.
+- Step 9D-1 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 49 files / 427 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 9D-1 boundaries:
+  - No root `AppModule` wiring and no AppModule-level Dashboard tests.
+  - No `dashboard:read_institute`, permission seed, SearchLog write, Meilisearch, index sync, queue, scheduler, cron, frontend, export, detail/list/drilldown route, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+- Next planning boundary:
+  - Step 9D-2 remains TODO and must start with Dashboard root `AppModule` wiring and Step 9 final closure plan confirmation.
+
+## Current Step 9C-2 Dashboard Repository/Service Foundation - 2026-06-18
+
+- Step 8 status: DONE.
+- Step 9 status: IN PROGRESS.
+- Step 9A status: DONE.
+- Step 9B status: DONE.
+- Step 9C status: DONE.
+- Step 9C-1 status: DONE.
+- Step 9C-2 status: DONE.
+- Step 9D status: TODO.
+- Step 9C delivered scope:
+  - Step 9C-1 added Dashboard domain / metric contract.
+  - Step 9C-2 added `DashboardRepository` and `DashboardService`.
+  - Dashboard repository aggregates Achievement, Fee, WorkflowTask, and ReminderTask counts using caller-provided scope inputs.
+  - Dashboard service builds policy-scoped Achievement/Fee where filters and current-user Workflow/Reminder scopes.
+  - Dashboard service maps repository facts into the Step 9C-1 `DashboardSummary` contract.
+  - DashboardModule now registers Dashboard repository/service providers but remains standalone.
+- Step 9C-2 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 48 files / 420 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 9C-2 boundaries:
+  - No Dashboard HTTP controller.
+  - No root `AppModule` wiring.
+  - No Dashboard frontend, cache, department ranking, trend, amount summary, patent depth metric, institute screen, custom report, Meilisearch, external service, SearchLog, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+- Next planning boundary:
+  - Step 9D remains TODO and must start with separate Dashboard HTTP/root wiring plan confirmation.
+
+## Current Step 9C-1 Dashboard Domain Contract - 2026-06-18
+
+- Step 8 status: DONE.
+- Step 9 status: IN PROGRESS.
+- Step 9A status: DONE.
+- Step 9B status: DONE.
+- Step 9C status: IN PROGRESS.
+- Step 9C-1 status: DONE.
+- Step 9C-2 status: TODO.
+- Step 9D status: TODO.
+- Step 9C split confirmed:
+  - 9C-1 Dashboard domain / metric contract.
+  - 9C-2 Dashboard repository/service foundation.
+- Step 9C-1 delivered scope:
+  - Added standalone `DashboardModule` skeleton under `apps/api/src/dashboard`.
+  - Added Dashboard metric section/key constants and result contract types.
+  - Added minimum Dashboard summary contracts for Achievement, Fee, WorkflowTask, and ReminderTask.
+  - Added Dashboard request options contract with fixed `today` and `dueSoonDays`.
+  - Added due-soon defaults and range validation helpers.
+  - Added pure domain contract tests.
+- Step 9C-1 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 46 files / 406 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 9C-1 boundaries:
+  - No DashboardRepository.
+  - No DashboardService business aggregation.
+  - No Prisma query, `PrismaService`, groupBy, count, or aggregate use.
+  - No Dashboard HTTP controller.
+  - No root `AppModule` wiring.
+  - No Dashboard frontend, cache, department ranking, trend, amount summary, patent depth metric, institute screen, custom report, Meilisearch, external service, SearchLog, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+- Next planning boundary:
+  - Step 9C-2 remains TODO and must start with separate Dashboard repository/service foundation plan confirmation.
+
+## Current Step 9B-2 Search Root AppModule Wiring - 2026-06-18
+
+- Step 8 status: DONE.
+- Step 9 status: IN PROGRESS.
+- Step 9A status: DONE.
+- Step 9B status: DONE.
+- Step 9B-1 status: DONE.
+- Step 9B-2 status: DONE.
+- Step 9C status: TODO.
+- Step 9D status: TODO.
+- Step 9B delivered scope:
+  - Step 9B-1 added the module-local Search HTTP boundary.
+  - Step 9B-2 imported `SearchModule` into root `AppModule`.
+  - Search route is now root reachable through `GET /search`.
+  - Added AppModule-level Search HTTP tests with `SearchService`, `PrismaService`, and `IDENTITY_ADAPTER` overrides.
+  - Preserved real `UserContextGuard`, `PermissionGuard`, and permission metadata in root tests.
+- Step 9B-2 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 45 files / 400 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 9B-2 boundaries:
+  - No new Search endpoint beyond `GET /search`.
+  - No `search:read` permission or seed change.
+  - No SearchLog writes.
+  - No Meilisearch, external search service, index sync, queue, scheduler, cron, Dashboard, frontend, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+- Next planning boundary:
+  - Step 9C remains TODO and must start with separate Dashboard foundation plan confirmation.
+
+## Current Step 9B-1 Search Module-Local HTTP Boundary - 2026-06-18
+
+- Step 8 status: DONE.
+- Step 9 status: IN PROGRESS.
+- Step 9A status: DONE.
+- Step 9B status: IN PROGRESS.
+- Step 9B-1 status: DONE.
+- Step 9B-2 status: TODO.
+- Step 9C status: TODO.
+- Step 9D status: TODO.
+- Step 9B split confirmed:
+  - 9B-1 Search module-local HTTP boundary.
+  - 9B-2 Search root AppModule wiring.
+- Step 9B-1 delivered scope:
+  - Added module-local `SearchController`.
+  - Exposed only `GET /search` inside `SearchModule`.
+  - Protected the route with explicit `UserContextGuard`, `PermissionGuard`, `@CurrentUser()`, and `@RequirePermissions(PermissionCode.userContextRead)`.
+  - Kept resource visibility, department scope, and secret redaction inside `SearchService`.
+  - Added local validation for `SearchQueryDto`, including query normalization for single-value `targetTypes`.
+  - Registered the controller only inside `SearchModule` and imported `IdentityModule` for HTTP guard identity loading.
+  - Added module-local Search HTTP tests with provider overrides.
+- Step 9B-1 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 44 files / 395 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 9B-1 boundaries:
+  - No root `AppModule` wiring.
+  - No AppModule-level Search route test.
+  - No `search:read` permission or seed change.
+  - No SearchLog writes.
+  - No Meilisearch, external search service, index sync, queue, scheduler, cron, Dashboard, frontend, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+- Next planning boundary:
+  - Step 9B-2 remains TODO and must start with separate plan confirmation before root `AppModule` wiring.
+
+## Current Step 9A Search Foundation - 2026-06-18
+
+- Step 8 status: DONE.
+- Step 9 status: IN PROGRESS.
+- Step 9A status: DONE.
+- Step 9B status: TODO.
+- Step 9C status: TODO.
+- Step 9D status: TODO.
+- Step 9 split confirmed:
+  - 9A Search foundation.
+  - 9B Search HTTP/root wiring.
+  - 9C Dashboard foundation.
+  - 9D Dashboard HTTP/root wiring + Step 9 closure.
+- Step 9A delivered scope:
+  - Added standalone `apps/api/src/search/**` foundation.
+  - Added `SearchModule` without root `AppModule` wiring and without a controller.
+  - Added `SearchAdapter` interface token and `DatabaseSearchAdapter`.
+  - Added `SearchRepository` for policy-scoped Achievement and Fee database search.
+  - Added `SearchService` that builds Step 4 policy where filters, calls the adapter, and redacts restricted Achievement business details without an effective `SECRET_READ` grant.
+  - Added `SearchQueryDto`, search result/domain types, and search access error.
+  - Added fake Prisma/provider tests for repository, adapter, and service boundaries.
+- Step 9A validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 43 files / 388 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 9A boundaries:
+  - No Search HTTP controller.
+  - No root `AppModule` wiring.
+  - No Meilisearch or external search service integration.
+  - No index sync, queue, scheduler, cron, Dashboard, frontend, SearchLog writes, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+- Next planning boundary:
+  - Step 9B remains TODO and must start with separate plan confirmation before Search HTTP/root wiring.
+
+## Current Step 8D-3 / Step 8 Final Closure - 2026-06-18
+
+- Step 8 status: DONE.
+- Step 8A status: DONE.
+- Step 8B status: DONE.
+- Step 8C status: DONE.
+- Step 8D status: DONE.
+- Step 8D-1 status: DONE.
+- Step 8D-2 status: DONE.
+- Step 8D-3 status: DONE.
+- Step 9 status: TODO.
+- Step 8 final archive:
+  - Step 8A Fee domain / repository foundation: DONE.
+  - Step 8B Fee service / HTTP / root AppModule wiring / audit: DONE.
+  - Step 8C Reminder rule foundation: DONE.
+  - Step 8D Notification mock / reminder confirm / audit: DONE.
+  - Step 8 overall: DONE.
+  - Step 9 remains TODO and can only start from Step 9 pre-plan confirmation.
+- Step 8D-3 delivered scope:
+  - Added `ReminderController` with only `POST /reminders/:id/confirm`.
+  - Protected the confirm route with explicit `UserContextGuard`, `PermissionGuard`, `@CurrentUser()`, and `@RequirePermissions(PermissionCode.reminderReadDepartment)`.
+  - Delegated confirmation to `ReminderService.confirmReminder(...)`; the controller does not access repository, Prisma, AuditService, or NotificationService directly.
+  - Mapped Reminder service errors at the HTTP boundary: access denied to 403, not found to 404, and conflict/invalid transition to 409.
+  - Registered `ReminderController` inside `RemindersModule` and added HTTP guard dependencies.
+  - Imported `RemindersModule` into root `AppModule` without directly importing `NotificationsModule`.
+  - Added module-local Reminder HTTP tests and AppModule-level Reminder route tests.
+- Step 8D-3 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 40 files / 377 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8 final boundaries:
+  - No Step 9 implementation.
+  - No real search integration, send HTTP route, scheduler, cron, queue, real mail, EMAIL channel use, frontend, real finance integration, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - Root `AppModule` imports both `FeesModule` and `RemindersModule`.
+  - Root `AppModule` does not directly import `NotificationsModule`.
+  - Notification mock remains `IN_APP` only and does not use an EMAIL channel.
+  - Boundary scans confirmed no global guard/pipes wiring, no destructive delete, no direct root `NotificationsModule` import, and only the existing internal `sendPendingReminder` service/test references.
+- Next planning boundary:
+  - Step 9 remains TODO and must begin with separate plan confirmation before implementation.
+
+## Current Step 8D-2 Execution Closure - 2026-06-18
+
+- Step 8 status: IN PROGRESS.
+- Step 8A status: DONE.
+- Step 8B status: DONE.
+- Step 8C status: DONE.
+- Step 8D status: IN PROGRESS.
+- Step 8D-1 status: DONE.
+- Step 8D-2 status: DONE.
+- Step 8D-3 status: TODO.
+- Step 8D-2 delivered scope:
+  - Imported `NotificationsModule` and `AuditModule` into `RemindersModule`; root `AppModule` remains unchanged.
+  - Extended `ReminderRepository` with ReminderTask state reads and optimistic guarded status transitions.
+  - Extended `ReminderService` with `sendPendingReminder(...)` and `confirmReminder(...)`.
+  - Implemented send success transaction: Notification create, ReminderTask `PENDING -> SENT`, `REMINDER_TASK / UPDATE` audit, and `NOTIFICATION / CREATE` audit in one transaction.
+  - Implemented send failure transaction: ReminderTask `PENDING -> FAILED` and `REMINDER_TASK / UPDATE` audit in one transaction; no failed Notification row is created.
+  - Implemented confirm transaction: receiver-only `SENT -> CONFIRMED` and `REMINDER_TASK / CONFIRM_REMINDER` audit in one transaction.
+  - Reused the Step 8C Reminder status machine for transition validation.
+  - Kept audit summaries limited to stable Reminder/Notification facts and excluded notification content and Fee/Achievement/Attachment sensitive fields.
+- Step 8D-2 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 38 files / 366 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8D-2 boundaries:
+  - No Reminder HTTP controller, root `AppModule` wiring, scheduler, queue, real mail, EMAIL channel use, frontend, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - Boundary scans confirmed no controller decorators, external-system terms, env/database command/global guard wiring, destructive delete, or root `RemindersModule` / `NotificationsModule` wiring.
+  - Sensitive/high-risk field scan matched only tests and assertions; non-spec Reminder source files did not contain those terms.
+- Next planning boundary:
+  - Step 8D-3 remains TODO and must begin with separate plan confirmation before adding Reminder HTTP routes or root `AppModule` wiring.
+
+## Current Step 8D-1 Execution Closure - 2026-06-18
+
+- Step 8 status: IN PROGRESS.
+- Step 8A status: DONE.
+- Step 8B status: DONE.
+- Step 8C status: DONE.
+- Step 8D status: IN PROGRESS.
+- Step 8D-1 status: DONE.
+- Step 8D-2 / 8D-3 status: TODO.
+- Step 8D-1 delivered scope:
+  - Added `NotificationsModule` as a standalone provider module; it is not imported by root `AppModule`.
+  - Added Notification domain constants/types, repository types, mapper, and errors.
+  - Added `MockNotificationAdapter` for deterministic in-app mock notification results.
+  - Added `NotificationRepository` for minimal `Notification` table create behavior.
+  - Added `NotificationService.sendInAppNotification(...)` for mock in-app notification persistence.
+  - Notification mock supports only `IN_APP` behavior and persists `SENT` notifications with `sentAt`.
+  - Content is persisted as the business notification body, but no audit payload is produced in this step.
+- Step 8D-1 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 38 files / 352 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8D-1 boundaries:
+  - No Reminder send/confirm orchestration, Reminder HTTP controller, root `AppModule` wiring, scheduler, queue, external notification provider, AuditService integration, or frontend work.
+  - No schema, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - Boundary scans confirmed no controller decorators, external-system terms, audit/reminder orchestration terms, database/env/migrate/seed/global guard wiring, destructive delete, or root `NotificationsModule` wiring under the Step 8D-1 source boundary.
+- Next planning boundary:
+  - Step 8D-2 remains TODO and must begin with separate plan confirmation before Reminder send/confirm service orchestration or audit transaction integration.
+
+## Current Step 8C-2 / Step 8C Closure - 2026-06-18
+
+- Step 8 status: IN PROGRESS.
+- Step 8A status: DONE.
+- Step 8B status: DONE.
+- Step 8C status: DONE.
+- Step 8C-1 status: DONE.
+- Step 8C-2 status: DONE.
+- Step 8D status: TODO.
+- Step 8C-2 delivered scope:
+  - Added `RemindersModule` as a module-local provider module; it is not imported by root `AppModule`.
+  - Added `ReminderRepository` for due-date Fee fact scanning and `ReminderTask` creation.
+  - Added `ReminderService.generateFeeDueReminders(today, options)` for explicit-today generation orchestration.
+  - Added Reminder Prisma mapper and repository/service types.
+  - Repository reads only narrow Fee facts plus nested Achievement `ownerUserId`.
+  - Repository uses default `take: 500` for eligible Fee scanning.
+  - Repository uses `createMany({ skipDuplicates: true })` after in-memory unique-key deduplication.
+  - Service returns summary counts and skipped Fee facts only; it does not return created task rows.
+- Step 8C-2 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 36 files / 345 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8C-2 boundaries:
+  - No HTTP controller or route, root `AppModule` wiring, scheduler, queue, Notification adapter, reminder confirm, or AuditService integration.
+  - No schema, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - Boundary scans confirmed no controller decorators, external-system terms, audit terms, database/env/migrate/seed/global guard wiring, destructive delete, or root `RemindersModule` wiring under the Step 8C-2 source boundary.
+  - Sensitive/high-risk field scan only matched repository tests that assert those fields are not selected.
+- Step 8C closure:
+  - Reminder rule foundation is complete for domain rules plus repository/service task generation foundation.
+  - Step 8D remains TODO and must start with separate plan confirmation before Notification mock, reminder confirm, or audit integration.
+
+## Current Step 8C-1 Execution Closure - 2026-06-18
+
+- Step 8 status: IN PROGRESS.
+- Step 8A status: DONE.
+- Step 8B status: DONE.
+- Step 8C status: IN PROGRESS.
+- Step 8C-1 status: DONE.
+- Step 8C-2 / 8D status: TODO.
+- Step 8C-1 delivered scope:
+  - Added Reminder domain-only types, rule engine, state machine, domain errors, and tests under `apps/api/src/reminders/domain`.
+  - Implemented date-only reminder rules using explicit `today` input normalized to UTC date-only midnight.
+  - Implemented `DAYS_30`, `DAYS_15`, `DAYS_7`, and `OVERDUE` candidate generation.
+  - Implemented overdue-daily semantics: overdue candidates use normalized today as `remindDate`.
+  - Implemented eligible Fee status boundary: `PENDING` and `OVERDUE` can generate candidates; `PAID`, `WAIVED`, `CANCELLED`, and archived Fee facts are skipped.
+  - Implemented deterministic receiver fallback: `createdById ?? updatedById ?? achievement.ownerUserId`; missing receiver returns a skipped reason.
+  - Implemented Reminder status transition helpers for `PENDING`, `SENT`, `FAILED`, `CONFIRMED`, and `CANCELLED`.
+- Step 8C-1 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 34 files / 332 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8C-1 boundaries:
+  - No Reminder repository, service, Prisma access, HTTP route, root `AppModule` change, scheduler, queue, Notification, reminder confirm, or AuditService integration.
+  - No schema, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - Boundary scans confirmed no controller decorators, external-system terms, AuditService/recordEvent, PrismaService, database/env/migrate/seed/global guard wiring, destructive delete, or root `RemindersModule` wiring under the Step 8C-1 source boundary.
+- Next planning boundary:
+  - Step 8C-2 remains TODO and must begin with separate plan confirmation before adding ReminderRepository or ReminderService.
+
+## Current Step 8B-3 / Step 8B Closure - 2026-06-18
+
+- Step 8 status: IN PROGRESS.
+- Step 8A status: DONE.
+- Step 8B status: DONE.
+- Step 8B-1 status: DONE.
+- Step 8B-2 status: DONE.
+- Step 8B-3 status: DONE.
+- Step 8C / 8D status: TODO.
+- Step 8B-3 delivered scope:
+  - Imported `FeesModule` explicitly into root `AppModule`.
+  - Added AppModule-level Fee HTTP wiring tests in `apps/api/src/fees/fee.app-module.spec.ts`.
+  - Verified root app reachability for `/health`, `GET /fees`, `GET /fees/:id`, `POST /fees`, and `POST /fees/:id/mark-paid`.
+  - Kept `POST /fees/:id/mark-paid` at HTTP 200 through the existing controller boundary.
+  - AppModule tests override `FeeService`, `PrismaService`, and `IDENTITY_ADAPTER`; real `UserContextGuard`, `PermissionGuard`, `@RequirePermissions` metadata, and `@CurrentUser` injection remain active.
+  - AppModule tests avoid dev identity Prisma lookup and avoid real Fee service, transaction, audit, and database execution.
+- Step 8B-3 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 32 files / 315 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8B-3 boundaries:
+  - No `main.ts` change.
+  - No global `APP_GUARD`, `useGlobalPipes`, or `useGlobalGuards`.
+  - No PATCH, DELETE, archive, cancel, waive, Reminder, Notification, frontend, real mail, real queue, real finance integration, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - Boundary scans confirmed only the expected `FeesModule` root import and registration in `apps/api/src/app.module.ts`; no external-system, env/database command, global guard/pipe, or delete matches were found.
+- Step 8B closure:
+  - Fee backend service/controller/root HTTP boundary is complete.
+  - Step 8C remains TODO and must start with separate plan confirmation before Reminder rule implementation.
+
+## Current Step 8B-2 Execution Closure - 2026-06-18
+
+- Step 8 status: IN PROGRESS.
+- Step 8A status: DONE.
+- Step 8B status: IN PROGRESS.
+- Step 8B-1 status: DONE.
+- Step 8B-2 status: DONE.
+- Step 8B-3 / 8C / 8D status: TODO.
+- Step 8B-2 delivered scope:
+  - Added `FeeController` as a module-local HTTP boundary under `apps/api/src/fees`.
+  - Registered `FeeController` in `FeesModule`.
+  - Added `IdentityModule` to `FeesModule` imports so explicit `UserContextGuard` can resolve the identity adapter in module-local HTTP tests.
+  - Exposed four module-local routes only: `GET /fees`, `GET /fees/:id`, `POST /fees`, and `POST /fees/:id/mark-paid`.
+  - Kept `POST /fees/:id/mark-paid` at HTTP 200 with `@HttpCode(200)`.
+  - Used explicit `UserContextGuard`, `PermissionGuard`, `@CurrentUser()`, and `@RequirePermissions()`.
+  - Reused `FeeService` only; the controller does not directly access Fee repository, Prisma, or `AuditService`.
+  - Added module-local HTTP tests for 401, 403, DTO validation, UUID validation, current user injection, route-to-service calls, and Fee service error mapping.
+- Step 8B-2 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 31 files / 309 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8B-2 boundaries:
+  - No root `AppModule` change and no `main.ts` change.
+  - No PATCH, DELETE, archive, cancel, waive, Reminder, Notification, frontend, real mail, real queue, real finance integration, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - Boundary scans confirmed no Reminder/Notification/Queue/Bull/SMTP/Finance references, no database/env/migrate/seed/global guard wiring, no root AppModule/main references, and no delete/deleteMany in `apps/api/src/fees`.
+- Next planning boundary:
+  - Step 8B-3 remains TODO and must begin with separate plan confirmation before root `AppModule` wiring.
+
+## Current Step 8B-1 Execution Closure - 2026-06-18
+
+- Step 8 status: IN PROGRESS.
+- Step 8A status: DONE.
+- Step 8B status: IN PROGRESS.
+- Step 8B-1 status: DONE.
+- Step 8B-2 / 8B-3 / 8C / 8D status: TODO.
+- Step 8B-1 delivered scope:
+  - Added `FeeService` orchestration for list, detail, create fee, and mark fee paid.
+  - Added Fee service errors for access denied, missing permission, not found, conflict, and invalid transition.
+  - Updated `FeesModule` to provide/export `FeeService` and import `AuditModule`, `AuthorizationModule`, and `DatabaseModule` without root `AppModule` wiring.
+  - Reused `PolicyQueryFactory.feeReadableWhere(...)` and `feeDepartmentWhere(..., fee:manage_department)` for Fee reads and write scope.
+  - Reused `PolicyQueryFactory.achievementDepartmentWhere(..., fee:manage_department)` plus `FeeRepository.findAchievementParentByIdWhere(...)` for create-time Achievement parent narrow facts.
+  - Fee create and mark-paid writes are service-owned Prisma transactions; Fee repository writes and `AuditService.recordEventInTransaction(...)` share the same transaction callback.
+  - Added `feeType` to the Fee state read shape so mark-paid audit can record stable fee type without reading broader Fee or Achievement details.
+  - Audit payloads include stable facts only: fee record id, achievement id, action, fee type, pay status, due date, and paid date when present.
+- Step 8B-1 validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 30 files / 298 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8B-1 boundaries:
+  - No Fee controller, HTTP route, root `AppModule` change, Reminder, Notification, frontend, real mail, real queue, real finance integration, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - No delete, hard delete, archive, cancel, or waive behavior.
+  - Boundary scans confirmed no Reminder/Notification/Queue/Bull/SMTP/Finance references, no database/env/migrate/seed/global guard wiring, no HTTP decorators, and no delete/deleteMany in `apps/api/src/fees`.
+  - Sensitive-field scan matches expected Fee DTO/domain/repository/write-input fields only; service tests assert audit payloads do not contain amount, voucher number, Achievement detail fields, storage key, checksum, title, abstract, or contributors.
+- Next planning boundary:
+  - Step 8B-2 remains TODO and must begin with separate plan confirmation before adding Fee HTTP controller/routes.
+
+## Current Step 8A Execution Closure - 2026-06-18
+
+- Step 8 status: IN PROGRESS.
+- Step 8A status: DONE.
+- Step 8B / 8C / 8D status: TODO.
+- Step 8A delivered scope:
+  - Added standalone `FeesModule` under `apps/api/src/fees` without root `AppModule` wiring.
+  - Added Fee domain constants for fee type, fund source, and pay status.
+  - Added Fee state-machine helpers covering pending, overdue, paid, waived, cancelled, terminal status, invalid transition errors, and date-derived overdue status.
+  - Added Fee DTOs for create, update, mark paid, and query validation.
+  - Added `FeeRepository`, Prisma mapper, repository types, repository errors, and fake Prisma repository tests.
+  - Added repository support for create, create with caller-provided transaction client, policy-scoped list/detail/state reads, pay-status transition with optimistic status guard, unique-conflict detection, and narrow Achievement parent fact lookup for later Step 8B service boundary.
+- Step 8A validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 29 files / 283 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm lint`: passed.
+- Step 8A boundaries:
+  - No Fee service, Fee HTTP controller, root `AppModule` import, audit integration, reminder rule, notification adapter, frontend, real mail, real queue, real finance integration, schema change, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - `schema.prisma` was sufficient for Step 8A; no migration is required for this foundation step.
+  - Boundary scans confirmed no Fee controller/decorators, no root `FeesModule` import, no reminder/notification/queue/mail/finance integration, and no global guard/pipe wiring in the Step 8A source boundary.
+- Next planning boundary:
+  - Step 8B remains TODO and must begin with separate plan confirmation before adding Fee service, controller, audit, or root `AppModule` wiring.
+
+## Current Step 7 Final Closure - 2026-06-12
+
+- Step 7 status: DONE.
+- Step 7A status: DONE.
+- Step 7B status: DONE.
+- Step 7C status: DONE.
+- Step 7D status: DONE.
+- Step 8 status: TODO.
+- Final Step 7 delivered scope:
+  - Step 7A: Audit foundation with `AuditModule`, `AuditRepository`, `AuditService`, domain constants/types/mappers/errors, masked query DTO/type, fake Prisma repository tests, service tests, append-only writes, masked query reservation, `recordEventInTransaction(...)`, and `createInTransaction(...)`.
+  - Step 7B: Attachment foundation with `AttachmentsModule`, `AttachmentRepository`, `AttachmentService`, attachment domain/DTO/storage boundaries, fake in-memory storage adapter, metadata creation, version increment, object-key generation, and metadata-only public returns.
+  - Step 7C: Attachment HTTP upload/list/detail/download routes, explicit root `AppModule` import for `AttachmentsModule`, route reachability under root app, and 401/403 protection through real guards.
+  - Step 7D: Audit integration for Achievement create/update/submit/void/archive, Workflow approve/reject/archive closure, and Attachment upload/download.
+- Audit transaction strategy:
+  - Mutating business actions write audit inside the same Prisma transaction when a business transaction exists.
+  - Audit failure rejects the shared transaction for Achievement, Workflow, and Attachment upload writes.
+  - Attachment download is a read flow; audit is written after authorization and fake storage read, before returning the fake body. Audit failure prevents body return.
+- Security boundary:
+  - Audit records only stable facts and redacted summaries.
+  - Audit does not record attachment content, object key, storage key, checksum, real storage path, credentials, token, cookie, API key, private key, connection string, environment value, raw IP, full user agent, or full Achievement business detail.
+- Final validation:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 26 files / 264 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+- Final boundaries:
+  - No new global `APP_GUARD`, `useGlobalPipes`, or `useGlobalGuards`.
+  - `main.ts` was not modified.
+  - No schema, migration, seed, package, or lockfile change.
+  - No real database access and no migrate/seed command.
+  - No real object storage, file system storage, network storage, multipart upload, or stream download.
+  - No Step 8 implementation.
+- Known follow-up risks:
+  - Fake storage can leave an in-memory object if fake object write succeeds but the metadata/audit transaction fails.
+  - Real object storage needs cleanup, compensation, outbox, or pre-write status strategy.
+  - Attachment production hardening still needs a confirmed schema/migration plan for `contentType`, `sizeBytes`, `storageProvider`, object-key uniqueness, production download headers, and multi-backend storage.
+- Next planning boundary:
+  - Step 8 remains TODO.
+  - Next action must be Step 8 pre-plan confirmation only; do not directly implement fee or reminder code.
+
+## Current Step 7D-3 Execution Override - 2026-06-12
+
+- Step 7 status: IN PROGRESS.
+- Step 7A status: DONE.
+- Step 7B status: DONE.
+- Step 7C status: root reachable DONE.
+- Step 7D status: DONE for scoped core audit integration.
+- Step 7D split:
+  - 7D-1 Achievement audit integration: DONE.
+  - 7D-2 Workflow audit integration: DONE.
+  - 7D-3 Attachment upload/download audit integration: DONE.
+- Step 7D-3 scope completed:
+  - Imported `AuditModule` into `AttachmentsModule`.
+  - Injected `AuditService` into `AttachmentService`.
+  - Injected `PrismaService` into `AttachmentService` so upload metadata and audit share a service-owned transaction.
+  - Wrote `ATTACHMENT / UPLOAD_ATTACHMENT` audit events for Achievement attachment uploads.
+  - Wrote `ATTACHMENT / DOWNLOAD_ATTACHMENT` audit events for Achievement attachment downloads.
+  - Kept download as a read flow using `AuditService.recordEvent(...)`; audit failure rejects the request before the fake body is returned.
+- Audit summary boundary:
+  - Record actor user/department, Attachment target id/department/secret level, related Achievement id, relation type/id, action, file name, version, status, uploader id for upload, and timestamps.
+  - Do not record fake body, object key, storage key, checksum, credentials, env values, raw IP, user agent, parent Achievement business details, or connection strings.
+- Transaction and storage boundary:
+  - Upload fake storage write remains before and outside the metadata/audit transaction.
+  - Upload metadata and audit writes share one Prisma transaction and fail together.
+  - If fake storage succeeds and metadata/audit later fails, a fake in-memory object can remain without metadata; this is accepted in Step 7D-3 and should be revisited with real storage cleanup/compensation.
+  - Download authorization and fake storage read must succeed before audit write; audit failure prevents response return.
+- Boundaries:
+  - No controller, HTTP route, HTTP response shape, AchievementService, WorkflowService, root `AppModule`, or `main.ts` change.
+  - No global `APP_GUARD`, global pipe, or global guard.
+  - No AuditService or AuditRepository change.
+  - No schema/migration/seed/dependency/package/lockfile change.
+  - No real database access and no migrate/seed command.
+  - No real object storage, frontend, fee, reminder, search, or dashboard work.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 26 files / 264 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+  - Boundary scans confirmed expected Attachment/Audit matches only, no audit controller, no global guard/pipe wiring, no root AppModule audit wiring, and no migrate/seed/schema references.
+- Next planning boundary:
+  - Step 7 final closure or the next product step should start with separate plan confirmation.
+
+## Current Step 7D-2 Execution Override - 2026-06-12
+
+- Step 7 status: IN PROGRESS.
+- Step 7A status: DONE.
+- Step 7B status: DONE.
+- Step 7C status: root reachable DONE.
+- Step 7D status: IN PROGRESS.
+- Step 7D split:
+  - 7D-1 Achievement audit integration: DONE.
+  - 7D-2 Workflow audit integration: DONE.
+  - 7D-3 Attachment upload/download audit integration: TODO.
+- Step 7D-2 scope completed:
+  - Imported `AuditModule` into `WorkflowModule`.
+  - Injected `AuditService` into `WorkflowService`.
+  - Wrote `WORKFLOW_TASK / APPROVE` audit events for department review approve.
+  - Wrote `WORKFLOW_TASK / REJECT` audit events for department review reject.
+  - Wrote `WORKFLOW_INSTANCE / ARCHIVE` audit events for archive workflow closure.
+  - Kept `AchievementService.archiveAchievement` as archive transaction owner and passed the same transaction/audit client plus stable target facts into `WorkflowService.completeAchievementArchiveInTransaction(...)`.
+  - Preserved the 7D-1 `ACHIEVEMENT / ARCHIVE` audit write so archive has separate Achievement and Workflow instance audit facts.
+- Audit summary boundary:
+  - Record actor user/department, workflow task or instance target id, related workflow instance id, achievement id, action, status/step transitions, and timestamps.
+  - Do not record approve/reject comment text, void reason text, Achievement titles, detail payloads, attachment content, storage/object keys, checksum, credentials, env values, raw IP, user agent, or connection strings.
+- Boundaries:
+  - No AttachmentService change and no Attachment audit writes.
+  - No controller, HTTP route, WorkflowController response shape, root `AppModule`, or `main.ts` change.
+  - No global `APP_GUARD`, global pipe, or global guard.
+  - No schema/migration/seed/dependency/package/lockfile change.
+  - No real database access and no migrate/seed command.
+  - No real object storage, frontend, fee, reminder, search, or dashboard work.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 26 files / 260 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+  - Boundary scans confirmed expected Workflow/Achievement/Audit matches only, no Attachment audit integration, no audit controller, no global guard/pipe wiring, no root AppModule audit wiring, and no migrate/seed/schema references.
+- Next planning boundary:
+  - Step 7D-3 Attachment upload/download audit integration remains TODO and must start with separate plan confirmation.
+
+## Current Step 7D-1 Execution Override - 2026-06-12
+
+- Step 7 status: IN PROGRESS.
+- Step 7A status: DONE.
+- Step 7B status: DONE.
+- Step 7C status: root reachable DONE.
+- Step 7D status: IN PROGRESS.
+- Step 7D split:
+  - 7D-1 Achievement audit integration: DONE.
+  - 7D-2 Workflow approve/reject/archive-closure audit integration: TODO.
+  - 7D-3 Attachment upload/download audit integration: TODO.
+- Step 7D-1 scope completed:
+  - Imported `AuditModule` into `AchievementsModule`.
+  - Injected `AuditService` into `AchievementService`.
+  - Wrote Achievement audit events for create draft, update draft, submit, void, and archive.
+  - Used `AuditService.recordEventInTransaction(...)` for all Step 7D-1 audit writes.
+  - Ensured create/update/void business writes and audit writes share a service-owned Prisma transaction.
+  - Kept submit/archive on their existing business transactions and added audit writes inside those transactions.
+  - Selected `secretLevel` in Achievement state reads to support stable audit target facts.
+- Audit summary boundary:
+  - Record actor user/department, action, target Achievement id/department/secret level, status, version, and relevant timestamps.
+  - Do not record titles, detail payloads, paper abstract, void reason text, approval comment text, attachment content, storage/object keys, checksum, credentials, env values, or connection strings.
+- Boundaries:
+  - No WorkflowService change and no Workflow audit writes.
+  - No AttachmentService change and no Attachment audit writes.
+  - No controller, HTTP route, root `AppModule`, or `main.ts` change.
+  - No global `APP_GUARD`, global pipe, or global guard.
+  - No schema/migration/seed/dependency/package/lockfile change.
+  - No real database access and no migrate/seed command.
+  - No real object storage, frontend, fee, reminder, search, or dashboard work.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 26 files / 256 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+  - Boundary scans confirmed expected Achievement/Audit matches only, no Workflow/Attachment audit integration, no audit controller, no global guard/pipe wiring, and no migrate/seed/schema references.
+- Next planning boundary:
+  - Step 7D-2 Workflow audit integration remains TODO and must start with separate plan confirmation.
+
+## Current Step 7C-3 Execution Override - 2026-06-12
+
+- Step 7 status: IN PROGRESS.
+- Step 7A status: DONE.
+- Step 7B status: DONE.
+- Step 7C status: root reachable DONE.
+- Step 7C-3 status: DONE.
+- Step 7D status: TODO.
+- Step 7C-3 scope completed:
+  - Imported `AttachmentsModule` explicitly in root `AppModule`.
+  - Added `attachment.app-module.spec.ts`.
+  - Verified `/health` remains available through root `AppModule`.
+  - Verified root reachability for upload, list, detail, and download attachment routes.
+  - Verified root 401 without user context.
+  - Verified root 403 without static permissions.
+  - Verified upload and download keep separate static permission boundaries.
+- Test isolation:
+  - AppModule-level tests override `AttachmentService`.
+  - AppModule-level tests override `PrismaService` with test identity `user.findFirst` only.
+  - AppModule-level tests inert override `AchievementService` and `WorkflowService`.
+  - Real `UserContextGuard`, `PermissionGuard`, RBAC policy, and decorator metadata remain active.
+- Boundaries:
+  - No attachment business semantic change.
+  - No `AuditService` integration and no audit event writes.
+  - No Step 7D work.
+  - No `main.ts` change.
+  - No global `APP_GUARD`, global pipe, or global guard.
+  - No schema/migration/seed/dependency/package/lockfile change.
+  - No real database access and no migrate/seed command.
+  - No real object storage, file system, network, multipart, or stream work.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 26 files / 251 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+  - Boundary scans for root attachment import, audit integration, global guards/pipes, real storage/file APIs, sensitive keywords, migrate/seed/schema references, and literal `storageKey` returned expected clean results.
+- Next planning boundary:
+  - Step 7D audit integration remains TODO and must start with separate plan confirmation.
+
+## Current Step 7C Execution Override - 2026-06-12
+
+- Step 7 status: IN PROGRESS.
+- Step 7A status: DONE.
+- Step 7B status: DONE.
+- Step 7C status: DONE for module-local HTTP boundary.
+- Step 7C-3 root `AppModule` integration status: TODO.
+- Step 7D status: TODO.
+- Step 7C scope completed:
+  - Added `AttachmentController` inside `AttachmentsModule`.
+  - Added `POST /achievements/:achievementId/attachments`.
+  - Added `GET /achievements/:achievementId/attachments`.
+  - Added `GET /achievements/:achievementId/attachments/:attachmentId`.
+  - Added `GET /achievements/:achievementId/attachments/:attachmentId/download`.
+  - Added upload and list query HTTP DTO classes.
+  - Added controller-local validation pipes and UUID param validation.
+  - Added explicit `UserContextGuard`, `PermissionGuard`, `@CurrentUser()`, and `@RequirePermissions()` wiring.
+  - Added minimum Achievement parent fact reads and Achievement/Attachment grant reads to `AttachmentRepository`.
+  - Added user-scoped upload, Achievement attachment list/detail, and fake download methods to `AttachmentService`.
+  - Added tests for repository fake Prisma reads, service policy sequencing, direct download grant behavior, denied-download storage isolation, and module-local HTTP boundaries.
+- Route permissions:
+  - Upload requires `achievement:update_own` and does not additionally require `attachment:read_metadata`.
+  - List/detail require `attachment:read_metadata`.
+  - Download requires `attachment:download`.
+- Security boundaries:
+  - List/detail first require parent Achievement readability through `PolicyQueryFactory.achievementReadableWhere(...)` and `SecretAccessPolicyService.canReadResource(...)`.
+  - Download validates the attachment relation and calls `AttachmentAccessPolicyService.canDownload(...)` before fake storage read.
+  - Direct `ATTACHMENT_DOWNLOAD` grant is download-only and does not authorize metadata list/detail or Achievement business detail.
+  - Public HTTP responses do not include storage object keys, checksum, real storage paths, or parent Achievement business details.
+- Step 7C boundaries:
+  - No root `AppModule` import.
+  - No real object storage, file system storage, network storage, multipart upload, or stream download.
+  - No `AuditService` integration and no audit event writes.
+  - No `AchievementService`, `WorkflowService`, or audit module changes.
+  - No schema/migration/seed/dependency/package/lockfile change.
+  - No real database access and no migrate/seed command.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 25 files / 246 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+  - Boundary scans for root attachment import, audit integration, global guards/pipes, update/delete mutations, real storage/file APIs, sensitive keywords, and literal `storageKey` returned no matches.
+- Next planning boundary:
+  - Step 7C-3 should be planned separately for root `AppModule` wiring if attachment routes need root-app reachability.
+  - Step 7D audit integration should remain separate because it changes business event recording semantics.
+
+## Current Step 7B Execution Override - 2026-06-11
+
+- Step 7 status: IN PROGRESS.
+- Step 7A status: DONE.
+- Step 7B status: DONE.
+- Step 7C / 7D status: TODO.
+- Step 7B scope completed:
+  - Added standalone `AttachmentsModule` under `apps/api/src/attachments`.
+  - Added attachment domain constants, event/repository types, Prisma mapper, metadata DTO types, errors, and object-key builder.
+  - Added `AttachmentRepository` with create, transaction create, latest-version lookup, relation list, and id lookup.
+  - Added storage adapter interface plus fake in-memory adapter.
+  - Added `AttachmentService` for ACHIEVEMENT metadata creation, version calculation, object-key generation, fake storage calls, metadata-only return shape, and policy-sequencing preparation.
+  - Added repository fake Prisma tests, service tests, and fake storage tests.
+- Step 7B boundaries:
+  - No controller or HTTP route.
+  - No root `AppModule` import.
+  - No real upload/download stream.
+  - No real object storage, file system write, or network access.
+  - No `AuditService` integration.
+  - No `AchievementService`, `WorkflowService`, or `AuditService` changes.
+  - No schema/migration/seed/dependency/package/lockfile change.
+  - No real database access and no migrate/seed command.
+- Schema decision:
+  - Current Attachment schema is enough for Step 7B.
+  - `contentType`, `sizeBytes`, `storageProvider`, and object-key uniqueness remain deferred to a future confirmed migration plan.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 24 files / 228 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+  - Boundary scans for attachment HTTP decorators, global guards/pipes, attachment update/delete calls, sensitive attachment keywords, root module import, and audit integration returned no matches.
+- Next planning boundary:
+  - Step 7C may plan attachment HTTP upload/download/list only after confirmation.
+  - Step 7C must not assume real object storage, signed URLs, frontend, migration, seed, dependency changes, or audit integration unless separately confirmed.
+
+## Current Step 7A Execution Override - 2026-06-11
+
+- Step 7 status: IN PROGRESS.
+- Step 7A status: DONE.
+- Step 7B / 7C / 7D status: TODO.
+- Step 7A scope completed:
+  - Added standalone `AuditModule` under `apps/api/src/audit`.
+  - Added audit domain constants, event types, repository types, Prisma mapper, masked query type, and audit errors.
+  - Added `AuditRepository` with `create`, `createInTransaction`, and `findMany`.
+  - Added `AuditService` with `recordEvent`, `recordEventInTransaction`, and `listMasked`.
+  - Reused `AuditReadPolicyService` for masked audit read authorization.
+  - Reused `AuditRedactorService` for masked output and write-time old/new summary redaction.
+  - Preserved only explicit stable summary scalars after redaction: version, fileName, stepCode, and currentStep.
+  - Added fake Prisma repository tests and service tests; no real database access is used.
+- Step 7A boundaries:
+  - No attachment module.
+  - No controller or HTTP route.
+  - No root `AppModule` import.
+  - No `AchievementService` or `WorkflowService` integration.
+  - No schema/migration/seed/dependency/package/lockfile change.
+  - No real database access and no migrate/seed command.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test`: passed, 21 files / 210 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+  - Boundary scans for audit HTTP decorators, global guards/pipes, audit update/delete calls, sensitive audit keywords, and root `AuditModule` import returned no matches.
+- Next planning boundary:
+  - Step 7B may plan attachment foundation and storage adapter only after confirmation.
+  - Step 7B must not assume HTTP upload/download, real object storage, frontend, migration, seed, or dependency changes unless separately confirmed.
+
+## Current Step 6 Final Archive - 2026-06-11
+
+- Step 6 overall status: DONE.
+- Step 6A status: DONE.
+- Step 6B status: DONE.
+- Step 6C status: DONE.
+- Step 6D status: DONE.
+- Step 7 status: TODO.
+- Stable Step 6 delivery:
+  - Workflow domain / DTO / repository foundation.
+  - Submit-time workflow instance/task/action creation.
+  - Department review approve/reject service orchestration.
+  - System-admin archive workflow closure through the existing Achievement archive boundary.
+  - Workflow HTTP routes for approve/reject, my task list, and task detail.
+  - Root `AppModule` integration for `WorkflowModule`.
+  - AppModule-level HTTP wiring tests for health and workflow routes.
+- Final validation:
+  - `corepack pnpm --filter @research-ip/api test`: 19 files / 200 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `corepack pnpm lint`: passed.
+  - `corepack pnpm prisma:validate`: passed.
+- Final boundaries:
+  - No Step 7 implementation.
+  - No frontend, fees, reminders, attachments, search, dashboard, real login/SSO, complex multi-reviewer flow, candidate pool, transfer, claim, or reminder workflow.
+  - No `APP_GUARD`, global pipe, or global guard.
+  - No `main.ts` change.
+  - No schema/migration/seed/dependency change.
+  - No real database access and no migrate/seed command.
+- Next planning boundary:
+  - Step 7 remains TODO and must begin with plan confirmation before implementing attachment or audit code.
+
+## Current Step 6D Execution Override - 2026-06-11
+
+- Step 6 status: DONE.
+- Step 6A status: DONE.
+- Step 6B status: DONE.
+- Step 6C status: DONE.
+- Step 6D status: DONE.
+- Step 7 status: TODO.
+- Step 6D scope completed:
+  - Root `AppModule` now explicitly imports `WorkflowModule`.
+  - `AchievementsModule` keeps its existing `WorkflowModule` import for submit/archive service dependencies.
+  - Added AppModule-level workflow HTTP wiring tests.
+  - Verified `/health` remains available after workflow root integration.
+  - Verified root reachability for `GET /workflow/tasks/my`.
+  - Verified root reachability for `GET /workflow/tasks/:taskId`.
+  - Verified root reachability for `POST /workflow/tasks/:taskId/approve`.
+  - Verified root reachability for `POST /workflow/tasks/:taskId/reject`.
+  - Verified root 401 without user context and root 403 without `achievement:review_department`.
+  - Tests use provider overrides for `WorkflowService`, `AchievementService`, and `PrismaService`; real guards remain active and no real database is used.
+- Step 6 overall completion:
+  - Step 6A delivered workflow domain / DTO / repository foundation.
+  - Step 6B delivered submit workflow creation, department approve/reject orchestration, and system-admin archive workflow closure.
+  - Step 6C delivered workflow approve/reject and todo list/detail HTTP routes inside `WorkflowModule`.
+  - Step 6D delivered root `AppModule` integration and Step 6 closure evidence.
+- Next planning boundary:
+  - Step 7 may plan attachment and audit work only after confirmation.
+  - Step 7 must not assume frontend, fees, reminders, search, dashboard, migration, seed, dependency changes, or global guard registration unless separately confirmed.
+
+## Current Step 6C-2 Execution Override - 2026-06-11
+
+- Step 6 status: IN PROGRESS.
+- Step 6A status: DONE.
+- Step 6B status: DONE.
+- Step 6C status: DONE.
+- Step 6C-1 status: DONE.
+- Step 6C-2 status: DONE.
+- Step 6D status: TODO.
+- Step 6C-2 scope completed:
+  - Extended `WorkflowController` with `GET /workflow/tasks/my`.
+  - Extended `WorkflowController` with `GET /workflow/tasks/:taskId`.
+  - Registered the routes only inside `WorkflowModule`; root `AppModule` remains unchanged.
+  - Both routes use `UserContextGuard`, `PermissionGuard`, `@CurrentUser()`, and `achievement:review_department`.
+  - The list route validates `WorkflowTaskQueryDto`, defaults to `PENDING`, and allows explicit `status` plus optional `achievementId` filtering.
+  - The detail route validates UUID v4 task ids and uses assignee-scoped lookup.
+  - `WorkflowService` now exposes `listMyWorkflowTasks` and `getMyWorkflowTask` read methods.
+  - `WorkflowRepository` now exposes `findTasksForAssignee` for assignee-scoped task list reads.
+  - Return payloads are limited to workflow task fields and workflow instance target fields; no actions or Achievement business details are included.
+  - HTTP/service/repository fake tests were updated without real database access.
+- Step 6C completion:
+  - 6C-1 exposed approve/reject HTTP actions.
+  - 6C-2 exposed todo list/detail HTTP reads.
+  - Step 6C is now DONE at the module-local controller level.
+- Next planning boundary:
+  - Step 6D may plan root `AppModule` integration and Step 6 closure.
+  - Step 6D must not assume frontend, fees, reminders, attachments, search, dashboard, migration, seed, dependency changes, or global guard registration unless separately confirmed.
+
+## Current Step 6C-1 Execution Override - 2026-06-11
+
+- Step 6 status: IN PROGRESS.
+- Step 6A status: DONE.
+- Step 6B status: DONE.
+- Step 6C status: IN PROGRESS.
+- Step 6C-1 status: DONE.
+- Step 6C-2 / 6D status: TODO.
+- Step 6C-1 scope completed:
+  - Added `WorkflowController`.
+  - Registered `WorkflowController` only inside `WorkflowModule`.
+  - Exposed `POST /workflow/tasks/:taskId/approve`.
+  - Exposed `POST /workflow/tasks/:taskId/reject`.
+  - Both routes use `UserContextGuard`, `PermissionGuard`, `@CurrentUser()`, and `achievement:review_department`.
+  - Approve calls `WorkflowService.approveDepartmentReviewTask`.
+  - Reject calls `WorkflowService.rejectDepartmentReviewTask`.
+  - Controller-local validation and workflow error-to-HTTP mapping were added.
+  - Module-local HTTP tests use provider overrides and do not access the real database.
+  - `WorkflowModule` imports `IdentityModule` so the local controller guard dependency resolves without root `AppModule` wiring.
+- Next planning boundary:
+  - Step 6C-2 may plan todo list/detail HTTP only after confirmation.
+  - Step 6D may plan root AppModule integration and Step 6 closure only after 6C-2 or an explicit decision to skip 6C-2.
+
+## Current Step 6B-4 Closure Override - 2026-06-11
+
+- Step 6 status: IN PROGRESS.
+- Step 6A status: DONE.
+- Step 6B status: DONE.
+- Step 6B-1 status: DONE.
+- Step 6B-2 status: DONE.
+- Step 6B-3 status: DONE.
+- Step 6B-4 status: DONE.
+- Step 6C / 6D status: TODO.
+- Step 6B-4 scope completed:
+  - Existing `AchievementService.archiveAchievement` now owns a single Prisma transaction for system-admin archive workflow closure.
+  - Archive checks `achievement:archive`, reads the Achievement state in-transaction, and requires `PENDING_ARCHIVE`.
+  - Archive validates the active Workflow instance for the Achievement and requires `ACTIVE`, `currentStep=ARCHIVE`, `targetType=ACHIEVEMENT`, and matching `targetId`.
+  - Archive transitions Achievement to `ARCHIVED`, writes an instance-level `ARCHIVE` Workflow action with `taskId=null`, and completes the Workflow instance with `currentStep=null`.
+  - Missing active Workflow instance or invalid Workflow step/target maps to 409-class invalid-state semantics; no instance is auto-created and workflow is not skipped.
+  - `WorkflowRepository` now supports generic workflow action writes through `createAction` and `createActionInTransaction`.
+  - Fake/mock tests cover archive success, invalid workflow readiness, and concurrent archive conflicts.
+- Step 6B overall completion:
+  - Submit creates workflow instance/task/action.
+  - Department approve advances to archive.
+  - Department reject completes workflow.
+  - System-admin archive completes workflow.
+- Next planning boundary:
+  - Step 6C may plan workflow controller / HTTP API exposure.
+  - Step 6C must not assume frontend, fees, reminders, attachments, search, dashboard, migration, seed, or dependency changes unless separately confirmed.
+- Feature brief: `memory-bank/feature-brief.md`
+- Design spec: `memory-bank/design-spec.md`
+- Architecture: `memory-bank/architecture.md`
+- Tech stack: `memory-bank/tech-stack.md`
+
+## 总体策略
+
+按 SDD 流程推进：先稳定 memory-bank，再初始化项目，再实现领域模型、权限、核心业务、验证门禁。每次开发只执行一个 Step，完成后更新 `progress.md` 和 `evidence.md`。
+
+## 任务列表
+
+### Step 1 - 创建 memory-bank 文档
+
+- 目标：创建第一版项目上下文银行。
+- 文件：`memory-bank/product-brief.md`、`feature-brief.md`、`design-spec.md`、`architecture.md`、`tech-stack.md`、`implementation-plan.md`、`progress.md`、`decisions.md`、`evidence.md`。
+- 修改：只创建文档，不创建应用代码。
+- 验证命令：列出目录文件，确认 9 个文档存在。
+- 预期结果：后续开发可从 memory-bank 继续。
+- 完成证据：`evidence.md` 记录文档创建和文件清单。
+- 状态：DONE
+
+### Step 2 - 初始化项目脚手架
+
+- 目标：建立前后端、数据库、测试和基础命令。
+- 文件：项目根目录配置、`apps/web`、`apps/api`、`packages/shared`、`prisma`。
+- 修改：初始化 TypeScript monorepo、React/Vite 前端、NestJS 后端、Prisma 基础 schema、测试工具；未创建业务领域模型、数据库业务表、RBAC、成果登记、审批、费用等功能。
+- 验证命令：`corepack pnpm install`、`corepack pnpm lint`、`corepack pnpm typecheck`、`corepack pnpm test`、`corepack pnpm build`。
+- 预期结果：空项目可构建、可测试、可运行。
+- 完成证据：依赖安装成功；lint、typecheck、test、build 全部通过；命令输出摘要已写入 `evidence.md`。
+- 状态：DONE
+
+### Step 3 - 建立一期核心数据库基础
+
+Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Prisma 建模、migration 和 seed。
+
+- 状态：DONE
+- 产物：`prisma/schema.prisma`、`prisma/migrations/20260608080155_init_core_schema/migration.sql`、`prisma/seed.cjs`。
+- 数据库：使用本项目专用本地 PostgreSQL 容器 `research-achievement-postgres-dev`，宿主机端口 `127.0.0.1:55432`，独立 volume `research_achievement_pgdata_dev`；不记录密码或完整连接串。
+- 专项约束：migration 中已补充 `resource_access_grants_active_unique_idx` 和 `workflow_instances_active_target_unique_idx` 两个 partial unique index。
+- Seed：最小演示 seed 已完成，连续执行两次 `corepack pnpm exec prisma db seed` 计数一致；1 万条检索性能 seed 延后到 Step 9。
+- 验证：`corepack pnpm exec prisma db seed`、`corepack pnpm prisma:validate`、`corepack pnpm lint`、`corepack pnpm typecheck`、`corepack pnpm test`、`corepack pnpm build` 均已通过。
+- 边界：未进入 Step 4；未实现 RBAC、Auth、API、页面、审批、费用、提醒等业务逻辑。
+
+#### Step 3A - Schema 边界与数据库设计确认
+
+- 目标：确认一期 schema 边界、实体分组、表设计清单、命名规范、软删除/归档、审计和权限隔离字段策略。
+- 文件：`memory-bank/design-spec.md`、`memory-bank/architecture.md`、`memory-bank/implementation-plan.md`、`memory-bank/decisions.md`、`memory-bank/progress.md`、`memory-bank/evidence.md`。
+- 修改：只更新设计与决策文档，不修改 `prisma/schema.prisma`，不创建 Prisma model，不创建 migration，不运行迁移。
+- 验证方式：人工审查文档边界；确认 Prisma schema 未变化。
+- 预期结果：3B 可基于确认后的表清单和策略进行 Prisma 建模。
+- 完成证据：Step 3A 设计摘要和文件变更记录写入 `evidence.md`。
+- 状态：DONE
+
+#### Step 3B - Prisma schema 建模
+
+- 目标：把 Step 3A 确认的核心表、枚举、外键、索引和唯一约束写入 Prisma schema。
+- 文件：`prisma/schema.prisma`、必要的领域类型或 schema 辅助文档。
+- 修改：创建 Prisma models/enums；不创建 migration，不实现 API、RBAC、Auth、成果登记或审批逻辑。
+- 验证命令：`corepack pnpm prisma:validate`、`corepack pnpm lint`、`corepack pnpm typecheck`。
+- 预期结果：Prisma schema 可校验通过，字段命名和 `@@map/@map` 符合 Step 3A 规范。
+- 完成证据：Prisma validate 结果、schema 设计差异和未决问题。
+- 状态：DONE
+
+#### Step 3C - Migration 生成与审查
+
+- 目标：在确认本地 PostgreSQL 和 `DATABASE_URL` 后生成首个业务 migration，并审查 SQL。
+- 文件：`prisma/migrations/**`、必要的迁移说明。
+- 修改：创建新 migration；不修改已执行迁移；不运行生产迁移。
+- 验证命令：`corepack pnpm exec prisma migrate dev --name init_core_schema`、`corepack pnpm exec prisma generate`、必要的 migration SQL review。
+- 预期结果：本地开发库具备一期核心表、外键、唯一约束和索引。
+- 完成证据：迁移说明、SQL 审查、索引理由和回退说明。
+- 状态：DONE
+
+#### Step 3D - 小样本 Seed 与数据库证据
+
+- 目标：创建最小可验证 seed 数据和数据库 review checklist。
+- 文件：seed 脚本、必要的测试或文档证据。
+- 修改：只写小样本部门、用户、角色、权限、成果、费用和附件元数据；不生成 1 万条性能数据。
+- 验证命令：`corepack pnpm exec prisma db seed`、`corepack pnpm test`、`corepack pnpm build`。
+- 预期结果：小样本数据可重复生成，支持后续 Step 4/5 权限和成果流程开发。
+- 完成证据：seed 结果、数据库 checklist、未覆盖范围和风险。
+- 状态：DONE
+
+### Step 4 - 实现 RBAC 与部门隔离
+
+- 目标：统一权限策略，覆盖本人、部门、全院、涉密、审计只读。
+- 文件：Auth/RBAC 模块、policy、guard、测试。
+- 修改：角色权限定义、用户上下文、资源访问策略、后端统一鉴权。
+- 验证命令：权限矩阵单元测试和 API 集成测试。
+- 预期结果：跨部门、涉密、附件、审计访问均受控。
+- 完成证据：权限测试矩阵。
+- 状态：DONE（4A/4B/4C/4D DONE；Step 4 整体 DONE）
+- 收尾归档：
+  - 稳定事实：`UserContext` 已包含 `roleIds`；RBAC policy、精确部门 scope、`PolicyQueryFactory`、涉密授权、附件访问策略、审计脱敏、guard/decorator 和 HTTP 集成测试均已完成。
+  - 关键边界：`SYSTEM_ADMIN` 不超级绕过；`SECRET` / `CONFIDENTIAL` owner 不自动可读；`ATTACHMENT_DOWNLOAD` 是单附件窄授权；`DEPARTMENT` grant 只匹配当前 `departmentId`；guard 显式 `@UseGuards`，不注册全局 `APP_GUARD`；test-only controller 不成为运行时 API。
+  - 最终验证：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm --filter @research-ip/api build`、`corepack pnpm lint` 均通过。
+  - 下一步：Step 5 仍为 TODO，只能先做 Step 5 前计划确认，不直接实现成果登记代码。
+
+#### Step 4A - 权限基础与用户上下文
+
+- 目标：建立 API 侧 Prisma 基础服务、权限常量、`UserContext` 和 dev/test identity adapter。
+- 文件：`apps/api/src/database/**`、`apps/api/src/identity/**`、`apps/api/src/authorization/constants/**`、`apps/api/src/authorization/policy/policy-decision.ts`、`prisma/seed.cjs`。
+- 修改：新增 `DEPARTMENT_ADMIN` 和细粒度权限主数据；不修改 `schema.prisma`，不修改已执行 migration，不新增测试场景数据。
+- 验证命令：`corepack pnpm prisma:validate`、`corepack pnpm exec prisma db seed`、`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm lint`。
+- 预期结果：dev/test 可通过 `X-Demo-User-Id` 加载演示用户上下文，生产环境不依赖该 header。
+- 完成证据：Step 4A 验证命令已通过，记录在 `memory-bank/evidence.md`。
+- 状态：DONE
+
+#### Step 4B - RBAC 与部门隔离策略
+
+- 目标：实现静态权限、角色作用域、本人/部门/全院视角和 Prisma where 过滤基础。
+- 文件：`apps/api/src/authorization/policy/**`、`apps/api/src/authorization/authorization.module.ts`、相关单元测试。
+- 修改：实现 RBAC 和精确部门 scope 决策；为 achievement / fee / department 生成 Prisma where 过滤条件；不实现涉密授权、附件下载、审计策略或业务 API。
+- 验证命令：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm lint`。
+- 状态：DONE
+
+#### Step 4C - 涉密、附件和审计只读策略
+
+- 目标：实现 `resource_access_grants` 授权判断、附件元数据/下载授权边界、审计脱敏只读策略。
+- 文件：`apps/api/src/authorization/policy/**`、`apps/api/src/authorization/constants/**`、`apps/api/src/identity/**`、相关单元测试。
+- 修改：已实现策略层、`UserContext.roleIds`、授权/涉密/附件/审计脱敏单元测试；不接对象存储、不实现附件下载流、不实现审计页面或业务详情 API。
+- 验证命令：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm lint`。
+- 状态：DONE
+
+#### Step 4D - Guard / Decorator 接入与 API 集成测试
+
+- 目标：将用户上下文和 policy 接入 Nest guard/decorator，并用 test-only controller 或最小接口验证 401/403。
+- 文件：`apps/api/src/authorization/decorators/**`、`apps/api/src/authorization/guards/**`、`apps/api/src/app.module.ts`、必要测试文件。
+- 修改：已新增 `@CurrentUser()`、`@RequirePermissions()`、`UserContextGuard`、`PermissionGuard`；已将 `AuthorizationModule` 接入 `AppModule`；已新增 `@nestjs/testing`、`supertest`、`@types/supertest`；test-only controller 仅存在于 spec 文件内；未实现业务 API。
+- 验证命令：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm --filter @research-ip/api build`、`corepack pnpm lint` 均已通过。
+- 状态：DONE
+
+### Step 5 - 实现成果登记一期流程
+
+- 目标：论文、专利、软著登记、草稿、提交、编辑、作废、归档。
+- 文件：Achievement 模块、前端表单、API、测试。
+- 修改：三类成果表单、字段校验、唯一性校验、状态机、列表和详情。
+- 验证命令：单元测试、API 测试、E2E 登记流程。
+- 预期结果：三类成果可登记并提交审批。
+- 完成证据：测试结果和浏览器验证截图。
+- 状态：DONE
+- 收尾：Step 5A / 5B-1 / 5B-2 / 5C / 5D-1 / 5D-2 均已完成；Step 5 后端一期已接入根模块并通过测试。前端页面和 Step 6 审批流仍不属于 Step 5。
+
+#### Step 5A - Achievement domain / DTO 基础
+
+- 目标：建立成果登记后端的无副作用基础：领域类型、状态、动作、错误、normalized 纯函数、状态机纯函数、create/update/action/detail/contributor DTO 和单元测试。
+- 文件：`apps/api/src/achievements/domain/**`、`apps/api/src/achievements/dto/**`、`apps/api/package.json`、`pnpm-lock.yaml`。
+- 修改：新增 `class-validator` / `class-transformer` 作为 Nest DTO 校验依赖；不安装 zod；不创建 repository/service/controller/module；不接入 `AppModule`；不访问数据库。
+- normalized 边界：DOI 去掉 DOI URL / `doi:` 前缀、转小写并移除空白；专利号和软著登记号转大写、移除空白和常见连接符，保留 `/`、`.`、括号等可能有业务含义的字符。
+- 状态机边界：保留 `DEPARTMENT_REJECTED -> DRAFT / PENDING_DEPARTMENT_REVIEW` 作为 Step 6 兼容预留；不实现真实审批驳回产生逻辑。
+- 验证命令：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm --filter @research-ip/api build`、`corepack pnpm lint`。
+- 状态：DONE
+
+#### Step 5B-1 - Achievement Repository / Mapper / Conflict 基础
+
+- 目标：创建 Achievement 数据访问基础，但不进入 service/controller/API 编排。
+- 文件：`apps/api/src/achievements/achievements.module.ts`、`apps/api/src/achievements/achievement.repository.ts`、`apps/api/src/achievements/domain/achievement-prisma.mapper.ts`、`apps/api/src/achievements/domain/achievement-repository.types.ts`、`apps/api/src/achievements/domain/achievement-repository.errors.ts`、`apps/api/src/achievements/achievement.repository.spec.ts`。
+- 修改：新增 `AchievementsModule`，仅导入 `DatabaseModule` 并导出 `AchievementRepository`，不接入 `AppModule`；新增 repository 输入/输出类型、Prisma mapper、repository 错误、fake Prisma repository 测试。
+- Repository 能力：`createDraft` 事务写入 achievement 主表、对应 detail 和 contributors；`findDetailById`、`findDetailByIdWhere`；`findResourceGrantsForAchievement`；`findNormalizedConflict`；`isPrismaUniqueConflict` / `getPrismaUniqueConflictTarget`。
+- 测试策略：只使用 fake Prisma client / mock function 验证调用形状和冲突识别；不访问真实数据库，不运行 migrate，不运行 seed。
+- 边界：不创建 service/controller/route；不接入 `AppModule`；不实现业务编排、submit/void/archive、审批流、费用、提醒、附件、搜索、看板或前端。
+- 验证命令：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm --filter @research-ip/api build`、`corepack pnpm lint`、`corepack pnpm prisma:validate`。
+- 状态：DONE
+
+#### Step 5B-2 - Achievement Service orchestration
+
+- Goal: add service-layer orchestration for draft create, detail read, and DRAFT update without creating HTTP routes.
+- Files:
+  - `apps/api/src/achievements/achievement.service.ts`
+  - `apps/api/src/achievements/achievement.service.spec.ts`
+  - `apps/api/src/achievements/achievements.module.ts`
+  - `apps/api/src/achievements/achievement.repository.ts`
+  - `apps/api/src/achievements/achievement.repository.spec.ts`
+  - `apps/api/src/achievements/domain/**`
+- Scope:
+  - `createDraft(context, dto)` uses context `userId` and `departmentId`, checks `achievement:create`, rejects mismatched DTO `departmentId`, normalizes business keys, prechecks conflicts, and maps Prisma-style unique conflicts.
+  - `getDetail(context, achievementId)` uses Step 4 readable policy where and Step 4 secret access policy.
+  - `updateDraft(context, achievementId, dto)` requires owner, DRAFT status, and `achievement:update_own`; rejects contributors; increments version through repository update.
+  - `AchievementRepository.updateDraft` is a minimal extension for main achievement fields and one typed detail only.
+- Test strategy:
+  - Service tests use repository and policy mocks only.
+  - Repository tests use fake Prisma calls only.
+  - No real database access, migrate, or seed.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test` passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm --filter @research-ip/api build` passed.
+  - `corepack pnpm lint` passed.
+  - `corepack pnpm prisma:validate` passed.
+- Boundaries:
+  - No controller/route, no `AppModule` integration.
+  - No submit/void/archive.
+  - No Step 6 workflow.
+  - No contributor update or `deleteMany`.
+  - No schema/migration/seed change.
+- Status: DONE.
+
+#### Step 5C - Achievement state actions
+
+- Goal: implement achievement-owned state actions before HTTP integration and before Step 6 workflow.
+- Files:
+  - `apps/api/src/achievements/achievement.service.ts`
+  - `apps/api/src/achievements/achievement.service.spec.ts`
+  - `apps/api/src/achievements/achievement.repository.ts`
+  - `apps/api/src/achievements/achievement.repository.spec.ts`
+  - `apps/api/src/achievements/domain/achievement-prisma.mapper.ts`
+  - `apps/api/src/achievements/domain/achievement-repository.types.ts`
+  - `apps/api/src/achievements/domain/achievement-repository.errors.ts`
+- Scope:
+  - `submitDraft(context, achievementId)` requires `achievement:submit`, owner, and `DRAFT`; transitions to `PENDING_DEPARTMENT_REVIEW`; sets `submittedById`, `submittedAt`, `updatedById`, and increments `version`.
+  - `voidAchievement(context, achievementId, dto)` requires `achievement:update_own`, owner, `DRAFT`, and nonblank reason; transitions to `VOIDED`; sets `voidedById`, `voidedAt`, `voidReason`, `updatedById`, and increments `version`.
+  - `archiveAchievement(context, achievementId)` requires `achievement:archive` and `PENDING_ARCHIVE`; transitions to `ARCHIVED`; sets `archivedById`, `archivedAt`, `updatedById`, and increments `version`.
+  - `AchievementRepository.transitionStatus` uses `expectedStatus` in the update condition to prevent duplicate or concurrent transitions.
+- Test strategy:
+  - Service tests use repository and policy mocks only.
+  - Repository tests use fake Prisma calls only.
+  - No real database access, migrate, or seed.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test` passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm --filter @research-ip/api build` passed.
+  - `corepack pnpm lint` passed.
+  - `corepack pnpm prisma:validate` passed.
+  - Boundary checks passed for no controller/route, no workflow instance/task/action strings, and no `deleteMany`.
+- Boundaries:
+  - No controller/route, no `AppModule` integration.
+  - No Step 6 workflow.
+  - No workflow instance/task/action creation.
+  - No department review, reject, approve, or todo flow.
+  - No contributor update or `deleteMany`.
+  - No schema/migration/seed change.
+- Status: DONE.
+
+#### Step 5D-1 - Achievement HTTP controller boundary
+
+- Goal: add the achievement HTTP controller, local request validation, explicit guards, route permissions, and HTTP error mapping without connecting the module to `AppModule`.
+- Files:
+  - `apps/api/src/achievements/achievement.controller.ts`
+  - `apps/api/src/achievements/achievement.controller.spec.ts`
+  - `apps/api/src/achievements/achievements.module.ts`
+- Scope:
+  - Register `AchievementController` in `AchievementsModule`.
+  - Use `UserContextGuard` and `PermissionGuard` explicitly on the controller.
+  - Use `@CurrentUser()` and `@RequirePermissions()` on route handlers.
+  - Use controller-local `ValidationPipe` options: `transform`, `whitelist`, and `forbidNonWhitelisted`.
+  - Expose module-local routes: `POST /achievements`, `GET /achievements/:id`, `PATCH /achievements/:id`, `POST /achievements/:id/submit`, `POST /achievements/:id/void`, and `POST /achievements/:id/archive`.
+  - Map service business errors to confirmed HTTP status codes.
+- Test strategy:
+  - HTTP integration tests use service mock/provider override.
+  - Prisma access is overridden for identity loading only; no real repository or real database is used.
+  - Cover 401, static 403, successful route delegation, DTO validation 400, and service-error mappings.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test` passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm --filter @research-ip/api build` passed.
+  - `corepack pnpm lint` passed.
+  - `corepack pnpm prisma:validate` passed.
+  - Boundary checks passed for no workflow instance/task/action strings, no `deleteMany`, and no `APP_GUARD`.
+- Boundaries:
+  - No `AppModule` integration.
+  - No global `APP_GUARD`.
+  - No `main.ts` change.
+  - No Step 5 overall DONE archival.
+  - No Step 6 workflow.
+  - No schema/migration/seed change.
+- Status: DONE.
+
+#### Step 5D-2 - AppModule integration and Step 5 closure
+
+- Goal: connect `AchievementsModule` to root `AppModule`, verify achievement routes through the root module, and close Step 5.
+- Files:
+  - `apps/api/src/app.module.ts`
+  - `apps/api/src/achievements/achievement.app-module.spec.ts`
+  - `memory-bank/progress.md`
+  - `memory-bank/evidence.md`
+  - `memory-bank/implementation-plan.md`
+  - `memory-bank/architecture.md`
+  - `memory-bank/decisions.md`
+- Scope:
+  - `AppModule` imports `AchievementsModule`.
+  - No global `APP_GUARD` registration.
+  - No `main.ts` change and no global `ValidationPipe`.
+  - AppModule-level HTTP tests verify `/health`, six achievement routes, 401 without user context, and 403 without static permission.
+  - Tests override `AchievementService` and `PrismaService`; no real repository or database is used.
+  - Step 5A / 5B-1 / 5B-2 / 5C / 5D-1 / 5D-2 are marked DONE.
+  - Step 5 overall is marked DONE.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test` passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm --filter @research-ip/api build` passed.
+  - `corepack pnpm lint` passed.
+  - `corepack pnpm prisma:validate` passed.
+  - Boundary checks passed for no Step 6 workflow implementation, no `deleteMany`, no `APP_GUARD`, and no `main.ts` achievements import.
+- Boundaries:
+  - No Step 6 workflow.
+  - No workflow module/service/controller.
+  - No workflow instance/task/action write.
+  - No department review, reject, approve, or todo flow.
+  - No schema/migration/seed change.
+- Status: DONE.
+- Final archive review:
+  - Step 5 actual delivered scope is backend-only achievement registration phase one.
+  - Step 5A / 5B-1 / 5B-2 / 5C / 5D-1 / 5D-2 remain DONE.
+  - `AchievementsModule` is connected through root `AppModule`.
+  - Step 6 workflow remains TODO and was not started.
+  - No workflow module/service/controller, workflow instance/task/action write, department review/reject/approve/todo, frontend page, fee, reminder, attachment, search, dashboard, or real login/SSO was implemented in Step 5.
+
+### Step 6 - 实现基础审批流
+
+- 目标：科研人员提交 -> 部门科研秘书初审 -> 系统管理员归档。
+- 文件：Workflow 后端模块、审批状态机、repository/service/controller 测试；本轮不包含前端页面。
+- 修改：审批实例、任务、动作、通过、驳回、意见、状态流转。
+- 验证命令：workflow 状态机测试、repository fake Prisma 测试、后续 service/controller/API 测试。
+- 预期结果：待办正确分配，重复审批和越权审批被拒绝。
+- 完成证据：审批测试和审计日志记录。
+- 状态：DONE（6A / 6B / 6C / 6D 均已完成；Step 7 仍为 TODO）
+
+#### Step 6A - Workflow domain / DTO / repository 基础
+
+- 目标：建立 workflow 无 HTTP 基础层，为后续科研人员提交后创建审批实例和部门秘书待办打底。
+- 文件：
+  - `apps/api/src/workflow/workflow.module.ts`
+  - `apps/api/src/workflow/workflow.repository.ts`
+  - `apps/api/src/workflow/domain/**`
+  - `apps/api/src/workflow/dto/**`
+  - `apps/api/src/workflow/**/*.spec.ts`
+- 范围：
+  - 新增 workflow domain 常量：target type、instance status、task status、action type、step code。
+  - 新增 workflow task / instance 状态机纯函数和单元测试。
+  - 新增 approve/reject task DTO、task query DTO 和校验测试。
+  - 新增 `WorkflowRepository`，支持创建 achievement review workflow、查询 active instance、查询 assignee 待办、查找部门科研秘书用户、task transition with action、instance transition。
+  - 新增 fake Prisma repository 测试；不访问真实数据库。
+  - 新增 `WorkflowModule` 但不接入 `AppModule`。
+- 边界：
+  - 不实现 service 编排。
+  - 不创建 controller、HTTP API 或前端页面。
+  - 不接入 `AppModule`。
+  - 不实现部门审核通过/驳回业务流。
+  - 不推进 Achievement 状态。
+  - 不写审计日志，只保留 workflow action 记录基础。
+  - 不修改 `schema.prisma`、migration、seed 或依赖。
+  - 不运行 migrate 或 seed。
+- 验证：
+  - `corepack pnpm --filter @research-ip/api test` 通过：16 个测试文件、150 个测试。
+  - `corepack pnpm --filter @research-ip/api typecheck` 通过。
+  - `corepack pnpm --filter @research-ip/api build` 通过。
+  - `corepack pnpm lint` 通过。
+  - `corepack pnpm prisma:validate` 通过。
+  - 边界检查确认 `WorkflowModule` 未接入 `AppModule`，workflow 目录没有 controller/HTTP 装饰器、`APP_GUARD` 或 `deleteMany`。
+- 状态：DONE
+
+#### Step 6B - Workflow service 编排
+
+- 目标：在 6A 基础上实现提交后创建 workflow instance/task/action，以及部门秘书通过/驳回的后端服务编排。
+- 状态：DONE（6B-1 / 6B-2 / 6B-3 / 6B-4 均已完成）
+
+#### Step 6C - Workflow controller / HTTP API
+
+- 目标：在 `WorkflowModule` 内暴露部门初审 approve/reject 和我的待办列表/详情 HTTP 边界。
+- 状态：DONE（6C-1 / 6C-2 均已完成）
+
+#### Step 6D - Workflow root AppModule integration and Step 6 closure
+
+- 目标：将 `WorkflowModule` 显式接入 root `AppModule`，补 AppModule-level HTTP wiring 测试，并完成 Step 6 整体归档。
+- 状态：DONE
+
+### Step 7 - 实现附件与审计
+
+- 目标：附件上传、版本、下载鉴权、操作日志。
+- 文件：Attachment 模块、Storage adapter、Audit 模块、前端附件组件。
+- 修改：附件元数据、storage key、版本号、密级、下载权限、审计事件。
+- 验证命令：附件鉴权测试、审计 append-only 检查。
+- 预期结果：无权用户无法下载附件，核心操作均有日志。
+- 完成证据：安全测试摘要。
+- 状态：TODO
+
+### Step 8 - 实现费用台账与基础预警
+
+- 目标：费用记录、缴费状态、截止日期、预警任务、站内通知、邮件 mock。
+- 文件：Fee、Reminder、Notification、Queue、前端费用页面。
+- 修改：费用 CRUD、缴费标记、30/15/7 天及逾期预警、提醒确认。
+- 验证命令：预警规则单元测试、队列任务测试、API 测试。
+- 预期结果：费用台账可管理，预警可生成和确认。
+- 完成证据：预警测试输出和手动验证步骤。
+- 状态：IN PROGRESS（8A Fee domain/repository foundation DONE；8B Fee service/controller/audit/AppModule wiring TODO；8C Reminder rules TODO；8D Notification/mock/confirm TODO）
+
+#### Step 8A - Fee domain / repository foundation
+
+- 目标：建立费用台账后端基础能力，覆盖 Fee domain types、DTO、状态机、repository、Prisma mapper 和 fake Prisma 测试。
+- 文件：`apps/api/src/fees/**`。
+- 修改：新增独立 `FeesModule`、Fee DTO/domain/repository foundation；不接 root `AppModule`，不实现 service/controller/audit/reminder/notification。
+- 验证命令：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm lint`。
+- 预期结果：FeeRecord 支持基础创建、查询、状态读取和标记缴费所需 repository 能力，且为 Step 8B 服务/控制器/audit 集成预留事务和权限查询边界。
+- 完成证据：Step 8A 验证命令已通过，记录在 `memory-bank/evidence.md`。
+- 状态：DONE
+
+#### Step 8B - Fee service / controller / root AppModule wiring / audit
+
+- 目标：在 Fee foundation 之上实现 service 编排、HTTP 边界、root route reachability 和 Fee audit integration。
+- 拆分：
+  - Step 8B-1 FeeService + audit transaction：DONE。
+  - Step 8B-2 FeeController module-local HTTP boundary：TODO。
+  - Step 8B-3 root `AppModule` wiring and AppModule-level tests：TODO。
+- Step 8B-1 文件：`apps/api/src/fees/fee.service.ts`、`apps/api/src/fees/domain/fee-service.errors.ts`、`apps/api/src/fees/fee.service.spec.ts`、必要的 Fee repository state shape 和 `FeesModule` provider wiring。
+- Step 8B-1 修改：只实现 Fee service orchestration and audit transaction；不实现 controller、HTTP route、root `AppModule` wiring、Reminder、Notification、frontend、schema/migration/seed/dependency change。
+- Step 8B-1 验证命令：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm lint`。
+- Step 8B-1 状态：DONE
+
+### Step 9 - 实现基础检索与统计看板
+
+- 目标：权限过滤搜索和基础看板。
+- 文件：Search、Dashboard、Meilisearch adapter、前端检索和看板页面。
+- 修改：索引同步、关键词检索、筛选、权限过滤、年度趋势、类型分布、部门排行、专利状态、费用汇总。
+- 验证命令：搜索权限测试、1 万条种子数据基础响应测试、浏览器截图。
+- 预期结果：检索和看板只展示授权范围内数据。
+- 完成证据：性能摘要和截图。
+- 状态：TODO
+
+### Step 10 - 完成质量门禁与证据包
+
+- 目标：形成一期交付前质量证据。
+- 文件：测试、QA checklist、DB checklist、UI checklist、`evidence.md`。
+- 修改：补齐测试、修复门禁问题、记录验证。
+- 验证命令：`pnpm lint`、`pnpm typecheck`、`pnpm test`、`pnpm test:e2e`、`pnpm build`。
+- 预期结果：关键门禁通过，未覆盖范围和剩余风险清楚。
+- 完成证据：完整证据记录。
+- 状态：TODO
+
+## 门禁
+
+- [x] Step 2 Lint / Format：`corepack pnpm lint` 通过。
+- [x] Step 2 类型检查：`corepack pnpm typecheck` 通过。
+- [x] Step 2 测试：`corepack pnpm test` 通过，当前仅覆盖脚手架最小测试。
+- [x] Step 2 构建：`corepack pnpm build` 通过。
+- [x] Step 3 Prisma schema：`corepack pnpm prisma:validate` 通过。
+- [x] Step 3 Migration：`20260608080155_init_core_schema` 已生成、审查并应用到本地开发库。
+- [x] Step 3 数据库专项检查：FK、索引、唯一约束、nullable unique、partial unique index 已审查。
+- [x] Step 3 Seed：`corepack pnpm exec prisma db seed` 连续执行两次通过且计数一致。
+- [x] Step 3 Lint / Typecheck / Test / Build：`corepack pnpm lint`、`typecheck`、`test`、`build` 均通过。
+- [x] Step 4A 权限基础：`corepack pnpm prisma:validate`、`corepack pnpm exec prisma db seed`、`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm lint` 均通过。
+- [x] Step 4B RBAC 与部门隔离策略：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm lint` 均通过。
+- [x] Step 4C 涉密、附件和审计只读策略：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm lint` 均通过。
+- [x] Step 4D 测试：guard/decorator、API 集成、401/403 controller 测试；`corepack pnpm --filter @research-ip/api test`、`typecheck`、`build`、`corepack pnpm lint` 均通过。
+- [x] Step 5 Achievement backend phase one：`corepack pnpm --filter @research-ip/api test`、`corepack pnpm --filter @research-ip/api typecheck`、`corepack pnpm --filter @research-ip/api build`、`corepack pnpm lint`、`corepack pnpm prisma:validate` 均通过；边界检查确认未实现 Step 6 workflow、未新增 `deleteMany`、未注册 `APP_GUARD`、未修改 `main.ts`。
+- [ ] Step 4+ 手动验证：核心用户流程和权限状态。
+- [ ] Step 4+ 专项检查：安全、UI、外部 adapter、搜索权限过滤。
+
+## 回滚方案
+
+- 文档阶段：如需调整，直接修改对应 memory-bank 文件并在 `decisions.md` 记录原因。
+- 脚手架阶段：不删除文件；如方案废弃，创建归档说明或新分支方案。
+- 数据库阶段：使用新迁移，不修改已执行迁移；每次 schema 变更写回滚或兼容说明。
+- 外部接口：adapter 可配置关闭，降级为手工录入或站内通知。
+
+## 风险
+
+- 权限策略实现分散会带来越权风险，必须集中在 policy/guard。
+- 表单字段复杂，必须通过分组、草稿、校验提示降低录入成本。
+- 外部接口真实联调依赖院内资源，一期采用 mock/adapter 降低阻塞。
+- 搜索索引是派生数据，必须保证权限过滤基于主数据或可靠授权字段。
+## Current Step 6 Execution Override - 2026-06-10
+
+- Step 6 status: IN PROGRESS.
+- Step 6A status: DONE.
+- Step 6B status: IN PROGRESS.
+- Step 6B-1 status: DONE.
+- Step 6B-2 / 6B-3 / 6C / 6D status: TODO.
+- Step 6B-1 scope completed:
+  - Achievement review-state transitions now allow department approval and rejection outcomes.
+  - Workflow instance transitions now allow `ACTIVE -> ACTIVE` for same-instance step advancement.
+  - Achievement and Workflow repositories now expose caller-provided transaction-client methods to support later single-transaction orchestration.
+  - Fake Prisma tests verify no nested transaction is created by the new `...InTransaction` methods.
+- Step 6B-2 next planning boundary:
+  - May plan `AchievementService.submitDraft` integration with workflow creation.
+  - Must not assume Step 6B-1 implemented submit/approve/reject orchestration or HTTP APIs.
+## Current Step 6B-2 Execution Override - 2026-06-11
+
+- Step 6 status: IN PROGRESS.
+- Step 6A status: DONE.
+- Step 6B-1 status: DONE.
+- Step 6B-2 status: DONE.
+- Step 6B-3 status: DONE.
+- Step 6C / 6D status: TODO.
+- Step 6B-2 scope completed:
+  - `AchievementService.submitDraft` now owns a single Prisma transaction for Achievement submit and workflow creation.
+  - `WorkflowService` was added as a no-HTTP service to check active workflow conflicts, resolve department reviewer assignee, and create the workflow records.
+  - `AchievementsModule` imports `WorkflowModule`; root `AppModule` remains unchanged.
+  - Submit creates workflow instance, department review task, and submit action after the guarded Achievement transition succeeds.
+  - Department reviewer assignment uses the first user from stable reviewer ordering.
+- Step 6B-3 scope completed:
+  - `WorkflowService.approveDepartmentReviewTask` and `WorkflowService.rejectDepartmentReviewTask` are implemented without HTTP routes.
+  - Approve/reject each own one Prisma transaction across workflow task/action, workflow instance, and achievement state transition.
+  - Non-assignee and cross-department review failures use access-denied semantics.
+  - Reject requires a trim-nonempty comment; approve comment remains optional.
+  - `WorkflowModule` directly provides `AchievementRepository` and imports `AuthorizationModule`; root `AppModule` remains unchanged.
+- Next planning boundary:
+  - May plan archive workflow completion or workflow HTTP/todo exposure only after confirmation.
+  - Must not assume Step 6B-3 implemented system-admin archive workflow closure, workflow controller, new HTTP API, root AppModule changes, frontend, fees, reminders, attachments, search, or dashboard.

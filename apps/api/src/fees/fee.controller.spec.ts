@@ -1,0 +1,368 @@
+import { INestApplication } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
+import type { Server } from "node:http";
+import request from "supertest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PermissionCode } from "../authorization/constants/permission-code";
+import { RoleCode } from "../authorization/constants/role-code";
+import { ScopeType } from "../authorization/constants/scope-type";
+import { IDENTITY_ADAPTER } from "../identity/identity-adapter.token";
+import { UserContext } from "../identity/user-context";
+import { PrismaService } from "../database/prisma.service";
+import { FeeTypeCode, FundSourceCode, PayStatusCode } from "./domain/fee-domain.types";
+import {
+  FeeAccessDeniedError,
+  FeeConflictError,
+  FeeInvalidTransitionError,
+  FeeNotFoundError,
+  FeePermissionDeniedError,
+} from "./domain/fee-service.errors";
+import { FeeService } from "./fee.service";
+import { FeesModule } from "./fees.module";
+
+const ids = {
+  achievement: "30000000-0000-4000-8000-000000000001",
+  department: "10000000-0000-4000-8000-000000000001",
+  feeRecord: "80000000-0000-4000-8000-000000000001",
+  role: "50000000-0000-4000-8000-000000000001",
+  user: "40000000-0000-4000-8000-000000000001",
+};
+
+type FeeServiceMock = {
+  listFees: ReturnType<typeof vi.fn>;
+  getFee: ReturnType<typeof vi.fn>;
+  createFee: ReturnType<typeof vi.fn>;
+  markFeePaid: ReturnType<typeof vi.fn>;
+};
+
+type TestCallback = (
+  app: INestApplication,
+  service: FeeServiceMock,
+  identityAdapter: { loadUserContext: ReturnType<typeof vi.fn> },
+) => Promise<void>;
+
+const makeUserContext = (
+  permissions: readonly PermissionCode[],
+): UserContext => ({
+  userId: ids.user,
+  departmentId: ids.department,
+  roleIds: [ids.role],
+  roleCodes: [RoleCode.researcher],
+  permissionCodes: permissions,
+  roleScopes: [
+    {
+      roleCode: RoleCode.researcher,
+      scopeType: ScopeType.global,
+      scopeKey: "GLOBAL",
+      departmentId: null,
+    },
+  ],
+  scopedDepartmentIds: [ids.department],
+});
+
+const makeFeeRecord = () => ({
+  id: ids.feeRecord,
+  achievementId: ids.achievement,
+  departmentId: ids.department,
+  feeType: FeeTypeCode.patentAnnual,
+  fundSource: FundSourceCode.department,
+  amount: 1200,
+  dueDate: new Date("2026-07-01T00:00:00.000Z"),
+  paidDate: null,
+  payStatus: PayStatusCode.pending,
+  voucherNo: null,
+  createdById: ids.user,
+  updatedById: ids.user,
+  createdAt: new Date("2026-06-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-06-01T00:00:00.000Z"),
+  archivedAt: null,
+});
+
+const makePaidFeeState = () => ({
+  id: ids.feeRecord,
+  achievementId: ids.achievement,
+  departmentId: ids.department,
+  feeType: FeeTypeCode.patentAnnual,
+  dueDate: new Date("2026-07-01T00:00:00.000Z"),
+  paidDate: new Date("2026-06-18T00:00:00.000Z"),
+  payStatus: PayStatusCode.paid,
+  voucherNo: "VOUCHER-001",
+  updatedById: ids.user,
+  archivedAt: null,
+});
+
+const makeCreatePayload = () => ({
+  achievementId: ids.achievement,
+  feeType: FeeTypeCode.patentAnnual,
+  fundSource: FundSourceCode.department,
+  amount: 1200,
+  dueDate: "2026-07-01T00:00:00.000Z",
+});
+
+const createServiceMock = (): FeeServiceMock => ({
+  listFees: vi.fn().mockResolvedValue([makeFeeRecord()]),
+  getFee: vi.fn().mockResolvedValue(makeFeeRecord()),
+  createFee: vi.fn().mockResolvedValue(makeFeeRecord()),
+  markFeePaid: vi.fn().mockResolvedValue(makePaidFeeState()),
+});
+
+describe("FeeController HTTP", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 401 when no user context is loaded", async () => {
+    await withTestApp(null, async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/fees")
+        .expect(401);
+
+      expect(response.body.message).toBe("User context is required.");
+      expect(service.listFees).not.toHaveBeenCalled();
+    });
+  });
+
+  it("returns 403 when fee read permission is missing", async () => {
+    await withTestApp([], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/fees")
+        .set("X-Demo-User-Id", ids.user)
+        .expect(403);
+
+      expect(response.body.message).toBe("Required permissions are missing.");
+      expect(service.listFees).not.toHaveBeenCalled();
+    });
+  });
+
+  it("returns 403 when fee manage permission is missing", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .post("/fees")
+        .set("X-Demo-User-Id", ids.user)
+        .send(makeCreatePayload())
+        .expect(403);
+
+      expect(service.createFee).not.toHaveBeenCalled();
+    });
+  });
+
+  it("lists fees with fee:read_department and validated query", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/fees")
+        .set("X-Demo-User-Id", ids.user)
+        .query({
+          achievementId: ids.achievement,
+          feeType: FeeTypeCode.patentAnnual,
+          payStatus: PayStatusCode.pending,
+          take: "5",
+        })
+        .expect(200);
+
+      expect(response.body).toHaveLength(1);
+      expect(service.listFees).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          departmentId: ids.department,
+        }),
+        expect.objectContaining({
+          achievementId: ids.achievement,
+          feeType: FeeTypeCode.patentAnnual,
+          payStatus: PayStatusCode.pending,
+          take: 5,
+        }),
+      );
+    });
+  });
+
+  it("reads fee detail with fee:read_department", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      expect(service.getFee).toHaveBeenCalledWith(expect.any(Object), ids.feeRecord);
+    });
+  });
+
+  it("creates a fee with fee:manage_department and returns 201", async () => {
+    await withTestApp([PermissionCode.feeManageDepartment], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .post("/fees")
+        .set("X-Demo-User-Id", ids.user)
+        .send(makeCreatePayload())
+        .expect(201);
+
+      expect(response.body.id).toBe(ids.feeRecord);
+      expect(service.createFee).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          achievementId: ids.achievement,
+          feeType: FeeTypeCode.patentAnnual,
+          amount: 1200,
+        }),
+      );
+    });
+  });
+
+  it("marks a fee paid with fee:manage_department and returns 200", async () => {
+    await withTestApp([PermissionCode.feeManageDepartment], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/mark-paid`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ paidDate: "2026-06-18T00:00:00.000Z", voucherNo: "VOUCHER-001" })
+        .expect(200);
+
+      expect(response.body.payStatus).toBe(PayStatusCode.paid);
+      expect(service.markFeePaid).toHaveBeenCalledWith(
+        expect.any(Object),
+        ids.feeRecord,
+        expect.objectContaining({
+          paidDate: "2026-06-18T00:00:00.000Z",
+          voucherNo: "VOUCHER-001",
+        }),
+      );
+    });
+  });
+
+  it("rejects invalid UUID params with 400", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get("/fees/not-a-uuid")
+        .set("X-Demo-User-Id", ids.user)
+        .expect(400);
+
+      expect(service.getFee).not.toHaveBeenCalled();
+    });
+  });
+
+  it("rejects invalid query and body payloads with 400", async () => {
+    await withTestApp(
+      [PermissionCode.feeReadDepartment, PermissionCode.feeManageDepartment],
+      async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get("/fees")
+        .set("X-Demo-User-Id", ids.user)
+        .query({ unexpectedField: "x" })
+        .expect(400);
+
+      await request(app.getHttpServer() as Server)
+        .post("/fees")
+        .set("X-Demo-User-Id", ids.user)
+        .send({
+          ...makeCreatePayload(),
+          amount: -1,
+          unexpectedField: true,
+        })
+        .expect(400);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/mark-paid`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ paidDate: "not-a-date" })
+        .expect(400);
+
+      expect(service.listFees).not.toHaveBeenCalled();
+      expect(service.createFee).not.toHaveBeenCalled();
+      expect(service.markFeePaid).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  it("maps service errors to HTTP status codes", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
+      const cases = [
+        {
+          error: new FeeAccessDeniedError("Out of scope."),
+          expectedStatus: 403,
+        },
+        {
+          error: new FeePermissionDeniedError(PermissionCode.feeReadDepartment),
+          expectedStatus: 403,
+        },
+        {
+          error: new FeeNotFoundError(ids.feeRecord),
+          expectedStatus: 404,
+        },
+        {
+          error: new FeeConflictError("Duplicate fee."),
+          expectedStatus: 409,
+        },
+        {
+          error: new FeeInvalidTransitionError(PayStatusCode.paid, PayStatusCode.paid),
+          expectedStatus: 409,
+        },
+      ];
+
+      for (const testCase of cases) {
+        service.getFee.mockRejectedValueOnce(testCase.error);
+
+        await request(app.getHttpServer() as Server)
+          .get(`/fees/${ids.feeRecord}`)
+          .set("X-Demo-User-Id", ids.user)
+          .expect(testCase.expectedStatus);
+      }
+    });
+  });
+
+  it("uses the identity adapter context and only calls FeeService at the HTTP boundary", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service, identityAdapter) => {
+      await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      expect(identityAdapter.loadUserContext).toHaveBeenCalledWith({
+        headers: expect.objectContaining({
+          "x-demo-user-id": ids.user,
+        }),
+      });
+      expect(service.getFee).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+const withTestApp = async (
+  permissions: readonly PermissionCode[] | null,
+  callback: TestCallback,
+): Promise<void> => {
+  let app: INestApplication | null = null;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const service = createServiceMock();
+  const identityAdapter = {
+    loadUserContext: vi.fn().mockResolvedValue(
+      permissions === null ? null : makeUserContext(permissions),
+    ),
+  };
+
+  process.env.NODE_ENV = "test";
+
+  try {
+    const moduleRef = await Test.createTestingModule({
+      imports: [FeesModule],
+    })
+      .overrideProvider(PrismaService)
+      .useValue({})
+      .overrideProvider(IDENTITY_ADAPTER)
+      .useValue(identityAdapter)
+      .overrideProvider(FeeService)
+      .useValue(service)
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+
+    await callback(app, service, identityAdapter);
+  } finally {
+    if (app) {
+      await app.close();
+    }
+
+    if (previousNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+  }
+};

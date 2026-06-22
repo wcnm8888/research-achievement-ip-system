@@ -1,0 +1,761 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DepartmentStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  ARCHIVED
+}
+
+enum CredentialStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum RoleStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PermissionStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum UserRoleScopeType {
+  GLOBAL
+  DEPARTMENT
+}
+
+enum ResourceType {
+  ACHIEVEMENT
+  ATTACHMENT
+  FEE_RECORD
+  WORKFLOW_INSTANCE
+  AUDIT_LOG
+}
+
+enum GranteeType {
+  USER
+  ROLE
+  DEPARTMENT
+}
+
+enum GrantType {
+  SECRET_READ
+  SECRET_WRITE
+  ATTACHMENT_DOWNLOAD
+  AUDIT_READ
+}
+
+enum GrantStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum AchievementType {
+  PAPER
+  PATENT
+  SOFTWARE_COPYRIGHT
+}
+
+enum AchievementStatus {
+  DRAFT
+  PENDING_DEPARTMENT_REVIEW
+  DEPARTMENT_REJECTED
+  PENDING_ARCHIVE
+  ARCHIVED
+  VOIDED
+}
+
+enum SecretLevel {
+  PUBLIC
+  INTERNAL
+  SECRET
+  CONFIDENTIAL
+}
+
+enum ContributorType {
+  AUTHOR
+  INVENTOR
+  COPYRIGHT_OWNER
+}
+
+enum ContributorRole {
+  FIRST_AUTHOR
+  CORRESPONDING_AUTHOR
+  PRIMARY_INVENTOR
+  PARTICIPANT
+  OWNER
+  OTHER
+}
+
+enum PatentType {
+  INVENTION
+  UTILITY_MODEL
+  DESIGN
+  NATIONAL_DEFENSE
+  OTHER
+}
+
+enum PatentLegalStatus {
+  PENDING
+  GRANTED
+  REJECTED
+  EXPIRED
+  TERMINATED
+  TRANSFERRED
+  UNKNOWN
+}
+
+enum SoftwareType {
+  APPLICATION
+  SYSTEM
+  TOOL
+  EMBEDDED
+  OTHER
+}
+
+enum WorkflowTargetType {
+  ACHIEVEMENT
+}
+
+enum WorkflowInstanceStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkflowTaskStatus {
+  PENDING
+  CLAIMED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum WorkflowActionType {
+  SUBMIT
+  APPROVE
+  REJECT
+  ARCHIVE
+  VOID
+  CANCEL
+}
+
+enum FeeType {
+  PATENT_APPLICATION
+  PATENT_ANNUAL
+  SOFTWARE_COPYRIGHT
+  AGENCY
+  OTHER
+}
+
+enum FundSource {
+  PROJECT
+  DEPARTMENT
+  INSTITUTE
+  OTHER
+}
+
+enum PayStatus {
+  PENDING
+  PAID
+  OVERDUE
+  WAIVED
+  CANCELLED
+}
+
+enum ReminderTargetType {
+  FEE_RECORD
+}
+
+enum ReminderLevel {
+  DAYS_30
+  DAYS_15
+  DAYS_7
+  OVERDUE
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  CONFIRMED
+  CANCELLED
+  FAILED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  READ
+  FAILED
+  CANCELLED
+}
+
+enum AttachmentRelationType {
+  ACHIEVEMENT
+  FEE_RECORD
+  WORKFLOW_ACTION
+}
+
+enum AttachmentStatus {
+  ACTIVE
+  ARCHIVED
+  BLOCKED
+}
+
+enum AuditActionType {
+  CREATE
+  UPDATE
+  SUBMIT
+  APPROVE
+  REJECT
+  ARCHIVE
+  VOID
+  UPLOAD_ATTACHMENT
+  DOWNLOAD_ATTACHMENT
+  MARK_FEE_PAID
+  CONFIRM_REMINDER
+  CONFIG_UPDATE
+}
+
+enum ApiIntegrationProvider {
+  DOI
+  EMAIL
+  HR
+  FINANCE
+  PATENT
+  STORAGE
+  SEARCH
+  OTHER
+}
+
+enum ApiCallStatus {
+  SUCCESS
+  FAILED
+  TIMEOUT
+  RETRIED
+  SKIPPED
+}
+
+model Department {
+  id             String       @id @default(uuid()) @db.Uuid
+  code           String       @unique @db.VarChar(64)
+  name           String       @db.VarChar(200)
+  parentId       String?      @map("parent_id") @db.Uuid
+  status         DepartmentStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  archivedAt     DateTime?    @map("archived_at")
+
+  parent         Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children       Department[] @relation("DepartmentHierarchy")
+  users          User[]
+  userRoleScopes UserRole[]
+  achievements   Achievement[]
+  feeRecords     FeeRecord[]
+  auditLogs      AuditLog[]   @relation("AuditDepartment")
+
+  @@index([parentId])
+  @@index([status])
+  @@map("departments")
+}
+
+model User {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  email                 String                 @unique @db.VarChar(255)
+  name                  String                 @db.VarChar(120)
+  departmentId          String                 @map("department_id") @db.Uuid
+  status                UserStatus             @default(ACTIVE)
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  archivedAt            DateTime?              @map("archived_at")
+
+  department            Department             @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  credential            UserCredential?
+  userRoles             UserRole[]
+  ownedAchievements     Achievement[]          @relation("AchievementOwner")
+  submittedAchievements Achievement[]          @relation("AchievementSubmitter")
+  contributions         AchievementContributor[]
+  assignedWorkflowTasks WorkflowTask[]         @relation("WorkflowTaskAssignee")
+  workflowActions       WorkflowAction[]       @relation("WorkflowActionActor")
+  reminderTasks         ReminderTask[]         @relation("ReminderReceiver")
+  notifications         Notification[]         @relation("NotificationReceiver")
+  uploadedAttachments   Attachment[]           @relation("AttachmentUploader")
+  auditLogs             AuditLog[]             @relation("AuditActor")
+  searchLogs            SearchLog[]
+
+  @@index([departmentId])
+  @@index([status])
+  @@map("users")
+}
+
+model UserCredential {
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String           @unique @map("user_id") @db.Uuid
+  passwordHash      String           @map("password_hash") @db.VarChar(255)
+  passwordUpdatedAt DateTime?        @map("password_updated_at")
+  status            CredentialStatus @default(ACTIVE)
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  disabledAt        DateTime?        @map("disabled_at")
+
+  user              User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@map("user_credentials")
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  code            String           @unique @db.VarChar(64)
+  name            String           @db.VarChar(120)
+  description     String?          @db.Text
+  status          RoleStatus       @default(ACTIVE)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  archivedAt      DateTime?        @map("archived_at")
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@index([status])
+  @@map("roles")
+}
+
+model Permission {
+  id              String             @id @default(uuid()) @db.Uuid
+  code            String             @unique @db.VarChar(120)
+  resource        String             @db.VarChar(80)
+  action          String             @db.VarChar(80)
+  name            String             @db.VarChar(120)
+  description     String?            @db.Text
+  status          PermissionStatus   @default(ACTIVE)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@index([resource])
+  @@index([action])
+  @@index([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id           String            @id @default(uuid()) @db.Uuid
+  userId       String            @map("user_id") @db.Uuid
+  roleId       String            @map("role_id") @db.Uuid
+  scopeType    UserRoleScopeType @default(GLOBAL) @map("scope_type")
+  scopeKey     String            @default("GLOBAL") @map("scope_key") @db.VarChar(120)
+  departmentId String?           @map("department_id") @db.Uuid
+  createdAt    DateTime          @default(now()) @map("created_at")
+  revokedAt    DateTime?         @map("revoked_at")
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role         Role              @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  department   Department?       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, roleId, scopeType, scopeKey])
+  @@index([userId])
+  @@index([roleId])
+  @@index([departmentId])
+  @@map("user_roles")
+}
+
+model ResourceAccessGrant {
+  id           String       @id @default(uuid()) @db.Uuid
+  resourceType ResourceType @map("resource_type")
+  resourceId   String       @map("resource_id") @db.Uuid
+  granteeType  GranteeType  @map("grantee_type")
+  granteeId    String       @map("grantee_id") @db.Uuid
+  grantType    GrantType    @map("grant_type")
+  status       GrantStatus  @default(ACTIVE)
+  startsAt     DateTime?    @map("starts_at")
+  expiresAt    DateTime?    @map("expires_at")
+  createdById  String?      @map("created_by_id") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at")
+  revokedAt    DateTime?    @map("revoked_at")
+
+  @@index([resourceType, resourceId])
+  @@index([granteeType, granteeId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("resource_access_grants")
+}
+
+model Achievement {
+  id                       String                     @id @default(uuid()) @db.Uuid
+  type                     AchievementType
+  title                    String                     @db.VarChar(500)
+  status                   AchievementStatus          @default(DRAFT)
+  secretLevel              SecretLevel                @default(INTERNAL) @map("secret_level")
+  departmentId             String                     @map("department_id") @db.Uuid
+  ownerUserId              String                     @map("owner_user_id") @db.Uuid
+  submittedById            String?                    @map("submitted_by_id") @db.Uuid
+  createdById              String?                    @map("created_by_id") @db.Uuid
+  updatedById              String?                    @map("updated_by_id") @db.Uuid
+  archivedById             String?                    @map("archived_by_id") @db.Uuid
+  voidedById               String?                    @map("voided_by_id") @db.Uuid
+  version                  Int                        @default(1)
+  createdAt                DateTime                   @default(now()) @map("created_at")
+  updatedAt                DateTime                   @updatedAt @map("updated_at")
+  submittedAt              DateTime?                  @map("submitted_at")
+  archivedAt               DateTime?                  @map("archived_at")
+  voidedAt                 DateTime?                  @map("voided_at")
+  voidReason               String?                    @map("void_reason") @db.Text
+
+  department               Department                 @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  ownerUser                User                       @relation("AchievementOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  submittedBy              User?                      @relation("AchievementSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  paperDetail              PaperDetail?
+  patentDetail             PatentDetail?
+  softwareCopyrightDetail  SoftwareCopyrightDetail?
+  contributors             AchievementContributor[]
+  feeRecords               FeeRecord[]
+
+  @@index([departmentId, status])
+  @@index([ownerUserId, status])
+  @@index([type, status])
+  @@index([secretLevel])
+  @@map("achievements")
+}
+
+model PaperDetail {
+  achievementId String      @id @map("achievement_id") @db.Uuid
+  doi           String?     @db.VarChar(255)
+  doiNormalized String?     @unique @map("doi_normalized") @db.VarChar(255)
+  journal       String?     @db.VarChar(255)
+  issnCn        String?     @map("issn_cn") @db.VarChar(64)
+  publishYear   Int?        @map("publish_year")
+  includedType  String?     @map("included_type") @db.VarChar(80)
+  impactFactor  Decimal?    @map("impact_factor") @db.Decimal(8, 3)
+  partition     String?     @db.VarChar(80)
+  abstract      String?     @db.Text
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Restrict)
+
+  @@index([publishYear])
+  @@index([journal])
+  @@map("paper_details")
+}
+
+model PatentDetail {
+  achievementId           String             @id @map("achievement_id") @db.Uuid
+  applicationNo           String?            @map("application_no") @db.VarChar(120)
+  applicationNoNormalized String?            @unique @map("application_no_normalized") @db.VarChar(120)
+  grantNo                 String?            @map("grant_no") @db.VarChar(120)
+  grantNoNormalized       String?            @unique @map("grant_no_normalized") @db.VarChar(120)
+  patentType              PatentType?        @map("patent_type")
+  filingDate              DateTime?          @map("filing_date") @db.Date
+  grantDate               DateTime?          @map("grant_date") @db.Date
+  nextFeeDate             DateTime?          @map("next_fee_date") @db.Date
+  feeAmount               Decimal?           @map("fee_amount") @db.Decimal(12, 2)
+  legalStatus             PatentLegalStatus  @default(UNKNOWN) @map("legal_status")
+  createdAt               DateTime           @default(now()) @map("created_at")
+  updatedAt               DateTime           @updatedAt @map("updated_at")
+
+  achievement             Achievement        @relation(fields: [achievementId], references: [id], onDelete: Restrict)
+
+  @@index([legalStatus])
+  @@index([nextFeeDate])
+  @@map("patent_details")
+}
+
+model SoftwareCopyrightDetail {
+  achievementId          String       @id @map("achievement_id") @db.Uuid
+  registrationNo         String?      @map("registration_no") @db.VarChar(120)
+  registrationNoNormalized String?    @unique @map("registration_no_normalized") @db.VarChar(120)
+  softwareVersion        String?      @map("software_version") @db.VarChar(80)
+  softwareType           SoftwareType? @map("software_type")
+  publishDate            DateTime?    @map("publish_date") @db.Date
+  registerDate           DateTime?    @map("register_date") @db.Date
+  runEnv                 String?      @map("run_env") @db.VarChar(255)
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+
+  achievement            Achievement  @relation(fields: [achievementId], references: [id], onDelete: Restrict)
+
+  @@index([softwareType])
+  @@index([registerDate])
+  @@map("software_copyright_details")
+}
+
+model AchievementContributor {
+  id              String           @id @default(uuid()) @db.Uuid
+  achievementId   String           @map("achievement_id") @db.Uuid
+  name            String           @db.VarChar(120)
+  userId          String?          @map("user_id") @db.Uuid
+  organization    String?          @db.VarChar(255)
+  contributorType ContributorType  @map("contributor_type")
+  contributorRole ContributorRole? @map("contributor_role")
+  sortOrder       Int              @map("sort_order")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  achievement     Achievement      @relation(fields: [achievementId], references: [id], onDelete: Restrict)
+  user            User?            @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([achievementId, contributorType, sortOrder])
+  @@index([achievementId])
+  @@index([userId])
+  @@map("achievement_contributors")
+}
+
+model WorkflowInstance {
+  id           String                 @id @default(uuid()) @db.Uuid
+  targetType   WorkflowTargetType     @map("target_type")
+  targetId     String                 @map("target_id") @db.Uuid
+  status       WorkflowInstanceStatus @default(ACTIVE)
+  currentStep  String?                @map("current_step") @db.VarChar(80)
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
+  completedAt  DateTime?              @map("completed_at")
+  cancelledAt  DateTime?              @map("cancelled_at")
+
+  tasks        WorkflowTask[]
+  actions      WorkflowAction[]
+
+  @@index([targetType, targetId])
+  @@index([targetType, targetId, status])
+  @@index([status])
+  @@map("workflow_instances")
+}
+
+model WorkflowTask {
+  id          String             @id @default(uuid()) @db.Uuid
+  instanceId  String             @map("instance_id") @db.Uuid
+  assigneeId  String             @map("assignee_id") @db.Uuid
+  stepCode    String             @map("step_code") @db.VarChar(80)
+  status      WorkflowTaskStatus @default(PENDING)
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  claimedAt   DateTime?          @map("claimed_at")
+  completedAt DateTime?          @map("completed_at")
+
+  instance    WorkflowInstance   @relation(fields: [instanceId], references: [id], onDelete: Restrict)
+  assignee    User               @relation("WorkflowTaskAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
+  actions     WorkflowAction[]
+
+  @@index([assigneeId, status])
+  @@index([instanceId, status])
+  @@map("workflow_tasks")
+}
+
+model WorkflowAction {
+  id         String             @id @default(uuid()) @db.Uuid
+  instanceId String             @map("instance_id") @db.Uuid
+  taskId     String?            @map("task_id") @db.Uuid
+  actorId    String             @map("actor_id") @db.Uuid
+  action     WorkflowActionType
+  comment    String?            @db.Text
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  instance   WorkflowInstance   @relation(fields: [instanceId], references: [id], onDelete: Restrict)
+  task       WorkflowTask?      @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  actor      User               @relation("WorkflowActionActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([instanceId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("workflow_actions")
+}
+
+model FeeRecord {
+  id            String      @id @default(uuid()) @db.Uuid
+  achievementId String      @map("achievement_id") @db.Uuid
+  departmentId  String      @map("department_id") @db.Uuid
+  feeType       FeeType     @map("fee_type")
+  fundSource    FundSource? @map("fund_source")
+  amount        Decimal     @db.Decimal(12, 2)
+  dueDate       DateTime    @map("due_date") @db.Date
+  paidDate      DateTime?   @map("paid_date") @db.Date
+  payStatus     PayStatus   @default(PENDING) @map("pay_status")
+  voucherNo     String?     @map("voucher_no") @db.VarChar(120)
+  createdById   String?     @map("created_by_id") @db.Uuid
+  updatedById   String?     @map("updated_by_id") @db.Uuid
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  archivedAt    DateTime?   @map("archived_at")
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Restrict)
+  department    Department  @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  @@unique([achievementId, feeType, dueDate])
+  @@index([dueDate, payStatus])
+  @@index([achievementId])
+  @@index([departmentId])
+  @@map("fee_records")
+}
+
+model ReminderTask {
+  id            String             @id @default(uuid()) @db.Uuid
+  targetType    ReminderTargetType @map("target_type")
+  targetId      String             @map("target_id") @db.Uuid
+  remindDate    DateTime           @map("remind_date") @db.Date
+  remindLevel   ReminderLevel      @map("remind_level")
+  receiverId    String             @map("receiver_id") @db.Uuid
+  status        ReminderStatus     @default(PENDING)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  sentAt        DateTime?          @map("sent_at")
+  confirmedAt   DateTime?          @map("confirmed_at")
+
+  receiver      User               @relation("ReminderReceiver", fields: [receiverId], references: [id], onDelete: Restrict)
+
+  @@unique([targetType, targetId, remindDate, remindLevel, receiverId])
+  @@index([receiverId, status])
+  @@index([remindDate, status])
+  @@map("reminder_tasks")
+}
+
+model Notification {
+  id         String              @id @default(uuid()) @db.Uuid
+  receiverId String              @map("receiver_id") @db.Uuid
+  channel    NotificationChannel
+  title      String              @db.VarChar(255)
+  content    String              @db.Text
+  status     NotificationStatus  @default(PENDING)
+  createdAt  DateTime            @default(now()) @map("created_at")
+  sentAt     DateTime?           @map("sent_at")
+  readAt     DateTime?           @map("read_at")
+
+  receiver   User                @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: Restrict)
+
+  @@index([receiverId, status])
+  @@index([channel, status])
+  @@map("notifications")
+}
+
+model Attachment {
+  id           String                 @id @default(uuid()) @db.Uuid
+  relationType AttachmentRelationType @map("relation_type")
+  relationId   String                 @map("relation_id") @db.Uuid
+  fileName     String                 @map("file_name") @db.VarChar(255)
+  storageKey   String                 @map("storage_key") @db.VarChar(500)
+  version      Int                    @default(1)
+  uploaderId   String                 @map("uploader_id") @db.Uuid
+  secretLevel  SecretLevel            @default(INTERNAL) @map("secret_level")
+  checksum     String?                @db.VarChar(128)
+  status       AttachmentStatus       @default(ACTIVE)
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
+  archivedAt   DateTime?              @map("archived_at")
+
+  uploader     User                   @relation("AttachmentUploader", fields: [uploaderId], references: [id], onDelete: Restrict)
+
+  @@unique([relationType, relationId, fileName, version])
+  @@index([relationType, relationId])
+  @@index([uploaderId])
+  @@index([secretLevel])
+  @@map("attachments")
+}
+
+model AuditLog {
+  id                 String          @id @default(uuid()) @db.Uuid
+  actorUserId        String?         @map("actor_user_id") @db.Uuid
+  actorDepartmentId  String?         @map("actor_department_id") @db.Uuid
+  action             AuditActionType
+  targetType         String          @map("target_type") @db.VarChar(100)
+  targetId           String?         @map("target_id") @db.Uuid
+  targetDepartmentId String?         @map("target_department_id") @db.Uuid
+  targetSecretLevel  SecretLevel?    @map("target_secret_level")
+  oldValue           Json?           @map("old_value")
+  newValue           Json?           @map("new_value")
+  ipAddress          String?         @map("ip_address") @db.VarChar(64)
+  userAgent          String?         @map("user_agent") @db.Text
+  traceId            String?         @map("trace_id") @db.VarChar(120)
+  createdAt          DateTime        @default(now()) @map("created_at")
+
+  actorUser          User?           @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorDepartment    Department?     @relation("AuditDepartment", fields: [actorDepartmentId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@index([traceId])
+  @@map("audit_logs")
+}
+
+model ApiIntegration {
+  id          String                 @id @default(uuid()) @db.Uuid
+  code        String                 @unique @db.VarChar(100)
+  provider    ApiIntegrationProvider
+  enabled     Boolean                @default(false)
+  timeoutMs   Int                    @default(3000) @map("timeout_ms")
+  configRef   String?                @map("config_ref") @db.VarChar(255)
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+  archivedAt  DateTime?              @map("archived_at")
+
+  callLogs    ApiCallLog[]
+
+  @@index([enabled])
+  @@index([provider])
+  @@map("api_integrations")
+}
+
+model ApiCallLog {
+  id              String         @id @default(uuid()) @db.Uuid
+  integrationCode String         @map("integration_code") @db.VarChar(100)
+  requestId       String         @unique @map("request_id") @db.VarChar(120)
+  status          ApiCallStatus
+  durationMs      Int?           @map("duration_ms")
+  errorSummary    String?        @map("error_summary") @db.Text
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  integration     ApiIntegration @relation(fields: [integrationCode], references: [code], onDelete: Restrict)
+
+  @@index([integrationCode, createdAt])
+  @@index([status])
+  @@map("api_call_logs")
+}
+
+model SearchLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  keyword     String?  @db.Text
+  filters     Json?
+  resultCount Int      @default(0) @map("result_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("search_logs")
+}

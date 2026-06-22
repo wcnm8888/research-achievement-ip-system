@@ -1,0 +1,23 @@
+export const PermissionCode = {
+  userContextRead: "user_context:read",
+  achievementCreate: "achievement:create",
+  achievementReadOwn: "achievement:read_own",
+  achievementUpdateOwn: "achievement:update_own",
+  achievementSubmit: "achievement:submit",
+  achievementReadDepartment: "achievement:read_department",
+  achievementReviewDepartment: "achievement:review_department",
+  achievementArchive: "achievement:archive",
+  attachmentReadMetadata: "attachment:read_metadata",
+  attachmentDownload: "attachment:download",
+  feeReadDepartment: "fee:read_department",
+  feeManageDepartment: "fee:manage_department",
+  reminderReadDepartment: "reminder:read_department",
+  auditReadMasked: "audit:read_masked",
+  dashboardReadInstitute: "dashboard:read_institute",
+  departmentReadDepartment: "department:read_department",
+  resourceGrantCreate: "resource_grant:create",
+  resourceGrantRevoke: "resource_grant:revoke",
+  systemConfig: "system:config",
+} as const;
+
+export type PermissionCode = (typeof PermissionCode)[keyof typeof PermissionCode];

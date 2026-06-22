@@ -1,0 +1,1 @@
+export const IDENTITY_ADAPTER = "IDENTITY_ADAPTER";

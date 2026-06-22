@@ -1,0 +1,48 @@
+Step 24B route-mock browser/request boundary acceptance - 2026-06-21
+
+Scope:
+- Local Vite dev server only: http://localhost:5173/
+- Playwright CLI session: step24b.
+- Route mock installed for **/api/** before app navigation.
+- No live backend, database, or business write was used.
+
+Observed search requests:
+- GET http://localhost:5173/api/search?take=20
+- GET http://localhost:5173/api/search?targetTypes=ACHIEVEMENT&targetTypes=FEE_RECORD&take=20
+
+Parsed targetTypes:
+- ACHIEVEMENT
+- FEE_RECORD
+
+Repeated parameter evidence:
+- targetTypes=ACHIEVEMENT
+- targetTypes=FEE_RECORD
+
+Boundary scans:
+- noDemoSearchRequests=[]
+- invalidDepartmentSearchRequests=[]
+- nonGetRequests=[]
+- forbiddenRequests=[]
+- consoleErrors=[]
+- pageErrors=[]
+
+Forbidden request scan covered:
+- POST / PATCH / DELETE
+- search_logs
+- Meilisearch / external sync
+- settings/config
+- /fees/warnings
+- attachments
+- upload / download
+- fee write
+- seed / migrate / import / data cleanup
+
+390px viewport:
+- body=390
+- doc=390
+- client=390
+- inner=390
+- overflow=false
+
+Result:
+- PASS.
