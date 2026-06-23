@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApiClient, mapApiErrorMessage, serializeQuery } from "./api-client";
+import {
+  createApiClient,
+  createAuthClient,
+  mapApiErrorMessage,
+  serializeQuery,
+  shouldSendDemoUserHeader,
+} from "./api-client";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -98,9 +104,25 @@ describe("createApiClient writes JSON requests", () => {
 
     expect(url).toBe("http://localhost/api/achievements");
     expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
     expect(init.body).toBe(JSON.stringify({ title: "Draft" }));
     expect(headers.get("Content-Type")).toBe("application/json");
     expect(headers.get("X-Demo-User-Id")).toBe("demo-user-id");
+  });
+
+  it("does not send the demo user header when production mode disables it", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient(" demo-user-id ", { allowDemoUserHeader: false });
+    await expect(client.get("/dashboard/summary")).resolves.toEqual({ ok: true });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(init.credentials).toBe("include");
+    expect(headers.get("X-Demo-User-Id")).toBeNull();
   });
 
   it("sends PATCH without content type when body is absent and accepts 204", async () => {
@@ -120,6 +142,7 @@ describe("createApiClient writes JSON requests", () => {
     const headers = init.headers as Headers;
 
     expect(init.method).toBe("PATCH");
+    expect(init.credentials).toBe("include");
     expect(init.body).toBeUndefined();
     expect(headers.get("Content-Type")).toBeNull();
     expect(headers.get("X-Demo-User-Id")).toBeNull();
@@ -184,5 +207,49 @@ describe("createApiClient writes JSON requests", () => {
     expect(init.method).toBe("POST");
     expect(init.body).toBe(JSON.stringify({ reason: "重复登记" }));
     expect(headers.get("Content-Type")).toBe("application/json");
+  });
+});
+
+describe("demo header policy", () => {
+  it("allows demo headers only when the caller explicitly permits them", () => {
+    expect(shouldSendDemoUserHeader(" demo-user-id ", true)).toBe(true);
+    expect(shouldSendDemoUserHeader(" demo-user-id ", false)).toBe(false);
+    expect(shouldSendDemoUserHeader("   ", true)).toBe(false);
+    expect(shouldSendDemoUserHeader(null, true)).toBe(false);
+  });
+});
+
+describe("createAuthClient", () => {
+  it("calls auth endpoints with credentials and without demo headers", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ user: { id: "user-1" } }))
+      .mockResolvedValueOnce(Response.json({ user: { id: "user-1" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createAuthClient();
+    await client.me();
+    await client.login({ email: "admin@example.com", password: "safe-password-123" });
+    await expect(client.logout()).resolves.toBeUndefined();
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    const [meUrl, meInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const [loginUrl, loginInit] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
+    const [logoutUrl, logoutInit] = fetchMock.mock.calls[2] as unknown as [string, RequestInit];
+
+    expect(meUrl).toBe("http://localhost/api/auth/me");
+    expect(loginUrl).toBe("http://localhost/api/auth/login");
+    expect(logoutUrl).toBe("http://localhost/api/auth/logout");
+    expect(meInit.credentials).toBe("include");
+    expect(loginInit.credentials).toBe("include");
+    expect(logoutInit.credentials).toBe("include");
+    expect((meInit.headers as Headers).get("X-Demo-User-Id")).toBeNull();
+    expect((loginInit.headers as Headers).get("X-Demo-User-Id")).toBeNull();
+    expect((logoutInit.headers as Headers).get("X-Demo-User-Id")).toBeNull();
+    expect(JSON.stringify(loginInit.body)).not.toContain("cookie");
+    expect(JSON.stringify(logoutInit)).not.toContain("safe-password-123");
   });
 });

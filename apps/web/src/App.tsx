@@ -1,8 +1,15 @@
-import { Button, Input, Layout, Menu, Select, Space, Tag, Typography } from "antd";
-import { useMemo, useState } from "react";
+import { Alert, Button, Form, Input, Layout, Menu, Select, Space, Spin, Tag, Typography } from "antd";
+import { useEffect, useMemo, useState } from "react";
 import { appName } from "./app-meta";
 import "./App.css";
 import { Achievements } from "./Achievements";
+import {
+  createAuthClient,
+  isApiError,
+  type AuthClient,
+  type AuthUser,
+  type LoginRequest,
+} from "./api-client";
 import { AuditLogs } from "./AuditLogs";
 import { BoundaryNotice, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import {
@@ -19,6 +26,8 @@ import { Workbench } from "./Workbench";
 import { WorkflowTasks } from "./WorkflowTasks";
 
 const { Header, Sider, Content } = Layout;
+
+type AuthStatus = "checking" | "anonymous" | "authenticated" | "error";
 
 type NavItem = {
   key: string;
@@ -82,7 +91,347 @@ const navItems: NavItem[] = [
 
 const fallbackNavItem = navItems[0] as NavItem;
 
+export const isProductionAuthMode = (): boolean => import.meta.env.PROD;
+
+export const shouldShowDemoIdentityControls = (productionAuthMode: boolean): boolean =>
+  !productionAuthMode;
+
+export const getBusinessContextId = ({
+  productionAuthMode,
+  demoUserId,
+  authUser,
+}: {
+  productionAuthMode: boolean;
+  demoUserId: string | null;
+  authUser: Pick<AuthUser, "id"> | null;
+}): string | null => (productionAuthMode ? authUser?.id ?? null : demoUserId);
+
+export const mapAuthCheckErrorToStatus = (error: unknown): AuthStatus =>
+  isApiError(error) && error.kind === "unauthorized" ? "anonymous" : "error";
+
+export const loginAndRefreshCurrentUser = async (
+  authClient: AuthClient,
+  payload: LoginRequest,
+): Promise<AuthUser> => {
+  await authClient.login(payload);
+  const response = await authClient.me();
+  return response.user;
+};
+
+export const logoutAndClearCurrentUser = async (authClient: AuthClient): Promise<null> => {
+  await authClient.logout();
+  return null;
+};
+
 export function App() {
+  const [activeKey, setActiveKey] = useState("workbench");
+  const productionAuthMode = isProductionAuthMode();
+  const authClient = useMemo(() => createAuthClient(), []);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>(
+    productionAuthMode ? "checking" : "anonymous",
+  );
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [loginSubmitting, setLoginSubmitting] = useState(false);
+  const [demoUserId, setDemoUserId] = useState<string | null>(() => readStoredDemoUserId());
+  const [customUserId, setCustomUserId] = useState("");
+  const activeUser = useMemo(() => findDemoUserPreset(demoUserId), [demoUserId]);
+  const businessContextId = getBusinessContextId({
+    productionAuthMode,
+    demoUserId,
+    authUser,
+  });
+
+  useEffect(() => {
+    if (!productionAuthMode) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void authClient
+      .me()
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        setAuthUser(response.user);
+        setAuthStatus("authenticated");
+        setAuthError(null);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
+
+        setAuthUser(null);
+        setAuthStatus(mapAuthCheckErrorToStatus(error));
+        setAuthError(isApiError(error) && error.kind !== "unauthorized" ? error.message : null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authClient, productionAuthMode]);
+
+  const updateDemoUser = (userId: string | null) => {
+    setDemoUserId(userId);
+    storeDemoUserId(userId);
+  };
+
+  const applyCustomUser = () => {
+    updateDemoUser(customUserId.trim() || null);
+  };
+
+  const handleLogin = async (values: LoginRequest) => {
+    setLoginSubmitting(true);
+    setAuthError(null);
+
+    try {
+      const user = await loginAndRefreshCurrentUser(authClient, values);
+      setAuthUser(user);
+      setAuthStatus("authenticated");
+    } catch (error) {
+      setAuthUser(null);
+      setAuthStatus(mapAuthCheckErrorToStatus(error));
+      setAuthError(isApiError(error) ? error.message : "Login failed.");
+    } finally {
+      setLoginSubmitting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setAuthUser(await logoutAndClearCurrentUser(authClient));
+    setAuthStatus("anonymous");
+  };
+
+  return (
+    <Layout className="app-shell">
+      <Header className="app-header">
+        <div className="brand-block">
+          <Typography.Title level={4}>{appName}</Typography.Title>
+          <Typography.Text type="secondary">Phase 1 frontend</Typography.Text>
+        </div>
+        {shouldShowDemoIdentityControls(productionAuthMode) ? (
+          <DemoIdentityControls
+            customUserId={customUserId}
+            demoUserId={demoUserId}
+            onApplyCustomUser={applyCustomUser}
+            onCustomUserIdChange={setCustomUserId}
+            onDemoUserChange={updateDemoUser}
+          />
+        ) : (
+          <ProductionIdentityControls
+            authStatus={authStatus}
+            authUser={authUser}
+            onLogout={handleLogout}
+          />
+        )}
+      </Header>
+      {productionAuthMode && authStatus !== "authenticated" ? (
+        <Content className="app-content auth-login-content">
+          <ProductionLoginPanel
+            authError={authError}
+            authStatus={authStatus}
+            loading={loginSubmitting}
+            onLogin={handleLogin}
+          />
+        </Content>
+      ) : (
+        <Layout className="main-layout">
+          <Sider width={232} className="app-sider" breakpoint="lg" collapsedWidth={0}>
+            <div className="user-panel">
+              <Typography.Text type="secondary">Current user</Typography.Text>
+              <Typography.Text strong ellipsis>
+                {productionAuthMode
+                  ? authUser?.name ?? "Not signed in"
+                  : activeUser?.label ?? (demoUserId ? "Custom demo user" : "Not selected")}
+              </Typography.Text>
+              <Typography.Text type="secondary" ellipsis>
+                {productionAuthMode
+                  ? authUser?.email ?? "Please sign in"
+                  : activeUser?.department ?? demoUserId ?? "Select demo context"}
+              </Typography.Text>
+            </div>
+            <Menu
+              mode="inline"
+              selectedKeys={[activeKey]}
+              items={navItems.map((item) => ({
+                key: item.key,
+                label: item.label,
+              }))}
+              onClick={(event) => setActiveKey(event.key)}
+            />
+          </Sider>
+          <Content className="app-content">
+            {productionAuthMode ? (
+              <ProductionAuthBanner authUser={authUser} />
+            ) : (
+              <DemoContextBanner demoUserId={demoUserId} />
+            )}
+            {activeKey === "workbench" ? (
+              <Workbench demoUserId={businessContextId} onNavigate={setActiveKey} />
+            ) : activeKey === "achievements" ? (
+              <Achievements demoUserId={businessContextId} />
+            ) : activeKey === "workflow" ? (
+              <WorkflowTasks demoUserId={businessContextId} />
+            ) : activeKey === "fees" ? (
+              <Fees demoUserId={businessContextId} />
+            ) : activeKey === "search" ? (
+              <Search demoUserId={businessContextId} />
+            ) : activeKey === "dashboard" ? (
+              <Dashboard demoUserId={businessContextId} />
+            ) : activeKey === "audit" ? (
+              <AuditLogs demoUserId={businessContextId} />
+            ) : activeKey === "settings" ? (
+              <SettingsBoundary demoUserId={businessContextId} />
+            ) : (
+              <BoundaryPage
+                item={navItems.find((item) => item.key === activeKey) ?? fallbackNavItem}
+              />
+            )}
+          </Content>
+        </Layout>
+      )}
+    </Layout>
+  );
+}
+
+function DemoIdentityControls({
+  customUserId,
+  demoUserId,
+  onApplyCustomUser,
+  onCustomUserIdChange,
+  onDemoUserChange,
+}: {
+  customUserId: string;
+  demoUserId: string | null;
+  onApplyCustomUser: () => void;
+  onCustomUserIdChange: (value: string) => void;
+  onDemoUserChange: (userId: string | null) => void;
+}) {
+  return (
+    <div className="identity-bar">
+      <Tag color="gold">demo/staging identity</Tag>
+      <Select
+        className="demo-user-select"
+        allowClear
+        placeholder="Select demo user"
+        value={demoUserId ?? undefined}
+        onChange={(value) => onDemoUserChange(value ?? null)}
+        options={demoUserPresets.map((preset) => ({
+          value: preset.userId,
+          label: `${preset.label} / ${preset.role}`,
+        }))}
+      />
+      <Input.Search
+        className="demo-user-input"
+        placeholder="X-Demo-User-Id"
+        enterButton="Apply"
+        value={customUserId}
+        onChange={(event) => onCustomUserIdChange(event.target.value)}
+        onSearch={onApplyCustomUser}
+      />
+      {demoUserId ? <Button onClick={() => onDemoUserChange(null)}>Clear</Button> : null}
+    </div>
+  );
+}
+
+function ProductionIdentityControls({
+  authStatus,
+  authUser,
+  onLogout,
+}: {
+  authStatus: AuthStatus;
+  authUser: AuthUser | null;
+  onLogout: () => void;
+}) {
+  return (
+    <div className="identity-bar">
+      <Tag color={authStatus === "authenticated" ? "green" : "blue"}>production auth</Tag>
+      {authUser ? (
+        <>
+          <Typography.Text strong>{authUser.name}</Typography.Text>
+          <Typography.Text type="secondary">{authUser.email}</Typography.Text>
+          <Button onClick={onLogout}>Logout</Button>
+        </>
+      ) : (
+        <Typography.Text type="secondary">
+          {authStatus === "checking" ? "Checking session" : "Please sign in"}
+        </Typography.Text>
+      )}
+    </div>
+  );
+}
+
+export function ProductionLoginPanel({
+  authError,
+  authStatus,
+  loading,
+  onLogin,
+}: {
+  authError: string | null;
+  authStatus: AuthStatus;
+  loading: boolean;
+  onLogin: (values: LoginRequest) => void | Promise<void>;
+}) {
+  if (authStatus === "checking") {
+    return (
+      <div className="auth-login-panel">
+        <Spin />
+        <Typography.Text type="secondary">Checking session</Typography.Text>
+      </div>
+    );
+  }
+
+  return (
+    <div className="auth-login-panel">
+      <Space direction="vertical" size={16} className="full-width">
+        <div>
+          <Typography.Title level={3}>Production sign in</Typography.Title>
+          <Typography.Text type="secondary">
+            Sign in with a local production account. Demo user switching is disabled here.
+          </Typography.Text>
+        </div>
+        {authError ? <Alert type="error" showIcon message={authError} /> : null}
+        <Form<LoginRequest> layout="vertical" onFinish={onLogin} requiredMark={false}>
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[{ required: true, type: "email", message: "Enter a valid email." }]}
+          >
+            <Input autoComplete="username" />
+          </Form.Item>
+          <Form.Item
+            label="Password"
+            name="password"
+            rules={[{ required: true, message: "Enter your password." }]}
+          >
+            <Input.Password autoComplete="current-password" />
+          </Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading}>
+            Sign in
+          </Button>
+        </Form>
+      </Space>
+    </div>
+  );
+}
+
+function ProductionAuthBanner({ authUser }: { authUser: AuthUser | null }) {
+  return (
+    <div className="context-banner">
+      <Space size={12} wrap>
+        <Tag color="green">session</Tag>
+        <Typography.Text strong>{authUser?.name ?? "Authenticated user"}</Typography.Text>
+        <Typography.Text type="secondary">{authUser?.email ?? "No active session"}</Typography.Text>
+      </Space>
+    </div>
+  );
+}
+
+function LegacyDemoApp() {
   const [activeKey, setActiveKey] = useState("workbench");
   const [demoUserId, setDemoUserId] = useState<string | null>(() => readStoredDemoUserId());
   const [customUserId, setCustomUserId] = useState("");

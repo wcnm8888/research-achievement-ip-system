@@ -9,6 +9,9 @@ export const AuditTargetTypeCode = {
   notification: "NOTIFICATION",
   systemConfig: "SYSTEM_CONFIG",
   auditLog: "AUDIT_LOG",
+  user: "USER",
+  userSession: "USER_SESSION",
+  auth: "AUTH",
 } as const;
 
 export type AuditTargetTypeCode =

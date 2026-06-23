@@ -11,6 +11,12 @@ export const AuditActionCode = {
   markFeePaid: "MARK_FEE_PAID",
   confirmReminder: "CONFIRM_REMINDER",
   configUpdate: "CONFIG_UPDATE",
+  bootstrapAdmin: "BOOTSTRAP_ADMIN",
+  login: "LOGIN",
+  loginFailed: "LOGIN_FAILED",
+  logout: "LOGOUT",
+  sessionRevoked: "SESSION_REVOKED",
+  authMeDenied: "AUTH_ME_DENIED",
 } as const;
 
 export type AuditActionCode =

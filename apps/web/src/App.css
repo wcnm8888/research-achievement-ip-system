@@ -70,6 +70,21 @@ body {
   overflow: hidden;
 }
 
+.auth-login-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 72px);
+}
+
+.auth-login-panel {
+  width: min(100%, 420px);
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+}
+
 .page-stack,
 .full-width {
   width: 100%;

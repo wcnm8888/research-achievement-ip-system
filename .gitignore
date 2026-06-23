@@ -7,6 +7,7 @@ coverage/
 .env.*
 !.env.example
 !.env.demo.example
+!.env.production.example
 *.log
 pnpm-debug.log*
 npm-debug.log*
@@ -15,3 +16,4 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 .playwright-cli/
+deploy/artifacts/
