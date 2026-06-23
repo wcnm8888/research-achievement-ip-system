@@ -593,17 +593,17 @@ export class AchievementService {
     type: AchievementTypeCode,
     dto: CreateAchievementDto | UpdateAchievementDto,
   ): void {
-    if (type !== AchievementTypeCode.paper && hasOwn(dto, "paperDetail")) {
+    if (type !== AchievementTypeCode.paper && isProvidedDetail(dto.paperDetail)) {
       throw new AchievementInvalidPayloadError("Paper detail does not match achievement type.");
     }
 
-    if (type !== AchievementTypeCode.patent && hasOwn(dto, "patentDetail")) {
+    if (type !== AchievementTypeCode.patent && isProvidedDetail(dto.patentDetail)) {
       throw new AchievementInvalidPayloadError("Patent detail does not match achievement type.");
     }
 
     if (
       type !== AchievementTypeCode.softwareCopyright &&
-      hasOwn(dto, "softwareCopyrightDetail")
+      isProvidedDetail(dto.softwareCopyrightDetail)
     ) {
       throw new AchievementInvalidPayloadError(
         "Software copyright detail does not match achievement type.",
@@ -867,6 +867,8 @@ const toContributorInput = (
 
 const hasOwn = <T extends object>(object: T, key: PropertyKey): boolean =>
   Object.prototype.hasOwnProperty.call(object, key);
+
+const isProvidedDetail = (value: unknown): boolean => value !== undefined && value !== null;
 
 const hasNormalizedValue = (input: NormalizedAchievementConflictInput): boolean =>
   Boolean(

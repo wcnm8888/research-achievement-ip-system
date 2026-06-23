@@ -391,6 +391,8 @@ describe("AchievementService.createDraft", () => {
       secretLevel: SecretLevelCode.internal,
       departmentId: ids.department,
       paperDetail: { doi: "https://doi.org/10.1234/EXAMPLE" },
+      patentDetail: undefined,
+      softwareCopyrightDetail: undefined,
       contributors: [
         {
           name: "Author One",
@@ -574,6 +576,8 @@ describe("AchievementService.updateDraft", () => {
     await service.updateDraft(makeContext(), ids.achievement, {
       title: "Updated title",
       paperDetail: { doi: "10.1234/UPDATED" },
+      patentDetail: undefined,
+      softwareCopyrightDetail: undefined,
     });
 
     expect(policyQueryFactory.achievementOwnedWhere).toHaveBeenCalledWith(
