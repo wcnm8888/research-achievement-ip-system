@@ -556,7 +556,7 @@ export class AchievementService {
   }
 
   private assertContributorsAreNotUpdated(dto: UpdateAchievementDto): void {
-    if (hasOwn(dto, "contributors")) {
+    if (isProvidedDetail(dto.contributors)) {
       throw new AchievementUnsupportedOperationError(
         "Updating achievement contributors is not supported in Step 5B-2.",
       );

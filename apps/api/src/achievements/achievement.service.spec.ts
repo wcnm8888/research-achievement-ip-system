@@ -578,6 +578,7 @@ describe("AchievementService.updateDraft", () => {
       paperDetail: { doi: "10.1234/UPDATED" },
       patentDetail: undefined,
       softwareCopyrightDetail: undefined,
+      contributors: undefined,
     });
 
     expect(policyQueryFactory.achievementOwnedWhere).toHaveBeenCalledWith(
