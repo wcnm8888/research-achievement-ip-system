@@ -33,6 +33,14 @@ const ids = {
   user: "40000000-0000-4000-8000-000000000001",
 };
 
+const localResearcherAcceptanceMarker = "[LOCAL-SYNTHETIC-ROLE-ACCEPTANCE]";
+const researcherPermissionProfile = [
+  PermissionCode.achievementCreate,
+  PermissionCode.achievementReadOwn,
+  PermissionCode.achievementUpdateOwn,
+  PermissionCode.achievementSubmit,
+] as const;
+
 type LoadedUserFixture = {
   id: string;
   departmentId: string;
@@ -365,6 +373,65 @@ describe("AchievementController HTTP", () => {
         .expect(201);
 
       expect(service.archiveAchievement).toHaveBeenCalledWith(expect.any(Object), ids.achievement);
+    });
+  });
+
+  it("allows the researcher local acceptance draft flow but rejects archive", async () => {
+    await withTestApp(researcherPermissionProfile, async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .post("/achievements")
+        .set("X-Demo-User-Id", ids.user)
+        .send({
+          ...makeCreatePayload(),
+          title: `${localResearcherAcceptanceMarker} researcher draft`,
+        })
+        .expect(201);
+
+      await request(app.getHttpServer() as Server)
+        .patch(`/achievements/${ids.achievement}`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ title: `${localResearcherAcceptanceMarker} researcher draft updated` })
+        .expect(200);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/achievements/${ids.achievement}/submit`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(201);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/achievements/${ids.achievement}/archive`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(403);
+
+      expect(service.createDraft).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          departmentId: ids.department,
+          roleCodes: [RoleCode.researcher],
+          permissionCodes: expect.arrayContaining([...researcherPermissionProfile]),
+        }),
+        expect.objectContaining({
+          title: `${localResearcherAcceptanceMarker} researcher draft`,
+        }),
+      );
+      expect(service.updateDraft).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          roleCodes: [RoleCode.researcher],
+        }),
+        ids.achievement,
+        expect.objectContaining({
+          title: `${localResearcherAcceptanceMarker} researcher draft updated`,
+        }),
+      );
+      expect(service.submitDraft).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          roleCodes: [RoleCode.researcher],
+        }),
+        ids.achievement,
+      );
+      expect(service.archiveAchievement).not.toHaveBeenCalled();
     });
   });
 

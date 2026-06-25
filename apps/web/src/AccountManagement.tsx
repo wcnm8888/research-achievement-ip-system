@@ -1,0 +1,1214 @@
+import {
+  Alert,
+  Button,
+  Card,
+  Descriptions,
+  Drawer,
+  Form,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  message,
+  type FormInstance,
+} from "antd";
+import type { TableProps } from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createApiClient,
+  isApiError,
+  type AccountManagementApiClient,
+  type ApiError,
+  type AuthUser,
+} from "./api-client";
+import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import type {
+  AccountRoleCode,
+  AccountRoleScopeType,
+  AccountUserDetail,
+  AccountUserListResponse,
+  AccountUserStatus,
+  AccountUserSummary,
+  AssignAccountUserRoleInput,
+  ChangeAccountUserDepartmentInput,
+  CreateAccountUserInput,
+  DisableAccountUserInput,
+  EnableAccountUserInput,
+  ListAccountUsersQuery,
+  RevokeAccountUserRoleInput,
+} from "./types";
+
+type Loadable<T> = {
+  loading: boolean;
+  data: T | null;
+  error: ApiError | null;
+};
+
+type AccountUserFilters = {
+  keyword?: string;
+  status?: AccountUserStatus;
+  departmentId?: string;
+  roleCode?: AccountRoleCode;
+};
+
+type CreateUserFormValues = {
+  email: string;
+  name: string;
+  departmentId: string;
+  roles: Array<{
+    roleCode?: AccountRoleCode;
+    scopeType?: AccountRoleScopeType;
+    departmentId?: string;
+  }>;
+  initialPassword?: string;
+};
+
+type ReasonFormValues = {
+  reason?: string;
+};
+
+type AssignRoleFormValues = {
+  roleCode?: AccountRoleCode;
+  scopeType?: AccountRoleScopeType;
+  departmentId?: string;
+  reason?: string;
+};
+
+type ChangeDepartmentFormValues = {
+  departmentId?: string;
+  reason?: string;
+};
+
+type OperationRequest =
+  | { kind: "disable"; user: AccountUserDetail }
+  | { kind: "enable"; user: AccountUserDetail }
+  | { kind: "assign-role"; user: AccountUserDetail }
+  | { kind: "revoke-role"; user: AccountUserDetail; userRole: AccountUserDetail["roles"][number] }
+  | { kind: "change-department"; user: AccountUserDetail };
+
+type AccountManagementProps = {
+  demoUserId: string | null;
+  authUser: Pick<AuthUser, "permissionCodes"> | null;
+};
+
+const defaultPageSize = 20;
+
+const emptyLoadable = <T,>(): Loadable<T> => ({
+  loading: false,
+  data: null,
+  error: null,
+});
+
+export const accountManagementPermissionCode = "system:config";
+
+const statusOptions: Array<{ label: string; value: AccountUserStatus }> = [
+  { label: "启用", value: "ACTIVE" },
+  { label: "禁用", value: "DISABLED" },
+  { label: "归档", value: "ARCHIVED" },
+];
+
+const roleOptions: Array<{ label: string; value: AccountRoleCode }> = [
+  { label: "科研人员", value: "RESEARCHER" },
+  { label: "科研秘书", value: "RESEARCH_SECRETARY" },
+  { label: "部门管理员", value: "DEPARTMENT_ADMIN" },
+  { label: "系统管理员", value: "SYSTEM_ADMIN" },
+  { label: "审计员", value: "AUDITOR" },
+  { label: "负责人", value: "LEADER" },
+  { label: "保密员", value: "SECRET_MANAGER" },
+];
+
+const scopeTypeOptions: Array<{ label: string; value: AccountRoleScopeType }> = [
+  { label: "全局", value: "GLOBAL" },
+  { label: "部门", value: "DEPARTMENT" },
+];
+
+const statusLabels = Object.fromEntries(
+  statusOptions.map((option) => [option.value, option.label]),
+) as Record<AccountUserStatus, string>;
+
+const roleLabels = Object.fromEntries(
+  roleOptions.map((option) => [option.value, option.label]),
+) as Record<AccountRoleCode, string>;
+
+const credentialStatusLabels: Record<string, string> = {
+  ACTIVE: "可登录",
+  DISABLED: "凭证禁用",
+};
+
+export function AccountManagement({ demoUserId, authUser }: AccountManagementProps) {
+  const [draftFilters, setDraftFilters] = useState<AccountUserFilters>({});
+  const [appliedFilters, setAppliedFilters] = useState<AccountUserFilters>({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(defaultPageSize);
+  const [users, setUsers] = useState<Loadable<AccountUserListResponse>>(emptyLoadable);
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<Loadable<AccountUserDetail>>(emptyLoadable);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [operation, setOperation] = useState<OperationRequest | null>(null);
+  const [operationError, setOperationError] = useState<ApiError | null>(null);
+  const [operationSubmitting, setOperationSubmitting] = useState(false);
+  const [createForm] = Form.useForm<CreateUserFormValues>();
+  const [reasonForm] = Form.useForm<ReasonFormValues>();
+  const [assignRoleForm] = Form.useForm<AssignRoleFormValues>();
+  const [departmentForm] = Form.useForm<ChangeDepartmentFormValues>();
+  const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
+
+  const canReadAccounts = hasSystemConfigPermission(authUser);
+  const query = useMemo(
+    () => buildAccountUserListQuery(appliedFilters, page, pageSize),
+    [appliedFilters, page, pageSize],
+  );
+
+  const loadUsers = useCallback(() => {
+    if (!canReadAccounts || !demoUserId) {
+      setUsers(emptyLoadable);
+      return;
+    }
+
+    setUsers({ loading: true, data: null, error: null });
+    void fetchAccountUsers(apiClient, query)
+      .then((data) => setUsers({ loading: false, data, error: null }))
+      .catch((error: unknown) =>
+        setUsers({ loading: false, data: null, error: normalizeError(error) }),
+      );
+  }, [apiClient, canReadAccounts, demoUserId, query]);
+
+  const loadDetail = useCallback(
+    (userId: string) => {
+      if (!canReadAccounts || !demoUserId) {
+        setDetail(emptyLoadable);
+        return;
+      }
+
+      setDetailUserId(userId);
+      setDetail({ loading: true, data: null, error: null });
+      void fetchAccountUserDetail(apiClient, userId)
+        .then((data) => setDetail({ loading: false, data, error: null }))
+        .catch((error: unknown) =>
+          setDetail({ loading: false, data: null, error: normalizeError(error) }),
+        );
+    },
+    [apiClient, canReadAccounts, demoUserId],
+  );
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const applyFilters = () => {
+    setPage(1);
+    setAppliedFilters(trimAccountUserFilters(draftFilters));
+  };
+
+  const resetFilters = () => {
+    setDraftFilters({});
+    setAppliedFilters({});
+    setPage(1);
+    setPageSize(defaultPageSize);
+  };
+
+  const closeDetail = () => {
+    setDetailUserId(null);
+    setDetail(emptyLoadable);
+  };
+
+  const openCreateUser = () => {
+    createForm.resetFields();
+    createForm.setFieldsValue({
+      roles: [{ roleCode: "RESEARCHER", scopeType: "DEPARTMENT" }],
+    });
+    setCreateOpen(true);
+  };
+
+  const closeCreateUser = () => {
+    createForm.resetFields();
+    setCreateOpen(false);
+  };
+
+  const handleCreateUser = async (values: CreateUserFormValues) => {
+    setOperationSubmitting(true);
+    setOperationError(null);
+
+    try {
+      const user = await createAccountUserFromForm(apiClient, values);
+      message.success("用户已创建");
+      closeCreateUser();
+      loadUsers();
+      loadDetail(user.id);
+    } catch (error) {
+      setOperationError(normalizeError(error));
+    } finally {
+      createForm.setFieldValue("initialPassword", undefined);
+      setOperationSubmitting(false);
+    }
+  };
+
+  const openOperation = (request: OperationRequest) => {
+    setOperation(request);
+    setOperationError(null);
+    reasonForm.resetFields();
+    assignRoleForm.resetFields();
+    departmentForm.resetFields();
+
+    if (request.kind === "assign-role") {
+      assignRoleForm.setFieldsValue({
+        roleCode: "RESEARCHER",
+        scopeType: "DEPARTMENT",
+      });
+    }
+
+    if (request.kind === "change-department") {
+      departmentForm.setFieldsValue({
+        departmentId: request.user.department.id,
+      });
+    }
+  };
+
+  const closeOperation = () => {
+    setOperation(null);
+    setOperationError(null);
+    reasonForm.resetFields();
+    assignRoleForm.resetFields();
+    departmentForm.resetFields();
+  };
+
+  const handleOperationOk = async () => {
+    if (!operation) {
+      return;
+    }
+
+    setOperationSubmitting(true);
+    setOperationError(null);
+
+    try {
+      const updatedUser = await executeAccountOperation({
+        apiClient,
+        operation,
+        reasonValues: reasonForm.getFieldsValue(),
+        assignRoleValues:
+          operation.kind === "assign-role" ? await assignRoleForm.validateFields() : undefined,
+        departmentValues:
+          operation.kind === "change-department" ? await departmentForm.validateFields() : undefined,
+      });
+
+      message.success(getOperationSuccessMessage(operation.kind));
+      setDetailUserId(updatedUser.id);
+      setDetail({ loading: false, data: updatedUser, error: null });
+      loadUsers();
+      closeOperation();
+    } catch (error) {
+      setOperationError(normalizeError(error));
+    } finally {
+      setOperationSubmitting(false);
+    }
+  };
+
+  const hasFilters = hasActiveAccountUserFilters(appliedFilters);
+  const items = users.data?.items ?? [];
+
+  if (!canReadAccounts) {
+    return (
+      <Space direction="vertical" size={16} className="page-stack">
+        <SectionHeader
+          title="账号管理"
+          description="账号管理入口只对具备 system:config 权限的管理员开放。"
+        />
+        <DataState
+          error={{
+            kind: "forbidden",
+            status: 403,
+            message: "当前账号无权访问账号管理。",
+            detail: "请使用具备 system:config 权限的 production 管理员账号进入。",
+          }}
+        >
+          <span />
+        </DataState>
+      </Space>
+    );
+  }
+
+  if (!demoUserId) {
+    return (
+      <Space direction="vertical" size={16} className="page-stack">
+        <SectionHeader
+          title="账号管理"
+          description="需要有效 session 上下文后才会请求账号管理 API。"
+        />
+        <PermissionHint description="当前没有可用的业务上下文；前端不会发起账号管理请求。" />
+      </Space>
+    );
+  }
+
+  return (
+    <Space direction="vertical" size={16} className="page-stack">
+      <SectionHeader
+        title="账号管理"
+        description="管理本地账号创建、状态、角色和部门绑定；所有操作以后端 system:config 权限校验为准。"
+        extra={
+          <Button type="primary" onClick={openCreateUser}>
+            创建用户
+          </Button>
+        }
+      />
+      <PermissionHint description="账号管理权限最终以后端 system:config 校验为准；前端只做入口收敛和只读展示，不展示或缓存任何密码、token、session hash 或 credential secret。" />
+
+      <Card className="shell-card">
+        <Space className="account-filter-bar" size={12} wrap>
+          <Input.Search
+            allowClear
+            className="account-keyword"
+            placeholder="按姓名或邮箱搜索"
+            enterButton="查询"
+            value={draftFilters.keyword}
+            onChange={(event) =>
+              setDraftFilters((current) => ({ ...current, keyword: event.target.value }))
+            }
+            onSearch={applyFilters}
+          />
+          <Select
+            allowClear
+            className="account-filter-select"
+            placeholder="账号状态"
+            options={statusOptions}
+            value={draftFilters.status}
+            onChange={(value) =>
+              setDraftFilters((current) => ({ ...current, status: value }))
+            }
+          />
+          <Input
+            allowClear
+            className="account-filter-input"
+            placeholder="部门 ID"
+            value={draftFilters.departmentId}
+            onChange={(event) =>
+              setDraftFilters((current) => ({ ...current, departmentId: event.target.value }))
+            }
+          />
+          <Select
+            allowClear
+            className="account-filter-select"
+            placeholder="角色"
+            options={roleOptions}
+            value={draftFilters.roleCode}
+            onChange={(value) =>
+              setDraftFilters((current) => ({ ...current, roleCode: value }))
+            }
+          />
+          <Button type="primary" onClick={applyFilters}>
+            查询
+          </Button>
+          <Button onClick={resetFilters}>重置</Button>
+          <Button onClick={loadUsers}>刷新</Button>
+        </Space>
+      </Card>
+
+      <Card className="shell-card" title="用户列表" extra={<Tag>GET /account-management/users</Tag>}>
+        <DataState
+          loading={users.loading}
+          error={users.error}
+          empty={!users.loading && !users.error && items.length === 0}
+          emptyText={hasFilters ? "没有匹配的用户" : "暂无用户"}
+          onRetry={loadUsers}
+        >
+          <Table<AccountUserSummary>
+            className="account-user-table"
+            rowKey="id"
+            columns={createAccountUserColumns(loadDetail, openOperation)}
+            dataSource={items}
+            pagination={{
+              current: users.data?.page ?? page,
+              pageSize: users.data?.pageSize ?? pageSize,
+              total: users.data?.total ?? 0,
+              showSizeChanger: true,
+              showTotal: (total) => `共 ${total} 位用户`,
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage);
+                setPageSize(nextPageSize);
+              },
+            }}
+            scroll={{ x: 1080 }}
+          />
+        </DataState>
+      </Card>
+
+      <Drawer
+        className="account-detail-drawer"
+        title="用户详情"
+        width={640}
+        open={Boolean(detailUserId)}
+        onClose={closeDetail}
+      >
+        <DataState loading={detail.loading} error={detail.error} onRetry={() => {
+          if (detailUserId) {
+            loadDetail(detailUserId);
+          }
+        }}>
+          {detail.data ? (
+            <AccountUserDetailView user={detail.data} onOperation={openOperation} />
+          ) : null}
+        </DataState>
+      </Drawer>
+
+      <CreateUserDrawer
+        form={createForm}
+        open={createOpen}
+        submitting={operationSubmitting}
+        error={operationError}
+        onClose={closeCreateUser}
+        onFinish={handleCreateUser}
+      />
+
+      <AccountOperationModal
+        operation={operation}
+        reasonForm={reasonForm}
+        assignRoleForm={assignRoleForm}
+        departmentForm={departmentForm}
+        submitting={operationSubmitting}
+        error={operationError}
+        onCancel={closeOperation}
+        onOk={handleOperationOk}
+      />
+    </Space>
+  );
+}
+
+export const hasSystemConfigPermission = (
+  user: Pick<AuthUser, "permissionCodes"> | null | undefined,
+): boolean => Boolean(user?.permissionCodes.includes(accountManagementPermissionCode));
+
+export const buildAccountUserListQuery = (
+  filters: AccountUserFilters,
+  page: number,
+  pageSize: number,
+): ListAccountUsersQuery => ({
+  ...trimAccountUserFilters(filters),
+  page,
+  pageSize,
+});
+
+export const fetchAccountUsers = async (
+  client: Pick<AccountManagementApiClient, "listAccountUsers">,
+  query: ListAccountUsersQuery,
+): Promise<AccountUserListResponse> => {
+  const result = await client.listAccountUsers(query);
+
+  return {
+    items: Array.isArray(result.items) ? result.items : [],
+    total: typeof result.total === "number" ? result.total : 0,
+    page: typeof result.page === "number" ? result.page : query.page ?? 1,
+    pageSize: typeof result.pageSize === "number" ? result.pageSize : query.pageSize ?? defaultPageSize,
+  };
+};
+
+export const fetchAccountUserDetail = async (
+  client: Pick<AccountManagementApiClient, "getAccountUser">,
+  userId: string,
+): Promise<AccountUserDetail> => client.getAccountUser(userId);
+
+export const buildCreateAccountUserPayload = (
+  values: CreateUserFormValues,
+): CreateAccountUserInput => {
+  const initialPassword = values.initialPassword?.trim();
+
+  return {
+    email: values.email.trim(),
+    name: values.name.trim(),
+    departmentId: values.departmentId.trim(),
+    roles: values.roles.map((role) => buildRolePayload(role)),
+    ...(initialPassword ? { initialPassword } : {}),
+  };
+};
+
+export const buildReasonPayload = <T extends ReasonFormValues>(
+  values: T,
+): DisableAccountUserInput & EnableAccountUserInput & RevokeAccountUserRoleInput => {
+  const reason = values.reason?.trim();
+  return reason ? { reason } : {};
+};
+
+export const buildAssignRolePayload = (
+  values: AssignRoleFormValues,
+): AssignAccountUserRoleInput => {
+  if (!values.roleCode || !values.scopeType) {
+    throw new Error("Role code and scope type are required.");
+  }
+
+  const reason = values.reason?.trim();
+  const base = buildRolePayload({
+    roleCode: values.roleCode,
+    scopeType: values.scopeType,
+    departmentId: values.departmentId,
+  });
+
+  return {
+    ...base,
+    ...(reason ? { reason } : {}),
+  };
+};
+
+export const buildChangeDepartmentPayload = (
+  values: ChangeDepartmentFormValues,
+): ChangeAccountUserDepartmentInput => {
+  if (!values.departmentId?.trim()) {
+    throw new Error("Department id is required.");
+  }
+
+  const reason = values.reason?.trim();
+
+  return {
+    departmentId: values.departmentId.trim(),
+    ...(reason ? { reason } : {}),
+  };
+};
+
+export const createAccountUserFromForm = async (
+  client: Pick<AccountManagementApiClient, "createAccountUser">,
+  values: CreateUserFormValues,
+): Promise<AccountUserDetail> => client.createAccountUser(buildCreateAccountUserPayload(values));
+
+export const executeAccountOperation = async ({
+  apiClient,
+  operation,
+  reasonValues = {},
+  assignRoleValues,
+  departmentValues,
+}: {
+  apiClient: Pick<
+    AccountManagementApiClient,
+    | "disableAccountUser"
+    | "enableAccountUser"
+    | "assignAccountUserRole"
+    | "revokeAccountUserRole"
+    | "changeAccountUserDepartment"
+  >;
+  operation: OperationRequest;
+  reasonValues?: ReasonFormValues;
+  assignRoleValues?: AssignRoleFormValues;
+  departmentValues?: ChangeDepartmentFormValues;
+}): Promise<AccountUserDetail> => {
+  if (operation.kind === "disable") {
+    const response = await apiClient.disableAccountUser(
+      operation.user.id,
+      buildReasonPayload(reasonValues),
+    );
+    return response.user;
+  }
+
+  if (operation.kind === "enable") {
+    return apiClient.enableAccountUser(operation.user.id, buildReasonPayload(reasonValues));
+  }
+
+  if (operation.kind === "assign-role") {
+    const response = await apiClient.assignAccountUserRole(
+      operation.user.id,
+      buildAssignRolePayload(assignRoleValues ?? {}),
+    );
+    return response.user;
+  }
+
+  if (operation.kind === "revoke-role") {
+    return apiClient.revokeAccountUserRole(
+      operation.user.id,
+      operation.userRole.id,
+      buildReasonPayload(reasonValues),
+    );
+  }
+
+  return apiClient.changeAccountUserDepartment(
+    operation.user.id,
+    buildChangeDepartmentPayload(departmentValues ?? {}),
+  );
+};
+
+const buildRolePayload = ({
+  roleCode,
+  scopeType,
+  departmentId,
+}: {
+  roleCode?: AccountRoleCode;
+  scopeType?: AccountRoleScopeType;
+  departmentId?: string;
+}) => {
+  if (!roleCode || !scopeType) {
+    throw new Error("Role code and scope type are required.");
+  }
+
+  const trimmedDepartmentId = departmentId?.trim();
+
+  if (scopeType === "DEPARTMENT" && !trimmedDepartmentId) {
+    throw new Error("Department scope requires department id.");
+  }
+
+  return {
+    roleCode,
+    scopeType,
+    ...(scopeType === "DEPARTMENT" ? { departmentId: trimmedDepartmentId } : {}),
+  };
+};
+
+const trimAccountUserFilters = (filters: AccountUserFilters): AccountUserFilters => {
+  const keyword = filters.keyword?.trim();
+  const departmentId = filters.departmentId?.trim();
+
+  return {
+    keyword: keyword || undefined,
+    status: filters.status,
+    departmentId: departmentId || undefined,
+    roleCode: filters.roleCode,
+  };
+};
+
+const hasActiveAccountUserFilters = (filters: AccountUserFilters): boolean =>
+  Boolean(filters.keyword?.trim() || filters.status || filters.departmentId?.trim() || filters.roleCode);
+
+const createAccountUserColumns = (
+  onViewDetail: (userId: string) => void,
+  onOperation: (request: OperationRequest) => void,
+): TableProps<AccountUserSummary>["columns"] => [
+  {
+    title: "用户",
+    key: "user",
+    width: 260,
+    render: (_, user) => (
+      <Space direction="vertical" size={2}>
+        <Typography.Text strong>{user.name}</Typography.Text>
+        <Typography.Text type="secondary" ellipsis>
+          {user.email}
+        </Typography.Text>
+      </Space>
+    ),
+  },
+  {
+    title: "状态",
+    dataIndex: "status",
+    key: "status",
+    width: 112,
+    render: (value: AccountUserStatus) => renderUserStatusTag(value),
+  },
+  {
+    title: "部门",
+    dataIndex: "department",
+    key: "department",
+    width: 220,
+    render: (department: AccountUserSummary["department"]) => (
+      <Space direction="vertical" size={2}>
+        <Typography.Text>{department.name}</Typography.Text>
+        <Typography.Text type="secondary">{department.code}</Typography.Text>
+      </Space>
+    ),
+  },
+  {
+    title: "角色",
+    dataIndex: "roles",
+    key: "roles",
+    width: 260,
+    render: (roles: AccountUserSummary["roles"]) => (
+      <Space size={[4, 4]} wrap>
+        {roles.length > 0 ? (
+          roles.map((userRole) => renderRoleTag(userRole.role.code, userRole.id))
+        ) : (
+          <Tag>无角色</Tag>
+        )}
+      </Space>
+    ),
+  },
+  {
+    title: "凭证",
+    dataIndex: "credential",
+    key: "credential",
+    width: 132,
+    render: (credential: AccountUserSummary["credential"]) =>
+      credential ? (
+        <Tag color={credential.status === "ACTIVE" ? "green" : "orange"}>
+          {credentialStatusLabels[credential.status] ?? credential.status}
+        </Tag>
+      ) : (
+        <Tag>无凭证</Tag>
+      ),
+  },
+  {
+    title: "最近登录",
+    dataIndex: "lastLogin",
+    key: "lastLogin",
+    width: 176,
+    render: (lastLogin: AccountUserSummary["lastLogin"]) =>
+      formatDateTime(lastLogin?.lastSeenAt ?? lastLogin?.createdAt),
+  },
+  {
+    title: "更新时间",
+    dataIndex: "updatedAt",
+    key: "updatedAt",
+    width: 176,
+    render: (value: string) => formatDateTime(value),
+  },
+  {
+    title: "操作入口",
+    key: "actions",
+    fixed: "right",
+    width: 220,
+    render: (_, user) => (
+      <Space>
+        <Button size="small" onClick={() => onViewDetail(user.id)}>
+          查看详情
+        </Button>
+        {user.status === "ACTIVE" ? (
+          <Button danger size="small" onClick={() => onOperation({ kind: "disable", user })}>
+            禁用
+          </Button>
+        ) : user.status === "DISABLED" ? (
+          <Button size="small" onClick={() => onOperation({ kind: "enable", user })}>
+            启用
+          </Button>
+        ) : null}
+      </Space>
+    ),
+  },
+];
+
+function AccountUserDetailView({
+  user,
+  onOperation,
+}: {
+  user: AccountUserDetail;
+  onOperation: (request: OperationRequest) => void;
+}) {
+  return (
+    <Space direction="vertical" size={16} className="full-width">
+      <Descriptions bordered size="small" column={1}>
+        <Descriptions.Item label="用户 ID">{user.id}</Descriptions.Item>
+        <Descriptions.Item label="姓名">{user.name}</Descriptions.Item>
+        <Descriptions.Item label="邮箱">{user.email}</Descriptions.Item>
+        <Descriptions.Item label="状态">{renderUserStatusTag(user.status)}</Descriptions.Item>
+        <Descriptions.Item label="部门">
+          {user.department.name} / {user.department.code}
+        </Descriptions.Item>
+        <Descriptions.Item label="凭证状态">
+          {user.credential ? credentialStatusLabels[user.credential.status] ?? user.credential.status : "无凭证"}
+        </Descriptions.Item>
+        <Descriptions.Item label="最近登录">
+          {formatDateTime(user.lastLogin?.lastSeenAt ?? user.lastLogin?.createdAt)}
+        </Descriptions.Item>
+        <Descriptions.Item label="创建时间">{formatDateTime(user.createdAt)}</Descriptions.Item>
+        <Descriptions.Item label="更新时间">{formatDateTime(user.updatedAt)}</Descriptions.Item>
+      </Descriptions>
+      <Card className="shell-card" title="账号操作">
+        <Space size={8} wrap>
+          {user.status === "ACTIVE" ? (
+            <Button danger onClick={() => onOperation({ kind: "disable", user })}>
+              禁用用户
+            </Button>
+          ) : user.status === "DISABLED" ? (
+            <Button onClick={() => onOperation({ kind: "enable", user })}>启用用户</Button>
+          ) : null}
+          <Button onClick={() => onOperation({ kind: "assign-role", user })}>分配角色</Button>
+          <Button onClick={() => onOperation({ kind: "change-department", user })}>
+            变更部门
+          </Button>
+        </Space>
+      </Card>
+      <Card className="shell-card" title="角色范围">
+        <Space size={[6, 6]} wrap>
+          {user.roles.length > 0 ? (
+            user.roles.map((role) => (
+              <Space key={role.id} className="account-role-row" size={8} wrap>
+                <Tag>
+                  {getRoleLabel(role.role.code)} / {role.scopeType}
+                  {role.departmentId ? ` / ${role.departmentId}` : ""}
+                </Tag>
+                <Button
+                  danger
+                  size="small"
+                  onClick={() => onOperation({ kind: "revoke-role", user, userRole: role })}
+                >
+                  撤销
+                </Button>
+              </Space>
+            ))
+          ) : (
+            <Typography.Text type="secondary">暂无角色</Typography.Text>
+          )}
+        </Space>
+      </Card>
+    </Space>
+  );
+}
+
+function CreateUserDrawer({
+  form,
+  open,
+  submitting,
+  error,
+  onClose,
+  onFinish,
+}: {
+  form: FormInstance<CreateUserFormValues>;
+  open: boolean;
+  submitting: boolean;
+  error: ApiError | null;
+  onClose: () => void;
+  onFinish: (values: CreateUserFormValues) => void | Promise<void>;
+}) {
+  return (
+    <Drawer
+      className="account-operation-drawer"
+      title="创建用户"
+      width={680}
+      open={open}
+      onClose={onClose}
+      destroyOnClose
+      extra={
+        <Space>
+          <Button onClick={onClose}>取消</Button>
+          <Button type="primary" loading={submitting} onClick={() => form.submit()}>
+            创建
+          </Button>
+        </Space>
+      }
+    >
+      <Space direction="vertical" size={16} className="full-width">
+        {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
+        <Form<CreateUserFormValues>
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={onFinish}
+          initialValues={{
+            roles: [{ roleCode: "RESEARCHER", scopeType: "DEPARTMENT" }],
+          }}
+        >
+          <Form.Item
+            label="邮箱"
+            name="email"
+            rules={[
+              { required: true, message: "请输入邮箱。" },
+              { type: "email", message: "请输入有效邮箱。" },
+            ]}
+          >
+            <Input autoComplete="off" />
+          </Form.Item>
+          <Form.Item
+            label="姓名"
+            name="name"
+            rules={[{ required: true, message: "请输入姓名。" }]}
+          >
+            <Input autoComplete="off" />
+          </Form.Item>
+          <Form.Item
+            label="所属部门 ID"
+            name="departmentId"
+            rules={[{ required: true, message: "请输入部门 ID。" }]}
+          >
+            <Input autoComplete="off" />
+          </Form.Item>
+          <Form.Item
+            label="初始密码（可选）"
+            name="initialPassword"
+            rules={[{ min: 12, message: "初始密码至少 12 位。" }]}
+          >
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+          <Form.List name="roles">
+            {(fields, { add, remove }) => (
+              <Space direction="vertical" size={12} className="full-width">
+                {fields.map((field) => (
+                  <Card
+                    className="account-inline-card"
+                    key={field.key}
+                    size="small"
+                    title={`角色 ${field.name + 1}`}
+                    extra={
+                      fields.length > 1 ? (
+                        <Button danger size="small" onClick={() => remove(field.name)}>
+                          移除
+                        </Button>
+                      ) : null
+                    }
+                  >
+                    <Space className="account-role-form-row" size={12} wrap>
+                      <Form.Item
+                        label="角色"
+                        name={[field.name, "roleCode"]}
+                        rules={[{ required: true, message: "请选择角色。" }]}
+                      >
+                        <Select className="account-form-select" options={roleOptions} />
+                      </Form.Item>
+                      <Form.Item
+                        label="范围"
+                        name={[field.name, "scopeType"]}
+                        rules={[{ required: true, message: "请选择范围。" }]}
+                      >
+                        <Select
+                          className="account-form-select"
+                          options={scopeTypeOptions}
+                          onChange={(value) => {
+                            if (value === "GLOBAL") {
+                              form.setFieldValue(["roles", field.name, "departmentId"], undefined);
+                            }
+                          }}
+                        />
+                      </Form.Item>
+                      <Form.Item shouldUpdate noStyle>
+                        {() =>
+                          form.getFieldValue(["roles", field.name, "scopeType"]) === "DEPARTMENT" ? (
+                            <Form.Item
+                              label="范围部门 ID"
+                              name={[field.name, "departmentId"]}
+                              rules={[{ required: true, message: "部门范围必须填写部门 ID。" }]}
+                            >
+                              <Input className="account-form-input" autoComplete="off" />
+                            </Form.Item>
+                          ) : null
+                        }
+                      </Form.Item>
+                    </Space>
+                  </Card>
+                ))}
+                <Button onClick={() => add({ roleCode: "RESEARCHER", scopeType: "DEPARTMENT" })}>
+                  添加角色
+                </Button>
+              </Space>
+            )}
+          </Form.List>
+        </Form>
+      </Space>
+    </Drawer>
+  );
+}
+
+function AccountOperationModal({
+  operation,
+  reasonForm,
+  assignRoleForm,
+  departmentForm,
+  submitting,
+  error,
+  onCancel,
+  onOk,
+}: {
+  operation: OperationRequest | null;
+  reasonForm: FormInstance<ReasonFormValues>;
+  assignRoleForm: FormInstance<AssignRoleFormValues>;
+  departmentForm: FormInstance<ChangeDepartmentFormValues>;
+  submitting: boolean;
+  error: ApiError | null;
+  onCancel: () => void;
+  onOk: () => void | Promise<void>;
+}) {
+  const title = operation ? getOperationTitle(operation) : "";
+
+  return (
+    <Modal
+      title={title}
+      open={Boolean(operation)}
+      okText="确认"
+      cancelText="取消"
+      confirmLoading={submitting}
+      onCancel={onCancel}
+      onOk={onOk}
+      destroyOnClose
+    >
+      <Space direction="vertical" size={12} className="full-width">
+        {operation ? <OperationWarning operation={operation} /> : null}
+        {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
+        {operation?.kind === "assign-role" ? (
+          <AssignRoleForm form={assignRoleForm} />
+        ) : operation?.kind === "change-department" ? (
+          <ChangeDepartmentForm form={departmentForm} />
+        ) : (
+          <ReasonForm form={reasonForm} />
+        )}
+      </Space>
+    </Modal>
+  );
+}
+
+const getOperationTitle = (operation: OperationRequest): string => {
+  if (operation.kind === "disable") {
+    return `禁用用户：${operation.user.name}`;
+  }
+
+  if (operation.kind === "enable") {
+    return `启用用户：${operation.user.name}`;
+  }
+
+  if (operation.kind === "assign-role") {
+    return `分配角色：${operation.user.name}`;
+  }
+
+  if (operation.kind === "revoke-role") {
+    return `撤销角色：${operation.user.name}`;
+  }
+
+  return `变更部门：${operation.user.name}`;
+};
+
+const getOperationSuccessMessage = (kind: OperationRequest["kind"]): string => {
+  if (kind === "disable") {
+    return "用户已禁用";
+  }
+
+  if (kind === "enable") {
+    return "用户已启用";
+  }
+
+  if (kind === "assign-role") {
+    return "角色已分配";
+  }
+
+  if (kind === "revoke-role") {
+    return "角色已撤销";
+  }
+
+  return "部门已变更";
+};
+
+function OperationWarning({ operation }: { operation: OperationRequest }) {
+  if (operation.kind === "disable") {
+    return (
+      <Alert
+        type="warning"
+        showIcon
+        message="禁用用户会禁用 active credential，并撤销 active sessions。"
+      />
+    );
+  }
+
+  if (operation.kind === "enable") {
+    return (
+      <Alert
+        type="info"
+        showIcon
+        message="启用用户不会自动恢复已禁用 credential。"
+      />
+    );
+  }
+
+  if (operation.kind === "revoke-role") {
+    return (
+      <Alert
+        type="warning"
+        showIcon
+        message={`将撤销 ${getRoleLabel(operation.userRole.role.code)} / ${operation.userRole.scopeType}。`}
+      />
+    );
+  }
+
+  if (operation.kind === "change-department") {
+    return (
+      <Alert
+        type="warning"
+        showIcon
+        message="部门变更不会迁移历史成果、费用、审批，也不会自动迁移 scoped roles。"
+      />
+    );
+  }
+
+  return <Alert type="info" showIcon message="角色分配成功后会刷新当前用户详情。" />;
+}
+
+function ReasonForm({ form }: { form: FormInstance<ReasonFormValues> }) {
+  return (
+    <Form<ReasonFormValues> form={form} layout="vertical" requiredMark={false}>
+      <Form.Item label="原因（可选）" name="reason">
+        <Input.TextArea maxLength={300} rows={3} />
+      </Form.Item>
+    </Form>
+  );
+}
+
+function AssignRoleForm({ form }: { form: FormInstance<AssignRoleFormValues> }) {
+  return (
+    <Form<AssignRoleFormValues> form={form} layout="vertical" requiredMark={false}>
+      <Form.Item label="角色" name="roleCode" rules={[{ required: true, message: "请选择角色。" }]}>
+        <Select options={roleOptions} />
+      </Form.Item>
+      <Form.Item label="范围" name="scopeType" rules={[{ required: true, message: "请选择范围。" }]}>
+        <Select
+          options={scopeTypeOptions}
+          onChange={(value) => {
+            if (value === "GLOBAL") {
+              form.setFieldValue("departmentId", undefined);
+            }
+          }}
+        />
+      </Form.Item>
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue("scopeType") === "DEPARTMENT" ? (
+            <Form.Item
+              label="范围部门 ID"
+              name="departmentId"
+              rules={[{ required: true, message: "部门范围必须填写部门 ID。" }]}
+            >
+              <Input autoComplete="off" />
+            </Form.Item>
+          ) : null
+        }
+      </Form.Item>
+      <Form.Item label="原因（可选）" name="reason">
+        <Input.TextArea maxLength={300} rows={3} />
+      </Form.Item>
+    </Form>
+  );
+}
+
+function ChangeDepartmentForm({ form }: { form: FormInstance<ChangeDepartmentFormValues> }) {
+  return (
+    <Form<ChangeDepartmentFormValues> form={form} layout="vertical" requiredMark={false}>
+      <Form.Item
+        label="新部门 ID"
+        name="departmentId"
+        rules={[{ required: true, message: "请输入新部门 ID。" }]}
+      >
+        <Input autoComplete="off" />
+      </Form.Item>
+      <Form.Item label="原因（可选）" name="reason">
+        <Input.TextArea maxLength={300} rows={3} />
+      </Form.Item>
+    </Form>
+  );
+}
+
+const renderUserStatusTag = (status: AccountUserStatus) => {
+  const color = status === "ACTIVE" ? "green" : status === "DISABLED" ? "orange" : "default";
+  return <Tag color={color}>{statusLabels[status] ?? status}</Tag>;
+};
+
+const renderRoleTag = (code: AccountRoleCode | string, id: string) => (
+  <Tag key={id}>{getRoleLabel(code)}</Tag>
+);
+
+const getRoleLabel = (code: AccountRoleCode | string): string =>
+  roleLabels[code as AccountRoleCode] ?? code;
+
+const normalizeError = (error: unknown): ApiError => {
+  if (isApiError(error)) {
+    return error;
+  }
+
+  return {
+    kind: "unknown",
+    message: "请求失败",
+    detail: error instanceof Error ? error.message : undefined,
+  };
+};
+
+const formatDateTime = (value: string | null | undefined): string => {
+  if (!value) {
+    return "未返回";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("zh-CN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+};

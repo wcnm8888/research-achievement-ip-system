@@ -1,5 +1,75 @@
 # Progress
 
+## 2026-06-24 Step 34 / Prompt 26 Archive - Phase 1 production cutover closure
+
+- Status: DONE.
+- Archived as:
+  - `Phase 1 production cutover final checklist and closure`.
+- Final status:
+  - `PHASE_1_PRODUCTION_CUTOVER_GO_WITH_DEFERRED_ITEMS`.
+- Archive type:
+  - Production cutover closure archive.
+  - This records the final production cutover state, production smoke evidence, minimal synthetic write acceptance, and remaining deferred items.
+  - This does not mark Phase 2 scope as complete.
+- Completed production cutover scope:
+  - Single VPS production cutover adopted.
+  - Production domain confirmed as `https://production.wangyimin.cn`.
+  - Demo/staging was replaced by production.
+  - Production Docker Compose stack is running.
+  - Production Postgres/API/Web containers are healthy.
+  - Nginx reverse proxy is configured for `/api/*`, `/assets/*`, and `/`.
+  - HTTPS, Web root, API health, and frontend JS/CSS assets return 200.
+  - Production frontend no longer white-screens and displays authenticated application UI.
+- Completed auth scope:
+  - Production uses session auth, not `X-Demo-User-Id`.
+  - Public demo user switcher is not shown in production.
+  - Bootstrap admin exists.
+  - Bootstrap is closed.
+  - `admin@production.local` can sign in as `System Admin`.
+  - Login, `/api/auth/me`, logout, and post-logout 401 behavior were verified.
+  - No-session `X-Demo-User-Id` bypass attempt returns 401.
+- Completed migration / seed scope:
+  - Production migration completed for `20260608080155_init_core_schema`.
+  - Production migration completed for `20260623073332_add_auth_sessions`.
+  - Foundation seed completed with departments, roles, permissions, and rolePermissions only.
+  - Foundation seed did not create demo users, sessions, login attempts, achievements, fees, workflow tasks, attachments, or demo business data.
+- Completed smoke / acceptance scope:
+  - GET-only production smoke passed for health, auth me, audit logs, achievements, dashboard, search, fees, workflow tasks, logout, and post-logout auth check.
+  - Minimal synthetic achievement draft create/update acceptance passed.
+  - Synthetic write evidence is explicitly marked with `[SYNTHETIC-PROD-SMOKE]`.
+- Production fixes completed during cutover:
+  - Fixed achievement detail validation for undefined detail fields.
+  - Fixed achievement update validation for undefined contributors.
+  - Fixed production frontend white screen by routing `/assets/*` through the production Web container.
+- Files changed in this archive update:
+  - `memory-bank/implementation-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Files not changed by this archive update:
+  - Product source code, tests, schema, migration, seed, Docker compose files, deployment files, production env, and VPS files.
+- Verification:
+  - Live non-login recheck returned Web root 200, API health 200, JS asset 200, and CSS asset 200.
+  - Other production execution evidence is taken from the user-run VPS output and browser screenshot in Prompt 26 / Step 34.
+  - No test/typecheck/build/lint command was run for this archive update because it is documentation-only.
+- Security boundaries:
+  - Did not read or display `.env`, `DATABASE_URL`, `SESSION_SECRET`, `POSTGRES_PASSWORD`, passwords, tokens, cookies, certificates, private keys, DB dumps, or full connection strings.
+  - Did not execute production writes, migrations, seed, deployment, restart, or deletion during this archive update.
+- Deferred items:
+  - Complete approval submit / approve / reject flow.
+  - Real production users and role/permission acceptance for researcher, secretary, and auditor.
+  - Fee write and payment-state acceptance.
+  - Attachment upload/download and storage boundary.
+  - Real business data import.
+  - Account management UI.
+  - Password reset, MFA, or SSO.
+  - Monitoring and alerting.
+  - Production backup automation.
+  - Real settings/config CRUD backend.
+  - Real department maintenance backend.
+- Next:
+  - Step 35A - Phase 2 scope confirmation.
+
 ## 2026-06-22 Phase 1 Remaining Work Roadmap Review Archive
 
 - Status: DONE.

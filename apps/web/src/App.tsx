@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { appName } from "./app-meta";
 import "./App.css";
 import { Achievements } from "./Achievements";
+import { AccountManagement, hasSystemConfigPermission } from "./AccountManagement";
 import {
   createAuthClient,
   isApiError,
@@ -36,7 +37,7 @@ type NavItem = {
   description: string;
 };
 
-const navItems: NavItem[] = [
+export const navItems: NavItem[] = [
   {
     key: "workbench",
     label: "工作台",
@@ -87,6 +88,12 @@ const navItems: NavItem[] = [
     step: "Step 20B",
     description: "Step 20B 提供系统配置边界 / 只读能力盘点，不实现 settings/config API 或配置 CRUD。",
   },
+  {
+    key: "account-management",
+    label: "账号管理",
+    step: "Step 36E-2",
+    description: "Step 36E-2 提供账号列表和详情只读 UI，不提供创建、禁用启用、角色或部门写入操作。",
+  },
 ];
 
 const fallbackNavItem = navItems[0] as NavItem;
@@ -105,6 +112,14 @@ export const getBusinessContextId = ({
   demoUserId: string | null;
   authUser: Pick<AuthUser, "id"> | null;
 }): string | null => (productionAuthMode ? authUser?.id ?? null : demoUserId);
+
+export const getVisibleNavItems = (
+  items: readonly NavItem[],
+  authUser: Pick<AuthUser, "permissionCodes"> | null,
+): NavItem[] =>
+  items.filter(
+    (item) => item.key !== "account-management" || hasSystemConfigPermission(authUser),
+  );
 
 export const mapAuthCheckErrorToStatus = (error: unknown): AuthStatus =>
   isApiError(error) && error.kind === "unauthorized" ? "anonymous" : "error";
@@ -141,6 +156,13 @@ export function App() {
     demoUserId,
     authUser,
   });
+  const visibleNavItems = useMemo(() => getVisibleNavItems(navItems, authUser), [authUser]);
+
+  useEffect(() => {
+    if (!visibleNavItems.some((item) => item.key === activeKey)) {
+      setActiveKey(fallbackNavItem.key);
+    }
+  }, [activeKey, visibleNavItems]);
 
   useEffect(() => {
     if (!productionAuthMode) {
@@ -257,7 +279,7 @@ export function App() {
             <Menu
               mode="inline"
               selectedKeys={[activeKey]}
-              items={navItems.map((item) => ({
+              items={visibleNavItems.map((item) => ({
                 key: item.key,
                 label: item.label,
               }))}
@@ -286,6 +308,8 @@ export function App() {
               <AuditLogs demoUserId={businessContextId} />
             ) : activeKey === "settings" ? (
               <SettingsBoundary demoUserId={businessContextId} />
+            ) : activeKey === "account-management" ? (
+              <AccountManagement demoUserId={businessContextId} authUser={authUser} />
             ) : (
               <BoundaryPage
                 item={navItems.find((item) => item.key === activeKey) ?? fallbackNavItem}
@@ -436,6 +460,7 @@ function LegacyDemoApp() {
   const [demoUserId, setDemoUserId] = useState<string | null>(() => readStoredDemoUserId());
   const [customUserId, setCustomUserId] = useState("");
   const activeUser = useMemo(() => findDemoUserPreset(demoUserId), [demoUserId]);
+  const visibleNavItems = useMemo(() => getVisibleNavItems(navItems, null), []);
 
   const updateDemoUser = (userId: string | null) => {
     setDemoUserId(userId);
@@ -491,7 +516,7 @@ function LegacyDemoApp() {
           <Menu
             mode="inline"
             selectedKeys={[activeKey]}
-            items={navItems.map((item) => ({
+            items={visibleNavItems.map((item) => ({
               key: item.key,
               label: item.label,
             }))}

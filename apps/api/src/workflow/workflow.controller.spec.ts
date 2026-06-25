@@ -38,6 +38,13 @@ const ids = {
   user: "40000000-0000-4000-8000-000000000001",
 };
 
+const researcherPermissionProfile = [
+  PermissionCode.achievementCreate,
+  PermissionCode.achievementReadOwn,
+  PermissionCode.achievementUpdateOwn,
+  PermissionCode.achievementSubmit,
+] as const;
+
 type LoadedUserFixture = {
   id: string;
   departmentId: string;
@@ -341,6 +348,37 @@ describe("WorkflowController HTTP", () => {
         );
       },
     );
+  });
+
+  it("rejects researcher access to department review workflow operations", async () => {
+    await withTestApp(researcherPermissionProfile, async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get("/workflow/tasks/my")
+        .set("X-Demo-User-Id", ids.user)
+        .expect(403);
+
+      await request(app.getHttpServer() as Server)
+        .get(`/workflow/tasks/${ids.task}`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(403);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/workflow/tasks/${ids.task}/approve`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ comment: "Should be forbidden." })
+        .expect(403);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/workflow/tasks/${ids.task}/reject`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ comment: "Should be forbidden." })
+        .expect(403);
+
+      expect(service.listMyWorkflowTasks).not.toHaveBeenCalled();
+      expect(service.getMyWorkflowTask).not.toHaveBeenCalled();
+      expect(service.approveDepartmentReviewTask).not.toHaveBeenCalled();
+      expect(service.rejectDepartmentReviewTask).not.toHaveBeenCalled();
+    });
   });
 
   it("rejects invalid reject DTO payloads with 400", async () => {

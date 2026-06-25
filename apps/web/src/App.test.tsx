@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { ApiError, AuthClient, AuthUser } from "./api-client";
 import {
   getBusinessContextId,
+  getVisibleNavItems,
   loginAndRefreshCurrentUser,
   logoutAndClearCurrentUser,
   mapAuthCheckErrorToStatus,
+  navItems,
   shouldShowDemoIdentityControls,
 } from "./App";
 
@@ -63,6 +65,26 @@ describe("production auth mode helpers", () => {
     expect(mapAuthCheckErrorToStatus(unauthorized)).toBe("anonymous");
     expect(mapAuthCheckErrorToStatus(forbidden)).toBe("error");
     expect(mapAuthCheckErrorToStatus(new Error("network"))).toBe("error");
+  });
+
+  it("shows account management navigation only to system config users", () => {
+    const accountNavigationKey = "account-management";
+
+    expect(
+      getVisibleNavItems(navItems, {
+        ...authUser,
+        permissionCodes: ["system:config"],
+      }).some((item) => item.key === accountNavigationKey),
+    ).toBe(true);
+    expect(
+      getVisibleNavItems(navItems, {
+        ...authUser,
+        permissionCodes: ["audit:read"],
+      }).some((item) => item.key === accountNavigationKey),
+    ).toBe(false);
+    expect(getVisibleNavItems(navItems, null).some((item) => item.key === accountNavigationKey)).toBe(
+      false,
+    );
   });
 });
 

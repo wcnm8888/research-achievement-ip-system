@@ -14,7 +14,21 @@ export type MaskedAuditListResult = {
   items: MaskedAuditLog[];
 };
 
-const auditSummaryScalarKeys = new Set(["version", "fileName", "stepCode", "currentStep"]);
+const auditSummaryScalarKeys = new Set([
+  "version",
+  "fileName",
+  "stepCode",
+  "currentStep",
+  "emailMasked",
+  "roleCodes",
+  "credentialMode",
+  "operation",
+  "reason",
+  "reasonProvided",
+  "roleCode",
+  "revokedSessionCount",
+  "scopeMigration",
+]);
 
 @Injectable()
 export class AuditService {

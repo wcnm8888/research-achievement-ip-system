@@ -318,6 +318,54 @@ body {
   vertical-align: top;
 }
 
+.account-filter-bar {
+  width: 100%;
+}
+
+.account-keyword {
+  width: min(100%, 320px);
+}
+
+.account-filter-select {
+  width: 180px;
+}
+
+.account-filter-input {
+  width: min(100%, 260px);
+}
+
+.account-user-table .ant-table-cell {
+  vertical-align: top;
+}
+
+.account-detail-drawer .ant-descriptions-item-content {
+  overflow-wrap: anywhere;
+}
+
+.account-operation-drawer .ant-form-item {
+  margin-bottom: 14px;
+}
+
+.account-inline-card {
+  width: 100%;
+}
+
+.account-role-form-row {
+  width: 100%;
+}
+
+.account-form-select {
+  width: 180px;
+}
+
+.account-form-input {
+  width: min(100%, 260px);
+}
+
+.account-role-row {
+  max-width: 100%;
+}
+
 .workflow-filter-bar {
   width: 100%;
 }

@@ -425,3 +425,140 @@ export type AuditLogQuery = {
   traceId?: string;
   take?: number;
 };
+
+export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED";
+
+export type AccountCredentialStatus = "ACTIVE" | "DISABLED";
+
+export type AccountRoleStatus = "ACTIVE" | "ARCHIVED";
+
+export type AccountRoleScopeType = "GLOBAL" | "DEPARTMENT";
+
+export type AccountCredentialMode = "INITIAL_PASSWORD" | "NO_CREDENTIAL";
+
+export type AccountRoleCode =
+  | "RESEARCHER"
+  | "RESEARCH_SECRETARY"
+  | "DEPARTMENT_ADMIN"
+  | "SYSTEM_ADMIN"
+  | "AUDITOR"
+  | "LEADER"
+  | "SECRET_MANAGER";
+
+export type AccountUserDepartmentSummary = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+};
+
+export type AccountRoleSummary = {
+  id: string;
+  code: AccountRoleCode | string;
+  name: string;
+  status: AccountRoleStatus | string;
+};
+
+export type AccountUserRoleSummary = {
+  id: string;
+  role: AccountRoleSummary;
+  scopeType: AccountRoleScopeType;
+  scopeKey: string;
+  departmentId: string | null;
+  createdAt: string;
+};
+
+export type AccountUserCredentialSummary = {
+  status: AccountCredentialStatus;
+  passwordUpdatedAt: string | null;
+  disabledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AccountUserLastLoginSummary = {
+  sessionId: string;
+  createdAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  lastSeenAt: string | null;
+};
+
+export type AccountUserSummary = {
+  id: string;
+  email: string;
+  name: string;
+  status: AccountUserStatus;
+  department: AccountUserDepartmentSummary;
+  roles: AccountUserRoleSummary[];
+  credential: AccountUserCredentialSummary | null;
+  lastLogin: AccountUserLastLoginSummary | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AccountUserDetail = AccountUserSummary;
+
+export type AccountUserListResponse = {
+  items: AccountUserSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type ListAccountUsersQuery = {
+  keyword?: string;
+  status?: AccountUserStatus;
+  departmentId?: string;
+  roleCode?: AccountRoleCode;
+  page?: number;
+  pageSize?: number;
+};
+
+export type CreateAccountUserRoleInput = {
+  roleCode: AccountRoleCode;
+  scopeType: AccountRoleScopeType;
+  departmentId?: string;
+};
+
+export type CreateAccountUserInput = {
+  email: string;
+  name: string;
+  departmentId: string;
+  roles: CreateAccountUserRoleInput[];
+  initialPassword?: string;
+};
+
+export type DisableAccountUserInput = {
+  reason?: string | null;
+};
+
+export type EnableAccountUserInput = {
+  reason?: string | null;
+};
+
+export type AssignAccountUserRoleInput = {
+  roleCode: AccountRoleCode;
+  scopeType: AccountRoleScopeType;
+  departmentId?: string;
+  reason?: string | null;
+};
+
+export type RevokeAccountUserRoleInput = {
+  reason?: string | null;
+};
+
+export type ChangeAccountUserDepartmentInput = {
+  departmentId: string;
+  reason?: string | null;
+};
+
+export type DisableAccountUserResponse = {
+  user: AccountUserDetail;
+  revokedSessionCount: number;
+};
+
+export type AssignAccountUserRoleResponse = {
+  user: AccountUserDetail;
+  userRoleId: string;
+};
