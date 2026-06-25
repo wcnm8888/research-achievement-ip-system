@@ -57,6 +57,14 @@ const ids = {
   workflowInstance: "50000000-0000-4000-8000-000000000001",
 };
 
+const localResearcherAcceptanceMarker = "[LOCAL-SYNTHETIC-ROLE-ACCEPTANCE]";
+const researcherPermissionProfile = [
+  PermissionCode.achievementCreate,
+  PermissionCode.achievementReadOwn,
+  PermissionCode.achievementUpdateOwn,
+  PermissionCode.achievementSubmit,
+] as const;
+
 const makeContext = (
   permissionCodes: readonly PermissionCode[] = [
     PermissionCode.achievementCreate,
@@ -391,6 +399,8 @@ describe("AchievementService.createDraft", () => {
       secretLevel: SecretLevelCode.internal,
       departmentId: ids.department,
       paperDetail: { doi: "https://doi.org/10.1234/EXAMPLE" },
+      patentDetail: undefined,
+      softwareCopyrightDetail: undefined,
       contributors: [
         {
           name: "Author One",
@@ -537,6 +547,85 @@ describe("AchievementService.createDraft", () => {
   });
 });
 
+describe("AchievementService researcher local acceptance profile", () => {
+  it("allows researcher draft create, update, and submit without sensitive credential data", async () => {
+    const { service, repository, workflowService, auditService } = createService();
+    repository.transitionStatusInTransaction.mockResolvedValue(
+      makeState({
+        status: AchievementStatusCode.pendingDepartmentReview,
+        version: 3,
+        submittedAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+    );
+    const context = makeContext(researcherPermissionProfile);
+
+    await service.createDraft(context, {
+      type: AchievementTypeCode.paper,
+      title: `${localResearcherAcceptanceMarker} researcher draft`,
+      secretLevel: SecretLevelCode.internal,
+      departmentId: ids.department,
+      paperDetail: {},
+      contributors: [
+        {
+          name: "Local Synthetic Author",
+          contributorType: ContributorTypeCode.author,
+          sortOrder: 1,
+        },
+      ],
+    });
+    await service.updateDraft(context, ids.achievement, {
+      title: `${localResearcherAcceptanceMarker} researcher draft updated`,
+    });
+    const submitted = await service.submitDraft(context, ids.achievement);
+
+    expect(repository.createDraftInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        title: `${localResearcherAcceptanceMarker} researcher draft`,
+        departmentId: ids.department,
+        ownerUserId: ids.user,
+      }),
+    );
+    expect(repository.updateDraftInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        achievementId: ids.achievement,
+        title: `${localResearcherAcceptanceMarker} researcher draft updated`,
+        updatedById: ids.user,
+      }),
+    );
+    expect(workflowService.createAchievementReviewOnSubmitInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        achievementId: ids.achievement,
+        submittedById: ids.user,
+        departmentReviewerId: ids.reviewer,
+      }),
+    );
+    expect(submitted.status).toBe(AchievementStatusCode.pendingDepartmentReview);
+
+    const serializedAuditCalls = JSON.stringify(auditService.recordEventInTransaction.mock.calls);
+    expect(serializedAuditCalls).not.toContain("passwordHash");
+    expect(serializedAuditCalls).not.toContain("sessionHash");
+    expect(serializedAuditCalls).not.toContain("credentialSecret");
+    expect(serializedAuditCalls).not.toContain("token");
+    expect(serializedAuditCalls).not.toContain("cookie");
+  });
+
+  it("does not allow researcher to archive achievements", async () => {
+    const { service, prisma, repository, workflowService, auditService } = createService();
+
+    await expect(
+      service.archiveAchievement(makeContext(researcherPermissionProfile), ids.achievement),
+    ).rejects.toBeInstanceOf(AchievementPermissionDeniedError);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.transitionStatus).not.toHaveBeenCalled();
+    expect(repository.transitionStatusInTransaction).not.toHaveBeenCalled();
+    expect(workflowService.completeAchievementArchiveInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+});
+
 describe("AchievementService.getDetail", () => {
   it("reads detail through the Step 4 readable policy query", async () => {
     const { service, repository, policyQueryFactory } = createService();
@@ -574,6 +663,9 @@ describe("AchievementService.updateDraft", () => {
     await service.updateDraft(makeContext(), ids.achievement, {
       title: "Updated title",
       paperDetail: { doi: "10.1234/UPDATED" },
+      patentDetail: undefined,
+      softwareCopyrightDetail: undefined,
+      contributors: undefined,
     });
 
     expect(policyQueryFactory.achievementOwnedWhere).toHaveBeenCalledWith(

@@ -9,7 +9,9 @@
     "typecheck": "corepack pnpm -r typecheck",
     "test": "corepack pnpm -r test",
     "build": "corepack pnpm -r build",
-    "prisma:validate": "prisma validate"
+    "prisma:validate": "prisma validate",
+    "prisma:seed:foundation": "node prisma/seed-foundation.cjs",
+    "test:seed:foundation": "node --test prisma/seed-foundation.test.cjs"
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"

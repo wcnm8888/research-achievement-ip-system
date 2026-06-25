@@ -1,3 +1,17 @@
+import type {
+  AccountUserDetail,
+  AccountUserListResponse,
+  AssignAccountUserRoleInput,
+  AssignAccountUserRoleResponse,
+  ChangeAccountUserDepartmentInput,
+  CreateAccountUserInput,
+  DisableAccountUserInput,
+  DisableAccountUserResponse,
+  EnableAccountUserInput,
+  ListAccountUsersQuery,
+  RevokeAccountUserRoleInput,
+} from "./types";
+
 export type ApiErrorKind =
   | "unauthorized"
   | "forbidden"
@@ -25,6 +39,62 @@ export type ApiClient = {
   get<T>(path: string, query?: ApiQuery): Promise<T>;
   post<T>(path: string, body?: unknown): Promise<T>;
   patch<T>(path: string, body?: unknown): Promise<T>;
+};
+
+export type AccountManagementApiClient = ApiClient & {
+  listAccountUsers(query?: ListAccountUsersQuery): Promise<AccountUserListResponse>;
+  getAccountUser(userId: string): Promise<AccountUserDetail>;
+  createAccountUser(payload: CreateAccountUserInput): Promise<AccountUserDetail>;
+  disableAccountUser(
+    userId: string,
+    payload?: DisableAccountUserInput,
+  ): Promise<DisableAccountUserResponse>;
+  enableAccountUser(
+    userId: string,
+    payload?: EnableAccountUserInput,
+  ): Promise<AccountUserDetail>;
+  assignAccountUserRole(
+    userId: string,
+    payload: AssignAccountUserRoleInput,
+  ): Promise<AssignAccountUserRoleResponse>;
+  revokeAccountUserRole(
+    userId: string,
+    userRoleId: string,
+    payload?: RevokeAccountUserRoleInput,
+  ): Promise<AccountUserDetail>;
+  changeAccountUserDepartment(
+    userId: string,
+    payload: ChangeAccountUserDepartmentInput,
+  ): Promise<AccountUserDetail>;
+};
+
+export type ApiClientOptions = {
+  allowDemoUserHeader?: boolean;
+};
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  departmentId: string;
+  roleCodes: string[];
+  permissionCodes: string[];
+  scopedDepartmentIds: string[];
+};
+
+export type AuthUserResponse = {
+  user: AuthUser;
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type AuthClient = {
+  me(): Promise<AuthUserResponse>;
+  login(payload: LoginRequest): Promise<AuthUserResponse>;
+  logout(): Promise<void>;
 };
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(/\/$/, "");
@@ -85,18 +155,118 @@ export const mapApiErrorMessage = (status?: number): Pick<ApiError, "kind" | "me
   };
 };
 
-export const createApiClient = (demoUserId: string | null): ApiClient => ({
+export const createApiClient = (
+  demoUserId: string | null,
+  options: ApiClientOptions = {},
+): AccountManagementApiClient => ({
   async get<T>(path: string, query?: ApiQuery) {
-    const response = await request(path, demoUserId, { method: "GET", query });
+    const response = await request(path, demoUserId, { method: "GET", query }, options);
     return response as T;
   },
   async post<T>(path: string, body?: unknown) {
-    const response = await request(path, demoUserId, { method: "POST", body });
+    const response = await request(path, demoUserId, { method: "POST", body }, options);
     return response as T;
   },
   async patch<T>(path: string, body?: unknown) {
-    const response = await request(path, demoUserId, { method: "PATCH", body });
+    const response = await request(path, demoUserId, { method: "PATCH", body }, options);
     return response as T;
+  },
+  async listAccountUsers(query?: ListAccountUsersQuery) {
+    const response = await request(
+      "/account-management/users",
+      demoUserId,
+      { method: "GET", query },
+      options,
+    );
+    return response as AccountUserListResponse;
+  },
+  async getAccountUser(userId: string) {
+    const response = await request(
+      `/account-management/users/${userId}`,
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as AccountUserDetail;
+  },
+  async createAccountUser(payload: CreateAccountUserInput) {
+    const response = await request(
+      "/account-management/users",
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as AccountUserDetail;
+  },
+  async disableAccountUser(userId: string, payload: DisableAccountUserInput = {}) {
+    const response = await request(
+      `/account-management/users/${userId}/disable`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as DisableAccountUserResponse;
+  },
+  async enableAccountUser(userId: string, payload: EnableAccountUserInput = {}) {
+    const response = await request(
+      `/account-management/users/${userId}/enable`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as AccountUserDetail;
+  },
+  async assignAccountUserRole(userId: string, payload: AssignAccountUserRoleInput) {
+    const response = await request(
+      `/account-management/users/${userId}/roles`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as AssignAccountUserRoleResponse;
+  },
+  async revokeAccountUserRole(
+    userId: string,
+    userRoleId: string,
+    payload: RevokeAccountUserRoleInput = {},
+  ) {
+    const response = await request(
+      `/account-management/users/${userId}/roles/${userRoleId}/revoke`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as AccountUserDetail;
+  },
+  async changeAccountUserDepartment(
+    userId: string,
+    payload: ChangeAccountUserDepartmentInput,
+  ) {
+    const response = await request(
+      `/account-management/users/${userId}/department`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as AccountUserDetail;
+  },
+});
+
+export const createAuthClient = (): AuthClient => ({
+  async me() {
+    const response = await request("/auth/me", null, { method: "GET" }, {
+      allowDemoUserHeader: false,
+    });
+    return response as AuthUserResponse;
+  },
+  async login(payload: LoginRequest) {
+    const response = await request("/auth/login", null, { method: "POST", body: payload }, {
+      allowDemoUserHeader: false,
+    });
+    return response as AuthUserResponse;
+  },
+  async logout() {
+    await request("/auth/logout", null, { method: "POST" }, { allowDemoUserHeader: false });
   },
 });
 
@@ -110,12 +280,13 @@ const request = async (
   path: string,
   demoUserId: string | null,
   options: RequestOptions,
+  clientOptions: ApiClientOptions = {},
 ): Promise<unknown> => {
   const url = buildUrl(path, options.query);
   const headers = new Headers();
   const trimmedUserId = demoUserId?.trim();
 
-  if (trimmedUserId) {
+  if (shouldSendDemoUserHeader(trimmedUserId, clientOptions.allowDemoUserHeader)) {
     headers.set("X-Demo-User-Id", trimmedUserId);
   }
 
@@ -154,6 +325,7 @@ export const buildRequestInit = (
   const init: RequestInit = {
     method,
     headers,
+    credentials: "include",
   };
 
   if (body !== undefined) {
@@ -163,6 +335,11 @@ export const buildRequestInit = (
 
   return init;
 };
+
+export const shouldSendDemoUserHeader = (
+  demoUserId: string | null | undefined,
+  allowDemoUserHeader = !import.meta.env.PROD,
+): demoUserId is string => Boolean(allowDemoUserHeader && demoUserId?.trim());
 
 export const serializeQuery = (query?: ApiQuery): string => {
   const searchParams = new URLSearchParams();

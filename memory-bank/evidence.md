@@ -1,5 +1,97 @@
 # Evidence
 
+## 2026-06-24 Step 34 / Prompt 26 Archive - Phase 1 production cutover closure evidence
+
+- Purpose:
+  - Archive Prompt 26 / Step 34 as `Phase 1 production cutover final checklist and closure`.
+  - Preserve the evidence for production cutover, auth, migration, foundation seed, GET-only smoke, minimal synthetic write acceptance, and deferred items.
+  - Keep this archive update documentation-only.
+- Final status:
+  - `PHASE_1_PRODUCTION_CUTOVER_GO_WITH_DEFERRED_ITEMS`.
+- Production access evidence:
+  - Production domain: `https://production.wangyimin.cn`.
+  - Live recheck from local environment:
+    - `GET /` returned 200.
+    - `GET /api/health` returned 200.
+    - Frontend JS asset returned 200.
+    - Frontend CSS asset returned 200.
+  - Browser evidence from user screenshot:
+    - Production frontend loads authenticated UI.
+    - Page shows `production auth`.
+    - Current user shows `System Admin / admin@production.local`.
+    - Left navigation is visible.
+- Infrastructure evidence:
+  - Production Docker stack was started on the VPS.
+  - Production Postgres container was healthy.
+  - Production API container was healthy.
+  - Production Web container was healthy.
+  - Nginx config test passed.
+  - Nginx reverse proxy supports:
+    - `/api/*` to production API.
+    - `/assets/*` to production Web.
+    - `/` to production Web.
+  - Previous white-screen issue was caused by missing `/assets/*` proxy and was fixed; after the fix, Web root, JS asset, CSS asset, and API health returned 200.
+- Migration evidence:
+  - Production migration deploy completed.
+  - Applied migration names:
+    - `20260608080155_init_core_schema`.
+    - `20260623073332_add_auth_sessions`.
+- Foundation seed evidence:
+  - Foundation seed completed.
+  - Counts:
+    - departments: 2.
+    - roles: 4.
+    - permissions: 19.
+    - rolePermissions: 35.
+  - Foundation seed did not create users, user credentials, user sessions, login attempts, achievements, fees, workflow tasks, attachments, or demo business data.
+- Auth evidence:
+  - Bootstrap admin was created.
+  - Bootstrap was closed after initialization.
+  - `AUTH_BOOTSTRAP_ENABLED=false` was confirmed in non-sensitive summary output.
+  - Repeat bootstrap returned 403.
+  - Admin login returned 200.
+  - `/api/auth/me` with session returned 200.
+  - Logout returned 204.
+  - `/api/auth/me` after logout returned 401.
+  - No-session `X-Demo-User-Id` bypass attempt returned 401.
+- GET-only production smoke evidence:
+  - API health returned 200.
+  - Web root returned 200.
+  - Auth me with session returned 200.
+  - Audit logs returned 200.
+  - Achievements list returned 200.
+  - Dashboard summary returned 200.
+  - Search returned 200.
+  - Fees returned 200.
+  - Workflow tasks returned 200.
+  - Logout returned 204.
+  - Auth me after logout returned 401.
+- Minimal synthetic write acceptance evidence:
+  - Synthetic achievement draft create returned 201.
+  - Detail after create returned 200.
+  - Synthetic achievement update returned 200 after production code fix.
+  - Detail after update returned 200.
+  - List, search, dashboard, and audit readonly checks after write returned 200.
+  - Synthetic data was marked with `[SYNTHETIC-PROD-SMOKE]`.
+- Production fixes evidenced during cutover:
+  - `c78c9c8 Fix achievement detail type validation`.
+  - `d4eaf17 Fix achievement contributor update validation`.
+  - Nginx `/assets/*` proxy fix on the VPS.
+- Archive execution evidence:
+  - Updated memory-bank archive records only.
+  - Did not modify product source code, tests, schema, migration, seed, Docker compose, deployment files, production env, or VPS files during this archive update.
+  - Did not run test/typecheck/build/lint because this archive update is documentation-only.
+- Security evidence:
+  - No password, token, cookie, `DATABASE_URL`, `.env`, certificate, private key, full connection string, DB dump content, or session token was recorded in memory-bank.
+  - Sensitive values remain only in the VPS local environment.
+- Deferred evidence:
+  - Full approval submit / approve / reject is not accepted yet.
+  - Real researcher / secretary / auditor production user and permission acceptance is not complete.
+  - Fee write and payment-state acceptance is not complete.
+  - Attachment upload/download/storage boundary is not complete.
+  - Real business data import is not complete.
+  - Account management UI, password reset, MFA, SSO, monitoring, backup automation, settings/config CRUD, and real department maintenance remain future work.
+
 ## 2026-06-22 Phase 1 Remaining Work Roadmap Review Archive Evidence
 
 - Purpose:

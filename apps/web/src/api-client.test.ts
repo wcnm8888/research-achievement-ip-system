@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApiClient, mapApiErrorMessage, serializeQuery } from "./api-client";
+import {
+  createApiClient,
+  createAuthClient,
+  mapApiErrorMessage,
+  serializeQuery,
+  shouldSendDemoUserHeader,
+} from "./api-client";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -98,9 +104,25 @@ describe("createApiClient writes JSON requests", () => {
 
     expect(url).toBe("http://localhost/api/achievements");
     expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
     expect(init.body).toBe(JSON.stringify({ title: "Draft" }));
     expect(headers.get("Content-Type")).toBe("application/json");
     expect(headers.get("X-Demo-User-Id")).toBe("demo-user-id");
+  });
+
+  it("does not send the demo user header when production mode disables it", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient(" demo-user-id ", { allowDemoUserHeader: false });
+    await expect(client.get("/dashboard/summary")).resolves.toEqual({ ok: true });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(init.credentials).toBe("include");
+    expect(headers.get("X-Demo-User-Id")).toBeNull();
   });
 
   it("sends PATCH without content type when body is absent and accepts 204", async () => {
@@ -120,6 +142,7 @@ describe("createApiClient writes JSON requests", () => {
     const headers = init.headers as Headers;
 
     expect(init.method).toBe("PATCH");
+    expect(init.credentials).toBe("include");
     expect(init.body).toBeUndefined();
     expect(headers.get("Content-Type")).toBeNull();
     expect(headers.get("X-Demo-User-Id")).toBeNull();
@@ -185,4 +208,346 @@ describe("createApiClient writes JSON requests", () => {
     expect(init.body).toBe(JSON.stringify({ reason: "重复登记" }));
     expect(headers.get("Content-Type")).toBe("application/json");
   });
+});
+
+describe("account management API client", () => {
+  it("serializes listAccountUsers filters and pagination", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        items: [makeAccountUserResponse()],
+        total: 1,
+        page: 2,
+        pageSize: 20,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    const result = await client.listAccountUsers({
+      keyword: "researcher",
+      status: "ACTIVE",
+      departmentId: "10000000-0000-4000-8000-000000000001",
+      roleCode: "RESEARCHER",
+      page: 2,
+      pageSize: 20,
+    });
+
+    expect(result.total).toBe(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(
+      "http://localhost/api/account-management/users?keyword=researcher&status=ACTIVE&departmentId=10000000-0000-4000-8000-000000000001&roleCode=RESEARCHER&page=2&pageSize=20",
+    );
+    expect(init.method).toBe("GET");
+    expect(init.credentials).toBe("include");
+  });
+
+  it("gets account user detail with the correct path", async () => {
+    const fetchMock = vi.fn(async () => Response.json(makeAccountUserResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(client.getAccountUser("user-1")).resolves.toMatchObject({
+      id: "user-1",
+      email: "researcher@example.com",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("http://localhost/api/account-management/users/user-1");
+    expect(init.method).toBe("GET");
+  });
+
+  it("creates an account user without expecting sensitive response fields", async () => {
+    const fetchMock = vi.fn(async () => Response.json(makeAccountUserResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    const result = await client.createAccountUser({
+      email: "researcher@example.com",
+      name: "Researcher",
+      departmentId: "10000000-0000-4000-8000-000000000001",
+      roles: [
+        {
+          roleCode: "RESEARCHER",
+          scopeType: "DEPARTMENT",
+          departmentId: "10000000-0000-4000-8000-000000000001",
+        },
+      ],
+      initialPassword: "safe-password-123",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("http://localhost/api/account-management/users");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBe(
+      JSON.stringify({
+        email: "researcher@example.com",
+        name: "Researcher",
+        departmentId: "10000000-0000-4000-8000-000000000001",
+        roles: [
+          {
+            roleCode: "RESEARCHER",
+            scopeType: "DEPARTMENT",
+            departmentId: "10000000-0000-4000-8000-000000000001",
+          },
+        ],
+        initialPassword: "safe-password-123",
+      }),
+    );
+    const serializedResult = JSON.stringify(result);
+    expect(serializedResult).not.toContain("safe-password-123");
+    expect(serializedResult).not.toContain("passwordHash");
+    expect(serializedResult).not.toContain("token");
+    expect(serializedResult).not.toContain("credentialSecret");
+  });
+
+  it("posts disable and enable account user actions with reason payloads", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          user: makeAccountUserResponse({ status: "DISABLED" }),
+          revokedSessionCount: 2,
+        }),
+      )
+      .mockResolvedValueOnce(Response.json(makeAccountUserResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.disableAccountUser("user-1", { reason: "offboarding" }),
+    ).resolves.toMatchObject({ revokedSessionCount: 2 });
+    await expect(
+      client.enableAccountUser("user-1", { reason: "returned" }),
+    ).resolves.toMatchObject({ status: "ACTIVE" });
+
+    const [disableUrl, disableInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [enableUrl, enableInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(disableUrl).toBe("http://localhost/api/account-management/users/user-1/disable");
+    expect(disableInit.method).toBe("POST");
+    expect(disableInit.body).toBe(JSON.stringify({ reason: "offboarding" }));
+    expect(enableUrl).toBe("http://localhost/api/account-management/users/user-1/enable");
+    expect(enableInit.method).toBe("POST");
+    expect(enableInit.body).toBe(JSON.stringify({ reason: "returned" }));
+  });
+
+  it("posts role assignment and revoke account user actions", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          user: makeAccountUserResponse(),
+          userRoleId: "user-role-1",
+        }),
+      )
+      .mockResolvedValueOnce(Response.json(makeAccountUserResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.assignAccountUserRole("user-1", {
+        roleCode: "RESEARCHER",
+        scopeType: "DEPARTMENT",
+        departmentId: "10000000-0000-4000-8000-000000000001",
+        reason: "department onboarding",
+      }),
+    ).resolves.toMatchObject({ userRoleId: "user-role-1" });
+    await expect(
+      client.revokeAccountUserRole("user-1", "user-role-1", {
+        reason: "role changed",
+      }),
+    ).resolves.toMatchObject({ id: "user-1" });
+
+    const [assignUrl, assignInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [revokeUrl, revokeInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(assignUrl).toBe("http://localhost/api/account-management/users/user-1/roles");
+    expect(assignInit.method).toBe("POST");
+    expect(assignInit.body).toBe(
+      JSON.stringify({
+        roleCode: "RESEARCHER",
+        scopeType: "DEPARTMENT",
+        departmentId: "10000000-0000-4000-8000-000000000001",
+        reason: "department onboarding",
+      }),
+    );
+    expect(revokeUrl).toBe(
+      "http://localhost/api/account-management/users/user-1/roles/user-role-1/revoke",
+    );
+    expect(revokeInit.method).toBe("POST");
+    expect(revokeInit.body).toBe(JSON.stringify({ reason: "role changed" }));
+  });
+
+  it("posts account user department changes", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json(
+        makeAccountUserResponse({
+          departmentId: "10000000-0000-4000-8000-000000000002",
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.changeAccountUserDepartment("user-1", {
+        departmentId: "10000000-0000-4000-8000-000000000002",
+        reason: "transfer",
+      }),
+    ).resolves.toMatchObject({
+      department: {
+        id: "10000000-0000-4000-8000-000000000002",
+      },
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("http://localhost/api/account-management/users/user-1/department");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBe(
+      JSON.stringify({
+        departmentId: "10000000-0000-4000-8000-000000000002",
+        reason: "transfer",
+      }),
+    );
+  });
+
+  it("passes account management API errors through the existing ApiError mechanism", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ message: "User role assignment already exists." }, { status: 409 }),
+      ),
+    );
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.assignAccountUserRole("user-1", {
+        roleCode: "RESEARCHER",
+        scopeType: "GLOBAL",
+      }),
+    ).rejects.toMatchObject({
+      kind: "unknown",
+      status: 409,
+      detail: "User role assignment already exists.",
+    });
+  });
+
+  it("does not add production demo header behavior for account management methods", async () => {
+    const fetchMock = vi.fn(async () => Response.json(makeAccountUserResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient(" demo-user-id ", { allowDemoUserHeader: false });
+    await client.getAccountUser("user-1");
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Headers).get("X-Demo-User-Id")).toBeNull();
+    expect(init.credentials).toBe("include");
+  });
+});
+
+describe("demo header policy", () => {
+  it("allows demo headers only when the caller explicitly permits them", () => {
+    expect(shouldSendDemoUserHeader(" demo-user-id ", true)).toBe(true);
+    expect(shouldSendDemoUserHeader(" demo-user-id ", false)).toBe(false);
+    expect(shouldSendDemoUserHeader("   ", true)).toBe(false);
+    expect(shouldSendDemoUserHeader(null, true)).toBe(false);
+  });
+});
+
+describe("createAuthClient", () => {
+  it("calls auth endpoints with credentials and without demo headers", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ user: { id: "user-1" } }))
+      .mockResolvedValueOnce(Response.json({ user: { id: "user-1" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createAuthClient();
+    await client.me();
+    await client.login({ email: "admin@example.com", password: "safe-password-123" });
+    await expect(client.logout()).resolves.toBeUndefined();
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    const [meUrl, meInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const [loginUrl, loginInit] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
+    const [logoutUrl, logoutInit] = fetchMock.mock.calls[2] as unknown as [string, RequestInit];
+
+    expect(meUrl).toBe("http://localhost/api/auth/me");
+    expect(loginUrl).toBe("http://localhost/api/auth/login");
+    expect(logoutUrl).toBe("http://localhost/api/auth/logout");
+    expect(meInit.credentials).toBe("include");
+    expect(loginInit.credentials).toBe("include");
+    expect(logoutInit.credentials).toBe("include");
+    expect((meInit.headers as Headers).get("X-Demo-User-Id")).toBeNull();
+    expect((loginInit.headers as Headers).get("X-Demo-User-Id")).toBeNull();
+    expect((logoutInit.headers as Headers).get("X-Demo-User-Id")).toBeNull();
+    expect(JSON.stringify(loginInit.body)).not.toContain("cookie");
+    expect(JSON.stringify(logoutInit)).not.toContain("safe-password-123");
+  });
+});
+
+const makeAccountUserResponse = (
+  overrides: {
+    status?: string;
+    departmentId?: string;
+  } = {},
+) => ({
+  id: "user-1",
+  email: "researcher@example.com",
+  name: "Researcher",
+  status: overrides.status ?? "ACTIVE",
+  department: {
+    id: overrides.departmentId ?? "10000000-0000-4000-8000-000000000001",
+    code: "INSTITUTE_ROOT",
+    name: "Institute",
+    status: "ACTIVE",
+  },
+  roles: [
+    {
+      id: "user-role-1",
+      role: {
+        id: "role-1",
+        code: "RESEARCHER",
+        name: "Researcher",
+        status: "ACTIVE",
+      },
+      scopeType: "DEPARTMENT",
+      scopeKey: "10000000-0000-4000-8000-000000000001",
+      departmentId: "10000000-0000-4000-8000-000000000001",
+      createdAt: "2026-06-24T00:00:00.000Z",
+    },
+  ],
+  credential: {
+    status: "ACTIVE",
+    passwordUpdatedAt: "2026-06-24T00:00:00.000Z",
+    disabledAt: null,
+    createdAt: "2026-06-24T00:00:00.000Z",
+    updatedAt: "2026-06-24T00:00:00.000Z",
+  },
+  lastLogin: null,
+  createdAt: "2026-06-24T00:00:00.000Z",
+  updatedAt: "2026-06-24T00:00:00.000Z",
 });

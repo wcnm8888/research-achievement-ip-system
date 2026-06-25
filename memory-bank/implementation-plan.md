@@ -4,6 +4,55 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 34 / Prompt 26 Archive - Phase 1 Production Cutover Closure - 2026-06-24
+
+- Archive name:
+  - `Phase 1 production cutover final checklist and closure`.
+- Final status:
+  - `PHASE_1_PRODUCTION_CUTOVER_GO_WITH_DEFERRED_ITEMS`.
+- Archive type:
+  - Production cutover closure archive.
+  - This records the final accepted Phase 1 production cutover state.
+  - It does not complete Phase 2 or deferred capabilities.
+- Completed production cutover chain:
+  - Production domain `https://production.wangyimin.cn` is the Phase 1 production entry.
+  - Production Docker stack is running.
+  - Production Postgres/API/Web containers are healthy.
+  - Nginx reverse proxy routes `/api/*`, `/assets/*`, and `/` to the production stack.
+  - HTTPS, Web root, API health, frontend JS asset, and frontend CSS asset return 200.
+  - Production frontend loads the authenticated app UI.
+  - Production auth uses session cookie and local account login.
+  - Demo user switcher and `X-Demo-User-Id` production auth are disabled.
+  - Bootstrap admin exists and bootstrap is closed.
+  - Production migrations and foundation seed are complete.
+  - GET-only production smoke is complete.
+  - Minimal synthetic achievement draft create/update acceptance is complete.
+- Completed production code/deploy corrections:
+  - Achievement detail type validation fixed.
+  - Achievement contributor update validation fixed.
+  - Production `/assets/*` Nginx proxy fixed.
+- Current Phase 1 conclusion:
+  - Phase 1 production cutover can be treated as GO_WITH_DEFERRED_ITEMS.
+  - The system is ready to proceed to Phase 2 scope confirmation.
+- Deferred routes:
+  - Full approval submit / approve / reject.
+  - Real production user and role acceptance for researcher, secretary, and auditor.
+  - Fee write and payment-state acceptance.
+  - Attachment upload/download/storage boundary.
+  - Real business data import.
+  - Account management UI.
+  - Password reset, MFA, SSO.
+  - Monitoring, alerting, and backup automation.
+  - Real settings/config CRUD backend.
+  - Real department maintenance backend.
+- Boundary:
+  - Do not represent deferred items as completed.
+  - Do not represent synthetic data as real business data.
+  - Do not reuse demo/staging evidence as production evidence.
+  - Do not reintroduce `X-Demo-User-Id` as production auth.
+- Recommended next:
+  - Step 35A - Phase 2 scope confirmation.
+
 ## Current Phase 1 Remaining Work Roadmap Review Archive - 2026-06-22
 
 - Archive name:

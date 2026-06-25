@@ -1,5 +1,32 @@
 # Decisions
 
+## D090 - Step 34 closes Phase 1 as production cutover GO with deferred items
+
+- Date: 2026-06-24.
+- Context: Step 34 / Prompt 26 moved Phase 1 from demo/staging deployment to a single-VPS production cutover on `production.wangyimin.cn`. The work included production auth hardening, production config fail-fast, production Docker deployment, migration, foundation seed, bootstrap admin, Nginx reverse proxy, GET-only smoke, minimal synthetic write acceptance, and final browser verification.
+- Decision:
+  - Mark Step 34F-Q2 as DONE for `Phase 1 production cutover final checklist and closure`.
+  - Set final status to `PHASE_1_PRODUCTION_CUTOVER_GO_WITH_DEFERRED_ITEMS`.
+  - Treat `production.wangyimin.cn` as the Phase 1 production entry.
+  - Treat production auth as session-based local account auth, not demo header auth.
+  - Keep bootstrap closed after first admin initialization.
+  - Treat foundation seed as production foundation data only, not business data.
+  - Accept minimal synthetic achievement draft create/update as the only production write acceptance completed in Phase 1.
+  - Carry complete approval, real production users, fees write, attachments, real data import, settings/config CRUD, department maintenance, monitoring, and backup automation into Phase 2 or later confirmed steps.
+- Rationale:
+  - The production cutover core chain is verified: HTTPS/Web/API access, frontend assets, production auth, Docker/Nginx/DB health, migrations, foundation seed, GET-only smoke, and minimal synthetic create/update all passed.
+  - The remaining work is real business expansion and operational hardening beyond the minimum Phase 1 production cutover acceptance.
+  - Labeling the result as GO_WITH_DEFERRED_ITEMS avoids overclaiming Phase 2 capability completion.
+- Consequences:
+  - Future planning should continue from Step 35A - Phase 2 scope confirmation.
+  - Step 34 should not be reopened unless there is a production incident, rollback need, security issue, or explicit user request.
+  - Production evidence must remain separated from old demo/staging evidence.
+  - `X-Demo-User-Id` must not be reintroduced as production auth.
+  - Synthetic data must remain clearly marked and must not be represented as real business data.
+- Rollback / correction path:
+  - If a production cutover regression is found, open a dedicated production incident or hotfix step rather than rewriting Step 34 completion.
+  - If a deferred feature becomes required for launch acceptance, scope it as a Phase 2 or post-cutover acceptance step with separate evidence.
+
 ## D089 - Step 23A aligns frontend search targetTypes with the backend array query contract
 
 - Date: 2026-06-21.
