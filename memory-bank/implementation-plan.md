@@ -4,6 +4,68 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Local Production-like Regression Closure - Account Management Department Binding Fix - 2026-06-26
+
+- Step identity:
+  - This is a local production-like regression / documentation closure after Step 42 in the authoritative project memory-bank.
+  - It is not production deploy, not production smoke, not production write acceptance, not production DB access, not VPS access, not cleanup, not migration/seed, and not Phase 2 completion.
+- Canonical state:
+  - Latest canonical completed Step is Step 42-Closure.
+  - Step 42-Closure result is `STEP_42_CLOSED_RETAINED_NOW_CLEANUP_BEFORE_FORMAL_PRODUCTION_LAUNCH`.
+  - Phase 2 remains incomplete.
+  - Step 38 negative write-path production acceptance remains deferred.
+  - Local validation remains local evidence only and is not production acceptance.
+- Local environment:
+  - Frontend: `http://localhost:5176/`.
+  - API: `http://localhost:3002`.
+  - Docker Postgres: `127.0.0.1:55433`.
+  - Local GitHub-main clone: `E:\Vibe coding\production-github-main-20260626`.
+  - Local proxy helper: `local-prod-preview-proxy.cjs`.
+- Local code fix:
+  - Fix `apps/web/src/AccountManagement.tsx`.
+  - Ensure `DepartmentSelect` forwards AntD Form-provided `value` / `onChange` into the inner Select.
+  - This prevents visual department selection from diverging from submitted form state.
+- Local data setup:
+  - Ensure local baseline departments:
+    - `INSTITUTE_ROOT` / `Research Institute`.
+    - `RESEARCH_ADMIN_OFFICE` / `Research Administration Office`.
+  - Ensure local test accounts:
+    - `admin@production.local`.
+    - `auditor@production.local`.
+    - `research_secretary@production.local`.
+    - `smoke-user-1@production.local`.
+  - Do not record local test passwords in memory-bank.
+- Completed local verification:
+  - Account management create-user path passed.
+  - Account management change-department path passed.
+  - Department management create / edit / disable / includeArchived / enable / UI visibility passed.
+  - Non-admin menu tightening passed for researcher, research secretary, and auditor.
+  - Step 38 negative write-path local retest passed with controlled local fixture `LOCAL_STEP38_RETEST_20260626142056`.
+  - Frontend targeted tests passed: 38 tests.
+  - API targeted tests passed: 114 tests.
+  - Web production build passed with Vite chunk-size warning only.
+- Current working-tree notes:
+  - `apps/web/src/AccountManagement.tsx` is the product fix to review for commit.
+  - `local-prod-preview-proxy.cjs` is a local testing helper; commit decision is separate.
+  - Do not auto-commit.
+  - Do not delete local test data.
+  - Do not clean Docker volumes.
+- Recommended next sequence:
+  - Review diff.
+  - Decide whether to commit `apps/web/src/AccountManagement.tsx`.
+  - Decide separately whether `local-prod-preview-proxy.cjs` remains local-only or becomes a committed helper.
+  - After commit/push, run a separately authorized GitHub / VPS deploy flow.
+  - After VPS deploy, run minimal production smoke.
+  - Keep any production write acceptance, Step 38 production negative write-path acceptance, and cleanup behind separate explicit authorization.
+- Boundary:
+  - No VPS connection.
+  - No production DB access.
+  - No direct production DB query.
+  - No production write.
+  - No production deploy.
+  - No cleanup, migration, seed, file deletion, batch cleanup, commit, tag, or artifact packaging.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was recorded.
+
 ## Current Step 41B Archive - Authorized Production Deploy and GET-only Smoke Gate - 2026-06-25
 
 - Step identity:

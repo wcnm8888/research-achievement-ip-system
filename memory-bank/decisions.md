@@ -1,5 +1,30 @@
 # Decisions
 
+## D110 - Local production-like regression becomes the pre-VPS verification path
+
+- Date: 2026-06-26.
+- Context: After Step 42 closure in the authoritative project memory-bank, the user shifted the workflow back to local production-like validation and asked to use `http://localhost:5176/` for repeated testing before any later VPS upload/deploy. During this local regression, an Account management department selector bug was fixed and validated in this GitHub-main local clone.
+- Decision:
+  - Record `http://localhost:5176/` as the preferred local production-like regression target before future GitHub / VPS deploy work.
+  - Treat the Account management department selector fix in `apps/web/src/AccountManagement.tsx` as locally validated.
+  - Treat `local-prod-preview-proxy.cjs` as a local test helper unless the user separately decides it should be committed.
+  - Treat the imported `admin@production.local`, `auditor@production.local`, `research_secretary@production.local`, and `smoke-user-1@production.local` records as local production-like test accounts only.
+  - Do not record local test passwords in memory-bank.
+  - Treat Step 38 negative write-path as locally retested and passed in the production-like environment, not as production acceptance.
+  - Keep production deploy, production smoke, production DB access, and production write acceptance gated by later explicit authorization.
+- Rationale:
+  - Local production-like testing catches production-build/session/cookie/form-binding issues before VPS deploy without expanding production access.
+  - The reported UI issue was caused by form-state binding, so a production-build local UI regression is the right verification layer before deployment.
+  - Step 38 negative write-path requires a controlled archived-department fixture; reproducing this locally avoids mutating real production data.
+- Consequences:
+  - Future work should first run local production-like regression on `http://localhost:5176/` when feasible.
+  - The current local regression can support a later commit/deploy decision.
+  - Production acceptance remains incomplete until separately executed or explicitly deferred.
+  - Phase 2 remains incomplete.
+- Boundary:
+  - No VPS connection, production DB access, direct production DB query, production write, production deploy, cleanup, migration, seed, file deletion, or batch cleanup was executed.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was recorded.
+
 ## D099 - Step 41B is blocked until explicit production authorization is provided
 
 - Date: 2026-06-25.

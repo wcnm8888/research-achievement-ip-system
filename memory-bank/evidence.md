@@ -1,5 +1,79 @@
 # Evidence
 
+## 2026-06-26 Local production-like regression closure evidence
+
+- Purpose:
+  - Archive the local production-like regression completed after Step 42 closure in the authoritative project memory-bank.
+  - Record the Account management department selector fix and local verification evidence.
+  - Preserve the boundary that local validation is not production acceptance.
+- Local environment evidence:
+  - Local production-like UI: `http://localhost:5176/`.
+  - Local production-like API: `http://localhost:3002`.
+  - Local Docker Postgres port: `127.0.0.1:55433`.
+  - Local GitHub-main clone: `E:\Vibe coding\production-github-main-20260626`.
+  - Local helper file: `local-prod-preview-proxy.cjs`.
+- Code-change evidence:
+  - Changed file: `apps/web/src/AccountManagement.tsx`.
+  - Fix target: `DepartmentSelect`.
+  - Root cause: the custom department selector did not forward AntD Form-provided `value` / `onChange` to the inner Select.
+  - User-visible symptoms before fix:
+    - Create user could continue to show `请选择所属部门` / `请选择部门范围` after a visible department selection.
+    - Change department could show success while the list/detail still reflected the old submitted value.
+  - Local fix behavior:
+    - Department selection is now bound to the AntD Form field state.
+    - Submitted payload reflects the selected department.
+- Local baseline data evidence:
+  - Ensured departments:
+    - `INSTITUTE_ROOT` / `Research Institute`.
+    - `RESEARCH_ADMIN_OFFICE` / `Research Administration Office`.
+  - Created local test accounts:
+    - `admin@production.local`.
+    - `auditor@production.local`.
+    - `research_secretary@production.local`.
+    - `smoke-user-1@production.local`.
+  - These accounts were bound to `RESEARCH_ADMIN_OFFICE` in the local production-like database.
+  - Local test passwords were not recorded.
+- Local UI / API regression evidence:
+  - Account management create-user path:
+    - UI create succeeded.
+    - Selected department was included in the submitted payload.
+    - The earlier `请选择所属部门` / `请选择部门范围` validation symptom did not recur.
+  - Account management change-department path:
+    - UI change from `INSTITUTE_ROOT` to `RESEARCH_ADMIN_OFFICE` succeeded.
+    - Account list and detail reflected `RESEARCH_ADMIN_OFFICE`.
+  - Department management:
+    - Create department passed.
+    - Edit department passed.
+    - Disable/archive passed.
+    - includeArchived visibility passed.
+    - Re-enable passed.
+    - Final UI visibility passed.
+  - Non-admin menu tightening:
+    - `smoke-user-1@production.local` / researcher login passed and did not show `账号管理` or `部门维护`.
+    - `research_secretary@production.local` / research secretary login passed and did not show `账号管理` or `部门维护`.
+    - `auditor@production.local` / auditor login passed and did not show `账号管理` or `部门维护`.
+  - Step 38 negative write-path local retest:
+    - Local fixture department: `LOCAL_STEP38_RETEST_20260626142056`.
+    - ACTIVE baseline draft creation passed.
+    - The local fixture department was then marked `ARCHIVED` in the local test database only.
+    - Create achievement after archive returned 422 with `Achievement department is archived or unavailable.`
+    - Submit baseline draft after archive returned 422 with `Achievement department is archived or unavailable.`
+    - Create fee after archive returned 409 with `Achievement department is archived or unavailable.`
+- Automated verification evidence:
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement.test.tsx DepartmentManagement.test.tsx App.test.tsx`: PASS, 3 test files / 38 tests.
+  - `corepack pnpm --filter @research-ip/api test -- account-management.service.spec.ts account-management.controller.spec.ts department-management.service.spec.ts department-management.controller.spec.ts auth.controller.spec.ts auth.service.spec.ts session-identity.adapter.spec.ts runtime-identity.adapter.spec.ts achievement.service.spec.ts fee.service.spec.ts`: PASS, 10 test files / 114 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with Vite chunk-size warning only.
+- Result:
+  - `LOCAL_PRODUCTION_LIKE_REGRESSION_PASS_WITH_PRODUCTION_DEPLOY_DEFERRED`.
+- Boundary evidence:
+  - No VPS connection was made.
+  - No production DB access was made.
+  - No direct production DB query was run.
+  - No production write or production deploy was executed.
+  - No cleanup, migration, seed, file deletion, batch cleanup, commit, tag, or artifact packaging was executed.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was recorded.
+  - This evidence is local production-like validation only and does not complete Step 38 negative write-path production acceptance.
+
 ## 2026-06-25 Step 41B - Authorization gate blocked evidence
 
 - Purpose:

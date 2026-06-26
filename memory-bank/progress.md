@@ -1,5 +1,66 @@
 # Progress
 
+## 2026-06-26 Local production-like regression closure - Account management department binding fix
+
+- Status: DONE as local production-like regression / documentation closure.
+- Result:
+  - `LOCAL_PRODUCTION_LIKE_REGRESSION_PASS_WITH_PRODUCTION_DEPLOY_DEFERRED`.
+- Canonical state restored from current conversation and authoritative memory-bank:
+  - Latest canonical completed Step is Step 42-Closure.
+  - Step 42-Closure result is `STEP_42_CLOSED_RETAINED_NOW_CLEANUP_BEFORE_FORMAL_PRODUCTION_LAUNCH`.
+  - Phase 2 remains incomplete.
+  - Step 38 negative write-path production acceptance remains deferred.
+  - Local validation remains local evidence only and is not production acceptance.
+- Local environment:
+  - Local production-like frontend: `http://localhost:5176/`.
+  - Local production-like API: `http://localhost:3002`.
+  - Local Docker Postgres port: `127.0.0.1:55433`.
+  - Local GitHub-main clone: `E:\Vibe coding\production-github-main-20260626`.
+  - Local proxy helper: `local-prod-preview-proxy.cjs`; this is a local testing helper and is not automatically production deploy scope.
+- Completed:
+  - Fixed and locally verified the Account management department selector bug in `apps/web/src/AccountManagement.tsx`.
+  - Root cause: `DepartmentSelect` did not pass AntD Form-injected `value` / `onChange` through to the inner Select, so the visual selection could differ from submitted form state.
+  - Imported / ensured local production-like baseline departments:
+    - `INSTITUTE_ROOT` / `Research Institute`.
+    - `RESEARCH_ADMIN_OFFICE` / `Research Administration Office`.
+  - Imported local production-like test accounts:
+    - `admin@production.local`.
+    - `auditor@production.local`.
+    - `research_secretary@production.local`.
+    - `smoke-user-1@production.local`.
+  - These accounts are local test accounts and were bound to `RESEARCH_ADMIN_OFFICE`.
+  - Did not record local test passwords in memory-bank.
+- Local regression results:
+  - Account management UI create-user path passed; department selection entered the submitted payload.
+  - Account management UI change-department path passed; list and detail reflected the new department.
+  - Department management local write path passed: create, edit, disable/archive, includeArchived visibility, re-enable, and final UI visibility.
+  - Non-admin menu tightening passed: researcher / research secretary / auditor can log in but do not see `账号管理` or `部门维护`.
+  - Step 38 negative write-path local retest passed with local controlled fixture `LOCAL_STEP38_RETEST_20260626142056`.
+  - Archived-department create achievement was rejected with 422.
+  - Archived-department submit baseline draft was rejected with 422.
+  - Archived-department create fee was rejected with 409.
+  - The rejection message was `Achievement department is archived or unavailable.`
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement.test.tsx DepartmentManagement.test.tsx App.test.tsx`: PASS, 3 files / 38 tests.
+  - `corepack pnpm --filter @research-ip/api test -- account-management.service.spec.ts account-management.controller.spec.ts department-management.service.spec.ts department-management.controller.spec.ts auth.controller.spec.ts auth.service.spec.ts session-identity.adapter.spec.ts runtime-identity.adapter.spec.ts achievement.service.spec.ts fee.service.spec.ts`: PASS, 10 files / 114 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Boundary:
+  - No VPS connection.
+  - No production DB access.
+  - No production write.
+  - No production deploy.
+  - No migration / seed.
+  - No cleanup.
+  - No file deletion or batch cleanup.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was recorded.
+- Remaining:
+  - Review diff before commit.
+  - Decide whether to commit `apps/web/src/AccountManagement.tsx`.
+  - Decide separately whether `local-prod-preview-proxy.cjs` should remain a local-only helper or be committed.
+  - After commit/push, run a separately authorized GitHub / VPS deploy flow.
+  - After VPS deploy, run minimal production smoke.
+  - Step 38 negative write-path production acceptance remains deferred until a separately authorized production test is performed or explicitly deferred again.
+
 ## 2026-06-25 Step 41B - Authorized production deploy and GET-only smoke gate
 
 - Status: BLOCKED.
