@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { DepartmentStatus } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
 import { AuditTargetTypeCode } from "../audit/domain/audit-target-type-code";
@@ -19,6 +20,7 @@ import {
 } from "./domain/fee-repository.types";
 import {
   FeeConflictError,
+  FeeDepartmentUnavailableError,
   FeeInvalidTransitionError,
   FeeNotFoundError,
   FeePermissionDeniedError,
@@ -92,6 +94,10 @@ const makeParent = (
   id: ids.achievement,
   status: "ARCHIVED",
   departmentId: ids.department,
+  department: {
+    status: DepartmentStatus.ACTIVE,
+    archivedAt: null,
+  },
   ownerUserId: ids.user,
   secretLevel: SecretLevelCode.internal,
   ...overrides,
@@ -276,6 +282,29 @@ describe("FeeService.createFee", () => {
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
   });
 
+  it("does not create fees when the related achievement department is archived", async () => {
+    const { auditService, repository, service } = createService();
+    repository.findAchievementParentByIdWhere.mockResolvedValueOnce(
+      makeParent({
+        department: {
+          status: DepartmentStatus.ARCHIVED,
+          archivedAt: new Date("2026-06-25T00:00:00.000Z"),
+        },
+      }),
+    );
+
+    await expect(
+      service.createFee(makeContext([PermissionCode.feeManageDepartment]), {
+        achievementId: ids.achievement,
+        feeType: FeeTypeCode.patentAnnual,
+        amount: 1200.5,
+        dueDate: "2026-07-01",
+      }),
+    ).rejects.toBeInstanceOf(FeeDepartmentUnavailableError);
+    expect(repository.createInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
   it("maps unique conflicts to fee conflict errors", async () => {
     const { repository, service } = createService();
     repository.createInTransaction.mockRejectedValueOnce({ code: "P2002" });
@@ -437,4 +466,3 @@ const expectAuditPayloadHasNoSensitiveFeeFields = (input: unknown): void => {
   expect(serialized).not.toContain("checksum");
   expect(serialized).not.toContain("contributors");
 };
-

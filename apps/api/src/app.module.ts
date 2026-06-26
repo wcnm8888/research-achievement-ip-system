@@ -7,6 +7,7 @@ import { AuditModule } from "./audit/audit.module";
 import { AuthorizationModule } from "./authorization/authorization.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { DatabaseModule } from "./database/database.module";
+import { DepartmentManagementModule } from "./department-management/department-management.module";
 import { FeesModule } from "./fees/fees.module";
 import { HealthController } from "./health.controller";
 import { IdentityModule } from "./identity/identity.module";
@@ -29,6 +30,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     SearchModule,
     DashboardModule,
     AccountManagementModule,
+    DepartmentManagementModule,
   ],
   controllers: [HealthController],
 })

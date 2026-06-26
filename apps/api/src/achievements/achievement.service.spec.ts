@@ -1,4 +1,5 @@
 import { SELF_DECLARED_DEPS_METADATA } from "@nestjs/common/constants";
+import { DepartmentStatus } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -12,6 +13,7 @@ import { UserContext } from "../identity/user-context";
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
   DepartmentReviewerNotFoundError,
+  WorkflowDepartmentUnavailableError,
   WorkflowInvalidStateError,
 } from "../workflow/domain/workflow-errors";
 import { WorkflowService } from "../workflow/workflow.service";
@@ -157,6 +159,9 @@ const createService = () => {
   const tx = {};
   const prisma = {
     $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    department: {
+      findFirst: vi.fn().mockResolvedValue({ id: ids.department }),
+    },
   };
   const repository = {
     createDraft: vi.fn().mockResolvedValue(makeAggregate()),
@@ -469,6 +474,38 @@ describe("AchievementService.createDraft", () => {
     ).rejects.toBeInstanceOf(AchievementInvalidPayloadError);
     expect(repository.createDraft).not.toHaveBeenCalled();
     expect(repository.createDraftInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects create when the current user department is archived", async () => {
+    const { service, prisma, repository, auditService } = createService();
+    prisma.department.findFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      service.createDraft(makeContext(), {
+        type: AchievementTypeCode.paper,
+        title: "Paper draft",
+        departmentId: ids.department,
+        paperDetail: {},
+        contributors: [
+          {
+            name: "Author One",
+            contributorType: ContributorTypeCode.author,
+            sortOrder: 1,
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(AchievementUnsupportedOperationError);
+
+    expect(prisma.department.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: ids.department,
+        status: DepartmentStatus.ACTIVE,
+        archivedAt: null,
+      },
+      select: { id: true },
+    });
+    expect(repository.createDraftInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
   });
 
   it("rejects create without achievement:create permission", async () => {
@@ -929,6 +966,19 @@ describe("AchievementService.submitDraft", () => {
     const { service, repository, workflowService } = createService();
     workflowService.prepareAchievementReviewOnSubmitInTransaction.mockRejectedValue(
       new DepartmentReviewerNotFoundError(ids.department),
+    );
+
+    await expect(service.submitDraft(makeContext(), ids.achievement)).rejects.toBeInstanceOf(
+      AchievementUnsupportedOperationError,
+    );
+    expect(repository.transitionStatusInTransaction).not.toHaveBeenCalled();
+    expect(workflowService.createAchievementReviewOnSubmitInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("maps archived achievement department to an unsupported submit operation", async () => {
+    const { service, repository, workflowService } = createService();
+    workflowService.prepareAchievementReviewOnSubmitInTransaction.mockRejectedValue(
+      new WorkflowDepartmentUnavailableError(ids.department),
     );
 
     await expect(service.submitDraft(makeContext(), ids.achievement)).rejects.toBeInstanceOf(

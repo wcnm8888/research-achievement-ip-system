@@ -13,7 +13,13 @@ import type { TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AchievementDetail } from "./AchievementDetail";
 import { AchievementForm, isEditableAchievementStatus } from "./AchievementForm";
-import { createApiClient, isApiError, type ApiClient, type ApiError } from "./api-client";
+import {
+  createApiClient,
+  isApiError,
+  type ApiClient,
+  type ApiError,
+  type AuthUser,
+} from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import type {
   AchievementListItem,
@@ -37,7 +43,10 @@ type AchievementFilters = {
 
 type AchievementsProps = {
   demoUserId: string | null;
+  authUser?: AchievementPermissionContext;
 };
+
+type AchievementPermissionContext = Pick<AuthUser, "id" | "permissionCodes"> | null | undefined;
 
 type FormRequest =
   | {
@@ -86,7 +95,7 @@ const secretLevelLabels: Record<AchievementListItem["secretLevel"], string> = {
   CONFIDENTIAL: "机密",
 };
 
-export function Achievements({ demoUserId }: AchievementsProps) {
+export function Achievements({ demoUserId, authUser }: AchievementsProps) {
   const [draftFilters, setDraftFilters] = useState<AchievementFilters>({});
   const [appliedFilters, setAppliedFilters] = useState<AchievementFilters>({});
   const [page, setPage] = useState(1);
@@ -158,9 +167,11 @@ export function Achievements({ demoUserId }: AchievementsProps) {
         title="成果管理"
         description="读取后端 GET /achievements 的真实成果列表；筛选、分页和脱敏结果均以后端返回为准。"
         extra={
-          <Button type="primary" onClick={() => setFormRequest({ mode: "create" })}>
-            登记成果
-          </Button>
+          canCreateAchievementDraft(authUser) ? (
+            <Button type="primary" onClick={() => setFormRequest({ mode: "create" })}>
+              登记成果
+            </Button>
+          ) : undefined
         }
       />
       <PermissionHint description="最终读取权限以后端策略为准。前端只负责传递 X-Demo-User-Id、展示后端返回的列表和脱敏状态，不在浏览器端承担最终鉴权。" />
@@ -220,6 +231,7 @@ export function Achievements({ demoUserId }: AchievementsProps) {
             columns={createColumns(
               (item) => setFormRequest({ achievementId: item.id, mode: "edit" }),
               setDetailItem,
+              authUser,
             )}
             dataSource={items}
             pagination={{
@@ -297,6 +309,31 @@ export const isAchievementTitleRedacted = (
   item: Pick<AchievementListItem, "title" | "isRedacted">,
 ): boolean => item.title === null && item.isRedacted;
 
+const hasAchievementPermission = (
+  authUser: AchievementPermissionContext,
+  permissionCode: string,
+): boolean => !authUser || authUser.permissionCodes.includes(permissionCode);
+
+export const canCreateAchievementDraft = (
+  authUser: AchievementPermissionContext,
+): boolean => hasAchievementPermission(authUser, "achievement:create");
+
+export const canEditAchievementDraft = (
+  authUser: AchievementPermissionContext,
+  item: Pick<AchievementListItem, "ownerUserId" | "status">,
+): boolean =>
+  hasAchievementPermission(authUser, "achievement:update_own") &&
+  (!authUser || item.ownerUserId === authUser.id) &&
+  isEditableAchievementStatus(item.status);
+
+const canSeeRejectedDraftEditBoundary = (
+  authUser: AchievementPermissionContext,
+  item: Pick<AchievementListItem, "ownerUserId" | "status">,
+): boolean =>
+  hasAchievementPermission(authUser, "achievement:update_own") &&
+  (!authUser || item.ownerUserId === authUser.id) &&
+  item.status === "DEPARTMENT_REJECTED";
+
 const fetchAchievementList = async (
   client: ApiClient,
   query: AchievementListQuery,
@@ -327,6 +364,7 @@ const hasActiveFilters = (filters: AchievementFilters): boolean =>
 const createColumns = (
   onEdit: (item: AchievementListItem) => void,
   onViewDetail: (item: AchievementListItem) => void,
+  authUser?: AchievementPermissionContext,
 ): TableProps<AchievementListItem>["columns"] => [
   {
     title: "标题",
@@ -401,7 +439,7 @@ const createColumns = (
     width: 180,
     render: (_, item) => (
       <Space>
-        {renderEditAction(item, onEdit)}
+        {renderEditAction(item, onEdit, authUser)}
         <Button size="small" onClick={() => onViewDetail(item)}>
           查看详情
         </Button>
@@ -413,8 +451,9 @@ const createColumns = (
 const renderEditAction = (
   item: AchievementListItem,
   onEdit: (item: AchievementListItem) => void,
+  authUser?: AchievementPermissionContext,
 ) => {
-  if (isEditableAchievementStatus(item.status)) {
+  if (canEditAchievementDraft(authUser, item)) {
     return (
       <Button size="small" type="link" onClick={() => onEdit(item)}>
         编辑草稿
@@ -422,7 +461,7 @@ const renderEditAction = (
     );
   }
 
-  if (item.status === "DEPARTMENT_REJECTED") {
+  if (canSeeRejectedDraftEditBoundary(authUser, item)) {
     return (
       <Tooltip title="当前后端暂不支持驳回后编辑">
         <Button disabled size="small" type="link">

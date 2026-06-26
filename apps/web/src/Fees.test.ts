@@ -5,6 +5,7 @@ import {
   buildFeeDetailOpenRequest,
   buildFeeQuery,
   buildMarkFeePaidPayload,
+  canManageDepartmentFees,
   canMarkFeePaid,
   classifyFeeWarningRecords,
   createFeeRecord,
@@ -383,6 +384,23 @@ describe("fee form validation and payload shaping", () => {
 });
 
 describe("mark-paid visibility", () => {
+  it("uses fee:manage_department for fee write entry visibility", () => {
+    expect(
+      canManageDepartmentFees({
+        permissionCodes: ["fee:manage_department"],
+      }),
+    ).toBe(true);
+    expect(
+      canManageDepartmentFees({
+        permissionCodes: ["fee:read_department"],
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowFeeDetailMarkPaidAction(baseFee, "management", false),
+    ).toBe(false);
+    expect(shouldShowFeeDetailMarkPaidAction(baseFee, "management", true)).toBe(true);
+  });
+
   it("shows mark-paid only for pending and overdue fee records", () => {
     expect(canMarkFeePaid({ payStatus: "PENDING" })).toBe(true);
     expect(canMarkFeePaid({ payStatus: "OVERDUE" })).toBe(true);

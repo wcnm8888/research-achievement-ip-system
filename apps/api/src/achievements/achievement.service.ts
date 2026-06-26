@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { DepartmentStatus } from "@prisma/client";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -19,6 +20,7 @@ import { UserContext } from "../identity/user-context";
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
   DepartmentReviewerNotFoundError,
+  WorkflowDepartmentUnavailableError,
   WorkflowInstanceTransitionConflictError,
   WorkflowInvalidStateError,
 } from "../workflow/domain/workflow-errors";
@@ -132,6 +134,7 @@ export class AchievementService {
     this.assertUserContext(context);
     this.assertPermission(context, PermissionCode.achievementCreate);
     this.assertDepartmentBoundary(context, dto.departmentId);
+    await this.assertActiveDepartmentForWrite(context.departmentId);
     this.assertCreateDetailMatchesType(dto);
 
     const input = this.toCreateDraftInput(context, dto);
@@ -336,6 +339,12 @@ export class AchievementService {
       if (error instanceof DepartmentReviewerNotFoundError) {
         throw new AchievementUnsupportedOperationError(
           "No active department research secretary is available for review assignment.",
+        );
+      }
+
+      if (error instanceof WorkflowDepartmentUnavailableError) {
+        throw new AchievementUnsupportedOperationError(
+          "Achievement department is archived or unavailable.",
         );
       }
 
@@ -551,6 +560,23 @@ export class AchievementService {
     if (departmentId && departmentId !== context.departmentId) {
       throw new AchievementInvalidPayloadError(
         "Achievement departmentId must match the current user context departmentId.",
+      );
+    }
+  }
+
+  private async assertActiveDepartmentForWrite(departmentId: string): Promise<void> {
+    const department = await this.prisma.department.findFirst({
+      where: {
+        id: departmentId,
+        status: DepartmentStatus.ACTIVE,
+        archivedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!department) {
+      throw new AchievementUnsupportedOperationError(
+        "Achievement department is archived or unavailable.",
       );
     }
   }

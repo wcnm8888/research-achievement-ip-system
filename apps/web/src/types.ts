@@ -426,6 +426,74 @@ export type AuditLogQuery = {
   take?: number;
 };
 
+export type DepartmentStatus = "ACTIVE" | "ARCHIVED";
+
+export type DepartmentSummary = {
+  id: string;
+  code: string;
+  name: string;
+  parentId: string | null;
+  status: DepartmentStatus;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt: string | null;
+};
+
+export type DepartmentDetail = DepartmentSummary;
+
+export type DepartmentTreeNode = DepartmentSummary & {
+  children: DepartmentTreeNode[];
+};
+
+export type DepartmentImpactSummary = {
+  activeUsersCount: number;
+  activeUserRoleScopesCount: number;
+  pendingWorkflowTasksCount: number;
+  activeOrUnarchivedAchievementsCount: number;
+  feeRecordsCount: number;
+};
+
+export type DepartmentListResponse = {
+  items: DepartmentSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type DepartmentTreeResponse = {
+  items: DepartmentTreeNode[];
+};
+
+export type ListDepartmentsQuery = {
+  keyword?: string;
+  status?: DepartmentStatus;
+  parentId?: string;
+  includeArchived?: boolean;
+  page?: number;
+  pageSize?: number;
+};
+
+export type CreateDepartmentInput = {
+  code: string;
+  name: string;
+  parentId?: string | null;
+};
+
+export type UpdateDepartmentInput = {
+  code?: string;
+  name?: string;
+  parentId?: string | null;
+};
+
+export type DepartmentReasonInput = {
+  reason?: string | null;
+};
+
+export type DisableDepartmentResponse = {
+  department: DepartmentDetail;
+  impactSummary: DepartmentImpactSummary;
+};
+
 export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED";
 
 export type AccountCredentialStatus = "ACTIVE" | "DISABLED";

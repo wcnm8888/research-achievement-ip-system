@@ -1,5 +1,324 @@
 # Decisions
 
+## D099 - Step 41B is blocked until explicit production authorization is provided
+
+- Date: 2026-06-25.
+- Context: Step 41B is the authorized production deploy and GET-only smoke substep after Step 41A. The Step 41B instructions require explicit Chinese user authorization before any VPS connection, production deploy, or GET-only production smoke. The user message attached Step 41B instructions but did not include the required authorization statement.
+- Decision:
+  - Set Step 41B result to `BLOCKED_BY_PRODUCTION_AUTHORIZATION`.
+  - Do not connect to VPS.
+  - Do not access production DB.
+  - Do not deploy.
+  - Do not run GET-only production smoke.
+  - Do not execute production writes, migration, seed, smoke-account cleanup, synthetic-data cleanup, prompt-history cleanup, commit, tag, artifact packaging, or new Phase 2 work.
+  - Keep Step 41A / D098 deploy-candidate scope as the current readiness basis.
+- Rationale:
+  - Step 41B has an explicit authorization gate for production connection/deploy/smoke.
+  - Production actions are high-risk and must be explicitly authorized by the user with target environment/domain and boundaries.
+  - Local checks found no schema / migration / seed / deployment-config diff and no scope conflict, so the blocker is authorization, not local readiness.
+- Evidence:
+  - Step 41A / D098 exists and records `READY_FOR_STEP_41B_AUTHORIZED_DEPLOY_AND_GET_SMOKE`.
+  - `git diff -- prisma/schema.prisma prisma/migrations prisma/seed.cjs prisma/seed-foundation.cjs`: no output / no diff.
+  - `git diff -- package.json pnpm-lock.yaml pnpm-workspace.yaml docker-compose.yml docker-compose.prod.yml docker-compose.production.yml Dockerfile.api Dockerfile.web deploy README.md README* nginx*`: no output / no diff.
+  - No production action was executed.
+- Consequences:
+  - Step 41B remains blocked until the user provides the required explicit authorization.
+  - Production deploy and GET-only smoke are not completed.
+  - GET-only smoke must not be represented as write acceptance when eventually performed.
+  - Phase 2 remains incomplete.
+- Resume requirement:
+  - The next user authorization must explicitly allow connecting to the target VPS / production environment, executing production deploy, and running GET-only production smoke.
+  - It must also explicitly forbid production writes, migration/seed, smoke-account cleanup, synthetic-data cleanup, and sensitive-config output, name the target environment/domain, and acknowledge that local validation is not production acceptance.
+
+## D098 - Step 41A confirms deploy candidate scope and excludes prompt-history file
+
+- Date: 2026-06-25.
+- Context: Step 41 concluded `NEEDS_SUBSTEP_SPLIT_BEFORE_DEPLOY` and recommended Step 41A as pre-deploy packaging / commit-scope confirmation. Step 41A rechecked the working tree, deploy candidate scope, excluded files, schema / migration / seed diff, deployment config diff, and lightweight local gates without executing production actions.
+- Decision:
+  - Set Step 41A judgment to `READY_FOR_STEP_41B_AUTHORIZED_DEPLOY_AND_GET_SMOKE`.
+  - Include the accumulated deploy candidate from Step 36Fix, Step 37, Step 38, Step 40, and Step 41 / Step 41A memory-bank records.
+  - Treat the untracked Department management source/test files as required deploy-candidate files.
+  - Exclude `prompt历史记录_按Step拆分/Step 34.md` or the equivalent mojibake prompt-history path from commit, tag, artifact, and deployment scope unless the user separately authorizes handling it.
+  - Do not execute commit, tag, artifact packaging, VPS connection, production deploy, production DB access, production write, migration, seed, smoke-account cleanup, synthetic-data cleanup, or new Phase 2 work in Step 41A.
+- Rationale:
+  - No schema / migration / seed implementation diff was found.
+  - No deployment configuration diff was found.
+  - Lightweight local gates passed after Step 41.
+  - The remaining prompt-history file is unrelated to deployable application behavior and should not enter the deploy package by accident.
+  - Step 41B has a different risk boundary because it requires VPS connection, production deployment, and GET-only production smoke.
+- Verification:
+  - `corepack pnpm lint`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+  - Step 41 API/Web full tests and builds remain the current full local evidence because Step 41A did not change business code.
+- Consequences:
+  - Step 41A is complete as pre-deploy scope confirmation only.
+  - Step 41B may proceed only with explicit user authorization for VPS connection, production deploy, and GET-only smoke.
+  - Production writes, migration, seed, smoke-account cleanup, and synthetic-data cleanup remain out of scope and forbidden unless separately authorized.
+  - Local validation remains local evidence only and must not be represented as production acceptance.
+- Rollback / correction path:
+  - If the working tree changes before Step 41B, rerun Step 41A scope confirmation and lightweight gates.
+  - If the prompt-history file must be preserved, handle it in a separate documentation step rather than mixing it into production deploy scope.
+  - If a later production deploy audit finds a migration / seed / production write requirement, stop and open a separately authorized high-risk production action step.
+
+## D097 - Step 41 requires substep split before production deploy
+
+- Date: 2026-06-25.
+- Context: Step 41 audited production deploy / acceptance readiness after Step 40. The deploy candidate accumulates Step 36Fix local UI tightening, Step 37 Department maintenance backend / UI, Step 38 ACTIVE department write-path hardening, and Step 40 root lint cleanup. The current diff has no schema / migration / seed implementation change and no deployment configuration change, and fresh local gates pass.
+- Decision:
+  - Set Step 41 judgment to `NEEDS_SUBSTEP_SPLIT_BEFORE_DEPLOY`.
+  - Do not execute production deploy, VPS connection, production DB access, production writes, migration, seed, smoke-account cleanup, synthetic-data cleanup, or new Phase 2 feature work in Step 41.
+  - Split the follow-up chain before actual deployment:
+    - Step 41A: pre-deploy packaging / commit-scope confirmation.
+    - Step 41B: explicitly authorized production deploy plus GET-only smoke.
+    - Step 41C: explicitly authorized production write acceptance only if the user approves production writes.
+  - Keep smoke-account cleanup and `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` cleanup in a later separate production data cleanup step.
+- Rationale:
+  - Local gates are clean and there is no migration/seed/deploy-config blocker.
+  - The candidate still spans multiple local steps and includes a new administrative Department management write surface plus backend write-path behavior changes.
+  - GET-only production smoke and production write acceptance have different risk boundaries and authorization requirements.
+  - The unrelated untracked prompt-history file should be excluded or separately handled before packaging / commit-scope confirmation.
+- Verification:
+  - `corepack pnpm lint`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+  - `corepack pnpm --filter @research-ip/api test`: PASS, 64 files / 558 tests.
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 15 files / 231 tests.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS with existing Vite large chunk warning.
+- Consequences:
+  - Step 41 is complete only as a planning / authorization gate.
+  - Production deploy and production acceptance are not completed.
+  - User authorization must explicitly name allowed production actions and boundaries before any production operation.
+  - Local validation must not be described as production acceptance.
+  - A larger production deploy / acceptance chain needs an explicit closure archive after execution.
+- Rollback / correction path:
+  - If local scope changes before deployment, rerun Step 41A-style scope confirmation and local gates.
+  - If a later audit discovers a required migration / seed / production data write, stop and open a high-risk production action step with separate authorization.
+  - If production deploy fails after authorization, use the production runbook rollback path and record only redacted evidence.
+
+## D096 - Step 40 resolves inherited root lint failures as local-only cleanup
+
+- Date: 2026-06-25.
+- Context: Step 39 classified inherited root lint failures as a dedicated local quality-gate cleanup item after Step 38 was closed locally with production and cleanup deferred. The failures were limited to an unused account-management import, an unused legacy frontend function, and CommonJS lint compatibility in the seed-foundation node:test script.
+- Decision:
+  - Treat Step 40 as the canonical local cleanup for those inherited root lint failures.
+  - Keep the cleanup behavior-preserving:
+    - Remove the unused account-management import.
+    - Preserve `LegacyDemoApp` and suppress only its unused-symbol lint warning.
+    - Preserve the CommonJS seed-foundation test script and add narrow lint compatibility comments.
+  - Do not use Step 40 to perform production deploy / acceptance, production DB access, production writes, smoke-account disable, synthetic data cleanup, migration, seed execution, schema changes, or Phase 2 feature implementation.
+- Rationale:
+  - The initial Step 40 root lint output matched the archived inherited unrelated failures exactly.
+  - Removing the unused import and using narrow lint compatibility comments clears the quality gate without rewriting legacy/demo code paths or changing seed test execution semantics.
+  - Production and data cleanup routes require separate authorization and evidence.
+- Verification:
+  - `corepack pnpm lint`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+- Consequences:
+  - Root lint no longer fails on the inherited unrelated items.
+  - Phase 2 remains incomplete.
+  - Production deploy / acceptance and production cleanup routes remain deferred.
+- Rollback / correction path:
+  - If a later review wants the legacy demo function removed instead of lint-suppressed, open a separate behavior-neutral cleanup step and verify web typecheck plus root lint.
+  - If the seed-foundation test is converted to ESM later, keep that as a separate test-harness refactor with root lint and `test:seed:foundation` evidence.
+
+## D095 - Step 39 plans remaining Phase 2 routes after Step 38 local closure
+
+- Date: 2026-06-25.
+- Context: Step 38-Closure closed Step 38 locally as `CLOSED_LOCALLY_WITH_PRODUCTION_AND_CLEANUP_DEFERRED` after local backend ACTIVE department guard hardening. Step 36, Step 37, and Step 38 each left production, cleanup, lint, and broader Phase 2 routes deferred. Step 39 was opened as a planning step only, with explicit boundaries against business code changes, production access, production writes, deployment, migration, seed, and sensitive configuration access.
+- Decision:
+  - Treat Step 39 as the canonical post-Step38 remaining-route planning archive.
+  - Keep Step 39 documentation-only.
+  - Do not execute Step 36Fix-Sync, production deploy / acceptance, smoke-account disable, synthetic achievement cleanup, root lint cleanup, migration, seed, or any remaining Phase 2 feature route in Step 39.
+  - Classify the remaining work into:
+    - Production / deploy / acceptance.
+    - Synthetic data / smoke-account cleanup.
+    - Root lint unrelated cleanup.
+    - Remaining Phase 2 feature routes.
+    - High-risk routes requiring explicit authorization.
+  - Preserve Step 38 as local implementation / local verification only.
+  - Preserve P-001 / P-002 / P-003 as smoke accounts, not real business users.
+  - Preserve `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` as synthetic production data, not real business data.
+- Rationale:
+  - The memory-bank state is consistent: Step 38-Closure, D094, D093, D092, and D091 agree on completed scope and deferred items.
+  - Production deployment and production writes require explicit user authorization and fresh evidence.
+  - Smoke-account cleanup and synthetic-data cleanup are production writes and should not be mixed with deployment, migration, seed, or feature implementation.
+  - Root lint inherited failures are local quality-gate cleanup items and must not be reclassified as Step 38 failure.
+  - Remaining Phase 2 routes are feature/product work and should be implemented as separate, locally verifiable steps before any production acceptance.
+- Consequences:
+  - Phase 2 remains incomplete after Step 39.
+  - The recommended route is:
+    - Dedicated local root-lint cleanup first if deploy gates require root lint.
+    - Separately authorized production deploy / acceptance for accumulated local changes.
+    - Separately authorized smoke-account and synthetic-data cleanup after production baseline is clear.
+    - Then separate local implementation steps for remaining Phase 2 routes.
+  - Future steps must not treat local Step 37 / Step 38 validation as production acceptance.
+  - Future steps must not combine production writes with unrelated local feature implementation.
+- Rollback / correction path:
+  - If a later review finds missing deferred items, append a Step 39 correction archive rather than editing Step 36 / Step 37 / Step 38 completion evidence retroactively.
+  - If production action is requested, open a separately authorized production step with explicit scope, risk, evidence, and rollback notes.
+
+## D094 - Step 38 final closure is local-only with production and cleanup deferred
+
+- Date: 2026-06-25.
+- Context: Step 38 implemented local backend business write path ACTIVE department guard hardening and was recorded in D093. A follow-up completion verification confirmed the Step 38 archive, code guard locations, and local quality gates, with result `PASS_WITH_KNOWN_UNRELATED_ROOT_LINT_FAILURES`. There was numbering ambiguity around a Step 38A readiness prompt and later Step numbering; this decision closes Step 38 without starting Step 39.
+- Decision:
+  - Record `Step 38 closure: CLOSED_LOCALLY_WITH_PRODUCTION_AND_CLEANUP_DEFERRED`.
+  - Treat Step 38 as locally implemented and locally verified.
+  - Treat the earlier Step 38A readiness prompt as superseded and not to be executed.
+  - Keep D093 as the canonical implementation decision for Step 38.
+  - Keep this closure as Step 38 final closure archive, not Step 39 and not a new Phase 2 planning step.
+  - Do not generate a Step 39 prompt in this closure.
+- Rationale:
+  - The Step 38 memory-bank archive, D093, and completion verification are consistent.
+  - Local verification is sufficient for local closure.
+  - Root lint failures remain inherited unrelated issues and do not invalidate Step 38 local hardening.
+  - Step 38 did not require schema, migration, or seed changes.
+- Consequences:
+  - Step 38 is closed locally.
+  - Step 38 is not production deployed or production accepted.
+  - Phase 2 is not complete.
+  - Future work must not treat the superseded Step 38A readiness prompt as pending required execution.
+- Deferred items:
+  - Production deploy / acceptance.
+  - Step 36Fix-Sync.
+  - P-001 / P-002 / P-003 smoke-account disable.
+  - `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` archive / cleanup.
+  - Root lint unrelated cleanup.
+  - Broader Phase 2 routes.
+
+## D093 - Step 38 hardens business write paths against ARCHIVED departments locally
+
+- Date: 2026-06-25.
+- Context: Step 37 introduced Department soft disable through ACTIVE / ARCHIVED without physical delete, cascade disable, or department scope expansion. Step 37 explicitly deferred business write path ACTIVE department guard hardening. Step 38 audited and hardened local backend write paths that create achievement drafts, submit achievements into workflow review, assign workflow reviewers/tasks, and create fee records.
+- Decision:
+  - Close Step 38 as `DONE_WITH_UNRELATED_VALIDATION_FAILURES: Step 38 business write path ACTIVE department guard hardening implemented locally, with root lint still failing only on inherited unrelated items.`
+  - Keep the change local-backend scoped.
+  - Do not change schema, migrations, seed, department hierarchy semantics, or exact `departmentId` authorization scope.
+  - Block new business writes, submission, workflow assignment, and fee creation when the target department is ARCHIVED or unavailable.
+  - Do not block historical read/list/detail access to existing achievements or fees.
+  - Leave account-management unchanged because the backend already validates ACTIVE departments for create user, department change, and DEPARTMENT role scope assignment.
+- Rationale:
+  - Service/write-orchestration guards stop unsafe writes regardless of frontend selector state.
+  - Workflow submit preparation is the correct boundary for review assignment because it runs before achievement state transition and before workflow task creation.
+  - Fee creation derives `departmentId` from the related achievement, so the achievement parent read must carry Department status facts before writing the fee record.
+  - Preserving exact `departmentId` scope avoids expanding Step 37 hierarchy semantics.
+  - Avoiding schema/migration keeps this Step within the requested local hardening boundary.
+- Validation:
+  - Targeted achievements, workflow, fees, and account-management tests passed.
+  - API full test suite passed: 64 files / 558 tests.
+  - API typecheck and build passed.
+  - Scoped eslint on touched Step 38 API files passed.
+  - Root lint still fails only on inherited unrelated account-management/web/seed-foundation issues recorded in Step 37G.
+- Consequences:
+  - ARCHIVED departments cannot receive new achievement draft writes from users still bound to that department.
+  - Achievements already tied to ARCHIVED departments cannot be submitted into department review.
+  - Workflow review tasks are not created for ARCHIVED target departments.
+  - Fee records cannot be newly created for achievements whose department is ARCHIVED.
+  - Historical data remains readable according to existing authorization policies.
+- Deferred items:
+  - Production deploy and production acceptance.
+  - Step 36Fix-Sync.
+  - P-001 / P-002 / P-003 smoke-account disable.
+  - Synthetic achievement archive / cleanup.
+  - Root lint unrelated cleanup.
+  - Broader Phase 2 routes such as attachments, settings/config CRUD, monitoring/backup, and real data import readiness.
+- Rollback / correction path:
+  - If local regressions appear, revert or patch only the Step 38 API hardening files and rerun targeted achievements/workflow/fees tests plus API typecheck.
+  - If production acceptance is needed, open a separately authorized deploy/acceptance step and do not reuse this local evidence as production proof.
+
+## D091 - Step 36 closes the user / role / department / permission chain with deferred cleanup and later Phase 2 routes
+
+- Date: 2026-06-25.
+- Context: Step 36 was the first Phase 2 business-foundation chain after Phase 1 production cutover was closed as `PHASE_1_PRODUCTION_CUTOVER_GO_WITH_DEFERRED_ITEMS`. It planned and implemented real production account-management foundations, role/department/permission boundaries, local account-management UI, production smoke account creation, and minimum researcher / secretary / auditor role acceptance. Step 36Fix then tightened role-based frontend UI entries locally after production smoke revealed over-visible UI actions.
+- Decision:
+  - Mark Step 36K-Archive as DONE for `Step 36 memory-bank closure for user / role / department / permission chain`.
+  - Set Step 36 final status to `DONE_WITH_DEFERRED_ITEMS: Step 36 user / role / department / permission chain completed with documented boundaries.`
+  - Treat Step 36 as a Phase 2 business-foundation chain, not as all of Phase 2.
+  - Accept account-management backend/API and frontend UI as implemented locally and manually smoke-accepted for production account creation.
+  - Accept admin / researcher / secretary / auditor minimum core role-chain production smoke as manually verified by user-provided redacted UI evidence.
+  - Accept Step 36Fix as local UI permission-entry tightening only until separately synced/deployed.
+  - Keep `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` and P-001 / P-002 / P-003 as synthetic/smoke artifacts, not real business data or real business users.
+  - Defer synthetic achievement cleanup and smoke-account disable to a separate cleanup step.
+- Rationale:
+  - Backend account-management now covers the minimum operational account lifecycle needed for Phase 2 role acceptance: list, detail, create, disable, enable, role assignment/revoke, and department binding.
+  - `CREATE + USER` and `UPDATE + USER` audit semantics avoided an unnecessary schema/migration expansion while preserving account-management audit traceability.
+  - Production smoke acceptance verified the core business-role chain with real session auth and manually created smoke accounts, while avoiding credential exposure to Codex.
+  - Step 36Fix addressed frontend over-visible write/action entries using existing permission codes rather than role-name checks or invented permissions.
+  - The explicit deferred list avoids overclaiming incomplete Phase 2 capabilities.
+- Consequences:
+  - Future work must not use admin as a substitute for researcher / secretary / auditor acceptance.
+  - `X-Demo-User-Id` and demo user switcher must not be restored as production auth.
+  - Synthetic production data must remain marked and must not be treated as real business data.
+  - P-001 / P-002 / P-003 must not be treated as real business users or long-term accounts.
+  - Production UI should not be considered tightened by Step 36Fix until the local changes are committed, pushed, deployed, and verified.
+  - Phase 2 should continue through explicit follow-up steps for cleanup, department maintenance, approval closure, fee write/payment-state, attachments, settings/config, monitoring/backup, and real data import readiness.
+- Deferred items:
+  - Step 36Fix sync / deploy if not yet completed.
+  - Synthetic production achievement archive/retain/mark decision.
+  - P-001 / P-002 / P-003 smoke-account disable.
+  - Password reset / invite.
+  - Department CRUD.
+  - Real business user batch creation.
+  - Full approval archive closure.
+  - Fee write / payment-state acceptance.
+  - Attachment upload / download / storage boundary.
+  - Settings/config CRUD.
+  - Monitoring / backup hardening.
+  - Real business data import readiness.
+- Rollback / correction path:
+  - If production role smoke regressions appear, open a dedicated Step 36 production role-acceptance fix or production incident step.
+  - If Step 36Fix has not been deployed, use a dedicated sync/deploy step; do not rewrite the local acceptance evidence.
+  - If synthetic data or smoke accounts need cleanup, use a separate synthetic production data and smoke-account cleanup step with explicit user authorization.
+
+## D092 - Step 37 closes department maintenance backend / UI locally with deferred production and hardening items
+
+- Date: 2026-06-25.
+- Context: Step 37 continued Phase 2 after Step 36 closed the user / role / department / permission chain with deferred items. Step 36 provided department binding but not Department CRUD. Step 37A audited Department maintenance readiness, Step 37B planned the backend API, Step 37C implemented the backend locally, Step 37E implemented the frontend locally, Step 37E-Followup linked AccountManagement to ACTIVE department selectors, and Step 37F completed local frontend/backend integrated acceptance. Root lint still has inherited unrelated failures.
+- Decision:
+  - Close Step 37 as `DONE_WITH_UNRELATED_VALIDATION_FAILURES: Step 37 department maintenance backend / UI locally implemented, locally accepted, and archived with production/deploy and unrelated lint items deferred.`
+  - Treat Department maintenance backend / UI as locally implemented and locally accepted, not production deployed or production accepted.
+  - Keep Step 37 within Phase 2 continuation; it does not complete Phase 2 overall.
+  - Do not require schema or migration for Step 37.
+  - Keep department authorization scope as exact `departmentId`; `parentId` hierarchy does not expand scope to child departments.
+  - Treat department disable as soft disable / archival state, not physical delete.
+  - Do not cascade disable to child departments, users, achievements, workflow tasks, fees, or audit records.
+  - Block department disable when active users, active department role scopes, or pending workflow tasks exist.
+  - Retain historical achievements, fee records, approvals, and audit records when a department is disabled.
+  - Use ACTIVE department selectors in AccountManagement for create user, department change, and department-scoped role assignment.
+  - Defer production deploy, production acceptance, business write path ACTIVE department guard hardening, Step 36Fix-Sync, smoke-account cleanup, synthetic data cleanup, and unrelated root lint fixes.
+- Rationale:
+  - Existing Department schema already supports the Step 37 local maintenance surface without a schema/migration expansion.
+  - Reusing `system:config` aligns Department maintenance with administrative account-management boundaries.
+  - Reusing CONFIG_UPDATE / SYSTEM_CONFIG audit semantics preserves traceability without adding new enum migrations.
+  - Exact `departmentId` scope avoids surprising access expansion from hierarchy and matches Step 36 authorization boundaries.
+  - Soft disable protects historical business records while blocking unsafe new bindings or scoped operations through frontend selectors and disable rules.
+  - Separating production deploy/acceptance and business write path hardening avoids overclaiming local evidence as production evidence.
+- Consequences:
+  - Future work must not represent Step 37 as production Department maintenance acceptance until a separately authorized production step deploys and verifies it.
+  - Business write paths that create achievements, workflow assignments, fees, or other department-bound data still need a separate ACTIVE department guard hardening step.
+  - AccountManagement department selector linkage should be described as account binding support, not Department CRUD.
+  - Parent department hierarchy is organization metadata only unless a future step explicitly designs, tests, and accepts parent-includes-child scope semantics.
+  - Root lint unrelated failures remain outside Step 37 and should be fixed in a dedicated cleanup step if desired.
+- Deferred items:
+  - Production deploy and production Department maintenance acceptance.
+  - Business write path ACTIVE department guard hardening.
+  - Step 36Fix-Sync if local UI tightening still needs commit / push / deploy / verification.
+  - P-001 / P-002 / P-003 smoke-account disable.
+  - `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` archive / cleanup.
+  - Root lint unrelated failures.
+  - Remaining Phase 2 routes such as fee write/payment-state, attachments, settings/config CRUD, monitoring/backup, and real data import readiness.
+- Rollback / correction path:
+  - If local department-management regressions are found, open a focused Step 37 fix with targeted backend/frontend tests before production deployment.
+  - If production acceptance is required, open a separate production deploy / acceptance step with explicit authorization and fresh production boundaries.
+  - If hierarchy-based authorization is later required, open a separate schema/rule/test planning step instead of changing the Step 37 exact-scope decision retroactively.
+  - If root lint cleanup is required, fix the inherited lint failures in a separate cleanup step and do not rewrite Step 37 acceptance evidence.
+
 ## D090 - Step 34 closes Phase 1 as production cutover GO with deferred items
 
 - Date: 2026-06-24.

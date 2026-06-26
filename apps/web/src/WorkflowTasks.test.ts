@@ -7,6 +7,7 @@ import {
   buildWorkflowTaskDrawerViewModel,
   buildWorkflowTaskListDisplayRow,
   buildWorkflowTaskListQuery,
+  canReviewDepartmentAchievements,
   getWorkflowTaskActionPresentation,
   getWorkbenchWorkflowNavKey,
 } from "./WorkflowTasks";
@@ -116,6 +117,27 @@ describe("workflow task detail drawer helpers", () => {
   it("maps an actionable task to approve and reject entries", () => {
     expect(getWorkflowTaskActionPresentation(baseTask)).toEqual({
       actions: ["approve", "reject"],
+    });
+  });
+
+  it("shows approve and reject only with achievement:review_department", () => {
+    const secretary = { permissionCodes: ["achievement:review_department"] };
+    const researcher = { permissionCodes: ["achievement:create", "achievement:update_own"] };
+    const auditor = { permissionCodes: ["audit:read_masked"] };
+
+    expect(canReviewDepartmentAchievements(secretary)).toBe(true);
+    expect(getWorkflowTaskActionPresentation(baseTask, secretary)).toEqual({
+      actions: ["approve", "reject"],
+    });
+    expect(canReviewDepartmentAchievements(researcher)).toBe(false);
+    expect(getWorkflowTaskActionPresentation(baseTask, researcher)).toEqual({
+      actions: [],
+      readonlyReason: "当前用户无审批处理权限",
+    });
+    expect(canReviewDepartmentAchievements(auditor)).toBe(false);
+    expect(getWorkflowTaskActionPresentation(baseTask, auditor)).toEqual({
+      actions: [],
+      readonlyReason: "当前用户无审批处理权限",
     });
   });
 

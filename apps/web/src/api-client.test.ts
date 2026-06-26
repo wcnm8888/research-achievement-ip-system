@@ -465,6 +465,196 @@ describe("account management API client", () => {
   });
 });
 
+describe("department management API client", () => {
+  it("serializes listDepartments filters and pagination including includeArchived", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        items: [makeDepartmentResponse()],
+        total: 1,
+        page: 2,
+        pageSize: 20,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    const result = await client.listDepartments({
+      keyword: "research",
+      status: "ACTIVE",
+      parentId: "10000000-0000-4000-8000-000000000001",
+      includeArchived: true,
+      page: 2,
+      pageSize: 20,
+    });
+
+    expect(result.total).toBe(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(
+      "http://localhost/api/departments?keyword=research&status=ACTIVE&parentId=10000000-0000-4000-8000-000000000001&includeArchived=true&page=2&pageSize=20",
+    );
+    expect(init.method).toBe("GET");
+    expect(init.credentials).toBe("include");
+  });
+
+  it("gets department tree with filters", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        items: [{ ...makeDepartmentResponse(), children: [] }],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.getDepartmentTree({ keyword: "center", includeArchived: false }),
+    ).resolves.toMatchObject({ items: [{ code: "RESEARCH_CENTER" }] });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("http://localhost/api/departments/tree?keyword=center&includeArchived=false");
+    expect(init.method).toBe("GET");
+  });
+
+  it("gets department detail with the correct path", async () => {
+    const fetchMock = vi.fn(async () => Response.json(makeDepartmentResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(client.getDepartmentDetail("department-1")).resolves.toMatchObject({
+      id: "department-1",
+      code: "RESEARCH_CENTER",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("http://localhost/api/departments/department-1");
+    expect(init.method).toBe("GET");
+  });
+
+  it("creates and updates departments with JSON payloads", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json(makeDepartmentResponse()))
+      .mockResolvedValueOnce(Response.json(makeDepartmentResponse({ name: "Updated Center" })));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.createDepartment({
+        code: "RESEARCH_CENTER",
+        name: "Research Center",
+        parentId: null,
+      }),
+    ).resolves.toMatchObject({ name: "Research Center" });
+    await expect(
+      client.updateDepartment("department-1", {
+        name: "Updated Center",
+        parentId: "10000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toMatchObject({ name: "Updated Center" });
+
+    const [createUrl, createInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [updateUrl, updateInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(createUrl).toBe("http://localhost/api/departments");
+    expect(createInit.method).toBe("POST");
+    expect(createInit.body).toBe(
+      JSON.stringify({
+        code: "RESEARCH_CENTER",
+        name: "Research Center",
+        parentId: null,
+      }),
+    );
+    expect(updateUrl).toBe("http://localhost/api/departments/department-1");
+    expect(updateInit.method).toBe("PATCH");
+    expect(updateInit.body).toBe(
+      JSON.stringify({
+        name: "Updated Center",
+        parentId: "10000000-0000-4000-8000-000000000001",
+      }),
+    );
+  });
+
+  it("posts disable and enable department actions with reason payloads", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          department: makeDepartmentResponse({ status: "ARCHIVED" }),
+          impactSummary: {
+            activeUsersCount: 0,
+            activeUserRoleScopesCount: 0,
+            pendingWorkflowTasksCount: 0,
+            activeOrUnarchivedAchievementsCount: 2,
+            feeRecordsCount: 3,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(Response.json(makeDepartmentResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.disableDepartment("department-1", { reason: "merge" }),
+    ).resolves.toMatchObject({
+      impactSummary: { activeOrUnarchivedAchievementsCount: 2 },
+    });
+    await expect(
+      client.enableDepartment("department-1", { reason: "restore" }),
+    ).resolves.toMatchObject({ status: "ACTIVE" });
+
+    const [disableUrl, disableInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [enableUrl, enableInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(disableUrl).toBe("http://localhost/api/departments/department-1/disable");
+    expect(disableInit.method).toBe("POST");
+    expect(disableInit.body).toBe(JSON.stringify({ reason: "merge" }));
+    expect(enableUrl).toBe("http://localhost/api/departments/department-1/enable");
+    expect(enableInit.method).toBe("POST");
+    expect(enableInit.body).toBe(JSON.stringify({ reason: "restore" }));
+  });
+
+  it("passes department API 403 and 409 errors through the existing ApiError mechanism", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({ message: "Missing required permission: system:config." }, { status: 403 }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({ message: "Department has active users or pending workflow tasks." }, { status: 409 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(client.listDepartments()).rejects.toMatchObject({
+      kind: "forbidden",
+      status: 403,
+      detail: "Missing required permission: system:config.",
+    });
+    await expect(client.disableDepartment("department-1")).rejects.toMatchObject({
+      kind: "unknown",
+      status: 409,
+      detail: "Department has active users or pending workflow tasks.",
+    });
+  });
+});
+
 describe("demo header policy", () => {
   it("allows demo headers only when the caller explicitly permits them", () => {
     expect(shouldSendDemoUserHeader(" demo-user-id ", true)).toBe(true);
@@ -550,4 +740,20 @@ const makeAccountUserResponse = (
   lastLogin: null,
   createdAt: "2026-06-24T00:00:00.000Z",
   updatedAt: "2026-06-24T00:00:00.000Z",
+});
+
+const makeDepartmentResponse = (
+  overrides: {
+    name?: string;
+    status?: string;
+  } = {},
+) => ({
+  id: "department-1",
+  code: "RESEARCH_CENTER",
+  name: overrides.name ?? "Research Center",
+  parentId: null,
+  status: overrides.status ?? "ACTIVE",
+  createdAt: "2026-06-24T00:00:00.000Z",
+  updatedAt: "2026-06-24T00:00:00.000Z",
+  archivedAt: overrides.status === "ARCHIVED" ? "2026-06-25T00:00:00.000Z" : null,
 });

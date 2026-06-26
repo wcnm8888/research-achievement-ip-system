@@ -4,6 +4,607 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 41B Archive - Authorized Production Deploy and GET-only Smoke Gate - 2026-06-25
+
+- Step identity:
+  - This is Step 41B.
+  - Step 41B is the authorized production deploy and GET-only smoke substep after Step 41A.
+  - Step 41B requires explicit user authorization before any VPS connection, production deploy, or GET-only production smoke.
+- Canonical state:
+  - Latest canonical completed step before Step 41B: Step 41A.
+  - Step 41A / D098 judgment: `READY_FOR_STEP_41B_AUTHORIZED_DEPLOY_AND_GET_SMOKE`.
+  - Step 41 / D097 judgment: `NEEDS_SUBSTEP_SPLIT_BEFORE_DEPLOY`.
+  - Step 40 / D096 root lint cleanup remains complete.
+  - Step 39 / D095 remaining-route planning remains complete.
+  - Step 38-Closure / D094 remains local-only with production and cleanup deferred.
+  - Phase 2 remains incomplete.
+  - Local validation remains local evidence only and is not production acceptance.
+- Pre-production local checks:
+  - Re-read required operating rules and top Step 41A / Step 41 memory-bank records.
+  - `git status --short --untracked-files=all` still shows the accumulated deploy candidate plus the excluded prompt-history untracked file.
+  - `git diff --name-status` still shows tracked Step 36Fix / Step 37 / Step 38 / Step 40 / memory-bank files.
+  - `git diff --stat` before Step 41B documentation update showed the same tracked application scope plus Step 41A memory-bank records.
+  - `git diff -- prisma/schema.prisma prisma/migrations prisma/seed.cjs prisma/seed-foundation.cjs`: no output / no diff.
+  - `git diff -- package.json pnpm-lock.yaml pnpm-workspace.yaml docker-compose.yml docker-compose.prod.yml docker-compose.production.yml Dockerfile.api Dockerfile.web deploy README.md README* nginx*`: no output / no diff.
+- Authorization status:
+  - Required Step 41B authorization was not provided in the user message.
+  - The message attached Step 41B instructions, but did not include the required explicit Chinese authorization covering VPS connection, production deploy, GET-only smoke, production-write prohibition, migration/seed prohibition, cleanup prohibition, sensitive-config prohibition, target environment/domain, and acknowledgement that local validation is not production acceptance.
+- Step 41B result:
+  - `BLOCKED_BY_PRODUCTION_AUTHORIZATION`.
+- Boundary:
+  - No VPS connection was made.
+  - No production DB access was made.
+  - No production deploy was executed.
+  - No GET-only production smoke was executed.
+  - No production write, migration, seed, smoke-account cleanup, synthetic-data cleanup, prompt-history cleanup, file deletion, file move, commit, tag, artifact packaging, or new Phase 2 route was executed.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - Step 41B is not production deploy completed, not production write acceptance, and not Phase 2 completion.
+- To proceed:
+  - User must provide explicit Chinese authorization for Step 41B before production actions.
+  - Authorization must name the target environment/domain and explicitly allow VPS connection, production deploy, and GET-only smoke while forbidding production writes, migration/seed, smoke-account cleanup, synthetic-data cleanup, and sensitive-config output.
+
+## Current Step 41A Archive - Pre-deploy Packaging / Commit-scope Confirmation - 2026-06-25
+
+- Step identity:
+  - This is Step 41A.
+  - Step 41A is the pre-deploy packaging / commit-scope confirmation substep after Step 41.
+  - Step 41A is not production deploy, production acceptance, VPS connection, production DB access, production write, migration, seed, smoke-account cleanup, synthetic-data cleanup, or new Phase 2 feature implementation.
+- Canonical state:
+  - Latest canonical completed step before Step 41A: Step 41.
+  - Step 41 judgment: `NEEDS_SUBSTEP_SPLIT_BEFORE_DEPLOY`.
+  - D097 records the Step 41 split-before-deploy decision.
+  - Step 40 / D096 root lint cleanup remains complete.
+  - Step 39 / D095 remaining-route planning remains complete.
+  - Step 38-Closure / D094 remains local-only with production and cleanup deferred.
+  - Phase 2 remains incomplete.
+  - Local validation remains local evidence only and is not production acceptance.
+- Working tree / diff scope:
+  - Tracked changed files remain the accumulated Step 36Fix / Step 37 / Step 38 / Step 40 / Step 41 records.
+  - Untracked deploy-candidate files are the Step 37 Department management files:
+    - `apps/api/src/department-management/department-management.app-module.spec.ts`.
+    - `apps/api/src/department-management/department-management.controller.spec.ts`.
+    - `apps/api/src/department-management/department-management.controller.ts`.
+    - `apps/api/src/department-management/department-management.errors.ts`.
+    - `apps/api/src/department-management/department-management.module.ts`.
+    - `apps/api/src/department-management/department-management.repository.spec.ts`.
+    - `apps/api/src/department-management/department-management.repository.ts`.
+    - `apps/api/src/department-management/department-management.service.spec.ts`.
+    - `apps/api/src/department-management/department-management.service.ts`.
+    - `apps/api/src/department-management/dto/department-management.dto.spec.ts`.
+    - `apps/api/src/department-management/dto/department-management.dto.ts`.
+    - `apps/web/src/DepartmentManagement.test.tsx`.
+    - `apps/web/src/DepartmentManagement.tsx`.
+  - Excluded untracked file:
+    - `prompt历史记录_按Step拆分/Step 34.md` shown by Git as a mojibake quoted path.
+    - It is prompt-history material, not part of the deploy candidate, and must not be committed/deployed unless the user separately authorizes documentation handling.
+- Deploy candidate include list:
+  - Step 36Fix local UI tightening:
+    - `apps/web/src/Achievements.tsx` and tests.
+    - `apps/web/src/WorkflowTasks.tsx` and tests.
+    - `apps/web/src/Fees.tsx` and tests.
+    - `apps/web/src/App.tsx`, `apps/web/src/App.css`, and app tests.
+  - Step 37 Department maintenance backend / UI:
+    - `apps/api/src/department-management/**`.
+    - `apps/api/src/app.module.ts`.
+    - `apps/web/src/DepartmentManagement.tsx`.
+    - `apps/web/src/DepartmentManagement.test.tsx`.
+    - `apps/web/src/api-client.ts`, `apps/web/src/api-client.test.ts`.
+    - `apps/web/src/types.ts`.
+    - `apps/web/src/AccountManagement.tsx`, `apps/web/src/AccountManagement.test.tsx`.
+  - Step 38 ACTIVE department write-path hardening:
+    - `apps/api/src/achievements/achievement.service.ts`.
+    - `apps/api/src/achievements/achievement.service.spec.ts`.
+    - `apps/api/src/workflow/domain/workflow-errors.ts`.
+    - `apps/api/src/workflow/workflow.service.ts`.
+    - `apps/api/src/workflow/workflow.service.spec.ts`.
+    - `apps/api/src/workflow/workflow.repository.ts`.
+    - `apps/api/src/workflow/workflow.repository.spec.ts`.
+    - `apps/api/src/fees/fee.service.ts`.
+    - `apps/api/src/fees/fee.service.spec.ts`.
+    - `apps/api/src/fees/fee.repository.ts`.
+    - `apps/api/src/fees/fee.repository.spec.ts`.
+    - `apps/api/src/fees/domain/fee-repository.types.ts`.
+    - `apps/api/src/fees/domain/fee-prisma.mapper.ts`.
+    - `apps/api/src/fees/domain/fee-service.errors.ts`.
+  - Step 40 local root lint cleanup:
+    - `apps/api/src/account-management/account-management.service.ts`.
+    - `apps/web/src/App.tsx`.
+    - `prisma/seed-foundation.test.cjs`.
+  - Step 41 / Step 41A memory-bank records:
+    - `memory-bank/implementation-plan.md`.
+    - `memory-bank/progress.md`.
+    - `memory-bank/evidence.md`.
+    - `memory-bank/decisions.md`.
+- Explicit excluded scope:
+  - `prompt历史记录_按Step拆分/Step 34.md` or the equivalent mojibake path.
+  - Smoke-account cleanup.
+  - `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` cleanup / archive / rewrite.
+  - Migration, seed, production DB write, production data cleanup, deployment config change, and new Phase 2 feature routes.
+- Schema / migration / seed / deploy-config conclusion:
+  - `git diff -- prisma/schema.prisma prisma/migrations prisma/seed.cjs prisma/seed-foundation.cjs`: no output / no diff.
+  - `git diff -- package.json pnpm-lock.yaml pnpm-workspace.yaml docker-compose.yml docker-compose.prod.yml docker-compose.production.yml Dockerfile.api Dockerfile.web deploy README.md README* nginx*`: no output / no diff.
+  - `prisma/seed-foundation.test.cjs` has only Step 40 test-harness lint compatibility comments; this is not seed implementation execution and not a production seed change.
+- Local gates:
+  - Step 41A refreshed lightweight pre-deploy gates:
+    - `corepack pnpm lint`: PASS.
+    - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+    - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+    - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+  - Step 41 full local evidence remains current because no business code changed after Step 41:
+    - API tests PASS, 64 files / 558 tests.
+    - Web tests PASS, 15 files / 231 tests.
+    - API build PASS.
+    - Web build PASS with existing Vite large chunk warning.
+- Packaging / commit-scope plan:
+  - No commit, tag, artifact build, or deployment was executed in Step 41A.
+  - If a commit is requested before Step 41B, include only the deploy candidate files and Step 41 / Step 41A memory-bank records.
+  - Exclude the prompt-history untracked file from any commit, tag, artifact, or deploy package unless separately authorized.
+  - If deployment is Git-based, Step 41B should start only after the exact commit to deploy is known and the excluded prompt-history file is confirmed not staged.
+  - If deployment is artifact-based, Step 41B should build from the confirmed include scope and not package the excluded prompt-history file.
+- Step 41B prerequisites:
+  - User explicitly authorizes VPS connection.
+  - User explicitly authorizes production deploy.
+  - User explicitly authorizes GET-only production smoke.
+  - Migration / seed remain forbidden unless separately authorized.
+  - Production writes remain forbidden unless separately authorized in a later write-acceptance step.
+  - Sensitive config must not be read or output.
+- Step 41A judgment:
+  - `READY_FOR_STEP_41B_AUTHORIZED_DEPLOY_AND_GET_SMOKE`.
+  - Reason: deploy candidate scope is identified, excluded prompt-history file is isolated, no schema / migration / seed / deploy-config diff was found, and local pre-deploy gates pass.
+- Boundary:
+  - No VPS connection, production DB access, production write, deployment, migration, seed, smoke-account cleanup, synthetic-data cleanup, file deletion, file move, commit, tag, artifact packaging, or new Phase 2 route was performed in Step 41A.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - Step 41A does not claim production deploy completed or production acceptance completed.
+
+## Current Step 41 Archive - Production Deploy / Acceptance Planning and Authorization Gate - 2026-06-25
+
+- Step identity:
+  - This is Step 41.
+  - Step 41 is a production deploy / acceptance planning and authorization gate after Step 40.
+  - Step 41 is not production deployment, production acceptance execution, VPS connection, production DB access, production write, migration, seed, smoke-account cleanup, synthetic-data cleanup, or new Phase 2 feature implementation.
+- Canonical state:
+  - Latest canonical completed step: Step 40.
+  - Step 40 resolved inherited root lint failures as local-only cleanup and recorded D096.
+  - Step 39 recorded the post-Step38 remaining-route plan and D095.
+  - Step 38-Closure remains local-only with production and cleanup deferred.
+  - Phase 2 remains incomplete.
+- Readiness audit:
+  - Current deploy candidate spans accumulated local changes from Step 36Fix, Step 37, Step 38, and Step 40.
+  - `git diff -- prisma/schema.prisma prisma/migrations prisma/seed.cjs prisma/seed-foundation.cjs` produced no diff.
+  - No schema, migration, seed implementation, dependency lockfile, Docker Compose, Nginx, package script, or deployment runbook diff was found.
+  - `apps/api/src/app.module.ts` registers the new DepartmentManagement module as an application code change, not deployment config.
+  - Working tree includes an unrelated untracked prompt-history file: `prompt历史记录_按Step拆分/Step 34.md`; it is outside the deploy candidate and must not be committed/deployed unless separately requested.
+- Deploy candidate scope:
+  - Step 36Fix local UI tightening:
+    - permission-gated frontend entries/actions for achievements, workflow review, fees, and account/department administration surfaces.
+  - Step 37 Department maintenance backend / UI:
+    - Department management API and frontend page.
+    - ACTIVE department selectors in AccountManagement.
+    - `system:config` boundary, soft disable / enable, impact summary, exact `departmentId` scope.
+  - Step 38 ACTIVE department write-path hardening:
+    - achievement draft create, achievement submit / workflow preparation, workflow reviewer lookup, and fee create guards against ARCHIVED/unavailable departments.
+  - Step 40 local root lint cleanup:
+    - unused account-management import removed.
+    - `LegacyDemoApp` narrow unused-symbol lint suppression.
+    - CommonJS compatibility comments in `prisma/seed-foundation.test.cjs`.
+- Explicit non-deploy scope:
+  - No remaining Phase 2 feature routes: fee payment-state expansion, attachments, settings/config CRUD, monitoring/backup, real data import readiness, password reset/invite, real business user batch creation, or full approval archive closure.
+  - No P-001 / P-002 / P-003 smoke-account disable.
+  - No `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` cleanup, archive, rewrite, or conversion to business data.
+  - No migration, seed, production DB write, production data cleanup, secret handling, or deployment configuration change.
+- Local quality gates:
+  - `corepack pnpm lint`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+  - `corepack pnpm --filter @research-ip/api test`: PASS, 64 files / 558 tests.
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 15 files / 231 tests.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS with existing Vite large chunk warning.
+- Production deploy / acceptance plan:
+  - Split follow-up work before actual deploy because the candidate spans multiple completed local steps and production acceptance has separate read-only and write boundaries.
+  - Recommended Step 41A: pre-deploy packaging / commit-scope confirmation.
+    - Confirm exact file list to include.
+    - Exclude the unrelated untracked prompt-history file unless the user separately asks to preserve it in repo history.
+    - Confirm no schema/migration/seed/deployment config diff.
+    - Confirm local gate evidence remains current.
+  - Recommended Step 41B: authorized production deploy and GET-only smoke.
+    - Requires explicit user authorization to connect to VPS and deploy.
+    - Use existing production runbook boundaries.
+    - Run only deployment and read-only smoke checks after deploy unless separately authorized.
+  - Recommended Step 41C: authorized production write acceptance, if required.
+    - Department create/edit/disable/enable acceptance and Step 38 negative write-path checks are production writes or write-adjacent operations.
+    - Must be separately authorized with test identities/data boundaries and rollback/cleanup expectations.
+  - Recommended later cleanup step:
+    - Smoke-account cleanup and synthetic-data cleanup remain separate from deploy and acceptance.
+- Risk points:
+  - New Department management write surface affects production administrative operations.
+  - ACTIVE department write-path hardening may reject operations that production users could previously attempt.
+  - Frontend permission tightening changes visible actions and could reveal permission configuration gaps.
+  - Production acceptance beyond GET-only smoke may require controlled production writes.
+  - Any migration/seed is not needed by current diff; if a later production audit discovers it is needed, stop and reclassify as high-risk production action.
+- Rollback / stop strategy:
+  - Stop before production action if the working tree or deploy candidate changes from this Step 41 audit.
+  - Stop if production target, backup status, or rollback path cannot be confirmed without exposing secrets.
+  - Stop if any local gate fails after new changes.
+  - For deploy failure, roll back to the previously known production artifact/container state according to the production runbook and record only redacted evidence.
+  - For production write-acceptance failure, stop additional writes and preserve redacted evidence for a separate fix step.
+- Authorization wording required:
+  - The user must explicitly authorize the target environment, the allowed production actions, whether VPS connection is allowed, whether deploy is allowed, whether GET-only smoke is allowed, whether production writes are allowed, and whether migration/seed remains forbidden.
+  - Authorization must state that local validation is not production acceptance and that sensitive config must not be read or output.
+- Step 41 judgment:
+  - `NEEDS_SUBSTEP_SPLIT_BEFORE_DEPLOY`.
+  - Reason: local readiness is good and no schema/migration/seed/deploy-config blocker was found, but deploy candidate scope and production acceptance chain are broad enough to require separated pre-deploy, deploy/GET-smoke, and write-acceptance substeps.
+- Boundary:
+  - No VPS connection, production DB access, production write, deployment, migration, seed, smoke-account cleanup, synthetic-data cleanup, or new Phase 2 feature route was performed in Step 41.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - Step 41 does not claim production deploy completed or production acceptance completed.
+  - A larger production deploy / acceptance chain will still need an explicit closure archive after authorized execution completes.
+
+## Current Step 40 Archive - Dedicated Local Root Lint Cleanup - 2026-06-25
+
+- Step identity:
+  - This is Step 40.
+  - Step 40 is a dedicated local quality-gate cleanup after Step 39.
+  - Step 40 is not Step 39A / 39B / 39C, production deploy / acceptance, smoke-account cleanup, synthetic data cleanup, migration, seed, or a new Phase 2 feature route.
+- Scope:
+  - Resolve only the inherited unrelated root lint failures recorded by Step 37G / Step 38 / Step 39:
+    - `apps/api/src/account-management/account-management.service.ts` unused `AccountUserRoleAssignmentRecord`.
+    - `apps/web/src/App.tsx` unused `LegacyDemoApp`.
+    - `prisma/seed-foundation.test.cjs` CommonJS `require()` / `__dirname` lint issues.
+  - Keep business behavior unchanged.
+  - Keep production, deploy, database, smoke-account, synthetic-data, migration, seed, schema, and Phase 2 feature work out of scope.
+- Implementation:
+  - Removed the unused `AccountUserRoleAssignmentRecord` import.
+  - Kept `LegacyDemoApp` code intact and added a narrow unused-symbol ESLint suppression.
+  - Kept `seed-foundation.test.cjs` as CommonJS and added narrow lint compatibility comments for its test-runner style.
+- Verification:
+  - `corepack pnpm lint`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+- Boundary:
+  - No VPS connection, production DB access, production write, deployment, migration, seed execution, schema change, production config change, smoke-account disable, synthetic data archive / cleanup, or new Phase 2 feature route was performed.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - Step 40 local lint cleanup does not complete Phase 2 and is not production acceptance.
+
+## Current Step 39 Archive - Phase 2 Post-Step38 Remaining-Route Planning - 2026-06-25
+
+- Step identity:
+  - This is Step 39.
+  - Step 39 is an overall planning / archive step after Step 38 local closure.
+  - Step 39 is not Step 38, Step 38A, Step 38-Closure, Step 39A / 39B / 39C, or Step 40.
+  - No business code, backend source, frontend source, production connection, production write, deployment, migration, seed, or cleanup execution is part of Step 39.
+- Canonical state:
+  - Latest canonical completed step: Step 38-Closure.
+  - Step 38 closure decision: `CLOSED_LOCALLY_WITH_PRODUCTION_AND_CLEANUP_DEFERRED`.
+  - Step 38 final status: `DONE_WITH_UNRELATED_VALIDATION_FAILURES: Step 38 business write path ACTIVE department guard hardening implemented locally, with root lint still failing only on inherited unrelated items.`
+  - Step 38 completion verification: `PASS_WITH_KNOWN_UNRELATED_ROOT_LINT_FAILURES`.
+  - D094 is the Step 38 final closure decision.
+  - D093 is the Step 38 local implementation decision.
+  - D092 is the Step 37 local department-maintenance closure decision.
+  - D091 is the Step 36 user / role / department / permission-chain closure decision.
+  - Step 38A readiness prompt is superseded and must not be executed.
+  - Phase 2 is not complete.
+- Remaining work classified after Step 36 / Step 37 / Step 38:
+  - Production / deploy / acceptance:
+    - Deploy and production-accept Step 36Fix local UI tightening if not already synced.
+    - Deploy and production-accept Step 37 Department maintenance backend / UI.
+    - Deploy and production-accept Step 38 ACTIVE department write-path hardening.
+    - Must be separately authorized because it can affect production service state.
+  - Synthetic data / smoke-account cleanup:
+    - Disable P-001 / P-002 / P-003 smoke accounts.
+    - Archive / retain / mark / clean up `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]`.
+    - These are production data/account operations and must not be mixed with feature deployment or migration steps.
+  - Root lint unrelated cleanup:
+    - Resolve inherited unrelated root lint failures:
+      - `apps/api/src/account-management/account-management.service.ts` unused `AccountUserRoleAssignmentRecord`.
+      - `apps/web/src/App.tsx` unused `LegacyDemoApp`.
+      - `prisma/seed-foundation.test.cjs` CommonJS `require()` / `__dirname` lint issues.
+    - This is a local quality-gate cleanup and is not a Step 38 failure.
+  - Remaining Phase 2 feature routes:
+    - Fee write / payment-state acceptance.
+    - Attachment upload / download / storage boundary.
+    - Settings / config CRUD.
+    - Monitoring / backup hardening.
+    - Real business data import readiness.
+    - Password reset / invite.
+    - Real business user batch creation.
+    - Full approval archive closure beyond the minimum synthetic role-chain smoke.
+  - High-risk / explicit-authorization routes:
+    - Any production deploy.
+    - Any VPS connection or production DB access.
+    - Any production write, including smoke-account disable and synthetic achievement archive / cleanup.
+    - Any migration / seed / data import / data cleanup.
+    - Any operation requiring secrets, tokens, cookies, certificates, private keys, or full connection strings.
+- Recommended post-Step39 route:
+  - First, run a dedicated local root-lint cleanup step if deployment gates require root lint to pass.
+  - Next, run a separately authorized production deploy / acceptance step for the accumulated local changes from Step 36Fix, Step 37, and Step 38; do not call local validation production acceptance.
+  - Then run a separately authorized production cleanup step for P-001 / P-002 / P-003 and `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]`; do not mix this with deployment, migration, seed, or new feature implementation.
+  - After production baseline and cleanup are settled, continue with local feature implementation steps for remaining Phase 2 routes such as fee write/payment-state, attachments, settings/config CRUD, monitoring/backup, and real data import readiness.
+  - Any migration / seed / production write route must be its own explicitly authorized step with fresh evidence.
+- Step 39 verification / sanity:
+  - Read-only canonical-state recovery completed from the allowed methodology and memory-bank files.
+  - No state conflict found.
+  - Step 39 updated only memory-bank planning/archive records.
+  - Existing local validation is not represented as production acceptance.
+  - Synthetic data remains synthetic; smoke accounts remain temporary smoke accounts.
+
+## Current Step 38-Closure Archive - Business Write Path ACTIVE Department Guard Hardening Final Closure - 2026-06-25
+
+- Closure decision:
+  - `Step 38 closure: CLOSED_LOCALLY_WITH_PRODUCTION_AND_CLEANUP_DEFERRED`.
+- Closure type:
+  - Final closure archive for Step 38.
+  - This is not Step 39, not Step 38A, and not a new Phase 2 planning step.
+  - No Step 39 prompt is generated by this closure.
+- Numbering correction:
+  - The earlier Step 38A readiness prompt is superseded and will not be executed.
+  - Canonical Step 38 state is the top Step 38 Archive, D093, and the Step 38 completion verification result.
+  - Step 38 completion verification result: `PASS_WITH_KNOWN_UNRELATED_ROOT_LINT_FAILURES`.
+- Final Step 38 status:
+  - `DONE_WITH_UNRELATED_VALIDATION_FAILURES: Step 38 business write path ACTIVE department guard hardening implemented locally, with root lint still failing only on inherited unrelated items.`
+- Closure basis:
+  - Step 38 local backend implementation is complete.
+  - Step 38 local verification is sufficient for local closure.
+  - Root lint known unrelated failures do not block Step 38 closure.
+  - No schema, migration, seed, deployment, or production acceptance was introduced by Step 38.
+  - Step 38 remains local implementation and local verification only.
+- Deferred after Step 38:
+  - Production deploy / acceptance.
+  - Step 36Fix-Sync.
+  - P-001 / P-002 / P-003 smoke-account disable.
+  - `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` archive / cleanup.
+  - Root lint unrelated cleanup.
+  - Broader Phase 2 routes.
+- Boundary:
+  - Do not represent Step 38 as Phase 2 complete.
+  - Do not represent Step 38 as production deployed or production accepted.
+
+## Current Step 38 Archive - Business Write Path ACTIVE Department Guard Hardening - 2026-06-25
+
+- Final status:
+  - `DONE_WITH_UNRELATED_VALIDATION_FAILURES: Step 38 business write path ACTIVE department guard hardening implemented locally, with root lint still failing only on inherited unrelated items.`
+- Scope:
+  - Local backend hardening only.
+  - No VPS connection, production DB access, production write, deployment, migration, seed, sensitive configuration read, Step 36Fix-Sync, smoke-account disable, or synthetic achievement cleanup.
+  - No schema change and no migration dependency.
+- Implementation summary:
+  - Achievement create draft now checks the current user `departmentId` against an ACTIVE, non-archived Department before draft write/audit.
+  - Achievement submit now maps workflow target department unavailability to a clear unsupported business operation error.
+  - Workflow submit preparation now checks the target department is ACTIVE before reviewer lookup and before any workflow task can be created.
+  - Workflow reviewer lookup now defensively requires the reviewer's own department to be ACTIVE and non-archived.
+  - Fee create now reads the related achievement department status and rejects fee creation when the achievement department is ARCHIVED or unavailable.
+  - Historical read paths for achievements and fees were not guarded by department ACTIVE status.
+  - Account-management was reviewed and kept unchanged because create user, department change, and DEPARTMENT role scope already use ACTIVE department repository checks.
+- Tests added / updated:
+  - ARCHIVED current user department cannot create achievement draft.
+  - ARCHIVED achievement department cannot submit draft through workflow preparation.
+  - ARCHIVED department blocks workflow reviewer lookup/task creation.
+  - ARCHIVED achievement department cannot create fee.
+  - Repository tests now assert department ACTIVE selectors for workflow and fee parent reads.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api test -- achievements` passed: 7 files / 104 tests.
+  - `corepack pnpm --filter @research-ip/api test -- workflow` passed: 6 files / 72 tests.
+  - `corepack pnpm --filter @research-ip/api test -- fees` passed: 6 files / 54 tests.
+  - `corepack pnpm --filter @research-ip/api test -- account-management` passed: 2 files / 22 tests.
+  - `corepack pnpm --filter @research-ip/api test` passed: 64 files / 558 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm --filter @research-ip/api build` passed.
+  - Scoped eslint on touched Step 38 API files passed.
+  - Root `corepack pnpm lint` still fails only on inherited unrelated items:
+    - `apps/api/src/account-management/account-management.service.ts` unused `AccountUserRoleAssignmentRecord`.
+    - `apps/web/src/App.tsx` unused `LegacyDemoApp`.
+    - `prisma/seed-foundation.test.cjs` CommonJS `require()` / `__dirname` lint issues.
+- Files intentionally changed for Step 38:
+  - `apps/api/src/achievements/achievement.service.ts`.
+  - `apps/api/src/achievements/achievement.service.spec.ts`.
+  - `apps/api/src/workflow/domain/workflow-errors.ts`.
+  - `apps/api/src/workflow/workflow.service.ts`.
+  - `apps/api/src/workflow/workflow.service.spec.ts`.
+  - `apps/api/src/workflow/workflow.repository.ts`.
+  - `apps/api/src/workflow/workflow.repository.spec.ts`.
+  - `apps/api/src/fees/fee.service.ts`.
+  - `apps/api/src/fees/fee.service.spec.ts`.
+  - `apps/api/src/fees/fee.repository.ts`.
+  - `apps/api/src/fees/fee.repository.spec.ts`.
+  - `apps/api/src/fees/domain/fee-repository.types.ts`.
+  - `apps/api/src/fees/domain/fee-prisma.mapper.ts`.
+  - `apps/api/src/fees/domain/fee-service.errors.ts`.
+  - `memory-bank/implementation-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Explicit non-completions:
+  - Production deploy / acceptance remains deferred.
+  - Step 36Fix-Sync remains separate.
+  - Smoke-account disable remains separate.
+  - Synthetic achievement archive / cleanup remains separate.
+  - Root lint unrelated cleanup remains separate.
+
+## Current Step 37G Archive - Department Maintenance Backend / UI Local Closure - 2026-06-25
+
+- Archive name:
+  - `Step 37 memory-bank closure for department maintenance backend / UI`.
+- Final status:
+  - `DONE_WITH_UNRELATED_VALIDATION_FAILURES: Step 37 department maintenance backend / UI implemented and locally accepted, with production/deploy and unrelated lint items deferred.`
+- Archive type:
+  - Phase 2 department-maintenance local implementation closure archive.
+  - This records the Step 37 readiness audit, backend API plan and implementation, frontend UI implementation, AccountManagement ACTIVE department selector linkage, local integrated acceptance, and documentation archive.
+  - This does not complete Phase 2 overall.
+  - This is local implementation and local acceptance evidence only; it is not production deploy or production DB acceptance.
+- Completed Step 37 substeps:
+  - Step 37A - Department maintenance backend / UI implementation readiness audit.
+  - Step 37B - Department maintenance backend API implementation plan.
+  - Step 37C - Department maintenance backend API local implementation.
+  - Step 37D - Department maintenance implementation continuation.
+  - Step 37E - Department maintenance frontend UI local implementation.
+  - Step 37E-Followup - AccountManagement ACTIVE department selector linkage.
+  - Step 37F - Local frontend/backend integrated acceptance for department maintenance.
+  - Step 37G - Memory-bank archive / evidence update.
+- Completed backend scope:
+  - `GET /departments`.
+  - `GET /departments/tree`.
+  - `GET /departments/:id`.
+  - `POST /departments`.
+  - `PATCH /departments/:id`.
+  - `POST /departments/:id/disable`.
+  - `POST /departments/:id/enable`.
+  - Department-management endpoints are protected by `system:config`.
+  - Department changes reuse existing `CONFIG_UPDATE` audit action and `SYSTEM_CONFIG` target semantics.
+  - Disable returns an impact summary.
+  - Disable is blocked by active users, active department role scopes, or pending workflow tasks.
+  - Historical achievements and fee records are retained and summarized, not physically deleted.
+  - `parentId` hierarchy validation requires existing ACTIVE parent, non-self parent, and no cycles.
+  - No physical delete, cascade disable, or department-scope expansion was introduced.
+- Completed frontend scope:
+  - `DepartmentManagement` page and `department-management` navigation entry.
+  - Entry is visible only for users with `system:config`.
+  - Keyword, status, and includeArchived filters.
+  - List and tree views.
+  - Detail drawer.
+  - Create and edit drawer flows.
+  - Enable and disable modal flows.
+  - Disable impact summary display and 409 blocked-disable error display.
+  - UI copy states that `parentId` is organization structure only, permission scope remains exact `departmentId`, parent departments do not automatically include child departments, disable does not cascade, and historical data is not deleted.
+- Completed AccountManagement linkage:
+  - Create-user `departmentId` uses an ACTIVE department selector.
+  - User department change uses an ACTIVE department selector.
+  - `scopeType=DEPARTMENT` role assignment uses an ACTIVE department selector.
+  - ARCHIVED departments are not selectable.
+  - The backend account-management contract was not changed.
+  - Account binding linkage is not represented as Department CRUD.
+- Local validation summary:
+  - API department-management targeted tests passed: 5 files / 25 tests.
+  - API full tests passed: 64 files / 553 tests.
+  - API typecheck passed.
+  - API build passed.
+  - API scoped eslint passed.
+  - Web DepartmentManagement tests passed: 12 tests.
+  - Web AccountManagement tests passed: 19 tests.
+  - Web api-client tests passed: 26 tests.
+  - Web full tests passed: 15 files / 231 tests.
+  - Web typecheck passed.
+  - Web build passed with only the existing Vite large chunk warning.
+  - Step 37 scoped eslint passed.
+  - Local web dev server returned HTTP 200 for `http://localhost:5173/`, root HTML was present, and the server was cleaned up.
+- Known unrelated validation failures:
+  - Root lint still fails on inherited unrelated issues:
+    - `apps/api/src/account-management/account-management.service.ts` unused `AccountUserRoleAssignmentRecord`.
+    - `apps/web/src/App.tsx` unused `LegacyDemoApp`.
+    - `prisma/seed-foundation.test.cjs` CommonJS `require()` / `__dirname` lint issues.
+  - These are not treated as Step 37 department-maintenance failures.
+- Explicit non-completions:
+  - Step 37 does not complete Phase 2 overall.
+  - Step 37 does not represent production deploy or production acceptance.
+  - Step 37 did not execute migration or seed.
+  - Step 37 did not change schema.
+  - Step 37 did not access production DB or perform production writes.
+  - Step 37 did not complete business write path ACTIVE department guard hardening.
+  - Step 37 did not handle Step 36Fix-Sync.
+  - Step 37 did not disable P-001 / P-002 / P-003 smoke accounts.
+  - Step 37 did not archive or clean up `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]`.
+  - Step 37 did not fix unrelated root lint failures.
+- Deferred routes:
+  - Business write path ACTIVE department guard hardening.
+  - Production deploy and production department-maintenance acceptance.
+  - Step 36Fix-Sync if local UI tightening has not yet been committed, pushed, deployed, and verified.
+  - P-001 / P-002 / P-003 smoke-account disable.
+  - Synthetic production achievement archive / retention / cleanup.
+  - Root lint unrelated failures.
+  - Remaining Phase 2 routes such as fee write/payment-state, attachments, settings/config CRUD, monitoring/backup, and real data import readiness.
+- Boundary:
+  - Do not represent Department maintenance as production completed until a separately authorized production deploy/acceptance step is executed.
+  - Do not represent account-management department selector linkage as Department CRUD.
+  - Do not expand department scope semantics through `parentId`; Step 37 keeps exact `departmentId` scope.
+  - Do not treat ARCHIVED departments as valid for new account binding or department-scoped role assignment.
+- Recommended next:
+  - If proceeding with hardening: business write path ACTIVE department guard hardening.
+  - If proceeding with deployment: a separately authorized production deploy / acceptance step.
+  - If closing documentation flow first: continue with explicitly scoped cleanup steps for Step 36Fix-Sync, smoke accounts, or synthetic achievement archive.
+
+## Current Step 36K-Archive - Step 36 User / Role / Department / Permission Chain Closure - 2026-06-25
+
+- Archive name:
+  - `Step 36 memory-bank closure for user / role / department / permission chain`.
+- Final status:
+  - `DONE_WITH_DEFERRED_ITEMS: Step 36 user / role / department / permission chain completed with documented boundaries.`
+- Archive type:
+  - Phase 2 business-foundation closure archive.
+  - This records the Step 36 model, implementation, local validation, production manual smoke acceptance, Step 36Fix local UI tightening, and deferred items.
+  - This does not complete Phase 2 overall.
+- Completed Step 36 substeps:
+  - Step 36 - user / role / department production model plan.
+  - Step 36A - account / role / department implementation readiness audit.
+  - Step 36B - account management backend API implementation plan.
+  - Step 36C-0 - account audit action schema decision; selected `CREATE + USER` instead of adding a `USER_CREATE` enum migration.
+  - Step 36C-1 - account list / detail / create backend API.
+  - Step 36C-2 - disable / enable / role assignment / role revoke / department binding backend API.
+  - Step 36D - account management frontend UI implementation plan.
+  - Step 36E-1 - account management API client and types.
+  - Step 36E-2 - user list / detail UI.
+  - Step 36E-3 - create user, disable / enable, role assignment / revoke, and department change UI.
+  - Step 36E-4 - account management frontend local acceptance and browser check.
+  - Step 36F - local account / role / department acceptance with DB-boundary limitation.
+  - Step 36G - production write checklist.
+  - Step 36H / 36H-Followup / Step 36I - production smoke account planning and user-manual P-001 account creation checklist.
+  - Step 36J series - production researcher / secretary / auditor role acceptance planning and manual smoke acceptance.
+  - Step 36Fix - role-based UI entry permission tightening completed and accepted locally.
+- Completed backend scope:
+  - `account-management` API supports list, detail, create, disable, enable, role assign, role revoke, and department change.
+  - Account-management endpoints are guarded by `system:config`.
+  - Account audit events use existing `CREATE` / `UPDATE` action with `USER` target and masked metadata.
+  - No Prisma schema, migration, or seed change was introduced for Step 36 account audit actions.
+- Completed frontend scope:
+  - Account management API client and types.
+  - Account management UI for list, detail, create, disable / enable, role operations, and department binding.
+  - Step 36Fix local UI entry tightening:
+    - Researcher no longer sees fee write or approval-processing UI entries when lacking the relevant permission codes.
+    - Auditor no longer sees achievement create/edit, fee write, or approval-processing entries when lacking the relevant permission codes.
+    - Secretary entries remain permission-based through `achievement:review_department` and `fee:manage_department`.
+    - Admin account-management entry remains unaffected.
+  - Step 36Fix is accepted locally only; production takes effect only after a later sync/deploy.
+- Production manual smoke acceptance summary:
+  - GitHub main was synchronized to production before the role smoke continuation.
+  - `GET /`, `GET /api/health`, and unauthenticated `GET /api/account-management/users` returned expected deployment / auth-boundary responses.
+  - User manually created and used smoke accounts:
+    - P-001 researcher smoke account.
+    - P-002 research secretary smoke account.
+    - P-003 auditor smoke account.
+  - User manually verified the minimum core chain:
+    - Researcher can sign in, create/update `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` draft, and submit after same-department active secretary exists.
+    - Secretary can see the same-department workflow task and approve it, moving the achievement to pending archive.
+    - Auditor can read masked audit logs and should not have write/approval/account-management capabilities.
+    - Admin can manage accounts but must not replace business-role acceptance.
+- Explicit non-completions:
+  - Step 36 does not complete Phase 2.
+  - Step 36 does not complete bulk real business user creation.
+  - Step 36 does not implement password reset / invite.
+  - Step 36 does not implement department CRUD.
+  - Step 36 does not accept fee write / payment-state.
+  - Step 36 does not complete attachment upload / download / storage boundary.
+  - Step 36 does not complete settings/config CRUD.
+  - Step 36 does not make synthetic data real business data.
+- Deferred routes:
+  - Step 36Fix sync / deploy if the local UI tightening has not yet been committed, pushed, and deployed.
+  - Synthetic production data and smoke-account cleanup plan.
+  - Department maintenance backend / UI.
+  - Approval flow production acceptance continuation, including archive.
+  - Fee write / payment-state acceptance.
+  - Password reset / invite.
+  - Attachment upload / download / storage boundary.
+  - Settings/config CRUD.
+  - Monitoring / backup hardening.
+  - Real business data import readiness.
+- Boundary:
+  - Do not represent local Step 36Fix as production-fixed until deployed and verified.
+  - Do not represent P-001 / P-002 / P-003 as real business users.
+  - Do not represent `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` as real business data.
+  - Do not reintroduce demo user switcher or `X-Demo-User-Id` as production auth.
+- Recommended next:
+  - If Step 36Fix is not yet synced/deployed: Step 36Fix-Sync - commit / push / deploy local UI tightening.
+  - If Step 36Fix is already synced/deployed: Step 36L - synthetic production data and smoke accounts cleanup plan.
+
 ## Current Step 34 / Prompt 26 Archive - Phase 1 Production Cutover Closure - 2026-06-24
 
 - Archive name:

@@ -16,6 +16,7 @@ import { AchievementStateRecord } from "../achievements/domain/achievement-repos
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
   DepartmentReviewerNotFoundError,
+  WorkflowDepartmentUnavailableError,
   WorkflowAccessDeniedError,
   WorkflowInvalidPayloadError,
   WorkflowInvalidStateError,
@@ -153,6 +154,7 @@ const createService = () => {
   const tx = {} as WorkflowTransactionClient & AuditTransactionClient;
   const repository = {
     findActiveInstanceForAchievementInTransaction: vi.fn().mockResolvedValue(null),
+    findActiveDepartmentByIdInTransaction: vi.fn().mockResolvedValue({ id: ids.department }),
     findDepartmentReviewerUserIdsInTransaction: vi
       .fn()
       .mockResolvedValue([ids.reviewerA, ids.reviewerB]),
@@ -247,6 +249,10 @@ describe("WorkflowService.prepareAchievementReviewOnSubmitInTransaction", () => 
       tx,
       ids.achievement,
     );
+    expect(repository.findActiveDepartmentByIdInTransaction).toHaveBeenCalledWith(
+      tx,
+      ids.department,
+    );
     expect(repository.findDepartmentReviewerUserIdsInTransaction).toHaveBeenCalledWith(
       tx,
       ids.department,
@@ -265,7 +271,23 @@ describe("WorkflowService.prepareAchievementReviewOnSubmitInTransaction", () => 
         departmentId: ids.department,
       }),
     ).rejects.toBeInstanceOf(ActiveWorkflowInstanceAlreadyExistsError);
+    expect(repository.findActiveDepartmentByIdInTransaction).not.toHaveBeenCalled();
     expect(repository.findDepartmentReviewerUserIdsInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects archived departments before reviewer lookup or task creation", async () => {
+    const { service, repository, tx } = createService();
+    repository.findActiveDepartmentByIdInTransaction.mockResolvedValue(null);
+
+    await expect(
+      service.prepareAchievementReviewOnSubmitInTransaction(tx, {
+        achievementId: ids.achievement,
+        departmentId: ids.department,
+      }),
+    ).rejects.toBeInstanceOf(WorkflowDepartmentUnavailableError);
+
+    expect(repository.findDepartmentReviewerUserIdsInTransaction).not.toHaveBeenCalled();
+    expect(repository.createAchievementReviewWorkflowInTransaction).not.toHaveBeenCalled();
   });
 
   it("rejects when no department reviewer can be assigned", async () => {

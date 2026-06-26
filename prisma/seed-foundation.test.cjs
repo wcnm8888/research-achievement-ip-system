@@ -1,4 +1,5 @@
-/* global require */
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* global require, __dirname */
 const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 const fs = require("node:fs");

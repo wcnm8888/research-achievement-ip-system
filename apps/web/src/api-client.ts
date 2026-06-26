@@ -4,12 +4,20 @@ import type {
   AssignAccountUserRoleInput,
   AssignAccountUserRoleResponse,
   ChangeAccountUserDepartmentInput,
+  CreateDepartmentInput,
   CreateAccountUserInput,
+  DepartmentDetail,
+  DepartmentListResponse,
+  DepartmentReasonInput,
+  DepartmentTreeResponse,
   DisableAccountUserInput,
   DisableAccountUserResponse,
+  DisableDepartmentResponse,
   EnableAccountUserInput,
   ListAccountUsersQuery,
+  ListDepartmentsQuery,
   RevokeAccountUserRoleInput,
+  UpdateDepartmentInput,
 } from "./types";
 
 export type ApiErrorKind =
@@ -42,6 +50,22 @@ export type ApiClient = {
 };
 
 export type AccountManagementApiClient = ApiClient & {
+  listDepartments(query?: ListDepartmentsQuery): Promise<DepartmentListResponse>;
+  getDepartmentTree(query?: ListDepartmentsQuery): Promise<DepartmentTreeResponse>;
+  getDepartmentDetail(departmentId: string): Promise<DepartmentDetail>;
+  createDepartment(payload: CreateDepartmentInput): Promise<DepartmentDetail>;
+  updateDepartment(
+    departmentId: string,
+    payload: UpdateDepartmentInput,
+  ): Promise<DepartmentDetail>;
+  disableDepartment(
+    departmentId: string,
+    payload?: DepartmentReasonInput,
+  ): Promise<DisableDepartmentResponse>;
+  enableDepartment(
+    departmentId: string,
+    payload?: DepartmentReasonInput,
+  ): Promise<DepartmentDetail>;
   listAccountUsers(query?: ListAccountUsersQuery): Promise<AccountUserListResponse>;
   getAccountUser(userId: string): Promise<AccountUserDetail>;
   createAccountUser(payload: CreateAccountUserInput): Promise<AccountUserDetail>;
@@ -170,6 +194,69 @@ export const createApiClient = (
   async patch<T>(path: string, body?: unknown) {
     const response = await request(path, demoUserId, { method: "PATCH", body }, options);
     return response as T;
+  },
+  async listDepartments(query?: ListDepartmentsQuery) {
+    const response = await request(
+      "/departments",
+      demoUserId,
+      { method: "GET", query },
+      options,
+    );
+    return response as DepartmentListResponse;
+  },
+  async getDepartmentTree(query?: ListDepartmentsQuery) {
+    const response = await request(
+      "/departments/tree",
+      demoUserId,
+      { method: "GET", query },
+      options,
+    );
+    return response as DepartmentTreeResponse;
+  },
+  async getDepartmentDetail(departmentId: string) {
+    const response = await request(
+      `/departments/${departmentId}`,
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as DepartmentDetail;
+  },
+  async createDepartment(payload: CreateDepartmentInput) {
+    const response = await request(
+      "/departments",
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as DepartmentDetail;
+  },
+  async updateDepartment(departmentId: string, payload: UpdateDepartmentInput) {
+    const response = await request(
+      `/departments/${departmentId}`,
+      demoUserId,
+      { method: "PATCH", body: payload },
+      options,
+    );
+    return response as DepartmentDetail;
+  },
+  async disableDepartment(departmentId: string, payload: DepartmentReasonInput = {}) {
+    const response = await request(
+      `/departments/${departmentId}/disable`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as DisableDepartmentResponse;
+  },
+  async enableDepartment(departmentId: string, payload: DepartmentReasonInput = {}) {
+    const response = await request(
+      `/departments/${departmentId}/enable`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as DepartmentDetail;
   },
   async listAccountUsers(query?: ListAccountUsersQuery) {
     const response = await request(

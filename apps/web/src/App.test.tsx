@@ -86,6 +86,26 @@ describe("production auth mode helpers", () => {
       false,
     );
   });
+
+  it("shows department maintenance navigation only to system config users", () => {
+    const departmentNavigationKey = "department-management";
+
+    expect(
+      getVisibleNavItems(navItems, {
+        ...authUser,
+        permissionCodes: ["system:config"],
+      }).some((item) => item.key === departmentNavigationKey),
+    ).toBe(true);
+    expect(
+      getVisibleNavItems(navItems, {
+        ...authUser,
+        permissionCodes: ["audit:read"],
+      }).some((item) => item.key === departmentNavigationKey),
+    ).toBe(false);
+    expect(
+      getVisibleNavItems(navItems, null).some((item) => item.key === departmentNavigationKey),
+    ).toBe(false);
+  });
 });
 
 describe("loginAndRefreshCurrentUser", () => {
