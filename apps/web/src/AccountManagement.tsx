@@ -15,7 +15,7 @@ import {
   message,
   type FormInstance,
 } from "antd";
-import type { TableProps } from "antd";
+import type { SelectProps, TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createApiClient,
@@ -1236,20 +1236,27 @@ function DepartmentSelectorBoundary({ error }: { error: ApiError | null }) {
   );
 }
 
+type DepartmentSelectProps = Omit<
+  SelectProps<string>,
+  "loading" | "options" | "optionFilterProp" | "showSearch" | "notFoundContent"
+> & {
+  departmentSelector: DepartmentSelectorState;
+  placeholder: string;
+};
+
 function DepartmentSelect({
   departmentSelector,
   className,
   placeholder,
-}: {
-  departmentSelector: DepartmentSelectorState;
-  className?: string;
-  placeholder: string;
-}) {
+  disabled,
+  ...selectProps
+}: DepartmentSelectProps) {
   return (
     <Select
+      {...selectProps}
       className={className}
       loading={departmentSelector.loading}
-      disabled={Boolean(departmentSelector.error)}
+      disabled={disabled || Boolean(departmentSelector.error)}
       showSearch
       optionFilterProp="label"
       options={departmentSelector.options}
