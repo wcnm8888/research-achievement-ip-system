@@ -9,6 +9,8 @@ export const AuditActionCode = {
   uploadAttachment: "UPLOAD_ATTACHMENT",
   downloadAttachment: "DOWNLOAD_ATTACHMENT",
   markFeePaid: "MARK_FEE_PAID",
+  waiveFee: "WAIVE_FEE",
+  cancelFee: "CANCEL_FEE",
   confirmReminder: "CONFIRM_REMINDER",
   configUpdate: "CONFIG_UPDATE",
   bootstrapAdmin: "BOOTSTRAP_ADMIN",

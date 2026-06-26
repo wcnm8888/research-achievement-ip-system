@@ -302,6 +302,10 @@ export type MarkFeePaidInput = {
   voucherNo?: string | null;
 };
 
+export type ChangeFeeStatusInput = {
+  reason: string;
+};
+
 export type FeeStateRecord = Pick<
   FeeRecord,
   | "id"
@@ -381,6 +385,8 @@ export type AuditActionCode =
   | "UPLOAD_ATTACHMENT"
   | "DOWNLOAD_ATTACHMENT"
   | "MARK_FEE_PAID"
+  | "WAIVE_FEE"
+  | "CANCEL_FEE"
   | "CONFIRM_REMINDER"
   | "CONFIG_UPDATE";
 

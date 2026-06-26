@@ -21,6 +21,7 @@ import { RequirePermissions } from "../authorization/decorators/require-permissi
 import { PermissionGuard } from "../authorization/guards/permission.guard";
 import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import { UserContext } from "../identity/user-context";
+import { ChangeFeeStatusDto } from "./dto/change-fee-status.dto";
 import { CreateFeeRecordDto } from "./dto/create-fee-record.dto";
 import { FeeQueryDto } from "./dto/fee-query.dto";
 import { MarkFeePaidDto } from "./dto/mark-fee-paid.dto";
@@ -51,6 +52,10 @@ const createFeeValidationPipe = new ValidationPipe({
 const markFeePaidValidationPipe = new ValidationPipe({
   ...feeValidationOptions,
   expectedType: MarkFeePaidDto,
+});
+const changeFeeStatusValidationPipe = new ValidationPipe({
+  ...feeValidationOptions,
+  expectedType: ChangeFeeStatusDto,
 });
 
 @Controller("fees")
@@ -111,6 +116,36 @@ export class FeeController {
   ) {
     try {
       return await this.feeService.markFeePaid(currentUser, feeRecordId, dto);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
+
+  @Post(":id/waive")
+  @HttpCode(200)
+  @RequirePermissions(PermissionCode.feeManageDepartment)
+  async waiveFee(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Body(changeFeeStatusValidationPipe) dto: ChangeFeeStatusDto,
+  ) {
+    try {
+      return await this.feeService.waiveFee(currentUser, feeRecordId, dto);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
+
+  @Post(":id/cancel")
+  @HttpCode(200)
+  @RequirePermissions(PermissionCode.feeManageDepartment)
+  async cancelFee(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Body(changeFeeStatusValidationPipe) dto: ChangeFeeStatusDto,
+  ) {
+    try {
+      return await this.feeService.cancelFee(currentUser, feeRecordId, dto);
     } catch (error) {
       throw mapFeeServiceError(error);
     }

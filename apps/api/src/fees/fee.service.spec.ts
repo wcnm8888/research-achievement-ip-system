@@ -482,6 +482,185 @@ describe("FeeService.markFeePaid", () => {
   });
 });
 
+describe("FeeService.waiveFee", () => {
+  it("denies waive when the user only has fee read permission", async () => {
+    const { auditService, repository, service } = createService();
+
+    await expect(
+      service.waiveFee(makeContext([PermissionCode.feeReadDepartment]), ids.feeRecord, {
+        reason: "approved waiver",
+      }),
+    ).rejects.toBeInstanceOf(FeePermissionDeniedError);
+    expect(repository.findStateByIdWhereInTransaction).not.toHaveBeenCalled();
+    expect(repository.transitionPayStatusInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("waives pending fees with reason in the shared audit transaction", async () => {
+    const { auditService, policyQueryFactory, repository, service } = createService();
+    const context = makeContext([PermissionCode.feeManageDepartment]);
+    repository.transitionPayStatusInTransaction.mockResolvedValueOnce(
+      makeFeeState({ payStatus: PayStatusCode.waived }),
+    );
+
+    await service.waiveFee(context, ids.feeRecord, { reason: "policy exemption" });
+
+    expect(policyQueryFactory.feeDepartmentWhere).toHaveBeenCalledWith(
+      context,
+      PermissionCode.feeManageDepartment,
+    );
+    expect(repository.transitionPayStatusInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        feeRecordId: ids.feeRecord,
+        expectedStatus: PayStatusCode.pending,
+        nextStatus: PayStatusCode.waived,
+        updatedById: ids.user,
+      }),
+    );
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        action: AuditActionCode.waiveFee,
+        newValue: expect.objectContaining({
+          oldStatus: PayStatusCode.pending,
+          newStatus: PayStatusCode.waived,
+          reason: "policy exemption",
+        }),
+      }),
+    );
+    expectAuditPayloadHasNoSensitiveFeeFields(
+      auditService.recordEventInTransaction.mock.calls[0]![1],
+    );
+  });
+
+  it("waives overdue fees", async () => {
+    const { repository, service } = createService();
+    repository.findStateByIdWhereInTransaction.mockResolvedValueOnce(
+      makeFeeState({ payStatus: PayStatusCode.overdue }),
+    );
+    repository.transitionPayStatusInTransaction.mockResolvedValueOnce(
+      makeFeeState({ payStatus: PayStatusCode.waived }),
+    );
+
+    await service.waiveFee(
+      makeContext([PermissionCode.feeManageDepartment]),
+      ids.feeRecord,
+      { reason: "overdue waived by policy" },
+    );
+
+    expect(repository.transitionPayStatusInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        expectedStatus: PayStatusCode.overdue,
+        nextStatus: PayStatusCode.waived,
+      }),
+    );
+  });
+
+  it.each([
+    PayStatusCode.paid,
+    PayStatusCode.waived,
+    PayStatusCode.cancelled,
+  ])("rejects waive from terminal status %s", async (payStatus) => {
+    const { auditService, repository, service } = createService();
+    repository.findStateByIdWhereInTransaction.mockResolvedValueOnce(
+      makeFeeState({ payStatus }),
+    );
+
+    await expect(
+      service.waiveFee(
+        makeContext([PermissionCode.feeManageDepartment]),
+        ids.feeRecord,
+        { reason: "terminal status cannot change" },
+      ),
+    ).rejects.toBeInstanceOf(FeeInvalidTransitionError);
+    expect(repository.transitionPayStatusInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("fails the shared transaction when waive audit write fails", async () => {
+    const { auditService, repository, service } = createService();
+    repository.transitionPayStatusInTransaction.mockResolvedValueOnce(
+      makeFeeState({ payStatus: PayStatusCode.waived }),
+    );
+    auditService.recordEventInTransaction.mockRejectedValueOnce(new Error("audit failed"));
+
+    await expect(
+      service.waiveFee(
+        makeContext([PermissionCode.feeManageDepartment]),
+        ids.feeRecord,
+        { reason: "audit should be atomic" },
+      ),
+    ).rejects.toThrow("audit failed");
+    expect(repository.transitionPayStatusInTransaction).toHaveBeenCalledOnce();
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledOnce();
+  });
+});
+
+describe("FeeService.cancelFee", () => {
+  it("denies cancel when the user only has fee read permission", async () => {
+    const { auditService, repository, service } = createService();
+
+    await expect(
+      service.cancelFee(makeContext([PermissionCode.feeReadDepartment]), ids.feeRecord, {
+        reason: "invalid fee",
+      }),
+    ).rejects.toBeInstanceOf(FeePermissionDeniedError);
+    expect(repository.findStateByIdWhereInTransaction).not.toHaveBeenCalled();
+    expect(repository.transitionPayStatusInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("cancels pending fees with reason in the shared audit transaction", async () => {
+    const { auditService, repository, service } = createService();
+    repository.transitionPayStatusInTransaction.mockResolvedValueOnce(
+      makeFeeState({ payStatus: PayStatusCode.cancelled }),
+    );
+
+    await service.cancelFee(
+      makeContext([PermissionCode.feeManageDepartment]),
+      ids.feeRecord,
+      { reason: "duplicate fee record" },
+    );
+
+    expect(repository.transitionPayStatusInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        expectedStatus: PayStatusCode.pending,
+        nextStatus: PayStatusCode.cancelled,
+        updatedById: ids.user,
+      }),
+    );
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        action: AuditActionCode.cancelFee,
+        newValue: expect.objectContaining({
+          oldStatus: PayStatusCode.pending,
+          newStatus: PayStatusCode.cancelled,
+          reason: "duplicate fee record",
+        }),
+      }),
+    );
+  });
+
+  it("returns not found for missing or out-of-scope fee records", async () => {
+    const { auditService, repository, service } = createService();
+    repository.findStateByIdWhereInTransaction.mockResolvedValueOnce(null);
+
+    await expect(
+      service.cancelFee(
+        makeContext([PermissionCode.feeManageDepartment]),
+        ids.feeRecord,
+        { reason: "not found path" },
+      ),
+    ).rejects.toBeInstanceOf(FeeNotFoundError);
+    expect(repository.transitionPayStatusInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+});
+
 const expectAuditPayloadHasNoSensitiveFeeFields = (input: unknown): void => {
   const serialized = JSON.stringify(input);
 

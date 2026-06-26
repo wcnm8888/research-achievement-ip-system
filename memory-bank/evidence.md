@@ -1,5 +1,57 @@
 # Evidence
 
+## 2026-06-27 Step 44E - Local fee waive/cancel implementation evidence
+
+- Purpose:
+  - Implement local explicit `WAIVED` and `CANCELLED` fee actions after Step 44D confirmation.
+  - Keep archive, voucher attachment, warnings API, finance review, production deploy, and production acceptance deferred.
+- Code-change evidence:
+  - Changed `apps/api/src/audit/domain/audit-action-code.ts`.
+  - Added `apps/api/src/fees/dto/change-fee-status.dto.ts`.
+  - Changed `apps/api/src/fees/dto/fee-dto.spec.ts`.
+  - Changed `apps/api/src/fees/fee.controller.ts`.
+  - Changed `apps/api/src/fees/fee.controller.spec.ts`.
+  - Changed `apps/api/src/fees/fee.app-module.spec.ts`.
+  - Changed `apps/api/src/fees/fee.service.ts`.
+  - Changed `apps/api/src/fees/fee.service.spec.ts`.
+  - Changed `apps/web/src/Fees.tsx`.
+  - Changed `apps/web/src/Fees.test.ts`.
+  - Changed `apps/web/src/types.ts`.
+  - Changed memory-bank records for this Step.
+- Implemented behavior:
+  - `POST /fees/:id/waive` transitions eligible fees to `WAIVED`.
+  - `POST /fees/:id/cancel` transitions eligible fees to `CANCELLED`.
+  - Both actions require `fee:manage_department`.
+  - Both actions require reason length 1-500 after trimming.
+  - Both actions reuse the existing department-scope query and transaction path.
+  - Both actions write audit events with action, old status, new status, and reason.
+  - Frontend write entries are shown only for management mode, explicit manage permission, and `PENDING` / `OVERDUE` records.
+- Existing behavior revalidated:
+  - `POST /fees` remains the create-fee contract.
+  - `POST /fees/:id/mark-paid` remains the mark-paid contract.
+  - `PENDING` and `OVERDUE` can transition to `PAID`, `WAIVED`, or `CANCELLED`.
+  - `PAID`, `WAIVED`, and `CANCELLED` remain terminal.
+  - Read-only users are blocked from fee write paths.
+  - `/fees/warnings` remains unimplemented.
+- Automated verification evidence:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS, 6 test files / 70 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Fee`: PASS, 1 test file / 40 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Boundary evidence:
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access was made.
+  - No production write or production deploy was executed.
+  - No migration, seed, cleanup, file deletion, or batch cleanup was executed.
+  - No archive API or archive UI action was implemented.
+  - No voucher upload/download/storage was implemented.
+  - No `/fees/warnings` was implemented.
+  - No finance approval / review state was added.
+  - `local-prod-preview-proxy.cjs` was not modified or committed.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-26 Step 44B - Local fee write / payment-state validation evidence
 
 - Purpose:

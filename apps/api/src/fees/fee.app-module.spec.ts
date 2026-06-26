@@ -26,6 +26,8 @@ type FeeServiceMock = {
   getFee: ReturnType<typeof vi.fn>;
   createFee: ReturnType<typeof vi.fn>;
   markFeePaid: ReturnType<typeof vi.fn>;
+  waiveFee: ReturnType<typeof vi.fn>;
+  cancelFee: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -84,6 +86,21 @@ const makePaidFeeState = () => ({
   archivedAt: null,
 });
 
+const makeTerminalFeeState = (payStatus: PayStatusCode) => ({
+  id: ids.feeRecord,
+  achievementId: ids.achievement,
+  departmentId: ids.department,
+  feeType: FeeTypeCode.patentAnnual,
+  dueDate: new Date("2026-07-01T00:00:00.000Z"),
+  paidDate: payStatus === PayStatusCode.paid
+    ? new Date("2026-06-18T00:00:00.000Z")
+    : null,
+  payStatus,
+  voucherNo: payStatus === PayStatusCode.paid ? "VOUCHER-001" : null,
+  updatedById: ids.user,
+  archivedAt: null,
+});
+
 const makeCreatePayload = () => ({
   achievementId: ids.achievement,
   feeType: FeeTypeCode.patentAnnual,
@@ -97,6 +114,8 @@ const createServiceMock = (): FeeServiceMock => ({
   getFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   createFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   markFeePaid: vi.fn().mockResolvedValue(makePaidFeeState()),
+  waiveFee: vi.fn().mockResolvedValue(makeTerminalFeeState(PayStatusCode.waived)),
+  cancelFee: vi.fn().mockResolvedValue(makeTerminalFeeState(PayStatusCode.cancelled)),
 });
 
 describe("Fee routes through AppModule", () => {
@@ -158,8 +177,22 @@ describe("Fee routes through AppModule", () => {
         .send({ paidDate: "2026-06-18T00:00:00.000Z", voucherNo: "VOUCHER-001" })
         .expect(200);
 
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/waive`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "policy exemption" })
+        .expect(200);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/cancel`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "duplicate fee record" })
+        .expect(200);
+
       expect(service.createFee).toHaveBeenCalledOnce();
       expect(service.markFeePaid).toHaveBeenCalledOnce();
+      expect(service.waiveFee).toHaveBeenCalledOnce();
+      expect(service.cancelFee).toHaveBeenCalledOnce();
     });
   });
 
@@ -201,8 +234,22 @@ describe("Fee routes through AppModule", () => {
         .send({ paidDate: "2026-06-18T00:00:00.000Z" })
         .expect(403);
 
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/waive`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "policy exemption" })
+        .expect(403);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/cancel`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "duplicate fee record" })
+        .expect(403);
+
       expect(service.createFee).not.toHaveBeenCalled();
       expect(service.markFeePaid).not.toHaveBeenCalled();
+      expect(service.waiveFee).not.toHaveBeenCalled();
+      expect(service.cancelFee).not.toHaveBeenCalled();
     });
   });
 });

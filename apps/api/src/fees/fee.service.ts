@@ -29,6 +29,7 @@ import {
 } from "./domain/fee-service.errors";
 import { assertFeeTransition } from "./domain/fee-state-machine";
 import { PayStatusCode } from "./domain/fee-domain.types";
+import { ChangeFeeStatusDto } from "./dto/change-fee-status.dto";
 import { CreateFeeRecordDto } from "./dto/create-fee-record.dto";
 import { FeeQueryDto } from "./dto/fee-query.dto";
 import { MarkFeePaidDto } from "./dto/mark-fee-paid.dto";
@@ -195,6 +196,90 @@ export class FeeService {
     }
   }
 
+  async waiveFee(
+    context: UserContext,
+    feeRecordId: string,
+    dto: ChangeFeeStatusDto,
+  ): Promise<FeeStateRecord> {
+    return this.transitionFeeStatusWithReason(
+      context,
+      feeRecordId,
+      PayStatusCode.waived,
+      dto.reason,
+      AuditActionCode.waiveFee,
+    );
+  }
+
+  async cancelFee(
+    context: UserContext,
+    feeRecordId: string,
+    dto: ChangeFeeStatusDto,
+  ): Promise<FeeStateRecord> {
+    return this.transitionFeeStatusWithReason(
+      context,
+      feeRecordId,
+      PayStatusCode.cancelled,
+      dto.reason,
+      AuditActionCode.cancelFee,
+    );
+  }
+
+  private async transitionFeeStatusWithReason(
+    context: UserContext,
+    feeRecordId: string,
+    nextStatus: PayStatusCode,
+    reason: string,
+    action: AuditActionCode,
+  ): Promise<FeeStateRecord> {
+    this.assertUserContext(context);
+    this.assertPermission(context, PermissionCode.feeManageDepartment);
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const feeClient = tx as FeeTransactionClient;
+        const auditClient = tx as AuditTransactionClient;
+        const current = await this.repository.findStateByIdWhereInTransaction(
+          feeClient,
+          feeRecordId,
+          this.policyQueryFactory.feeDepartmentWhere(
+            context,
+            PermissionCode.feeManageDepartment,
+          ),
+        );
+
+        if (!current) {
+          throw new FeeNotFoundError();
+        }
+
+        try {
+          assertFeeTransition(current.payStatus, nextStatus);
+        } catch (error) {
+          if (error instanceof InvalidFeeTransitionError) {
+            throw new FeeInvalidTransitionError(current.payStatus, nextStatus);
+          }
+
+          throw error;
+        }
+
+        const next = await this.repository.transitionPayStatusInTransaction(feeClient, {
+          feeRecordId,
+          expectedStatus: current.payStatus,
+          nextStatus,
+          updatedById: context.userId,
+        });
+
+        await this.auditService.recordEventInTransaction(
+          auditClient,
+          this.toFeeAuditEvent(context, action, current, next, undefined, reason),
+        );
+
+        return next;
+      });
+    } catch (error) {
+      throw this.mapRepositoryError(error);
+    }
+  }
+
   private assertUserContext(context: UserContext | null | undefined): asserts context is UserContext {
     if (!context?.userId || !context.departmentId) {
       throw new FeeAccessDeniedError("User context with department is required.");
@@ -247,6 +332,7 @@ export class FeeService {
     oldRecord: FeeAuditRecord | null,
     newRecord: FeeAuditRecord,
     parent?: FeeAchievementParentRecord,
+    reason?: string,
   ): CreateAuditEventInput {
     return {
       actor: {
@@ -261,7 +347,7 @@ export class FeeService {
         secretLevel: parent?.secretLevel as SecretLevelCode | undefined,
       },
       oldValue: oldRecord ? toFeeAuditSummary(action, oldRecord) : null,
-      newValue: toFeeAuditSummary(action, newRecord),
+      newValue: toFeeAuditSummary(action, newRecord, oldRecord, reason),
     };
   }
 }
@@ -274,6 +360,8 @@ type FeeAuditRecord = Pick<
 const toFeeAuditSummary = (
   action: AuditActionCode,
   record: FeeAuditRecord,
+  oldRecord?: FeeAuditRecord | null,
+  reason?: string,
 ): AuditJsonValue =>
   ({
     feeRecordId: record.id,
@@ -281,6 +369,13 @@ const toFeeAuditSummary = (
     action,
     feeType: record.feeType,
     payStatus: record.payStatus,
+    ...(oldRecord
+      ? {
+          oldStatus: oldRecord.payStatus,
+          newStatus: record.payStatus,
+        }
+      : {}),
+    ...(reason ? { reason } : {}),
     dueDate: toAuditDateString(record.dueDate),
     ...(record.paidDate ? { paidDate: toAuditDateString(record.paidDate) } : {}),
   }) as AuditJsonValue;

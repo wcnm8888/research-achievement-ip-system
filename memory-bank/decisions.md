@@ -1,5 +1,37 @@
 # Decisions
 
+## D112 - Step 44E implements local waive/cancel and keeps archive deferred
+
+- Date: 2026-06-27.
+- Context: Step 44D confirmed that fee `WAIVED` and `CANCELLED` should become explicit local user actions, while archive should remain separate and deferred. Existing schema already has `PayStatus.WAIVED`, `PayStatus.CANCELLED`, and `archivedAt`, and the state machine already permits `PENDING` / `OVERDUE` to transition to `WAIVED` or `CANCELLED`.
+- Decision:
+  - Implement local `POST /fees/:id/waive` and `POST /fees/:id/cancel` actions.
+  - Reuse `fee:manage_department` for both actions.
+  - Require a trimmed reason with length 1-500.
+  - Store the reason only in audit payload for this Step; do not add schema fields or a status-history table.
+  - Add audit action codes `WAIVE_FEE` and `CANCEL_FEE`.
+  - Include old status, new status, and reason in the fee audit payload.
+  - Keep archive deferred and separate from `PayStatus`.
+  - Do not add voucher attachment, warnings API, finance review/approval, production deploy, production DB access, production write, migration, seed, cleanup, or Phase 2 completion.
+- Rationale:
+  - The existing data model and state machine already support the two terminal statuses, so no schema migration is needed for a minimal local implementation.
+  - Reusing the existing transaction, permission, and department-scope patterns limits blast radius.
+  - Audit-only reason storage satisfies the Step 44E scope without introducing migration risk.
+  - Archive has different semantics from pay status and should remain deferred until a separate lifecycle decision is made.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS, 6 files / 70 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Fee`: PASS, 1 file / 40 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Consequences:
+  - Local fee users with manage permission can explicitly waive or cancel eligible fees.
+  - `PAID`, `WAIVED`, and `CANCELLED` remain terminal.
+  - Production acceptance is still not complete.
+  - Archive, voucher attachments, warnings API, finance review, production deploy/smoke, and Step 38 production acceptance remain deferred.
+  - Phase 2 remains incomplete.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration, seed, cleanup, deletion, batch cleanup, or sensitive-config access occurred.
+  - `local-prod-preview-proxy.cjs` remains an untracked local helper outside this decision.
+
 ## D111 - Step 44B keeps fee write hardening local and permission-scoped
 
 - Date: 2026-06-26.

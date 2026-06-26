@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-06-27 Step 44E - Local fee waive/cancel implementation
+
+- Status: DONE as local implementation.
+- Result:
+  - `LOCAL_FEE_WAIVE_CANCEL_ACTIONS_IMPLEMENTED_WITHOUT_SCHEMA_MIGRATION`.
+- Canonical state:
+  - Current local HEAD before this Step: `08a9f3a77ff4dd1800d3b2ea4092f47420ee951a`.
+  - Step 44D completed the local fee waived/cancelled/archive business decision gate.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - This Step is local implementation / validation only and is not production acceptance.
+- Completed:
+  - Added explicit local API/service actions for `POST /fees/:id/waive` and `POST /fees/:id/cancel`.
+  - Reused existing `fee:manage_department` permission and department scope.
+  - Kept allowed transitions to existing state-machine behavior: `PENDING` / `OVERDUE` can transition to `WAIVED` or `CANCELLED`; terminal statuses remain blocked.
+  - Required a trimmed `reason` with length 1-500 for waive/cancel requests.
+  - Recorded `WAIVE_FEE` / `CANCEL_FEE` audit actions in the existing transaction path with old/new status and reason in the audit payload.
+  - Added frontend API helpers, validation helpers, and UI entry points for waive/cancel actions.
+  - Kept archive deferred and did not add archive API or UI action.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS, 6 files / 70 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Fee`: PASS, 1 file / 40 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Boundary:
+  - No push.
+  - No VPS connection.
+  - No production DB access.
+  - No production write.
+  - No production deploy.
+  - No migration / seed / cleanup.
+  - No file deletion or batch cleanup.
+  - No archive API or archive UI action.
+  - No voucher attachment upload/download/storage.
+  - No `/fees/warnings`.
+  - No finance approval / review states.
+  - `local-prod-preview-proxy.cjs` remains untracked local helper and was not modified.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was read or recorded.
+
 ## 2026-06-26 Step 44B - Local fee create / mark-paid validation and transition hardening
 
 - Status: DONE as local implementation / validation hardening.

@@ -4,6 +4,41 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 44E Archive - Local Fee Waive / Cancel Implementation - 2026-06-27
+
+- Step identity:
+  - This is Step 44E.
+  - Step 44E is a local implementation step for explicit fee `WAIVED` / `CANCELLED` actions.
+  - It is not production deploy, not production smoke, not production write acceptance, not production DB access, not VPS access, not migration/seed, not cleanup, and not Phase 2 completion.
+- Canonical state:
+  - Step 44D completed the business decision gate and recommended implementing waive/cancel while keeping archive deferred.
+  - Current local HEAD before Step 44E: `08a9f3a77ff4dd1800d3b2ea4092f47420ee951a`.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - Local validation remains local evidence only and is not production acceptance.
+- Implementation scope completed:
+  - Added `ChangeFeeStatusDto` requiring trimmed `reason` length 1-500.
+  - Added `POST /fees/:id/waive` and `POST /fees/:id/cancel`.
+  - Added FeeService `waiveFee` and `cancelFee` write paths using the existing transaction, repository transition, state machine, permission, and department-scope patterns.
+  - Added `WAIVE_FEE` and `CANCEL_FEE` audit action codes.
+  - Included old status, new status, and reason in the fee audit payload.
+  - Added frontend API helpers, form validation, and UI actions for waive/cancel.
+  - Added API and frontend tests for permission, state transitions, DTO validation, endpoint wiring, API helper paths, and UI visibility helpers.
+- Remaining / deferred:
+  - Archive remains deferred.
+  - Voucher attachment remains deferred.
+  - `/fees/warnings` remains deferred.
+  - Finance review / approval remains deferred.
+  - Production deploy, production smoke, production DB access, and production write remain deferred.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- Fee`: PASS.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration, seed, cleanup, deletion, or batch cleanup.
+  - `local-prod-preview-proxy.cjs` remains outside Step 44E.
+  - No sensitive configuration or credentials were read or recorded.
+
 ## Current Step 44B Archive - Local Fee Create / Mark-Paid Validation and Transition Hardening - 2026-06-26
 
 - Step identity:

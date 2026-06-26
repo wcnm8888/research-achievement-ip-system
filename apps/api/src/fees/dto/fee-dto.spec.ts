@@ -3,6 +3,7 @@ import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import { describe, expect, it } from "vitest";
 import { FeeTypeCode, FundSourceCode, PayStatusCode } from "../domain/fee-domain.types";
+import { ChangeFeeStatusDto } from "./change-fee-status.dto";
 import { CreateFeeRecordDto } from "./create-fee-record.dto";
 import { FeeQueryDto } from "./fee-query.dto";
 import { MarkFeePaidDto } from "./mark-fee-paid.dto";
@@ -61,6 +62,27 @@ describe("MarkFeePaidDto", () => {
     });
 
     expect(errors).toHaveLength(0);
+  });
+});
+
+describe("ChangeFeeStatusDto", () => {
+  it("accepts and trims a required reason", async () => {
+    const dto = plainToInstance(ChangeFeeStatusDto, {
+      reason: "  approved waiver  ",
+    });
+    const errors = await validate(dto);
+
+    expect(errors).toHaveLength(0);
+    expect(dto.reason).toBe("approved waiver");
+  });
+
+  it("rejects missing, blank, or overlong reasons", async () => {
+    const cases = [{}, { reason: "   " }, { reason: "x".repeat(501) }];
+
+    for (const testCase of cases) {
+      const errors = await validateDto(ChangeFeeStatusDto, testCase);
+      expect(errors.map((error) => error.property)).toContain("reason");
+    }
   });
 });
 

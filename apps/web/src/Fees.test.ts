@@ -4,10 +4,14 @@ import {
   buildCreateFeeRecordPayload,
   buildFeeDetailOpenRequest,
   buildFeeQuery,
+  buildFeeStatusActionPayload,
   buildMarkFeePaidPayload,
   canManageDepartmentFees,
   canMarkFeePaid,
+  canWaiveOrCancelFee,
   classifyFeeWarningRecords,
+  cancelFee,
+  cancelFeeForDemoUser,
   createFeeRecord,
   createFeeRecordForDemoUser,
   deriveFeeWarningSummary,
@@ -27,8 +31,12 @@ import {
   mapFeeMutationErrorToDisplay,
   refreshFeesAfterMutation,
   shouldShowFeeDetailMarkPaidAction,
+  shouldShowFeeDetailStatusActions,
   validateCreateFeeForm,
+  validateFeeStatusActionForm,
   validateMarkFeePaidForm,
+  waiveFee,
+  waiveFeeForDemoUser,
 } from "./Fees";
 import type { FeeRecord } from "./types";
 
@@ -220,6 +228,49 @@ describe("fee write helpers", () => {
     await expect(markFeePaidForDemoUser(client, "   ", "fee-id", payload)).resolves.toBeNull();
     expect(client.post).not.toHaveBeenCalled();
   });
+
+  it("requests explicit waive and cancel endpoints with required reason", async () => {
+    const waived = {
+      id: "fee-id",
+      achievementId: "achievement-id",
+      departmentId: "department-id",
+      feeType: "PATENT_ANNUAL" as const,
+      dueDate: "2026-07-01T00:00:00.000Z",
+      paidDate: null,
+      payStatus: "WAIVED" as const,
+      voucherNo: null,
+      updatedById: "updater-id",
+      archivedAt: null,
+    };
+    const cancelled = { ...waived, payStatus: "CANCELLED" as const };
+    const waiveClient = createClient([], waived);
+    const cancelClient = createClient([], cancelled);
+
+    await expect(waiveFee(waiveClient, "fee-id", { reason: "policy exemption" }))
+      .resolves.toEqual(waived);
+    await expect(cancelFee(cancelClient, "fee-id", { reason: "duplicate fee" }))
+      .resolves.toEqual(cancelled);
+
+    expect(waiveClient.post).toHaveBeenCalledWith("/fees/fee-id/waive", {
+      reason: "policy exemption",
+    });
+    expect(cancelClient.post).toHaveBeenCalledWith("/fees/fee-id/cancel", {
+      reason: "duplicate fee",
+    });
+    expectNoAttachmentOrWarningsCalls(waiveClient);
+    expectNoAttachmentOrWarningsCalls(cancelClient);
+  });
+
+  it("does not request waive or cancel without a demo user or fee id", async () => {
+    const client = createClient([], baseFee);
+    const payload = { reason: "policy exemption" };
+
+    await expect(waiveFee(client, "   ", payload)).resolves.toBeNull();
+    await expect(cancelFee(client, "   ", payload)).resolves.toBeNull();
+    await expect(waiveFeeForDemoUser(client, null, "fee-id", payload)).resolves.toBeNull();
+    await expect(cancelFeeForDemoUser(client, "   ", "fee-id", payload)).resolves.toBeNull();
+    expect(client.post).not.toHaveBeenCalled();
+  });
 });
 
 describe("loadFeeRecordsForDemoUser", () => {
@@ -381,9 +432,24 @@ describe("fee form validation and payload shaping", () => {
       },
     });
   });
+
+  it("validates and builds waive/cancel reason payload", () => {
+    expect(validateFeeStatusActionForm({ reason: "   " })).toEqual({
+      reason: "请输入原因。",
+    });
+    expect(validateFeeStatusActionForm({ reason: "x".repeat(501) })).toEqual({
+      reason: "原因不能超过 500 个字符。",
+    });
+    expect(buildFeeStatusActionPayload({ reason: "  policy exemption  " })).toEqual({
+      errors: {},
+      payload: {
+        reason: "policy exemption",
+      },
+    });
+  });
 });
 
-describe("mark-paid visibility", () => {
+describe("fee write visibility", () => {
   it("uses fee:manage_department for fee write entry visibility", () => {
     expect(
       canManageDepartmentFees({
@@ -400,24 +466,36 @@ describe("mark-paid visibility", () => {
       shouldShowFeeDetailMarkPaidAction(baseFee, "management", false),
     ).toBe(false);
     expect(shouldShowFeeDetailMarkPaidAction(baseFee, "management", true)).toBe(true);
+    expect(shouldShowFeeDetailStatusActions(baseFee, "management", false)).toBe(false);
+    expect(shouldShowFeeDetailStatusActions(baseFee, "management", true)).toBe(true);
   });
 
-  it("shows mark-paid only for pending and overdue fee records", () => {
+  it("shows write actions only for pending and overdue fee records", () => {
     expect(canMarkFeePaid({ payStatus: "PENDING" })).toBe(true);
     expect(canMarkFeePaid({ payStatus: "OVERDUE" })).toBe(true);
     expect(canMarkFeePaid({ payStatus: "PAID" })).toBe(false);
     expect(canMarkFeePaid({ payStatus: "WAIVED" })).toBe(false);
     expect(canMarkFeePaid({ payStatus: "CANCELLED" })).toBe(false);
+    expect(canWaiveOrCancelFee({ payStatus: "PENDING" })).toBe(true);
+    expect(canWaiveOrCancelFee({ payStatus: "OVERDUE" })).toBe(true);
+    expect(canWaiveOrCancelFee({ payStatus: "PAID" })).toBe(false);
+    expect(canWaiveOrCancelFee({ payStatus: "WAIVED" })).toBe(false);
+    expect(canWaiveOrCancelFee({ payStatus: "CANCELLED" })).toBe(false);
   });
 
-  it("hides mark-paid in search readonly fee detail mode", () => {
+  it("hides write actions in search readonly fee detail mode", () => {
     expect(shouldShowFeeDetailMarkPaidAction(baseFee, "management")).toBe(true);
     expect(shouldShowFeeDetailMarkPaidAction(baseFee, "search-readonly")).toBe(false);
+    expect(shouldShowFeeDetailStatusActions(baseFee, "management")).toBe(true);
+    expect(shouldShowFeeDetailStatusActions(baseFee, "search-readonly")).toBe(false);
     expect(
       shouldShowFeeDetailMarkPaidAction({ ...baseFee, payStatus: "OVERDUE" }, "search-readonly"),
     ).toBe(false);
     expect(
       shouldShowFeeDetailMarkPaidAction({ ...baseFee, payStatus: "PAID" }, "management"),
+    ).toBe(false);
+    expect(
+      shouldShowFeeDetailStatusActions({ ...baseFee, payStatus: "PAID" }, "management"),
     ).toBe(false);
   });
 });
