@@ -30,10 +30,16 @@ export class FeeConflictError extends Error {
   }
 }
 
+export class FeeDepartmentUnavailableError extends FeeConflictError {
+  constructor(message = "Achievement department is archived or unavailable.") {
+    super(message);
+    this.name = "FeeDepartmentUnavailableError";
+  }
+}
+
 export class FeeInvalidTransitionError extends FeeConflictError {
   constructor(from: PayStatusCode, to: PayStatusCode) {
     super(`Invalid fee status transition from ${from} to ${to}.`);
     this.name = "FeeInvalidTransitionError";
   }
 }
-

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { DepartmentStatus, Prisma, RoleStatus, UserStatus } from "@prisma/client";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
 import { PrismaService } from "../database/prisma.service";
@@ -38,8 +38,12 @@ import {
 
 export type WorkflowTransactionClient = Pick<
   Prisma.TransactionClient,
-  "workflowInstance" | "workflowTask" | "workflowAction" | "user"
+  "workflowInstance" | "workflowTask" | "workflowAction" | "user" | "department"
 >;
+
+export type WorkflowDepartmentRecord = {
+  id: string;
+};
 
 @Injectable()
 export class WorkflowRepository {
@@ -193,6 +197,20 @@ export class WorkflowRepository {
     return this.findDepartmentReviewerUserIdsInTransaction(this.prisma, departmentId);
   }
 
+  async findActiveDepartmentByIdInTransaction(
+    client: WorkflowTransactionClient,
+    departmentId: string,
+  ): Promise<WorkflowDepartmentRecord | null> {
+    return client.department.findFirst({
+      where: {
+        id: departmentId,
+        status: DepartmentStatus.ACTIVE,
+        archivedAt: null,
+      },
+      select: { id: true },
+    });
+  }
+
   async findDepartmentReviewerUserIdsInTransaction(
     client: WorkflowTransactionClient,
     departmentId: string,
@@ -200,7 +218,11 @@ export class WorkflowRepository {
     const users = await client.user.findMany({
       where: {
         departmentId,
-        status: "ACTIVE",
+        status: UserStatus.ACTIVE,
+        department: {
+          status: DepartmentStatus.ACTIVE,
+          archivedAt: null,
+        },
         userRoles: {
           some: {
             revokedAt: null,
@@ -208,7 +230,7 @@ export class WorkflowRepository {
             departmentId,
             role: {
               code: RoleCode.researchSecretary,
-              status: "ACTIVE",
+              status: RoleStatus.ACTIVE,
             },
           },
         },

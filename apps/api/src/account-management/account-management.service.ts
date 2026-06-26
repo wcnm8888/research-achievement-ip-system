@@ -22,7 +22,6 @@ import {
   AccountManagementTransactionClient,
   AccountRoleRecord,
   AccountUserRecord,
-  AccountUserRoleAssignmentRecord,
 } from "./account-management.repository";
 import {
   AccountManagementReasonDto,

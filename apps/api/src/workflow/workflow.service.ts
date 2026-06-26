@@ -33,6 +33,7 @@ import {
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
   DepartmentReviewerNotFoundError,
+  WorkflowDepartmentUnavailableError,
   WorkflowAccessDeniedError,
   WorkflowInvalidPayloadError,
   WorkflowInvalidStateError,
@@ -113,6 +114,16 @@ export class WorkflowService {
 
     if (activeInstance) {
       throw new ActiveWorkflowInstanceAlreadyExistsError(input.achievementId);
+    }
+
+    const activeDepartment =
+      await this.repository.findActiveDepartmentByIdInTransaction(
+        client,
+        input.departmentId,
+      );
+
+    if (!activeDepartment) {
+      throw new WorkflowDepartmentUnavailableError(input.departmentId);
     }
 
     const reviewerIds =

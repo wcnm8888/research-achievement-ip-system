@@ -97,6 +97,7 @@ export const toFeeAchievementParentRecord = (
   id: row.id,
   status: row.status,
   departmentId: row.departmentId,
+  department: row.department,
   ownerUserId: row.ownerUserId,
   secretLevel: row.secretLevel,
 });

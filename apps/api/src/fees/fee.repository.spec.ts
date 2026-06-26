@@ -1,5 +1,5 @@
 import { SELF_DECLARED_DEPS_METADATA } from "@nestjs/common/constants";
-import { Prisma } from "@prisma/client";
+import { DepartmentStatus, Prisma } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { SecretLevelCode } from "../authorization/constants/secret-level-code";
 import { AchievementStatusCode } from "../achievements/domain/achievement-domain.types";
@@ -63,6 +63,10 @@ const makeAchievementParentRow = () => ({
   id: ids.achievement,
   status: AchievementStatusCode.archived,
   departmentId: ids.department,
+  department: {
+    status: DepartmentStatus.ACTIVE,
+    archivedAt: null,
+  },
   ownerUserId: ids.user,
   secretLevel: SecretLevelCode.internal,
 });
@@ -254,6 +258,12 @@ describe("FeeRepository reads", () => {
       select: expect.objectContaining({
         id: true,
         departmentId: true,
+        department: {
+          select: {
+            status: true,
+            archivedAt: true,
+          },
+        },
         secretLevel: true,
       }),
     });

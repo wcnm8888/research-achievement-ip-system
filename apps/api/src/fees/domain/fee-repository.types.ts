@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { DepartmentStatus, Prisma } from "@prisma/client";
 import { SecretLevelCode } from "../../authorization/constants/secret-level-code";
 import { AchievementStatusCode } from "../../achievements/domain/achievement-domain.types";
 import { FeeTypeCode, FundSourceCode, PayStatusCode } from "./fee-domain.types";
@@ -39,6 +39,10 @@ export type FeeAchievementParentRecord = {
   id: string;
   status: AchievementStatusCode;
   departmentId: string;
+  department: {
+    status: DepartmentStatus;
+    archivedAt: Date | null;
+  };
   ownerUserId: string;
   secretLevel: SecretLevelCode;
 };

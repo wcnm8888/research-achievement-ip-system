@@ -172,6 +172,12 @@ const feeAchievementParentSelect = {
   id: true,
   status: true,
   departmentId: true,
+  department: {
+    select: {
+      status: true,
+      archivedAt: true,
+    },
+  },
   ownerUserId: true,
   secretLevel: true,
 } satisfies Prisma.AchievementSelect;

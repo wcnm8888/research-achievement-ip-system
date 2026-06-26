@@ -17,7 +17,13 @@ import {
 } from "antd";
 import type { TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createApiClient, isApiError, type ApiClient, type ApiError } from "./api-client";
+import {
+  createApiClient,
+  isApiError,
+  type ApiClient,
+  type ApiError,
+  type AuthUser,
+} from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import type {
   CreateFeeRecordInput,
@@ -38,7 +44,10 @@ type Loadable<T> = {
 
 type FeesProps = {
   demoUserId: string | null;
+  authUser?: FeePermissionContext;
 };
+
+type FeePermissionContext = Pick<AuthUser, "permissionCodes"> | null | undefined;
 
 type FeeFilters = {
   achievementId?: string;
@@ -162,7 +171,7 @@ const payStatusColors: Record<PayStatusCode, string> = {
   CANCELLED: "default",
 };
 
-export function Fees({ demoUserId }: FeesProps) {
+export function Fees({ demoUserId, authUser }: FeesProps) {
   const [draftFilters, setDraftFilters] = useState<FeeFilters>({});
   const [appliedFilters, setAppliedFilters] = useState<FeeFilters>({});
   const [fees, setFees] = useState<Loadable<FeeRecord[]>>(emptyLoadable);
@@ -180,6 +189,7 @@ export function Fees({ demoUserId }: FeesProps) {
   const [markPaidStatus, setMarkPaidStatus] = useState<MutationState>(emptyMutationState);
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
   const query = useMemo(() => buildFeeQuery(appliedFilters), [appliedFilters]);
+  const canManageFees = canManageDepartmentFees(authUser);
 
   const loadFees = useCallback(() => {
     if (!demoUserId) {
@@ -278,6 +288,10 @@ export function Fees({ demoUserId }: FeesProps) {
   };
 
   const submitCreateFee = () => {
+    if (!canManageFees) {
+      return;
+    }
+
     const result = buildCreateFeeRecordPayload(createForm);
     setCreateErrors(result.errors);
 
@@ -319,7 +333,7 @@ export function Fees({ demoUserId }: FeesProps) {
   };
 
   const submitMarkPaid = () => {
-    if (!markPaidRecord) {
+    if (!canManageFees || !markPaidRecord) {
       return;
     }
 
@@ -363,8 +377,8 @@ export function Fees({ demoUserId }: FeesProps) {
   };
 
   const columns = useMemo(
-    () => buildFeeColumns(openFeeDetail, openMarkPaidDrawer),
-    [openFeeDetail, openMarkPaidDrawer],
+    () => buildFeeColumns(openFeeDetail, openMarkPaidDrawer, canManageFees),
+    [canManageFees, openFeeDetail, openMarkPaidDrawer],
   );
 
   if (!demoUserId) {
@@ -397,9 +411,11 @@ export function Fees({ demoUserId }: FeesProps) {
         description="读取后端 GET /fees 的真实费用台账；权限、范围和字段以后端返回为准。"
         extra={
           <Space wrap>
-            <Button type="primary" onClick={openCreateDrawer}>
-              新增费用
-            </Button>
+            {canManageFees ? (
+              <Button type="primary" onClick={openCreateDrawer}>
+                新增费用
+              </Button>
+            ) : null}
             <Button onClick={loadFees}>刷新</Button>
           </Space>
         }
@@ -547,6 +563,7 @@ export function Fees({ demoUserId }: FeesProps) {
       <FeeDetailDrawer
         detail={feeDetail}
         feeRecordId={selectedFeeId}
+        canManageFees={canManageFees}
         onOpenMarkPaid={openMarkPaidDrawer}
         onClose={closeFeeDetail}
         onRetry={retryFeeDetail}
@@ -565,6 +582,7 @@ export function Fees({ demoUserId }: FeesProps) {
         values={markPaidForm}
         errors={markPaidErrors}
         status={markPaidStatus}
+        canManageFees={canManageFees}
         onChange={(patch) => setMarkPaidForm((current) => ({ ...current, ...patch }))}
         onClose={closeMarkPaidDrawer}
         onSubmit={submitMarkPaid}
@@ -576,12 +594,14 @@ export function Fees({ demoUserId }: FeesProps) {
 function FeeDetailDrawer({
   detail,
   feeRecordId,
+  canManageFees,
   onOpenMarkPaid,
   onClose,
   onRetry,
 }: {
   detail: Loadable<FeeRecord>;
   feeRecordId: string | null;
+  canManageFees: boolean;
   onOpenMarkPaid: (record: FeeRecord) => void;
   onClose: () => void;
   onRetry: () => void;
@@ -614,6 +634,7 @@ function FeeDetailDrawer({
           <FeeDetailContent
             mode="management"
             record={detail.data}
+            canManageFees={canManageFees}
             onOpenMarkPaid={onOpenMarkPaid}
           />
         ) : null}
@@ -695,13 +716,15 @@ export function ReadonlyFeeDetailDrawer({
 function FeeDetailContent({
   mode = "management",
   record,
+  canManageFees = true,
   onOpenMarkPaid,
 }: {
   mode?: FeeDetailContentMode;
   record: FeeRecord;
+  canManageFees?: boolean;
   onOpenMarkPaid?: (record: FeeRecord) => void;
 }) {
-  const showMarkPaidAction = shouldShowFeeDetailMarkPaidAction(record, mode);
+  const showMarkPaidAction = shouldShowFeeDetailMarkPaidAction(record, mode, canManageFees);
 
   return (
     <Space direction="vertical" size={16} className="full-width">
@@ -893,6 +916,7 @@ function MarkFeePaidDrawer({
   values,
   errors,
   status,
+  canManageFees,
   onChange,
   onClose,
   onSubmit,
@@ -901,6 +925,7 @@ function MarkFeePaidDrawer({
   values: MarkFeePaidFormValues;
   errors: MarkFeePaidFormErrors;
   status: MutationState;
+  canManageFees: boolean;
   onChange: (patch: Partial<MarkFeePaidFormValues>) => void;
   onClose: () => void;
   onSubmit: () => void;
@@ -935,8 +960,12 @@ function MarkFeePaidDrawer({
         {record ? (
           <Alert
             showIcon
-            type={canMarkFeePaid(record) ? "info" : "warning"}
-            message={canMarkFeePaid(record) ? "当前费用可标记缴费" : "当前费用不可标记缴费"}
+            type={canManageFees && canMarkFeePaid(record) ? "info" : "warning"}
+            message={
+              canManageFees && canMarkFeePaid(record)
+                ? "当前费用可标记缴费"
+                : "当前费用不可标记缴费"
+            }
             description={`费用 ${record.id} 当前状态：${getPayStatusLabel(record.payStatus)}`}
           />
         ) : null}
@@ -963,7 +992,7 @@ function MarkFeePaidDrawer({
           <Button
             type="primary"
             loading={status.loading}
-            disabled={!record || !canMarkFeePaid(record)}
+            disabled={!record || !canManageFees || !canMarkFeePaid(record)}
             onClick={onSubmit}
           >
             确认标记缴费
@@ -1404,10 +1433,15 @@ export const buildFeeDetailOpenRequest = (record: FeeRecord): string => record.i
 export const canMarkFeePaid = (record: Pick<FeeRecord, "payStatus">): boolean =>
   record.payStatus === "PENDING" || record.payStatus === "OVERDUE";
 
+export const canManageDepartmentFees = (
+  authUser: FeePermissionContext,
+): boolean => !authUser || authUser.permissionCodes.includes("fee:manage_department");
+
 export const shouldShowFeeDetailMarkPaidAction = (
   record: Pick<FeeRecord, "payStatus">,
   mode: FeeDetailContentMode = "management",
-): boolean => mode === "management" && canMarkFeePaid(record);
+  canManageFees = true,
+): boolean => mode === "management" && canManageFees && canMarkFeePaid(record);
 
 export const mapFeeDetailErrorToDisplay = (error: ApiError): ApiError => {
   if (error.kind === "forbidden" || error.kind === "unauthorized") {
@@ -1496,6 +1530,7 @@ export const getPayStatusLabel = (value: PayStatusCode | string): string =>
 const buildFeeColumns = (
   onOpenDetail: (record: FeeRecord) => void,
   onOpenMarkPaid: (record: FeeRecord) => void,
+  canManageFees = true,
 ): TableProps<FeeRecord>["columns"] => [
   {
     title: "费用记录",
@@ -1577,7 +1612,7 @@ const buildFeeColumns = (
         <Button size="small" onClick={() => onOpenDetail(item)}>
           查看详情
         </Button>
-        {canMarkFeePaid(item) ? (
+        {canManageFees && canMarkFeePaid(item) ? (
           <Button size="small" onClick={() => onOpenMarkPaid(item)}>
             标记缴费
           </Button>

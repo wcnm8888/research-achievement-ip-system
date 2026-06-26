@@ -18,7 +18,7 @@ import {
 import type { TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReadonlyAchievementDetail } from "./AchievementDetail";
-import { createApiClient, isApiError, type ApiError } from "./api-client";
+import { createApiClient, isApiError, type ApiError, type AuthUser } from "./api-client";
 import { BoundaryNotice, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import type {
   ApproveWorkflowTaskPayload,
@@ -56,7 +56,10 @@ type Loadable<T> = {
 
 type WorkflowTasksProps = {
   demoUserId: string | null;
+  authUser?: WorkflowPermissionContext;
 };
+
+type WorkflowPermissionContext = Pick<AuthUser, "permissionCodes"> | null | undefined;
 
 type WorkflowTaskFilters = {
   status?: WorkflowTaskQuery["status"];
@@ -130,7 +133,7 @@ const emptyLoadable = <T,>(): Loadable<T> => ({
   error: null,
 });
 
-export function WorkflowTasks({ demoUserId }: WorkflowTasksProps) {
+export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
   const [draftFilters, setDraftFilters] =
     useState<WorkflowTaskFilters>(defaultWorkflowTaskFilters);
   const [appliedFilters, setAppliedFilters] =
@@ -327,7 +330,7 @@ export function WorkflowTasks({ demoUserId }: WorkflowTasksProps) {
     : null;
   const actionErrorDisplay = actionError ? mapWorkflowErrorToDisplay(actionError) : null;
   const detailViewModel = detailState.data
-    ? buildWorkflowTaskDrawerViewModel(detailState.data)
+    ? buildWorkflowTaskDrawerViewModel(detailState.data, authUser)
     : null;
 
   return (
@@ -533,20 +536,33 @@ export const buildWorkflowTaskListDisplayRow = (
 
 export const buildWorkflowTaskDrawerViewModel = (
   task: WorkflowTask,
+  authUser?: WorkflowPermissionContext,
 ): WorkflowTaskDrawerViewModel => {
   const linkedAchievement = getWorkflowTaskLinkedAchievementState(task);
 
   return {
     detailFields: buildWorkflowTaskDetailDisplayModel(task),
-    actionPresentation: getWorkflowTaskActionPresentation(task),
+    actionPresentation: getWorkflowTaskActionPresentation(task, authUser),
     linkedAchievement,
     linkedAchievementId: getWorkflowTaskLinkedAchievementId(task),
   };
 };
 
+export const canReviewDepartmentAchievements = (
+  authUser: WorkflowPermissionContext,
+): boolean => !authUser || authUser.permissionCodes.includes("achievement:review_department");
+
 export const getWorkflowTaskActionPresentation = (
   task: WorkflowTask,
+  authUser?: WorkflowPermissionContext,
 ): WorkflowTaskActionPresentation => {
+  if (!canReviewDepartmentAchievements(authUser)) {
+    return {
+      actions: [],
+      readonlyReason: "当前用户无审批处理权限",
+    };
+  }
+
   const availability = getWorkflowActionAvailability(task);
 
   if (availability.approve && availability.reject) {

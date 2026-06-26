@@ -1,4 +1,5 @@
 import { SELF_DECLARED_DEPS_METADATA } from "@nestjs/common/constants";
+import { DepartmentStatus, RoleStatus, UserStatus } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
@@ -84,6 +85,9 @@ const createFakePrisma = () => {
     user: {
       findMany: vi.fn(),
     },
+    department: {
+      findFirst: vi.fn(),
+    },
   };
 
   const prisma = {
@@ -98,6 +102,9 @@ const createFakePrisma = () => {
     },
     user: {
       findMany: vi.fn(),
+    },
+    department: {
+      findFirst: vi.fn(),
     },
   };
 
@@ -279,7 +286,11 @@ describe("WorkflowRepository read helpers", () => {
     expect(prisma.user.findMany).toHaveBeenCalledWith({
       where: {
         departmentId: ids.department,
-        status: "ACTIVE",
+        status: UserStatus.ACTIVE,
+        department: {
+          status: DepartmentStatus.ACTIVE,
+          archivedAt: null,
+        },
         userRoles: {
           some: {
             revokedAt: null,
@@ -287,13 +298,34 @@ describe("WorkflowRepository read helpers", () => {
             departmentId: ids.department,
             role: {
               code: RoleCode.researchSecretary,
-              status: "ACTIVE",
+              status: RoleStatus.ACTIVE,
             },
           },
         },
       },
       select: { id: true },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    });
+  });
+
+  it("finds active departments for workflow write guards", async () => {
+    const { repository, tx } = createRepository();
+    tx.department.findFirst.mockResolvedValue({ id: ids.department });
+
+    await expect(
+      repository.findActiveDepartmentByIdInTransaction(
+        tx as unknown as WorkflowTransactionClient,
+        ids.department,
+      ),
+    ).resolves.toEqual({ id: ids.department });
+
+    expect(tx.department.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: ids.department,
+        status: DepartmentStatus.ACTIVE,
+        archivedAt: null,
+      },
+      select: { id: true },
     });
   });
 
@@ -334,7 +366,11 @@ describe("WorkflowRepository read helpers", () => {
     expect(tx.user.findMany).toHaveBeenCalledWith({
       where: expect.objectContaining({
         departmentId: ids.department,
-        status: "ACTIVE",
+        status: UserStatus.ACTIVE,
+        department: {
+          status: DepartmentStatus.ACTIVE,
+          archivedAt: null,
+        },
       }),
       select: { id: true },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],

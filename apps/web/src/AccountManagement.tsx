@@ -35,6 +35,8 @@ import type {
   AssignAccountUserRoleInput,
   ChangeAccountUserDepartmentInput,
   CreateAccountUserInput,
+  DepartmentListResponse,
+  DepartmentSummary,
   DisableAccountUserInput,
   EnableAccountUserInput,
   ListAccountUsersQuery,
@@ -80,6 +82,17 @@ type AssignRoleFormValues = {
 type ChangeDepartmentFormValues = {
   departmentId?: string;
   reason?: string;
+};
+
+type DepartmentOption = {
+  value: string;
+  label: string;
+};
+
+type DepartmentSelectorState = {
+  options: DepartmentOption[];
+  loading: boolean;
+  error: ApiError | null;
 };
 
 type OperationRequest =
@@ -144,6 +157,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [users, setUsers] = useState<Loadable<AccountUserListResponse>>(emptyLoadable);
+  const [departments, setDepartments] = useState<Loadable<DepartmentSummary[]>>(emptyLoadable);
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Loadable<AccountUserDetail>>(emptyLoadable);
   const [createOpen, setCreateOpen] = useState(false);
@@ -161,6 +175,18 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
     () => buildAccountUserListQuery(appliedFilters, page, pageSize),
     [appliedFilters, page, pageSize],
   );
+  const departmentOptions = useMemo(
+    () => buildActiveDepartmentOptions(departments.data ?? []),
+    [departments.data],
+  );
+  const departmentSelector = useMemo(
+    () => ({
+      options: departmentOptions,
+      loading: departments.loading,
+      error: departments.error,
+    }),
+    [departmentOptions, departments.error, departments.loading],
+  );
 
   const loadUsers = useCallback(() => {
     if (!canReadAccounts || !demoUserId) {
@@ -175,6 +201,20 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
         setUsers({ loading: false, data: null, error: normalizeError(error) }),
       );
   }, [apiClient, canReadAccounts, demoUserId, query]);
+
+  const loadDepartments = useCallback(() => {
+    if (!shouldLoadAccountDepartmentOptions(canReadAccounts, demoUserId)) {
+      setDepartments(emptyLoadable);
+      return;
+    }
+
+    setDepartments({ loading: true, data: null, error: null });
+    void fetchActiveDepartments(apiClient)
+      .then((items) => setDepartments({ loading: false, data: items, error: null }))
+      .catch((error: unknown) =>
+        setDepartments({ loading: false, data: null, error: normalizeError(error) }),
+      );
+  }, [apiClient, canReadAccounts, demoUserId]);
 
   const loadDetail = useCallback(
     (userId: string) => {
@@ -197,6 +237,10 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  useEffect(() => {
+    loadDepartments();
+  }, [loadDepartments]);
 
   const applyFilters = () => {
     setPage(1);
@@ -354,6 +398,15 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
         }
       />
       <PermissionHint description="账号管理权限最终以后端 system:config 校验为准；前端只做入口收敛和只读展示，不展示或缓存任何密码、token、session hash 或 credential secret。" />
+      <PermissionHint description="部门选择器只用于账号绑定和角色部门 scope 绑定，不提供部门创建或编辑；部门 scope 仍精确匹配所选 departmentId，父部门不包含子部门权限。" />
+      {departments.error ? (
+        <Alert
+          type="warning"
+          showIcon
+          message="部门选项加载失败"
+          description={getDepartmentSelectorErrorDescription(departments.error)}
+        />
+      ) : null}
 
       <Card className="shell-card">
         <Space className="account-filter-bar" size={12} wrap>
@@ -454,6 +507,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
 
       <CreateUserDrawer
         form={createForm}
+        departmentSelector={departmentSelector}
         open={createOpen}
         submitting={operationSubmitting}
         error={operationError}
@@ -466,6 +520,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
         reasonForm={reasonForm}
         assignRoleForm={assignRoleForm}
         departmentForm={departmentForm}
+        departmentSelector={departmentSelector}
         submitting={operationSubmitting}
         error={operationError}
         onCancel={closeOperation}
@@ -507,6 +562,38 @@ export const fetchAccountUserDetail = async (
   client: Pick<AccountManagementApiClient, "getAccountUser">,
   userId: string,
 ): Promise<AccountUserDetail> => client.getAccountUser(userId);
+
+export const shouldLoadAccountDepartmentOptions = (
+  canReadAccounts: boolean,
+  demoUserId: string | null,
+): boolean => Boolean(canReadAccounts && demoUserId?.trim());
+
+export const fetchActiveDepartments = async (
+  client: Pick<AccountManagementApiClient, "listDepartments">,
+): Promise<DepartmentSummary[]> => {
+  const response: DepartmentListResponse = await client.listDepartments({
+    status: "ACTIVE",
+    page: 1,
+    pageSize: 100,
+  });
+
+  return (Array.isArray(response.items) ? response.items : []).filter(
+    (department) => department.status === "ACTIVE",
+  );
+};
+
+export const buildActiveDepartmentOptions = (
+  departments: DepartmentSummary[],
+): DepartmentOption[] =>
+  departments
+    .filter((department) => department.status === "ACTIVE")
+    .map((department) => ({
+      value: department.id,
+      label: `${department.name} / ${department.code}`,
+    }));
+
+export const getDepartmentSelectorErrorDescription = (error: ApiError): string =>
+  error.detail ?? error.message;
 
 export const buildCreateAccountUserPayload = (
   values: CreateUserFormValues,
@@ -838,6 +925,7 @@ function AccountUserDetailView({
 
 function CreateUserDrawer({
   form,
+  departmentSelector,
   open,
   submitting,
   error,
@@ -845,6 +933,7 @@ function CreateUserDrawer({
   onFinish,
 }: {
   form: FormInstance<CreateUserFormValues>;
+  departmentSelector: DepartmentSelectorState;
   open: boolean;
   submitting: boolean;
   error: ApiError | null;
@@ -870,6 +959,7 @@ function CreateUserDrawer({
     >
       <Space direction="vertical" size={16} className="full-width">
         {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
+        <DepartmentSelectorBoundary error={departmentSelector.error} />
         <Form<CreateUserFormValues>
           form={form}
           layout="vertical"
@@ -897,11 +987,14 @@ function CreateUserDrawer({
             <Input autoComplete="off" />
           </Form.Item>
           <Form.Item
-            label="所属部门 ID"
+            label="所属部门"
             name="departmentId"
-            rules={[{ required: true, message: "请输入部门 ID。" }]}
+            rules={[{ required: true, message: "请选择所属部门。" }]}
           >
-            <Input autoComplete="off" />
+            <DepartmentSelect
+              departmentSelector={departmentSelector}
+              placeholder="选择启用部门"
+            />
           </Form.Item>
           <Form.Item
             label="初始密码（可选）"
@@ -954,11 +1047,15 @@ function CreateUserDrawer({
                         {() =>
                           form.getFieldValue(["roles", field.name, "scopeType"]) === "DEPARTMENT" ? (
                             <Form.Item
-                              label="范围部门 ID"
+                              label="范围部门"
                               name={[field.name, "departmentId"]}
-                              rules={[{ required: true, message: "部门范围必须填写部门 ID。" }]}
+                              rules={[{ required: true, message: "请选择部门范围。" }]}
                             >
-                              <Input className="account-form-input" autoComplete="off" />
+                              <DepartmentSelect
+                                className="account-form-input"
+                                departmentSelector={departmentSelector}
+                                placeholder="选择启用部门"
+                              />
                             </Form.Item>
                           ) : null
                         }
@@ -983,6 +1080,7 @@ function AccountOperationModal({
   reasonForm,
   assignRoleForm,
   departmentForm,
+  departmentSelector,
   submitting,
   error,
   onCancel,
@@ -992,6 +1090,7 @@ function AccountOperationModal({
   reasonForm: FormInstance<ReasonFormValues>;
   assignRoleForm: FormInstance<AssignRoleFormValues>;
   departmentForm: FormInstance<ChangeDepartmentFormValues>;
+  departmentSelector: DepartmentSelectorState;
   submitting: boolean;
   error: ApiError | null;
   onCancel: () => void;
@@ -1008,15 +1107,18 @@ function AccountOperationModal({
       confirmLoading={submitting}
       onCancel={onCancel}
       onOk={onOk}
-      destroyOnClose
+      destroyOnHidden
     >
       <Space direction="vertical" size={12} className="full-width">
         {operation ? <OperationWarning operation={operation} /> : null}
         {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
+        {operation?.kind === "assign-role" || operation?.kind === "change-department" ? (
+          <DepartmentSelectorBoundary error={departmentSelector.error} />
+        ) : null}
         {operation?.kind === "assign-role" ? (
-          <AssignRoleForm form={assignRoleForm} />
+          <AssignRoleForm form={assignRoleForm} departmentSelector={departmentSelector} />
         ) : operation?.kind === "change-department" ? (
-          <ChangeDepartmentForm form={departmentForm} />
+          <ChangeDepartmentForm form={departmentForm} departmentSelector={departmentSelector} />
         ) : (
           <ReasonForm form={reasonForm} />
         )}
@@ -1119,7 +1221,51 @@ function ReasonForm({ form }: { form: FormInstance<ReasonFormValues> }) {
   );
 }
 
-function AssignRoleForm({ form }: { form: FormInstance<AssignRoleFormValues> }) {
+function DepartmentSelectorBoundary({ error }: { error: ApiError | null }) {
+  if (!error) {
+    return null;
+  }
+
+  return (
+    <Alert
+      type="warning"
+      showIcon
+      message="无法加载启用部门选项"
+      description="账号绑定仍由后端校验；请稍后刷新后再选择部门。"
+    />
+  );
+}
+
+function DepartmentSelect({
+  departmentSelector,
+  className,
+  placeholder,
+}: {
+  departmentSelector: DepartmentSelectorState;
+  className?: string;
+  placeholder: string;
+}) {
+  return (
+    <Select
+      className={className}
+      loading={departmentSelector.loading}
+      disabled={Boolean(departmentSelector.error)}
+      showSearch
+      optionFilterProp="label"
+      options={departmentSelector.options}
+      placeholder={placeholder}
+      notFoundContent={departmentSelector.loading ? "正在加载部门" : "暂无启用部门"}
+    />
+  );
+}
+
+function AssignRoleForm({
+  form,
+  departmentSelector,
+}: {
+  form: FormInstance<AssignRoleFormValues>;
+  departmentSelector: DepartmentSelectorState;
+}) {
   return (
     <Form<AssignRoleFormValues> form={form} layout="vertical" requiredMark={false}>
       <Form.Item label="角色" name="roleCode" rules={[{ required: true, message: "请选择角色。" }]}>
@@ -1139,11 +1285,14 @@ function AssignRoleForm({ form }: { form: FormInstance<AssignRoleFormValues> }) 
         {() =>
           form.getFieldValue("scopeType") === "DEPARTMENT" ? (
             <Form.Item
-              label="范围部门 ID"
+              label="范围部门"
               name="departmentId"
-              rules={[{ required: true, message: "部门范围必须填写部门 ID。" }]}
+              rules={[{ required: true, message: "请选择部门范围。" }]}
             >
-              <Input autoComplete="off" />
+              <DepartmentSelect
+                departmentSelector={departmentSelector}
+                placeholder="选择启用部门"
+              />
             </Form.Item>
           ) : null
         }
@@ -1155,15 +1304,24 @@ function AssignRoleForm({ form }: { form: FormInstance<AssignRoleFormValues> }) 
   );
 }
 
-function ChangeDepartmentForm({ form }: { form: FormInstance<ChangeDepartmentFormValues> }) {
+function ChangeDepartmentForm({
+  form,
+  departmentSelector,
+}: {
+  form: FormInstance<ChangeDepartmentFormValues>;
+  departmentSelector: DepartmentSelectorState;
+}) {
   return (
     <Form<ChangeDepartmentFormValues> form={form} layout="vertical" requiredMark={false}>
       <Form.Item
-        label="新部门 ID"
+        label="新部门"
         name="departmentId"
-        rules={[{ required: true, message: "请输入新部门 ID。" }]}
+        rules={[{ required: true, message: "请选择新部门。" }]}
       >
-        <Input autoComplete="off" />
+        <DepartmentSelect
+          departmentSelector={departmentSelector}
+          placeholder="选择启用部门"
+        />
       </Form.Item>
       <Form.Item label="原因（可选）" name="reason">
         <Input.TextArea maxLength={300} rows={3} />

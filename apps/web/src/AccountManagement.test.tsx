@@ -1,6 +1,9 @@
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { AccountManagementApiClient, AuthUser } from "./api-client";
 import {
+  AccountManagement,
+  buildActiveDepartmentOptions,
   buildAssignRolePayload,
   buildChangeDepartmentPayload,
   buildCreateAccountUserPayload,
@@ -8,14 +11,18 @@ import {
   buildReasonPayload,
   createAccountUserFromForm,
   executeAccountOperation,
+  fetchActiveDepartments,
   fetchAccountUserDetail,
   fetchAccountUsers,
+  getDepartmentSelectorErrorDescription,
   hasSystemConfigPermission,
+  shouldLoadAccountDepartmentOptions,
 } from "./AccountManagement";
 import type {
   AccountUserDetail,
   AccountUserListResponse,
   AssignAccountUserRoleResponse,
+  DepartmentSummary,
   DisableAccountUserResponse,
 } from "./types";
 
@@ -61,11 +68,112 @@ const accountUser: AccountUserDetail = {
   updatedAt: "2026-06-01T00:00:00.000Z",
 };
 
+const activeDepartment: DepartmentSummary = {
+  id: "10000000-0000-4000-8000-000000000001",
+  code: "D001",
+  name: "Research Department",
+  parentId: null,
+  status: "ACTIVE",
+  createdAt: "2026-06-01T00:00:00.000Z",
+  updatedAt: "2026-06-01T00:00:00.000Z",
+  archivedAt: null,
+};
+
+const archivedDepartment: DepartmentSummary = {
+  id: "10000000-0000-4000-8000-000000000099",
+  code: "OLD",
+  name: "Archived Department",
+  parentId: null,
+  status: "ARCHIVED",
+  createdAt: "2026-06-01T00:00:00.000Z",
+  updatedAt: "2026-06-01T00:00:00.000Z",
+  archivedAt: "2026-06-02T00:00:00.000Z",
+};
+
 describe("account management permission helpers", () => {
   it("allows only users with system:config to enter account management", () => {
     expect(hasSystemConfigPermission(adminUser)).toBe(true);
     expect(hasSystemConfigPermission({ permissionCodes: ["audit:read"] })).toBe(false);
     expect(hasSystemConfigPermission(null)).toBe(false);
+  });
+
+  it("loads department options only inside an authorized account-management context", () => {
+    expect(shouldLoadAccountDepartmentOptions(true, "admin-user-id")).toBe(true);
+    expect(shouldLoadAccountDepartmentOptions(true, " ")).toBe(false);
+    expect(shouldLoadAccountDepartmentOptions(false, "admin-user-id")).toBe(false);
+    expect(shouldLoadAccountDepartmentOptions(false, null)).toBe(false);
+  });
+
+  it("renders department binding boundary copy without turning account management into Department CRUD", () => {
+    const html = renderToStaticMarkup(
+      <AccountManagement demoUserId="admin-user-id" authUser={adminUser} />,
+    );
+
+    expect(html).toContain("部门选择器只用于账号绑定和角色部门 scope 绑定");
+    expect(html).toContain("不提供部门创建或编辑");
+    expect(html).toContain("部门 scope 仍精确匹配所选 departmentId");
+  });
+
+  it("does not request account-management or departments when the user lacks system config", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const html = renderToStaticMarkup(
+      <AccountManagement
+        demoUserId="auditor-user-id"
+        authUser={{ permissionCodes: ["audit:read"] }}
+      />,
+    );
+
+    expect(html).toContain("当前账号无权访问账号管理");
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("account management active department selector helpers", () => {
+  it("requests active departments only and filters archived rows defensively", async () => {
+    const client = {
+      listDepartments: vi.fn(async () => ({
+        items: [activeDepartment, archivedDepartment],
+        total: 2,
+        page: 1,
+        pageSize: 100,
+      })),
+    } as unknown as Pick<AccountManagementApiClient, "listDepartments">;
+
+    await expect(fetchActiveDepartments(client)).resolves.toEqual([activeDepartment]);
+    expect(client.listDepartments).toHaveBeenCalledWith({
+      status: "ACTIVE",
+      page: 1,
+      pageSize: 100,
+    });
+  });
+
+  it("builds selector options for active departments and omits archived departments", () => {
+    expect(buildActiveDepartmentOptions([activeDepartment, archivedDepartment])).toEqual([
+      {
+        value: activeDepartment.id,
+        label: "Research Department / D001",
+      },
+    ]);
+  });
+
+  it("surfaces department loading failures with backend detail when available", () => {
+    expect(
+      getDepartmentSelectorErrorDescription({
+        kind: "unknown",
+        status: 409,
+        message: "数据状态冲突",
+        detail: "Department list unavailable.",
+      }),
+    ).toBe("Department list unavailable.");
+    expect(
+      getDepartmentSelectorErrorDescription({
+        kind: "network",
+        message: "服务不可用",
+      }),
+    ).toBe("服务不可用");
   });
 });
 
@@ -175,6 +283,32 @@ describe("account management operation payloads", () => {
     });
   });
 
+  it("keeps create user departmentId from the active department selector payload", () => {
+    expect(
+      buildCreateAccountUserPayload({
+        email: "new-user@example.com",
+        name: "New User",
+        departmentId: activeDepartment.id,
+        roles: [
+          {
+            roleCode: "RESEARCHER",
+            scopeType: "DEPARTMENT",
+            departmentId: activeDepartment.id,
+          },
+        ],
+      }),
+    ).toMatchObject({
+      departmentId: activeDepartment.id,
+      roles: [
+        {
+          roleCode: "RESEARCHER",
+          scopeType: "DEPARTMENT",
+          departmentId: activeDepartment.id,
+        },
+      ],
+    });
+  });
+
   it("keeps initialPassword only in the submitted create payload when provided", () => {
     expect(
       buildCreateAccountUserPayload({
@@ -216,6 +350,31 @@ describe("account management operation payloads", () => {
     });
   });
 
+  it("keeps selected departmentId for department-scoped role assignment and omits it for global roles", () => {
+    expect(
+      buildAssignRolePayload({
+        roleCode: "RESEARCHER",
+        scopeType: "DEPARTMENT",
+        departmentId: activeDepartment.id,
+      }),
+    ).toEqual({
+      roleCode: "RESEARCHER",
+      scopeType: "DEPARTMENT",
+      departmentId: activeDepartment.id,
+    });
+
+    expect(
+      buildAssignRolePayload({
+        roleCode: "AUDITOR",
+        scopeType: "GLOBAL",
+        departmentId: activeDepartment.id,
+      }),
+    ).toEqual({
+      roleCode: "AUDITOR",
+      scopeType: "GLOBAL",
+    });
+  });
+
   it("trims optional reason and department change payloads", () => {
     expect(buildReasonPayload({ reason: "  policy update  " })).toEqual({
       reason: "policy update",
@@ -223,11 +382,11 @@ describe("account management operation payloads", () => {
     expect(buildReasonPayload({ reason: "   " })).toEqual({});
     expect(
       buildChangeDepartmentPayload({
-        departmentId: " 10000000-0000-4000-8000-000000000002 ",
+        departmentId: ` ${activeDepartment.id} `,
         reason: " department correction ",
       }),
     ).toEqual({
-      departmentId: "10000000-0000-4000-8000-000000000002",
+      departmentId: activeDepartment.id,
       reason: "department correction",
     });
   });

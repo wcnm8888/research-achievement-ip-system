@@ -366,6 +366,47 @@ body {
   max-width: 100%;
 }
 
+.department-filter-bar {
+  width: 100%;
+}
+
+.department-keyword {
+  width: min(100%, 320px);
+}
+
+.department-filter-select {
+  width: 180px;
+}
+
+.department-table .ant-table-cell {
+  vertical-align: top;
+}
+
+.department-detail-drawer .ant-descriptions-item-content {
+  overflow-wrap: anywhere;
+}
+
+.department-form-drawer .ant-form-item {
+  margin-bottom: 14px;
+}
+
+.department-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.department-impact-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+  padding: 10px;
+  background: #fbfcfd;
+  border: 1px solid #e6ebf0;
+  border-radius: 8px;
+}
+
 .workflow-filter-bar {
   width: 100%;
 }
@@ -864,14 +905,16 @@ body {
     width: min(100%, 360px);
   }
 
-    .achievement-keyword,
-    .achievement-filter-select,
-    .audit-filter-select,
-    .audit-uuid-input,
-    .audit-trace-input,
-    .audit-take-input,
-    .search-keyword,
-    .search-target-select,
+  .achievement-keyword,
+  .achievement-filter-select,
+  .audit-filter-select,
+  .audit-uuid-input,
+  .audit-trace-input,
+  .audit-take-input,
+  .department-keyword,
+  .department-filter-select,
+  .search-keyword,
+  .search-target-select,
   .search-filter-select,
   .search-department-input,
   .search-take-input,
@@ -959,14 +1002,16 @@ body {
     width: 100%;
   }
 
-    .achievement-keyword,
-    .achievement-filter-select,
-    .audit-filter-select,
-    .audit-uuid-input,
-    .audit-trace-input,
-    .audit-take-input,
-    .search-keyword,
-    .search-target-select,
+  .achievement-keyword,
+  .achievement-filter-select,
+  .audit-filter-select,
+  .audit-uuid-input,
+  .audit-trace-input,
+  .audit-take-input,
+  .department-keyword,
+  .department-filter-select,
+  .search-keyword,
+  .search-target-select,
   .search-filter-select,
   .search-department-input,
   .search-take-input,
@@ -1020,6 +1065,7 @@ body {
   .dashboard-distribution-header,
   .dashboard-distribution-item,
   .dashboard-distribution-line,
+  .department-impact-grid,
   .settings-capability-line {
     grid-template-columns: 1fr;
     align-items: stretch;

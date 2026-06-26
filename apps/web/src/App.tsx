@@ -20,6 +20,7 @@ import {
   storeDemoUserId,
 } from "./demo-users";
 import { Dashboard } from "./Dashboard";
+import { DepartmentManagement } from "./DepartmentManagement";
 import { Fees } from "./Fees";
 import { Search } from "./Search";
 import { SettingsBoundary } from "./SettingsBoundary";
@@ -94,6 +95,12 @@ export const navItems: NavItem[] = [
     step: "Step 36E-2",
     description: "Step 36E-2 提供账号列表和详情只读 UI，不提供创建、禁用启用、角色或部门写入操作。",
   },
+  {
+    key: "department-management",
+    label: "部门维护",
+    step: "Step 37E",
+    description: "Step 37E 提供部门列表、树形展示、创建、编辑、启用和停用 UI，权限由 system:config 收敛。",
+  },
 ];
 
 const fallbackNavItem = navItems[0] as NavItem;
@@ -118,7 +125,9 @@ export const getVisibleNavItems = (
   authUser: Pick<AuthUser, "permissionCodes"> | null,
 ): NavItem[] =>
   items.filter(
-    (item) => item.key !== "account-management" || hasSystemConfigPermission(authUser),
+    (item) =>
+      !["account-management", "department-management"].includes(item.key) ||
+      hasSystemConfigPermission(authUser),
   );
 
 export const mapAuthCheckErrorToStatus = (error: unknown): AuthStatus =>
@@ -295,11 +304,11 @@ export function App() {
             {activeKey === "workbench" ? (
               <Workbench demoUserId={businessContextId} onNavigate={setActiveKey} />
             ) : activeKey === "achievements" ? (
-              <Achievements demoUserId={businessContextId} />
+              <Achievements demoUserId={businessContextId} authUser={authUser} />
             ) : activeKey === "workflow" ? (
-              <WorkflowTasks demoUserId={businessContextId} />
+              <WorkflowTasks demoUserId={businessContextId} authUser={authUser} />
             ) : activeKey === "fees" ? (
-              <Fees demoUserId={businessContextId} />
+              <Fees demoUserId={businessContextId} authUser={authUser} />
             ) : activeKey === "search" ? (
               <Search demoUserId={businessContextId} />
             ) : activeKey === "dashboard" ? (
@@ -310,6 +319,8 @@ export function App() {
               <SettingsBoundary demoUserId={businessContextId} />
             ) : activeKey === "account-management" ? (
               <AccountManagement demoUserId={businessContextId} authUser={authUser} />
+            ) : activeKey === "department-management" ? (
+              <DepartmentManagement demoUserId={businessContextId} authUser={authUser} />
             ) : (
               <BoundaryPage
                 item={navItems.find((item) => item.key === activeKey) ?? fallbackNavItem}
@@ -455,6 +466,7 @@ function ProductionAuthBanner({ authUser }: { authUser: AuthUser | null }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function LegacyDemoApp() {
   const [activeKey, setActiveKey] = useState("workbench");
   const [demoUserId, setDemoUserId] = useState<string | null>(() => readStoredDemoUserId());

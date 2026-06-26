@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { DepartmentStatus } from "@prisma/client";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -20,6 +21,7 @@ import {
 } from "./domain/fee-repository.types";
 import {
   FeeConflictError,
+  FeeDepartmentUnavailableError,
   FeeInvalidTransitionError,
   FeeNotFoundError,
   FeePermissionDeniedError,
@@ -106,6 +108,8 @@ export class FeeService {
     if (!parent) {
       throw new FeeNotFoundError("Related achievement was not found.");
     }
+
+    this.assertAchievementDepartmentActive(parent);
 
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -226,6 +230,15 @@ export class FeeService {
     }
 
     return error instanceof Error ? error : new Error("Unknown fee service error.");
+  }
+
+  private assertAchievementDepartmentActive(parent: FeeAchievementParentRecord): void {
+    if (
+      parent.department.status !== DepartmentStatus.ACTIVE ||
+      parent.department.archivedAt
+    ) {
+      throw new FeeDepartmentUnavailableError();
+    }
   }
 
   private toFeeAuditEvent(

@@ -1,5 +1,541 @@
 # Evidence
 
+## 2026-06-25 Step 41B - Authorization gate blocked evidence
+
+- Purpose:
+  - Start Step 41B by restoring canonical state and checking whether explicit production authorization was provided.
+  - Perform only allowed local read-only checks before production action.
+  - Record the blocked status without connecting to production.
+- Read-only inputs reviewed:
+  - `E:\Vibe coding\AGENTS.md`.
+  - `E:\Vibe coding\vibe-methodology\00-operating-protocol.md`.
+  - `E:\Vibe coding\vibe-methodology\01-task-classification.md`.
+  - `E:\Vibe coding\vibe-methodology\03-context-bank.md`.
+  - `E:\Vibe coding\vibe-methodology\07-database-production.md`.
+  - `E:\Vibe coding\vibe-methodology\08-quality-gates.md`.
+  - `E:\Vibe coding\vibe-methodology\11-risk-and-pitfalls.md`.
+  - Top Step 41A / Step 41 sections of `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, and `memory-bank/evidence.md`.
+  - Top D098 / D097 / D096 sections of `memory-bank/decisions.md`.
+- Canonical-state evidence:
+  - Step 41A is the latest canonical completed step before Step 41B.
+  - D098 records `READY_FOR_STEP_41B_AUTHORIZED_DEPLOY_AND_GET_SMOKE`.
+  - D097 records the split-before-deploy decision.
+  - Phase 2 remains incomplete.
+  - Local validation is not production acceptance.
+- Local scope evidence:
+  - `git status --short --untracked-files=all` still shows the accumulated Step 36Fix / Step 37 / Step 38 / Step 40 / memory-bank deploy candidate.
+  - The untracked Department management source/test files remain deploy-candidate files.
+  - The untracked prompt-history file remains excluded.
+  - `git diff --name-status` shows tracked Step 36Fix / Step 37 / Step 38 / Step 40 / memory-bank files.
+  - `git diff --stat` before Step 41B documentation update showed 35 tracked changed files, 3018 insertions, and 78 deletions.
+  - `git diff -- prisma/schema.prisma prisma/migrations prisma/seed.cjs prisma/seed-foundation.cjs`: no output / no diff.
+  - `git diff -- package.json pnpm-lock.yaml pnpm-workspace.yaml docker-compose.yml docker-compose.prod.yml docker-compose.production.yml Dockerfile.api Dockerfile.web deploy README.md README* nginx*`: no output / no diff.
+- Authorization evidence:
+  - The user supplied Step 41B instructions but did not provide the required explicit Chinese authorization statement.
+  - Missing required authorization elements include explicit permission to connect to the target VPS / production environment, execute production deploy, execute GET-only production smoke, target environment/domain confirmation, and explicit prohibitions on writes, migration/seed, cleanup, and sensitive-config output.
+- Result:
+  - `BLOCKED_BY_PRODUCTION_AUTHORIZATION`.
+- Boundary evidence:
+  - No VPS connection was made.
+  - No production DB access was made.
+  - No production deploy was executed.
+  - No GET-only production smoke was executed.
+  - No production write, migration, seed, smoke-account cleanup, synthetic-data cleanup, prompt-history cleanup, file deletion, file move, commit, tag, artifact packaging, or new Phase 2 route was executed.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+
+## 2026-06-25 Step 41A - Pre-deploy packaging / commit-scope confirmation evidence
+
+- Purpose:
+  - Confirm the exact pre-deploy candidate scope before any production authorization.
+  - Exclude unrelated untracked prompt-history material.
+  - Reconfirm no schema / migration / seed / deployment config diff.
+  - Refresh lightweight local gates without committing, packaging, deploying, or connecting to production.
+- Read-only inputs reviewed:
+  - `E:\Vibe coding\AGENTS.md`.
+  - `E:\Vibe coding\vibe-methodology\00-operating-protocol.md`.
+  - `E:\Vibe coding\vibe-methodology\01-task-classification.md`.
+  - `E:\Vibe coding\vibe-methodology\03-context-bank.md`.
+  - `E:\Vibe coding\vibe-methodology\07-database-production.md`.
+  - `E:\Vibe coding\vibe-methodology\08-quality-gates.md`.
+  - `E:\Vibe coding\vibe-methodology\11-risk-and-pitfalls.md`.
+  - Top Step 41 / Step 40 sections of `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, and `memory-bank/evidence.md`.
+  - Top D097 / D096 / D095 sections of `memory-bank/decisions.md`.
+- Working tree evidence:
+  - `git status --short --untracked-files=all` shows tracked changes from Step 36Fix / Step 37 / Step 38 / Step 40 / Step 41 records.
+  - Untracked deploy-candidate files:
+    - `apps/api/src/department-management/department-management.app-module.spec.ts`.
+    - `apps/api/src/department-management/department-management.controller.spec.ts`.
+    - `apps/api/src/department-management/department-management.controller.ts`.
+    - `apps/api/src/department-management/department-management.errors.ts`.
+    - `apps/api/src/department-management/department-management.module.ts`.
+    - `apps/api/src/department-management/department-management.repository.spec.ts`.
+    - `apps/api/src/department-management/department-management.repository.ts`.
+    - `apps/api/src/department-management/department-management.service.spec.ts`.
+    - `apps/api/src/department-management/department-management.service.ts`.
+    - `apps/api/src/department-management/dto/department-management.dto.spec.ts`.
+    - `apps/api/src/department-management/dto/department-management.dto.ts`.
+    - `apps/web/src/DepartmentManagement.test.tsx`.
+    - `apps/web/src/DepartmentManagement.tsx`.
+  - Excluded untracked file:
+    - `prompt历史记录_按Step拆分/Step 34.md`, displayed by Git as a mojibake quoted path.
+  - `git diff --stat` after Step 41 records showed 35 tracked changed files, 2774 insertions, and 78 deletions before Step 41A documentation updates.
+- Schema / migration / seed / deploy-config evidence:
+  - `git diff -- prisma/schema.prisma prisma/migrations prisma/seed.cjs prisma/seed-foundation.cjs`: no output / no diff.
+  - `git diff -- package.json pnpm-lock.yaml pnpm-workspace.yaml docker-compose.yml docker-compose.prod.yml docker-compose.production.yml Dockerfile.api Dockerfile.web deploy README.md README* nginx*`: no output / no diff.
+  - `prisma/seed-foundation.test.cjs` remains a Step 40 test-harness lint compatibility change only.
+- Local gate evidence refreshed in Step 41A:
+  - `corepack pnpm lint`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+- Local gate evidence carried forward from Step 41:
+  - API tests: PASS, 64 files / 558 tests.
+  - Web tests: PASS, 15 files / 231 tests.
+  - API build: PASS.
+  - Web build: PASS with existing Vite large chunk warning.
+  - Reason for carrying forward: Step 41A made no business code changes before recording this evidence.
+- Readiness conclusion:
+  - `READY_FOR_STEP_41B_AUTHORIZED_DEPLOY_AND_GET_SMOKE`.
+  - This is readiness for an explicitly authorized deploy / GET-only smoke step only, not production acceptance completion.
+- Boundary evidence:
+  - No VPS connection was made.
+  - No production DB access was made.
+  - No production write, deploy, migration, seed, smoke-account cleanup, synthetic-data cleanup, file deletion, file move, commit, tag, artifact packaging, or new Phase 2 route was executed.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - Local validation is not production acceptance.
+
+## 2026-06-25 Step 41 - Production deploy / acceptance planning and authorization gate evidence
+
+- Purpose:
+  - Recover canonical state after Step 40.
+  - Audit current local deploy candidate scope.
+  - Check for schema / migration / seed / deployment config changes.
+  - Re-run local gates.
+  - Record production deploy / acceptance planning and authorization requirements without executing production action.
+- Read-only inputs reviewed:
+  - `E:\Vibe coding\AGENTS.md`.
+  - `E:\Vibe coding\vibe-methodology\00-operating-protocol.md`.
+  - `E:\Vibe coding\vibe-methodology\01-task-classification.md`.
+  - `E:\Vibe coding\vibe-methodology\03-context-bank.md`.
+  - `E:\Vibe coding\vibe-methodology\07-database-production.md`.
+  - `E:\Vibe coding\vibe-methodology\08-quality-gates.md`.
+  - `E:\Vibe coding\vibe-methodology\11-risk-and-pitfalls.md`.
+  - Top / keyword-matched sections of `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+  - Package scripts and production runbook excerpts needed for local gate and deploy-plan context.
+- Canonical-state evidence:
+  - Step 40 is the latest canonical completed step.
+  - D096 records Step 40 local-only lint cleanup.
+  - D095 records Step 39 remaining-route planning.
+  - Step 38-Closure remains local-only with production and cleanup deferred.
+  - Phase 2 remains incomplete.
+- Diff evidence:
+  - `git status --short` shows tracked local code/test/memory-bank changes from Step 36Fix, Step 37, Step 38, and Step 40.
+  - `git diff --stat` shows 35 tracked changed files and the Step 41 pre-update tracked diff size was 2552 insertions / 78 deletions.
+  - Untracked deploy-candidate files:
+    - `apps/api/src/department-management/`.
+    - `apps/web/src/DepartmentManagement.test.tsx`.
+    - `apps/web/src/DepartmentManagement.tsx`.
+  - Unrelated untracked file outside deploy candidate:
+    - `prompt历史记录_按Step拆分/Step 34.md`.
+  - `git diff -- prisma/schema.prisma prisma/migrations prisma/seed.cjs prisma/seed-foundation.cjs`: no diff.
+  - Deployment/config diff check found no package script, lockfile, Docker Compose, Nginx, or production runbook diff; `apps/api/src/app.module.ts` registers DepartmentManagement as application code.
+- Local gate evidence:
+  - `corepack pnpm lint`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+  - `corepack pnpm --filter @research-ip/api test`: PASS, 64 files / 558 tests.
+  - `corepack pnpm --filter @research-ip/web test`: PASS, 15 files / 231 tests.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS; Vite reported the existing large chunk warning.
+- Readiness conclusion:
+  - Local validation is sufficient to plan production authorization.
+  - No schema / migration / seed / deployment-config blocker was found.
+  - Because production acceptance can require write actions and the candidate spans multiple local steps, the next work should be split before actual deployment.
+  - Final Step 41 judgment: `NEEDS_SUBSTEP_SPLIT_BEFORE_DEPLOY`.
+- Boundary evidence:
+  - No VPS connection was made.
+  - No production DB access was made.
+  - No production write, deploy, migration, seed, smoke-account cleanup, synthetic-data cleanup, or new Phase 2 route was executed.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - Local validation is not production acceptance.
+
+## 2026-06-25 Step 40 - Dedicated local root lint cleanup evidence
+
+- Purpose:
+  - Clear the inherited unrelated root lint failures archived by Step 37G / Step 38 / Step 39.
+  - Keep the step local and limited to lint compatibility cleanup.
+- Initial root lint evidence:
+  - `corepack pnpm lint`: FAIL before Step 40 edits.
+  - Failures were limited to:
+    - `apps/api/src/account-management/account-management.service.ts` unused `AccountUserRoleAssignmentRecord`.
+    - `apps/web/src/App.tsx` unused `LegacyDemoApp`.
+    - `prisma/seed-foundation.test.cjs` CommonJS `require()` / `__dirname` lint issues.
+- Files changed:
+  - `apps/api/src/account-management/account-management.service.ts`.
+  - `apps/web/src/App.tsx`.
+  - `prisma/seed-foundation.test.cjs`.
+  - `memory-bank/implementation-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Verification evidence:
+  - `corepack pnpm lint`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 1 suite / 4 tests.
+- Boundary evidence:
+  - No seed command was executed; only the node:test wrapper `test:seed:foundation` ran.
+  - No migration, deploy, production write, production DB access, VPS connection, schema change, smoke-account disable, synthetic data cleanup, or Phase 2 feature route was executed.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - Step 40 is local lint cleanup evidence only, not production acceptance and not Phase 2 completion.
+
+## 2026-06-25 Step 39 - Phase 2 remaining-route planning evidence
+
+- Purpose:
+  - Recover the canonical Phase 2 state after Step 38 local closure.
+  - Summarize remaining deferred routes from Step 36, Step 37, and Step 38.
+  - Record recommended post-Step39 sequencing without executing follow-up work.
+- Read-only inputs reviewed:
+  - `E:\Vibe coding\AGENTS.md`.
+  - `E:\Vibe coding\vibe-methodology\00-operating-protocol.md`.
+  - `E:\Vibe coding\vibe-methodology\01-task-classification.md`.
+  - `E:\Vibe coding\vibe-methodology\03-context-bank.md`.
+  - `E:\Vibe coding\vibe-methodology\10-prompt-recipes.md`.
+  - `E:\Vibe coding\vibe-methodology\11-risk-and-pitfalls.md`.
+  - Top / keyword-matched sections of `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Canonical-state evidence:
+  - Step 38-Closure is the latest canonical completed step.
+  - D094 records `Step 38 closure: CLOSED_LOCALLY_WITH_PRODUCTION_AND_CLEANUP_DEFERRED`.
+  - D093 records Step 38 local implementation.
+  - D092 records Step 37 local department-maintenance closure.
+  - D091 records Step 36 user / role / department / permission-chain closure.
+  - Step 38 completion verification is recorded as `PASS_WITH_KNOWN_UNRELATED_ROOT_LINT_FAILURES`.
+  - No state conflict was found.
+- Remaining-route evidence:
+  - Production deploy / production acceptance remains deferred.
+  - Step 36Fix-Sync remains deferred if not already committed / pushed / deployed / verified.
+  - P-001 / P-002 / P-003 smoke-account disable remains deferred.
+  - `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` archive / retain / mark / cleanup remains deferred.
+  - Root lint unrelated cleanup remains deferred.
+  - Broader Phase 2 routes remain deferred, including fee write/payment-state, attachments upload/download/storage, settings/config CRUD, monitoring/backup, real data import readiness, password reset/invite, real business user batch creation, and full approval archive closure.
+- Boundary evidence:
+  - Step 39 is documentation-only.
+  - No backend source, frontend source, tests, schema, migration, seed, deployment config, production file, or sensitive config was intentionally changed by Step 39.
+  - No VPS or production DB connection was made.
+  - No production write, deployment, migration, seed, smoke-account disable, or synthetic data cleanup was executed.
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - Local Step 37 / Step 38 validation remains local evidence only and is not production acceptance.
+  - P-001 / P-002 / P-003 remain smoke accounts, not real business users.
+  - `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` remains synthetic production data, not real business data.
+- Numbering sanity evidence:
+  - Current step is Step 39.
+  - Step 39 is an overall planning step and not a concrete implementation / deploy / cleanup step.
+  - Step 38A remains superseded.
+  - No Step 39A / 39B / 39C / Step 40 execution prompt was generated.
+
+## 2026-06-25 Step 38-Closure - Final closure archive evidence
+
+- Purpose:
+  - Finalize Step 38 closure after local implementation and local completion verification.
+  - Correct numbering ambiguity without starting Step 39.
+  - Record that Step 38A readiness prompt is superseded and will not be executed.
+- Closure decision:
+  - `Step 38 closure: CLOSED_LOCALLY_WITH_PRODUCTION_AND_CLEANUP_DEFERRED`.
+- Evidence reviewed:
+  - Step 38 Archive exists at the top of `memory-bank/implementation-plan.md`.
+  - Step 38 progress exists at the top of `memory-bank/progress.md`.
+  - Step 38 evidence exists at the top of `memory-bank/evidence.md`.
+  - D093 exists at the top of `memory-bank/decisions.md`.
+  - Step 38 completion verification result is recorded as `PASS_WITH_KNOWN_UNRELATED_ROOT_LINT_FAILURES`.
+- Closure basis:
+  - Step 38 local backend hardening is implemented.
+  - Step 38 local verification passed for targeted API tests, API full test, API typecheck, API build, and scoped eslint.
+  - Root lint failure remains limited to known inherited unrelated issues and does not block Step 38 local closure.
+  - No schema / migration / seed diff is part of Step 38.
+- Numbering evidence:
+  - This is `Step 38-Closure`.
+  - It is not Step 39 and does not generate a Step 39 prompt.
+  - Step 38A readiness prompt is superseded.
+- Deferred evidence:
+  - Production deploy / production acceptance remains deferred.
+  - Step 36Fix-Sync remains deferred.
+  - P-001 / P-002 / P-003 smoke-account disable remains deferred.
+  - `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` archive / cleanup remains deferred.
+  - Root lint unrelated cleanup remains deferred.
+  - Broader Phase 2 routes remain deferred.
+- Security / boundary evidence:
+  - This closure is documentation-only.
+  - No business code, tests, schema, migration, seed, deployment config, production files, or sensitive config were modified by this closure.
+  - No VPS or production DB connection was made.
+  - No production write, deployment, migration, or seed was executed.
+  - Local verification is not represented as production acceptance.
+
+## 2026-06-25 Step 38 - Business write path ACTIVE department guard hardening evidence
+
+- Purpose:
+  - Harden local backend business write paths so ARCHIVED departments cannot receive new achievement, workflow, or fee writes.
+  - Preserve read-only historical access and exact `departmentId` scope semantics.
+  - Avoid schema, migration, seed, production, and sensitive configuration access.
+- Implementation evidence:
+  - Achievement create draft:
+    - `AchievementService.createDraft` now checks `context.departmentId` with `DepartmentStatus.ACTIVE` and `archivedAt: null` before draft creation.
+    - Mismatched DTO `departmentId` still fails exact current-department boundary validation.
+    - ARCHIVED current user department fails with a clear unsupported business operation error before repository write or audit event.
+  - Achievement submit / workflow assignment:
+    - `WorkflowDepartmentUnavailableError` records target department unavailability.
+    - `WorkflowService.prepareAchievementReviewOnSubmitInTransaction` checks active target department before reviewer lookup.
+    - `WorkflowRepository.findDepartmentReviewerUserIdsInTransaction` now requires active user, active role, and active non-archived user department.
+    - Submit maps archived/unavailable achievement department to an `AchievementUnsupportedOperationError` and does not transition achievement state or create workflow tasks.
+  - Fee create:
+    - `FeeAchievementParentRecord` now includes related Department status and `archivedAt`.
+    - `FeeService.createFee` rejects fee creation when the achievement department is not ACTIVE or has `archivedAt`.
+    - Fee read/list/detail paths were not changed and remain available for historical records.
+  - Account-management:
+    - Existing checks were confirmed and left unchanged:
+      - `createUser` uses `findActiveDepartmentById`.
+      - `changeUserDepartment` uses `findActiveDepartmentById`.
+      - `assignUserRole` DEPARTMENT scope resolves through `findActiveDepartmentById`.
+      - create-user scoped roles also validate through `findActiveDepartmentsByIds`.
+- Tests:
+  - Added achievement service test: ARCHIVED current user department cannot create draft.
+  - Added achievement service test: archived achievement department submit maps to unsupported operation and does not transition/create workflow.
+  - Added workflow service test: archived department is rejected before reviewer lookup or task creation.
+  - Added workflow repository test: active department lookup uses `DepartmentStatus.ACTIVE` and `archivedAt: null`.
+  - Updated workflow repository tests: reviewer lookup requires active user department.
+  - Added fee service test: archived achievement department cannot create fee.
+  - Updated fee repository tests: achievement parent read selects department status and archived timestamp.
+- Validation evidence:
+  - `corepack pnpm --filter @research-ip/api test -- achievements` passed.
+    - Result: 7 files passed, 104 tests passed.
+  - `corepack pnpm --filter @research-ip/api test -- workflow` passed.
+    - Result: 6 files passed, 72 tests passed.
+  - `corepack pnpm --filter @research-ip/api test -- fees` passed.
+    - Result: 6 files passed, 54 tests passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-management` passed.
+    - Result: 2 files passed, 22 tests passed.
+  - `corepack pnpm --filter @research-ip/api test` passed.
+    - Result: 64 files passed, 558 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm --filter @research-ip/api build` passed.
+  - `corepack pnpm exec eslint` on touched Step 38 API files passed.
+  - `corepack pnpm lint` failed with inherited unrelated issues only:
+    - `apps/api/src/account-management/account-management.service.ts`: unused `AccountUserRoleAssignmentRecord`.
+    - `apps/web/src/App.tsx`: unused `LegacyDemoApp`.
+    - `prisma/seed-foundation.test.cjs`: CommonJS `require()` and `__dirname` lint issues.
+- Diff / schema evidence:
+  - `git diff -- prisma/schema.prisma prisma/migrations prisma/seed.cjs prisma/seed-foundation.cjs` produced no diff.
+  - Step 38 intentionally modified only API hardening/test files and memory-bank records.
+  - The working tree still contains prior Step 37 frontend and department-management changes; Step 38 did not revert or clean them.
+- Security / production boundary evidence:
+  - No `.env`, `DATABASE_URL`, token, cookie, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - No VPS or production DB connection was made.
+  - No production write, deployment, migration, or seed was executed.
+  - Step 36Fix-Sync, smoke-account disable, and synthetic achievement archive were not handled.
+  - Local validation was not represented as production acceptance.
+
+## 2026-06-25 Step 37G - Department maintenance backend / UI local closure evidence
+
+- Purpose:
+  - Archive Step 37 as the Department maintenance backend / UI local implementation closure.
+  - Preserve backend API, frontend UI, AccountManagement linkage, local validation evidence, known unrelated lint failures, and deferred production/hardening routes.
+  - Keep this update documentation-only.
+- Final status:
+  - `DONE_WITH_UNRELATED_VALIDATION_FAILURES: Step 37 department maintenance backend / UI locally implemented, locally accepted, and archived with production/deploy and unrelated lint items deferred.`
+- Planning / readiness evidence:
+  - Step 37A audited the existing Department schema, seed, backend, frontend, permissions, disable rules, hierarchy rules, and AccountManagement linkage needs.
+  - Step 37A explicitly kept Step 36 department binding separate from Department CRUD.
+  - Step 37B planned the backend department-management API without requiring schema/migration.
+  - Step 37 kept department scope semantics as exact `departmentId`; `parentId` hierarchy does not automatically include child departments in authorization scope.
+- Backend implementation evidence:
+  - Department-management backend API was implemented locally:
+    - `GET /departments`.
+    - `GET /departments/tree`.
+    - `GET /departments/:id`.
+    - `POST /departments`.
+    - `PATCH /departments/:id`.
+    - `POST /departments/:id/disable`.
+    - `POST /departments/:id/enable`.
+  - All department-management endpoints are protected by `system:config`.
+  - Department changes reuse existing CONFIG_UPDATE / SYSTEM_CONFIG audit semantics.
+  - Disable returns impact summary fields for active users, active user-role department scopes, pending workflow tasks, active/unarchived achievements, and fee records.
+  - Disable is blocked by active users, active role scopes, or pending workflow tasks.
+  - Achievements and fee records are retained as history and summarized; no physical delete is introduced.
+  - Parent hierarchy validation requires existing ACTIVE parent, rejects self-parenting, and rejects cycles.
+  - No schema, migration, or seed change was introduced for Step 37.
+- Frontend implementation evidence:
+  - DepartmentManagement UI was implemented locally.
+  - `department-management` navigation entry is restricted to users with `system:config`.
+  - UI supports keyword/status/includeArchived filtering, list view, tree view, detail drawer, create/edit flows, enable/disable modals, disable impact summary, and 409 blocked-disable errors.
+  - UI copy states that `parentId` is organizational hierarchy only, permission scope remains exact `departmentId`, parent departments do not automatically include child departments, disable does not cascade, and history is not deleted.
+- AccountManagement linkage evidence:
+  - AccountManagement create-user department binding uses an ACTIVE department selector.
+  - AccountManagement user department change uses an ACTIVE department selector.
+  - AccountManagement `scopeType=DEPARTMENT` role assignment uses an ACTIVE department selector.
+  - ARCHIVED departments are filtered out defensively and are not selectable.
+  - Backend account-management API contract was not changed.
+  - The selector linkage is not recorded as Department CRUD.
+- Local backend validation evidence from Step 37F:
+  - `corepack pnpm --filter @research-ip/api test -- department-management` passed.
+  - Result: 5 files passed, 25 tests passed.
+  - `corepack pnpm --filter @research-ip/api test` passed.
+  - Result: 64 files passed, 553 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm --filter @research-ip/api build` passed.
+  - `corepack pnpm exec eslint apps/api/src/department-management apps/api/src/app.module.ts` passed.
+- Local frontend validation evidence from Step 37F:
+  - `corepack pnpm --filter @research-ip/web test -- Department` passed.
+  - Result: 12 tests passed.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement` passed.
+  - Result: 19 tests passed.
+  - `corepack pnpm --filter @research-ip/web test -- api-client` passed.
+  - Result: 26 tests passed.
+  - `corepack pnpm --filter @research-ip/web test` passed.
+  - Result: 15 files passed, 231 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck` passed.
+  - `corepack pnpm --filter @research-ip/web build` passed with only a Vite large chunk warning.
+  - Step 37 scoped eslint on related frontend files passed.
+- Local dev server / browser-boundary evidence:
+  - Local web dev server became ready.
+  - `http://localhost:5173/` returned HTTP 200.
+  - Root HTML contained the app root element.
+  - The local dev server was cleaned up, with no remaining Vite processes recorded.
+  - Browser CRUD over a real backend was not performed because Step 37F did not read sensitive configuration, access a real database, execute seed/migration, or use production data.
+- Known unrelated validation failures:
+  - Root lint still fails on inherited unrelated issues:
+    - `apps/api/src/account-management/account-management.service.ts` unused `AccountUserRoleAssignmentRecord`.
+    - `apps/web/src/App.tsx` unused `LegacyDemoApp`.
+    - `prisma/seed-foundation.test.cjs` CommonJS `require()` and `__dirname` lint issues.
+  - These root lint issues are not Step 37 department-maintenance failures and were not fixed in Step 37G.
+- Archive execution evidence:
+  - Step 37G modified memory-bank archive records only.
+  - It did not modify backend source, frontend source, tests, schema, migration, seed, deployment files, production env, VPS files, or production data.
+  - This Step did not run tests, typecheck, build, migrations, seed, deployment, production writes, Step 36Fix-Sync, smoke-account disable, synthetic achievement archive, or business write path hardening.
+- Security evidence:
+  - No password, token, cookie, `.env`, `DATABASE_URL`, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - No VPS or production DB connection was made during Step 37G.
+  - No production write, deployment, migration, or seed was executed.
+- Deferred evidence:
+  - Production deploy and production Department maintenance acceptance remain deferred.
+  - Business write path ACTIVE department guard hardening remains deferred.
+  - Step 36Fix-Sync remains separate if local UI tightening still needs commit/push/deploy.
+  - P-001 / P-002 / P-003 smoke-account disable remains separate.
+  - `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]` archive / cleanup remains separate.
+  - Root lint unrelated failures remain separate.
+
+## 2026-06-25 Step 36K-Archive - Step 36 user / role / department / permission chain evidence
+
+- Purpose:
+  - Archive Step 36 as the Phase 2 user / role / department / permission-chain foundation closure.
+  - Preserve implementation, local validation, production manual smoke acceptance, Step 36Fix local validation, known issues, and deferred items.
+  - Keep this update documentation-only.
+- Final status:
+  - `DONE_WITH_DEFERRED_ITEMS: Step 36 user / role / department / permission chain completed with documented boundaries.`
+- Model / planning evidence:
+  - Step 36 confirmed target roles: researcher, secretary, auditor, admin.
+  - Step 36 clarified department binding, scoped access, role / permission / department acceptance matrix, and production-write prerequisites.
+  - Step 36A confirmed readiness gaps before implementation.
+  - Step 36B planned backend account-management API scope, permission strategy, audit strategy, transaction boundaries, and tests.
+  - Step 36C-0 confirmed `AuditActionType` did not include `USER_CREATE` and selected existing `CREATE + USER` to avoid a schema/migration expansion.
+- Backend implementation evidence:
+  - Account-management API implemented list, detail, create, disable, enable, role assign, role revoke, and department binding.
+  - Auth/session/local-account foundation remained in place.
+  - `system:config` is the account-management guard.
+  - Account-management audit entries use existing `CREATE` or `UPDATE` actions with `USER` target and masked metadata.
+  - No Step 36 schema/migration/seed change was introduced for account audit action handling.
+- Frontend implementation evidence:
+  - Account-management API client and types were added.
+  - Account-management UI supports user list, detail drawer, create user, disable / enable, role assign / revoke, and department change operations.
+  - Step 36E-4 local browser check confirmed `http://127.0.0.1:5173/` returned 200, no obvious console errors, and account-management entry was not visible without a `system:config` session.
+- Local test evidence before Step 36Fix:
+  - API account-management targeted tests passed.
+  - API typecheck passed.
+  - API full test suite passed.
+  - Web AccountManagement targeted tests passed.
+  - Web typecheck passed.
+  - Web full tests passed.
+  - Web build passed.
+- Step 36Fix local evidence:
+  - Modified frontend entry logic only in UI/test files.
+  - Permission codes used for tightening:
+    - `achievement:create`.
+    - `achievement:update_own`.
+    - `achievement:review_department`.
+    - `fee:manage_department`.
+  - Targeted tests passed:
+    - `corepack pnpm --filter @research-ip/web test -- Achievements`.
+    - `corepack pnpm --filter @research-ip/web test -- Fees`.
+    - `corepack pnpm --filter @research-ip/web test -- WorkflowTasks`.
+    - `corepack pnpm --filter @research-ip/web test -- App`.
+  - Web typecheck passed:
+    - `corepack pnpm --filter @research-ip/web typecheck`.
+  - Web full tests passed:
+    - `corepack pnpm --filter @research-ip/web test`.
+    - Result: 14 test files passed, 204 tests passed.
+  - Web build passed:
+    - `corepack pnpm --filter @research-ip/web build`.
+    - Vite reported a chunk-size warning only; build completed.
+  - Step 36Fix was accepted locally only and is not evidence that production UI has been updated unless separately synced/deployed.
+- Production deployment / route-boundary evidence:
+  - User reported Step 36 code was merged to GitHub main and production was manually deployed / synchronized.
+  - User reported production readonly smoke:
+    - `GET https://production.wangyimin.cn/` returned 200.
+    - `GET https://production.wangyimin.cn/api/health` returned ok.
+    - Unauthenticated `GET https://production.wangyimin.cn/api/account-management/users` returned 401.
+  - This confirms the account-management backend route existed in production and was protected at that time.
+- Production manual smoke account evidence:
+  - P-001 / `smoke-user-1` was created manually by the user as a researcher smoke account.
+  - P-002 / `research_secretary` was created manually by the user as a research secretary smoke account.
+  - P-003 / `auditor` was created manually by the user as an auditor smoke account.
+  - These are smoke accounts, not real business users.
+  - Passwords, tokens, cookies, and connection strings were not provided to or recorded by Codex.
+- Production researcher evidence:
+  - P-001 could sign in.
+  - P-001 had researcher identity.
+  - P-001 could create and update a synthetic achievement draft marked `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]`.
+  - Initial submit attempt was blocked because there was no active same-department research secretary available for review assignment.
+  - After P-002 existed as a same-department active research secretary, P-001 submit succeeded.
+  - Submitted achievement moved to pending department review / subsequent workflow state.
+  - Researcher acceptance remains minimum role-chain smoke, not full product acceptance.
+- Production secretary evidence:
+  - P-002 could sign in as research secretary.
+  - P-002 could see the same-department workflow task generated by P-001 submit.
+  - P-002 could approve the workflow task.
+  - Approval moved the synthetic achievement to pending archive.
+  - Archive was not executed in Step 36; complete approval closure is still deferred.
+- Production auditor evidence:
+  - P-003 could sign in as auditor.
+  - P-003 could read masked audit logs.
+  - Auditor should not have achievement write, fee write, approval processing, or account-management capabilities.
+  - Some frontend entry tightening for auditor was handled locally in Step 36Fix and still requires production sync/deploy before production UI reflects it.
+- Production forbidden / boundary observations:
+  - Researcher should not have account-management, fee write/payment-state, approval-processing, settings/config CRUD, or audit-log read capabilities.
+  - Secretary should not replace researcher or auditor acceptance.
+  - Admin should not be used as a long-term substitute for researcher / secretary / auditor role acceptance.
+  - Auditor is for masked audit-log review and control verification, not business data creation or approval.
+- Synthetic data evidence:
+  - Synthetic achievement marker: `[SYNTHETIC-PROD-ROLE-ACCEPTANCE]`.
+  - The synthetic achievement is not real business data.
+  - The synthetic achievement reached pending archive after secretary approval.
+  - Archive / retain / mark cleanup is deferred to a separate synthetic production data cleanup step.
+- Deferred evidence:
+  - Password reset / invite not implemented.
+  - Department CRUD not implemented.
+  - Real business user batch creation not complete.
+  - Fee write/payment-state not accepted and remains for Step 40 or later.
+  - Attachment upload/download/storage boundary not complete.
+  - Settings/config CRUD not complete.
+  - Monitoring / backup hardening not complete.
+  - Real business data import readiness not complete.
+  - Smoke account disable and synthetic achievement cleanup remain deferred.
+- Archive execution evidence:
+  - This Step 36K update modified memory-bank archive records only.
+  - It did not modify product source code, tests, schema, migration, seed, deployment files, production env, or VPS files.
+  - It did not run production writes, deployment, migration, seed, synthetic archive, or smoke-account disable.
+- Security evidence:
+  - No password, token, cookie, `.env`, `DATABASE_URL`, certificate, private key, credential secret, session secret, or full connection string was read or recorded.
+  - No VPS or production DB connection was made during Step 36K.
+
 ## 2026-06-24 Step 34 / Prompt 26 Archive - Phase 1 production cutover closure evidence
 
 - Purpose:

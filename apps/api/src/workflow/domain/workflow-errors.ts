@@ -64,6 +64,13 @@ export class DepartmentReviewerNotFoundError extends WorkflowDomainError {
   }
 }
 
+export class WorkflowDepartmentUnavailableError extends WorkflowDomainError {
+  constructor(readonly departmentId: string) {
+    super(`Workflow target department is archived or unavailable: ${departmentId}.`);
+    this.name = "WorkflowDepartmentUnavailableError";
+  }
+}
+
 export class WorkflowAccessDeniedError extends WorkflowDomainError {
   constructor(message = "Workflow access is denied.") {
     super(message);
