@@ -1435,7 +1435,7 @@ export const canMarkFeePaid = (record: Pick<FeeRecord, "payStatus">): boolean =>
 
 export const canManageDepartmentFees = (
   authUser: FeePermissionContext,
-): boolean => !authUser || authUser.permissionCodes.includes("fee:manage_department");
+): boolean => Boolean(authUser?.permissionCodes.includes("fee:manage_department"));
 
 export const shouldShowFeeDetailMarkPaidAction = (
   record: Pick<FeeRecord, "payStatus">,

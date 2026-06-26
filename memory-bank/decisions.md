@@ -1,5 +1,38 @@
 # Decisions
 
+## D111 - Step 44B keeps fee write hardening local and permission-scoped
+
+- Date: 2026-06-26.
+- Context: Step 44A confirmed the local fee/payment-state scope. Existing backend APIs already expose `POST /fees` and `POST /fees/:id/mark-paid`, with PayStatus limited to `PENDING`, `PAID`, `OVERDUE`, `WAIVED`, and `CANCELLED`. Step 44B needed local validation and hardening without expanding into production, voucher attachments, warnings API, finance approval, or additional state APIs.
+- Decision:
+  - Keep Step 44B limited to local create / mark-paid validation and test hardening.
+  - Reuse existing fee API and UI contracts.
+  - Require explicit `fee:manage_department` permission context for frontend fee create / mark-paid visibility.
+  - Treat missing frontend auth context as not authorized for fee write entries.
+  - Add service-level regression coverage so read-only fee users cannot trigger create or mark-paid service write paths.
+  - Do not add finance approval / review states.
+  - Do not add waive/cancel/archive API.
+  - Do not add voucher upload/download/storage.
+  - Do not add `/fees/warnings`.
+  - Do not run migration, seed, cleanup, production deploy, production smoke, production DB access, or production write.
+- Rationale:
+  - Step 44A identified the real current business surface as existing fee ledger create and mark-paid, not a broader finance workflow.
+  - Frontend write-entry visibility should not be permissive when auth context is unavailable.
+  - Service-level permission tests protect the write path even if controller routing is bypassed in future internal usage.
+  - Keeping the state model unchanged avoids schema/migration risk and avoids implying unconfirmed finance approval semantics.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS, 6 files / 56 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Fee`: PASS, 1 file / 37 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Consequences:
+  - Local fee write/payment-state behavior is better permission-hardened.
+  - Production acceptance is still not complete.
+  - Voucher attachments, warnings API, finance review, waive/cancel/archive APIs, production deploy/smoke, and Step 38 production acceptance remain deferred.
+  - Phase 2 remains incomplete.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration, seed, cleanup, deletion, batch cleanup, or sensitive-config access occurred.
+  - `local-prod-preview-proxy.cjs` remains an untracked local helper outside this decision.
+
 ## D110 - Local production-like regression becomes the pre-VPS verification path
 
 - Date: 2026-06-26.

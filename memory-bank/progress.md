@@ -1,5 +1,42 @@
 # Progress
 
+## 2026-06-26 Step 44B - Local fee create / mark-paid validation and transition hardening
+
+- Status: DONE as local implementation / validation hardening.
+- Result:
+  - `LOCAL_FEE_WRITE_PAYMENT_STATE_HARDENED_WITHOUT_PRODUCTION_ACCEPTANCE`.
+- Canonical state:
+  - Current local HEAD before this Step: `a14640e6a043a1ba4b95cc4d5538361242428dd7`.
+  - Step 44A completed local fee/payment-state scope confirmation and design.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - This Step is local validation / test hardening only and is not production acceptance.
+- Completed:
+  - Confirmed existing fee write scope remains limited to `POST /fees` and `POST /fees/:id/mark-paid`.
+  - Kept PayStatus scope to existing `PENDING`, `PAID`, `OVERDUE`, `WAIVED`, and `CANCELLED`.
+  - Hardened frontend fee write-entry visibility so missing auth context no longer grants create / mark-paid visibility by default.
+  - Added frontend regression coverage for missing auth context and `fee:manage_department` visibility.
+  - Added FeeService regression coverage that read-only fee users cannot call create or mark-paid service write paths.
+  - Confirmed service write denial stops before repository mutation and audit event recording.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS, 6 files / 56 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Fee`: PASS, 1 file / 37 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Boundary:
+  - No push.
+  - No VPS connection.
+  - No production DB access.
+  - No production write.
+  - No production deploy.
+  - No migration / seed / cleanup.
+  - No file deletion or batch cleanup.
+  - No voucher upload/download/storage.
+  - No `/fees/warnings`.
+  - No finance approval / review states.
+  - No waive/cancel/archive API.
+  - `local-prod-preview-proxy.cjs` remains untracked local helper and was not modified.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was read or recorded.
+
 ## 2026-06-26 Local production-like regression closure - Account management department binding fix
 
 - Status: DONE as local production-like regression / documentation closure.

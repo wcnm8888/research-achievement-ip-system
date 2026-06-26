@@ -4,6 +4,43 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 44B Archive - Local Fee Create / Mark-Paid Validation and Transition Hardening - 2026-06-26
+
+- Step identity:
+  - This is Step 44B.
+  - Step 44B is a local implementation / validation hardening step for existing fee create and mark-paid behavior.
+  - It is not production deploy, not production smoke, not production write acceptance, not production DB access, not VPS access, not migration/seed, not cleanup, and not Phase 2 completion.
+- Canonical state:
+  - Step 44A completed local fee/payment-state scope confirmation and design.
+  - Current local HEAD before Step 44B: `a14640e6a043a1ba4b95cc4d5538361242428dd7`.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - Local validation remains local evidence only and is not production acceptance.
+- Implementation scope completed:
+  - Reused existing API/UI contracts for `POST /fees` and `POST /fees/:id/mark-paid`.
+  - Did not add new payment review / finance approval states.
+  - Did not add waive/cancel/archive APIs.
+  - Did not add voucher attachment upload/download/storage.
+  - Did not add `/fees/warnings`.
+  - Tightened frontend fee write-entry visibility to require an explicit `fee:manage_department` permission context.
+  - Added frontend regression coverage for missing auth context and read-only fee permission.
+  - Added service-level regression coverage that read-only users cannot create fees or mark fees paid and do not reach repository mutation or audit writes.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- Fee`: PASS.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Remaining / deferred:
+  - Production deploy and production smoke remain deferred.
+  - Step 38 production acceptance remains deferred.
+  - Voucher attachments remain deferred.
+  - Warnings API remains deferred.
+  - Finance review / approval remains deferred.
+  - Waive/cancel/archive API remains deferred unless separately confirmed.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration, seed, cleanup, deletion, or batch cleanup.
+  - `local-prod-preview-proxy.cjs` remains outside Step 44B.
+  - No sensitive configuration or credentials were read or recorded.
+
 ## Current Local Production-like Regression Closure - Account Management Department Binding Fix - 2026-06-26
 
 - Step identity:

@@ -217,6 +217,22 @@ describe("FeeService.getFee", () => {
 });
 
 describe("FeeService.createFee", () => {
+  it("denies create when the user only has fee read permission", async () => {
+    const { auditService, repository, service } = createService();
+
+    await expect(
+      service.createFee(makeContext([PermissionCode.feeReadDepartment]), {
+        achievementId: ids.achievement,
+        feeType: FeeTypeCode.patentAnnual,
+        amount: 1200.5,
+        dueDate: "2026-07-01",
+      }),
+    ).rejects.toBeInstanceOf(FeePermissionDeniedError);
+    expect(repository.findAchievementParentByIdWhere).not.toHaveBeenCalled();
+    expect(repository.createInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
   it("uses achievement parent facts, parent department, and shared audit transaction", async () => {
     const { auditService, policyQueryFactory, prisma, repository, service } = createService();
     const context = makeContext([PermissionCode.feeManageDepartment]);
@@ -337,6 +353,17 @@ describe("FeeService.createFee", () => {
 });
 
 describe("FeeService.markFeePaid", () => {
+  it("denies mark-paid when the user only has fee read permission", async () => {
+    const { auditService, repository, service } = createService();
+
+    await expect(
+      service.markFeePaid(makeContext([PermissionCode.feeReadDepartment]), ids.feeRecord, {}),
+    ).rejects.toBeInstanceOf(FeePermissionDeniedError);
+    expect(repository.findStateByIdWhereInTransaction).not.toHaveBeenCalled();
+    expect(repository.transitionPayStatusInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
   it("marks pending fees as paid in the shared audit transaction", async () => {
     const { auditService, policyQueryFactory, repository, service } = createService();
     const context = makeContext([PermissionCode.feeManageDepartment]);

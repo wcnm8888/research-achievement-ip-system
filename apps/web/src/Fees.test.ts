@@ -395,6 +395,7 @@ describe("mark-paid visibility", () => {
         permissionCodes: ["fee:read_department"],
       }),
     ).toBe(false);
+    expect(canManageDepartmentFees(undefined)).toBe(false);
     expect(
       shouldShowFeeDetailMarkPaidAction(baseFee, "management", false),
     ).toBe(false);

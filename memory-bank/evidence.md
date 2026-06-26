@@ -1,5 +1,48 @@
 # Evidence
 
+## 2026-06-26 Step 44B - Local fee write / payment-state validation evidence
+
+- Purpose:
+  - Validate and harden the existing local fee create / mark-paid path after Step 44A design confirmation.
+  - Keep validation local and avoid representing it as production acceptance.
+- Code-change evidence:
+  - Changed `apps/web/src/Fees.tsx`.
+  - Changed `apps/web/src/Fees.test.ts`.
+  - Changed `apps/api/src/fees/fee.service.spec.ts`.
+  - Changed memory-bank records for this Step.
+- Implemented behavior:
+  - Frontend fee write-entry visibility now requires an explicit `fee:manage_department` permission context.
+  - Missing `authUser` no longer defaults to fee-management capability.
+  - Frontend tests assert manage permission is required and read-only / missing context is not enough.
+  - FeeService tests assert read-only fee users cannot call create or mark-paid service write paths.
+  - FeeService read-only denial is verified before repository mutation and before audit event recording.
+- Existing behavior revalidated:
+  - `POST /fees` remains the create-fee contract.
+  - `POST /fees/:id/mark-paid` remains the only mark-paid contract.
+  - `PENDING` and `OVERDUE` can transition to `PAID`.
+  - `PAID`, `WAIVED`, and `CANCELLED` remain terminal for mark-paid.
+  - Archived/unavailable achievement department fee creation remains rejected by existing service coverage.
+  - Duplicate fee conflict and missing/out-of-scope achievement coverage remain in existing fee tests.
+  - Read-only users are blocked from HTTP fee write routes by existing controller/AppModule tests.
+- Automated verification evidence:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS, 6 test files / 56 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Fee`: PASS, 1 test file / 37 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with existing Vite chunk-size warning.
+- Boundary evidence:
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access was made.
+  - No production write or production deploy was executed.
+  - No migration, seed, cleanup, file deletion, or batch cleanup was executed.
+  - No voucher upload/download/storage was implemented.
+  - No `/fees/warnings` was implemented.
+  - No finance approval / review state was added.
+  - No waive/cancel/archive API was implemented.
+  - `local-prod-preview-proxy.cjs` was not modified or committed.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-26 Local production-like regression closure evidence
 
 - Purpose:
