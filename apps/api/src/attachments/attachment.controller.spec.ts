@@ -41,6 +41,11 @@ const metadata = {
   relationType: AttachmentRelationTypeCode.achievement,
   relationId: ids.achievement,
   fileName: "paper.pdf",
+  mimeType: "application/pdf",
+  sizeBytes: 24,
+  storageProvider: "LOCAL_DISK",
+  originalName: "paper.pdf",
+  storedName: "paper.pdf",
   version: 1,
   uploaderId: ids.user,
   secretLevel: SecretLevelCode.internal,
@@ -58,7 +63,9 @@ const createServiceMock = (): ServiceMock => ({
     id: ids.attachment,
     fileName: "paper.pdf",
     version: 1,
-    body: "fake body",
+    mimeType: "application/pdf",
+    sizeBytes: 9,
+    body: Buffer.from("fake body"),
   }),
 });
 
@@ -116,7 +123,10 @@ describe("AttachmentController", () => {
     await withAttachmentApp(null, async (app) => {
       await request(app.getHttpServer() as Server)
         .post(`/achievements/${ids.achievement}/attachments`)
-        .send({ fileName: "paper.pdf" })
+        .attach("file", pdfBuffer(), {
+          filename: "paper.pdf",
+          contentType: "application/pdf",
+        })
         .expect(401);
     });
   });
@@ -125,7 +135,10 @@ describe("AttachmentController", () => {
     await withAttachmentApp([], async (app) => {
       await request(app.getHttpServer() as Server)
         .post(`/achievements/${ids.achievement}/attachments`)
-        .send({ fileName: "paper.pdf" })
+        .attach("file", pdfBuffer(), {
+          filename: "paper.pdf",
+          contentType: "application/pdf",
+        })
         .expect(403);
     });
   });
@@ -136,10 +149,10 @@ describe("AttachmentController", () => {
       async (app, service, context) => {
         await request(app.getHttpServer() as Server)
           .post(`/achievements/${ids.achievement}/attachments`)
-          .send({
-            fileName: "paper.pdf",
-            secretLevel: SecretLevelCode.internal,
-            objectBody: "fake body",
+          .field("secretLevel", SecretLevelCode.internal)
+          .attach("file", pdfBuffer(), {
+            filename: "paper.pdf",
+            contentType: "application/pdf",
           })
           .expect(201)
           .expect((response) => {
@@ -147,6 +160,9 @@ describe("AttachmentController", () => {
               id: ids.attachment,
               relationId: ids.achievement,
               fileName: "paper.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 24,
+              originalName: "paper.pdf",
               version: 1,
             });
             expect(response.body).not.toHaveProperty("checksum");
@@ -156,11 +172,73 @@ describe("AttachmentController", () => {
         expect(service.createAchievementAttachmentForUser).toHaveBeenCalledWith(
           context,
           ids.achievement,
-          {
+          expect.objectContaining({
             fileName: "paper.pdf",
             secretLevel: SecretLevelCode.internal,
-            objectBody: "fake body",
-          },
+            mimeType: "application/pdf",
+            sizeBytes: 24,
+            originalName: "paper.pdf",
+            storedName: "paper.pdf",
+            objectBody: expect.any(Buffer),
+          }),
+        );
+      },
+    );
+  });
+
+  it("rejects multipart uploads without a file", async () => {
+    await withAttachmentApp([PermissionCode.achievementUpdateOwn], async (app) => {
+      await request(app.getHttpServer() as Server)
+        .post(`/achievements/${ids.achievement}/attachments`)
+        .field("secretLevel", SecretLevelCode.internal)
+        .expect(400);
+    });
+  });
+
+  it("rejects unsupported attachment file types", async () => {
+    await withAttachmentApp([PermissionCode.achievementUpdateOwn], async (app) => {
+      await request(app.getHttpServer() as Server)
+        .post(`/achievements/${ids.achievement}/attachments`)
+        .attach("file", Buffer.from("<html></html>"), {
+          filename: "bad.html",
+          contentType: "text/html",
+        })
+        .expect(415);
+    });
+  });
+
+  it("rejects oversized attachment files", async () => {
+    await withAttachmentApp([PermissionCode.achievementUpdateOwn], async (app) => {
+      await request(app.getHttpServer() as Server)
+        .post(`/achievements/${ids.achievement}/attachments`)
+        .attach("file", Buffer.alloc(10 * 1024 * 1024 + 1), {
+          filename: "too-large.pdf",
+          contentType: "application/pdf",
+        })
+        .expect(413);
+    });
+  });
+
+  it("sanitizes path traversal filenames before service upload", async () => {
+    await withAttachmentApp(
+      [PermissionCode.achievementUpdateOwn],
+      async (app, service) => {
+        await request(app.getHttpServer() as Server)
+          .post(`/achievements/${ids.achievement}/attachments`)
+          .attach("file", pdfBuffer(), {
+            filename: "../paper.pdf",
+            contentType: "application/pdf",
+          })
+          .expect(201);
+
+        expect(service.createAchievementAttachmentForUser).toHaveBeenCalledWith(
+          expect.anything(),
+          ids.achievement,
+          expect.objectContaining({
+            fileName: "paper.pdf",
+            originalName: "paper.pdf",
+            storedName: "paper.pdf",
+          }),
         );
       },
     );
@@ -170,10 +248,11 @@ describe("AttachmentController", () => {
     await withAttachmentApp([PermissionCode.achievementUpdateOwn], async (app) => {
       await request(app.getHttpServer() as Server)
         .post(`/achievements/${ids.achievement}/attachments`)
-        .send({
-          fileName: "paper.pdf",
-          relationId: ids.achievement,
-          uploaderId: ids.user,
+        .field("relationId", ids.achievement)
+        .field("uploaderId", ids.user)
+        .attach("file", pdfBuffer(), {
+          filename: "paper.pdf",
+          contentType: "application/pdf",
         })
         .expect(400);
     });
@@ -232,12 +311,12 @@ describe("AttachmentController", () => {
           .get(`/achievements/${ids.achievement}/attachments/${ids.attachment}/download`)
           .expect(200)
           .expect((response) => {
-            expect(response.body).toEqual({
-              id: ids.attachment,
-              fileName: "paper.pdf",
-              version: 1,
-              body: "fake body",
-            });
+            expect(response.headers["content-type"]).toContain("application/pdf");
+            expect(response.headers["content-length"]).toBe("9");
+            expect(response.headers["content-disposition"]).toBe(
+              'attachment; filename="paper.pdf"',
+            );
+            expect(Buffer.from(response.body).toString("utf8")).toBe("fake body");
           });
 
         expect(service.downloadAchievementAttachment).toHaveBeenCalledWith(
@@ -263,7 +342,10 @@ describe("AttachmentController", () => {
         );
         await request(app.getHttpServer() as Server)
           .post(`/achievements/${ids.achievement}/attachments`)
-          .send({ fileName: "paper.pdf" })
+          .attach("file", pdfBuffer(), {
+            filename: "paper.pdf",
+            contentType: "application/pdf",
+          })
           .expect(409);
 
         service.listAchievementMetadata.mockRejectedValueOnce(
@@ -302,3 +384,5 @@ describe("AttachmentController", () => {
     });
   });
 });
+
+const pdfBuffer = (): Buffer => Buffer.from("%PDF-1.7 local test file");

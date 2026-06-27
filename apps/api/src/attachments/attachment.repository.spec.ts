@@ -41,6 +41,11 @@ const makeRow = () => ({
   fileName: "paper.pdf",
   [objectKeyField]:
     "attachments/ACHIEVEMENT/30000000-0000-4000-8000-000000000001/object/v1/paper.pdf",
+  mimeType: "application/pdf",
+  sizeBytes: 128,
+  storageProvider: "LOCAL_DISK",
+  originalName: "paper.pdf",
+  storedName: "paper.pdf",
   version: 1,
   uploaderId: ids.uploader,
   secretLevel: SecretLevelCode.internal,
@@ -123,6 +128,11 @@ describe("AttachmentRepository.create", () => {
       uploaderId: ids.uploader,
       secretLevel: SecretLevelCode.internal,
       checksum: "fake-digest",
+      mimeType: "application/pdf",
+      sizeBytes: 128,
+      storageProvider: "LOCAL_DISK",
+      originalName: "paper.pdf",
+      storedName: "paper.pdf",
       createdAt,
     });
 
@@ -132,6 +142,11 @@ describe("AttachmentRepository.create", () => {
         relationType: AttachmentRelationTypeCode.achievement,
         relationId: ids.achievement,
         fileName: "paper.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 128,
+        storageProvider: "LOCAL_DISK",
+        originalName: "paper.pdf",
+        storedName: "paper.pdf",
         version: 1,
         uploaderId: ids.uploader,
         secretLevel: SecretLevelCode.internal,
@@ -146,9 +161,14 @@ describe("AttachmentRepository.create", () => {
     expect(result).toEqual(
       expect.objectContaining({
         id: ids.attachment,
-        objectKey:
-          "attachments/ACHIEVEMENT/30000000-0000-4000-8000-000000000001/object/v1/paper.pdf",
-      }),
+      objectKey:
+        "attachments/ACHIEVEMENT/30000000-0000-4000-8000-000000000001/object/v1/paper.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 128,
+      storageProvider: "LOCAL_DISK",
+      originalName: "paper.pdf",
+      storedName: "paper.pdf",
+    }),
     );
   });
 
@@ -172,6 +192,11 @@ describe("AttachmentRepository.create", () => {
         relationType: AttachmentRelationTypeCode.achievement,
         relationId: ids.achievement,
         fileName: "paper.pdf",
+        mimeType: null,
+        sizeBytes: null,
+        storageProvider: "LOCAL_DISK",
+        originalName: null,
+        storedName: null,
         version: 2,
         uploaderId: ids.uploader,
         secretLevel: SecretLevelCode.secret,

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   BadGatewayException,
   Body,
   ConflictException,
@@ -9,13 +10,20 @@ import {
   NotFoundException,
   Param,
   ParseUUIDPipe,
+  PayloadTooLargeException,
   Post,
   Query,
+  Res,
+  StreamableFile,
+  UnsupportedMediaTypeException,
+  UploadedFile,
   UnprocessableEntityException,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { CurrentUser } from "../authorization/decorators/current-user.decorator";
 import { RequirePermissions } from "../authorization/decorators/require-permissions.decorator";
@@ -33,6 +41,20 @@ import {
 } from "./domain/attachment-errors";
 import { AttachmentListQueryDto } from "./dto/attachment-list-query.dto";
 import { UploadAchievementAttachmentDto } from "./dto/upload-achievement-attachment.dto";
+import { toSafeFileName } from "./domain/storage-key";
+
+const attachmentMaxBytes = 10 * 1024 * 1024;
+
+type UploadedAttachmentFile = {
+  originalname: string;
+  mimetype: string;
+  size: number;
+  buffer?: Buffer;
+};
+
+type HeaderResponse = {
+  setHeader(name: string, value: string | number): void;
+};
 
 const attachmentValidationOptions = {
   transform: true,
@@ -61,16 +83,22 @@ export class AttachmentController {
 
   @Post()
   @RequirePermissions(PermissionCode.achievementUpdateOwn)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: { fileSize: attachmentMaxBytes },
+    }),
+  )
   async uploadAchievementAttachment(
     @CurrentUser() currentUser: UserContext,
     @Param("achievementId", new ParseUUIDPipe({ version: "4" })) achievementId: string,
     @Body(uploadAttachmentValidationPipe) dto: UploadAchievementAttachmentDto,
+    @UploadedFile() file?: UploadedAttachmentFile,
   ) {
     try {
       return await this.attachmentService.createAchievementAttachmentForUser(
         currentUser,
         achievementId,
-        dto,
+        toAchievementAttachmentUploadInput(dto, file),
       );
     } catch (error) {
       throw mapAttachmentServiceError(error);
@@ -119,20 +147,132 @@ export class AttachmentController {
     @CurrentUser() currentUser: UserContext,
     @Param("achievementId", new ParseUUIDPipe({ version: "4" })) achievementId: string,
     @Param("attachmentId", new ParseUUIDPipe({ version: "4" })) attachmentId: string,
-  ) {
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ): Promise<StreamableFile> {
     try {
-      return await this.attachmentService.downloadAchievementAttachment(
+      const download = await this.attachmentService.downloadAchievementAttachment(
         currentUser,
         achievementId,
         attachmentId,
       );
+      const body = Buffer.from(download.body ?? []);
+
+      response.setHeader("Content-Type", download.mimeType ?? "application/octet-stream");
+      response.setHeader("Content-Length", body.byteLength);
+      response.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${toContentDispositionFileName(download.fileName)}"`,
+      );
+
+      return new StreamableFile(body);
     } catch (error) {
       throw mapAttachmentServiceError(error);
     }
   }
 }
 
+const toAchievementAttachmentUploadInput = (
+  dto: UploadAchievementAttachmentDto,
+  file?: UploadedAttachmentFile,
+) => {
+  if (!file?.buffer) {
+    throw new BadRequestException("Attachment file is required.");
+  }
+
+  if (file.size > attachmentMaxBytes) {
+    throw new PayloadTooLargeException("Attachment file is too large.");
+  }
+
+  if (!isAllowedAttachmentFile(file.originalname, file.mimetype, file.buffer)) {
+    throw new UnsupportedMediaTypeException("Attachment file type is not allowed.");
+  }
+
+  const originalName = toDisplayFileName(file.originalname);
+  const fileName = toDisplayFileName(dto.displayName ?? originalName);
+
+  return {
+    fileName,
+    secretLevel: dto.secretLevel,
+    checksum: dto.checksum,
+    objectBody: file.buffer,
+    mimeType: file.mimetype,
+    sizeBytes: file.size,
+    originalName,
+    storedName: toSafeFileName(fileName),
+  };
+};
+
+const allowedMimeTypes = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+
+const allowedExtensions = new Set([".pdf", ".png", ".jpg", ".jpeg", ".doc", ".docx", ".xls", ".xlsx"]);
+
+const isAllowedAttachmentFile = (
+  originalName: string,
+  mimeType: string,
+  body: Buffer,
+): boolean => {
+  const extension = getFileExtension(originalName);
+
+  if (!allowedExtensions.has(extension) || !allowedMimeTypes.has(mimeType)) {
+    return false;
+  }
+
+  if (extension === ".pdf") {
+    return body.subarray(0, 4).toString("ascii") === "%PDF";
+  }
+
+  if (extension === ".png") {
+    return body.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+
+  if (extension === ".jpg" || extension === ".jpeg") {
+    return body[0] === 0xff && body[1] === 0xd8 && body[2] === 0xff;
+  }
+
+  if (extension === ".docx" || extension === ".xlsx") {
+    return body.subarray(0, 2).toString("ascii") === "PK";
+  }
+
+  return extension === ".doc" || extension === ".xls";
+};
+
+const getFileExtension = (fileName: string): string => {
+  const safeName = toDisplayFileName(fileName);
+  const dotIndex = safeName.lastIndexOf(".");
+
+  return dotIndex >= 0 ? safeName.slice(dotIndex).toLowerCase() : "";
+};
+
+const toDisplayFileName = (fileName: string): string => {
+  const safeName = toSafeFileName(fileName);
+
+  if (!safeName.includes(".")) {
+    return safeName;
+  }
+
+  return safeName;
+};
+
+const toContentDispositionFileName = (fileName: string): string =>
+  toSafeFileName(fileName).replace(/["\\]/g, "-");
+
 const mapAttachmentServiceError = (error: unknown): Error => {
+  if (error instanceof BadRequestException || error instanceof UnsupportedMediaTypeException) {
+    return error;
+  }
+
+  if (isMulterFileSizeError(error)) {
+    return new PayloadTooLargeException("Attachment file is too large.");
+  }
+
   if (error instanceof AttachmentAccessDeniedError) {
     return new ForbiddenException(error.message);
   }
@@ -158,3 +298,6 @@ const mapAttachmentServiceError = (error: unknown): Error => {
 
   return error instanceof Error ? error : new Error("Unknown attachment service error.");
 };
+
+const isMulterFileSizeError = (error: unknown): error is { code: "LIMIT_FILE_SIZE" } =>
+  Boolean(error && typeof error === "object" && (error as { code?: unknown }).code === "LIMIT_FILE_SIZE");

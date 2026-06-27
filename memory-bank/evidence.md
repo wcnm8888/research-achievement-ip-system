@@ -1,5 +1,113 @@
 # Evidence
 
+## 2026-06-27 Step 45C-2R - Attachment backend review and commit gate evidence
+
+- Purpose:
+  - Review the Step 45C-2 attachment backend implementation and Step 45C-2Fix audit enum typecheck unblock before local commit.
+  - Keep the gate local and avoid production access, migration execution, seed, Web UI, push, deploy, cleanup, or deletion.
+- Diff review evidence:
+  - Attachment API implements multipart upload, local disk storage, metadata propagation, and download response headers.
+  - Local storage adapter protects against path traversal and resolves the default local artifact root through the workspace root.
+  - Audit mapper uses an explicit domain-to-Prisma action mapping; `WAIVE_FEE` and `CANCEL_FEE` persist as `UPDATE` until a future schema/migration Step expands `AuditActionType`.
+  - Backend tests cover attachment controller/app-module/service/repository/storage behavior and audit action mapping.
+  - Tracked diff check found no Prisma schema/migration, Web UI, seed, deploy, Docker, or CI changes.
+- Automated verification evidence:
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- audit`: PASS, 3 files / 17 tests.
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS, 6 files / 54 tests.
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS, 6 files / 70 tests.
+  - `git diff --check`: PASS with line-ending warnings only.
+- Boundary evidence:
+  - No migration was executed.
+  - No seed was executed.
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access or production write was made.
+  - No Web UI, deploy, Docker, CI, cleanup, deletion, or batch cleanup change was made.
+  - `.local-step44h/`, `local-prod-preview-proxy.cjs`, and local test artifacts remained unstaged and outside this gate.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
+## 2026-06-27 Step 45C-2Fix - Audit action enum typecheck unblock evidence
+
+- Purpose:
+  - Unblock local API typecheck after Step 45C-2 by fixing only the audit action enum / Prisma enum type mismatch.
+  - Keep the Step narrow and avoid attachment feature expansion, schema changes, migration execution, seed, Web UI, and production access.
+- Root cause:
+  - `AuditActionCode` includes `WAIVE_FEE` and `CANCEL_FEE`.
+  - Current generated Prisma `AuditActionType` does not include those values.
+  - `apps/api/src/audit/domain/audit-prisma.mapper.ts` assigned domain action values directly into Prisma create/where inputs, causing `tsc` to reject the broader domain union.
+- Code-change evidence:
+  - Changed `apps/api/src/audit/domain/audit-prisma.mapper.ts`.
+  - Changed `apps/api/src/audit/audit.repository.spec.ts`.
+  - Changed memory-bank records for this Step.
+- Implemented behavior:
+  - Added a complete `Record<AuditActionCode, AuditActionType>` persisted-action map.
+  - Existing Prisma enum values map one-to-one.
+  - `WAIVE_FEE` and `CANCEL_FEE` map to persisted `UPDATE` for the current no-schema-change local phase.
+  - Fee audit summaries still preserve the domain `action` value inside the audit JSON payload.
+- Automated verification evidence:
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- audit`: PASS, 3 files / 17 tests.
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS, 6 files / 70 tests.
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS, 6 files / 54 tests.
+  - `git diff --check`: PASS with line-ending warnings only.
+- Boundary evidence:
+  - No Prisma schema or migration file was changed.
+  - No migration was executed.
+  - No seed was executed.
+  - No attachment implementation logic was expanded.
+  - No Web UI, deploy, Docker, CI, cleanup, deletion, or batch cleanup change was made.
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access or production write was made.
+  - `.local-step44h/`, `local-prod-preview-proxy.cjs`, and ignored/local test artifacts were not modified, cleaned, staged, or committed.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
+## 2026-06-27 Step 45C-2 - Attachment local backend implementation evidence
+
+- Purpose:
+  - Implement the local backend-only attachment upload/download/storage scope authorized after the schema metadata delta.
+  - Keep implementation local and avoid production, migration, seed, Web UI, archive/delete, virus scan, and object-storage scope.
+- Code-change evidence:
+  - Changed `apps/api/src/attachments/attachment.controller.ts`.
+  - Changed `apps/api/src/attachments/attachment.service.ts`.
+  - Changed `apps/api/src/attachments/attachment.repository.ts`.
+  - Changed `apps/api/src/attachments/attachments.module.ts`.
+  - Changed attachment domain mapper/types and DTO files under `apps/api/src/attachments/domain/` and `apps/api/src/attachments/dto/`.
+  - Changed attachment storage adapter contract and fake adapter.
+  - Added `apps/api/src/attachments/storage/local-attachment-storage.adapter.ts`.
+  - Added `apps/api/src/attachments/storage/local-attachment-storage.adapter.spec.ts`.
+  - Updated attachment backend tests for controller, app-module, service, repository, and storage adapters.
+- Implemented behavior:
+  - `POST /achievements/:achievementId/attachments` now accepts multipart `file` uploads at the local API boundary.
+  - Upload validation rejects missing files, unsupported file types, oversized files, and unsafe filenames.
+  - Allowed file scope is limited to PDF, PNG, JPEG, DOC, DOCX, XLS, and XLSX with basic signature checks where practical.
+  - Local disk storage writes and reads attachment bytes using a safe object-key resolver.
+  - Download returns bytes through `StreamableFile` and sets `Content-Type`, `Content-Length`, and `Content-Disposition`.
+  - Metadata responses include safe storage metadata fields needed by later UI work.
+  - Audit tests assert sensitive storage facts such as object key, checksum, and body are not emitted in audit summaries.
+- Automated verification evidence:
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS, 6 files / 54 tests.
+  - `git diff --check`: PASS with line-ending warnings only.
+  - `corepack pnpm --filter @research-ip/api typecheck`: FAIL only on existing non-Step audit Prisma enum mismatch in `src/audit/domain/audit-prisma.mapper.ts` for `WAIVE_FEE`; attachment-specific typecheck findings from the first run were fixed.
+- Boundary evidence:
+  - No migration was executed.
+  - No seed was executed.
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access or production write was made.
+  - No Web UI, archive/delete, virus scan, object storage, seed, deploy, or CI change was made.
+  - No cleanup, deletion, or batch cleanup was executed.
+  - `.local-step44h/` and `local-prod-preview-proxy.cjs` were not modified or committed.
+  - Local test files generated under `apps/api/deploy/artifacts/test-attachment-storage/` remain untracked and unstaged; they were not cleaned up because this Step forbids cleanup/deletion.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-27 Step 45C-1 - Attachment schema delta patch evidence
 
 - Purpose:

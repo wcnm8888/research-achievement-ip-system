@@ -7,7 +7,7 @@ import { AttachmentController } from "./attachment.controller";
 import { AttachmentRepository } from "./attachment.repository";
 import { AttachmentService } from "./attachment.service";
 import { ATTACHMENT_STORAGE_ADAPTER } from "./storage/attachment-storage.provider";
-import { FakeAttachmentStorageAdapter } from "./storage/fake-attachment-storage.adapter";
+import { LocalAttachmentStorageAdapter } from "./storage/local-attachment-storage.adapter";
 
 @Module({
   imports: [DatabaseModule, AuthorizationModule, IdentityModule, AuditModule],
@@ -17,7 +17,7 @@ import { FakeAttachmentStorageAdapter } from "./storage/fake-attachment-storage.
     AttachmentService,
     {
       provide: ATTACHMENT_STORAGE_ADAPTER,
-      useClass: FakeAttachmentStorageAdapter,
+      useClass: LocalAttachmentStorageAdapter,
     },
   ],
   exports: [AttachmentService],

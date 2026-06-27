@@ -40,7 +40,7 @@ export class AttachmentRepository {
       data: toAttachmentCreateData(input),
     });
 
-    return toAttachmentRecord(row as Parameters<typeof toAttachmentRecord>[0]);
+    return toAttachmentRecord(row as unknown as Parameters<typeof toAttachmentRecord>[0]);
   }
 
   async findLatestVersion(input: AttachmentLatestVersionInput): Promise<number | null> {
@@ -74,7 +74,7 @@ export class AttachmentRepository {
     });
 
     return rows.map((row) =>
-      toAttachmentRecord(row as Parameters<typeof toAttachmentRecord>[0]),
+      toAttachmentRecord(row as unknown as Parameters<typeof toAttachmentRecord>[0]),
     );
   }
 
@@ -83,7 +83,9 @@ export class AttachmentRepository {
       where: { id: attachmentId },
     });
 
-    return row ? toAttachmentRecord(row as Parameters<typeof toAttachmentRecord>[0]) : null;
+    return row
+      ? toAttachmentRecord(row as unknown as Parameters<typeof toAttachmentRecord>[0])
+      : null;
   }
 
   async findAchievementParentById(

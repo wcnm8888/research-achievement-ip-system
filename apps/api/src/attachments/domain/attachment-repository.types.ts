@@ -9,6 +9,11 @@ export type AttachmentRecord = {
   relationId: string;
   fileName: string;
   objectKey: string;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  storageProvider: string | null;
+  originalName: string | null;
+  storedName: string | null;
   version: number;
   uploaderId: string;
   secretLevel: SecretLevelCode;

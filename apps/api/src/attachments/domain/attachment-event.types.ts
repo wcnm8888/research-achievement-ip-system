@@ -6,6 +6,11 @@ export type CreateAttachmentMetadataInput = {
   relationId: string;
   fileName: string;
   objectKey: string;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  storageProvider?: string | null;
+  originalName?: string | null;
+  storedName?: string | null;
   version: number;
   uploaderId: string;
   secretLevel: SecretLevelCode;
@@ -20,5 +25,9 @@ export type CreateAchievementAttachmentInput = {
   secretLevel?: SecretLevelCode;
   checksum?: string | null;
   objectBody?: string | Uint8Array | null;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  originalName?: string | null;
+  storedName?: string | null;
   traceId?: string | null;
 };

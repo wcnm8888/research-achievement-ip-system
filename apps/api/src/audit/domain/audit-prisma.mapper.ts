@@ -1,5 +1,6 @@
-import { Prisma } from "@prisma/client";
+import { AuditActionType, Prisma } from "@prisma/client";
 import { AuditLogLike } from "../../authorization/policy/audit-redactor.service";
+import { AuditActionCode } from "./audit-action-code";
 import { CreateAuditEventInput } from "./audit-event.types";
 import { AuditFindManyInput, AuditLogRecord } from "./audit-repository.types";
 
@@ -8,7 +9,7 @@ export const toAuditLogCreateData = (
 ): Prisma.AuditLogUncheckedCreateInput => ({
   actorUserId: input.actor?.userId ?? null,
   actorDepartmentId: input.actor?.departmentId ?? null,
-  action: input.action,
+  action: toPersistedAuditAction(input.action),
   targetType: input.target.type,
   targetId: input.target.id ?? null,
   targetDepartmentId: input.target.departmentId ?? null,
@@ -26,7 +27,7 @@ export const toAuditFindManyWhere = (
   ...(input.actorDepartmentId
     ? { actorDepartmentId: input.actorDepartmentId }
     : {}),
-  ...(input.action ? { action: input.action } : {}),
+  ...(input.action ? { action: toPersistedAuditAction(input.action) } : {}),
   ...(input.targetType ? { targetType: input.targetType } : {}),
   ...(input.targetId ? { targetId: input.targetId } : {}),
   ...(input.targetDepartmentId
@@ -73,3 +74,29 @@ export const normalizeAuditJsonValue = (
 
   return value;
 };
+
+const persistedAuditActionByDomainAction = {
+  [AuditActionCode.create]: AuditActionType.CREATE,
+  [AuditActionCode.update]: AuditActionType.UPDATE,
+  [AuditActionCode.submit]: AuditActionType.SUBMIT,
+  [AuditActionCode.approve]: AuditActionType.APPROVE,
+  [AuditActionCode.reject]: AuditActionType.REJECT,
+  [AuditActionCode.archive]: AuditActionType.ARCHIVE,
+  [AuditActionCode.void]: AuditActionType.VOID,
+  [AuditActionCode.uploadAttachment]: AuditActionType.UPLOAD_ATTACHMENT,
+  [AuditActionCode.downloadAttachment]: AuditActionType.DOWNLOAD_ATTACHMENT,
+  [AuditActionCode.markFeePaid]: AuditActionType.MARK_FEE_PAID,
+  [AuditActionCode.waiveFee]: AuditActionType.UPDATE,
+  [AuditActionCode.cancelFee]: AuditActionType.UPDATE,
+  [AuditActionCode.confirmReminder]: AuditActionType.CONFIRM_REMINDER,
+  [AuditActionCode.configUpdate]: AuditActionType.CONFIG_UPDATE,
+  [AuditActionCode.bootstrapAdmin]: AuditActionType.BOOTSTRAP_ADMIN,
+  [AuditActionCode.login]: AuditActionType.LOGIN,
+  [AuditActionCode.loginFailed]: AuditActionType.LOGIN_FAILED,
+  [AuditActionCode.logout]: AuditActionType.LOGOUT,
+  [AuditActionCode.sessionRevoked]: AuditActionType.SESSION_REVOKED,
+  [AuditActionCode.authMeDenied]: AuditActionType.AUTH_ME_DENIED,
+} satisfies Record<AuditActionCode, AuditActionType>;
+
+const toPersistedAuditAction = (action: AuditActionCode): AuditActionType =>
+  persistedAuditActionByDomainAction[action];

@@ -39,10 +39,11 @@ import {
 } from "./domain/attachment-repository.types";
 import { AttachmentRelationTypeCode } from "./domain/attachment-relation-type-code";
 import { AttachmentStatusCode } from "./domain/attachment-status-code";
-import { buildAttachmentObjectKey } from "./domain/storage-key";
+import { buildAttachmentObjectKey, toSafeFileName } from "./domain/storage-key";
 import { AttachmentMetadataDto } from "./dto/attachment-query.dto";
 import {
   AttachmentStorageAdapter,
+  AttachmentObjectPutInput,
   AttachmentObjectPutResult,
   AttachmentObjectReadResult,
 } from "./storage/attachment-storage.adapter";
@@ -77,6 +78,10 @@ export type AchievementAttachmentUploadInput = {
   secretLevel?: SecretLevelCode;
   checksum?: string | null;
   objectBody?: string | Uint8Array | null;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  originalName?: string | null;
+  storedName?: string | null;
   traceId?: string | null;
 };
 
@@ -84,7 +89,9 @@ export type AttachmentDownloadDto = {
   id: string;
   fileName: string;
   version: number;
-  body: string | number[] | null;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  body: Uint8Array | null;
 };
 
 @Injectable()
@@ -128,6 +135,9 @@ export class AttachmentService {
       objectKey,
       body: input.objectBody,
       checksum: input.checksum,
+      mimeType: input.mimeType,
+      originalName: input.originalName,
+      storedName: input.storedName,
     });
 
     try {
@@ -139,6 +149,11 @@ export class AttachmentService {
             relationId: achievementId,
             fileName: input.fileName,
             objectKey: stored.objectKey,
+            mimeType: input.mimeType ?? null,
+            sizeBytes: input.sizeBytes ?? stored.sizeBytes ?? null,
+            storageProvider: "LOCAL_DISK",
+            originalName: input.originalName ?? input.fileName,
+            storedName: stored.storedName ?? input.storedName ?? toSafeFileName(input.fileName),
             version,
             uploaderId: context.userId,
             secretLevel: input.secretLevel ?? SecretLevelCode.internal,
@@ -231,7 +246,9 @@ export class AttachmentService {
       id: record.id,
       fileName: record.fileName,
       version: record.version,
-      body: toPublicDownloadBody(stored.body),
+      mimeType: record.mimeType,
+      sizeBytes: record.sizeBytes ?? stored.sizeBytes ?? null,
+      body: stored.body,
     };
   }
 
@@ -254,6 +271,9 @@ export class AttachmentService {
       objectKey,
       body: input.objectBody,
       checksum: input.checksum,
+      mimeType: input.mimeType,
+      originalName: input.originalName,
+      storedName: input.storedName,
     });
 
     try {
@@ -262,6 +282,11 @@ export class AttachmentService {
         relationId: input.relationId,
         fileName: input.fileName,
         objectKey: stored.objectKey,
+        mimeType: input.mimeType ?? null,
+        sizeBytes: input.sizeBytes ?? stored.sizeBytes ?? null,
+        storageProvider: "LOCAL_DISK",
+        originalName: input.originalName ?? input.fileName,
+        storedName: stored.storedName ?? input.storedName ?? toSafeFileName(input.fileName),
         version,
         uploaderId: input.uploaderId,
         secretLevel: input.secretLevel ?? SecretLevelCode.internal,
@@ -294,6 +319,9 @@ export class AttachmentService {
       objectKey,
       body: input.objectBody,
       checksum: input.checksum,
+      mimeType: input.mimeType,
+      originalName: input.originalName,
+      storedName: input.storedName,
     });
 
     try {
@@ -302,6 +330,11 @@ export class AttachmentService {
         relationId: input.relationId,
         fileName: input.fileName,
         objectKey: stored.objectKey,
+        mimeType: input.mimeType ?? null,
+        sizeBytes: input.sizeBytes ?? stored.sizeBytes ?? null,
+        storageProvider: "LOCAL_DISK",
+        originalName: input.originalName ?? input.fileName,
+        storedName: stored.storedName ?? input.storedName ?? toSafeFileName(input.fileName),
         version,
         uploaderId: input.uploaderId,
         secretLevel: input.secretLevel ?? SecretLevelCode.internal,
@@ -579,6 +612,8 @@ export class AttachmentService {
       relationId: record.relationId,
       relationType: record.relationType,
       fileName: record.fileName,
+      mimeType: record.mimeType ?? "",
+      sizeBytes: record.sizeBytes ?? 0,
       version: record.version,
       secretLevel: record.secretLevel,
       status: record.status,
@@ -586,11 +621,7 @@ export class AttachmentService {
     };
   }
 
-  private async putObject(input: {
-    objectKey: string;
-    body?: string | Uint8Array | null;
-    checksum?: string | null;
-  }): Promise<AttachmentObjectPutResult> {
+  private async putObject(input: AttachmentObjectPutInput): Promise<AttachmentObjectPutResult> {
     try {
       return await this.storageAdapter.putObject(input);
     } catch (error) {
@@ -602,8 +633,17 @@ export class AttachmentService {
 
   private async getObject(objectKey: string): Promise<AttachmentObjectReadResult> {
     try {
-      return await this.storageAdapter.getObject({ objectKey });
+      const result = await this.storageAdapter.getObject({ objectKey });
+      if (!result.body) {
+        throw new AttachmentStorageError("attachment object was not found");
+      }
+
+      return result;
     } catch (error) {
+      if (error instanceof AttachmentStorageError) {
+        throw error;
+      }
+
       throw new AttachmentStorageError(
         error instanceof Error ? error.message : "unknown storage error",
       );
@@ -641,6 +681,11 @@ const toAttachmentMetadataDto = (record: AttachmentRecord): AttachmentMetadataDt
   relationType: record.relationType,
   relationId: record.relationId,
   fileName: record.fileName,
+  mimeType: record.mimeType,
+  sizeBytes: record.sizeBytes,
+  storageProvider: record.storageProvider,
+  originalName: record.originalName,
+  storedName: record.storedName,
   version: record.version,
   uploaderId: record.uploaderId,
   secretLevel: record.secretLevel,
@@ -649,11 +694,3 @@ const toAttachmentMetadataDto = (record: AttachmentRecord): AttachmentMetadataDt
   updatedAt: record.updatedAt,
   archivedAt: record.archivedAt,
 });
-
-const toPublicDownloadBody = (body: string | Uint8Array | null): string | number[] | null => {
-  if (body instanceof Uint8Array) {
-    return Array.from(body);
-  }
-
-  return body;
-};

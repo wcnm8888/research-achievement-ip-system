@@ -63,6 +63,11 @@ const makeMetadata = () => ({
   relationType: AttachmentRelationTypeCode.achievement,
   relationId: ids.achievement,
   fileName: "paper.pdf",
+  mimeType: "application/pdf",
+  sizeBytes: 24,
+  storageProvider: "LOCAL_DISK",
+  originalName: "paper.pdf",
+  storedName: "paper.pdf",
   version: 1,
   uploaderId: ids.user,
   secretLevel: SecretLevelCode.internal,
@@ -80,7 +85,9 @@ const createAttachmentServiceMock = (): AttachmentServiceMock => ({
     id: ids.attachment,
     fileName: "paper.pdf",
     version: 1,
-    body: "fake body",
+    mimeType: "application/pdf",
+    sizeBytes: 9,
+    body: Buffer.from("fake body"),
   }),
 });
 
@@ -109,10 +116,10 @@ describe("Attachment routes through AppModule", () => {
         await request(app.getHttpServer() as Server)
           .post(`/achievements/${ids.achievement}/attachments`)
           .set("X-Demo-User-Id", ids.user)
-          .send({
-            fileName: "paper.pdf",
-            secretLevel: SecretLevelCode.internal,
-            objectBody: "fake body",
+          .field("secretLevel", SecretLevelCode.internal)
+          .attach("file", pdfBuffer(), {
+            filename: "paper.pdf",
+            contentType: "application/pdf",
           })
           .expect(201);
 
@@ -172,7 +179,10 @@ describe("Attachment routes through AppModule", () => {
       await request(app.getHttpServer() as Server)
         .post(`/achievements/${ids.achievement}/attachments`)
         .set("X-Demo-User-Id", ids.user)
-        .send({ fileName: "paper.pdf" })
+        .attach("file", pdfBuffer(), {
+          filename: "paper.pdf",
+          contentType: "application/pdf",
+        })
         .expect(403);
 
       await request(app.getHttpServer() as Server)
@@ -185,6 +195,8 @@ describe("Attachment routes through AppModule", () => {
     });
   });
 });
+
+const pdfBuffer = (): Buffer => Buffer.from("%PDF-1.7 local test file");
 
 const withAppModule = async (
   permissions: readonly PermissionCode[],

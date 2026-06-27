@@ -14,6 +14,11 @@ export type AttachmentMetadataDto = {
   relationType: AttachmentRelationTypeCode;
   relationId: string;
   fileName: string;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  storageProvider: string | null;
+  originalName: string | null;
+  storedName: string | null;
   version: number;
   uploaderId: string;
   secretLevel: SecretLevelCode;

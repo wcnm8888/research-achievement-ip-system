@@ -14,17 +14,21 @@ describe("FakeAttachmentStorageAdapter", () => {
     ).resolves.toEqual({
       objectKey: "attachments/ACHIEVEMENT/30000000-0000-4000-8000-000000000001/object/v1/paper.pdf",
       checksum: "fake-digest",
+      storedName: null,
+      sizeBytes: 9,
     });
 
-    await expect(
-      adapter.getObject({
-        objectKey: "attachments/ACHIEVEMENT/30000000-0000-4000-8000-000000000001/object/v1/paper.pdf",
-      }),
-    ).resolves.toEqual({
+    const result = await adapter.getObject({
       objectKey: "attachments/ACHIEVEMENT/30000000-0000-4000-8000-000000000001/object/v1/paper.pdf",
-      body: "fake body",
-      checksum: "fake-digest",
     });
+    expect(result).toMatchObject({
+      objectKey: "attachments/ACHIEVEMENT/30000000-0000-4000-8000-000000000001/object/v1/paper.pdf",
+      checksum: "fake-digest",
+      sizeBytes: 9,
+      mimeType: null,
+      storedName: null,
+    });
+    expect(Buffer.from(result.body ?? [])).toEqual(Buffer.from("fake body"));
   });
 
   it("returns an empty fake result for a missing object", async () => {
@@ -34,6 +38,26 @@ describe("FakeAttachmentStorageAdapter", () => {
       objectKey: "missing",
       body: null,
       checksum: null,
+      sizeBytes: null,
+      mimeType: null,
+      storedName: null,
+    });
+  });
+
+  it("stats in-memory objects", async () => {
+    const adapter = new FakeAttachmentStorageAdapter();
+
+    await adapter.putObject({ objectKey: "attachments/key", body: "fake body" });
+
+    await expect(adapter.statObject({ objectKey: "attachments/key" })).resolves.toEqual({
+      objectKey: "attachments/key",
+      exists: true,
+      sizeBytes: 9,
+    });
+    await expect(adapter.statObject({ objectKey: "missing" })).resolves.toEqual({
+      objectKey: "missing",
+      exists: false,
+      sizeBytes: null,
     });
   });
 });

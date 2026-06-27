@@ -19,6 +19,11 @@ type AttachmentPersistenceRow = Record<string, unknown> & {
   relationType: AttachmentRecord["relationType"];
   relationId: string;
   fileName: string;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  storageProvider: string | null;
+  originalName: string | null;
+  storedName: string | null;
   version: number;
   uploaderId: string;
   secretLevel: AttachmentRecord["secretLevel"];
@@ -56,12 +61,17 @@ export const toAttachmentCreateData = (
     relationId: input.relationId,
     fileName: input.fileName,
     [objectKeyColumn]: input.objectKey,
+    mimeType: input.mimeType ?? null,
+    sizeBytes: input.sizeBytes ?? null,
+    storageProvider: input.storageProvider ?? "LOCAL_DISK",
+    originalName: input.originalName ?? null,
+    storedName: input.storedName ?? null,
     version: input.version,
     uploaderId: input.uploaderId,
     secretLevel: input.secretLevel,
     checksum: input.checksum ?? null,
     ...(input.createdAt ? { createdAt: input.createdAt } : {}),
-  }) as Prisma.AttachmentUncheckedCreateInput;
+  }) as unknown as Prisma.AttachmentUncheckedCreateInput;
 
 export const toAttachmentRelationWhere = (
   input: AttachmentRelationQueryInput,
@@ -77,6 +87,11 @@ export const toAttachmentRecord = (row: AttachmentPersistenceRow): AttachmentRec
   relationId: row.relationId,
   fileName: row.fileName,
   objectKey: row[objectKeyColumn] as string,
+  mimeType: row.mimeType,
+  sizeBytes: row.sizeBytes,
+  storageProvider: row.storageProvider,
+  originalName: row.originalName,
+  storedName: row.storedName,
   version: row.version,
   uploaderId: row.uploaderId,
   secretLevel: row.secretLevel,

@@ -4,6 +4,94 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 45C-2R Archive - Attachment Backend Review and Commit Gate - 2026-06-27
+
+- Step identity:
+  - This is Step 45C-2R.
+  - Step 45C-2R is a local review and commit gate for the attachment backend implementation plus the audit enum typecheck unblock.
+  - It is not production deploy, production smoke, production DB access, VPS access, migration execution, seed, cleanup, Web UI implementation, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD before commit gate: `39b346a48beb13c97911e117a1523dbee69bf814`.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Review scope completed:
+  - Reviewed attachment multipart upload/download/storage adapter implementation.
+  - Reviewed metadata propagation and backend tests.
+  - Reviewed audit action enum typecheck fix.
+  - Confirmed tracked diff does not include Prisma schema/migration, Web UI, seed, deploy, Docker, or CI changes.
+  - Confirmed excluded local artifacts are not staged.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- audit`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS.
+  - `git diff --check`: PASS with line-ending warnings only.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration execution, seed, cleanup, deletion, or batch cleanup.
+  - No sensitive configuration or credentials were read or recorded.
+  - `.local-step44h/`, `local-prod-preview-proxy.cjs`, and local generated test artifacts remain outside this commit gate.
+
+## Current Step 45C-2Fix Archive - Local API Typecheck Unblock for Audit Action Enum - 2026-06-27
+
+- Step identity:
+  - This is Step 45C-2Fix.
+  - Step 45C-2Fix is a narrow local typecheck gate fix for audit action enum mapping.
+  - It is not attachment feature expansion, Web UI implementation, schema/migration work, migration execution, seed, production deploy, production smoke, production DB access, VPS access, cleanup, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD during Step 45C-2Fix: `39b346a48beb13c97911e117a1523dbee69bf814`.
+  - Step 45C-2 local attachment backend implementation remains uncommitted.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Scope completed:
+  - Added an explicit persisted audit action mapping in the Prisma mapper.
+  - Kept domain `WAIVE_FEE` and `CANCEL_FEE` action codes.
+  - Mapped `WAIVE_FEE` / `CANCEL_FEE` to persisted Prisma `UPDATE` until a future schema/migration Step explicitly expands `AuditActionType`.
+  - Added audit repository tests for this mapping.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- audit`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- fee`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS.
+  - `git diff --check`: PASS with line-ending warnings only.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration execution, seed, cleanup, deletion, or batch cleanup.
+  - No sensitive configuration or credentials were read or recorded.
+  - `.local-step44h/`, `local-prod-preview-proxy.cjs`, and local generated test artifacts remain outside this Step's committed scope.
+
+## Current Step 45C-2 Archive - Attachment Local Backend Upload/Download/Storage - 2026-06-27
+
+- Step identity:
+  - This is Step 45C-2.
+  - Step 45C-2 is a local backend implementation step for attachment multipart upload, download, and local disk storage.
+  - It is not Web UI implementation, migration execution, seed, production deploy, production smoke, production DB access, VPS access, cleanup, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD during Step 45C-2: `39b346a48beb13c97911e117a1523dbee69bf814`.
+  - Step 45C-1R committed the Attachment schema metadata delta.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Implementation scope completed:
+  - Multipart file upload boundary for achievement attachments.
+  - Backend validation for file presence, size, allowed MIME/extension, basic content signatures, and safe filenames.
+  - Local disk storage adapter with put/read/stat and path traversal protection.
+  - Download boundary returning `StreamableFile` with safe headers.
+  - Attachment metadata propagation for `mimeType`, `sizeBytes`, `storageProvider`, `originalName`, and `storedName`.
+  - Backend test coverage for controller/app-module/service/repository/storage behavior.
+- Remaining / deferred:
+  - Web UI remains deferred.
+  - Attachment archive/delete remains deferred.
+  - Virus scanning remains deferred.
+  - Object storage/S3 provider remains deferred.
+  - Production DB migration execution remains deferred.
+  - Production acceptance remains deferred.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS.
+  - `git diff --check`: PASS with line-ending warnings only.
+  - `corepack pnpm --filter @research-ip/api typecheck`: FAIL on existing non-Step audit Prisma enum mismatch for `WAIVE_FEE`.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration execution, seed, cleanup, deletion, or batch cleanup.
+  - No sensitive configuration or credentials were read or recorded.
+  - `.local-step44h/`, `local-prod-preview-proxy.cjs`, and local generated test storage artifacts remain outside this Step's committed scope.
+
 ## Current Step 45C-1 Archive - Attachment Schema Delta Patch Only - 2026-06-27
 
 - Step identity:

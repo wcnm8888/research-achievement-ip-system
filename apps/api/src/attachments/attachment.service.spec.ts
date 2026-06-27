@@ -55,6 +55,11 @@ const makeRecord = (overrides = {}) => ({
   fileName: "paper.pdf",
   objectKey:
     "attachments/ACHIEVEMENT/30000000-0000-4000-8000-000000000001/object/v4/paper.pdf",
+  mimeType: "application/pdf",
+  sizeBytes: 128,
+  storageProvider: "LOCAL_DISK",
+  originalName: "paper.pdf",
+  storedName: "paper.pdf",
   version: 4,
   uploaderId: ids.uploader,
   secretLevel: SecretLevelCode.internal,
@@ -105,9 +110,19 @@ const createService = () => {
   } as unknown as SecretAccessPolicyService;
 
   const storage = {
-    putObject: vi.fn(async (input: { objectKey: string; checksum?: string | null }) => ({
+    putObject: vi.fn(async (input: {
+      objectKey: string;
+      checksum?: string | null;
+      body?: string | Uint8Array | null;
+      storedName?: string | null;
+    }) => ({
       objectKey: input.objectKey,
       checksum: input.checksum ?? "fake-digest",
+      storedName: input.storedName ?? input.objectKey.split("/").pop() ?? null,
+      sizeBytes:
+        typeof input.body === "string"
+          ? Buffer.byteLength(input.body)
+          : input.body?.byteLength ?? null,
     })),
     getObject: vi.fn(),
   } as unknown as AttachmentStorageAdapter;
@@ -180,12 +195,20 @@ describe("AttachmentService.createMetadata", () => {
       ),
       body: "fake body",
       checksum: "fake-digest",
+      mimeType: undefined,
+      originalName: undefined,
+      storedName: undefined,
     });
     expect(repository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         relationType: AttachmentRelationTypeCode.achievement,
         relationId: ids.achievement,
         fileName: "paper.pdf",
+        mimeType: null,
+        sizeBytes: 9,
+        storageProvider: "LOCAL_DISK",
+        originalName: "paper.pdf",
+        storedName: "paper.pdf",
         version: 4,
         uploaderId: ids.uploader,
         secretLevel: SecretLevelCode.secret,
@@ -197,6 +220,11 @@ describe("AttachmentService.createMetadata", () => {
       relationType: AttachmentRelationTypeCode.achievement,
       relationId: ids.achievement,
       fileName: "paper.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 128,
+      storageProvider: "LOCAL_DISK",
+      originalName: "paper.pdf",
+      storedName: "paper.pdf",
       version: 4,
       uploaderId: ids.uploader,
       secretLevel: SecretLevelCode.internal,
@@ -419,6 +447,11 @@ describe("AttachmentService achievement HTTP boundary preparation", () => {
       expect.objectContaining({
         relationId: ids.achievement,
         fileName: "appendix.pdf",
+        mimeType: null,
+        sizeBytes: 9,
+        storageProvider: "LOCAL_DISK",
+        originalName: "appendix.pdf",
+        storedName: "appendix.pdf",
         uploaderId: ids.uploader,
       }),
     );
@@ -530,8 +563,9 @@ describe("AttachmentService achievement HTTP boundary preparation", () => {
     );
     vi.mocked(storage.getObject).mockResolvedValueOnce({
       objectKey: "internal-only",
-      body: "download body",
+      body: Buffer.from("download body"),
       checksum: "hidden",
+      sizeBytes: 13,
     });
 
     await expect(
@@ -540,7 +574,9 @@ describe("AttachmentService achievement HTTP boundary preparation", () => {
       id: ids.attachment,
       fileName: "paper.pdf",
       version: 4,
-      body: "download body",
+      mimeType: "application/pdf",
+      sizeBytes: 128,
+      body: Buffer.from("download body"),
     });
     expect(auditService.recordEvent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -583,7 +619,7 @@ describe("AttachmentService achievement HTTP boundary preparation", () => {
     const { service, storage, auditService } = createService();
     vi.mocked(storage.getObject).mockResolvedValueOnce({
       objectKey: "internal-only",
-      body: "download body",
+      body: Buffer.from("download body"),
       checksum: "hidden",
     });
     const auditError = new Error("audit failed");

@@ -141,6 +141,44 @@ describe("AuditRepository.create", () => {
     });
   });
 
+  it("maps fee waive and cancel domain actions to the persisted update audit action", async () => {
+    const { repository, tx } = createRepository();
+    const transactionClient = tx as unknown as AuditTransactionClient;
+
+    await repository.createInTransaction(transactionClient, {
+      actor: { userId: ids.actor, departmentId: ids.department },
+      action: AuditActionCode.waiveFee,
+      target: { type: AuditTargetTypeCode.feeRecord, id: ids.achievement },
+      newValue: { action: AuditActionCode.waiveFee, reason: "approved locally" },
+    });
+
+    await repository.createInTransaction(transactionClient, {
+      actor: { userId: ids.actor, departmentId: ids.department },
+      action: AuditActionCode.cancelFee,
+      target: { type: AuditTargetTypeCode.feeRecord, id: ids.achievement },
+      newValue: { action: AuditActionCode.cancelFee, reason: "cancelled locally" },
+    });
+
+    expect(tx.auditLog.create).toHaveBeenNthCalledWith(1, {
+      data: expect.objectContaining({
+        action: AuditActionCode.update,
+        newValue: {
+          action: AuditActionCode.waiveFee,
+          reason: "approved locally",
+        },
+      }),
+    });
+    expect(tx.auditLog.create).toHaveBeenNthCalledWith(2, {
+      data: expect.objectContaining({
+        action: AuditActionCode.update,
+        newValue: {
+          action: AuditActionCode.cancelFee,
+          reason: "cancelled locally",
+        },
+      }),
+    });
+  });
+
   it("does not expose update or delete mutation helpers", () => {
     const { repository } = createRepository();
     const multiChangeMethod = ["update", "Many"].join("");

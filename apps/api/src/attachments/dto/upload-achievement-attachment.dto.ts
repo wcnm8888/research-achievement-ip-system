@@ -2,10 +2,6 @@ import { IsEnum, IsOptional, IsString, Length } from "class-validator";
 import { SecretLevelCode } from "../../authorization/constants/secret-level-code";
 
 export class UploadAchievementAttachmentDto {
-  @IsString()
-  @Length(1, 255)
-  fileName!: string;
-
   @IsOptional()
   @IsEnum(SecretLevelCode)
   secretLevel?: SecretLevelCode;
@@ -17,6 +13,6 @@ export class UploadAchievementAttachmentDto {
 
   @IsOptional()
   @IsString()
-  @Length(0, 20000)
-  objectBody?: string;
+  @Length(1, 255)
+  displayName?: string;
 }

@@ -1,5 +1,60 @@
 # Decisions
 
+## D116 - Map fee waive/cancel domain audit actions to persisted UPDATE until AuditActionType is expanded
+
+- Date: 2026-06-27.
+- Context: Step 45C-2Fix needed to unblock local API typecheck without changing Prisma schema, generating a migration, executing migration, or expanding attachment feature scope. The domain `AuditActionCode` includes `WAIVE_FEE` and `CANCEL_FEE`, but the current Prisma `AuditActionType` enum does not.
+- Decision:
+  - Add a complete domain-to-Prisma audit action mapping in `audit-prisma.mapper`.
+  - Keep `WAIVE_FEE` and `CANCEL_FEE` in the domain enum.
+  - Persist those two fee status actions as Prisma `UPDATE` for the current no-schema-change local phase.
+  - Preserve the domain action values inside fee audit JSON summaries so masked audit details can still distinguish waive/cancel semantics.
+  - Do not modify `prisma/schema.prisma` or migration files in this Step.
+- Rationale:
+  - Directly assigning the wider domain action union to Prisma inputs makes typecheck fail when domain actions intentionally exceed the current database enum.
+  - Schema enum expansion requires a separate database/migration decision and is outside Step 45C-2Fix.
+  - Mapping to `UPDATE` keeps audit writes compatible with the current persisted enum while preserving semantic details in payload data.
+- Verification:
+  - API typecheck passed.
+  - Audit, fee, and attachment backend tests passed.
+  - `git diff --check` passed.
+- Consequences:
+  - Step 45C-2 can proceed to review/commit gate with API typecheck restored.
+  - A future schema/migration Step may add `WAIVE_FEE` and `CANCEL_FEE` to `AuditActionType` and then change the mapping to one-to-one persistence.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Boundary:
+  - No Prisma schema/migration change, migration execution, seed, production DB access, production write, VPS connection, deploy, push, cleanup, deletion, attachment feature expansion, Web UI implementation, or sensitive-config access occurred.
+
+## D115 - Step 45C-2 implements local backend multipart storage and defers production storage concerns
+
+- Date: 2026-06-27.
+- Context: Step 45C-1R committed the Attachment metadata schema delta needed for local upload/download/storage. Step 45C-2 was authorized as backend-only local implementation and validation, with migration execution, seed, Web UI, production access, archive/delete, virus scanning, and object storage explicitly out of scope.
+- Decision:
+  - Implement achievement attachment upload as multipart `file` input at the API boundary.
+  - Store uploaded bytes through a local disk storage adapter for this local phase.
+  - Keep local storage rooted under `deploy/artifacts/` for non-production usage, with path traversal protection and safe object-key resolution.
+  - Validate file presence, size, extension, MIME type, and basic content signatures before writing storage.
+  - Return downloads as streamed file responses with safe `Content-Type`, `Content-Length`, and `Content-Disposition` headers.
+  - Propagate safe metadata fields to repository records and metadata DTOs.
+  - Keep archive/delete, virus scanning, provider enum, object storage/S3, Web UI, production migration application, and production acceptance deferred.
+- Rationale:
+  - Multipart upload is the real backend boundary needed by future UI work; JSON object bodies are not a valid production-like attachment contract.
+  - A local disk adapter provides a concrete storage implementation for local validation without claiming production storage readiness.
+  - Explicit validation and path-safety checks reduce immediate local security risk while preserving future object-storage migration options.
+- Verification:
+  - Attachment backend tests passed: 6 files / 54 tests.
+  - `git diff --check` passed.
+  - API typecheck is blocked by an existing non-Step audit Prisma enum mismatch for `WAIVE_FEE`, not by attachment code after local fixes.
+- Consequences:
+  - Step 45C-2 provides local backend upload/download/storage behavior for attachments.
+  - Web UI and production storage acceptance still require separate Steps.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Boundary:
+  - No migration execution, seed, production DB access, production write, VPS connection, deploy, push, cleanup, deletion, Web UI implementation, archive/delete implementation, virus scan, object storage/S3, or sensitive-config access occurred.
+  - `.local-step44h/` and `local-prod-preview-proxy.cjs` remain untracked local artifacts outside this decision.
+
 ## D114 - Step 45C-1 adds Attachment storage metadata schema fields without migration execution
 
 - Date: 2026-06-27.
