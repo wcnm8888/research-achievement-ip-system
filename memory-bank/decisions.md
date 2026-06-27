@@ -1,5 +1,191 @@
 # Decisions
 
+## D133 - Step 47R approves local Step 47A-47G readiness changes for commit
+
+- Date: 2026-06-27.
+- Context: Step 47A-47G completed local readiness, migration rehearsal, permission rehearsal, provider decision, delivery contract design, fake-provider no-send tests, and outbox-vs-synchronous decision work. The work remained local and non-production.
+- Decision:
+  - Commit the reviewed Step 47A-47G local changes as `chore: record password reset delivery readiness`.
+  - Include only seed/backfill, delivery contract/test, account-lifecycle service test, and memory-bank records.
+  - Exclude local artifacts and preview/test files that were intentionally left untracked.
+- Review basis:
+  - `account:invite` and `account:reset_password` are seeded and granted only to `SYSTEM_ADMIN`.
+  - Fake provider remains test-only.
+  - Runtime remains `LOCAL_SAFE_STUB`.
+  - No provider SDK, SMTP/API config, dependency, or network send path was added.
+  - Outbox schema remains deferred; first real implementation should be synchronous post-commit adapter only after explicit provider/ops authorization.
+  - Step 47B limitation remains known: Prisma `_prisma_migrations` history was not covered by local SQL rehearsal.
+- Boundaries:
+  - No production migration, production seed/backfill, deploy, push, provider selection, dependency installation, real email/SMS, production/VPS/production DB access, sensitive-config access, cleanup, deletion, drop, or reset is authorized by this decision.
+
+## D132 - Step 47G starts with synchronous post-commit delivery and defers outbox schema
+
+- Date: 2026-06-27.
+- Context: Step 47E designed the adapter/outbox contract and Step 47F proved local fake-provider no-send behavior. A real provider is not selected, queue/worker/schema work is not authorized, and raw token persistence remains prohibited.
+- Decision:
+  - Choose `SYNCHRONOUS_POST_COMMIT_ADAPTER_FIRST_OUTBOX_DEFERRED`.
+  - First real provider implementation should call the delivery adapter after token creation commits, using raw token only transiently in process memory.
+  - Do not add outbox schema, migration, queue, worker, scheduler, or durable retry in this Step.
+  - Defer outbox schema to a separate authorized Step only if durable retry is required.
+- Rationale:
+  - Synchronous post-commit delivery avoids storing raw token or full links.
+  - Failed delivery can be handled by safe status and manual resend, which creates a fresh token and revokes/replaces the old active same-purpose token.
+  - Adding outbox now would increase schema, worker, retry, and operations complexity before provider/ops authorization exists.
+  - A durable worker cannot reconstruct a link after process loss without raw token persistence, which is intentionally forbidden.
+- Failure semantics:
+  - Accepted provider result maps to `SENT`.
+  - Missing/invalid provider config maps to `SUPPRESSED`.
+  - Permanent provider failure maps to `FAILED`.
+  - Temporary/rate-limited results may map to `QUEUED` only if a retry owner exists; before worker authorization, prefer `FAILED` or `SUPPRESSED` and require resend.
+- Resend policy:
+  - Admin resend is allowed and must issue a new token through the existing invite/admin reset flow.
+  - Public reset request may be repeated with enumeration-safe response behavior.
+  - No retry path may persist raw token or full reset/invite URL.
+- Production inputs still required:
+  - Provider/relay selection.
+  - Sender domain/address and DNS verification.
+  - Production public base URL.
+  - Secret storage and rotation process.
+  - Timeout/failure/rate-limit policy.
+  - Template approval.
+  - Controlled production smoke recipient and explicit send authorization.
+- Boundaries:
+  - No schema/migration, runtime code change, provider selection, dependency install, SMTP/API config, email/SMS send, migration/seed/backfill execution, production/VPS/production DB access, deploy/push, cleanup, deletion, drop, reset, or sensitive-config access occurred.
+
+## D131 - Step 47F keeps fake provider as test-only no-send boundary
+
+- Date: 2026-06-27.
+- Context: Step 47E designed a provider-agnostic adapter/outbox contract without implementation. Step 47F needed local fake-provider tests and no-send dry run while keeping runtime on `LOCAL_SAFE_STUB` and avoiding provider selection, dependencies, credentials, network, migration, seed/backfill, deploy, or production access.
+- Decision:
+  - Add provider-agnostic delivery contract helpers in API source.
+  - Keep fake provider implementations in tests only.
+  - Keep `AccountLifecycleMailer` runtime default as `LOCAL_SAFE_STUB`.
+  - Normalize provider outcomes into existing safe `AccountLifecycleDeliveryStatus` values.
+  - Drop unsafe provider message ids instead of storing or exposing them.
+- Rationale:
+  - Tests need a concrete fake adapter to prove the contract without opening a real delivery channel.
+  - Runtime should not accidentally switch from no-send stub to fake/provider behavior.
+  - Provider message ids can leak PII or provider URLs if accepted blindly.
+- Consequences:
+  - Local no-send dry-run coverage now exists for accepted, failed, suppressed, and rate-limited outcomes.
+  - Real provider integration remains blocked on explicit provider/config authorization.
+  - Durable retry/outbox schema is still a separate Step 47G decision.
+- Boundaries:
+  - No provider selected, dependency added, SMTP/API configured, email/SMS sent, schema/migration added, migration/seed/backfill executed, production/VPS/production DB accessed, deploy/push, cleanup, deletion, drop, reset, or sensitive-config access occurred.
+
+## D130 - Step 47E designs delivery outbox without persisting raw tokens
+
+- Date: 2026-06-27.
+- Context: Step 47D kept real delivery behind explicit provider authorization. Step 47E defines the adapter/outbox contract before implementation. Password reset and invite links require raw token only at the delivery boundary, while existing token persistence stores only token hashes.
+- Decision:
+  - Future real delivery should use a provider-agnostic `AccountLifecycleDeliveryAdapter`.
+  - A future outbox may persist delivery work metadata keyed by `token_id`, but must not persist raw token, full URL, plaintext recipient email, provider credentials, or full provider payloads.
+  - The outbox idempotency key should be `token_id`.
+  - Durable async delivery must not store raw tokens; if raw token is unavailable after process loss, mark delivery failed/suppressed and require resend.
+  - First implementation may use synchronous post-commit send plus safe delivery status if durable retry is not yet authorized.
+- Rationale:
+  - Persisting raw tokens would turn the outbox into credential storage and weaken the hash-only token design.
+  - Token id idempotency prevents duplicate delivery work for one issued token.
+  - Separating adapter contract from provider choice keeps SMTP/API providers replaceable and testable.
+- Consequences:
+  - Durable background retry has an explicit limitation: it cannot reconstruct a reset/invite link unless a new token is issued.
+  - True retry without reissue would require a separate security decision about encrypted secret storage, which is not approved.
+  - Future provider implementation must prove no raw token/full link leakage in logs, audit, outbox, or API responses.
+- Boundaries:
+  - No provider selected, dependency added, schema/migration added, runtime source changed, email/SMS sent, production migration/backfill, production/VPS/production DB access, deploy, push, cleanup, deletion, drop, reset, or sensitive-config access occurred.
+
+## D129 - Step 47D keeps real delivery behind explicit provider authorization
+
+- Date: 2026-06-27.
+- Context: Password reset and invite flows now have local schema, backend, Web, migration rehearsal, and permission seed/backfill rehearsal. Delivery still uses `AccountLifecycleMailer` with `LOCAL_SAFE_STUB`; no provider dependency, production sender, domain verification, SMTP/API credential, production base URL, or delivery-failure policy is configured.
+- Decision:
+  - Do not select, install, configure, or connect a real email/SMS provider in Step 47D.
+  - Keep the local safe stub as the only current delivery adapter.
+  - Require explicit user/operations authorization before any real delivery implementation.
+  - Next implementation should first define a provider-agnostic adapter/outbox contract; SMTP is acceptable as a generic first integration path only after the user confirms provider/relay details.
+- Rationale:
+  - Real delivery is an external-service and security boundary: it involves credentials, sender reputation, DNS/domain verification, production base URL, rate limits, retries, bounces, complaints, and user-visible messages.
+  - Picking a provider without organization input could create cost, deliverability, compliance, or operational obligations.
+  - A provider-agnostic boundary keeps token/link construction transient and makes provider replacement feasible.
+- Required authorization inputs:
+  - Provider type and vendor/relay.
+  - Sender domain/address and DNS verification ownership.
+  - Production public base URL.
+  - Secret storage and rotation process.
+  - Rate limit, retry, timeout, bounce/complaint, and escalation policy.
+  - Template copy and localization policy.
+- Consequences:
+  - Production invite/reset cannot be claimed end-to-end until real delivery is implemented and smoke-tested.
+  - Migration/backfill readiness does not imply delivery readiness.
+  - Full reset/invite links must remain unlogged and unpersisted; raw token may exist only transiently at the delivery boundary.
+- Boundaries:
+  - No provider selected, dependency added, email/SMS sent, production migration/backfill, production/VPS/production DB access, deploy, push, cleanup, deletion, drop, reset, or sensitive-config access occurred.
+
+## D128 - Step 47C grants lifecycle permissions only to SYSTEM_ADMIN through idempotent seed/backfill
+
+- Date: 2026-06-27.
+- Context: Step 46D/46E added runtime gates for `account:invite` and `account:reset_password`, while Step 47A found the seed surfaces did not create or grant those permissions. Step 47B rehearsed migration SQL locally but did not run seed/backfill.
+- Decision:
+  - Add `account:invite` and `account:reset_password` to both seed surfaces.
+  - Grant both permissions to `SYSTEM_ADMIN` only.
+  - Keep other roles unchanged.
+  - Use idempotent insert/upsert semantics and `role_permissions` duplicate skipping / conflict avoidance.
+- Rationale:
+  - Backend account lifecycle endpoints require dedicated permissions; without seed/backfill, existing system admins would not pass those gates after rollout.
+  - Granting only `SYSTEM_ADMIN` is the narrowest current production-ready policy and avoids expanding invite/reset authority to department, researcher, secretary, auditor, leader, or secret-manager roles.
+  - Idempotence is required because seed/backfill may be rerun during rehearsal or recovery.
+- Consequences:
+  - Production authorization still must run a controlled backfill; this Step only rehearsed locally.
+  - Future product policy may introduce delegated account lifecycle roles, but that requires a separate access-control decision.
+- Rollback / recovery:
+  - Assignment rollback can remove the two `SYSTEM_ADMIN` role-permission rows for the lifecycle permissions.
+  - Permission rows should normally remain for auditability and future policy consistency unless a separate rollback explicitly removes unused permission vocabulary.
+  - If a production backfill partially fails, stop deployment, preserve logs, inspect partial permission rows/assignments, and retry only after review.
+- Boundaries:
+  - No production seed/backfill, production migration, production/VPS/production DB access, deploy, push, real email/SMS, cleanup, deletion, drop, reset, or sensitive-config access occurred.
+
+## D127 - Step 47B uses SQL-only local rehearsal because Prisma deploy would require forbidden local DB credentials
+
+- Date: 2026-06-27.
+- Context: Step 47B required local migration rehearsal without production access, seed/backfill, destructive reset/drop/cleanup, or sensitive credential exposure. A local non-production PostgreSQL container was available, but host-side `prisma migrate deploy` would require constructing a `DATABASE_URL` from local DB credentials. The Step explicitly forbids reading local test passwords and full connection strings.
+- Decision:
+  - Use a new local rehearsal database in the existing local PostgreSQL container.
+  - Apply committed migration SQL files in order with container-local `psql`, relying on the container's own environment without printing credentials.
+  - Record that full Prisma `_prisma_migrations` history verification is not covered by this rehearsal.
+  - Keep production authorization blocked on either credential-safe Prisma deploy rehearsal evidence or explicit user-provided disposable local DB connection authorization.
+- Rationale:
+  - SQL-only rehearsal validates the actual DDL chain, enum additions, column default/not-null behavior, table creation, indexes, and foreign keys without violating the no-password/no-connection-string boundary.
+  - Avoiding `drop`, `reset`, and seed/backfill preserves the Step's non-destructive boundary.
+- Consequences:
+  - SQL structure readiness is confirmed locally.
+  - Prisma migration-history behavior remains a known gap and must not be claimed as production-ready.
+  - Future production migration authorization still needs backup/recovery evidence and preferably a true `prisma migrate deploy` rehearsal under an explicitly safe disposable connection.
+- Boundaries:
+  - No production/VPS/production DB access, seed/backfill, deploy, push, real email/SMS, cleanup, deletion, drop, reset, or sensitive-config access occurred.
+
+## D126 - Step 47A splits migration, permission backfill, and real delivery into separate gates
+
+- Date: 2026-06-27.
+- Context: Step 46R committed the local password reset / invite flow at `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`, but migration execution, permission seed/backfill, production access, deploy, and real email/SMS remained out of scope. Step 47A reviewed readiness without touching production or executing data changes.
+- Decision:
+  - Execute the account lifecycle migration only in a dedicated Step after local migration rehearsal and rollback / recovery planning.
+  - Execute permission seed/backfill only in a dedicated Step after local rehearsal confirms `account:invite` and `account:reset_password` are inserted and granted to `SYSTEM_ADMIN`.
+  - Keep real delivery/email provider selection as a separate decision gate before production user-facing rollout.
+  - Keep production migration, production permission backfill, deploy, and smoke as separately authorized work.
+- Rationale:
+  - The migration changes PostgreSQL enum types, adds a defaulted column to an existing credential table, creates lifecycle token storage, creates indexes, and adds foreign keys; it deserves its own rehearsal and recovery evidence.
+  - The runtime now requires dedicated lifecycle permissions, but current seed surfaces do not grant them; mixing seed/backfill with migration would obscure authorization and rollback boundaries.
+  - Real email/SMS changes introduce provider, secret, deliverability, rate limit, and abuse-control decisions outside the local safe stub boundary.
+- Consequences:
+  - Until permission seed/backfill is applied, existing system-admin accounts with only prior permissions may not see or pass the dedicated invite/reset backend gates.
+  - Until migration is applied, runtime database use of lifecycle token storage and `must_change_password` depends on schema drift being resolved.
+  - Until real delivery is chosen, production invite/reset links should not be claimed as end-to-end deliverable.
+- Rollback / recovery expectation:
+  - Step 47B must document local migration rehearsal evidence and a production recovery approach before production authorization.
+  - Step 47C must document idempotent permission insert/grant and a backout approach for only the new permission assignments before production authorization.
+- Boundaries:
+  - No migration execution, seed/backfill, real email/SMS, production/VPS/production DB access, deploy, push, cleanup, deletion, or sensitive-config access occurred in Step 47A.
+
 ## D124 - Step 46G keeps public lifecycle URL tokens out of form DOM values
 
 - Date: 2026-06-27.

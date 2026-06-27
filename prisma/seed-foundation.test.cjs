@@ -12,6 +12,7 @@ const {
 } = require("./seed-foundation.cjs");
 
 const unique = (items) => new Set(items).size === items.length;
+const accountLifecyclePermissionCodes = ["account:invite", "account:reset_password"];
 
 describe("foundation seed facts", () => {
   it("uses unique stable codes", () => {
@@ -41,6 +42,28 @@ describe("foundation seed facts", () => {
       new Set(rolePermissionMatrix.SYSTEM_ADMIN),
       new Set(permissions.map((permission) => permission.code)),
     );
+  });
+
+  it("grants account lifecycle permissions only to SYSTEM_ADMIN", () => {
+    const permissionCodes = new Set(permissions.map((permission) => permission.code));
+    for (const permissionCode of accountLifecyclePermissionCodes) {
+      assert.equal(permissionCodes.has(permissionCode), true);
+      assert.equal(rolePermissionMatrix.SYSTEM_ADMIN.includes(permissionCode), true);
+    }
+
+    for (const [roleCode, matrixPermissionCodes] of Object.entries(rolePermissionMatrix)) {
+      if (roleCode === "SYSTEM_ADMIN") {
+        continue;
+      }
+
+      for (const permissionCode of accountLifecyclePermissionCodes) {
+        assert.equal(
+          matrixPermissionCodes.includes(permissionCode),
+          false,
+          `${roleCode} must not receive ${permissionCode}`,
+        );
+      }
+    }
   });
 
   it("does not contain obvious secret, token, cookie, or connection string material", () => {

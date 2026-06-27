@@ -532,6 +532,204 @@
 - Production adapter must be replaceable and separately authorized/configured.
 - Full links should be constructed only transiently at delivery boundary and never logged or persisted.
 
+## Step 47E - Real Delivery Adapter/Outbox Contract Design - 2026-06-27
+
+### Scope
+
+- Step identity: Step 47E, contract design only.
+- This Step does not implement a provider, add dependencies, add schema/migration files, send email/SMS, read provider credentials, deploy, push, or access production.
+- Current runtime remains `AccountLifecycleMailer` with `LOCAL_SAFE_STUB`.
+
+### Contract Goals
+
+- Keep account lifecycle token persistence separate from provider delivery.
+- Keep raw token and full reset/invite URL transient, in process memory only.
+- Provide a retryable delivery boundary that can move from local fake provider to SMTP/API provider without changing account lifecycle service semantics.
+- Preserve enumeration-safe reset request behavior: delivery status must not reveal whether a target email exists to public callers.
+- Make failures visible through safe status and audit metadata without logging secrets.
+
+### Adapter Interface
+
+Recommended TypeScript shape for a future implementation:
+
+```ts
+export type AccountLifecycleDeliveryTemplate = "INVITE_ACCEPT" | "PASSWORD_RESET";
+
+export type AccountLifecycleDeliveryInput = {
+  deliveryId: string;
+  tokenId: string;
+  purpose: AccountLifecycleTokenPurpose;
+  template: AccountLifecycleDeliveryTemplate;
+  targetUserId: string;
+  emailHash: string | null;
+  recipientEmail: string;
+  expiresAt: Date;
+  rawToken: string;
+  publicBaseUrl: string;
+  correlationId: string;
+};
+
+export type AccountLifecycleDeliveryResult = {
+  status: AccountLifecycleDeliveryStatus;
+  adapter: string;
+  providerMessageId?: string;
+  failureCategory?: "CONFIGURATION" | "RATE_LIMITED" | "TEMPORARY" | "PERMANENT" | "SUPPRESSED";
+};
+
+export interface AccountLifecycleDeliveryAdapter {
+  send(input: AccountLifecycleDeliveryInput): Promise<AccountLifecycleDeliveryResult>;
+}
+```
+
+Security notes:
+
+- `recipientEmail`, `rawToken`, and full URL must not be persisted in outbox rows, logs, audit payloads, or API responses.
+- `providerMessageId` is allowed only if it is not a credential and does not embed recipient PII.
+- `publicBaseUrl` must come from validated configuration, not request headers.
+
+### Outbox Contract
+
+Recommended table for a later schema Step: `account_lifecycle_delivery_outbox`.
+
+Fields:
+
+- `id` UUID primary key.
+- `token_id` UUID foreign key to `account_lifecycle_tokens`.
+- `purpose` enum or string matching token purpose.
+- `template` string.
+- `recipient_email_hash` varchar(128), nullable for suppressed/unknown targets.
+- `status` enum: `PENDING`, `PROCESSING`, `SENT`, `FAILED`, `SUPPRESSED`.
+- `adapter` varchar(64), nullable until attempted.
+- `provider_message_id` varchar(255), nullable and non-sensitive.
+- `attempt_count` integer default 0.
+- `next_attempt_at` timestamp nullable.
+- `last_attempt_at` timestamp nullable.
+- `failure_category` varchar(64), nullable.
+- `failure_summary` varchar(500), safe and redacted.
+- `correlation_id` varchar(128).
+- `created_at`, `updated_at`.
+
+Indexes:
+
+- Unique idempotency index on `token_id`.
+- Worker index on `(status, next_attempt_at)`.
+- Lookup index on `correlation_id`.
+
+Do not store:
+
+- Raw token.
+- Full URL.
+- Recipient plaintext email.
+- SMTP/API credentials.
+- Provider request payloads.
+
+### Status Semantics
+
+- `PENDING`: durable delivery work exists but has not been attempted.
+- `PROCESSING`: worker has claimed the item with a short lease or transaction boundary.
+- `SENT`: provider accepted delivery.
+- `FAILED`: terminal or currently unretriable failure after policy is exhausted.
+- `SUPPRESSED`: intentionally not sent, for example missing provider config, ineligible target, or abuse-control suppression.
+
+Retry policy:
+
+- Retry only `TEMPORARY` and `RATE_LIMITED` categories.
+- Use bounded exponential backoff with a max attempt count.
+- Never create a new lifecycle token just to retry provider delivery.
+- Manual resend should revoke/replace previous active token through the existing lifecycle flow.
+
+### Transaction Boundary
+
+Preferred flow:
+
+1. Validate actor/target eligibility.
+2. Revoke previous active token rows for same target/purpose.
+3. Create new lifecycle token row with hash only.
+4. Create one outbox row keyed by token id.
+5. Commit.
+6. Worker or post-commit dispatcher calls adapter with transient raw token only if raw token is still available; otherwise manual resend creates a new token.
+
+Design implication:
+
+- For first real implementation without durable raw-token storage, synchronous post-commit send is acceptable if failure status is recorded safely.
+- A durable async worker must not persist raw tokens; if the process loses raw token before send, mark delivery `FAILED`/`SUPPRESSED` and require resend.
+
+### Observability and Audit
+
+- Account lifecycle token row keeps safe delivery status and adapter.
+- Outbox row keeps safe operational status and provider message id if available.
+- Audit payload may include token id, target user id, delivery status, adapter, failure category, and correlation id.
+- Audit/log payload must not include plaintext email, raw token, full link, provider credentials, full provider response, or full connection string.
+
+### Required Future Gates
+
+- Step 47F: local fake-provider adapter tests and no-send dry run.
+- Step 47G: schema design for outbox if durable retry is required, or explicit decision to start with synchronous adapter only.
+- Step 47H: provider-specific implementation after provider, sender domain, production base URL, and secret storage are authorized.
+
+## Step 47G - Outbox vs Synchronous Adapter Decision Gate - 2026-06-27
+
+### Decision
+
+Choose `SYNCHRONOUS_POST_COMMIT_ADAPTER_FIRST_OUTBOX_DEFERRED`.
+
+### Rationale
+
+- No real provider has been selected.
+- No queue, worker, scheduler, or outbox schema has been authorized.
+- Durable retry would require an outbox table and worker ownership model, but storing raw token remains prohibited.
+- A durable worker cannot reconstruct reset/invite links after process loss unless raw token is persisted, which is intentionally forbidden.
+- The current lifecycle token table already records safe delivery status and adapter, enough for a first provider implementation.
+- Manual resend already follows the safer model: revoke/replace the active token and issue a new raw token transiently.
+
+### Synchronous Adapter Semantics
+
+Future first real provider implementation should:
+
+1. Commit lifecycle token creation with hash-only token persistence.
+2. Call provider adapter after commit with raw token held only in process memory.
+3. Construct full reset/invite link only inside delivery boundary.
+4. Update token delivery status and adapter with a safe result.
+5. Return only target id and delivery status to admin callers, or enumeration-safe accepted response to public callers.
+
+Status mapping:
+
+- Provider accepted: `SENT`.
+- Provider temporary failure or rate limit: `QUEUED` or `FAILED` depending on policy; first implementation should prefer safe `FAILED` if there is no worker to retry.
+- Provider suppressed or missing/invalid config: `SUPPRESSED`.
+- Provider permanent failure: `FAILED`.
+
+### Failure and Resend Policy
+
+- Failed/suppressed delivery does not invalidate the token by itself.
+- The raw token is not recoverable after the process loses it.
+- Admin resend is allowed and should create a new token through the existing invite/reset issue path, revoking/replacing the previous active same-purpose token.
+- Public reset request may be repeated by the user; it should issue a replacement token only for eligible users while preserving enumeration-safe response behavior.
+- Do not retry indefinitely in process.
+
+### Deferred Outbox Conditions
+
+Add outbox schema only if a later authorized Step requires:
+
+- Durable background retry after process restarts.
+- Queue/worker ownership and operational monitoring.
+- Bounded retry/backoff independent of request latency.
+- Provider callback/bounce/complaint reconciliation.
+
+If outbox is later required, create a separate Step 47G-schema / Step 47I with schema, migration, worker, and recovery planning. The outbox still must not persist raw token, full URL, plaintext email, provider credentials, or provider payloads.
+
+### Production Readiness Inputs Still Required
+
+- Provider/relay selection.
+- Sender domain/address and DNS verification.
+- Production public base URL.
+- Secret storage and rotation plan.
+- Timeout, failure category, and support escalation rules.
+- Rate limiting and abuse-control policy.
+- Template copy approval.
+- Controlled production smoke recipient and explicit send authorization.
+- Production smoke: single controlled invite/reset delivery to an approved test recipient after migration/backfill/deploy authorization.
+
 ### Temporary Password Policy
 
 - Recommended decision: do not allow administrators to directly set or view temporary passwords once invite/reset is implemented.

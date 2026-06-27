@@ -70,6 +70,8 @@ const permissions = [
   ["audit:read_masked", "audit", "read_masked", "Read masked audit logs"],
   ["dashboard:read_institute", "dashboard", "read_institute", "Read institute dashboard"],
   ["department:read_department", "department", "read_department", "Read department data"],
+  ["account:invite", "account", "invite", "Invite accounts"],
+  ["account:reset_password", "account", "reset_password", "Reset account passwords"],
   ["resource_grant:create", "resource_grant", "create", "Create resource access grants"],
   ["resource_grant:revoke", "resource_grant", "revoke", "Revoke resource access grants"],
   ["system:config", "system", "config", "Configure system"],

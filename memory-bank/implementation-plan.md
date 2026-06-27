@@ -4,6 +4,258 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47R Archive - Post-46 Readiness and Delivery-Gate Review / Commit Gate - 2026-06-27
+
+- Step identity:
+  - This is Step 47R.
+  - Step 47R is a review / commit gate for Step 47A-47G local non-production changes.
+  - A local commit is allowed; push/deploy/migration/seed/backfill/provider selection/real delivery/production access remain forbidden.
+- Confirmed pre-commit state:
+  - HEAD was `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - Latest commit subject was `feat: add password reset and invite local flow`.
+  - Step 47A-47G records were present in memory-bank.
+  - Existing local artifacts remained untracked and were not selected for commit.
+- Review conclusions:
+  - Seed/backfill changes are scoped to `account:invite` and `account:reset_password`.
+  - `SYSTEM_ADMIN` receives both permissions through deterministic seed data.
+  - Foundation test coverage prevents accidental grants to non-admin roles.
+  - Delivery contract code is provider-agnostic and adds no SMTP/API provider or network path.
+  - Fake provider is test-only.
+  - Runtime remains `LOCAL_SAFE_STUB`.
+  - Step 47G keeps outbox schema deferred and selects synchronous post-commit adapter first.
+  - Step 47B limitation remains recorded: local migration SQL rehearsal did not cover Prisma `_prisma_migrations` history.
+- Validation:
+  - `git diff --check` passed with LF/CRLF warnings only.
+  - `corepack pnpm test:seed:foundation` passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle-delivery account-lifecycle.service` passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - Sensitive/provider scan found no real credentials, full production connection strings, provider SDK, SMTP/API config, or network send calls.
+- Commit plan:
+  - Stage only the approved Step 47 files.
+  - Create local commit with subject `chore: record password reset delivery readiness`.
+  - Do not push.
+- Next:
+  - Step 47H requires explicit provider/ops authorization before any provider-specific implementation.
+
+## Current Step 47G Archive - Real Delivery Outbox vs Synchronous Adapter Decision Gate - 2026-06-27
+
+- Step identity:
+  - This is Step 47G.
+  - Step 47G is an outbox vs synchronous adapter decision gate.
+  - It is not outbox schema implementation, provider implementation, real email/SMS sending, dependency addition, production seed/backfill, production migration, production acceptance, production DB access, VPS access, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - Latest commit subject confirmed: `feat: add password reset and invite local flow`.
+  - Step 47C / 47D / 47E / 47F records confirmed.
+  - Current runtime remains `LOCAL_SAFE_STUB`.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Decision:
+  - Choose `SYNCHRONOUS_POST_COMMIT_ADAPTER_FIRST_OUTBOX_DEFERRED`.
+  - Do not implement durable retry/outbox schema now.
+  - Do not introduce background worker, queue, scheduler, or retry policy tables now.
+- Reason:
+  - Real provider is not selected.
+  - Queue/worker/schema is not authorized.
+  - Durable retry cannot preserve hash-only token security unless raw token remains transient; if raw token is lost, delivery must fail/suppress and require resend.
+  - First provider implementation can record safe delivery status on `account_lifecycle_tokens`.
+- Follow-up:
+  - Step 47H should be provider-specific implementation only after provider, sender domain, production base URL, secret storage, and ops policy are authorized.
+  - If durable retry becomes mandatory, create a separate Step 47G-schema / outbox schema design and migration Step.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, SMTP/API credential, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 47F Archive - Real Delivery Local Fake-Provider Adapter Tests and No-Send Dry Run - 2026-06-27
+
+- Step identity:
+  - This is Step 47F.
+  - Step 47F is local fake-provider adapter tests and no-send dry run.
+  - It is not real provider selection, SMTP/API configuration, real email/SMS sending, dependency addition, schema/migration implementation, production seed/backfill, production migration, production acceptance, production DB access, VPS access, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - Latest commit subject confirmed: `feat: add password reset and invite local flow`.
+  - Step 47C permission seed/backfill rehearsal is recorded.
+  - Step 47D provider decision gate is recorded.
+  - Step 47E adapter/outbox contract design is recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Implementation completed:
+  - Added provider-agnostic delivery contract and normalization helpers.
+  - Added fake-provider no-send tests.
+  - Added service tests for safe fake-provider delivery status persistence.
+  - Kept production runtime default as `LOCAL_SAFE_STUB`.
+- Validation completed:
+  - Targeted account-lifecycle delivery/service tests passed.
+  - API typecheck passed.
+  - Diff whitespace check passed.
+  - Sensitive/provider scan found no real credentials or network/provider integration.
+- Follow-up:
+  - Step 47G should decide whether durable retry requires outbox schema, or explicitly choose synchronous adapter only.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, SMTP/API credential, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 47E Archive - Real Delivery Adapter/Outbox Contract Design Only - 2026-06-27
+
+- Step identity:
+  - This is Step 47E.
+  - Step 47E is real delivery adapter/outbox contract design only.
+  - It is not provider implementation, real email/SMS sending, dependency addition, schema/migration implementation, production seed/backfill, production migration, production acceptance, production DB access, VPS access, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - Latest commit subject confirmed: `feat: add password reset and invite local flow`.
+  - Step 47D provider decision gate confirmed provider not selected.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Contract design completed:
+  - Added design-spec section for Step 47E.
+  - Defined adapter input/output contract.
+  - Defined future outbox table contract and indexes.
+  - Defined status semantics, retry policy, transaction boundary, observability, and audit redaction rules.
+- Recommended next steps:
+  - Step 47F: local fake-provider adapter tests and no-send dry run.
+  - Step 47G: outbox schema decision/implementation if durable retry is required.
+  - Step 47H: provider-specific implementation after explicit provider/ops authorization.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, SMTP credential, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 47D Archive - Password Reset / Invite Real Delivery/Email Provider Decision Gate - 2026-06-27
+
+- Step identity:
+  - This is Step 47D.
+  - Step 47D is a real delivery/email provider decision gate.
+  - It is not provider implementation, real email/SMS sending, production seed/backfill, production migration, production acceptance, production DB access, VPS access, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - Latest commit subject confirmed: `feat: add password reset and invite local flow`.
+  - Step 47A readiness gate confirmed.
+  - Step 47B local SQL migration rehearsal confirmed with Prisma history not covered.
+  - Step 47C local permission seed/backfill rehearsal confirmed.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Review completed:
+  - Reviewed `AccountLifecycleMailer` and `AccountLifecycleService` delivery handoff.
+  - Reviewed package dependencies for mail provider libraries.
+  - Reviewed existing tech-stack environment variable planning and prior design notes.
+- Decision:
+  - Keep `LOCAL_SAFE_STUB` in place for now.
+  - Do not select a specific external provider in this Step.
+  - Require explicit user/ops decision before adding a provider SDK, SMTP dependency, production config, secrets, DNS/sender domain, or sending behavior.
+  - Prefer a provider-agnostic adapter/outbox contract as the next design step; SMTP can be the first generic integration path if the user chooses no managed API provider.
+- Required inputs before real provider implementation:
+  - Provider and delivery channel.
+  - Verified sender domain/address.
+  - Production base URL for reset/invite links.
+  - Secret storage, rotation, and deployment injection process.
+  - Rate limit, retry, timeout, bounce/complaint, and support escalation policy.
+  - Template content and no-secret logging/audit rules.
+- Follow-up:
+  - Step 47E should design the real delivery adapter/outbox contract without sending.
+  - Production migration / permission backfill / deploy / smoke still require separate authorization.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, SMTP credential, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 47C Archive - Password Reset / Invite Local Permission Seed/Backfill Rehearsal Only - 2026-06-27
+
+- Step identity:
+  - This is Step 47C.
+  - Step 47C is local permission seed/backfill rehearsal only.
+  - It is not production seed/backfill, production migration, production acceptance, production DB access, VPS access, real email/SMS sending, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - Latest commit subject confirmed: `feat: add password reset and invite local flow`.
+  - Step 47A readiness gate confirmed.
+  - Step 47B local SQL migration rehearsal confirmed with Prisma history not covered.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Implementation completed:
+  - Added `account:invite` and `account:reset_password` to `prisma/seed.cjs`.
+  - Added both permissions to `prisma/seed-foundation.cjs`.
+  - Granted both permissions only to `SYSTEM_ADMIN`.
+  - Added targeted foundation seed tests for lifecycle permissions.
+- Local rehearsal completed:
+  - Used local non-production rehearsal DB `step47b_rehearsal_20260627_001`.
+  - Executed an equivalent idempotent permission backfill twice with container-local `psql`.
+  - Verified two permission rows, two `SYSTEM_ADMIN` grants, zero non-admin grants, and zero duplicate permission/role-permission rows.
+  - Did not run host-side Prisma seed because this Step forbids reading local test passwords or constructing a full `DATABASE_URL`.
+- Validation completed:
+  - `git diff --check` passed.
+  - `corepack pnpm test:seed:foundation` passed.
+  - API typecheck passed.
+  - Changed seed files did not contain credential material.
+- Recovery plan:
+  - Production rollback for assignments can remove only the two `SYSTEM_ADMIN` role-permission rows.
+  - Permission rows should generally be retained unless a deliberate vocabulary rollback is approved.
+  - On production failure, stop, preserve logs, inspect partial inserts/grants, and do not deploy/smoke until fixed.
+- Follow-up:
+  - Step 47D should be real delivery/email provider decision gate.
+  - Production migration / permission backfill / deploy / smoke still require separate authorization.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 47B Archive - Password Reset / Invite Local Migration Rehearsal Only - 2026-06-27
+
+- Step identity:
+  - This is Step 47B.
+  - Step 47B is local migration rehearsal only.
+  - It is not production migration, seed/backfill, production acceptance, production DB access, VPS access, real email/SMS sending, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - Latest commit subject confirmed: `feat: add password reset and invite local flow`.
+  - Step 47A memory-bank updates were the expected tracked dirty scope.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Rehearsal approach:
+  - Used local non-production Docker PostgreSQL container `research-achievement-postgres-dev`.
+  - Created local rehearsal database `step47b_rehearsal_20260627_001`.
+  - Applied all committed migration SQL files in order via container-local `psql`.
+  - Did not run `prisma migrate deploy` because host-side Prisma deploy would require constructing a `DATABASE_URL` with local DB credentials, and this Step explicitly forbids reading local test passwords.
+- Validation completed:
+  - SQL migration chain applied successfully through `20260627103000_add_account_lifecycle_tokens`.
+  - Read-only catalog checks verified the account lifecycle table, `must_change_password` column/default/not-null, enum values, indexes, and foreign keys.
+  - `_prisma_migrations` table was not present; full Prisma migration-history rehearsal remains unverified.
+  - `git diff --check`, Prisma validate/generate, and API typecheck passed.
+- Recovery plan:
+  - Production execution requires backup, explicit authorization, and a stop-on-failure policy.
+  - Enum additions require forward-fix or planned type rebuild for rollback; simple enum value deletion is not a normal rollback path.
+  - New table/index/FK/column rollback must be coordinated with application rollback and evidence preservation.
+- Follow-up:
+  - Step 47C should rehearse local permission seed/backfill only.
+  - A future production migration Step must still run a credential-safe `prisma migrate deploy` rehearsal or obtain explicit local disposable DB credentials for Prisma history verification before production authorization.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 47A Archive - Password Reset / Invite Migration and Permission Backfill Readiness Gate - 2026-06-27
+
+- Step identity:
+  - This is Step 47A.
+  - Step 47A is a readiness / decision gate for migration execution, permission seed/backfill, rollback planning, and real delivery readiness.
+  - It is not migration execution, seed/backfill execution, production acceptance, production DB access, VPS access, real email/SMS sending, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - Latest commit subject confirmed: `feat: add password reset and invite local flow`.
+  - Step 46R review / commit gate confirmed.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Read-only review completed:
+  - Reviewed Step 46R memory-bank record and commit boundary.
+  - Reviewed `prisma/schema.prisma`.
+  - Reviewed `prisma/migrations/20260627103000_add_account_lifecycle_tokens/migration.sql`.
+  - Reviewed permission seed surfaces: `prisma/seed.cjs`, `prisma/seed-foundation.cjs`, and foundation seed tests by reference.
+  - Reviewed account lifecycle / auth / account-management permission and runtime boundaries.
+- Readiness decisions:
+  - Migration execution must be split into its own authorized Step.
+  - Permission seed/backfill must be split into its own authorized Step.
+  - Local database migration rehearsal is required before production migration.
+  - Rollback / recovery plan is required before production migration or permission backfill.
+  - Real email provider / delivery is a separate decision gate before production user-facing rollout.
+- Recommended follow-up:
+  - Step 47B: local migration rehearsal only, no production.
+  - Step 47C: local permission seed/backfill rehearsal only, no production.
+  - Step 47D: real delivery/email provider decision gate.
+  - Production migration / permission backfill / deploy / smoke must be separately authorized after local evidence and recovery plan are recorded.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
 ## Current Step 46G Archive - Password Reset / Invite Local Browser Acceptance - 2026-06-27
 
 - Step identity:

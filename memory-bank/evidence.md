@@ -1,5 +1,386 @@
 # Evidence
 
+## 2026-06-27 Step 47R - Post-46 readiness and delivery-gate review / commit evidence
+
+- Purpose:
+  - Review and commit Step 47A-47G local non-production readiness and delivery-gate changes.
+  - Keep push, deploy, migration execution, seed/backfill execution, provider selection, dependency installation, SMTP/API config, real email/SMS, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence before commit:
+  - `git rev-parse HEAD`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - `git log -1 --pretty=%s`: `feat: add password reset and invite local flow`.
+  - Step 47A readiness gate record exists.
+  - Step 47B local migration SQL rehearsal record exists with result `LOCAL_MIGRATION_SQL_REHEARSAL_PASSED_PRISMA_HISTORY_NOT_COVERED`.
+  - Step 47C local permission seed/backfill rehearsal record exists with result `LOCAL_PERMISSION_SEED_BACKFILL_REHEARSAL_PASSED`.
+  - Step 47D provider decision gate record exists with result `REAL_DELIVERY_PROVIDER_GATE_COMPLETED_PROVIDER_NOT_SELECTED`.
+  - Step 47E adapter/outbox contract design record exists with result `REAL_DELIVERY_ADAPTER_OUTBOX_CONTRACT_DESIGNED_NO_IMPLEMENTATION`.
+  - Step 47F fake-provider no-send dry run record exists with result `LOCAL_FAKE_PROVIDER_NO_SEND_DRY_RUN_PASSED`.
+  - Step 47G outbox-vs-synchronous decision record exists with result `SYNCHRONOUS_POST_COMMIT_ADAPTER_FIRST_OUTBOX_DEFERRED`.
+- Diff review:
+  - `prisma/seed.cjs` adds stable permission ids and grants `account:invite` / `account:reset_password` to `SYSTEM_ADMIN`.
+  - `prisma/seed-foundation.cjs` adds the two account lifecycle permissions.
+  - `prisma/seed-foundation.test.cjs` asserts the two permissions exist and are not granted to non-admin roles.
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.ts` defines provider-agnostic delivery input/result normalization and unsafe provider message id filtering.
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.spec.ts` keeps fake provider inside tests and verifies safe persisted projection.
+  - `apps/api/src/account-lifecycle/account-lifecycle.service.spec.ts` verifies failed/suppressed/queued fake-provider statuses do not expose raw token material.
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts` remains runtime `LOCAL_SAFE_STUB`.
+- Validation:
+  - `git diff --check`: passed; only Git LF/CRLF working-copy warnings were printed.
+  - `corepack pnpm test:seed:foundation`: passed, 5 tests.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle-delivery account-lifecycle.service`: passed, 2 files / 12 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - Sensitive/provider scan found no real credentials, production connection strings, provider SDK, SMTP/API config, or network send calls. Matches were limited to placeholder datasource evidence and test-only dangerous-string assertions/regex.
+- Commit scope:
+  - Stage only Step 47 seed/backfill, delivery contract/test, service test, and memory-bank files.
+  - Do not stage `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `apps/api/deploy/artifacts/test-attachment-storage/**`, or `local-prod-preview-proxy.cjs`.
+- Boundaries observed:
+  - No migration executed.
+  - No seed/backfill executed.
+  - No provider selected.
+  - No dependency installed.
+  - No SMTP/API config.
+  - No real email/SMS sent.
+  - No `.env`, SMTP/API credential, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+
+## 2026-06-27 Step 47G - Real delivery outbox vs synchronous adapter decision evidence
+
+- Purpose:
+  - Decide whether first real delivery implementation requires durable retry/outbox schema or should start with synchronous post-commit adapter.
+  - Keep schema/migration/outbox implementation, provider selection, dependency addition, SMTP/API config, real email/SMS, migration, seed/backfill, production/VPS/production DB access, push, deploy, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - `git log -1 --pretty=format:"%H%n%s"`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d` / `feat: add password reset and invite local flow`.
+  - Step 47C memory-bank record exists with result `LOCAL_PERMISSION_SEED_BACKFILL_REHEARSAL_PASSED`.
+  - Step 47D memory-bank record exists with result `REAL_DELIVERY_PROVIDER_GATE_COMPLETED_PROVIDER_NOT_SELECTED`.
+  - Step 47E memory-bank record exists with result `REAL_DELIVERY_ADAPTER_OUTBOX_CONTRACT_DESIGNED_NO_IMPLEMENTATION`.
+  - Step 47F memory-bank record exists with result `LOCAL_FAKE_PROVIDER_NO_SEND_DRY_RUN_PASSED`.
+- Reviewed files:
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.service.ts`.
+  - `memory-bank/design-spec.md` Step 47E contract.
+  - `git status --short --untracked-files=all`.
+- Decision evidence:
+  - Chosen path: `SYNCHRONOUS_POST_COMMIT_ADAPTER_FIRST_OUTBOX_DEFERRED`.
+  - Current runtime remains `LOCAL_SAFE_STUB`.
+  - No provider is selected.
+  - No queue/worker/scheduler/schema is authorized.
+  - Raw token persistence remains prohibited.
+- Answers to Step questions:
+  - Durable retry/outbox schema is not needed for the first real implementation.
+  - If outbox becomes required, it must be a separate authorized schema/migration/worker Step.
+  - First real implementation should use synchronous post-commit adapter only.
+  - Send failure maps to safe delivery status: `FAILED` or `SUPPRESSED`; `QUEUED` requires an authorized retry owner.
+  - Manual admin resend is allowed and should generate a new token while replacing previous active same-purpose token.
+  - No background worker, queue, scheduler, retry count, or backoff policy is required until outbox is authorized.
+  - Raw token/full URL persistence is explicitly forbidden.
+  - Production still needs provider/relay, sender domain, public base URL, secret storage/rotation, failure/rate-limit policy, template approval, and controlled smoke authorization.
+- Validation:
+  - `git diff --check`: passed; only Git LF/CRLF working-copy warnings were printed.
+  - Sensitive scan over account-lifecycle, memory-bank, and seed files found no real credentials or production connection strings. Matches were limited to placeholder datasource evidence and test-only dangerous-string assertions/regex.
+  - Typecheck/tests were not rerun in Step 47G because this Step changed only decision/evidence documentation and did not modify runtime/test/schema code.
+- Boundaries observed:
+  - No schema/migration added.
+  - No runtime code changed.
+  - No provider selected.
+  - No dependency installed.
+  - No SMTP/API config.
+  - No real email/SMS sent.
+  - No `.env`, SMTP/API credential, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+
+## 2026-06-27 Step 47F - Real delivery local fake-provider no-send dry-run evidence
+
+- Purpose:
+  - Convert Step 47E delivery adapter contract into local fake-provider tests and no-send dry-run coverage.
+  - Keep provider selection, dependency addition, SMTP/API config, real email/SMS, schema/migration/outbox implementation, migration, seed/backfill, production/VPS/production DB access, push, deploy, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - `git log -1 --pretty=format:"%H%n%s"`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d` / `feat: add password reset and invite local flow`.
+  - Step 47C memory-bank record exists with result `LOCAL_PERMISSION_SEED_BACKFILL_REHEARSAL_PASSED`.
+  - Step 47D memory-bank record exists with result `REAL_DELIVERY_PROVIDER_GATE_COMPLETED_PROVIDER_NOT_SELECTED`.
+  - Step 47E memory-bank record exists with result `REAL_DELIVERY_ADAPTER_OUTBOX_CONTRACT_DESIGNED_NO_IMPLEMENTATION`.
+  - `git status --short --untracked-files=all`: tracked dirty scope before Step 47F was expected Step 47A-47E memory-bank plus Step 47C seed files, with existing local artifacts untracked.
+- Files changed:
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.spec.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.service.spec.ts`.
+  - Step 47F memory-bank records.
+- No-send dry-run evidence:
+  - Fake provider exists only inside `account-lifecycle-delivery.spec.ts`.
+  - Runtime `AccountLifecycleMailer` remains unchanged and still returns `LOCAL_SAFE_STUB`.
+  - No provider SDK, SMTP client, or network call was added.
+- Test coverage:
+  - Fake provider accepted result maps to `SENT`.
+  - Failed result maps to `FAILED`.
+  - Suppressed result maps to `SUPPRESSED`.
+  - Rate-limited result maps to `QUEUED`.
+  - Safe provider message id is retained.
+  - Provider message ids containing plaintext email, URL, token, cookie, password/secret/key markers, private-key markers, or line breaks are dropped.
+  - Safe persisted projection excludes raw token, plaintext recipient email, public base URL, and full reset link.
+  - Service fake-provider status test verifies delivery adapter/status update without raw token, token hash, or URL exposure.
+- Quality gates:
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle-delivery account-lifecycle.service`: passed, 2 files / 12 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `git diff --check`: passed; only LF/CRLF warnings.
+  - Sensitive scan matched only test/assertion patterns and existing token variable names, not real credentials.
+  - Network/provider scan found no real network/provider integration; matches were test text such as suppressed/cookie negative assertions.
+- Boundaries observed:
+  - No provider selected.
+  - No dependency installed.
+  - No SMTP/API config.
+  - No real email/SMS sent.
+  - No `.env`, SMTP/API credential, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+  - No schema/migration/outbox table added.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+
+## 2026-06-27 Step 47E - Real delivery adapter/outbox contract design evidence
+
+- Purpose:
+  - Design the real delivery adapter/outbox contract for password reset and invite flows.
+  - Keep provider implementation, dependency addition, schema/migration implementation, real email/SMS, production migration, production seed/backfill, production/VPS/production DB access, push, deploy, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - `git log -1 --pretty=format:"%H%n%s"`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d` / `feat: add password reset and invite local flow`.
+  - `git status --short`: tracked dirty scope before Step 47E was expected Step 47A/47B/47C/47D memory-bank plus Step 47C seed files, with existing untracked local artifacts.
+- Reviewed context:
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts`: current adapter remains `LOCAL_SAFE_STUB`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.service.ts`: raw token is generated transiently and handed to mailer after token hash persistence.
+  - `memory-bank/design-spec.md`: existing design required future adapter/outbox boundary and no raw token/full link persistence.
+- Design evidence:
+  - Added Step 47E section to `memory-bank/design-spec.md`.
+  - Defined adapter input/output types.
+  - Defined future outbox fields and indexes.
+  - Defined delivery statuses: `PENDING`, `PROCESSING`, `SENT`, `FAILED`, `SUPPRESSED`.
+  - Defined retry categories and bounded retry rule.
+  - Defined transaction boundary and limitation for durable async delivery without raw-token persistence.
+  - Defined audit/log redaction rules.
+- Key safety findings:
+  - Raw token and full URL must remain transient only.
+  - Outbox must not store plaintext recipient email, raw token, full URL, provider credentials, full provider payloads, or full connection strings.
+  - If raw token is lost before provider send, the system must fail/suppress and require resend instead of reconstructing or storing secrets.
+- Boundaries observed:
+  - No provider selected or configured.
+  - No dependency added.
+  - No runtime source changed.
+  - No schema/migration added.
+  - No real email/SMS sent.
+  - No production migration or seed/backfill.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+  - No `.env`, SMTP credential, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+
+## 2026-06-27 Step 47D - Password reset / invite real delivery provider decision evidence
+
+- Purpose:
+  - Decide readiness and boundaries for real password reset / invite delivery.
+  - Keep provider implementation, real email/SMS, production migration, production seed/backfill, production/VPS/production DB access, push, deploy, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - `git log -1 --pretty=format:"%H%n%s"`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d` / `feat: add password reset and invite local flow`.
+  - `git status --short`: tracked dirty scope before Step 47D was expected Step 47A/47B/47C memory-bank and seed files, plus existing untracked local artifacts.
+- Delivery boundary evidence:
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts` still returns adapter `LOCAL_SAFE_STUB` and `QUEUED`.
+  - The mailer receives the raw token only as transient method input and does not send email/SMS.
+  - `AccountLifecycleService.deliverLifecycleToken` updates token delivery adapter/status after the mailer result.
+  - API package dependencies do not include a real email provider SDK or SMTP mailer dependency.
+  - `memory-bank/tech-stack.md` lists SMTP variable names only and does not configure a concrete provider or credential.
+- Decision evidence:
+  - Provider not selected in Step 47D.
+  - Real delivery remains blocked on explicit provider/operations authorization.
+  - Recommended next work is a provider-agnostic adapter/outbox contract, not direct provider coupling.
+- Production readiness gaps:
+  - No verified sender domain/address.
+  - No production public base URL decision for reset/invite links.
+  - No secret storage/rotation plan for SMTP/API credentials.
+  - No rate-limit, retry, timeout, bounce/complaint, suppression, or support escalation policy.
+  - No real email templates approved for production.
+  - No provider-specific local dry run or production smoke evidence.
+- Recovery / safety plan:
+  - Keep `LOCAL_SAFE_STUB` until provider configuration is explicitly authorized.
+  - Feature rollout should fail closed or suppress delivery if provider config is missing/invalid.
+  - Do not log or persist raw tokens or full reset/invite links.
+  - If provider sending fails in production, mark delivery failed/suppressed, preserve safe logs, and avoid reissuing unlimited tokens.
+- Boundaries observed:
+  - No provider selected or configured.
+  - No dependency added.
+  - No real email/SMS sent.
+  - No production migration or seed/backfill.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+  - No `.env`, SMTP credential, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+
+## 2026-06-27 Step 47C - Password reset / invite local permission seed/backfill rehearsal evidence
+
+- Purpose:
+  - Add and locally rehearse idempotent permission seed/backfill for `account:invite` and `account:reset_password`.
+  - Keep production seed/backfill, production migration, production/VPS/production DB access, push, deploy, real email/SMS, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - `git log -1 --pretty=format:"%H%n%s"`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d` / `feat: add password reset and invite local flow`.
+  - `git status --short`: tracked dirty scope before Step 47C was expected Step 47A/47B memory-bank files, plus existing untracked local artifacts.
+- Files changed:
+  - `prisma/seed.cjs`.
+  - `prisma/seed-foundation.cjs`.
+  - `prisma/seed-foundation.test.cjs`.
+  - Step 47C memory-bank records.
+- Seed/backfill design evidence:
+  - `prisma/seed.cjs` adds stable IDs:
+    - `30000000-0000-4000-8000-000000000022` for `account:invite`.
+    - `30000000-0000-4000-8000-000000000023` for `account:reset_password`.
+  - `prisma/seed.cjs` grants both permissions to `SYSTEM_ADMIN`.
+  - `prisma/seed-foundation.cjs` includes both permissions in the foundation permissions array.
+  - `SYSTEM_ADMIN` receives all foundation permissions through the existing matrix.
+  - Targeted foundation test asserts lifecycle permissions exist, are granted to `SYSTEM_ADMIN`, and are not granted to other foundation roles.
+- Local rehearsal evidence:
+  - Used local non-production rehearsal database `step47b_rehearsal_20260627_001`.
+  - Did not read `.env`, real `DATABASE_URL`, local DB password, token, cookie, certificate, private key, local test password, or full connection string.
+  - Executed equivalent idempotent local SQL backfill twice through container-local `psql`.
+  - Verification after repeated execution:
+    - Lifecycle permission rows: 2.
+    - `SYSTEM_ADMIN` lifecycle grants: 2.
+    - Non-admin lifecycle grants: 0.
+    - Duplicate lifecycle permission codes: 0.
+    - Duplicate `role_permissions`: 0.
+    - Observed grants:
+      - `SYSTEM_ADMIN` -> `account:invite`.
+      - `SYSTEM_ADMIN` -> `account:reset_password`.
+  - Did not run host-side Prisma seed because it would require constructing a full local `DATABASE_URL`, which is outside this Step's credential boundary.
+- Quality gates:
+  - `node --test prisma/seed-foundation.test.cjs`: passed, 5 tests.
+  - `corepack pnpm test:seed:foundation`: passed, 5 tests.
+  - `git diff --check`: passed; only LF/CRLF warnings for existing edited files.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - Changed seed file sensitive keyword scan did not expose credentials; the only match was the test's forbidden-pattern literal for private keys.
+- Recovery plan evidence:
+  - Production backfill requires backup and explicit authorization.
+  - Assignment rollback can remove only the two `SYSTEM_ADMIN` lifecycle `role_permissions`.
+  - Prefer retaining permission rows as inactive/auditable vocabulary unless a separate rollback decision removes them.
+  - On failure, stop deploy/smoke, preserve logs, inspect partial inserts/grants, and retry only after human review.
+- Boundaries observed:
+  - No production seed/backfill.
+  - No production migration.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No real email/SMS.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+  - No sensitive configuration was read or recorded.
+
+## 2026-06-27 Step 47B - Password reset / invite local migration rehearsal evidence
+
+- Purpose:
+  - Rehearse password reset / invite migration locally only.
+  - Keep production migration, seed/backfill, production/VPS/production DB access, push, deploy, real email/SMS, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - `git log -1 --pretty=format:"%H%n%s"`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d` / `feat: add password reset and invite local flow`.
+  - `git status --short`: tracked dirty scope before Step 47B was the expected Step 47A memory-bank files, plus existing untracked local artifacts.
+- Local DB boundary evidence:
+  - `docker ps --format "{{.Names}} {{.Image}} {{.Ports}}"` showed local container `research-achievement-postgres-dev` using `postgres:16-alpine` bound to `127.0.0.1:55432->5432/tcp`.
+  - Created local rehearsal database `step47b_rehearsal_20260627_001`.
+  - No full connection string, password, `.env`, token, cookie, certificate, private key, or production host was read or recorded.
+- Migration SQL review:
+  - `20260627103000_add_account_lifecycle_tokens/migration.sql` adds `UserStatus.PENDING_ACTIVATION`.
+  - It adds 10 account lifecycle audit action enum values.
+  - It creates `AccountLifecycleTokenPurpose`, `AccountLifecycleTokenStatus`, `AccountLifecycleDeliveryChannel`, and `AccountLifecycleDeliveryStatus`.
+  - It adds `user_credentials.must_change_password BOOLEAN NOT NULL DEFAULT false`.
+  - It creates `account_lifecycle_tokens`, a unique token-hash index, four query indexes, and two user foreign keys with `ON DELETE SET NULL`.
+- Local rehearsal execution:
+  - Applied all committed migration SQL files in order using container-local `psql -v ON_ERROR_STOP=1`.
+  - Applied successfully:
+    - `20260608080155_init_core_schema`
+    - `20260623073332_add_auth_sessions`
+    - `20260627090100_add_attachment_storage_metadata`
+    - `20260627103000_add_account_lifecycle_tokens`
+  - Did not run `prisma migrate deploy`; reason: host-side deploy would require constructing a `DATABASE_URL` with local DB credentials, while this Step forbids reading local test passwords.
+  - Did not run seed/backfill.
+- Read-only verification:
+  - `to_regclass('public.account_lifecycle_tokens') IS NOT NULL`: true.
+  - `user_credentials.must_change_password`: `is_nullable = NO`, `column_default = false`.
+  - `UserStatus` includes `PENDING_ACTIVATION`.
+  - Lifecycle `AuditActionType` values found: 10 / 10.
+  - `AccountLifecycleTokenPurpose`: `INVITE_ACCEPT,PASSWORD_RESET_SELF,PASSWORD_RESET_ADMIN`.
+  - `AccountLifecycleTokenStatus`: `ACTIVE,USED,REVOKED`.
+  - `AccountLifecycleDeliveryChannel`: `EMAIL`.
+  - `AccountLifecycleDeliveryStatus`: `PENDING,QUEUED,SENT,FAILED,SUPPRESSED`.
+  - Expected account lifecycle indexes found: 6 / 6.
+  - Expected account lifecycle foreign keys found: 2 / 2.
+  - `_prisma_migrations` table exists: false; Prisma migration history is not covered by this SQL-only rehearsal.
+- Quality gates:
+  - `git diff --check`: passed; only LF/CRLF warnings for existing memory-bank edits.
+  - Placeholder datasource + `corepack pnpm prisma:validate`: passed.
+  - Placeholder datasource + `corepack pnpm prisma generate`: passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+- Recovery plan evidence:
+  - Production migration must be preceded by a fresh backup and explicit production authorization.
+  - PostgreSQL enum additions are not directly reversible with a simple drop-value operation; rollback should use forward-fix or a planned type rebuild/type swap under maintenance review.
+  - If application rollback is required, verify code compatibility with `must_change_password` before considering column rollback.
+  - `account_lifecycle_tokens` rollback must consider issued tokens, audit correlation, foreign keys, and runtime code dependency before removing table/index/FK objects.
+  - If production migration fails, stop deploy, preserve migration logs, do not run seed/backfill, and require human review before retry.
+- Boundaries observed:
+  - No production migration.
+  - No seed/backfill.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No real email/SMS.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+  - No sensitive configuration was read or recorded.
+
+## 2026-06-27 Step 47A - Password reset / invite readiness gate evidence
+
+- Purpose:
+  - Review readiness for migration execution, permission seed/backfill, rollback planning, and real delivery decisions.
+  - Keep migration execution, seed/backfill, production/VPS/production DB access, push, deploy, real email/SMS, cleanup, deletion, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d`.
+  - `git log -1 --pretty=format:"%H%n%s"`: `83d2d4fa06c81a4ab4502f2725fed28a73e4479d` / `feat: add password reset and invite local flow`.
+  - Step 46R archive and evidence confirmed in memory-bank.
+- Working-tree evidence:
+  - `git status --short`: untracked local artifacts only:
+    - `.local-step44h/`
+    - `.local-step45c4/`
+    - `.local-step46g/`
+    - `apps/api/deploy/`
+    - `local-prod-preview-proxy.cjs`
+  - These artifacts were not read deeply, modified, committed, cleaned, moved, or deleted.
+- Migration review evidence:
+  - Reviewed `prisma/migrations/20260627103000_add_account_lifecycle_tokens/migration.sql`.
+  - The migration adds `UserStatus.PENDING_ACTIVATION`.
+  - The migration adds multiple `AuditActionType` values for invite/password reset/credential events.
+  - The migration creates lifecycle token purpose/status/delivery enums.
+  - The migration adds `user_credentials.must_change_password BOOLEAN NOT NULL DEFAULT false`.
+  - The migration creates `account_lifecycle_tokens`, unique token-hash index, query indexes, and foreign keys to `users` with `ON DELETE SET NULL`.
+  - Risk conclusion: split execution into Step 47B local rehearsal before any production authorization; production needs backup/recovery and compatibility planning.
+- Permission seed/backfill review evidence:
+  - Reviewed `apps/api/src/authorization/constants/permission-code.ts`: `account:invite` and `account:reset_password` exist as runtime permission codes.
+  - Reviewed `prisma/seed-foundation.cjs`: permissions list and `SYSTEM_ADMIN: permissions.map(...)` currently do not include the two lifecycle permissions.
+  - Reviewed `prisma/seed.cjs`: deterministic permission IDs and system-admin role-permission matrix currently do not include the two lifecycle permissions.
+  - Risk conclusion: Step 47C should add/rehearse idempotent seed/backfill so `SYSTEM_ADMIN` receives both new permissions.
+- Runtime compatibility review evidence:
+  - Public reset request remains enumeration-safe and does not require auth.
+  - Public reset confirm and invite accept use token validation and safe public errors.
+  - Admin invite/reset controller routes require `account:invite` and `account:reset_password`.
+  - Existing direct account creation remains under `system:config`; invite is a separate route.
+  - Existing active login eligibility should remain based on active user/credential/session behavior; `PENDING_ACTIVATION` users should not be treated as active login users.
+- Explicitly not executed:
+  - No `prisma migrate` command.
+  - No seed or backfill command.
+  - No database connection.
+  - No production/VPS access.
+  - No push/deploy.
+  - No real email/SMS.
+  - No `.env`, real `DATABASE_URL`, token, cookie, certificate, private key, local test password, or full connection string read or recorded.
+
 ## 2026-06-27 Step 46G - Password reset / invite local browser acceptance evidence
 
 - Purpose:

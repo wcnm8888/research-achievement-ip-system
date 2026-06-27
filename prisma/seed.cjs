@@ -42,6 +42,8 @@ const ids = {
     feeReadDepartment: "30000000-0000-4000-8000-000000000019",
     resourceGrantCreate: "30000000-0000-4000-8000-000000000020",
     resourceGrantRevoke: "30000000-0000-4000-8000-000000000021",
+    accountInvite: "30000000-0000-4000-8000-000000000022",
+    accountResetPassword: "30000000-0000-4000-8000-000000000023",
   },
   users: {
     researcher: "40000000-0000-4000-8000-000000000001",
@@ -165,6 +167,8 @@ async function seedRolesAndPermissions() {
     [ids.permissions.feeReadDepartment, "fee:read_department", "fee", "read_department", "Read department fee records", "ACTIVE"],
     [ids.permissions.resourceGrantCreate, "resource_grant:create", "resource_grant", "create", "Create resource access grants", "ACTIVE"],
     [ids.permissions.resourceGrantRevoke, "resource_grant:revoke", "resource_grant", "revoke", "Revoke resource access grants", "ACTIVE"],
+    [ids.permissions.accountInvite, "account:invite", "account", "invite", "Invite accounts", "ACTIVE"],
+    [ids.permissions.accountResetPassword, "account:reset_password", "account", "reset_password", "Reset account passwords", "ACTIVE"],
   ];
 
   for (const [id, code, resource, action, name, status] of permissions) {
@@ -200,6 +204,8 @@ async function seedRolesAndPermissions() {
     [ids.roles.systemAdmin, ids.permissions.auditReadMasked],
     [ids.roles.systemAdmin, ids.permissions.systemConfig],
     [ids.roles.systemAdmin, ids.permissions.userContextRead],
+    [ids.roles.systemAdmin, ids.permissions.accountInvite],
+    [ids.roles.systemAdmin, ids.permissions.accountResetPassword],
     [ids.roles.auditor, ids.permissions.auditReadMasked],
     [ids.roles.auditor, ids.permissions.userContextRead],
     [ids.roles.leader, ids.permissions.dashboardReadInstitute],

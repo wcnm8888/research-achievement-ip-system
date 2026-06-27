@@ -229,6 +229,47 @@ describe("AccountLifecycleService", () => {
 
     expect(repository.findUserById).not.toHaveBeenCalled();
   });
+
+  it.each([
+    AccountLifecycleDeliveryStatus.FAILED,
+    AccountLifecycleDeliveryStatus.SUPPRESSED,
+    AccountLifecycleDeliveryStatus.QUEUED,
+  ])("persists safe fake-provider delivery status %s without exposing token material", async (deliveryStatus) => {
+    const { service, repository, mailer, auditService } = createService();
+    mailer.enqueue.mockResolvedValueOnce({
+      deliveryStatus,
+      adapter: "LOCAL_FAKE_PROVIDER",
+      template: "PASSWORD_RESET",
+    });
+
+    const result = await service.requestAdminPasswordReset(
+      adminContext,
+      ids.targetUser,
+      "dry-run",
+    );
+
+    expect(result).toEqual({
+      userId: ids.targetUser,
+      deliveryStatus,
+    });
+    expect(repository.updateTokenDeliveryInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      ids.token,
+      {
+        deliveryAdapter: "LOCAL_FAKE_PROVIDER",
+        deliveryStatus,
+      },
+    );
+
+    const serialized = JSON.stringify({
+      result,
+      deliveryUpdates: repository.updateTokenDeliveryInTransaction.mock.calls,
+      audit: auditService.recordEventInTransaction.mock.calls,
+    });
+    expect(serialized).not.toContain("raw-lifecycle-token");
+    expect(serialized).not.toContain("token-hash:raw-lifecycle-token");
+    expect(serialized).not.toContain("https://");
+  });
 });
 
 const createService = () => {
