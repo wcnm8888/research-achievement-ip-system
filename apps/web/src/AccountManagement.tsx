@@ -35,10 +35,12 @@ import type {
   AssignAccountUserRoleInput,
   ChangeAccountUserDepartmentInput,
   CreateAccountUserInput,
+  CreateInviteInput,
   DepartmentListResponse,
   DepartmentSummary,
   DisableAccountUserInput,
   EnableAccountUserInput,
+  InviteIssueResponse,
   ListAccountUsersQuery,
   RevokeAccountUserRoleInput,
 } from "./types";
@@ -66,6 +68,10 @@ type CreateUserFormValues = {
     departmentId?: string;
   }>;
   initialPassword?: string;
+};
+
+type CreateInviteFormValues = Omit<CreateUserFormValues, "initialPassword"> & {
+  reason?: string;
 };
 
 type ReasonFormValues = {
@@ -98,6 +104,9 @@ type DepartmentSelectorState = {
 type OperationRequest =
   | { kind: "disable"; user: AccountUserDetail }
   | { kind: "enable"; user: AccountUserDetail }
+  | { kind: "resend-invite"; user: AccountUserDetail }
+  | { kind: "admin-password-reset"; user: AccountUserDetail }
+  | { kind: "revoke-password-reset"; user: AccountUserDetail }
   | { kind: "assign-role"; user: AccountUserDetail }
   | { kind: "revoke-role"; user: AccountUserDetail; userRole: AccountUserDetail["roles"][number] }
   | { kind: "change-department"; user: AccountUserDetail };
@@ -116,6 +125,8 @@ const emptyLoadable = <T,>(): Loadable<T> => ({
 });
 
 export const accountManagementPermissionCode = "system:config";
+export const accountInvitePermissionCode = "account:invite";
+export const accountResetPasswordPermissionCode = "account:reset_password";
 
 const statusOptions: Array<{ label: string; value: AccountUserStatus }> = [
   { label: "启用", value: "ACTIVE" },
@@ -161,16 +172,20 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Loadable<AccountUserDetail>>(emptyLoadable);
   const [createOpen, setCreateOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [operation, setOperation] = useState<OperationRequest | null>(null);
   const [operationError, setOperationError] = useState<ApiError | null>(null);
   const [operationSubmitting, setOperationSubmitting] = useState(false);
   const [createForm] = Form.useForm<CreateUserFormValues>();
+  const [inviteForm] = Form.useForm<CreateInviteFormValues>();
   const [reasonForm] = Form.useForm<ReasonFormValues>();
   const [assignRoleForm] = Form.useForm<AssignRoleFormValues>();
   const [departmentForm] = Form.useForm<ChangeDepartmentFormValues>();
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
 
   const canReadAccounts = hasSystemConfigPermission(authUser);
+  const canInviteAccounts = hasAccountInvitePermission(authUser);
+  const canResetPasswords = hasAccountResetPasswordPermission(authUser);
   const query = useMemo(
     () => buildAccountUserListQuery(appliedFilters, page, pageSize),
     [appliedFilters, page, pageSize],
@@ -272,6 +287,19 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
     setCreateOpen(false);
   };
 
+  const openCreateInvite = () => {
+    inviteForm.resetFields();
+    inviteForm.setFieldsValue({
+      roles: [{ roleCode: "RESEARCHER", scopeType: "DEPARTMENT" }],
+    });
+    setInviteOpen(true);
+  };
+
+  const closeCreateInvite = () => {
+    inviteForm.resetFields();
+    setInviteOpen(false);
+  };
+
   const handleCreateUser = async (values: CreateUserFormValues) => {
     setOperationSubmitting(true);
     setOperationError(null);
@@ -286,6 +314,23 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
       setOperationError(normalizeError(error));
     } finally {
       createForm.setFieldValue("initialPassword", undefined);
+      setOperationSubmitting(false);
+    }
+  };
+
+  const handleCreateInvite = async (values: CreateInviteFormValues) => {
+    setOperationSubmitting(true);
+    setOperationError(null);
+
+    try {
+      const issue = await createInviteFromForm(apiClient, values);
+      message.success(`Invite queued: ${issue.deliveryStatus}`);
+      closeCreateInvite();
+      loadUsers();
+      loadDetail(issue.userId);
+    } catch (error) {
+      setOperationError(normalizeError(error));
+    } finally {
       setOperationSubmitting(false);
     }
   };
@@ -408,6 +453,26 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
         />
       ) : null}
 
+      <Card className="shell-card" title="Account lifecycle">
+        <Space size={12} wrap>
+          {canInviteAccounts ? (
+            <Button type="primary" onClick={openCreateInvite}>
+              Invite user
+            </Button>
+          ) : (
+            <Tag>account:invite unavailable</Tag>
+          )}
+          {canResetPasswords ? (
+            <Tag color="blue">account:reset_password enabled</Tag>
+          ) : (
+            <Tag>account:reset_password unavailable</Tag>
+          )}
+          <Typography.Text type="secondary">
+            Invite and reset actions never display delivery links or raw tokens.
+          </Typography.Text>
+        </Space>
+      </Card>
+
       <Card className="shell-card">
         <Space className="account-filter-bar" size={12} wrap>
           <Input.Search
@@ -500,7 +565,14 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
           }
         }}>
           {detail.data ? (
-            <AccountUserDetailView user={detail.data} onOperation={openOperation} />
+            <AccountUserDetailView
+              user={detail.data}
+              permissions={{
+                canInvite: canInviteAccounts,
+                canResetPassword: canResetPasswords,
+              }}
+              onOperation={openOperation}
+            />
           ) : null}
         </DataState>
       </Drawer>
@@ -513,6 +585,16 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
         error={operationError}
         onClose={closeCreateUser}
         onFinish={handleCreateUser}
+      />
+
+      <CreateInviteDrawer
+        form={inviteForm}
+        departmentSelector={departmentSelector}
+        open={inviteOpen}
+        submitting={operationSubmitting}
+        error={operationError}
+        onClose={closeCreateInvite}
+        onFinish={handleCreateInvite}
       />
 
       <AccountOperationModal
@@ -533,6 +615,14 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
 export const hasSystemConfigPermission = (
   user: Pick<AuthUser, "permissionCodes"> | null | undefined,
 ): boolean => Boolean(user?.permissionCodes.includes(accountManagementPermissionCode));
+
+export const hasAccountInvitePermission = (
+  user: Pick<AuthUser, "permissionCodes"> | null | undefined,
+): boolean => Boolean(user?.permissionCodes.includes(accountInvitePermissionCode));
+
+export const hasAccountResetPasswordPermission = (
+  user: Pick<AuthUser, "permissionCodes"> | null | undefined,
+): boolean => Boolean(user?.permissionCodes.includes(accountResetPasswordPermissionCode));
 
 export const buildAccountUserListQuery = (
   filters: AccountUserFilters,
@@ -609,6 +699,20 @@ export const buildCreateAccountUserPayload = (
   };
 };
 
+export const buildCreateInvitePayload = (
+  values: CreateInviteFormValues,
+): CreateInviteInput => {
+  const reason = values.reason?.trim();
+
+  return {
+    email: values.email.trim(),
+    name: values.name.trim(),
+    departmentId: values.departmentId.trim(),
+    roles: values.roles.map((role) => buildRolePayload(role)),
+    ...(reason ? { reason } : {}),
+  };
+};
+
 export const buildReasonPayload = <T extends ReasonFormValues>(
   values: T,
 ): DisableAccountUserInput & EnableAccountUserInput & RevokeAccountUserRoleInput => {
@@ -656,6 +760,11 @@ export const createAccountUserFromForm = async (
   values: CreateUserFormValues,
 ): Promise<AccountUserDetail> => client.createAccountUser(buildCreateAccountUserPayload(values));
 
+export const createInviteFromForm = async (
+  client: Pick<AccountManagementApiClient, "createInvite">,
+  values: CreateInviteFormValues,
+): Promise<InviteIssueResponse> => client.createInvite(buildCreateInvitePayload(values));
+
 export const executeAccountOperation = async ({
   apiClient,
   operation,
@@ -670,6 +779,9 @@ export const executeAccountOperation = async ({
     | "assignAccountUserRole"
     | "revokeAccountUserRole"
     | "changeAccountUserDepartment"
+    | "resendInvite"
+    | "requestAdminPasswordReset"
+    | "revokePasswordResetTokens"
   >;
   operation: OperationRequest;
   reasonValues?: ReasonFormValues;
@@ -686,6 +798,27 @@ export const executeAccountOperation = async ({
 
   if (operation.kind === "enable") {
     return apiClient.enableAccountUser(operation.user.id, buildReasonPayload(reasonValues));
+  }
+
+  if (operation.kind === "resend-invite") {
+    await apiClient.resendInvite(operation.user.id);
+    return operation.user;
+  }
+
+  if (operation.kind === "admin-password-reset") {
+    await apiClient.requestAdminPasswordReset(
+      operation.user.id,
+      buildReasonPayload(reasonValues),
+    );
+    return operation.user;
+  }
+
+  if (operation.kind === "revoke-password-reset") {
+    await apiClient.revokePasswordResetTokens(
+      operation.user.id,
+      buildReasonPayload(reasonValues),
+    );
+    return operation.user;
   }
 
   if (operation.kind === "assign-role") {
@@ -857,9 +990,11 @@ const createAccountUserColumns = (
 
 function AccountUserDetailView({
   user,
+  permissions,
   onOperation,
 }: {
   user: AccountUserDetail;
+  permissions: { canInvite: boolean; canResetPassword: boolean };
   onOperation: (request: OperationRequest) => void;
 }) {
   return (
@@ -881,6 +1016,31 @@ function AccountUserDetailView({
         <Descriptions.Item label="创建时间">{formatDateTime(user.createdAt)}</Descriptions.Item>
         <Descriptions.Item label="更新时间">{formatDateTime(user.updatedAt)}</Descriptions.Item>
       </Descriptions>
+      <Card className="shell-card" title="Lifecycle actions">
+        <Space size={8} wrap>
+          {permissions.canInvite && user.status === "PENDING_ACTIVATION" ? (
+            <Button onClick={() => onOperation({ kind: "resend-invite", user })}>
+              Resend invite
+            </Button>
+          ) : null}
+          {permissions.canResetPassword && user.status === "ACTIVE" ? (
+            <>
+              <Button onClick={() => onOperation({ kind: "admin-password-reset", user })}>
+                Issue reset
+              </Button>
+              <Button onClick={() => onOperation({ kind: "revoke-password-reset", user })}>
+                Revoke reset links
+              </Button>
+            </>
+          ) : null}
+          {!permissions.canInvite && !permissions.canResetPassword ? (
+            <Tag>No lifecycle permission</Tag>
+          ) : null}
+          <Typography.Text type="secondary">
+            These actions return delivery status only; tokens and full links are never shown.
+          </Typography.Text>
+        </Space>
+      </Card>
       <Card className="shell-card" title="账号操作">
         <Space size={8} wrap>
           {user.status === "ACTIVE" ? (
@@ -1075,6 +1235,159 @@ function CreateUserDrawer({
   );
 }
 
+function CreateInviteDrawer({
+  form,
+  departmentSelector,
+  open,
+  submitting,
+  error,
+  onClose,
+  onFinish,
+}: {
+  form: FormInstance<CreateInviteFormValues>;
+  departmentSelector: DepartmentSelectorState;
+  open: boolean;
+  submitting: boolean;
+  error: ApiError | null;
+  onClose: () => void;
+  onFinish: (values: CreateInviteFormValues) => void | Promise<void>;
+}) {
+  return (
+    <Drawer
+      className="account-operation-drawer"
+      title="Invite user"
+      width={680}
+      open={open}
+      onClose={onClose}
+      destroyOnClose
+      extra={
+        <Space>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="primary" loading={submitting} onClick={() => form.submit()}>
+            Send invite
+          </Button>
+        </Space>
+      }
+    >
+      <Space direction="vertical" size={16} className="full-width">
+        {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
+        <Alert
+          type="info"
+          showIcon
+          message="Invitation delivery is handled by the configured backend adapter. This UI never displays generated tokens or full links."
+        />
+        <DepartmentSelectorBoundary error={departmentSelector.error} />
+        <Form<CreateInviteFormValues>
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={onFinish}
+          initialValues={{
+            roles: [{ roleCode: "RESEARCHER", scopeType: "DEPARTMENT" }],
+          }}
+        >
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: "Enter an email." },
+              { type: "email", message: "Enter a valid email." },
+            ]}
+          >
+            <Input autoComplete="off" />
+          </Form.Item>
+          <Form.Item
+            label="Name"
+            name="name"
+            rules={[{ required: true, message: "Enter a name." }]}
+          >
+            <Input autoComplete="off" />
+          </Form.Item>
+          <Form.Item
+            label="Primary department"
+            name="departmentId"
+            rules={[{ required: true, message: "Select a department." }]}
+          >
+            <DepartmentSelect
+              departmentSelector={departmentSelector}
+              placeholder="Select active department"
+            />
+          </Form.Item>
+          <Form.Item label="Reason" name="reason">
+            <Input.TextArea maxLength={300} rows={3} />
+          </Form.Item>
+          <Form.List name="roles">
+            {(fields, { add, remove }) => (
+              <Space direction="vertical" size={12} className="full-width">
+                {fields.map((field) => (
+                  <Card
+                    className="account-inline-card"
+                    key={field.key}
+                    size="small"
+                    title={`Role ${field.name + 1}`}
+                    extra={
+                      fields.length > 1 ? (
+                        <Button danger size="small" onClick={() => remove(field.name)}>
+                          Remove
+                        </Button>
+                      ) : null
+                    }
+                  >
+                    <Space className="account-role-form-row" size={12} wrap>
+                      <Form.Item
+                        label="Role"
+                        name={[field.name, "roleCode"]}
+                        rules={[{ required: true, message: "Select a role." }]}
+                      >
+                        <Select className="account-form-select" options={roleOptions} />
+                      </Form.Item>
+                      <Form.Item
+                        label="Scope"
+                        name={[field.name, "scopeType"]}
+                        rules={[{ required: true, message: "Select a scope." }]}
+                      >
+                        <Select
+                          className="account-form-select"
+                          options={scopeTypeOptions}
+                          onChange={(value) => {
+                            if (value === "GLOBAL") {
+                              form.setFieldValue(["roles", field.name, "departmentId"], undefined);
+                            }
+                          }}
+                        />
+                      </Form.Item>
+                      <Form.Item shouldUpdate noStyle>
+                        {() =>
+                          form.getFieldValue(["roles", field.name, "scopeType"]) === "DEPARTMENT" ? (
+                            <Form.Item
+                              label="Scope department"
+                              name={[field.name, "departmentId"]}
+                              rules={[{ required: true, message: "Select a scope department." }]}
+                            >
+                              <DepartmentSelect
+                                className="account-form-input"
+                                departmentSelector={departmentSelector}
+                                placeholder="Select active department"
+                              />
+                            </Form.Item>
+                          ) : null
+                        }
+                      </Form.Item>
+                    </Space>
+                  </Card>
+                ))}
+                <Button onClick={() => add({ roleCode: "RESEARCHER", scopeType: "DEPARTMENT" })}>
+                  Add role
+                </Button>
+              </Space>
+            )}
+          </Form.List>
+        </Form>
+      </Space>
+    </Drawer>
+  );
+}
+
 function AccountOperationModal({
   operation,
   reasonForm,
@@ -1136,6 +1449,18 @@ const getOperationTitle = (operation: OperationRequest): string => {
     return `启用用户：${operation.user.name}`;
   }
 
+  if (operation.kind === "resend-invite") {
+    return `Resend invite: ${operation.user.name}`;
+  }
+
+  if (operation.kind === "admin-password-reset") {
+    return `Issue password reset: ${operation.user.name}`;
+  }
+
+  if (operation.kind === "revoke-password-reset") {
+    return `Revoke password reset links: ${operation.user.name}`;
+  }
+
   if (operation.kind === "assign-role") {
     return `分配角色：${operation.user.name}`;
   }
@@ -1154,6 +1479,18 @@ const getOperationSuccessMessage = (kind: OperationRequest["kind"]): string => {
 
   if (kind === "enable") {
     return "用户已启用";
+  }
+
+  if (kind === "resend-invite") {
+    return "Invite delivery queued";
+  }
+
+  if (kind === "admin-password-reset") {
+    return "Password reset delivery queued";
+  }
+
+  if (kind === "revoke-password-reset") {
+    return "Password reset links revoked";
   }
 
   if (kind === "assign-role") {
@@ -1184,6 +1521,36 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
         type="info"
         showIcon
         message="启用用户不会自动恢复已禁用 credential。"
+      />
+    );
+  }
+
+  if (operation.kind === "resend-invite") {
+    return (
+      <Alert
+        type="info"
+        showIcon
+        message="A new invite delivery will be queued. The UI will not display a token or full invitation link."
+      />
+    );
+  }
+
+  if (operation.kind === "admin-password-reset") {
+    return (
+      <Alert
+        type="warning"
+        showIcon
+        message="A password reset delivery will be queued. The user must sign in again after completing the reset."
+      />
+    );
+  }
+
+  if (operation.kind === "revoke-password-reset") {
+    return (
+      <Alert
+        type="warning"
+        showIcon
+        message="Active password reset links for this user will be revoked."
       />
     );
   }

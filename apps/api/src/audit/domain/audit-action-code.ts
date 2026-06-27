@@ -19,6 +19,16 @@ export const AuditActionCode = {
   logout: "LOGOUT",
   sessionRevoked: "SESSION_REVOKED",
   authMeDenied: "AUTH_ME_DENIED",
+  inviteCreated: "INVITE_CREATED",
+  inviteResent: "INVITE_RESENT",
+  inviteAccepted: "INVITE_ACCEPTED",
+  inviteRevoked: "INVITE_REVOKED",
+  passwordResetRequestedSelf: "PASSWORD_RESET_REQUESTED_SELF",
+  passwordResetRequestedAdmin: "PASSWORD_RESET_REQUESTED_ADMIN",
+  passwordResetConfirmed: "PASSWORD_RESET_CONFIRMED",
+  passwordResetRevoked: "PASSWORD_RESET_REVOKED",
+  passwordResetFailed: "PASSWORD_RESET_FAILED",
+  credentialChanged: "CREDENTIAL_CHANGED",
 } as const;
 
 export type AuditActionCode =

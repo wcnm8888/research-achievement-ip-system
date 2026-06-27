@@ -96,6 +96,16 @@ const persistedAuditActionByDomainAction = {
   [AuditActionCode.logout]: AuditActionType.LOGOUT,
   [AuditActionCode.sessionRevoked]: AuditActionType.SESSION_REVOKED,
   [AuditActionCode.authMeDenied]: AuditActionType.AUTH_ME_DENIED,
+  [AuditActionCode.inviteCreated]: AuditActionType.INVITE_CREATED,
+  [AuditActionCode.inviteResent]: AuditActionType.INVITE_RESENT,
+  [AuditActionCode.inviteAccepted]: AuditActionType.INVITE_ACCEPTED,
+  [AuditActionCode.inviteRevoked]: AuditActionType.INVITE_REVOKED,
+  [AuditActionCode.passwordResetRequestedSelf]: AuditActionType.PASSWORD_RESET_REQUESTED_SELF,
+  [AuditActionCode.passwordResetRequestedAdmin]: AuditActionType.PASSWORD_RESET_REQUESTED_ADMIN,
+  [AuditActionCode.passwordResetConfirmed]: AuditActionType.PASSWORD_RESET_CONFIRMED,
+  [AuditActionCode.passwordResetRevoked]: AuditActionType.PASSWORD_RESET_REVOKED,
+  [AuditActionCode.passwordResetFailed]: AuditActionType.PASSWORD_RESET_FAILED,
+  [AuditActionCode.credentialChanged]: AuditActionType.CREDENTIAL_CHANGED,
 } satisfies Record<AuditActionCode, AuditActionType>;
 
 const toPersistedAuditAction = (action: AuditActionCode): AuditActionType =>

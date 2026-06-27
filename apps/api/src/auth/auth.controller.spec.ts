@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import type { Server } from "node:http";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { AccountLifecycleService } from "../account-lifecycle/account-lifecycle.service";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
@@ -131,6 +132,8 @@ const makeApp = async ({
   })
     .overrideProvider(AuthService)
     .useValue(authService)
+    .overrideProvider(AccountLifecycleService)
+    .useValue(makeAccountLifecycleService())
     .overrideProvider(PrismaService)
     .useValue(prisma)
     .compile();
@@ -149,6 +152,12 @@ const makeAuthService = () => ({
   })),
   logout: vi.fn(async () => undefined),
   getMe: vi.fn(async () => makeAuthUserResponse()),
+});
+
+const makeAccountLifecycleService = () => ({
+  requestPasswordResetByEmail: vi.fn(async () => ({ accepted: true })),
+  confirmPasswordReset: vi.fn(async () => ({ reset: true })),
+  acceptInvite: vi.fn(async () => ({ accepted: true })),
 });
 
 const readSetCookieHeader = (response: request.Response): string => {

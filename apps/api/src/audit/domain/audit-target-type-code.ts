@@ -11,6 +11,7 @@ export const AuditTargetTypeCode = {
   auditLog: "AUDIT_LOG",
   user: "USER",
   userSession: "USER_SESSION",
+  accountLifecycleToken: "ACCOUNT_LIFECYCLE_TOKEN",
   auth: "AUTH",
 } as const;
 

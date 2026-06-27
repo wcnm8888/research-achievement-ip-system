@@ -18,6 +18,8 @@ describe("authorization constants", () => {
     expect(PermissionCode.attachmentDownload).toBe("attachment:download");
     expect(PermissionCode.auditReadMasked).toBe("audit:read_masked");
     expect(PermissionCode.departmentReadDepartment).toBe("department:read_department");
+    expect(PermissionCode.accountInvite).toBe("account:invite");
+    expect(PermissionCode.accountResetPassword).toBe("account:reset_password");
     expect(PermissionCode.feeReadDepartment).toBe("fee:read_department");
     expect(PermissionCode.resourceGrantCreate).toBe("resource_grant:create");
     expect(PermissionCode.resourceGrantRevoke).toBe("resource_grant:revoke");

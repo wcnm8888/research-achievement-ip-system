@@ -1,5 +1,296 @@
 # Progress
 
+## 2026-06-27 Step 46G - Password reset / invite local browser acceptance with safe stub/interception
+
+- Status: DONE as local browser acceptance.
+- Result:
+  - `LOCAL_PASSWORD_RESET_INVITE_BROWSER_ACCEPTANCE_PASSED_WITH_INTERCEPTION`.
+- Canonical state:
+  - Current local HEAD confirmed before browser acceptance: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Step 46C completed schema delta patch and migration file generation, but migration execution remains explicitly deferred.
+  - Step 46D completed backend local implementation.
+  - Step 46E completed Web UI local implementation.
+  - Step 46F completed cross-surface local quality gate.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Browser acceptance mode:
+  - Used local Vite preview at `127.0.0.1:4176`.
+  - Used browser-layer `/api/*` interception with synthetic local-only data.
+  - Did not start the API service or connect to any database.
+- Fixes made during acceptance:
+  - Public reset/invite URL tokens are no longer written into form fields; they remain in React memory as submit fallback.
+  - Successful reset/invite submit now clears token/password form fields before showing the success state.
+  - Added focused Web helper coverage for token fallback behavior.
+- Accepted flows:
+  - Public forgot-password from login page with enumeration-safe accepted copy.
+  - Public reset-password success and safe invalid/expired/used/revoked error category.
+  - Public invite-accept success and safe invalid/expired/used/revoked error category.
+  - Account-management invite create, invite resend, admin reset issue, and reset revoke with dedicated lifecycle permissions.
+  - Account-management lifecycle action visibility denied when the user lacks `account:invite` and `account:reset_password`.
+  - Invite create request was observed without an `initialPassword` payload key.
+  - Browser checks found no sensitive marker leakage in page text, static HTML, console messages, or intercepted API responses.
+- Evidence:
+  - Screenshots and acceptance script saved under `.local-step46g/`.
+  - `playwright-cli -s=step46g run-code --filename=.local-step46g/browser-acceptance.js`: passed.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- AccountLifecycleAccess`: passed, 1 file / 5 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed; Vite emitted the existing large chunk warning.
+  - `git diff --check`: passed; only Windows line-ending warnings were printed.
+- Explicitly not done:
+  - No production acceptance.
+  - No migration execution.
+  - No seed/backfill permission assignment execution.
+  - No production/VPS/production DB access.
+  - No real email/SMS adapter or sending.
+  - No deploy, push, cleanup, deletion, or Phase 2 completion claim.
+  - No real token, password, or full reset/invite link was printed or recorded.
+  - No sensitive configuration was read or recorded.
+
+## 2026-06-27 Step 46F - Password reset / invite cross-surface local quality gate
+
+- Status: DONE as cross-surface local quality gate.
+- Result:
+  - `LOCAL_PASSWORD_RESET_INVITE_CROSS_SURFACE_QUALITY_GATE_PASSED`.
+- Canonical state:
+  - Current local HEAD confirmed before gate work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Step 46C completed schema delta patch and migration file generation, but migration execution remains explicitly deferred.
+  - Step 46D completed backend local implementation.
+  - Step 46E completed Web UI local implementation.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Diff and security review:
+  - Reviewed current dirty scope across Prisma schema/migration, API lifecycle module, auth/account-management integration, audit/permission constants, Web API client/UI/tests, and memory-bank.
+  - Expected new files were present under `apps/api/src/account-lifecycle/`, `apps/web/src/AccountLifecycleAccess.tsx`, `apps/web/src/AccountLifecycleAccess.test.tsx`, and `prisma/migrations/20260627103000_add_account_lifecycle_tokens/migration.sql`.
+  - Known old local evidence/helper artifacts remained untracked and were not modified or cleaned.
+  - No stale workspace path, sensitive configuration file, or unrelated production artifact was found in the changed scope.
+  - Confirmed lifecycle tokens are hash-persisted, raw tokens/full links are not response/audit payloads, reset request remains enumeration-safe, used/revoked/expired token errors map to safe public errors, and frontend static markup does not render token query values.
+- Verification:
+  - `git diff --check`: passed; only Windows line-ending warnings were printed.
+  - One-shot placeholder `DATABASE_URL` + `corepack pnpm prisma:validate`: passed.
+  - One-shot placeholder `DATABASE_URL` + `corepack pnpm prisma generate`: passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle account-management auth.controller authorization.constants audit.repository`: passed, 6 files / 43 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web test -- api-client AccountLifecycleAccess AccountManagement App`: passed, 5 files / 63 tests.
+  - `corepack pnpm --filter @research-ip/web build`: passed; Vite emitted the existing large chunk warning.
+- Explicitly not done:
+  - No browser acceptance was run; leave safe local browser acceptance to Step 46G.
+  - No migration execution.
+  - No seed/backfill permission assignment execution.
+  - No production/VPS/production DB access.
+  - No real email/SMS adapter or sending.
+  - No deploy, push, cleanup, deletion, or Phase 2 completion claim.
+  - No real token, password, or full reset/invite link was printed or recorded.
+  - No sensitive configuration was read or recorded.
+
+## 2026-06-27 Step 46E - Password reset / invite Web UI local implementation
+
+- Status: DONE as Web UI local implementation.
+- Result:
+  - `LOCAL_PASSWORD_RESET_INVITE_WEB_UI_IMPLEMENTED`.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Step 46C completed schema delta patch and migration file generation, but migration execution remains explicitly deferred.
+  - Step 46D completed backend local implementation.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Completed:
+  - Added Web API client methods for public password reset request, reset confirm, invite accept, admin invite create/resend, admin password reset issue, and password reset revoke.
+  - Added `AccountLifecycleAccess` public UI for forgot-password, reset-password, and invite-accept flows in production-auth unauthenticated mode.
+  - Added safe public copy for password reset request so user existence is not disclosed.
+  - Added token-entry handling that does not render raw token values into static markup.
+  - Added account-management lifecycle affordances for invite create, invite resend, admin reset issue, and reset revoke.
+  - Added dedicated frontend visibility helpers for `account:invite` and `account:reset_password`; backend remains the security boundary.
+  - Kept legacy direct `initialPassword` path available but separate from invite-first onboarding; invite UI has no temporary-password field.
+  - Added tests for API client paths, public lifecycle helper/UI behavior, account lifecycle permission gating, invite payload safety, and lifecycle operations.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web test -- api-client AccountLifecycleAccess AccountManagement App`: passed, 5 test files / 63 tests.
+  - `corepack pnpm --filter @research-ip/web build`: passed; Vite emitted the existing large chunk warning.
+  - `git diff --check`: passed.
+- Explicitly not done:
+  - No browser acceptance was run; leave safe local browser acceptance to Step 46F/46G.
+  - No migration execution.
+  - No seed/backfill permission assignment execution.
+  - No production/VPS/production DB access.
+  - No real email/SMS adapter or sending.
+  - No deploy, push, cleanup, deletion, or Phase 2 completion claim.
+  - No real token, password, or full reset/invite link was printed or recorded.
+  - No sensitive configuration was read or recorded.
+
+## 2026-06-27 Step 46D - Password reset / invite backend local implementation
+
+- Status: DONE as local backend implementation only.
+- Result:
+  - `LOCAL_PASSWORD_RESET_INVITE_BACKEND_IMPLEMENTED_WITH_SAFE_STUB_DELIVERY`.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Step 46C completed schema delta patch and migration file generation, but migration execution remains explicitly deferred.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Completed:
+  - Added `apps/api/src/account-lifecycle/` backend module with service, repository, DTOs, error types, token crypto wrapper, and local safe mailer stub.
+  - Implemented public backend endpoints:
+    - `POST /auth/password-reset/request`.
+    - `POST /auth/password-reset/confirm`.
+    - `POST /auth/invites/accept`.
+  - Implemented administrator backend endpoints:
+    - `POST /account-management/invites`.
+    - `POST /account-management/users/:id/invite/resend`.
+    - `POST /account-management/users/:id/password-reset`.
+    - `POST /account-management/users/:id/password-reset/revoke`.
+  - Implemented hash-only lifecycle token storage, token replace/revoke, expiry/use validation, invite acceptance activation, credential reset, session revocation after password reset, dedicated permission checks, and audit records.
+  - Kept password reset request enumeration-safe by returning accepted for unknown/ineligible users while auditing only safe metadata.
+  - Kept delivery local-only through `LOCAL_SAFE_STUB`; no real email/SMS was sent and no response returns raw token or full link.
+  - Updated transitional direct `initialPassword` account creation to persist `mustChangePassword: true`.
+  - Added lifecycle service unit coverage and updated affected auth/account-management tests.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle account-management auth.controller`: passed, 4 files / 33 tests.
+- Explicitly not done:
+  - No Web UI implementation.
+  - No migration execution.
+  - No seed/backfill permission assignment execution.
+  - No real email/SMS adapter.
+  - No production/VPS/production DB access.
+  - No deploy, push, cleanup, deletion, or Phase 2 completion claim.
+  - No real token, password, or full reset/invite link was printed or recorded.
+
+## 2026-06-27 Step 46C - Password reset / invite schema delta patch only
+
+- Status: DONE as schema delta patch only.
+- Result:
+  - `LOCAL_PASSWORD_RESET_INVITE_SCHEMA_DELTA_PATCHED_WITH_MIGRATION_NOT_EXECUTED`.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed local design-only work.
+  - Step 46B completed schema/API contract review.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Completed:
+  - Updated `prisma/schema.prisma` with lifecycle token enums/model, `UserStatus.PENDING_ACTIVATION`, `UserCredential.mustChangePassword`, user lifecycle token relations, and invite/reset audit enum values.
+  - Added migration file `prisma/migrations/20260627103000_add_account_lifecycle_tokens/migration.sql`.
+  - Added `account:invite` and `account:reset_password` permission constants.
+  - Added invite/reset lifecycle audit action constants and mapper entries.
+  - Added `ACCOUNT_LIFECYCLE_TOKEN` audit target constant.
+  - Updated schema-adjacent authorization constants test.
+- Validation:
+  - `corepack pnpm prisma:validate` initially failed because Prisma requires `DATABASE_URL` while loading the datasource; `.env` was not read.
+  - Re-ran validation with a one-shot placeholder `DATABASE_URL`: PASS.
+  - `corepack pnpm prisma generate` with the same one-shot placeholder `DATABASE_URL`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- authorization.constants audit.repository`: PASS, 2 files / 10 tests.
+- Boundary:
+  - No API service/controller implementation.
+  - No Web UI implementation.
+  - No migration execution.
+  - No seed or role-permission backfill.
+  - No real email/SMS sending.
+  - No real account creation.
+  - No real token/password/full link generation.
+  - No production DB access or production write.
+  - No VPS connection, deploy, push, cleanup, deletion, or batch cleanup.
+  - No stale workspace access.
+  - No `.env`, real `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## 2026-06-27 Step 46B - Password reset / invite schema and API contract review
+
+- Status: DONE as schema/API contract review only.
+- Result:
+  - `LOCAL_PASSWORD_RESET_INVITE_SCHEMA_API_CONTRACT_REVIEWED_WITH_SCHEMA_PATCH_DEFERRED`.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed local design-only work.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Dirty scope:
+  - Step 46A's five memory-bank document modifications were present and expected.
+  - Known local untracked artifacts were present and left untouched:
+    - `.local-step44h/`.
+    - `.local-step45c4/`.
+    - `apps/api/deploy/`.
+    - `local-prod-preview-proxy.cjs`.
+- Completed:
+  - Read required AGENTS and methodology files.
+  - Re-read Step 46A memory-bank top sections.
+  - Reviewed existing auth, account-management, audit, authorization constants, Prisma schema, migration naming, and targeted test patterns.
+  - Compared schema options:
+    - Option A single lifecycle-token table plus minimal user/credential fields.
+    - Option B split invite/reset tables.
+    - Option C adapter-only/no schema.
+  - Selected Option A for future schema patch.
+  - Recorded recommended schema/API/permission/audit/mail-adapter/transaction contracts.
+  - Recorded that schema delta and migration file are required, but not in Step 46B.
+- Recommended next:
+  - Step 46C should be schema delta patch only and may update `prisma/schema.prisma` plus generate a migration file, but still must not execute migration.
+- Boundary:
+  - No API implementation.
+  - No Web UI implementation.
+  - No Prisma schema or migration change.
+  - No migration generation or execution.
+  - No seed.
+  - No real email/SMS sending.
+  - No real account creation.
+  - No real token/password/full link generation.
+  - No production DB access or production write.
+  - No VPS connection, deploy, push, cleanup, deletion, or batch cleanup.
+  - No stale workspace access.
+  - No `.env`, `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## 2026-06-27 Step 46A - Password reset / invite scope confirmation and design
+
+- Status: DONE as local design confirmation only.
+- Result:
+  - `LOCAL_PASSWORD_RESET_INVITE_DESIGN_CONFIRMED_WITH_IMPLEMENTATION_DEFERRED`.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 45C-4 completed attachment local browser acceptance.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - Local validation / local browser acceptance remains distinct from production acceptance.
+- Completed:
+  - Read the required AGENTS and methodology files.
+  - Read only top and keyword-nearby memory-bank context for Step 45C-4, remaining Phase 2 routes, production-acceptance deferral, password reset, invite, and local boundary.
+  - Confirmed existing auth/account/audit/authorization/schema structures without reading sensitive configuration.
+  - Confirmed current system has no dedicated invite/password reset token capability.
+  - Confirmed current account creation supports an optional admin-provided `initialPassword`, which the Step 46A design recommends replacing with invite-first onboarding or constraining with forced password change if retained temporarily.
+  - Added Step 46A design specification, follow-up Step split, decision record, and evidence record.
+- Design summary:
+  - Invite is for new-account onboarding/activation; password reset is for credential recovery/replacement on an existing identity.
+  - Invite/reset tokens should be hash-only at rest, one-time, expiry-bound, revocable, purpose-scoped, and audited.
+  - Password reset request responses must avoid user enumeration.
+  - Production email is required for real delivery, but future work must isolate it behind an outbox/adapter boundary.
+  - Future implementation likely needs schema/migration work for lifecycle tokens, invite/pending activation state, forced password-change state, permission deltas, and audit/action deltas.
+- Boundary:
+  - No API implementation.
+  - No Web UI implementation.
+  - No Prisma schema or migration change.
+  - No migration execution.
+  - No seed.
+  - No real email/SMS sending.
+  - No real account creation.
+  - No real token/password generation.
+  - No production DB access or production write.
+  - No VPS connection, deploy, push, cleanup, deletion, or batch cleanup.
+  - No stale workspace access.
+  - No `.env`, `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
 ## 2026-06-27 Step 45C-4 - Attachment local browser acceptance
 
 - Status: DONE as local browser acceptance.
@@ -5798,3 +6089,36 @@
 - 2026-06-08：Step 2 依赖安装完成，lint/typecheck/test/build 均通过。
 - 2026-06-08：Step 2 早期曾因 120 秒超时导致依赖安装未完成，后续放宽超时后安装成功并完成门禁。
 - 2026-06-08：已通过目录清单检查确认 9 个文档存在。
+## 2026-06-27 Step 46R - Password reset / invite review and commit gate
+
+- Status: DONE.
+- Step type: local review and commit gate for the Step 46C-46G password reset / invite work.
+- Review result:
+  - Canonical HEAD confirmed as `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed as `docs: record attachment browser acceptance`.
+  - Diff scope reviewed across Prisma schema/migration, API account lifecycle module, auth/account-management integration, audit/permission constants, Web API client/UI/tests, and memory-bank.
+  - Local evidence/helper artifacts remained untracked and were excluded from the commit scope.
+  - No `.env`, production config, real database URL, cookie, certificate, private key, local test password, full connection string, stale workspace, production/VPS/production DB, real email/SMS, or real token/password/full reset/invite link was read or used.
+- Quality gates passed:
+  - `git diff --check`
+  - placeholder `DATABASE_URL` + `corepack pnpm prisma:validate`
+  - placeholder `DATABASE_URL` + `corepack pnpm prisma generate`
+  - `corepack pnpm --filter @research-ip/api typecheck`
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle account-management auth.controller authorization.constants audit.repository`
+  - `corepack pnpm --filter @research-ip/web typecheck`
+  - `corepack pnpm --filter @research-ip/web test -- api-client AccountLifecycleAccess AccountManagement App`
+  - `corepack pnpm --filter @research-ip/web build`
+- Commit gate:
+  - Review passed.
+  - Authorized local commit prepared for the Step 46C-46G implementation and memory-bank records.
+  - Commit excludes `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `apps/api/deploy/artifacts/test-attachment-storage/**`, and `local-prod-preview-proxy.cjs`.
+- Boundaries:
+  - Migration not executed.
+  - Seed/backfill not executed.
+  - Deploy/push not executed.
+  - Production/VPS/production DB not accessed.
+  - Real email/SMS not sent.
+  - Real token/password/full reset or invite link not output.
+  - Sensitive configuration not read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.

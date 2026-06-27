@@ -14,6 +14,16 @@ import {
   UseGuards,
   ValidationPipe,
 } from "@nestjs/common";
+import {
+  AccountLifecycleConflictError,
+  AccountLifecycleInvalidTokenError,
+} from "../account-lifecycle/account-lifecycle.errors";
+import { AccountLifecycleService } from "../account-lifecycle/account-lifecycle.service";
+import {
+  InviteAcceptDto,
+  PasswordResetConfirmDto,
+  PasswordResetRequestDto,
+} from "../account-lifecycle/dto/account-lifecycle.dto";
 import { CurrentUser } from "../authorization/decorators/current-user.decorator";
 import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import {
@@ -50,6 +60,8 @@ export class AuthController {
   constructor(
     @Inject(AuthService)
     private readonly authService: AuthService,
+    @Inject(AccountLifecycleService)
+    private readonly accountLifecycleService: AccountLifecycleService,
   ) {}
 
   @Post("bootstrap")
@@ -92,6 +104,43 @@ export class AuthController {
     }
   }
 
+  @Post("password-reset/request")
+  @HttpCode(202)
+  async requestPasswordReset(
+    @Body(authValidationPipe) dto: PasswordResetRequestDto,
+  ) {
+    try {
+      return await this.accountLifecycleService.requestPasswordResetByEmail(dto.email);
+    } catch (error) {
+      throw mapAuthError(error);
+    }
+  }
+
+  @Post("password-reset/confirm")
+  @HttpCode(200)
+  async confirmPasswordReset(
+    @Body(authValidationPipe) dto: PasswordResetConfirmDto,
+  ) {
+    try {
+      return await this.accountLifecycleService.confirmPasswordReset(
+        dto.token,
+        dto.newPassword,
+      );
+    } catch (error) {
+      throw mapAuthError(error);
+    }
+  }
+
+  @Post("invites/accept")
+  @HttpCode(200)
+  async acceptInvite(@Body(authValidationPipe) dto: InviteAcceptDto) {
+    try {
+      return await this.accountLifecycleService.acceptInvite(dto.token, dto.password);
+    } catch (error) {
+      throw mapAuthError(error);
+    }
+  }
+
   @Get("me")
   @UseGuards(UserContextGuard)
   async me(@CurrentUser() currentUser: UserContext) {
@@ -114,6 +163,14 @@ const mapAuthError = (error: unknown): Error => {
 
   if (error instanceof AuthInvalidCredentialsError) {
     return new UnauthorizedException("Invalid email or password.");
+  }
+
+  if (error instanceof AccountLifecycleInvalidTokenError) {
+    return new UnauthorizedException("Invalid or expired token.");
+  }
+
+  if (error instanceof AccountLifecycleConflictError) {
+    return new ConflictException(error.message);
   }
 
   if (error instanceof AuthConfigurationError) {

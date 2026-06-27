@@ -81,6 +81,7 @@ describe("AccountManagementService", () => {
         departmentId: ids.department,
         credential: expect.objectContaining({
           passwordHash: expect.stringContaining("scrypt$"),
+          mustChangePassword: true,
         }),
         roles: [
           expect.objectContaining({
@@ -501,6 +502,7 @@ const makeAccountUser = (
   credential: {
     status: "ACTIVE",
     passwordUpdatedAt: new Date("2026-06-24T00:00:00.000Z"),
+    mustChangePassword: true,
     disabledAt: null,
     createdAt: new Date("2026-06-24T00:00:00.000Z"),
     updatedAt: new Date("2026-06-24T00:00:00.000Z"),

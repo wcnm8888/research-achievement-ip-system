@@ -4,6 +4,301 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 46G Archive - Password Reset / Invite Local Browser Acceptance - 2026-06-27
+
+- Step identity:
+  - This is Step 46G.
+  - Step 46G is local browser acceptance for password reset / invite using safe stub/interception.
+  - It is not production acceptance, new feature implementation, migration execution, seed, production DB access, VPS access, real email/SMS sending, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed before browser acceptance: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Step 46C completed schema delta patch and migration file generation, but did not execute migration.
+  - Step 46D completed backend local implementation.
+  - Step 46E completed Web UI local implementation.
+  - Step 46F completed cross-surface local quality gate.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Browser acceptance approach:
+  - Started local Web preview on `127.0.0.1:4176`.
+  - Exercised the app in production-auth frontend mode.
+  - Mocked `/api/*` at the browser layer with synthetic local-only responses.
+  - Stopped the local preview after acceptance.
+- Acceptance completed:
+  - Public forgot-password from login page shows enumeration-safe accepted copy.
+  - Public reset-password success shows return-to-sign-in guidance and does not auto-login.
+  - Public reset-password invalid token path shows one safe invalid/expired category.
+  - Public invite-accept success shows return-to-sign-in guidance and does not auto-login.
+  - Public invite-accept invalid token path shows one safe invalid/expired category.
+  - Account-management lifecycle card and actions appear with dedicated invite/reset permissions.
+  - Invite create, invite resend, admin reset issue, and reset revoke show safe queued/revoked feedback without token or full-link display.
+  - Lifecycle controls are hidden or unavailable when only `system:config` is present.
+  - Screenshots and script were saved under `.local-step46g/`.
+- Fixes made during acceptance:
+  - URL tokens are no longer copied into visible form field values; they remain in component memory as submit fallback.
+  - Successful reset/invite submits clear token/password fields before success state display.
+  - Focused helper tests were added for token fallback behavior.
+- Validation completed:
+  - Browser acceptance passed with browser-layer interception.
+  - Focused AccountLifecycleAccess test passed.
+  - Web typecheck passed.
+  - Web production build passed with the existing large chunk warning.
+  - Diff whitespace check passed.
+- Follow-up:
+  - Migration execution and permission seed/backfill remain separate authorized work.
+  - Production acceptance remains separate authorized work after migration/seed/backfill and real delivery decisions.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 46F Archive - Password Reset / Invite Cross-Surface Local Quality Gate - 2026-06-27
+
+- Step identity:
+  - This is Step 46F.
+  - Step 46F is a cross-surface local quality gate and diff/security review for password reset / invite.
+  - It is not new feature implementation, browser acceptance, migration execution, seed, production acceptance, production DB access, VPS access, real email/SMS sending, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed before gate work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Step 46C completed schema delta patch and migration file generation, but did not execute migration.
+  - Step 46D completed backend local implementation.
+  - Step 46E completed Web UI local implementation.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Review completed:
+  - Checked dirty scope across schema/migration, API lifecycle module, auth/account-management integration, audit/permission constants, Web API client/UI/tests, and memory-bank.
+  - Confirmed expected new lifecycle files are present and that old local evidence/helper artifacts remain untracked and untouched.
+  - Reviewed security boundaries for hash-only token persistence, no raw token/full-link response or audit payload, no password audit/log payload, enumeration-safe reset request, safe token error messages, and no frontend static token rendering.
+- Validation completed:
+  - Diff whitespace check passed.
+  - Prisma schema validation passed with a one-shot placeholder datasource value.
+  - Prisma client generation passed with a one-shot placeholder datasource value.
+  - API typecheck passed.
+  - Targeted API tests passed for account-lifecycle, account-management, auth controller, authorization constants, and audit repository.
+  - Web typecheck passed.
+  - Targeted Web tests passed for API client, public lifecycle UI, account management, and app integration.
+  - Web production build passed with the existing large chunk warning.
+- Follow-up:
+  - Step 46G should run local browser acceptance with safe stub/interception only.
+  - Seed/backfill for granting new dedicated permissions remains separate authorized work.
+  - Runtime DB use still depends on separately authorized migration execution.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 46E Archive - Password Reset / Invite Web UI Local Implementation - 2026-06-27
+
+- Step identity:
+  - This is Step 46E.
+  - Step 46E is Web UI local implementation for password reset / invite.
+  - It is not migration execution, seed, production acceptance, production DB access, VPS access, real email/SMS sending, real token/password/full link output, deploy, push, cleanup, deletion, browser acceptance, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Step 46C completed schema delta patch and migration file generation, but did not execute migration.
+  - Step 46D completed backend local implementation.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Web implementation completed:
+  - Extended Web types and API clients for the Step 46D auth/account-management lifecycle endpoints.
+  - Added unauthenticated production public lifecycle panels for forgot password, reset confirm, and invite accept.
+  - Added URL intent parsing for `flow=forgot-password`, `flow=reset-password`, and `flow=invite-accept`.
+  - Added safe token handling so prefilled token values are not emitted into static HTML output.
+  - Added account-management lifecycle UI for invite create plus per-user invite resend, admin reset issue, and reset revoke actions.
+  - Added frontend visibility gates for `account:invite` and `account:reset_password`.
+  - Preserved direct create-user path as a transitional path while making invite flow the password-free onboarding affordance.
+- Validation completed:
+  - Web typecheck passed.
+  - Targeted Web tests passed.
+  - Web production build passed with existing large chunk warning.
+  - Diff whitespace check passed.
+- Follow-up:
+  - Step 46F/46G should run local browser acceptance with safe stub/interception only.
+  - Seed/backfill for granting new dedicated permissions remains separate authorized work.
+  - Runtime DB use still depends on separately authorized migration execution.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 46D Archive - Password Reset / Invite Backend Local Implementation - 2026-06-27
+
+- Step identity:
+  - This is Step 46D.
+  - Step 46D is backend local implementation for password reset / invite.
+  - It is not Web UI implementation, migration execution, seed, production acceptance, production DB access, VPS access, real email/SMS sending, real token/password/full link output, deploy, push, cleanup, deletion, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Step 46C completed schema delta patch and migration file generation, but did not execute migration.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Backend implementation completed:
+  - Added `AccountLifecycleModule` with lifecycle DTOs, errors, repository, service, token crypto wrapper, and local safe mailer stub.
+  - Added public auth routes for password reset request, password reset confirm, and invite accept.
+  - Added account-management routes for invite create, invite resend, admin reset issue, and reset token revoke.
+  - Implemented hash-only token persistence and one-time consume semantics against `account_lifecycle_tokens`.
+  - Implemented invite pending-user activation and credential creation on accept.
+  - Implemented password reset credential replacement, active session revocation, and token consume.
+  - Implemented dedicated `account:invite` and `account:reset_password` policy checks in the backend service.
+  - Implemented local safe mail delivery boundary returning delivery status without real sending.
+  - Updated legacy direct initial-password account creation to set `mustChangePassword: true`.
+- Validation completed:
+  - API typecheck passed.
+  - Targeted API tests passed for lifecycle, account-management, and auth controller areas.
+- Follow-up:
+  - Step 46E should handle Web UI local implementation only after acknowledging that migrations and real delivery remain deferred.
+  - Step 46F/46G should handle wider local build/browser acceptance with safe stub/interception only.
+  - Seed/backfill for granting new dedicated permissions remains a separate authorized step because this Step did not execute seeds or migrations.
+- Sensitive boundary:
+  - No `.env`, real `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 46C Archive - Password Reset / Invite Schema Delta Patch - 2026-06-27
+
+- Step identity:
+  - This is Step 46C.
+  - Step 46C is schema delta patch only for password reset / invite.
+  - It is not backend runtime API implementation, Web UI implementation, migration execution, seed, real email/SMS sending, real account creation, real token/password/full link generation, production deploy, production smoke, production DB access, VPS access, cleanup, deletion, push, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed design-only work.
+  - Step 46B completed schema/API contract review.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Schema delta completed:
+  - Added `UserStatus.PENDING_ACTIVATION`.
+  - Added lifecycle token purpose/status/delivery enums.
+  - Added `AccountLifecycleToken` model mapped to `account_lifecycle_tokens`.
+  - Added target/creator lifecycle token relations on `User`.
+  - Added `UserCredential.mustChangePassword`.
+  - Expanded `AuditActionType` for invite/reset lifecycle actions.
+  - Added migration file `prisma/migrations/20260627103000_add_account_lifecycle_tokens/migration.sql`.
+- Schema-adjacent constants completed:
+  - Added `PermissionCode.accountInvite` and `PermissionCode.accountResetPassword`.
+  - Added invite/reset lifecycle audit domain actions.
+  - Added `AuditTargetTypeCode.accountLifecycleToken`.
+  - Mapped new audit domain actions to persisted Prisma `AuditActionType`.
+  - Updated authorization constants test expectations.
+- Validation:
+  - `corepack pnpm prisma:validate` without a local placeholder `DATABASE_URL`: blocked by Prisma config loading requirement for `DATABASE_URL`; no `.env` was read.
+  - One-shot placeholder `DATABASE_URL` + `corepack pnpm prisma:validate`: PASS.
+  - One-shot placeholder `DATABASE_URL` + `corepack pnpm prisma generate`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- authorization.constants audit.repository`: PASS, 2 files / 10 tests.
+- Remaining / deferred:
+  - No migration execution.
+  - No seed or role-permission backfill.
+  - No backend runtime implementation.
+  - No Web UI implementation.
+  - No real email provider or outbox implementation.
+  - No production acceptance.
+- Next recommended Step:
+  - Step 46D backend local implementation for lifecycle token issuance/consume, credential update, session revoke, permission checks, audit, enumeration-safe responses, and local safe mail adapter.
+- Boundary:
+  - No migration execution, seed, deploy, push, production access, VPS access, production DB access, cleanup, deletion, real email/SMS, real account creation, or real token/password/full link generation occurred.
+  - No `.env`, `DATABASE_URL` real value, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 46B Archive - Password Reset / Invite Schema and API Contract Review - 2026-06-27
+
+- Step identity:
+  - This is Step 46B.
+  - Step 46B is schema and API contract review for password reset / invite.
+  - It is not backend runtime implementation, Web UI implementation, Prisma schema patch, migration generation, migration execution, seed, real email/SMS sending, real account creation, real token/password/link generation, production deploy, production smoke, production DB access, VPS access, cleanup, deletion, push, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 46A completed local design-only work and left the expected five memory-bank files modified.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Dirty scope confirmed:
+  - Expected Step 46A memory-bank modifications:
+    - `memory-bank/design-spec.md`.
+    - `memory-bank/implementation-plan.md`.
+    - `memory-bank/progress.md`.
+    - `memory-bank/decisions.md`.
+    - `memory-bank/evidence.md`.
+  - Known local untracked artifacts remain outside this Step:
+    - `.local-step44h/`.
+    - `.local-step45c4/`.
+    - `apps/api/deploy/`.
+    - `local-prod-preview-proxy.cjs`.
+- Review outcome:
+  - Recommend Option A: single `account_lifecycle_tokens` table plus minimal user/credential state fields.
+  - Reject split invite/reset tables for the first implementation because it duplicates token security, cleanup, replay, delivery, and audit logic.
+  - Reject adapter-only/no-schema approach for production-grade invite/reset because it cannot support one-time use, replay prevention, revoke/resend, cleanup, or audit correlation.
+  - Recommend adding `PENDING_ACTIVATION` to `UserStatus` rather than an independent activation field.
+  - Recommend adding `mustChangePassword` to `UserCredential` for transitional admin-set password compatibility.
+  - Recommend dedicated permissions `account:invite` and `account:reset_password`.
+  - Recommend expanding audit domain and persisted `AuditActionType` for invite/reset lifecycle actions in the future schema patch.
+  - Recommend adapter interface + safe local mail stub first; do not add a separate mail outbox table in the first schema patch.
+- Required next Step:
+  - Step 46C should be schema delta patch only:
+    - Update `prisma/schema.prisma`.
+    - Generate a migration file following existing timestamped migration style.
+    - Add/update schema-related constants/contracts if needed.
+    - Run schema validation/generation and targeted tests if available.
+    - Do not execute migration.
+- Later Steps:
+  - Step 46D: backend local implementation for lifecycle token issuance/consume, credential update, session revoke, audit, permission checks, enumeration-safe responses, and local safe mail stub.
+  - Step 46E: Web UI local implementation for forgot-password, reset-confirm, invite-accept, admin invite/resend/reset/revoke, and direct initial-password deprecation/forced-change UX.
+  - Step 46F: local tests/typecheck/build across API/Web/schema boundaries.
+  - Step 46G: local browser acceptance with safe stub/interception only.
+  - Step 46R: review/commit gate.
+- Boundary:
+  - No Prisma schema or migration file was modified or generated in Step 46B.
+  - No migration execution.
+  - No seed.
+  - No runtime API/UI implementation.
+  - No real email/SMS, real account creation, or real token/password/full link generation.
+  - No production DB access or production write.
+  - No VPS connection, deploy, push, cleanup, deletion, or batch cleanup.
+  - No stale workspace access.
+  - No `.env`, `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+
+## Current Step 46A Archive - Password Reset / Invite Scope Confirmation and Design - 2026-06-27
+
+- Step identity:
+  - This is Step 46A.
+  - Step 46A is local scope confirmation and design for password reset / invite.
+  - It is not API implementation, Web UI implementation, Prisma schema/migration work, migration execution, seed, real email/SMS sending, real account creation, real token/password generation, production deploy, production smoke, production DB access, VPS access, cleanup, deletion, push, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD confirmed before Step work: `eeb9da0276d71b7be86abf6478d3b259598f780e`.
+  - Latest commit subject confirmed: `docs: record attachment browser acceptance`.
+  - Step 45C-4 completed attachment local browser acceptance.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - Attachment migration files exist from earlier work but migration execution remains deferred.
+- Local research completed:
+  - Read required workspace AGENTS and methodology files.
+  - Read top and keyword-nearby memory-bank records for Step 45C-4, remaining Phase 2 routes, password reset/invite, and production-acceptance boundaries.
+  - Checked current auth/account/audit/authorization/schema structures without reading sensitive config.
+  - Confirmed no existing invite/password reset token implementation.
+  - Confirmed current account creation can accept `initialPassword`, which should be deprecated or constrained after invite/reset lands.
+- Design outcome:
+  - Invite and password reset should be separate business capabilities.
+  - Future implementation requires schema/migration design for token storage and likely user lifecycle / forced password change fields.
+  - Tokens must be high-entropy, one-time, expiry-bound, revocable, and hash-only at rest.
+  - Production email is required for real invite/reset, but it must be isolated behind a replaceable mail adapter/outbox boundary and is not implemented in this Step.
+  - Admins should not directly set temporary passwords in the preferred future flow; if retained temporarily, first login must force password change.
+- Recommended follow-up split:
+  - Step 46B: schema/API contract design review or schema delta implementation for account lifecycle tokens, invite status, forced password change fields, permission/audit enum deltas, and mail outbox boundary. No migration execution unless separately authorized.
+  - Step 46C: backend local implementation for token lifecycle, reset/invite services, permission checks, audit, and local safe mail stub. No real email.
+  - Step 46D: Web UI local implementation for forgot-password, reset-confirm, invite-accept, admin invite/resend/reset/revoke affordances, and removal/deprecation of direct password exposure.
+  - Step 46E: local tests/typecheck/build for API, Web, schema generation if schema changes were authorized, audit redaction, token replay, expiry, permissions, and enumeration safety.
+  - Step 46F: local browser acceptance using safe local stub/interception only, with no real email, no real token/link output, and no production access.
+  - Step 46R: review/commit gate to verify diff scope, sensitive-info absence, no production acceptance claims, and no migration/deploy/push unless explicitly authorized.
+- Boundary:
+  - No code implementation was performed.
+  - No Prisma schema or migration file was modified or generated.
+  - No migration, seed, deploy, push, cleanup, deletion, real email/SMS, real account creation, real token/password generation, production access, VPS access, or production DB access was performed.
+  - No `.env`, `DATABASE_URL`, token value, cookie value, certificate, private key, credential secret, local test password, full reset/invite link, or full connection string was read or recorded.
+  - `.local-step44h/`, `.local-step45c4/`, `local-prod-preview-proxy.cjs`, and local attachment storage test artifacts remain outside this Step.
+
 ## Current Step 45C-4 Archive - Attachment Local Browser Acceptance - 2026-06-27
 
 - Step identity:
@@ -5174,3 +5469,35 @@ Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Pr
 - Next planning boundary:
   - May plan archive workflow completion or workflow HTTP/todo exposure only after confirmation.
   - Must not assume Step 6B-3 implemented system-admin archive workflow closure, workflow controller, new HTTP API, root AppModule changes, frontend, fees, reminders, attachments, search, or dashboard.
+## Step 46R - Review and commit gate archive
+
+- Goal: review the cross-surface password reset / invite implementation, run local quality gates, and create a local commit only if the review passes.
+- Scope reviewed:
+  - Prisma schema and generated migration file for account lifecycle tokens.
+  - API account lifecycle module, auth/account-management integration, audit action/target mappings, and permission constants.
+  - Web API client, public account lifecycle access UI, account-management lifecycle actions, and targeted tests.
+  - Memory-bank records for Step 46A-46G.
+- Safety review outcome:
+  - Raw lifecycle token remains transient in backend issuance and local safe mailer stub handoff only.
+  - Stored token value is the hash; response/audit payloads expose only safe IDs, status, counts, or accepted booleans.
+  - Public password reset request keeps enumeration-safe accepted behavior.
+  - Expired, invalid, used, and revoked token paths use the same safe public error behavior.
+  - Frontend avoids writing URL token values into static markup/form DOM state and clears sensitive fields after successful reset/invite acceptance.
+  - Account-management invite payload does not include a temporary password.
+- Gate plan executed:
+  - Diff whitespace check.
+  - Prisma validation and client generation with a placeholder database URL only.
+  - API typecheck and targeted API tests.
+  - Web typecheck, targeted Web tests, and Web production build.
+- Commit plan:
+  - Stage only Step 46 source/schema/test/memory-bank files.
+  - Exclude all local screenshot/helper artifacts, local preview proxy, and old attachment evidence artifacts.
+  - Create one local commit if staging review remains clean.
+- Explicit non-goals:
+  - No migration execution.
+  - No seed/backfill.
+  - No production acceptance.
+  - No browser acceptance rerun in this Step.
+  - No production/VPS/production DB access.
+  - No real email/SMS.
+  - No push/deploy.

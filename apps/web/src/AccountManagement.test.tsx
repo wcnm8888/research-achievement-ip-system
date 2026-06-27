@@ -7,14 +7,18 @@ import {
   buildAssignRolePayload,
   buildChangeDepartmentPayload,
   buildCreateAccountUserPayload,
+  buildCreateInvitePayload,
   buildAccountUserListQuery,
   buildReasonPayload,
   createAccountUserFromForm,
+  createInviteFromForm,
   executeAccountOperation,
   fetchActiveDepartments,
   fetchAccountUserDetail,
   fetchAccountUsers,
   getDepartmentSelectorErrorDescription,
+  hasAccountInvitePermission,
+  hasAccountResetPasswordPermission,
   hasSystemConfigPermission,
   shouldLoadAccountDepartmentOptions,
 } from "./AccountManagement";
@@ -27,7 +31,7 @@ import type {
 } from "./types";
 
 const adminUser: Pick<AuthUser, "permissionCodes"> = {
-  permissionCodes: ["system:config", "audit:read"],
+  permissionCodes: ["system:config", "account:invite", "account:reset_password", "audit:read"],
 };
 
 const accountUser: AccountUserDetail = {
@@ -95,6 +99,13 @@ describe("account management permission helpers", () => {
     expect(hasSystemConfigPermission(adminUser)).toBe(true);
     expect(hasSystemConfigPermission({ permissionCodes: ["audit:read"] })).toBe(false);
     expect(hasSystemConfigPermission(null)).toBe(false);
+  });
+
+  it("gates invite and reset affordances with dedicated account lifecycle permissions", () => {
+    expect(hasAccountInvitePermission(adminUser)).toBe(true);
+    expect(hasAccountResetPasswordPermission(adminUser)).toBe(true);
+    expect(hasAccountInvitePermission({ permissionCodes: ["system:config"] })).toBe(false);
+    expect(hasAccountResetPasswordPermission({ permissionCodes: ["system:config"] })).toBe(false);
   });
 
   it("loads department options only inside an authorized account-management context", () => {
@@ -440,6 +451,52 @@ describe("account management operation API helpers", () => {
     });
   });
 
+  it("creates invite payloads without temporary passwords or token material", async () => {
+    const createInviteMock = vi.fn(async () => ({
+      userId: accountUser.id,
+      deliveryStatus: "QUEUED" as const,
+    }));
+    const client = {
+      createInvite: createInviteMock,
+    } as unknown as Pick<AccountManagementApiClient, "createInvite">;
+
+    const values = {
+      email: " invited@example.com ",
+      name: " Invited User ",
+      departmentId: "10000000-0000-4000-8000-000000000001",
+      roles: [
+        {
+          roleCode: "RESEARCHER" as const,
+          scopeType: "DEPARTMENT" as const,
+          departmentId: "10000000-0000-4000-8000-000000000001",
+        },
+      ],
+      reason: " onboarding ",
+    };
+
+    expect(buildCreateInvitePayload(values)).toEqual({
+      email: "invited@example.com",
+      name: "Invited User",
+      departmentId: "10000000-0000-4000-8000-000000000001",
+      roles: [
+        {
+          roleCode: "RESEARCHER",
+          scopeType: "DEPARTMENT",
+          departmentId: "10000000-0000-4000-8000-000000000001",
+        },
+      ],
+      reason: "onboarding",
+    });
+    await expect(createInviteFromForm(client, values)).resolves.toEqual({
+      userId: accountUser.id,
+      deliveryStatus: "QUEUED",
+    });
+    const serializedCall = JSON.stringify(createInviteMock.mock.calls);
+    expect(serializedCall).not.toContain("initialPassword");
+    expect(serializedCall).not.toContain("token");
+    expect(serializedCall).not.toContain("link");
+  });
+
   it("executes disable, enable, role, revoke, and department operations through API client methods", async () => {
     const accountUserRole = accountUser.roles[0];
 
@@ -453,6 +510,17 @@ describe("account management operation API helpers", () => {
       assignAccountUserRole: vi.fn(async () => assignedResponse),
       revokeAccountUserRole: vi.fn(async () => accountUser),
       changeAccountUserDepartment: vi.fn(async () => accountUser),
+      resendInvite: vi.fn(async () => ({
+        userId: accountUser.id,
+        deliveryStatus: "QUEUED" as const,
+      })),
+      requestAdminPasswordReset: vi.fn(async () => ({
+        userId: accountUser.id,
+        deliveryStatus: "QUEUED" as const,
+      })),
+      revokePasswordResetTokens: vi.fn(async () => ({
+        revokedTokenCount: 1,
+      })),
     } as unknown as Pick<
       AccountManagementApiClient,
       | "disableAccountUser"
@@ -460,6 +528,9 @@ describe("account management operation API helpers", () => {
       | "assignAccountUserRole"
       | "revokeAccountUserRole"
       | "changeAccountUserDepartment"
+      | "resendInvite"
+      | "requestAdminPasswordReset"
+      | "revokePasswordResetTokens"
     >;
 
     await executeAccountOperation({
@@ -497,6 +568,20 @@ describe("account management operation API helpers", () => {
         reason: "transfer",
       },
     });
+    await executeAccountOperation({
+      apiClient: client,
+      operation: { kind: "resend-invite", user: { ...accountUser, status: "PENDING_ACTIVATION" } },
+    });
+    await executeAccountOperation({
+      apiClient: client,
+      operation: { kind: "admin-password-reset", user: accountUser },
+      reasonValues: { reason: " reset requested " },
+    });
+    await executeAccountOperation({
+      apiClient: client,
+      operation: { kind: "revoke-password-reset", user: accountUser },
+      reasonValues: { reason: " revoke stale links " },
+    });
 
     expect(client.disableAccountUser).toHaveBeenCalledWith(accountUser.id, {
       reason: "offboarding",
@@ -516,6 +601,13 @@ describe("account management operation API helpers", () => {
     expect(client.changeAccountUserDepartment).toHaveBeenCalledWith(accountUser.id, {
       departmentId: "10000000-0000-4000-8000-000000000002",
       reason: "transfer",
+    });
+    expect(client.resendInvite).toHaveBeenCalledWith(accountUser.id);
+    expect(client.requestAdminPasswordReset).toHaveBeenCalledWith(accountUser.id, {
+      reason: "reset requested",
+    });
+    expect(client.revokePasswordResetTokens).toHaveBeenCalledWith(accountUser.id, {
+      reason: "revoke stale links",
     });
   });
 });

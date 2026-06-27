@@ -476,6 +476,99 @@ describe("account management API client", () => {
     );
   });
 
+  it("posts account lifecycle admin actions without returning token material", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          userId: "user-1",
+          deliveryStatus: "QUEUED",
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          userId: "user-1",
+          deliveryStatus: "QUEUED",
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          userId: "user-1",
+          deliveryStatus: "QUEUED",
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          revokedTokenCount: 1,
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    const invite = await client.createInvite({
+      email: "invited@example.com",
+      name: "Invited User",
+      departmentId: "department-1",
+      roles: [{ roleCode: "RESEARCHER", scopeType: "GLOBAL" }],
+      reason: "onboarding",
+    });
+    const resend = await client.resendInvite("user-1");
+    const reset = await client.requestAdminPasswordReset("user-1", {
+      reason: "manual reset",
+    });
+    const revoke = await client.revokePasswordResetTokens("user-1", {
+      reason: "stale",
+    });
+
+    expect(invite).toEqual({ userId: "user-1", deliveryStatus: "QUEUED" });
+    expect(resend).toEqual({ userId: "user-1", deliveryStatus: "QUEUED" });
+    expect(reset).toEqual({ userId: "user-1", deliveryStatus: "QUEUED" });
+    expect(revoke).toEqual({ revokedTokenCount: 1 });
+
+    const [inviteUrl, inviteInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [resendUrl, resendInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [resetUrl, resetInit] = fetchMock.mock.calls[2] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [revokeUrl, revokeInit] = fetchMock.mock.calls[3] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(inviteUrl).toBe("http://localhost/api/account-management/invites");
+    expect(inviteInit.method).toBe("POST");
+    expect(inviteInit.body).toBe(
+      JSON.stringify({
+        email: "invited@example.com",
+        name: "Invited User",
+        departmentId: "department-1",
+        roles: [{ roleCode: "RESEARCHER", scopeType: "GLOBAL" }],
+        reason: "onboarding",
+      }),
+    );
+    expect(resendUrl).toBe("http://localhost/api/account-management/users/user-1/invite/resend");
+    expect(resendInit.method).toBe("POST");
+    expect(resetUrl).toBe("http://localhost/api/account-management/users/user-1/password-reset");
+    expect(resetInit.body).toBe(JSON.stringify({ reason: "manual reset" }));
+    expect(revokeUrl).toBe(
+      "http://localhost/api/account-management/users/user-1/password-reset/revoke",
+    );
+    expect(revokeInit.body).toBe(JSON.stringify({ reason: "stale" }));
+
+    const serialized = JSON.stringify([invite, resend, reset, revoke]);
+    expect(serialized).not.toContain("raw-token");
+    expect(serialized).not.toContain("http://");
+    expect(serialized).not.toContain("password");
+  });
+
   it("passes account management API errors through the existing ApiError mechanism", async () => {
     vi.stubGlobal(
       "fetch",
@@ -509,6 +602,57 @@ describe("account management API client", () => {
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect((init.headers as Headers).get("X-Demo-User-Id")).toBeNull();
     expect(init.credentials).toBe("include");
+  });
+});
+
+describe("account lifecycle public auth API client", () => {
+  it("posts reset request, reset confirm, and invite accept without demo identity headers", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ accepted: true }))
+      .mockResolvedValueOnce(Response.json({ reset: true }))
+      .mockResolvedValueOnce(Response.json({ accepted: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createAuthClient();
+    await expect(client.requestPasswordReset({ email: "user@example.com" })).resolves.toEqual({
+      accepted: true,
+    });
+    await expect(
+      client.confirmPasswordReset({
+        token: "safe-test-reset-token-value",
+        newPassword: "new-password-123",
+      }),
+    ).resolves.toEqual({ reset: true });
+    await expect(
+      client.acceptInvite({
+        token: "safe-test-invite-token-value",
+        password: "new-password-123",
+      }),
+    ).resolves.toEqual({ accepted: true });
+
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [confirmUrl, confirmInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [inviteUrl, inviteInit] = fetchMock.mock.calls[2] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(requestUrl).toBe("http://localhost/api/auth/password-reset/request");
+    expect(confirmUrl).toBe("http://localhost/api/auth/password-reset/confirm");
+    expect(inviteUrl).toBe("http://localhost/api/auth/invites/accept");
+    [requestInit, confirmInit, inviteInit].forEach((init) => {
+      expect(init.method).toBe("POST");
+      expect(init.credentials).toBe("include");
+      expect((init.headers as Headers).get("X-Demo-User-Id")).toBeNull();
+    });
   });
 });
 

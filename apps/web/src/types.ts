@@ -511,7 +511,7 @@ export type DisableDepartmentResponse = {
   impactSummary: DepartmentImpactSummary;
 };
 
-export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED";
+export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED" | "PENDING_ACTIVATION";
 
 export type AccountCredentialStatus = "ACTIVE" | "DISABLED";
 
@@ -556,6 +556,7 @@ export type AccountUserRoleSummary = {
 export type AccountUserCredentialSummary = {
   status: AccountCredentialStatus;
   passwordUpdatedAt: string | null;
+  mustChangePassword?: boolean;
   disabledAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -612,6 +613,63 @@ export type CreateAccountUserInput = {
   departmentId: string;
   roles: CreateAccountUserRoleInput[];
   initialPassword?: string;
+};
+
+export type AccountLifecycleRoleInput = CreateAccountUserRoleInput;
+
+export type CreateInviteInput = {
+  email: string;
+  name: string;
+  departmentId: string;
+  roles: AccountLifecycleRoleInput[];
+  reason?: string | null;
+};
+
+export type AccountLifecycleDeliveryStatus =
+  | "PENDING"
+  | "QUEUED"
+  | "SENT"
+  | "FAILED"
+  | "SUPPRESSED";
+
+export type InviteIssueResponse = {
+  userId: string;
+  deliveryStatus: AccountLifecycleDeliveryStatus;
+};
+
+export type PasswordResetIssueResponse = {
+  userId: string;
+  deliveryStatus: AccountLifecycleDeliveryStatus;
+};
+
+export type PasswordResetRevokeResponse = {
+  revokedTokenCount: number;
+};
+
+export type PasswordResetRequestInput = {
+  email: string;
+};
+
+export type PasswordResetRequestResponse = {
+  accepted: true;
+};
+
+export type PasswordResetConfirmInput = {
+  token: string;
+  newPassword: string;
+};
+
+export type PasswordResetConfirmResponse = {
+  reset: true;
+};
+
+export type InviteAcceptInput = {
+  token: string;
+  password: string;
+};
+
+export type InviteAcceptResponse = {
+  accepted: true;
 };
 
 export type DisableAccountUserInput = {

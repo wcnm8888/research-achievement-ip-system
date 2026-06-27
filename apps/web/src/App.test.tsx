@@ -114,6 +114,9 @@ describe("loginAndRefreshCurrentUser", () => {
       login: vi.fn(async () => ({ user: authUser })),
       me: vi.fn(async () => ({ user: authUser })),
       logout: vi.fn(async () => undefined),
+      requestPasswordReset: vi.fn(async () => ({ accepted: true as const })),
+      confirmPasswordReset: vi.fn(async () => ({ reset: true as const })),
+      acceptInvite: vi.fn(async () => ({ accepted: true as const })),
     };
 
     await expect(
@@ -136,6 +139,9 @@ describe("loginAndRefreshCurrentUser", () => {
       login: vi.fn(async () => ({ user: authUser })),
       me: vi.fn(async () => ({ user: authUser })),
       logout: vi.fn(async () => undefined),
+      requestPasswordReset: vi.fn(async () => ({ accepted: true as const })),
+      confirmPasswordReset: vi.fn(async () => ({ reset: true as const })),
+      acceptInvite: vi.fn(async () => ({ accepted: true as const })),
     };
 
     await expect(logoutAndClearCurrentUser(authClient)).resolves.toBeNull();

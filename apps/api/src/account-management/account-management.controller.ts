@@ -14,6 +14,17 @@ import {
   UsePipes,
   ValidationPipe,
 } from "@nestjs/common";
+import {
+  AccountLifecycleConflictError,
+  AccountLifecycleInvalidTokenError,
+  AccountLifecyclePermissionDeniedError,
+  AccountLifecycleTargetNotFoundError,
+} from "../account-lifecycle/account-lifecycle.errors";
+import { AccountLifecycleService } from "../account-lifecycle/account-lifecycle.service";
+import {
+  AccountLifecycleReasonDto,
+  CreateInviteDto,
+} from "../account-lifecycle/dto/account-lifecycle.dto";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { CurrentUser } from "../authorization/decorators/current-user.decorator";
 import { RequirePermissions } from "../authorization/decorators/require-permissions.decorator";
@@ -64,6 +75,14 @@ const changeAccountUserDepartmentValidationPipe = new ValidationPipe({
   ...accountManagementValidationOptions,
   expectedType: ChangeAccountUserDepartmentDto,
 });
+const createInviteValidationPipe = new ValidationPipe({
+  ...accountManagementValidationOptions,
+  expectedType: CreateInviteDto,
+});
+const accountLifecycleReasonValidationPipe = new ValidationPipe({
+  ...accountManagementValidationOptions,
+  expectedType: AccountLifecycleReasonDto,
+});
 
 @Controller("account-management")
 @UseGuards(UserContextGuard, PermissionGuard)
@@ -72,6 +91,8 @@ export class AccountManagementController {
   constructor(
     @Inject(AccountManagementService)
     private readonly accountManagementService: AccountManagementService,
+    @Inject(AccountLifecycleService)
+    private readonly accountLifecycleService: AccountLifecycleService,
   ) {}
 
   @Get("users")
@@ -108,6 +129,68 @@ export class AccountManagementController {
   ) {
     try {
       return await this.accountManagementService.createUser(currentUser, dto);
+    } catch (error) {
+      throw mapAccountManagementError(error);
+    }
+  }
+
+  @Post("invites")
+  @RequirePermissions(PermissionCode.accountInvite)
+  async createInvite(
+    @CurrentUser() currentUser: UserContext,
+    @Body(createInviteValidationPipe) dto: CreateInviteDto,
+  ) {
+    try {
+      return await this.accountLifecycleService.createInvite(currentUser, dto);
+    } catch (error) {
+      throw mapAccountManagementError(error);
+    }
+  }
+
+  @Post("users/:id/invite/resend")
+  @RequirePermissions(PermissionCode.accountInvite)
+  async resendInvite(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) userId: string,
+  ) {
+    try {
+      return await this.accountLifecycleService.resendInvite(currentUser, userId);
+    } catch (error) {
+      throw mapAccountManagementError(error);
+    }
+  }
+
+  @Post("users/:id/password-reset")
+  @RequirePermissions(PermissionCode.accountResetPassword)
+  async requestAdminPasswordReset(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) userId: string,
+    @Body(accountLifecycleReasonValidationPipe) dto: AccountLifecycleReasonDto = {},
+  ) {
+    try {
+      return await this.accountLifecycleService.requestAdminPasswordReset(
+        currentUser,
+        userId,
+        dto.reason,
+      );
+    } catch (error) {
+      throw mapAccountManagementError(error);
+    }
+  }
+
+  @Post("users/:id/password-reset/revoke")
+  @RequirePermissions(PermissionCode.accountResetPassword)
+  async revokePasswordResetTokens(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) userId: string,
+    @Body(accountLifecycleReasonValidationPipe) dto: AccountLifecycleReasonDto = {},
+  ) {
+    try {
+      return await this.accountLifecycleService.revokePasswordResetTokens(
+        currentUser,
+        userId,
+        dto.reason,
+      );
     } catch (error) {
       throw mapAccountManagementError(error);
     }
@@ -201,16 +284,24 @@ export class AccountManagementController {
 const mapAccountManagementError = (error: unknown): Error => {
   if (
     error instanceof AccountManagementAccessDeniedError ||
-    error instanceof AccountManagementPermissionDeniedError
+    error instanceof AccountManagementPermissionDeniedError ||
+    error instanceof AccountLifecyclePermissionDeniedError
   ) {
     return new ForbiddenException(error.message);
   }
 
-  if (error instanceof AccountManagementNotFoundError) {
+  if (
+    error instanceof AccountManagementNotFoundError ||
+    error instanceof AccountLifecycleTargetNotFoundError
+  ) {
     return new NotFoundException(error.message);
   }
 
-  if (error instanceof AccountManagementConflictError) {
+  if (
+    error instanceof AccountManagementConflictError ||
+    error instanceof AccountLifecycleConflictError ||
+    error instanceof AccountLifecycleInvalidTokenError
+  ) {
     return new ConflictException(error.message);
   }
 

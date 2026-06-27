@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import type { Server } from "node:http";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AccountLifecycleService } from "../account-lifecycle/account-lifecycle.service";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
@@ -39,10 +40,18 @@ type AccountManagementServiceMock = {
   changeUserDepartment: ReturnType<typeof vi.fn>;
 };
 
+type AccountLifecycleServiceMock = {
+  createInvite: ReturnType<typeof vi.fn>;
+  resendInvite: ReturnType<typeof vi.fn>;
+  requestAdminPasswordReset: ReturnType<typeof vi.fn>;
+  revokePasswordResetTokens: ReturnType<typeof vi.fn>;
+};
+
 type TestCallback = (
   app: INestApplication,
   service: AccountManagementServiceMock,
   identityAdapter: { loadUserContext: ReturnType<typeof vi.fn> },
+  accountLifecycleService: AccountLifecycleServiceMock,
 ) => Promise<void>;
 
 const makeUserContext = (
@@ -101,6 +110,7 @@ const makeAccountUser = () => ({
   credential: {
     status: "ACTIVE",
     passwordUpdatedAt: new Date("2026-06-24T00:00:00.000Z"),
+    mustChangePassword: true,
     disabledAt: null,
     createdAt: new Date("2026-06-24T00:00:00.000Z"),
     updatedAt: new Date("2026-06-24T00:00:00.000Z"),
@@ -144,6 +154,24 @@ const createServiceMock = (): AccountManagementServiceMock => ({
   }),
   revokeUserRole: vi.fn().mockResolvedValue(makeAccountUser()),
   changeUserDepartment: vi.fn().mockResolvedValue(makeAccountUser()),
+});
+
+const createAccountLifecycleServiceMock = (): AccountLifecycleServiceMock => ({
+  createInvite: vi.fn().mockResolvedValue({
+    userId: ids.createdUser,
+    deliveryStatus: "QUEUED",
+  }),
+  resendInvite: vi.fn().mockResolvedValue({
+    userId: ids.createdUser,
+    deliveryStatus: "QUEUED",
+  }),
+  requestAdminPasswordReset: vi.fn().mockResolvedValue({
+    userId: ids.createdUser,
+    deliveryStatus: "QUEUED",
+  }),
+  revokePasswordResetTokens: vi.fn().mockResolvedValue({
+    revokedTokenCount: 1,
+  }),
 });
 
 describe("AccountManagementController HTTP", () => {
@@ -427,6 +455,7 @@ const withTestApp = async (
   let app: INestApplication | null = null;
   const previousNodeEnv = process.env.NODE_ENV;
   const service = createServiceMock();
+  const accountLifecycleService = createAccountLifecycleServiceMock();
   const identityAdapter = {
     loadUserContext: vi.fn().mockResolvedValue(
       permissions === null ? null : makeUserContext(permissions),
@@ -445,12 +474,14 @@ const withTestApp = async (
       .useValue(identityAdapter)
       .overrideProvider(AccountManagementService)
       .useValue(service)
+      .overrideProvider(AccountLifecycleService)
+      .useValue(accountLifecycleService)
       .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
 
-    await callback(app, service, identityAdapter);
+    await callback(app, service, identityAdapter, accountLifecycleService);
   } finally {
     if (app) {
       await app.close();

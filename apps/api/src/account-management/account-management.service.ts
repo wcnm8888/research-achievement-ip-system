@@ -136,6 +136,7 @@ export class AccountManagementService {
                 passwordHash,
                 passwordUpdatedAt: new Date(),
                 status: CredentialStatus.ACTIVE,
+                mustChangePassword: true,
               }
             : null,
           roles: dto.roles.map((requestedRole) =>

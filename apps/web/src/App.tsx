@@ -5,6 +5,11 @@ import "./App.css";
 import { Achievements } from "./Achievements";
 import { AccountManagement, hasSystemConfigPermission } from "./AccountManagement";
 import {
+  AccountLifecycleAccess,
+  parsePublicLifecycleIntent,
+  type PublicLifecycleIntent,
+} from "./AccountLifecycleAccess";
+import {
   createAuthClient,
   isApiError,
   type AuthClient,
@@ -151,6 +156,9 @@ export function App() {
   const [activeKey, setActiveKey] = useState("workbench");
   const productionAuthMode = isProductionAuthMode();
   const authClient = useMemo(() => createAuthClient(), []);
+  const [publicLifecycleIntent, setPublicLifecycleIntent] = useState<PublicLifecycleIntent>(() =>
+    parsePublicLifecycleIntent(window.location.href),
+  );
   const [authStatus, setAuthStatus] = useState<AuthStatus>(
     productionAuthMode ? "checking" : "anonymous",
   );
@@ -237,6 +245,14 @@ export function App() {
     setAuthStatus("anonymous");
   };
 
+  const showForgotPassword = () => {
+    setPublicLifecycleIntent({ mode: "forgot-password" });
+  };
+
+  const showLogin = () => {
+    setPublicLifecycleIntent({ mode: "login" });
+  };
+
   return (
     <Layout className="app-shell">
       <Header className="app-header">
@@ -262,12 +278,21 @@ export function App() {
       </Header>
       {productionAuthMode && authStatus !== "authenticated" ? (
         <Content className="app-content auth-login-content">
-          <ProductionLoginPanel
-            authError={authError}
-            authStatus={authStatus}
-            loading={loginSubmitting}
-            onLogin={handleLogin}
-          />
+          {publicLifecycleIntent.mode === "login" ? (
+            <ProductionLoginPanel
+              authError={authError}
+              authStatus={authStatus}
+              loading={loginSubmitting}
+              onForgotPassword={showForgotPassword}
+              onLogin={handleLogin}
+            />
+          ) : (
+            <AccountLifecycleAccess
+              authClient={authClient}
+              intent={publicLifecycleIntent}
+              onBackToLogin={showLogin}
+            />
+          )}
         </Content>
       ) : (
         <Layout className="main-layout">
@@ -405,11 +430,13 @@ export function ProductionLoginPanel({
   authStatus,
   loading,
   onLogin,
+  onForgotPassword,
 }: {
   authError: string | null;
   authStatus: AuthStatus;
   loading: boolean;
   onLogin: (values: LoginRequest) => void | Promise<void>;
+  onForgotPassword?: () => void;
 }) {
   if (authStatus === "checking") {
     return (
@@ -448,6 +475,11 @@ export function ProductionLoginPanel({
           <Button type="primary" htmlType="submit" loading={loading}>
             Sign in
           </Button>
+          {onForgotPassword ? (
+            <Button type="link" onClick={onForgotPassword}>
+              Forgot password
+            </Button>
+          ) : null}
         </Form>
       </Space>
     </div>

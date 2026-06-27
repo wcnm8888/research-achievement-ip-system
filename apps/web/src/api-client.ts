@@ -4,6 +4,7 @@ import type {
   AssignAccountUserRoleInput,
   AssignAccountUserRoleResponse,
   ChangeAccountUserDepartmentInput,
+  CreateInviteInput,
   CreateDepartmentInput,
   CreateAccountUserInput,
   DepartmentDetail,
@@ -14,8 +15,17 @@ import type {
   DisableAccountUserResponse,
   DisableDepartmentResponse,
   EnableAccountUserInput,
+  InviteAcceptInput,
+  InviteAcceptResponse,
+  InviteIssueResponse,
   ListAccountUsersQuery,
   ListDepartmentsQuery,
+  PasswordResetConfirmInput,
+  PasswordResetConfirmResponse,
+  PasswordResetIssueResponse,
+  PasswordResetRequestInput,
+  PasswordResetRequestResponse,
+  PasswordResetRevokeResponse,
   RevokeAccountUserRoleInput,
   UpdateDepartmentInput,
 } from "./types";
@@ -92,6 +102,16 @@ export type AccountManagementApiClient = ApiClient & {
     userId: string,
     payload: ChangeAccountUserDepartmentInput,
   ): Promise<AccountUserDetail>;
+  createInvite(payload: CreateInviteInput): Promise<InviteIssueResponse>;
+  resendInvite(userId: string): Promise<InviteIssueResponse>;
+  requestAdminPasswordReset(
+    userId: string,
+    payload?: { reason?: string | null },
+  ): Promise<PasswordResetIssueResponse>;
+  revokePasswordResetTokens(
+    userId: string,
+    payload?: { reason?: string | null },
+  ): Promise<PasswordResetRevokeResponse>;
 };
 
 export type ApiClientOptions = {
@@ -121,6 +141,9 @@ export type AuthClient = {
   me(): Promise<AuthUserResponse>;
   login(payload: LoginRequest): Promise<AuthUserResponse>;
   logout(): Promise<void>;
+  requestPasswordReset(payload: PasswordResetRequestInput): Promise<PasswordResetRequestResponse>;
+  confirmPasswordReset(payload: PasswordResetConfirmInput): Promise<PasswordResetConfirmResponse>;
+  acceptInvite(payload: InviteAcceptInput): Promise<InviteAcceptResponse>;
 };
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(/\/$/, "");
@@ -346,6 +369,42 @@ export const createApiClient = (
     );
     return response as AccountUserDetail;
   },
+  async createInvite(payload: CreateInviteInput) {
+    const response = await request(
+      "/account-management/invites",
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as InviteIssueResponse;
+  },
+  async resendInvite(userId: string) {
+    const response = await request(
+      `/account-management/users/${userId}/invite/resend`,
+      demoUserId,
+      { method: "POST" },
+      options,
+    );
+    return response as InviteIssueResponse;
+  },
+  async requestAdminPasswordReset(userId: string, payload: { reason?: string | null } = {}) {
+    const response = await request(
+      `/account-management/users/${userId}/password-reset`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as PasswordResetIssueResponse;
+  },
+  async revokePasswordResetTokens(userId: string, payload: { reason?: string | null } = {}) {
+    const response = await request(
+      `/account-management/users/${userId}/password-reset/revoke`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as PasswordResetRevokeResponse;
+  },
 });
 
 export const createAuthClient = (): AuthClient => ({
@@ -363,6 +422,33 @@ export const createAuthClient = (): AuthClient => ({
   },
   async logout() {
     await request("/auth/logout", null, { method: "POST" }, { allowDemoUserHeader: false });
+  },
+  async requestPasswordReset(payload: PasswordResetRequestInput) {
+    const response = await request(
+      "/auth/password-reset/request",
+      null,
+      { method: "POST", body: payload },
+      { allowDemoUserHeader: false },
+    );
+    return response as PasswordResetRequestResponse;
+  },
+  async confirmPasswordReset(payload: PasswordResetConfirmInput) {
+    const response = await request(
+      "/auth/password-reset/confirm",
+      null,
+      { method: "POST", body: payload },
+      { allowDemoUserHeader: false },
+    );
+    return response as PasswordResetConfirmResponse;
+  },
+  async acceptInvite(payload: InviteAcceptInput) {
+    const response = await request(
+      "/auth/invites/accept",
+      null,
+      { method: "POST", body: payload },
+      { allowDemoUserHeader: false },
+    );
+    return response as InviteAcceptResponse;
   },
 });
 

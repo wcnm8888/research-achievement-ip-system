@@ -14,6 +14,7 @@ enum DepartmentStatus {
 
 enum UserStatus {
   ACTIVE
+  PENDING_ACTIVATION
   DISABLED
   ARCHIVED
 }
@@ -21,6 +22,30 @@ enum UserStatus {
 enum CredentialStatus {
   ACTIVE
   DISABLED
+}
+
+enum AccountLifecycleTokenPurpose {
+  INVITE_ACCEPT
+  PASSWORD_RESET_SELF
+  PASSWORD_RESET_ADMIN
+}
+
+enum AccountLifecycleTokenStatus {
+  ACTIVE
+  USED
+  REVOKED
+}
+
+enum AccountLifecycleDeliveryChannel {
+  EMAIL
+}
+
+enum AccountLifecycleDeliveryStatus {
+  PENDING
+  QUEUED
+  SENT
+  FAILED
+  SUPPRESSED
 }
 
 enum RoleStatus {
@@ -241,6 +266,16 @@ enum AuditActionType {
   LOGOUT
   SESSION_REVOKED
   AUTH_ME_DENIED
+  INVITE_CREATED
+  INVITE_RESENT
+  INVITE_ACCEPTED
+  INVITE_REVOKED
+  PASSWORD_RESET_REQUESTED_SELF
+  PASSWORD_RESET_REQUESTED_ADMIN
+  PASSWORD_RESET_CONFIRMED
+  PASSWORD_RESET_REVOKED
+  PASSWORD_RESET_FAILED
+  CREDENTIAL_CHANGED
 }
 
 enum ApiIntegrationProvider {
@@ -310,6 +345,8 @@ model User {
   searchLogs            SearchLog[]
   sessions              UserSession[]
   loginAttempts         LoginAttempt[]
+  accountLifecycleTokens        AccountLifecycleToken[] @relation("AccountLifecycleTokenTarget")
+  createdAccountLifecycleTokens AccountLifecycleToken[] @relation("AccountLifecycleTokenCreator")
 
   @@index([departmentId])
   @@index([status])
@@ -322,6 +359,7 @@ model UserCredential {
   passwordHash      String           @map("password_hash") @db.VarChar(255)
   passwordUpdatedAt DateTime?        @map("password_updated_at")
   status            CredentialStatus @default(ACTIVE)
+  mustChangePassword Boolean         @default(false) @map("must_change_password")
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
   disabledAt        DateTime?        @map("disabled_at")
@@ -370,6 +408,37 @@ model LoginAttempt {
   @@index([success, createdAt])
   @@index([userId, createdAt])
   @@map("login_attempts")
+}
+
+model AccountLifecycleToken {
+  id                   String                          @id @default(uuid()) @db.Uuid
+  purpose              AccountLifecycleTokenPurpose
+  tokenHash            String                          @unique @map("token_hash") @db.VarChar(128)
+  targetUserId         String?                         @map("target_user_id") @db.Uuid
+  emailHash            String?                         @map("email_hash") @db.VarChar(128)
+  status               AccountLifecycleTokenStatus     @default(ACTIVE)
+  expiresAt            DateTime                        @map("expires_at")
+  usedAt               DateTime?                       @map("used_at")
+  revokedAt            DateTime?                       @map("revoked_at")
+  revokedReason        String?                         @map("revoked_reason") @db.VarChar(500)
+  createdByUserId      String?                         @map("created_by_user_id") @db.Uuid
+  createdByIpHash      String?                         @map("created_by_ip_hash") @db.VarChar(128)
+  createdUserAgentHash String?                         @map("created_user_agent_hash") @db.VarChar(128)
+  deliveryChannel      AccountLifecycleDeliveryChannel? @map("delivery_channel")
+  deliveryStatus       AccountLifecycleDeliveryStatus?  @map("delivery_status")
+  deliveryAdapter      String?                         @map("delivery_adapter") @db.VarChar(64)
+  auditCorrelationId   String?                         @map("audit_correlation_id") @db.VarChar(128)
+  createdAt            DateTime                        @default(now()) @map("created_at")
+  updatedAt            DateTime                        @updatedAt @map("updated_at")
+
+  targetUser    User? @relation("AccountLifecycleTokenTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  createdByUser User? @relation("AccountLifecycleTokenCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([targetUserId, purpose, status])
+  @@index([emailHash, purpose, status])
+  @@index([status, expiresAt])
+  @@index([createdByUserId])
+  @@map("account_lifecycle_tokens")
 }
 
 model Role {

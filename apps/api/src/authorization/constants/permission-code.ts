@@ -15,6 +15,8 @@ export const PermissionCode = {
   auditReadMasked: "audit:read_masked",
   dashboardReadInstitute: "dashboard:read_institute",
   departmentReadDepartment: "department:read_department",
+  accountInvite: "account:invite",
+  accountResetPassword: "account:reset_password",
   resourceGrantCreate: "resource_grant:create",
   resourceGrantRevoke: "resource_grant:revoke",
   systemConfig: "system:config",

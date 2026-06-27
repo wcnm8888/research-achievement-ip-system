@@ -28,6 +28,7 @@ export type CreateAccountUserInput = {
     passwordHash: string;
     passwordUpdatedAt: Date;
     status: CredentialStatus;
+    mustChangePassword: boolean;
   } | null;
   roles: {
     roleId: string;
@@ -385,6 +386,7 @@ const accountUserSelect = {
     select: {
       status: true,
       passwordUpdatedAt: true,
+      mustChangePassword: true,
       disabledAt: true,
       createdAt: true,
       updatedAt: true,
@@ -450,6 +452,7 @@ const toAccountUserRecord = (row: AccountUserRow) => ({
     ? {
         status: row.credential.status,
         passwordUpdatedAt: row.credential.passwordUpdatedAt,
+        mustChangePassword: row.credential.mustChangePassword,
         disabledAt: row.credential.disabledAt,
         createdAt: row.credential.createdAt,
         updatedAt: row.credential.updatedAt,
