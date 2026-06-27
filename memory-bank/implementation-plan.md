@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 44H Archive - Fee Local Browser Acceptance - 2026-06-27
+
+- Step identity:
+  - This is Step 44H.
+  - Step 44H is a local browser/UI acceptance step for fee/payment-state behavior.
+  - It is not a new feature implementation step.
+  - It is not production deploy, not production smoke, not production write acceptance, not production DB access, not VPS access, not migration/seed, not cleanup, and not Phase 2 completion.
+- Canonical state:
+  - Current local HEAD during Step 44H: `1023c0ab166826ee7e8a1c748368515dba5b646d`.
+  - Step 44B-44F implemented and locally validated fee create/mark-paid hardening plus waive/cancel actions.
+  - Step 44G recommended local browser acceptance before fee/payment-state local closure.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Acceptance scope completed:
+  - Verified manager UI entries for create, mark-paid, waive, and cancel.
+  - Verified pending/overdue detail actions.
+  - Verified create drawer validation blocks empty submit.
+  - Verified mark-paid submit feedback and UI refresh to `PAID`.
+  - Verified waive/cancel reason validation and successful UI refresh to `WAIVED` / `CANCELLED`.
+  - Verified terminal statuses hide fee write actions.
+  - Verified read-only user can read list/detail but cannot see fee write entries.
+- Remaining / deferred:
+  - Archive API / UI remains deferred.
+  - Voucher attachment remains deferred.
+  - `/fees/warnings` remains deferred.
+  - Finance review / approval remains deferred.
+  - Schema migration / persisted reason history remains deferred.
+  - Production deploy, production smoke, production DB access, and production write remain deferred.
+- Evidence:
+  - Browser acceptance script: PASS.
+  - Screenshots saved under `.local-step44h/`.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration, seed, cleanup, deletion, or batch cleanup.
+  - `local-prod-preview-proxy.cjs` remains outside Step 44H.
+  - No sensitive configuration or credentials were read or recorded.
+
 ## Current Step 44E Archive - Local Fee Waive / Cancel Implementation - 2026-06-27
 
 - Step identity:

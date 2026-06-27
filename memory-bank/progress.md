@@ -1,5 +1,48 @@
 # Progress
 
+## 2026-06-27 Step 44H - Fee local browser acceptance
+
+- Status: DONE as local browser/UI acceptance.
+- Result:
+  - `LOCAL_FEE_BROWSER_ACCEPTANCE_PASSED_WITH_PRODUCTION_ACCEPTANCE_DEFERRED`.
+- Canonical state:
+  - Current local HEAD during this Step: `1023c0ab166826ee7e8a1c748368515dba5b646d`.
+  - Step 44G recommended local browser acceptance before fee/payment-state local closure.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - This Step is local browser acceptance only and is not production acceptance.
+- Completed:
+  - Served the existing local production preview at `http://127.0.0.1:5176/`.
+  - Used a real local browser against the built frontend.
+  - Used local browser API interception with synthetic `LOCAL_STEP44H` fee records to avoid production access and real DB writes.
+  - Verified manager visibility for create, mark-paid, waive, and cancel entries with explicit `fee:manage_department`.
+  - Verified pending/overdue detail drawers expose eligible write actions.
+  - Verified empty create form validation blocks `POST /fees`.
+  - Verified mark-paid submit updates list/detail-facing state to `PAID`.
+  - Verified waive/cancel empty reason validation blocks submit and does not call write endpoints.
+  - Verified valid waive/cancel reason submits update list/detail-facing state to `WAIVED` / `CANCELLED`.
+  - Verified terminal `PAID` / `WAIVED` / `CANCELLED` rows and details do not expose mark-paid / waive / cancel actions.
+  - Verified read-only authenticated user can read list/detail but cannot see create / mark-paid / waive / cancel entries.
+- Evidence:
+  - Browser acceptance script result: PASS.
+  - Local screenshots:
+    - `.local-step44h/fee-step44h-manager-terminal.png`.
+    - `.local-step44h/fee-step44h-readonly-detail.png`.
+- Boundary:
+  - No push.
+  - No VPS connection.
+  - No production DB access.
+  - No production write.
+  - No production deploy.
+  - No migration / seed / cleanup.
+  - No file deletion or batch cleanup.
+  - No archive API or archive UI action verified.
+  - No voucher attachment upload/download/storage verified.
+  - No `/fees/warnings` verified.
+  - No finance approval / review states verified.
+  - `local-prod-preview-proxy.cjs` remains untracked local helper and was not modified.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was read or recorded.
+
 ## 2026-06-27 Step 44E - Local fee waive/cancel implementation
 
 - Status: DONE as local implementation.

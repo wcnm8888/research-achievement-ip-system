@@ -1,5 +1,26 @@
 # Decisions
 
+## D113 - Step 44H closes fee local browser acceptance without production acceptance
+
+- Date: 2026-06-27.
+- Context: Step 44B-44F completed local fee create/mark-paid hardening and waive/cancel implementation. Step 44G recommended browser/UI acceptance before treating the fee/payment-state local phase as ready to move on.
+- Decision:
+  - Treat fee create / mark-paid / waive / cancel local UI behavior as browser-accepted for the current local scope.
+  - Use local browser API interception and synthetic `LOCAL_STEP44H` records for this acceptance to avoid production access, real DB writes, and sensitive local configuration exposure.
+  - Keep archive, voucher attachment, `/fees/warnings`, finance review/approval, persisted reason history, production deploy/smoke, and Step 38 production acceptance deferred.
+- Rationale:
+  - Production preview plus real browser interaction validates the frontend permission gates, drawers, validation feedback, and refresh behavior that unit tests cannot fully prove.
+  - API interception is appropriate for this Step because the requested boundary forbids production access and sensitive configuration exposure.
+  - Existing API and web tests already covered service/controller/client logic for the fee endpoints before this browser acceptance.
+- Consequences:
+  - Fee/payment-state can locally move past browser/UI acceptance for the implemented create / mark-paid / waive / cancel scope.
+  - Remaining fee items are still not complete and must not be represented as implemented or production accepted.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration, seed, cleanup, deletion, batch cleanup, or sensitive-config access occurred.
+  - `local-prod-preview-proxy.cjs` remains an untracked local helper outside this decision.
+
 ## D112 - Step 44E implements local waive/cancel and keeps archive deferred
 
 - Date: 2026-06-27.

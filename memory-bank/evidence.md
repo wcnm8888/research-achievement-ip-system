@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-06-27 Step 44H - Fee local browser acceptance evidence
+
+- Purpose:
+  - Run local browser/UI acceptance for the Step 44B-44F fee create / mark-paid / waive / cancel scope.
+  - Keep validation local and avoid representing it as production acceptance.
+- Local browser setup:
+  - Frontend target: `http://127.0.0.1:5176/`.
+  - Browser: local Chrome channel through Playwright.
+  - Data source: local browser API interception with synthetic `LOCAL_STEP44H` fee records.
+  - Real API/DB write path was not used because this Step must not read sensitive local DB configuration, access production DB, or execute production writes.
+- Acceptance evidence:
+  - Manager path:
+    - Explicit `fee:manage_department` user saw create, mark-paid, waive, and cancel entries.
+    - Pending/overdue detail drawer exposed mark-paid / waive / cancel entries.
+    - Empty create form validation blocked `POST /fees`.
+    - Mark-paid submit called the local intercepted `POST /fees/:id/mark-paid` once and refreshed UI state to `PAID`.
+    - Empty waive reason showed validation feedback and did not call `POST /fees/:id/waive`.
+    - Valid waive reason called the local intercepted `POST /fees/:id/waive` once and refreshed UI state to `WAIVED`.
+    - Empty cancel reason showed validation feedback and did not call `POST /fees/:id/cancel`.
+    - Valid cancel reason called the local intercepted `POST /fees/:id/cancel` once and refreshed UI state to `CANCELLED`.
+  - Read-only path:
+    - Authenticated user without `fee:manage_department` could read fee list and detail.
+    - Create, mark-paid, waive, and cancel entries were not visible in list or detail.
+  - Terminal path:
+    - `PAID`, `WAIVED`, and `CANCELLED` rows/details kept read-only detail entry and did not expose mark-paid / waive / cancel.
+- Artifacts:
+  - `.local-step44h/fee-step44h-manager-terminal.png`.
+  - `.local-step44h/fee-step44h-readonly-detail.png`.
+- Automated check:
+  - `git diff --check`: recorded in Step 44H completion after this evidence update.
+- Boundary evidence:
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access was made.
+  - No production write or production deploy was executed.
+  - No migration, seed, cleanup, file deletion, or batch cleanup was executed.
+  - No archive API or archive UI action was verified.
+  - No voucher upload/download/storage was verified.
+  - No `/fees/warnings` was verified.
+  - No finance approval / review state was verified.
+  - `local-prod-preview-proxy.cjs` was not modified or committed.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, session secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-27 Step 44E - Local fee waive/cancel implementation evidence
 
 - Purpose:
