@@ -1,5 +1,17 @@
 # Decisions
 
+## D134 - Step 47H provider implementation remains blocked until provider/ops inputs are complete
+
+- Date: 2026-06-27.
+- Context: Step 47R committed local readiness and delivery-gate work. Step 47H-Auth was opened to collect provider/ops authorization before any provider-specific implementation. No concrete provider, relay plan, sender domain, production base URL, secret injection policy, rate-limit policy, failure semantics, template approval, smoke authorization, or rollout authorization was supplied in this Step.
+- Decision:
+  - Output `BLOCKED_BY_PROVIDER_OPS_AUTHORIZATION_MISSING`.
+  - Do not generate a Step 47H provider-specific implementation Prompt.
+  - Keep runtime on `LOCAL_SAFE_STUB`.
+  - Require explicit user/ops authorization for all required provider, secret-management, abuse-control, failure-policy, template, smoke, and rollout inputs before implementation.
+- Boundaries:
+  - This decision does not authorize provider implementation, dependency installation, SMTP/API config, real email/SMS, production migration, production seed/backfill, deploy, push, production/VPS/production DB access, sensitive-config access, cleanup, deletion, drop, or reset.
+
 ## D133 - Step 47R approves local Step 47A-47G readiness changes for commit
 
 - Date: 2026-06-27.

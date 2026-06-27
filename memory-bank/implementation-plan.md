@@ -4,6 +4,37 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47H-Auth Archive - Real Delivery Provider / Ops Authorization Collection Gate - 2026-06-27
+
+- Step identity:
+  - This is Step 47H-Auth.
+  - Step 47H-Auth is a provider / ops authorization collection gate.
+  - It is not provider implementation, dependency installation, SMTP/API configuration, secret access, real email/SMS sending, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Canonical state:
+  - HEAD confirmed: `ddb303153709464d9650069499dc82a3309835e3`.
+  - Latest commit subject confirmed: `chore: record password reset delivery readiness`.
+  - Step 47R completed and committed readiness / delivery-gate changes.
+  - Tracked diff was empty at Step start.
+  - Existing local artifacts remained untracked and were not processed.
+- Outcome:
+  - `BLOCKED_BY_PROVIDER_OPS_AUTHORIZATION_MISSING`.
+  - Required provider/ops inputs were not provided in this Step.
+  - Do not generate a Step 47H provider-specific implementation Prompt.
+- Missing inputs before Step 47H:
+  - Provider / relay type and concrete provider or relay plan.
+  - Dependency authorization.
+  - Sender domain/address and DNS responsibility owner.
+  - Production public base URL.
+  - Secret storage/injection/rotation strategy, without exposing actual secrets.
+  - Password reset and invite resend rate-limit / abuse policy.
+  - Failure semantics for config missing, rate limit, permanent failure, bounce, and complaint.
+  - Invite/password-reset template approvals, expiry copy, and no-secret logging rule.
+  - Controlled smoke authorization and test-recipient handling policy.
+  - Separate production migration, seed/backfill, deploy, and smoke authorization boundaries.
+- Next:
+  - Collect the missing authorization inputs from user/ops.
+  - Keep runtime on `LOCAL_SAFE_STUB` until a later authorized implementation Step.
+
 ## Current Step 47R Archive - Post-46 Readiness and Delivery-Gate Review / Commit Gate - 2026-06-27
 
 - Step identity:

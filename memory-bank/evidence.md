@@ -1,5 +1,43 @@
 # Evidence
 
+## 2026-06-27 Step 47H-Auth - Real delivery provider / ops authorization collection evidence
+
+- Purpose:
+  - Collect and validate provider/ops authorization inputs required before Step 47H provider-specific implementation.
+  - Keep provider implementation, dependency installation, SMTP/API config, secret access, real email/SMS, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `ddb303153709464d9650069499dc82a3309835e3`.
+  - `git log -1 --pretty=%s`: `chore: record password reset delivery readiness`.
+  - `git diff --name-status`: empty at Step start.
+  - Existing untracked local artifacts remained untracked and were not processed.
+- Authorization check result:
+  - `BLOCKED_BY_PROVIDER_OPS_AUTHORIZATION_MISSING`.
+  - Step 47H provider-specific implementation Prompt was not generated.
+- Missing required inputs:
+  - Provider / relay type: SMTP relay, managed email API, SMS provider, or other.
+  - Concrete provider name or relay plan.
+  - Dependency authorization, including whether adding a package is allowed.
+  - Sender domain and sender address.
+  - DNS/SPF/DKIM/DMARC responsibility owner.
+  - Production public base URL for reset/invite links.
+  - Secret storage location, deployment injection method, and rotation owner. No real secret should be supplied to this Step.
+  - Password reset request rate limit / abuse policy.
+  - Invite resend rate limit / abuse policy.
+  - Failure semantics for provider config missing, rate limited, permanent failure, bounce, and complaint.
+  - Invite and password reset template approval, expiry copy, and no-secret logging rule.
+  - Controlled production smoke authorization and test-recipient handling policy.
+  - Separate authorization boundaries for production migration, production seed/backfill, deploy, and smoke.
+- Boundaries observed:
+  - No provider implemented.
+  - No dependency installed.
+  - No SMTP/API config.
+  - No real email/SMS sent.
+  - No `.env`, SMTP/API credential, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+
 ## 2026-06-27 Step 47R - Post-46 readiness and delivery-gate review / commit evidence
 
 - Purpose:

@@ -1,5 +1,48 @@
 # Progress
 
+## 2026-06-27 Step 47H-Auth - Real delivery provider / ops authorization collection gate
+
+- Status: BLOCKED.
+- Result:
+  - `BLOCKED_BY_PROVIDER_OPS_AUTHORIZATION_MISSING`.
+- Canonical state:
+  - `git rev-parse HEAD`: `ddb303153709464d9650069499dc82a3309835e3`.
+  - Latest commit subject: `chore: record password reset delivery readiness`.
+  - Step 47R completed and committed readiness / delivery-gate changes.
+  - `git diff --name-status` was empty at Step start.
+  - Existing untracked local artifacts remained untracked and were not processed.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Missing provider/ops authorization inputs:
+  - Provider / relay type: SMTP relay, managed email API, SMS provider, or other.
+  - Concrete provider name or relay plan.
+  - Dependency authorization, including whether a new package may be added.
+  - Sender domain and sender address.
+  - DNS/SPF/DKIM/DMARC responsibility owner.
+  - Production public base URL for reset/invite links.
+  - Secret storage location, deployment injection method, and rotation owner.
+  - Password reset request rate limit / abuse policy.
+  - Invite resend rate limit / abuse policy.
+  - Failure semantics for missing config, rate limit, permanent failure, bounce, and complaint.
+  - Invite template approval, password reset template approval, expiry copy, and no-secret logging rule.
+  - Controlled production smoke authorization and recipient handling policy.
+  - Separate rollout authorization boundaries for production migration, production seed/backfill, deploy, and smoke.
+- Decision:
+  - Do not generate a Step 47H provider-specific implementation Prompt until all required inputs are explicitly authorized.
+  - Continue to keep runtime on `LOCAL_SAFE_STUB`.
+- Explicitly not done:
+  - No provider implemented.
+  - No dependency installed.
+  - No SMTP/API configured.
+  - No real email/SMS sent.
+  - No `.env`, SMTP/API credential, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+  - No migration or seed/backfill executed.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No cleanup/deletion/drop/reset.
+- Next:
+  - User/ops must provide the missing provider/ops authorization inputs before Step 47H can be generated.
+
 ## 2026-06-27 Step 47R - Post-46 readiness and delivery-gate review / commit gate
 
 - Status: DONE as review / commit gate, pending local commit creation in this Step.
