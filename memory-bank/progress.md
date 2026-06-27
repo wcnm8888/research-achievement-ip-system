@@ -1,5 +1,44 @@
 # Progress
 
+## 2026-06-27 Step 45C-4 - Attachment local browser acceptance
+
+- Status: DONE as local browser acceptance.
+- Result:
+  - `LOCAL_ATTACHMENT_BROWSER_ACCEPTANCE_PASSED_WITH_PRODUCTION_ACCEPTANCE_DEFERRED`.
+- Canonical state:
+  - Current local HEAD during this Step: `dd29f653cd2ab66be827813817a189c63575e33c`.
+  - Step 45C-3R committed the attachment Web UI integration.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - This Step is local browser acceptance only and is not production acceptance.
+- Acceptance mode:
+  - Used the existing local frontend at `http://127.0.0.1:5176/`.
+  - Used real local Chrome through Playwright.
+  - Used browser-layer `/api/*` interception with synthetic achievement, user, attachment, upload, and download responses.
+  - Real local API/DB upload was not executed because the Attachment metadata migration remains intentionally not executed by boundary.
+- Browser acceptance completed:
+  - Permitted owner path: attachment section visible, upload entry visible, empty state visible.
+  - Client-side invalid type rejection: `.html` synthetic file rejected before upload request.
+  - Client-side size rejection: oversized synthetic PDF rejected before upload request.
+  - Synthetic allowed PDF upload: success feedback visible and exactly one intercepted upload route call recorded.
+  - List refresh: safe metadata displayed after upload, including original name, MIME type, and size.
+  - Download: authenticated download route called and success feedback displayed.
+  - Read-only/no-download path: upload entry hidden, explanatory notice visible, list visible, download 403 surfaced as safe UI error.
+  - Storage internals were not displayed: no `storageKey`, checksum, raw path, or file body content appeared in the UI.
+- Evidence:
+  - `.local-step45c4/permitted-attachment-flow.png`.
+  - `.local-step45c4/readonly-attachment-flow.png`.
+- Boundary:
+  - No migration execution.
+  - No seed.
+  - No real local API/DB upload.
+  - No production DB access or production write.
+  - No push, VPS connection, deployment, cleanup, deletion, or batch cleanup.
+  - No archive/delete, virus scan, or object storage/S3 validation.
+  - No real business file upload or user private file read.
+  - `.local-step44h/`, `.local-step45c4/`, `local-prod-preview-proxy.cjs`, and local attachment storage test artifacts remain untracked/unstaged outside this Step.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+
 ## 2026-06-27 Step 45C-3 - Attachment Web UI integration
 
 - Status: DONE as local Web UI integration and validation.

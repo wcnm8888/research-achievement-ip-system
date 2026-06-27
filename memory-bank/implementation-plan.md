@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 45C-4 Archive - Attachment Local Browser Acceptance - 2026-06-27
+
+- Step identity:
+  - This is Step 45C-4.
+  - Step 45C-4 is local browser acceptance for attachment list, upload, and download UI behavior.
+  - It is not new feature implementation, backend feature expansion, Prisma schema/migration work, migration execution, seed, production deploy, production smoke, production DB access, VPS access, cleanup, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD during Step 45C-4: `dd29f653cd2ab66be827813817a189c63575e33c`.
+  - Step 45C-3R committed attachment Web UI integration.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Acceptance mode completed:
+  - Used existing local frontend at `http://127.0.0.1:5176/`.
+  - Used real local Chrome through Playwright.
+  - Used browser-layer `/api/*` interception for synthetic users, achievement, attachment upload, metadata list, and download responses.
+  - Did not execute real local API/DB upload because the Attachment metadata migration remains not executed by boundary.
+- Acceptance scope completed:
+  - Permitted owner path verified attachment section, upload entry, empty state, client-side invalid type rejection, client-side oversize rejection, synthetic PDF upload, success feedback, list refresh, safe metadata display, authenticated download route call, and download success feedback.
+  - Read-only/no-download path verified upload entry hidden, no-upload notice, list visibility, download 403 handling, and safe permission error display.
+  - Verified UI did not expose `storageKey`, checksum, raw path, or file body content.
+- Evidence:
+  - `.local-step45c4/permitted-attachment-flow.png`.
+  - `.local-step45c4/readonly-attachment-flow.png`.
+- Remaining / deferred:
+  - Real local API/DB upload remains deferred until migration execution is explicitly authorized.
+  - Attachment archive/delete remains deferred.
+  - Virus scanning remains deferred.
+  - Object storage/S3 provider remains deferred.
+  - Production deploy and production smoke remain deferred.
+  - Step 38 production acceptance remains deferred.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration execution, seed, cleanup, deletion, or batch cleanup.
+  - No real business file upload and no user private file read.
+  - No sensitive configuration or credentials were read or recorded.
+  - `.local-step44h/`, `.local-step45c4/`, `local-prod-preview-proxy.cjs`, and local generated attachment storage test artifacts remain outside this Step's tracked scope.
+
 ## Current Step 45C-3 Archive - Attachment Web UI Integration - 2026-06-27
 
 - Step identity:

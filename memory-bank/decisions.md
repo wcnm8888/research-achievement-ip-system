@@ -1,5 +1,31 @@
 # Decisions
 
+## D118 - Step 45C-4 accepts attachment UI behavior with browser-layer interception until migration execution is authorized
+
+- Date: 2026-06-27.
+- Context: Step 45C-4 needed local browser acceptance for attachment UI behavior after Step 45C-3R committed Web integration. Step 45C-1R generated the Attachment metadata migration file but migration execution remains explicitly forbidden in the current boundary.
+- Decision:
+  - Perform browser acceptance against the existing local frontend at `http://127.0.0.1:5176/`.
+  - Use real local Chrome for UI interaction.
+  - Use browser-layer `/api/*` interception with synthetic users, achievement, attachment metadata, upload, and download responses.
+  - Do not execute real local API/DB upload in this Step because the required Attachment metadata migration has not been applied and migration execution is out of scope.
+  - Treat this as local browser/UI acceptance only, not production acceptance and not real DB/storage acceptance.
+- Rationale:
+  - The Step's goal is to verify the user-facing attachment UI workflow without violating the no-migration/no-production/no-real-business-file boundary.
+  - Browser-layer interception exercises the actual rendered UI, client-side validation, permission gating, request routing, success/error states, and safe metadata display.
+  - Real API/DB upload acceptance should wait for a separately authorized migration/database Step.
+- Verification:
+  - Permitted owner path passed for attachment visibility, upload visibility, empty state, invalid type rejection, oversize rejection, synthetic allowed upload, list refresh, safe metadata display, authenticated download route call, and download success feedback.
+  - Read-only/no-download path passed for upload hidden, notice visible, list visible, intercepted 403, and safe permission error display.
+  - UI did not expose `storageKey`, checksum, raw path, or file body content.
+- Consequences:
+  - Attachments first-stage local browser/UI capability is accepted at browser layer.
+  - Real local API/DB upload, migration execution, production deploy/smoke, archive/delete, virus scanning, and object storage remain future work.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Boundary:
+  - No Prisma schema/migration change, migration execution, seed, production DB access, production write, VPS connection, deploy, push, cleanup, deletion, real business file upload, user private file read, or sensitive-config access occurred.
+
 ## D117 - Step 45C-3 uses authenticated Web multipart upload and blob download without exposing storage internals
 
 - Date: 2026-06-27.

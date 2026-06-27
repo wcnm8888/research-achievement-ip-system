@@ -1,5 +1,54 @@
 # Evidence
 
+## 2026-06-27 Step 45C-4 - Attachment local browser acceptance evidence
+
+- Purpose:
+  - Validate the attachment list/upload/download Web UI flow in a real local browser.
+  - Keep the Step local and avoid production access, migration execution, seed, real DB/API writes, real business files, push, deploy, cleanup, or deletion.
+- Browser acceptance setup:
+  - Local frontend: `http://127.0.0.1:5176/`.
+  - Browser: local Chrome controlled through Playwright.
+  - API mode: browser-layer `/api/*` route interception.
+  - Real local API/DB upload was not executed because the Attachment metadata migration remains not executed by explicit Step boundary.
+  - Synthetic files were provided through Playwright in-memory file inputs; no user private file was read.
+- Browser acceptance evidence:
+  - Permitted owner user:
+    - Attachment section displayed.
+    - Upload entry displayed.
+    - Empty attachment metadata state displayed before upload.
+    - Invalid `.html` synthetic file rejected client-side with zero upload route calls.
+    - Oversized synthetic PDF rejected client-side with zero upload route calls.
+    - Allowed synthetic PDF uploaded through intercepted multipart route.
+    - Upload success feedback displayed.
+    - Attachment list refreshed with safe metadata: original name, MIME type, and size.
+    - Download action called the authenticated download route and displayed success feedback.
+  - Read-only/no-download user:
+    - Upload entry hidden.
+    - No-upload notice displayed.
+    - Attachment list remained visible.
+    - Download route returned intercepted 403 and the UI displayed the safe permission error.
+  - Storage privacy:
+    - UI did not display `storageKey`, checksum, raw path, or file body content.
+- Screenshot evidence:
+  - `.local-step45c4/permitted-attachment-flow.png`.
+  - `.local-step45c4/readonly-attachment-flow.png`.
+- Validation evidence:
+  - Browser run recorded one upload route call.
+  - Browser run recorded two download route calls: one permitted success and one read-only 403.
+  - `git diff --check` is required after this evidence update.
+- Boundary evidence:
+  - No migration was executed.
+  - No seed was executed.
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access or production write was made.
+  - No real local API/DB upload was executed.
+  - No archive/delete, virus scan, object storage/S3, deploy, cleanup, deletion, or batch cleanup action was performed.
+  - `.local-step44h/`, `.local-step45c4/`, `local-prod-preview-proxy.cjs`, and local attachment storage test artifacts remained untracked and outside this Step.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-27 Step 45C-3 - Attachment Web UI integration evidence
 
 - Purpose:
