@@ -1,5 +1,42 @@
 # Evidence
 
+## 2026-06-27 Step 45C-1 - Attachment schema delta patch evidence
+
+- Purpose:
+  - Prepare the minimal Attachment schema delta needed by later multipart upload/download/local storage work.
+  - Keep this Step limited to Prisma schema and migration-file preparation.
+- Schema delta:
+  - Changed `prisma/schema.prisma`.
+  - Added `Attachment.mimeType String? @map("mime_type") @db.VarChar(127)`.
+  - Added `Attachment.sizeBytes Int? @map("size_bytes")`.
+  - Added `Attachment.storageProvider String? @default("LOCAL_DISK") @map("storage_provider") @db.VarChar(32)`.
+  - Added `Attachment.originalName String? @map("original_name") @db.VarChar(255)`.
+  - Added `Attachment.storedName String? @map("stored_name") @db.VarChar(255)`.
+  - Kept `fileName`, `storageKey`, `checksum`, `status`, `secretLevel`, and `archivedAt`.
+  - Did not add `deletedAt`, `scanStatus`, or a storage provider enum.
+- Migration file evidence:
+  - Added `prisma/migrations/20260627090100_add_attachment_storage_metadata/migration.sql`.
+  - SQL contains only additive Attachment table column additions.
+  - SQL was not executed against any database.
+  - SQL safety scan for `DROP`, `DELETE`, `UPDATE`, production connection strings, and secret-like tokens returned no matches.
+- Verification:
+  - `corepack pnpm exec prisma format --schema prisma/schema.prisma`: PASS with existing Prisma config deprecation warning.
+  - `corepack pnpm exec prisma validate --schema prisma/schema.prisma`: PASS with existing Prisma config deprecation warning and Prisma major-version update notice.
+  - `git diff --check`: PASS with line-ending warning for `prisma/schema.prisma`.
+  - `git diff -- prisma/schema.prisma prisma/migrations`: reviewed schema diff; untracked migration file content was inspected directly.
+- Boundary evidence:
+  - No migration was executed.
+  - No seed was executed.
+  - No API, storage adapter, Web UI, test, seed, package, lockfile, deploy, or production config change was made.
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access or production write was made.
+  - No cleanup, deletion, or batch cleanup was executed.
+  - `.local-step44h/` and `local-prod-preview-proxy.cjs` were not modified or committed.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-27 Step 44H - Fee local browser acceptance evidence
 
 - Purpose:

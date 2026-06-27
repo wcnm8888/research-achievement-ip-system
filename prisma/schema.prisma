@@ -710,19 +710,24 @@ model Notification {
 }
 
 model Attachment {
-  id           String                 @id @default(uuid()) @db.Uuid
-  relationType AttachmentRelationType @map("relation_type")
-  relationId   String                 @map("relation_id") @db.Uuid
-  fileName     String                 @map("file_name") @db.VarChar(255)
-  storageKey   String                 @map("storage_key") @db.VarChar(500)
-  version      Int                    @default(1)
-  uploaderId   String                 @map("uploader_id") @db.Uuid
-  secretLevel  SecretLevel            @default(INTERNAL) @map("secret_level")
-  checksum     String?                @db.VarChar(128)
-  status       AttachmentStatus       @default(ACTIVE)
-  createdAt    DateTime               @default(now()) @map("created_at")
-  updatedAt    DateTime               @updatedAt @map("updated_at")
-  archivedAt   DateTime?              @map("archived_at")
+  id              String                 @id @default(uuid()) @db.Uuid
+  relationType    AttachmentRelationType @map("relation_type")
+  relationId      String                 @map("relation_id") @db.Uuid
+  fileName        String                 @map("file_name") @db.VarChar(255)
+  storageKey      String                 @map("storage_key") @db.VarChar(500)
+  mimeType        String?                @map("mime_type") @db.VarChar(127)
+  sizeBytes       Int?                   @map("size_bytes")
+  storageProvider String?                @default("LOCAL_DISK") @map("storage_provider") @db.VarChar(32)
+  originalName    String?                @map("original_name") @db.VarChar(255)
+  storedName      String?                @map("stored_name") @db.VarChar(255)
+  version         Int                    @default(1)
+  uploaderId      String                 @map("uploader_id") @db.Uuid
+  secretLevel     SecretLevel            @default(INTERNAL) @map("secret_level")
+  checksum        String?                @db.VarChar(128)
+  status          AttachmentStatus       @default(ACTIVE)
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+  archivedAt      DateTime?              @map("archived_at")
 
   uploader User @relation("AttachmentUploader", fields: [uploaderId], references: [id], onDelete: Restrict)
 

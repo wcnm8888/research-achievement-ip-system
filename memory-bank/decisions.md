@@ -1,5 +1,39 @@
 # Decisions
 
+## D114 - Step 45C-1 adds Attachment storage metadata schema fields without migration execution
+
+- Date: 2026-06-27.
+- Context: Step 45B concluded that real local attachment multipart upload/download and local storage need additional Attachment metadata fields before implementation. The user authorized modifying `prisma/schema.prisma` and generating a migration file, but not executing migration, seed, API/storage/UI implementation, production access, push, deploy, or cleanup.
+- Decision:
+  - Add five Attachment metadata fields:
+    - `mimeType`.
+    - `sizeBytes`.
+    - `storageProvider`.
+    - `originalName`.
+    - `storedName`.
+  - Keep the fields nullable/default-compatible for existing rows.
+  - Use `storageProvider` as a string with default `LOCAL_DISK` instead of a provider enum for this Step to reduce future provider expansion migration cost.
+  - Preserve existing `fileName`, `storageKey`, `checksum`, `status`, `secretLevel`, `archivedAt`, unique constraint, and indexes.
+  - Add a new migration file with only additive `ADD COLUMN` statements.
+  - Do not execute the migration.
+  - Defer `deletedAt`, `scanStatus`, provider enum, data backfill, API implementation, storage implementation, UI implementation, tests, seed changes, and production acceptance.
+- Rationale:
+  - The new fields are the minimum metadata needed for later safe multipart upload, download headers, local disk adapter compatibility, and future object-storage provider routing.
+  - Nullable/default additive columns avoid destructive migration risk and preserve compatibility with existing Attachment rows.
+  - Keeping old fields avoids breaking current metadata-only UI and backend fake-storage tests.
+- Verification:
+  - Prisma schema format and validate passed.
+  - Migration SQL was inspected and contains only additive column changes.
+  - Safety scan found no destructive SQL or sensitive connection information.
+- Consequences:
+  - Step 45C can implement local multipart/local storage against explicit metadata fields after separate authorization.
+  - Applying the migration remains a future, explicitly authorized database operation.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Boundary:
+  - No migration execution, seed, production DB access, production write, VPS connection, deploy, push, cleanup, deletion, API/storage/UI/test implementation, or sensitive-config access occurred.
+  - `.local-step44h/` and `local-prod-preview-proxy.cjs` remain untracked local artifacts outside this decision.
+
 ## D113 - Step 44H closes fee local browser acceptance without production acceptance
 
 - Date: 2026-06-27.

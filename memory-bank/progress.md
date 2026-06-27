@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-06-27 Step 45C-1 - Attachment schema delta patch only
+
+- Status: DONE as local schema patch / migration-file preparation.
+- Result:
+  - `ATTACHMENT_SCHEMA_DELTA_PATCH_PREPARED_WITH_MIGRATION_NOT_EXECUTED`.
+- Canonical state:
+  - Current local HEAD during this Step: `46455f7a24a66d19037d88862eda210141325808`.
+  - Step 45B completed the attachment schema/API design gate and recommended a separate schema delta patch before multipart/local storage implementation.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - This Step is schema patch only, not API/storage/UI implementation and not production acceptance.
+- Completed:
+  - Added nullable/default Attachment metadata fields in `prisma/schema.prisma`: `mimeType`, `sizeBytes`, `storageProvider`, `originalName`, and `storedName`.
+  - Preserved existing Attachment fields: `fileName`, `storageKey`, `checksum`, `status`, `secretLevel`, and `archivedAt`.
+  - Preserved existing Attachment unique constraint and indexes.
+  - Added migration SQL file `prisma/migrations/20260627090100_add_attachment_storage_metadata/migration.sql`.
+  - Migration SQL is additive only: `ADD COLUMN` for the five new Attachment metadata columns.
+  - Deferred `deletedAt`, `scanStatus`, provider enum, backfill, API implementation, storage implementation, UI implementation, tests, seed changes, and migration execution.
+- Verification:
+  - `corepack pnpm exec prisma format --schema prisma/schema.prisma`: PASS with existing Prisma config deprecation warning.
+  - `corepack pnpm exec prisma validate --schema prisma/schema.prisma`: PASS with existing Prisma config deprecation warning and Prisma major-update notice.
+  - `git diff --check`: PASS with line-ending warning for `prisma/schema.prisma`.
+  - `git diff -- prisma/schema.prisma prisma/migrations`: reviewed schema diff; untracked migration file checked separately.
+  - Migration SQL safety scan for `DROP`, `DELETE`, `UPDATE`, production connection strings, and secret-like tokens: no matches.
+- Boundary:
+  - No migration execution.
+  - No seed.
+  - No API, storage adapter, Web UI, or test implementation.
+  - No production DB access or production write.
+  - No push, VPS connection, deployment, cleanup, deletion, or batch cleanup.
+  - `.local-step44h/` and `local-prod-preview-proxy.cjs` remain untracked local artifacts outside this Step.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+
 ## 2026-06-27 Step 44H - Fee local browser acceptance
 
 - Status: DONE as local browser/UI acceptance.

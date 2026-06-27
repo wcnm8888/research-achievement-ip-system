@@ -4,6 +4,53 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 45C-1 Archive - Attachment Schema Delta Patch Only - 2026-06-27
+
+- Step identity:
+  - This is Step 45C-1.
+  - Step 45C-1 is a local Prisma schema delta and migration-file preparation step.
+  - It is not API implementation, storage implementation, Web UI implementation, migration execution, seed, production deploy, production smoke, production DB access, VPS access, cleanup, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD during Step 45C-1: `46455f7a24a66d19037d88862eda210141325808`.
+  - Step 45B completed the Attachment schema/API design gate.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Schema scope completed:
+  - Added nullable/default Attachment metadata fields for future local multipart/storage implementation:
+    - `mimeType`.
+    - `sizeBytes`.
+    - `storageProvider`.
+    - `originalName`.
+    - `storedName`.
+  - Preserved existing fields and constraints:
+    - `fileName`.
+    - `storageKey`.
+    - `checksum`.
+    - `status`.
+    - `secretLevel`.
+    - `archivedAt`.
+    - Existing relation/version unique constraint and indexes.
+  - Deferred:
+    - `deletedAt`.
+    - `scanStatus`.
+    - provider enum.
+    - backfill.
+    - API, storage adapter, UI, and tests.
+- Migration-file scope completed:
+  - Added `prisma/migrations/20260627090100_add_attachment_storage_metadata/migration.sql`.
+  - The migration file only adds nullable/default columns to `attachments`.
+  - The migration was not executed.
+- Verification:
+  - `corepack pnpm exec prisma format --schema prisma/schema.prisma`: PASS.
+  - `corepack pnpm exec prisma validate --schema prisma/schema.prisma`: PASS.
+  - `git diff --check`: PASS with line-ending warning.
+  - Migration SQL safety scan: no destructive statements or sensitive connection info.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration execution, seed, cleanup, deletion, or batch cleanup.
+  - No API/storage/UI/test implementation.
+  - `.local-step44h/` and `local-prod-preview-proxy.cjs` remain outside this Step.
+  - No sensitive configuration or credentials were read or recorded.
+
 ## Current Step 44H Archive - Fee Local Browser Acceptance - 2026-06-27
 
 - Step identity:
