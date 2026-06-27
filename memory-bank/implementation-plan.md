@@ -4,6 +4,44 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 45C-3 Archive - Attachment Web UI Integration - 2026-06-27
+
+- Step identity:
+  - This is Step 45C-3.
+  - Step 45C-3 is a local Web UI integration step for attachment list, upload, and download on achievement detail.
+  - It is not backend feature expansion, Prisma schema/migration work, migration execution, seed, production deploy, production smoke, production DB access, VPS access, cleanup, or Phase 2 completion.
+- Canonical state:
+  - Current local HEAD during Step 45C-3: `1663802f2fca5e1b9ddd16f2e4bc8193cf53df03`.
+  - Step 45C-2R committed the local backend attachment upload/download/storage implementation.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Implementation scope completed:
+  - Web API-client multipart upload support through `postForm`.
+  - Web API-client blob download support through `downloadBlob`.
+  - Frontend attachment metadata type extension for safe backend metadata fields.
+  - Achievement detail attachment list, upload entry, download action, loading, empty, success, and error UI states.
+  - Upload gating for achievement owner with `achievement:update_own`.
+  - Local UI precheck for allowed file type and 10 MB size limit.
+  - Frontend tests for API-client transport behavior and attachment helper behavior.
+- Remaining / deferred:
+  - Attachment archive/delete remains deferred.
+  - Virus scanning remains deferred.
+  - Object storage/S3 provider remains deferred.
+  - Production DB migration execution remains deferred.
+  - Production deploy and production smoke remain deferred.
+  - Step 38 production acceptance remains deferred.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- api-client`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement`: PASS.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with Vite chunk-size warning.
+  - `git diff --check`: PASS with line-ending warnings only.
+- Boundary:
+  - No push, VPS connection, production DB access, production write, production deploy, migration execution, seed, cleanup, deletion, or batch cleanup.
+  - No sensitive configuration or credentials were read or recorded.
+  - `.local-step44h/`, `local-prod-preview-proxy.cjs`, and local generated attachment storage test artifacts remain outside this Step's tracked scope.
+
 ## Current Step 45C-2R Archive - Attachment Backend Review and Commit Gate - 2026-06-27
 
 - Step identity:

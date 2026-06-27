@@ -8,6 +8,7 @@ import {
   Input,
   List,
   Modal,
+  Select,
   Space,
   Tag,
   Typography,
@@ -15,7 +16,7 @@ import {
 } from "antd";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { isApiError, type ApiClient, type ApiError } from "./api-client";
+import { isApiError, type ApiClient, type ApiError, type AuthUser } from "./api-client";
 import { DataState, PermissionHint } from "./components/StateBlocks";
 import type {
   AchievementContributor,
@@ -33,10 +34,12 @@ import type {
   PatentTypeCode,
   SecretLevelCode,
   SoftwareTypeCode,
+  UploadAchievementAttachmentInput,
 } from "./types";
 
 type AchievementDetailProps = {
   apiClient: ApiClient;
+  authUser?: AchievementPermissionContext;
   demoUserId: string | null;
   listItem: AchievementListItem;
   onChanged: () => void;
@@ -58,6 +61,8 @@ type Loadable<T> = {
   data: T | null;
   error: ApiError | null;
 };
+
+type AchievementPermissionContext = Pick<AuthUser, "id" | "permissionCodes"> | null | undefined;
 
 export type AchievementAction = "submit" | "void" | "archive";
 export type ReadonlyAchievementDetailContext = "approval" | "search";
@@ -144,6 +149,18 @@ const attachmentStatusLabels: Record<AttachmentStatusCode, string> = {
 };
 
 const attachmentDefaultTake = 50;
+export const attachmentUploadMaxBytes = 10 * 1024 * 1024;
+
+const allowedAttachmentExtensions = new Set(["pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"]);
+const allowedAttachmentMimeTypes = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
 
 export const fetchAchievementDetailById = (
   client: ApiClient,
@@ -170,8 +187,38 @@ export const fetchAchievementAttachmentDetailMetadata = (
     `/achievements/${achievementId}/attachments/${attachmentId}`,
   );
 
+export const uploadAchievementAttachment = (
+  client: ApiClient,
+  achievementId: string,
+  input: UploadAchievementAttachmentInput,
+): Promise<AttachmentMetadata> => {
+  if (!client.postForm) {
+    throw new Error("Attachment upload requires multipart API client support.");
+  }
+
+  return client.postForm<AttachmentMetadata>(
+    `/achievements/${achievementId}/attachments`,
+    buildAchievementAttachmentFormData(input),
+  );
+};
+
+export const downloadAchievementAttachment = (
+  client: ApiClient,
+  achievementId: string,
+  attachmentId: string,
+): Promise<Blob> => {
+  if (!client.downloadBlob) {
+    throw new Error("Attachment download requires blob API client support.");
+  }
+
+  return client.downloadBlob(
+    `/achievements/${achievementId}/attachments/${attachmentId}/download`,
+  );
+};
+
 export function AchievementDetail({
   apiClient,
+  authUser,
   demoUserId,
   listItem,
   onChanged,
@@ -301,6 +348,7 @@ export function AchievementDetail({
           {detail ? (
             <DetailContent
               apiClient={apiClient}
+              authUser={authUser}
               demoUserId={demoUserId}
               detail={detail}
             />
@@ -435,9 +483,9 @@ export const shouldLoadAttachmentDetailMetadata = (
   Boolean(demoUserId?.trim() && achievementId?.trim() && attachmentId?.trim());
 
 export const getAttachmentMetadataReadonlyBoundary = () => ({
-  title: "Step 19A 附件 metadata 只读",
+  title: "Step 45C-3 附件本地 UI",
   description:
-    "本区域只读取 GET /achievements/:achievementId/attachments 返回的安全 metadata 字段；不提供上传、下载、删除、归档、版本变更、对象存储或费用凭证附件能力。",
+    "本区域接入附件 metadata 列表、multipart 上传和认证下载；不展示 storageKey、checksum、真实路径或文件内容。",
   allowedRequest: "GET /achievements/:achievementId/attachments",
 });
 
@@ -550,6 +598,9 @@ export const buildAttachmentMetadataViewModel = (attachment: AttachmentMetadata)
   relationType: attachment.relationType,
   relationId: attachment.relationId,
   fileName: attachment.fileName || "未命名附件",
+  originalName: attachment.originalName || attachment.fileName || "未返回",
+  mimeType: attachment.mimeType || "未返回",
+  sizeLabel: formatAttachmentSize(attachment.sizeBytes),
   version: attachment.version,
   uploaderId: attachment.uploaderId || "未返回",
   secretLevelLabel: getSecretLevelLabel(attachment.secretLevel),
@@ -558,6 +609,110 @@ export const buildAttachmentMetadataViewModel = (attachment: AttachmentMetadata)
   updatedAt: formatDateTime(attachment.updatedAt),
   archivedAt: formatDateTime(attachment.archivedAt),
 });
+
+export const buildAchievementAttachmentFormData = (
+  input: UploadAchievementAttachmentInput,
+): FormData => {
+  const formData = new FormData();
+  formData.append("file", input.file);
+
+  const displayName = input.displayName?.trim();
+  if (displayName) {
+    formData.append("displayName", displayName);
+  }
+
+  if (input.secretLevel) {
+    formData.append("secretLevel", input.secretLevel);
+  }
+
+  return formData;
+};
+
+export const validateAttachmentUploadFile = (
+  file: Pick<File, "name" | "size" | "type">,
+): { ok: true } | { ok: false; message: string } => {
+  if (file.size > attachmentUploadMaxBytes) {
+    return { ok: false, message: "附件不能超过 10 MB" };
+  }
+
+  const extension = getFileExtension(file.name);
+  if (!allowedAttachmentExtensions.has(extension)) {
+    return { ok: false, message: "不支持的附件扩展名" };
+  }
+
+  if (file.type && !allowedAttachmentMimeTypes.has(file.type)) {
+    return { ok: false, message: "不支持的附件 MIME 类型" };
+  }
+
+  return { ok: true };
+};
+
+export const canUploadAchievementAttachment = (
+  authUser: AchievementPermissionContext,
+  detail: Pick<AchievementDetailType, "ownerUserId">,
+): boolean =>
+  hasAchievementPermission(authUser, "achievement:update_own") &&
+  (!authUser || detail.ownerUserId === authUser.id);
+
+export const formatAttachmentSize = (value: number | null | undefined): string => {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "未返回";
+  }
+
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+export const mapAttachmentUploadErrorToDisplay = (error: ApiError): ApiError => ({
+  ...error,
+  message: error.message || "附件上传失败",
+});
+
+export const mapAttachmentDownloadErrorToDisplay = (error: ApiError): ApiError => {
+  if (error.status === 401 || error.kind === "unauthorized") {
+    return {
+      ...error,
+      message: "请选择或切换演示用户",
+      detail: error.detail ?? "附件下载需要有效用户上下文。",
+    };
+  }
+
+  if (error.status === 403 || error.kind === "forbidden") {
+    return {
+      ...error,
+      message: "当前角色无附件下载权限",
+      detail: error.detail ?? "下载权限由后端控制，前端不会绕过授权策略。",
+    };
+  }
+
+  if (error.status === 404) {
+    return {
+      ...error,
+      message: "附件不存在或不可下载",
+      detail: error.detail ?? "请刷新附件列表后重试。",
+    };
+  }
+
+  if (error.kind === "network" || error.kind === "server" || (error.status ?? 0) >= 500) {
+    return {
+      ...error,
+      message: "附件下载服务暂不可用",
+      detail: error.detail ?? "请稍后重试。",
+    };
+  }
+
+  return {
+    ...error,
+    message: error.message || "附件下载失败",
+  };
+};
 
 export const buildAttachmentDetailMetadataViewModel = (
   attachment: AttachmentDetailMetadata,
@@ -624,11 +779,13 @@ export const getReadonlyAchievementErrorState = (
 
 function DetailContent({
   apiClient,
+  authUser,
   demoUserId,
   detail,
   mode = "management",
 }: {
   apiClient: ApiClient;
+  authUser?: AchievementPermissionContext;
   demoUserId: string | null;
   detail: AchievementDetailType;
   mode?: DetailContentMode;
@@ -690,7 +847,10 @@ function DetailContent({
       <AttachmentMetadataSection
         achievementId={detail.id}
         apiClient={apiClient}
+        authUser={authUser}
         demoUserId={demoUserId}
+        detail={detail}
+        readonly={isReadonly}
       />
 
       <Alert
@@ -700,7 +860,7 @@ function DetailContent({
         description={
           isReadonly
             ? readonlyLabels.boundaryDescription
-            : "workflow 审批处理、附件上传下载、费用 CRUD、搜索中心、统计看板和审计日志均不在 Step 12D 范围内。"
+            : "workflow 审批处理、费用 CRUD、搜索中心、统计看板和审计日志均不在 Step 12D 范围内。附件上传下载为当前本地 UI 接入范围。"
         }
       />
     </Space>
@@ -761,16 +921,31 @@ const getDetailContentReadonlyLabels = (mode: DetailContentMode) => {
 function AttachmentMetadataSection({
   achievementId,
   apiClient,
+  authUser,
   demoUserId,
+  detail,
+  readonly,
 }: {
   achievementId: string;
   apiClient: ApiClient;
+  authUser?: AchievementPermissionContext;
   demoUserId: string | null;
+  detail: AchievementDetailType;
+  readonly: boolean;
 }) {
   const [attachments, setAttachments] =
     useState<Loadable<AttachmentMetadata[]>>(emptyLoadable);
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [secretLevel, setSecretLevel] = useState<SecretLevelCode | undefined>(detail.secretLevel);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<ApiError | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<ApiError | null>(null);
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | null>(null);
   const canLoadAttachments = shouldLoadAttachmentMetadata(demoUserId, achievementId);
+  const canUpload = canLoadAttachments && !readonly && canUploadAchievementAttachment(authUser, detail);
 
   const loadAttachments = useCallback(async () => {
     if (!canLoadAttachments) {
@@ -798,21 +973,101 @@ function AttachmentMetadataSection({
 
   useEffect(() => {
     setSelectedAttachmentId(null);
+    setSelectedFile(null);
+    setDisplayName("");
+    setSecretLevel(detail.secretLevel);
+    setUploadError(null);
+    setUploadSuccess(null);
+    setDownloadError(null);
   }, [achievementId]);
 
-  const boundary = getAttachmentMetadataReadonlyBoundary();
   const items = attachments.data ?? [];
+
+  const onUpload = async () => {
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    if (!selectedFile) {
+      setUploadError({
+        kind: "bad-request",
+        message: "请选择要上传的附件文件",
+      });
+      return;
+    }
+
+    const validation = validateAttachmentUploadFile(selectedFile);
+    if (!validation.ok) {
+      setUploadError({
+        kind: "bad-request",
+        message: validation.message,
+      });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const uploaded = await uploadAchievementAttachment(apiClient, achievementId, {
+        file: selectedFile,
+        displayName,
+        secretLevel,
+      });
+      setSelectedFile(null);
+      setDisplayName("");
+      setSecretLevel(detail.secretLevel);
+      setUploadSuccess(`附件 ${uploaded.fileName || selectedFile.name} 上传成功`);
+      await loadAttachments();
+    } catch (error) {
+      setUploadError(mapAttachmentUploadErrorToDisplay(normalizeError(error)));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onDownload = async (attachment: AttachmentMetadata) => {
+    setDownloadError(null);
+    setDownloadingAttachmentId(attachment.id);
+
+    try {
+      const blob = await downloadAchievementAttachment(apiClient, achievementId, attachment.id);
+      saveAttachmentBlob(blob, getAttachmentDownloadFileName(attachment));
+      void message.success("附件下载已开始");
+    } catch (error) {
+      setDownloadError(mapAttachmentDownloadErrorToDisplay(normalizeError(error)));
+    } finally {
+      setDownloadingAttachmentId(null);
+    }
+  };
 
   return (
     <>
-      <Divider orientation="left">附件 metadata</Divider>
+      <Divider orientation="left">附件</Divider>
       <Space direction="vertical" size={12} className="full-width">
-        <Alert
-          showIcon
-          type="info"
-          message={boundary.title}
-          description={boundary.description}
-        />
+        {canUpload ? (
+          <AttachmentUploadPanel
+            displayName={displayName}
+            file={selectedFile}
+            secretLevel={secretLevel}
+            uploading={uploading}
+            uploadError={uploadError}
+            uploadSuccess={uploadSuccess}
+            onDisplayNameChange={setDisplayName}
+            onFileChange={setSelectedFile}
+            onSecretLevelChange={setSecretLevel}
+            onUpload={() => void onUpload()}
+          />
+        ) : (
+          <Alert
+            showIcon
+            type="info"
+            message={readonly ? "只读附件视图" : "附件上传入口未开放"}
+            description={
+              readonly
+                ? "当前成果详情来自只读上下文，只展示后端允许读取的附件 metadata 与下载结果。"
+                : "当前用户缺少 achievement:update_own，或不是该成果负责人；前端不会显示上传入口。"
+            }
+          />
+        )}
         {!canLoadAttachments ? (
           <Alert
             showIcon
@@ -830,11 +1085,21 @@ function AttachmentMetadataSection({
           >
             <AttachmentMetadataList
               attachments={items}
+              downloadingAttachmentId={downloadingAttachmentId}
               selectedAttachmentId={selectedAttachmentId}
+              onDownload={(attachment) => void onDownload(attachment)}
               onSelectAttachment={setSelectedAttachmentId}
             />
           </DataState>
         )}
+        {downloadError ? (
+          <Alert
+            showIcon
+            type="error"
+            message={downloadError.message}
+            description={downloadError.detail}
+          />
+        ) : null}
         {selectedAttachmentId ? (
           <AttachmentDetailMetadataPanel
             achievementId={achievementId}
@@ -849,12 +1114,103 @@ function AttachmentMetadataSection({
   );
 }
 
+function AttachmentUploadPanel({
+  displayName,
+  file,
+  onDisplayNameChange,
+  onFileChange,
+  onSecretLevelChange,
+  onUpload,
+  secretLevel,
+  uploadError,
+  uploading,
+  uploadSuccess,
+}: {
+  displayName: string;
+  file: File | null;
+  onDisplayNameChange: (value: string) => void;
+  onFileChange: (file: File | null) => void;
+  onSecretLevelChange: (value: SecretLevelCode | undefined) => void;
+  onUpload: () => void;
+  secretLevel?: SecretLevelCode;
+  uploadError: ApiError | null;
+  uploading: boolean;
+  uploadSuccess: string | null;
+}) {
+  const fileValidation = file ? validateAttachmentUploadFile(file) : null;
+
+  return (
+    <div className="attachment-upload-panel">
+      <Space direction="vertical" size={10} className="full-width">
+        <Space size={10} wrap className="attachment-upload-controls">
+          <input
+            key={file ? `${file.name}:${file.size}:${file.lastModified}` : "empty"}
+            aria-label="选择附件文件"
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+            onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+          />
+          <Input
+            className="attachment-display-name-input"
+            placeholder="显示文件名，可留空"
+            value={displayName}
+            onChange={(event) => onDisplayNameChange(event.target.value)}
+          />
+          <Select
+            allowClear
+            className="attachment-secret-select"
+            placeholder="附件密级"
+            value={secretLevel}
+            options={[
+              { label: "公开", value: "PUBLIC" },
+              { label: "内部", value: "INTERNAL" },
+              { label: "秘密", value: "SECRET" },
+              { label: "机密", value: "CONFIDENTIAL" },
+            ]}
+            onChange={(value) => onSecretLevelChange(value)}
+          />
+          <Button
+            type="primary"
+            loading={uploading}
+            disabled={!file || fileValidation?.ok === false}
+            onClick={onUpload}
+          >
+            上传附件
+          </Button>
+        </Space>
+        <Typography.Text type="secondary">
+          支持 PDF、PNG、JPG、DOC、DOCX、XLS、XLSX；单个文件不超过 10 MB。前端预检仅用于体验，后端校验仍是准入标准。
+        </Typography.Text>
+        {file ? (
+          <Typography.Text type={fileValidation?.ok ? "secondary" : "danger"}>
+            已选择：{file.name}（{formatAttachmentSize(file.size)}）
+            {fileValidation?.ok ? "" : `；${fileValidation?.message}`}
+          </Typography.Text>
+        ) : null}
+        {uploadSuccess ? <Alert showIcon type="success" message={uploadSuccess} /> : null}
+        {uploadError ? (
+          <Alert
+            showIcon
+            type="error"
+            message={uploadError.message}
+            description={uploadError.detail}
+          />
+        ) : null}
+      </Space>
+    </div>
+  );
+}
+
 function AttachmentMetadataList({
   attachments,
+  downloadingAttachmentId,
+  onDownload,
   onSelectAttachment,
   selectedAttachmentId,
 }: {
   attachments: AttachmentMetadata[];
+  downloadingAttachmentId: string | null;
+  onDownload: (attachment: AttachmentMetadata) => void;
   onSelectAttachment: (attachmentId: string) => void;
   selectedAttachmentId: string | null;
 }) {
@@ -879,15 +1235,27 @@ function AttachmentMetadataList({
               <Typography.Text type="secondary" className="attachment-metadata-id">
                 附件 ID：{model.id}
               </Typography.Text>
-              <Button
-                size="small"
-                type={selectedAttachmentId === attachment.id ? "primary" : "default"}
-                onClick={() => onSelectAttachment(attachment.id)}
-              >
-                查看 metadata 详情
-              </Button>
+              <Space size={8} wrap>
+                <Button
+                  size="small"
+                  type={selectedAttachmentId === attachment.id ? "primary" : "default"}
+                  onClick={() => onSelectAttachment(attachment.id)}
+                >
+                  查看 metadata 详情
+                </Button>
+                <Button
+                  size="small"
+                  loading={downloadingAttachmentId === attachment.id}
+                  onClick={() => onDownload(attachment)}
+                >
+                  下载
+                </Button>
+              </Space>
             </div>
             <div className="attachment-metadata-grid">
+              <MetadataLine label="原始名" value={model.originalName} />
+              <MetadataLine label="类型" value={model.mimeType} />
+              <MetadataLine label="大小" value={model.sizeLabel} />
               <MetadataLine label="上传者" value={model.uploaderId} />
               <MetadataLine label="关联对象" value={model.relationId} />
               <MetadataLine label="创建时间" value={model.createdAt} />
@@ -1307,6 +1675,11 @@ const getSecretLevelLabel = (value: string): string =>
 const getAttachmentStatusLabel = (value: string): string =>
   attachmentStatusLabels[value as AttachmentStatusCode] ?? value;
 
+const hasAchievementPermission = (
+  authUser: AchievementPermissionContext,
+  permissionCode: string,
+): boolean => !authUser || authUser.permissionCodes.includes(permissionCode);
+
 const getAttachmentStatusTagColor = (value: string): string => {
   if (value === "ACTIVE") {
     return "green";
@@ -1325,6 +1698,40 @@ const getAttachmentStatusTagColor = (value: string): string => {
 
 const labelFromMap = <T extends string>(labels: Record<T, string>, value: T): string =>
   labels[value] ?? value;
+
+const getFileExtension = (fileName: string): string => {
+  const parts = fileName.toLowerCase().split(".");
+  return parts.length > 1 ? parts.at(-1) ?? "" : "";
+};
+
+const getAttachmentDownloadFileName = (attachment: AttachmentMetadata): string =>
+  toSafeDownloadFileName(attachment.originalName || attachment.fileName || "attachment");
+
+const toSafeDownloadFileName = (fileName: string): string => {
+  const baseName = fileName.split(/[\\/]/).filter(Boolean).at(-1) ?? "attachment";
+  const safe = baseName
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+
+  return safe || "attachment";
+};
+
+const saveAttachmentBlob = (blob: Blob, fileName: string): void => {
+  if (typeof document === "undefined" || typeof URL === "undefined") {
+    return;
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
 
 const normalizeError = (error: unknown): ApiError => {
   if (isApiError(error)) {

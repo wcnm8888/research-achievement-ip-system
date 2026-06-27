@@ -208,6 +208,53 @@ describe("createApiClient writes JSON requests", () => {
     expect(init.body).toBe(JSON.stringify({ reason: "重复登记" }));
     expect(headers.get("Content-Type")).toBe("application/json");
   });
+
+  it("sends multipart form data without overriding the content type", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ id: "attachment-id" }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const formData = new FormData();
+    formData.append("file", new Blob(["%PDF synthetic"]), "paper.pdf");
+
+    const client = createApiClient("user-id");
+    await expect(
+      client.postForm?.("/achievements/achievement-id/attachments", formData),
+    ).resolves.toEqual({ id: "attachment-id" });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe("http://localhost/api/achievements/achievement-id/attachments");
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+    expect(init.body).toBe(formData);
+    expect(headers.get("Content-Type")).toBeNull();
+    expect(headers.get("X-Demo-User-Id")).toBe("user-id");
+  });
+
+  it("downloads attachment blobs with credentials and demo user context", async () => {
+    const blob = new Blob(["download body"], { type: "application/pdf" });
+    const fetchMock = vi.fn(async () => new Response(blob, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("user-id");
+    await expect(
+      client.downloadBlob?.("/achievements/achievement-id/attachments/attachment-id/download"),
+    ).resolves.toBeInstanceOf(Blob);
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe(
+      "http://localhost/api/achievements/achievement-id/attachments/attachment-id/download",
+    );
+    expect(init.method).toBe("GET");
+    expect(init.credentials).toBe("include");
+    expect(headers.get("X-Demo-User-Id")).toBe("user-id");
+    expect(headers.get("Content-Type")).toBeNull();
+  });
 });
 
 describe("account management API client", () => {

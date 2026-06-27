@@ -46,7 +46,9 @@ export type ApiQuery = Record<string, ApiQueryValue>;
 export type ApiClient = {
   get<T>(path: string, query?: ApiQuery): Promise<T>;
   post<T>(path: string, body?: unknown): Promise<T>;
+  postForm?<T>(path: string, body: FormData): Promise<T>;
   patch<T>(path: string, body?: unknown): Promise<T>;
+  downloadBlob?(path: string): Promise<Blob>;
 };
 
 export type AccountManagementApiClient = ApiClient & {
@@ -191,9 +193,16 @@ export const createApiClient = (
     const response = await request(path, demoUserId, { method: "POST", body }, options);
     return response as T;
   },
+  async postForm<T>(path: string, body: FormData) {
+    const response = await requestForm(path, demoUserId, body, options);
+    return response as T;
+  },
   async patch<T>(path: string, body?: unknown) {
     const response = await request(path, demoUserId, { method: "PATCH", body }, options);
     return response as T;
+  },
+  async downloadBlob(path: string) {
+    return requestBlob(path, demoUserId, options);
   },
   async listDepartments(query?: ListDepartmentsQuery) {
     const response = await request(
@@ -391,6 +400,88 @@ const request = async (
     }
 
     return await response.json();
+  } catch (error) {
+    if (isApiError(error)) {
+      throw error;
+    }
+
+    throw {
+      kind: "network",
+      message: "服务不可用",
+      detail: error instanceof Error ? error.message : "Network request failed.",
+    } satisfies ApiError;
+  }
+};
+
+const requestForm = async (
+  path: string,
+  demoUserId: string | null,
+  body: FormData,
+  clientOptions: ApiClientOptions = {},
+): Promise<unknown> => {
+  const url = buildUrl(path);
+  const headers = new Headers();
+  const trimmedUserId = demoUserId?.trim();
+
+  if (shouldSendDemoUserHeader(trimmedUserId, clientOptions.allowDemoUserHeader)) {
+    headers.set("X-Demo-User-Id", trimmedUserId);
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body,
+    });
+
+    if (!response.ok) {
+      throw await buildApiError(response);
+    }
+
+    if (response.status === 204) {
+      return undefined;
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (isApiError(error)) {
+      throw error;
+    }
+
+    throw {
+      kind: "network",
+      message: "服务不可用",
+      detail: error instanceof Error ? error.message : "Network request failed.",
+    } satisfies ApiError;
+  }
+};
+
+const requestBlob = async (
+  path: string,
+  demoUserId: string | null,
+  clientOptions: ApiClientOptions = {},
+): Promise<Blob> => {
+  const url = buildUrl(path);
+  const headers = new Headers();
+  const trimmedUserId = demoUserId?.trim();
+
+  if (shouldSendDemoUserHeader(trimmedUserId, clientOptions.allowDemoUserHeader)) {
+    headers.set("X-Demo-User-Id", trimmedUserId);
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw await buildApiError(response);
+    }
+
+    return await response.blob();
   } catch (error) {
     if (isApiError(error)) {
       throw error;

@@ -2,11 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import type { ApiClient, ApiError } from "./api-client";
 import {
   buildAttachmentDetailMetadataViewModel,
+  buildAchievementAttachmentFormData,
   buildAttachmentMetadataViewModel,
   buildVoidActionPayload,
+  canUploadAchievementAttachment,
+  downloadAchievementAttachment,
   fetchAchievementAttachmentDetailMetadata,
   fetchAchievementAttachmentMetadata,
   fetchAchievementDetailById,
+  formatAttachmentSize,
   getActionConfirmConfig,
   getAvailableAchievementActions,
   getAttachmentDetailMetadataReadonlyBoundary,
@@ -15,7 +19,10 @@ import {
   getReadonlyAchievementErrorState,
   getReadonlyAchievementActions,
   mapAttachmentDetailMetadataErrorToDisplay,
+  mapAttachmentDownloadErrorToDisplay,
   mapAttachmentMetadataErrorToDisplay,
+  uploadAchievementAttachment,
+  validateAttachmentUploadFile,
   shouldLoadAttachmentDetailMetadata,
   shouldLoadAttachmentMetadata,
   getTypeDetailFields,
@@ -171,6 +178,11 @@ describe("Step 19A attachment metadata helpers", () => {
     relationType: "ACHIEVEMENT",
     relationId: "achievement-id",
     fileName: "paper.pdf",
+    mimeType: "application/pdf",
+    sizeBytes: 2048,
+    storageProvider: "LOCAL_DISK",
+    originalName: "original-paper.pdf",
+    storedName: "stored-paper.pdf",
     version: 2,
     uploaderId: "uploader-id",
     secretLevel: "INTERNAL",
@@ -248,6 +260,9 @@ describe("Step 19A attachment metadata helpers", () => {
       id: "attachment-id",
       relationId: "achievement-id",
       fileName: "paper.pdf",
+      originalName: "original-paper.pdf",
+      mimeType: "application/pdf",
+      sizeLabel: "2.0 KB",
       version: 2,
       uploaderId: "uploader-id",
       secretLevelLabel: "内部",
@@ -258,13 +273,124 @@ describe("Step 19A attachment metadata helpers", () => {
     expect(model).not.toHaveProperty("checksum");
   });
 
-  it("keeps Step 19A boundary metadata-readonly and excludes download routes", () => {
+  it("states the Step 45C-3 local UI boundary without storage internals", () => {
     const boundary = getAttachmentMetadataReadonlyBoundary();
 
     expect(boundary.allowedRequest).toBe("GET /achievements/:achievementId/attachments");
     expect(boundary.allowedRequest).not.toContain("download");
-    expect(boundary.description).toContain("只读取");
-    expect(boundary.description).toContain("不提供上传、下载");
+    expect(boundary.title).toContain("Step 45C-3");
+    expect(boundary.description).toContain("multipart");
+    expect(boundary.description).toContain("storageKey");
+    expect(boundary.description).toContain("checksum");
+  });
+
+  it("builds multipart upload payloads without storage internals", async () => {
+    const file = new File(["paper"], "paper.pdf", { type: "application/pdf" });
+    const uploaded = { ...attachment, id: "uploaded-attachment-id" };
+    const postForm = vi.fn().mockResolvedValue(uploaded);
+    const client: ApiClient = {
+      get: vi.fn(),
+      post: vi.fn(),
+      patch: vi.fn(),
+      postForm,
+    };
+
+    const formData = buildAchievementAttachmentFormData({
+      file,
+      displayName: "  Paper proof  ",
+      secretLevel: "INTERNAL",
+    });
+    const uploadResult = await uploadAchievementAttachment(client, "achievement-id", {
+      file,
+      displayName: "  Paper proof  ",
+      secretLevel: "INTERNAL",
+    });
+
+    expect(formData.get("file")).toBe(file);
+    expect(formData.get("displayName")).toBe("Paper proof");
+    expect(formData.get("secretLevel")).toBe("INTERNAL");
+    expect(formData.has("storageKey")).toBe(false);
+    expect(formData.has("checksum")).toBe(false);
+    expect(postForm).toHaveBeenCalledWith("/achievements/achievement-id/attachments", expect.any(FormData));
+    expect(uploadResult).toBe(uploaded);
+  });
+
+  it("downloads attachment blobs through the authenticated backend route", async () => {
+    const blob = new Blob(["paper"], { type: "application/pdf" });
+    const downloadBlob = vi.fn().mockResolvedValue(blob);
+    const client: ApiClient = {
+      get: vi.fn(),
+      post: vi.fn(),
+      patch: vi.fn(),
+      downloadBlob,
+    };
+
+    const result = await downloadAchievementAttachment(client, "achievement-id", "attachment-id");
+
+    expect(downloadBlob).toHaveBeenCalledWith(
+      "/achievements/achievement-id/attachments/attachment-id/download",
+    );
+    expect(result).toBe(blob);
+  });
+
+  it("gates attachment upload to the owner with update-own permission", () => {
+    expect(
+      canUploadAchievementAttachment(
+        { id: "owner-id", permissionCodes: ["achievement:update_own"] },
+        baseDetail,
+      ),
+    ).toBe(true);
+    expect(
+      canUploadAchievementAttachment(
+        { id: "other-user-id", permissionCodes: ["achievement:update_own"] },
+        baseDetail,
+      ),
+    ).toBe(false);
+    expect(
+      canUploadAchievementAttachment(
+        { id: "owner-id", permissionCodes: [] },
+        baseDetail,
+      ),
+    ).toBe(false);
+  });
+
+  it("prechecks local file type and size before upload", () => {
+    expect(
+      validateAttachmentUploadFile({
+        name: "paper.pdf",
+        size: 1024,
+        type: "application/pdf",
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      validateAttachmentUploadFile({
+        name: "page.html",
+        size: 1024,
+        type: "text/html",
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateAttachmentUploadFile({
+        name: "paper.pdf",
+        size: 10 * 1024 * 1024 + 1,
+        type: "application/pdf",
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("formats attachment size and maps download permission failures", () => {
+    expect(formatAttachmentSize(512)).toBe("512 B");
+    expect(formatAttachmentSize(2048)).toBe("2.0 KB");
+    expect(formatAttachmentSize(2 * 1024 * 1024)).toBe("2.0 MB");
+
+    const mapped = mapAttachmentDownloadErrorToDisplay({
+      kind: "forbidden",
+      status: 403,
+      message: "Forbidden",
+    });
+
+    expect(mapped.status).toBe(403);
+    expect(mapped.message).not.toBe("Forbidden");
   });
 });
 

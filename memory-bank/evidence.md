@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-06-27 Step 45C-3 - Attachment Web UI integration evidence
+
+- Purpose:
+  - Integrate the local attachment backend into the Web achievement detail UI.
+  - Keep the Step local and avoid production access, migration execution, seed, backend feature expansion, push, deploy, cleanup, deletion, and real business file uploads.
+- Code-change evidence:
+  - Changed `apps/web/src/api-client.ts`.
+  - Changed `apps/web/src/api-client.test.ts`.
+  - Changed `apps/web/src/types.ts`.
+  - Changed `apps/web/src/AchievementDetail.tsx`.
+  - Changed `apps/web/src/AchievementDetail.test.ts`.
+  - Changed `apps/web/src/Achievements.tsx`.
+  - Changed memory-bank records for this Step.
+- Implemented behavior:
+  - Web API client can submit multipart `FormData` through `postForm` without setting a manual `Content-Type`.
+  - Web API client can request authenticated attachment downloads as blobs.
+  - Achievement detail attachment area now shows safe attachment metadata, upload controls, download actions, loading state, empty state, success state, and error state.
+  - Upload prechecks allowed extension/MIME scope and the 10 MB local UI limit before calling the backend.
+  - Upload UI is available only when the current user is the achievement owner and has `achievement:update_own`.
+  - Download action calls the backend download route and does not expose storage keys, checksums, local paths, or file contents in UI metadata.
+- Automated verification evidence:
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail`: PASS, 1 file / 29 tests.
+  - `corepack pnpm --filter @research-ip/web test -- api-client`: PASS, 1 file / 28 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement`: PASS, 3 files / 42 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with Vite chunk-size warning.
+  - `git diff --check`: PASS with line-ending warnings only.
+- Boundary evidence:
+  - No migration was executed.
+  - No seed was executed.
+  - No production environment was contacted.
+  - No VPS connection was made.
+  - No production DB access or production write was made.
+  - No backend API/storage implementation, Prisma schema, migration, seed, deploy, Docker, CI, cleanup, deletion, or batch cleanup change was made.
+  - No real business file was uploaded or read.
+  - `.local-step44h/`, `local-prod-preview-proxy.cjs`, and local attachment storage test artifacts remained unstaged and outside this Step.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-27 Step 45C-2R - Attachment backend review and commit gate evidence
 
 - Purpose:

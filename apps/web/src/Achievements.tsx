@@ -272,6 +272,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
       {detailItem ? (
         <AchievementDetail
           apiClient={apiClient}
+          authUser={authUser}
           demoUserId={demoUserId}
           listItem={detailItem}
           open

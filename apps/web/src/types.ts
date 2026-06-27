@@ -236,6 +236,11 @@ export type AttachmentMetadata = {
   relationType: AttachmentRelationTypeCode | string;
   relationId: string;
   fileName: string;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  storageProvider?: string | null;
+  originalName?: string | null;
+  storedName?: string | null;
   version: number;
   uploaderId: string;
   secretLevel: SecretLevelCode | string;
@@ -250,6 +255,12 @@ export type AttachmentDetailMetadata = AttachmentMetadata;
 export type AttachmentListQuery = {
   status?: AttachmentStatusCode;
   take?: number;
+};
+
+export type UploadAchievementAttachmentInput = {
+  file: File;
+  secretLevel?: SecretLevelCode;
+  displayName?: string;
 };
 
 export type FeeTypeCode =

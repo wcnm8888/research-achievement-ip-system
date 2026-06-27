@@ -1,5 +1,45 @@
 # Progress
 
+## 2026-06-27 Step 45C-3 - Attachment Web UI integration
+
+- Status: DONE as local Web UI integration and validation.
+- Result:
+  - `LOCAL_ATTACHMENT_WEB_UI_UPLOAD_DOWNLOAD_INTEGRATED_WITH_PRODUCTION_DEFERRED`.
+- Canonical state:
+  - Current local HEAD during this Step: `1663802f2fca5e1b9ddd16f2e4bc8193cf53df03`.
+  - Step 45C-2R committed the local attachment backend upload/download/storage implementation.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - This Step is local Web UI integration only, not production deploy, production smoke, production DB access, VPS access, migration execution, seed, cleanup, or Phase 2 completion.
+- Completed:
+  - Added Web API-client support for multipart `FormData` uploads without overriding `Content-Type`.
+  - Added Web API-client support for authenticated blob downloads.
+  - Extended frontend attachment metadata types for safe storage metadata returned by the backend.
+  - Integrated achievement detail attachment UI for listing metadata, selecting a local file, prechecking allowed type/size, uploading, and downloading.
+  - Gated upload UI by the achievement owner with `achievement:update_own`; download remains handled through authenticated backend authorization.
+  - Kept `storageKey`, checksum, real paths, and file body contents out of UI metadata display.
+  - Added frontend tests for multipart client behavior, blob download client behavior, upload payloads, download route, permission gating, file precheck, and display-safe metadata.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail`: PASS, 1 file / 29 tests.
+  - `corepack pnpm --filter @research-ip/web test -- api-client`: PASS, 1 file / 28 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement`: PASS, 3 files / 42 tests.
+  - `$env:VITE_API_BASE_URL='/api'; corepack pnpm --filter @research-ip/web build`: PASS with Vite chunk-size warning.
+  - `git diff --check`: PASS with line-ending warnings only.
+- Boundary:
+  - No migration execution.
+  - No seed.
+  - No Prisma schema or migration change in this Step.
+  - No backend API/storage feature expansion.
+  - No archive/delete attachment capability.
+  - No virus scan implementation.
+  - No object storage/S3 implementation.
+  - No real business file upload.
+  - No production DB access or production write.
+  - No push, VPS connection, deployment, cleanup, deletion, or batch cleanup.
+  - `.local-step44h/`, `local-prod-preview-proxy.cjs`, and local attachment storage test artifacts remain untracked/unstaged outside this Step.
+  - No `.env`, `DATABASE_URL`, token, cookie value, certificate, private key, credential secret, local test password, or full connection string was read or recorded.
+
 ## 2026-06-27 Step 45C-2R - Attachment backend implementation review and commit gate
 
 - Status: DONE as local review and commit gate preparation.

@@ -1,5 +1,34 @@
 # Decisions
 
+## D117 - Step 45C-3 uses authenticated Web multipart upload and blob download without exposing storage internals
+
+- Date: 2026-06-27.
+- Context: Step 45C-2R committed the local backend attachment multipart upload/download/storage implementation. Step 45C-3 needed to connect achievement detail UI to that backend while staying local and avoiding schema/migration, backend scope expansion, production access, real business files, push, deploy, cleanup, or deletion.
+- Decision:
+  - Add `postForm` to the Web API client for attachment multipart upload and let the browser set the multipart `Content-Type` boundary.
+  - Add `downloadBlob` to the Web API client for authenticated attachment download.
+  - Keep achievement detail UI focused on safe attachment metadata, upload controls, and download actions.
+  - Gate upload UI by achievement ownership plus `achievement:update_own`.
+  - Keep download authorization at the backend route and surface user-facing frontend errors for unauthorized/forbidden/not-found/server failures.
+  - Do not display storage keys, checksums, local paths, or file body contents in Web metadata.
+  - Do not add archive/delete, virus scanning, object storage, production deployment, production smoke, migration execution, or seed behavior in this Step.
+- Rationale:
+  - The browser must own multipart boundaries; manually setting `Content-Type` would break real uploads.
+  - Blob downloads preserve the backend authorization and response-header contract without exposing storage implementation details to the frontend.
+  - Upload gating in UI improves ergonomics, but backend permission checks remain the security boundary.
+- Verification:
+  - Web typecheck passed.
+  - AchievementDetail, api-client, and broader Achievement tests passed.
+  - Web build passed with only the Vite chunk-size warning.
+  - `git diff --check` passed with line-ending warnings only.
+- Consequences:
+  - Achievement detail now has local attachment list/upload/download UI wired to the backend contract.
+  - Production storage acceptance, archive/delete, virus scanning, object storage, migration execution, and production smoke remain future work.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Boundary:
+  - No Prisma schema/migration change, migration execution, seed, backend feature expansion, production DB access, production write, VPS connection, deploy, push, cleanup, deletion, real business file upload, or sensitive-config access occurred.
+
 ## D116 - Map fee waive/cancel domain audit actions to persisted UPDATE until AuditActionType is expanded
 
 - Date: 2026-06-27.
