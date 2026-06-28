@@ -1,5 +1,34 @@
 # Evidence
 
+## 2026-06-28 Step 47U - Local production-like environment variable readiness evidence
+
+- Purpose:
+  - Document the local production-like environment variable names needed after Step 47T was blocked by missing `.env.production`.
+  - Do not create or fill a real `.env.production` file.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `e2865fd8d9de7a3f2ce13ff3cbd1e7e42f91ea3a`.
+  - `git log -1 --pretty=%s`: `docs: record local production-like deployment result`.
+  - `git diff --name-status`: empty before this Step.
+- Read evidence:
+  - `docker-compose.production.yml` requires `.env.production` for Postgres and API services.
+  - Dockerfiles confirm production-like API/Web build inputs but do not add extra runtime secret requirements beyond env/config.
+  - Account lifecycle delivery config reads the DirectMail-related env names only when configured.
+- Change evidence:
+  - `.env.production.example` now includes non-secret account lifecycle delivery variable names and safe defaults.
+  - `deploy/local-production-like-env-checklist.md` lists required core runtime and DirectMail variable names.
+  - Real `.env.production` was not created.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive diff scan found no real secret values, raw token, full reset link, plaintext recipient email, cookie, private key, full connection string, or provider raw payload.
+- Boundaries observed:
+  - No real `.env` or `.env.production` values were read or output.
+  - No provider credential value, SMTP/API credential, raw token, full reset link, plaintext recipient email, provider raw full payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No stack start.
+  - No migration or seed/backfill executed.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+
 ## 2026-06-28 Step 47T - Local production-like deployment acceptance evidence
 
 - Purpose:

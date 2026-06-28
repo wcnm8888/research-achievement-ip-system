@@ -4,6 +4,25 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47U Archive - Local Production-Like Env Readiness Checklist - 2026-06-28
+
+- Step identity:
+  - This is Step 47U.
+  - This Step prepares the local production-like environment variable checklist/template only.
+  - It is not stack startup, migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, or artifact removal.
+- Starting state:
+  - HEAD confirmed as `e2865fd8d9de7a3f2ce13ff3cbd1e7e42f91ea3a`.
+  - Latest commit subject confirmed as `docs: record local production-like deployment result`.
+  - Tracked diff was empty before this Step.
+- Result:
+  - Added DirectMail/account-lifecycle variable names to `.env.production.example` with safe no-send defaults.
+  - Added `deploy/local-production-like-env-checklist.md`.
+  - Did not create `.env.production`.
+  - Did not read or record real environment values.
+- Next:
+  - User manually provides a private `.env.production` outside git.
+  - A later Step can start the local production-like stack and check API/Web health.
+
 ## Current Step 47T Archive - Local Production-Like Deployment Acceptance - 2026-06-28
 
 - Step identity:

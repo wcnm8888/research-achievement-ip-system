@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-06-28 Step 47U - Local production-like environment variable readiness check
+
+- Status: LOCAL_PRODUCTION_LIKE_ENV_READINESS_CHECKLIST_ADDED_NO_REAL_ENV_CREATED.
+- Step identity:
+  - This is Step 47U.
+  - This Step prepares a non-secret local production-like environment variable checklist/template only.
+  - It does not create or fill a real `.env.production` file.
+- Starting state:
+  - `git rev-parse HEAD`: `e2865fd8d9de7a3f2ce13ff3cbd1e7e42f91ea3a`.
+  - Latest commit subject: `docs: record local production-like deployment result`.
+  - Tracked diff was empty before this Step.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Files updated:
+  - `.env.production.example`: added non-secret account lifecycle delivery variable names and safe defaults.
+  - `deploy/local-production-like-env-checklist.md`: added a local production-like env readiness checklist.
+- Environment variable readiness:
+  - Core runtime names recorded: `NODE_ENV`, `PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL`, `SESSION_SECRET`, `AUTH_BOOTSTRAP_ENABLED`, `CORS_ALLOWED_ORIGIN`, `VITE_API_BASE_URL`, `LOG_LEVEL`.
+  - Delivery names recorded: `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER`, `ALIYUN_DM_DRY_RUN`, `ALIYUN_DM_ACCOUNT_NAME`, `ALIYUN_DM_FROM_ALIAS`, `ALIYUN_DM_REGION`, `ALIBABA_CLOUD_ACCESS_KEY_ID`, `ALIBABA_CLOUD_ACCESS_KEY_SECRET`.
+  - Safe default remains `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER=local_stub` and `ALIYUN_DM_DRY_RUN=true`.
+  - Starting the local production-like stack still requires the user to manually provide a private `.env.production` file outside git.
+- Boundaries:
+  - No real `.env.production` was created.
+  - No real env values, provider credentials, SMTP/API credentials, raw token, full reset link, plaintext recipient email, cookie, private key, full connection string, or provider raw payload were read, output, or recorded.
+  - No stack start.
+  - No migration, seed, or backfill.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+
 ## 2026-06-28 Step 47T - Local production-like deployment acceptance
 
 - Status: BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START.

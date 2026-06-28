@@ -1,5 +1,18 @@
 # Decisions
 
+## D155 - Step 47U records local production-like env names without real values
+
+- Date: 2026-06-28.
+- Context: Step 47T was blocked because `.env.production` was missing. Step 47U was opened to document the required local production-like environment variables without creating or filling the real env file.
+- Decision:
+  - Update `.env.production.example` with account lifecycle delivery variable names and safe no-send defaults.
+  - Add `deploy/local-production-like-env-checklist.md`.
+  - Do not create `.env.production`.
+  - Do not read, output, or record real env values or secrets.
+  - Keep local production-like stack startup deferred until a private `.env.production` exists.
+- Boundaries:
+  - This decision does not authorize stack startup, migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or artifact removal.
+
 ## D154 - Step 47T local production-like acceptance is blocked by missing env file
 
 - Date: 2026-06-28.
