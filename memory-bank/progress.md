@@ -1,5 +1,48 @@
 # Progress
 
+## 2026-06-28 Step 47Z - Local production-like database readiness diagnosis
+
+- Status: BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_CONFIG.
+- Step identity:
+  - This is Step 47Z.
+  - This Step diagnoses the local production-like API Prisma `P1003` startup blocker after Step 47Y.
+  - It is read-only for database state and does not run migration, seed, backfill, database creation, or destructive database operations.
+- Starting state:
+  - `git rev-parse HEAD`: `cb138a9954ee787cf8f62c3a9d04c0503b8e4b00`.
+  - Latest commit subject: `fix: wire attachment storage for production container`.
+  - Tracked diff was empty before this memory-bank update.
+  - `.env.production` existence check returned present; values were not read or output.
+- Read-only diagnosis:
+  - `docker-compose.production.yml` uses the same private `.env.production` file for `postgres` and `api`.
+  - Prisma datasource uses `env("DATABASE_URL")`.
+  - Local migrations present:
+    - `20260608080155_init_core_schema`
+    - `20260623073332_add_auth_sessions`
+    - `20260627090100_add_attachment_storage_metadata`
+    - `20260627103000_add_account_lifecycle_tokens`
+  - `postgres` compose service remained running / healthy.
+  - Non-sensitive container checks showed:
+    - The `POSTGRES_DB` target was reachable.
+    - The database target parsed from `DATABASE_URL` differed from `POSTGRES_DB`.
+    - The database target parsed from `DATABASE_URL` was not connectable / missing.
+    - On the reachable `POSTGRES_DB` target, `public._prisma_migrations` was missing and public table count was zero.
+- Conclusion:
+  - The observed API `P1003` is classified as local production-like DB configuration / target database readiness mismatch.
+  - This is not safe to resolve by running migration deploy immediately because the API target database itself is missing or mismatched.
+  - Result recorded as `BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_CONFIG`.
+- Recommended next step:
+  - Align the local private `.env.production` database target so `DATABASE_URL` and the intended Postgres database refer to the same local production-like database, or explicitly authorize creating the missing local database.
+  - After the database target exists, open a separate authorization Step for local production-like `prisma migrate deploy`.
+  - Do not run seed/backfill unless separately authorized.
+- Boundaries:
+  - No `.env.production` values, `DATABASE_URL`, password, token, cookie, private key, connection string, raw token, full reset/invite link, plaintext recipient email, or provider raw payload was recorded.
+  - No migration, seed, or backfill.
+  - No database writes.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+  - Source code and DirectMail default sending strategy were not modified.
+
 ## 2026-06-28 Step 47Y - Fix LocalAttachmentStorageAdapter production container wiring
 
 - Status: BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_UNAVAILABLE_AFTER_ATTACHMENT_WIRING_FIX.

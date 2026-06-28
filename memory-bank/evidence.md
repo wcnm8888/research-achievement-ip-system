@@ -1,5 +1,56 @@
 # Evidence
 
+## 2026-06-28 Step 47Z - Local production-like database readiness diagnosis evidence
+
+- Purpose:
+  - Diagnose the local production-like API Prisma `P1003` startup blocker.
+  - Determine whether the cause is database missing, connection configuration mismatch, schema/migration not applied, or compose Postgres readiness.
+  - Keep `.env.production` values, secrets, tokens, full reset/invite links, cookies, private keys, connection strings, database writes, migration, seed/backfill, push, VPS access, production DB access, real email smoke, cleanup, deletion, drop/reset, and source changes out of scope.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `cb138a9954ee787cf8f62c3a9d04c0503b8e4b00`.
+  - `git log -1 --pretty=%s`: `fix: wire attachment storage for production container`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - `.env.production` existence check returned present; values were not read or output.
+- Context evidence:
+  - `docker-compose.production.yml` loads `.env.production` for both `postgres` and `api`.
+  - Prisma datasource is PostgreSQL and uses `env("DATABASE_URL")`.
+  - Migration directories found:
+    - `20260608080155_init_core_schema`
+    - `20260623073332_add_auth_sessions`
+    - `20260627090100_add_attachment_storage_metadata`
+    - `20260627103000_add_account_lifecycle_tokens`
+  - `PrismaService` connects during module initialization through Prisma Client.
+- Container / database evidence:
+  - Compose service status before diagnosis:
+    - `postgres`: running / healthy.
+    - `api`: restarting.
+    - `web`: created, waiting for healthy `api`.
+  - Read-only Postgres checks, with values redacted from output:
+    - `POSTGRES_DB` target readiness: OK.
+    - `POSTGRES_DB` target exists and is connectable.
+    - The database target parsed from `DATABASE_URL` differs from `POSTGRES_DB`.
+    - The database target parsed from `DATABASE_URL` is missing / not connectable.
+    - On the reachable `POSTGRES_DB` target, `public._prisma_migrations` is missing.
+    - On the reachable `POSTGRES_DB` target, public table count is `0`.
+- Classification:
+  - Result: `BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_CONFIG`.
+  - The immediate API `P1003` cause is a local production-like DB target mismatch / missing database for the API connection.
+  - Because the API target database is missing or mismatched, this Step does not classify the next action as migration-only.
+  - Local production-like migration deploy should wait until the database target is corrected and then be separately authorized.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive memory-bank diff scan found no secret values, raw token, full reset/invite link, plaintext recipient email, cookie, private key, full connection string, or provider raw payload.
+- Boundaries observed:
+  - No `.env.production` values were read or output into memory-bank.
+  - No provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was recorded.
+  - No migration or seed/backfill executed.
+  - No database writes were performed.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+  - Source code and DirectMail default sending strategy were not modified.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+
 ## 2026-06-28 Step 47Y - Attachment storage production container wiring evidence
 
 - Purpose:

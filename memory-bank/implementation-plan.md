@@ -4,6 +4,27 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47Z Archive - Local Production-Like Database Readiness Diagnosis - 2026-06-28
+
+- Step identity:
+  - This is Step 47Z.
+  - This Step diagnoses the local production-like Prisma `P1003` blocker.
+  - It is not migration, seed/backfill, database creation, database writes, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or DirectMail strategy modification.
+- Diagnosis:
+  - Compose Postgres is running and healthy.
+  - `POSTGRES_DB` target is reachable and connectable.
+  - Prisma uses `DATABASE_URL`, and the database target parsed from `DATABASE_URL` differs from `POSTGRES_DB`.
+  - The `DATABASE_URL` target database is missing or not connectable.
+  - The reachable `POSTGRES_DB` target has no `public._prisma_migrations` table and zero public tables.
+- Decision:
+  - Record `BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_CONFIG`.
+  - Do not run migration deploy yet because the API target database is missing or mismatched.
+  - First correct or authorize creation of the intended local production-like database target.
+  - Then open a separate local production-like migration deploy authorization Step.
+- Next:
+  - User should align private `.env.production` DB target values or authorize local database creation.
+  - After the DB target exists, run a separate Step for `prisma migrate deploy` rehearsal against this local production-like DB.
+
 ## Current Step 47Y Archive - Fix Production Container Attachment Storage Wiring - 2026-06-28
 
 - Step identity:

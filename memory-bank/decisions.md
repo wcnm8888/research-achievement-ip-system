@@ -1,5 +1,19 @@
 # Decisions
 
+## D161 - Step 47Z classifies Prisma P1003 as local database target mismatch
+
+- Date: 2026-06-28.
+- Context: Step 47Z diagnosed the API container's Prisma `P1003` startup blocker after Step 47Y fixed attachment storage DI. The local `.env.production` file existed but its values were not read or recorded.
+- Decision:
+  - Record `BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_CONFIG`.
+  - Treat the immediate blocker as local production-like DB configuration / target database readiness mismatch.
+  - Do not run migration deploy in this Step because the API `DATABASE_URL` target differs from the reachable `POSTGRES_DB` target and is missing or not connectable.
+  - Do not create databases, run migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or artifact removal.
+  - Next authorization should either correct/create the intended local database target or explicitly authorize local production-like database creation, followed by a separate migration deploy Step.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+  - DirectMail default sending strategy remains unchanged.
+
 ## D160 - Step 47Y fixes attachment storage DI and stops on database availability blocker
 
 - Date: 2026-06-28.
