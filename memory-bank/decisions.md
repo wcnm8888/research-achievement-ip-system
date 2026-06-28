@@ -1,5 +1,20 @@
 # Decisions
 
+## D140 - Step 47I-Resume stops after provider permanent failure on first controlled smoke attempt
+
+- Date: 2026-06-28.
+- Context: Step 47I-Resume retried controlled smoke after the non-secret Aliyun DirectMail runtime variables were supplied as a process-local overlay. Secret environment variable presence was confirmed without printing values. The default runtime remained `LOCAL_SAFE_STUB`. The local smoke harness called `AliyunDirectMailAdapter` directly for the first password reset attempt.
+- Decision:
+  - Record `CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND`.
+  - Treat the password reset result as provider status `FAILED` with failure category `PERMANENT`.
+  - Record total accepted/sent count as 0.
+  - Do not attempt the invite smoke after the first provider failure.
+  - Do not retry in this Step.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Keep the non-secret env overlay process-local only.
+- Boundaries:
+  - This decision does not authorize secret output, raw token output, full link output, plaintext recipient logging, provider raw full payload recording, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D139 - Step 47I controlled smoke stops on missing runtime configuration
 
 - Date: 2026-06-28.

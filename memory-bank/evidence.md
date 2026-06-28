@@ -1,5 +1,64 @@
 # Evidence
 
+## 2026-06-28 Step 47I-Resume - Aliyun DirectMail controlled smoke retry evidence
+
+- Purpose:
+  - Retry controlled smoke with process-local non-secret env overlay after Step 47I stopped on missing config.
+  - Keep production runtime wiring, production access, migration, seed/backfill, deploy, push, cleanup, deletion, drop/reset, real user account operations, and sensitive-config disclosure out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `8482a3d28d9d3560591d401c007c1ee33f4e9324`.
+  - `git log -1 --pretty=%s`: `docs: record controlled smoke missing config result`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - Existing old local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Pre-send evidence:
+  - `AccountLifecycleModule` still did not register `AliyunDirectMailAdapter`.
+  - `AccountLifecycleMailer` still used `LOCAL_SAFE_STUB`.
+  - `ALIYUN_DM_DRY_RUN` default remained safe unless explicitly overridden in the smoke harness process.
+  - Required secret environment variable presence was checked without printing values.
+  - AccessKey id environment variable name was present.
+  - AccessKey secret environment variable name was present.
+- Process-local non-sensitive env overlay:
+  - `ALIYUN_DM_ACCOUNT_NAME` was set to `system@wzunew.uk` in process only.
+  - `ALIYUN_DM_FROM_ALIAS` was set to the approved display name in process only.
+  - `ALIYUN_DM_REGION` was set to `cn-hangzhou` in process only.
+  - `ALIYUN_DM_DRY_RUN` was set to `false` in process only.
+  - The overlay was not written to `.env`, system environment, source code, package files, or deployment config.
+- Smoke harness evidence:
+  - Local harness path: `.local-step47i/aliyun-directmail-smoke.ts`.
+  - Harness did not contain the full recipient email literal.
+  - Harness constructed transient test raw tokens and links in memory only.
+  - Harness output contained only masked recipient and provider status summary.
+- Smoke result:
+  - Password reset provider status: `FAILED`.
+  - Password reset failure category: `PERMANENT`.
+  - Password reset accepted/sent: no.
+  - Invite accepted/sent: no; skipped after the first provider failure.
+  - Total accepted/sent: 0.
+  - Masked recipient only: `246****571@qq.com`.
+  - Safe normalized provider message id: none.
+  - Provider raw full response payload was not recorded.
+  - User receipt confirmation: no accepted send; user may still manually confirm no unexpected email arrived.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed before smoke.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed before smoke, 3 files / 18 tests.
+  - First harness invocation did not execute smoke because root `pnpm exec tsx` could not find `tsx`.
+  - Second harness invocation did not execute smoke because the temporary harness used top-level await with CJS output.
+  - Third harness invocation executed the provider attempt and returned the de-identified summary above.
+- Outcome:
+  - `CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND`.
+  - No retry was attempted after the provider failure.
+  - No invite send was attempted after the provider failure.
+- Sensitive-output evidence:
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+- Boundaries observed:
+  - No accepted real email/SMS send.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+
 ## 2026-06-28 Step 47I - Aliyun DirectMail controlled smoke execution evidence
 
 - Purpose:

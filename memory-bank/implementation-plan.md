@@ -4,6 +4,37 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47I-Resume Archive - Aliyun DirectMail Controlled Smoke Retry - 2026-06-28
+
+- Step identity:
+  - This is Step 47I-Resume.
+  - This Step retried controlled smoke using process-local non-secret env overlay and a local harness.
+  - It is not production runtime wiring, production access, migration, seed/backfill, deploy, push, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `8482a3d28d9d3560591d401c007c1ee33f4e9324`.
+  - Latest commit subject confirmed as `docs: record controlled smoke missing config result`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Execution boundary:
+  - Runtime boundary checked: `AccountLifecycleModule` was not wired to `AliyunDirectMailAdapter`.
+  - Safe default checked: `AccountLifecycleMailer` remained `LOCAL_SAFE_STUB`.
+  - Secret env presence was checked without printing values.
+  - Non-secret config overlay was applied only inside the smoke harness process and was not persisted.
+- Outcome:
+  - `CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND`.
+  - Password reset provider status: `FAILED`.
+  - Password reset failure category: `PERMANENT`.
+  - Password reset accepted/sent: no.
+  - Invite accepted/sent: no; skipped after first provider failure.
+  - Total accepted/sent: 0.
+  - Safe normalized provider message id: none.
+  - Masked recipient only: `246****571@qq.com`.
+- Plan:
+  - Do not retry in this Step.
+  - Do not send invite after the provider failure.
+  - Investigate provider-side rejection in a later authorized diagnostic Step without exposing secrets or raw provider payloads.
+  - Keep production migration, seed/backfill, deploy, production runtime switching, default provider wiring, production access, and real user operations out of scope.
+
 ## Current Step 47I Archive - Aliyun DirectMail Controlled Smoke Execution - 2026-06-28
 
 - Step identity:

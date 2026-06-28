@@ -1,5 +1,60 @@
 # Progress
 
+## 2026-06-28 Step 47I-Resume - Aliyun DirectMail controlled smoke retry with non-secret env overlay
+
+- Status: CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND.
+- Step identity:
+  - This is Step 47I-Resume.
+  - This Step retried controlled smoke with a process-local non-secret environment overlay.
+  - It used a local `.local-step47i/` smoke harness to call `AliyunDirectMailAdapter` directly.
+  - It is not production runtime wiring, production access, migration, seed/backfill, deploy, push, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Canonical state:
+  - `git rev-parse HEAD`: `8482a3d28d9d3560591d401c007c1ee33f4e9324`.
+  - Latest commit subject: `docs: record controlled smoke missing config result`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Pre-send checks:
+  - `AccountLifecycleModule` still did not register `AliyunDirectMailAdapter`.
+  - `AccountLifecycleMailer` still used `LOCAL_SAFE_STUB`.
+  - `ALIYUN_DM_DRY_RUN` default remained safe unless explicitly set to `false` in the smoke harness process.
+  - Required secret environment variable presence was checked without printing values.
+  - `ALIBABA_CLOUD_ACCESS_KEY_ID`: present.
+  - `ALIBABA_CLOUD_ACCESS_KEY_SECRET`: present.
+- Process-local non-sensitive env overlay:
+  - `ALIYUN_DM_ACCOUNT_NAME`: set to `system@wzunew.uk` in the smoke process only.
+  - `ALIYUN_DM_FROM_ALIAS`: set to the approved display name in the smoke process only.
+  - `ALIYUN_DM_REGION`: set to `cn-hangzhou` in the smoke process only.
+  - `ALIYUN_DM_DRY_RUN`: set to `false` in the smoke process only.
+  - The overlay was not written to `.env`, system environment, source code, package files, or deployment config.
+- Smoke result:
+  - Password reset email accepted/sent: no.
+  - Invite email accepted/sent: no; skipped because the first provider attempt failed.
+  - Total accepted/sent: 0.
+  - Recipient evidence stored only as masked value: `246****571@qq.com`.
+  - Password reset provider status: `FAILED`.
+  - Password reset failure category: `PERMANENT`.
+  - Password reset safe normalized provider message id: none.
+  - Invite provider status: not attempted.
+  - User receipt confirmation: no accepted send; user may still manually confirm no unexpected email arrived.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed before smoke.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed before smoke, 3 files / 18 tests.
+- Explicitly not done:
+  - No accepted provider send.
+  - No invite send attempted after first provider failure.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was output or recorded.
+  - No migration or seed/backfill was executed.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No real user account operation.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - Investigate the provider rejection category in a later authorized Step using only safe provider diagnostics.
+  - Step 47I-Resume-R can review and commit this controlled smoke retry result record.
+
 ## 2026-06-28 Step 47I - Aliyun DirectMail controlled smoke execution
 
 - Status: BLOCKED_BY_MISSING_CONFIG_NO_SEND.
