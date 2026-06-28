@@ -1,5 +1,53 @@
 # Progress
 
+## 2026-06-28 Step 47AA - Local production-like database target fix and migration deploy
+
+- Status: LOCAL_PRODUCTION_LIKE_MIGRATION_AND_STARTUP_ACCEPTED.
+- Step identity:
+  - This is Step 47AA.
+  - This Step uses only the local `docker-compose.production.yml` production-like stack and local compose Postgres database.
+  - It is not VPS production acceptance and not Step 38 production acceptance.
+- Starting state:
+  - `git rev-parse HEAD`: `3b5c54bdf1431cd6b08a5887af389a204f940856`.
+  - Latest commit subject: `docs: diagnose local production-like database readiness`.
+  - Tracked diff was empty before this memory-bank update.
+  - `.env.production` existence check returned present; values were not read or output.
+  - User had manually corrected local `.env.production` so `POSTGRES_DB` and `DATABASE_URL` target the same local production-like database name.
+- Database readiness:
+  - Local compose Postgres was available.
+  - The local target database was missing and was created inside the local compose Postgres service.
+  - Target database connectivity was confirmed without outputting credentials or connection strings.
+- Migration:
+  - Command executed against the local production-like compose database: `prisma migrate deploy`.
+  - Result: migration deploy succeeded.
+  - Applied migrations:
+    - `20260608080155_init_core_schema`
+    - `20260623073332_add_auth_sessions`
+    - `20260627090100_add_attachment_storage_metadata`
+    - `20260627103000_add_account_lifecycle_tokens`
+  - No seed or backfill was executed.
+- Stack startup:
+  - API and Web were rebuilt/restarted with the local production-like compose stack.
+  - Compose service state after startup:
+    - `postgres`: running / healthy.
+    - `api`: running / healthy.
+    - `web`: running / healthy.
+  - A one-off API migration container exited successfully and remains untouched; no orphan cleanup was run.
+- Health:
+  - API health `http://127.0.0.1:13001/api/health`: HTTP 200.
+  - Web root `http://127.0.0.1:18081/`: HTTP 200.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No password, `DATABASE_URL`, connection string, secret, token, cookie, private key, raw token, full reset/invite link, plaintext recipient email, or provider raw payload was recorded.
+  - No seed or backfill.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+  - DirectMail default sending strategy was not modified.
+- Next:
+  - Local production-like API/Web acceptance can continue from the running healthy stack.
+  - Production/VPS enablement remains separate and still requires explicit authorization.
+
 ## 2026-06-28 Step 47Z - Local production-like database readiness diagnosis
 
 - Status: BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_CONFIG.

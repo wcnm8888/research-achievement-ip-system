@@ -4,6 +4,33 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47AA Archive - Local Production-Like Database Target Fix and Migration Deploy - 2026-06-28
+
+- Step identity:
+  - This is Step 47AA.
+  - This Step fixes local production-like database target readiness, runs local `prisma migrate deploy`, and verifies local API/Web health.
+  - It is not seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or DirectMail strategy modification.
+- Result:
+  - `.env.production` existed; values were not read or output.
+  - The corrected local target database was created because it was missing.
+  - `prisma migrate deploy` succeeded against the local production-like compose database.
+  - API and Web were rebuilt/restarted.
+  - `postgres`, `api`, and `web` are running / healthy.
+  - API health and Web root both returned HTTP 200.
+- Applied migrations:
+  - `20260608080155_init_core_schema`
+  - `20260623073332_add_auth_sessions`
+  - `20260627090100_add_attachment_storage_metadata`
+  - `20260627103000_add_account_lifecycle_tokens`
+- Boundaries:
+  - No seed/backfill.
+  - No real email smoke.
+  - No production/VPS/production DB access.
+  - No secret or connection string recorded.
+- Next:
+  - Continue local production-like acceptance from the healthy stack.
+  - Keep production/VPS enablement separate and explicitly authorized.
+
 ## Current Step 47Z Archive - Local Production-Like Database Readiness Diagnosis - 2026-06-28
 
 - Step identity:

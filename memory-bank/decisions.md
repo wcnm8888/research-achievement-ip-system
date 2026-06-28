@@ -1,5 +1,25 @@
 # Decisions
 
+## D162 - Step 47AA local production-like database migration and startup accepted
+
+- Date: 2026-06-28.
+- Context: Step 47AA ran after the user manually corrected local `.env.production` so `POSTGRES_DB` and `DATABASE_URL` target the same local production-like database name. Values were not read or recorded.
+- Decision:
+  - Create the missing local production-like target database inside the local compose Postgres service.
+  - Run `prisma migrate deploy` against the local production-like compose database.
+  - Record `LOCAL_PRODUCTION_LIKE_MIGRATION_AND_STARTUP_ACCEPTED`.
+  - Do not run seed/backfill.
+  - Do not send real email.
+  - Do not push, deploy, access VPS, or access production DB.
+  - Do not clean up the successful one-off migration container or old local artifacts in this Step.
+- Evidence:
+  - Four migrations were applied successfully.
+  - `postgres`, `api`, and `web` are running / healthy.
+  - API health and Web root returned HTTP 200.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+  - DirectMail default sending strategy remains unchanged.
+
 ## D161 - Step 47Z classifies Prisma P1003 as local database target mismatch
 
 - Date: 2026-06-28.

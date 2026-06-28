@@ -1,5 +1,52 @@
 # Evidence
 
+## 2026-06-28 Step 47AA - Local production-like migration deploy and startup evidence
+
+- Purpose:
+  - Use the local production-like compose database only.
+  - Create the corrected local target database if missing, run `prisma migrate deploy`, restart API/Web, and verify API/Web health.
+  - Keep `.env.production` values, secrets, tokens, full reset/invite links, cookies, private keys, connection strings, seed/backfill, push, VPS access, production DB access, real email smoke, cleanup, deletion, drop/reset, and DirectMail strategy changes out of scope.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `3b5c54bdf1431cd6b08a5887af389a204f940856`.
+  - `git log -1 --pretty=%s`: `docs: diagnose local production-like database readiness`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - `.env.production` existence check returned present; values were not read or output.
+- Database evidence:
+  - User manually corrected local `.env.production` before this Step.
+  - The local target database was not present before the Step and was created in the local compose Postgres service.
+  - Target database connection was confirmed without outputting credentials or a connection string.
+- Migration evidence:
+  - Ran `prisma migrate deploy` against the local production-like compose database.
+  - Result: all migrations were successfully applied.
+  - Applied migrations:
+    - `20260608080155_init_core_schema`
+    - `20260623073332_add_auth_sessions`
+    - `20260627090100_add_attachment_storage_metadata`
+    - `20260627103000_add_account_lifecycle_tokens`
+  - No seed/backfill command was run.
+- Startup evidence:
+  - Rebuilt/restarted API and Web via `docker-compose.production.yml`.
+  - Compose service state after startup:
+    - `postgres`: running / healthy.
+    - `api`: running / healthy.
+    - `web`: running / healthy.
+  - The migration one-off API container exited successfully and was left untouched; no orphan cleanup was performed.
+- Health evidence:
+  - `http://127.0.0.1:13001/api/health`: HTTP 200, `application/json`.
+  - `http://127.0.0.1:18081/`: HTTP 200, `text/html`.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive diff scan found no secret values, raw token, full reset/invite link, plaintext recipient email, cookie, private key, full connection string, or provider raw payload.
+- Boundaries observed:
+  - No `.env.production` values were read or output into memory-bank.
+  - No provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was recorded.
+  - No seed/backfill executed.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+  - Source code and DirectMail default sending strategy were not modified.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+
 ## 2026-06-28 Step 47Z - Local production-like database readiness diagnosis evidence
 
 - Purpose:
