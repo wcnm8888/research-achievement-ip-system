@@ -4,6 +4,37 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47S Archive - Production DirectMail Enablement Attempt - 2026-06-28
+
+- Step identity:
+  - This is Step 47S.
+  - This Step was authorized for production DirectMail password reset enablement, production deploy/restart, at most one production smoke, and rollback if needed.
+  - It stopped before production changes because no safe VPS/deploy execution channel or secret injection mechanism was available.
+- Starting state:
+  - HEAD confirmed as `87f7f5bd525e54b41c69931a2256af6ee33ef97d`.
+  - Latest commit subject confirmed as `docs: record production delivery enablement authorization`.
+  - Tracked diff was empty before this memory-bank update.
+  - Branch `main` was ahead of `origin/main` by 30 commits.
+- Read-only deploy review:
+  - Production deployment model is Docker Compose on a single VPS.
+  - `docker-compose.production.yml` reads `.env.production`.
+  - Runbook requires `.env.production` to exist only on the VPS.
+  - Repo contains no safe remote execution or secret injection command for applying the DirectMail production env changes.
+  - Push was not performed because no deploy automation requiring push was confirmed, and pushing would publish 30 local commits.
+- Baseline:
+  - Production API health returned HTTP 200.
+  - Production web root returned HTTP 200.
+- Result:
+  - `BLOCKED_BY_PRODUCTION_EXECUTION_CHANNEL_UNAVAILABLE_NO_PRODUCTION_CHANGE`.
+  - Production env/config was not changed.
+  - Production deploy/restart was not run.
+  - Production password reset smoke was not attempted.
+  - Total production smoke sent count was 0.
+  - Rollback was not needed because no production change was made.
+- Next:
+  - User/ops must provide an explicit safe VPS execution method or apply production env changes manually.
+  - A later Step may then check env presence without outputting values, restart/deploy, perform one password reset production smoke, and roll back if needed.
+
 ## Current Step 47R Archive - Production Delivery Enablement Authorization - 2026-06-28
 
 - Step identity:

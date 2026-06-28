@@ -1,5 +1,58 @@
 # Evidence
 
+## 2026-06-28 Step 47S - Production DirectMail enablement evidence
+
+- Purpose:
+  - Execute production DirectMail password reset enablement, production deploy/restart, one production password reset smoke, and rollback if needed, if a safe execution channel is available.
+  - Keep secret values, full reset links/tokens, plaintext recipient email, provider raw full payload, production DB manual writes, migration, seed/backfill, invite real delivery, cleanup, deletion, drop/reset, and unrelated artifacts out of scope.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `87f7f5bd525e54b41c69931a2256af6ee33ef97d`.
+  - `git log -1 --pretty=%s`: `docs: record production delivery enablement authorization`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - `git status --short --branch --untracked-files=all`: branch `main` ahead of `origin/main` by 30 commits; old local artifacts remained untracked.
+- Read-only deploy review evidence:
+  - `deploy/runbook-production.md` states production uses Docker Compose on a single VPS and `.env.production` must be stored only on the VPS.
+  - `docker-compose.production.yml` uses `.env.production` for production API/Postgres env.
+  - `docker-compose.production.yml` maps API to `127.0.0.1:13001:3000` and web to `127.0.0.1:18081:80`.
+  - Production Postgres is internal to the Compose network with no public port binding.
+  - No repo-provided safe VPS SSH/deploy/secret injection command was found.
+  - No deployment automation that would make a push sufficient was confirmed.
+- Baseline evidence:
+  - `GET https://production.wangyimin.cn/api/health`: HTTP 200.
+  - `GET https://production.wangyimin.cn/`: HTTP 200.
+  - Public reset baseline was not executed because production config/deploy could not proceed and the Step stopped before production writes/smoke.
+- Execution evidence:
+  - Production env/config update: not performed.
+  - Push: not performed.
+  - Deploy/restart production API: not performed.
+  - Production password reset smoke attempted: no.
+  - Production password reset accepted/sent: no.
+  - Total production smoke sent count: 0.
+  - Safe normalized providerMessageId: none.
+  - Safe normalized providerErrorCode: none.
+  - Rollback: not performed because no production change was made.
+- Result:
+  - `BLOCKED_BY_PRODUCTION_EXECUTION_CHANNEL_UNAVAILABLE_NO_PRODUCTION_CHANGE`.
+  - User/ops still needs to provide a safe VPS execution path or manually apply production env changes before a later deploy/smoke Step.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive diff and command-output summary scan: no real AccessKey value, AccessKey Secret value, SMTP/API secret, real `DATABASE_URL`, raw token, full reset link, plaintext recipient email, cookie, private key, production connection string, or provider raw full payload found.
+- Boundaries observed:
+  - No provider credential value, SMTP/API credential, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No Aliyun API call executed.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No source code changed.
+  - No deployment config changed.
+  - No migration or seed/backfill executed.
+  - No production DB manual write.
+  - No real business user account creation or operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+  - Invite real delivery remains deferred.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47R - Production delivery enablement authorization evidence
 
 - Purpose:

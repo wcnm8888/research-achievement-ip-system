@@ -1,5 +1,20 @@
 # Decisions
 
+## D153 - Step 47S production enablement is blocked by missing execution channel
+
+- Date: 2026-06-28.
+- Context: The Step 47S prompt authorized production password reset DirectMail enablement, deploy/restart, one production smoke, and rollback if needed. Local review confirmed the production model is VPS Docker Compose with `.env.production` stored only on the VPS. No safe VPS/deploy execution channel or secret injection command was available in the repo context.
+- Decision:
+  - Do not guess production access.
+  - Do not push 30 local commits without a confirmed deploy mechanism requiring that push.
+  - Do not modify production runtime configuration.
+  - Do not deploy/restart production API.
+  - Do not attempt production password reset smoke.
+  - Record `BLOCKED_BY_PRODUCTION_EXECUTION_CHANNEL_UNAVAILABLE_NO_PRODUCTION_CHANGE`.
+  - Keep invite real delivery deferred.
+- Boundaries:
+  - This decision does not authorize reading or outputting secrets, calling Aliyun API, sending email/SMS, running smoke harness, migration, seed/backfill, production DB writes, real user account operations, deployment config changes, cleanup, deletion, drop, or reset.
+
 ## D152 - Step 47R blocks production delivery enablement pending explicit authorization
 
 - Date: 2026-06-28.

@@ -1,5 +1,65 @@
 # Progress
 
+## 2026-06-28 Step 47S - Production DirectMail password reset enablement, smoke, rollback if needed, and archive
+
+- Status: BLOCKED_BY_PRODUCTION_EXECUTION_CHANNEL_UNAVAILABLE_NO_PRODUCTION_CHANGE.
+- Step identity:
+  - This is Step 47S.
+  - This Step was authorized for production DirectMail password reset enablement, production deploy/restart, at most one production password reset smoke, and rollback if needed.
+  - Execution did not proceed because no safe VPS/production execution channel or secret injection mechanism was available from the repo context.
+- Starting state:
+  - `git rev-parse HEAD`: `87f7f5bd525e54b41c69931a2256af6ee33ef97d`.
+  - Latest commit subject: `docs: record production delivery enablement authorization`.
+  - Tracked diff was empty before this memory-bank update.
+  - Current branch: `main`.
+  - Branch relation: `main...origin/main [ahead 30]`.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Authorization summary:
+  - User authorized production runtime config changes for password reset DirectMail.
+  - User authorized password-reset-only real delivery; invite remains deferred.
+  - User authorized production env/secret presence checks without outputting values.
+  - User authorized deploy/restart production API, at most one production password reset smoke, and rollback if smoke fails.
+  - User authorized push if deploy requires remote code.
+- Deploy config diff review:
+  - `docker-compose.production.yml` uses `.env.production` through Compose.
+  - Production runbook states `.env.production` exists only on the VPS and must not be printed or committed.
+  - Production API maps `127.0.0.1:13001 -> 3000`.
+  - Production web maps `127.0.0.1:18081 -> 80`.
+  - Production stack has no public Postgres port binding.
+  - No migration, seed/backfill, DB config change, or invite real delivery is required for the intended DirectMail runtime env change.
+  - No repo-provided SSH/VPS/deploy automation or secret injection command was found for safely applying production env changes.
+- Baseline:
+  - `GET https://production.wangyimin.cn/api/health`: returned HTTP 200.
+  - `GET https://production.wangyimin.cn/`: returned HTTP 200.
+  - Public password reset baseline was not executed because production config change/deploy could not proceed and the Step stopped before any production write/smoke.
+- Execution result:
+  - Push: not performed.
+  - Production env/config update: not performed.
+  - Deploy/restart production API: not performed.
+  - Production password reset smoke: not attempted.
+  - Total production smoke sent count: 0.
+  - Rollback: not needed and not performed because no production change was made.
+- Blocker:
+  - Production enablement requires a concrete VPS/deploy execution channel and secret injection procedure that can be used without reading or outputting secret values.
+  - Because no such channel was available, continuing would require guessing production access or handling secrets unsafely.
+- Boundaries:
+  - No real provider credential value, SMTP/API credential, raw token, full reset link, plaintext recipient email, provider raw full payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No Aliyun API call executed.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No source code changed.
+  - No deployment config changed.
+  - No migration or seed/backfill.
+  - No production DB manual write.
+  - No real business user account creation or operation.
+  - No push/deploy.
+  - No cleanup/deletion/drop/reset.
+  - Invite real delivery remains deferred.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - Provide a safe VPS execution channel or have ops apply the listed env changes on the VPS, then authorize a new Step to verify env presence, restart/deploy, and perform one password reset production smoke.
+
 ## 2026-06-28 Step 47R - Production delivery enablement authorization and archive
 
 - Status: BLOCKED_BY_PRODUCTION_DELIVERY_ENABLEMENT_AUTHORIZATION_MISSING.
