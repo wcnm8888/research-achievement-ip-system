@@ -1,5 +1,52 @@
 # Progress
 
+## 2026-06-28 Step 47K-Auth - Aliyun DirectMail controlled smoke retry authorization after endpoint fix
+
+- Status: BLOCKED_BY_CONTROLLED_SMOKE_RETRY_AUTHORIZATION_MISSING.
+- Step identity:
+  - This is Step 47K-Auth.
+  - This Step only records whether a later controlled smoke retry is authorized after the Step 47J-Fix endpoint/error-classification patch.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read secrets, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `5d324c8fd7a7174611a11360b9cb5987d4f5bcdd`.
+  - Latest commit subject: `fix: correct Aliyun DirectMail endpoint diagnostics`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Known facts:
+  - Step 47J-Fix corrected `cn-hangzhou` endpoint mapping to `dm.aliyuncs.com`.
+  - Step 47J-Fix kept client config on the endpoint resolver and preserved default no-send behavior.
+  - Step 47J-Fix added safe provider error-code normalization and classification.
+  - Previous controlled smoke attempt ended with password reset `FAILED` / `PERMANENT`, invite skipped, and total accepted/sent count `0`.
+  - Provider raw payload was not recorded.
+- Authorization collection result:
+  - The current prompt provided a recommended retry scope, but did not explicitly grant each authorization input as user/ops approval for another real send.
+  - Therefore a later real-send controlled smoke retry remains blocked.
+- Missing authorization inputs:
+  - Explicit authorization for a later separate Step to send a real test email after the endpoint fix.
+  - Confirmation that the controlled recipient remains the prior mailbox, recorded only as `246****571@qq.com`.
+  - Confirmation that the later Step may check secret environment variable presence without outputting values.
+  - Confirmation that the later Step may temporarily set `ALIYUN_DM_DRY_RUN=false`.
+  - Confirmation that the listed non-sensitive env overlay may be used process-locally.
+  - Confirmation that the next smoke type is password reset only and invite remains deferred.
+  - Confirmation that total send limit is at most 1 email.
+  - Confirmation that safe normalized `providerMessageId` may be recorded.
+  - Confirmation that safe normalized `providerErrorCode` may be recorded.
+  - Confirmation that the later smoke Step is forbidden from deploy, migration, seed/backfill, DB writes, real user account operations, production/VPS/production DB access, default runtime provider wiring, and provider raw full payload recording.
+- Explicitly not done:
+  - No Aliyun API call.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No default runtime provider wiring changed; runtime remains `LOCAL_SAFE_STUB`.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - User/ops must explicitly provide the missing retry authorization inputs before a retry execution Prompt is generated.
+
 ## 2026-06-28 Step 47J-Fix - Aliyun DirectMail endpoint mapping and safe error classification patch
 
 - Status: DONE_LOCAL_PATCH_NO_SEND.

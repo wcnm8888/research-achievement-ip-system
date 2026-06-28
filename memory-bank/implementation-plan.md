@@ -4,6 +4,35 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47K-Auth Archive - Aliyun DirectMail Controlled Smoke Retry Authorization After Endpoint Fix - 2026-06-28
+
+- Step identity:
+  - This is Step 47K-Auth.
+  - This Step is authorization collection and record-only.
+  - It is not smoke execution, Aliyun API access, real email/SMS sending, smoke harness execution, secret access, production runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `5d324c8fd7a7174611a11360b9cb5987d4f5bcdd`.
+  - Latest commit subject confirmed as `fix: correct Aliyun DirectMail endpoint diagnostics`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Authorization result:
+  - `BLOCKED_BY_CONTROLLED_SMOKE_RETRY_AUTHORIZATION_MISSING`.
+  - The prompt provided a recommended retry scope, but did not explicitly grant user/ops authorization for each required real-send retry input.
+  - No retry execution Prompt should be generated from this record.
+- Missing inputs:
+  - Explicit permission for a later separate Step to send a real test email.
+  - Confirmation of masked controlled recipient reuse: `246****571@qq.com`.
+  - Permission to check secret environment variable presence without outputting values.
+  - Permission to temporarily set `ALIYUN_DM_DRY_RUN=false` in the smoke process.
+  - Permission to use the non-sensitive process-local Aliyun DirectMail env overlay.
+  - Confirmation of password-reset-only retry and invite deferral.
+  - Confirmation of the total maximum of 1 email.
+  - Permission to record safe normalized `providerMessageId` and `providerErrorCode`.
+  - Confirmation of prohibited actions for the later smoke Step: deploy, migration, seed/backfill, DB writes, real user account operations, production/VPS/production DB access, default runtime provider wiring, and provider raw full payload recording.
+- Remaining rollout boundary:
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Do not retry controlled smoke until explicit Step 47K-Auth inputs are supplied and reviewed.
+
 ## Current Step 47J-Fix Archive - Aliyun DirectMail Endpoint/Error Classification Patch - 2026-06-28
 
 - Step identity:

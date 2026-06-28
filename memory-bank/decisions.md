@@ -1,5 +1,17 @@
 # Decisions
 
+## D143 - Step 47K controlled smoke retry remains blocked pending explicit retry authorization
+
+- Date: 2026-06-28.
+- Context: Step 47J-Fix corrected the Aliyun DirectMail endpoint mapping for `cn-hangzhou` and added safe provider error-code classification. A future controlled smoke retry would still send a real test email and therefore requires explicit renewed user/ops authorization. The current prompt provided a recommended retry scope, but did not explicitly grant all required retry permissions.
+- Decision:
+  - Record `BLOCKED_BY_CONTROLLED_SMOKE_RETRY_AUTHORIZATION_MISSING`.
+  - Do not generate a retry execution Prompt.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Require explicit authorization before any future real-send retry, including recipient reuse, secret-presence-only checks, process-local `ALIYUN_DM_DRY_RUN=false`, non-sensitive env overlay, password-reset-only scope, one-email limit, safe provider diagnostic recording, and prohibited production actions.
+- Boundaries:
+  - This decision does not authorize Aliyun API calls, real email/SMS, smoke harness execution, secret output, raw token output, full link output, plaintext recipient logging, provider raw full payload recording, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D142 - Step 47J-Fix patches DirectMail endpoint mapping and safe error diagnostics
 
 - Date: 2026-06-28.

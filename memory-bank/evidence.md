@@ -1,5 +1,36 @@
 # Evidence
 
+## 2026-06-28 Step 47K-Auth - Aliyun DirectMail controlled smoke retry authorization evidence
+
+- Purpose:
+  - Record whether a later controlled smoke retry is authorized after Step 47J-Fix.
+  - Keep real email/SMS, Aliyun API calls, smoke harness execution, secret reading, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config disclosure out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `5d324c8fd7a7174611a11360b9cb5987d4f5bcdd`.
+  - `git log -1 --pretty=%s`: `fix: correct Aliyun DirectMail endpoint diagnostics`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Known facts recorded:
+  - Step 47J-Fix corrected `cn-hangzhou` endpoint mapping to `dm.aliyuncs.com`.
+  - Step 47J-Fix preserved default no-send behavior and default runtime `LOCAL_SAFE_STUB`.
+  - Step 47J-Fix added safe provider error-code normalization and classification.
+  - Previous controlled smoke result was password reset `FAILED` / `PERMANENT`, invite skipped, and total accepted/sent `0`.
+- Authorization evidence:
+  - Result: `BLOCKED_BY_CONTROLLED_SMOKE_RETRY_AUTHORIZATION_MISSING`.
+  - The current prompt provided a recommended retry scope but did not explicitly grant each required renewed real-send authorization input.
+  - Missing inputs include explicit real-send retry permission, masked recipient reuse confirmation, secret-presence-only check permission, process-local `ALIYUN_DM_DRY_RUN=false` permission, non-sensitive env overlay permission, password-reset-only and one-email scope confirmation, safe diagnostic recording permission, and prohibited production action confirmation.
+- Boundaries observed:
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No Aliyun API call executed.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+
 ## 2026-06-28 Step 47J-Fix - Aliyun DirectMail endpoint/error classification patch evidence
 
 - Purpose:
