@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47K-Auth-Resume Archive - Aliyun DirectMail Controlled Smoke Retry Authorization Collected - 2026-06-28
+
+- Step identity:
+  - This is Step 47K-Auth-Resume.
+  - This Step records supplemental authorization only.
+  - It is not smoke execution, Aliyun API access, real email/SMS sending, smoke harness execution, secret access, production runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `c5d5250cb3a3ad25989013b838ada8cafac18925`.
+  - Latest commit subject confirmed as `docs: record controlled smoke retry authorization block`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Authorization result:
+  - `CONTROLLED_SMOKE_RETRY_AUTHORIZATION_COLLECTED_NO_SEND`.
+  - A later separate Step may perform one controlled real-send retry for password reset only.
+  - Recipient must be recorded only as `246****571@qq.com`.
+  - Secret environment variables may only be checked for presence, with no values printed or recorded.
+  - `ALIYUN_DM_DRY_RUN=false` may be set only in the smoke process for this single retry.
+  - Non-sensitive Aliyun DirectMail env overlay may be used only process-locally.
+  - Safe normalized `providerMessageId` and `providerErrorCode` may be recorded.
+- Smoke retry limits:
+  - Password reset only.
+  - Maximum 1 email.
+  - Invite remains out of scope.
+- Prohibited in later smoke Step:
+  - Deploy.
+  - Migration.
+  - Seed/backfill.
+  - DB writes.
+  - Real user account operations.
+  - Production/VPS/production DB access.
+  - Default runtime provider wiring.
+  - Provider raw full payload recording.
+- Remaining rollout boundary:
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Controlled smoke retry has not executed yet.
+
 ## Current Step 47K-Auth Archive - Aliyun DirectMail Controlled Smoke Retry Authorization After Endpoint Fix - 2026-06-28
 
 - Step identity:

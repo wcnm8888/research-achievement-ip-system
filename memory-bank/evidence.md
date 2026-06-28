@@ -1,5 +1,40 @@
 # Evidence
 
+## 2026-06-28 Step 47K-Auth-Resume - Aliyun DirectMail controlled smoke retry authorization collected evidence
+
+- Purpose:
+  - Record supplemental authorization for a later controlled smoke retry after Step 47J-Fix.
+  - Keep real email/SMS, Aliyun API calls, smoke harness execution, secret reading, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config disclosure out of scope for this record Step.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `c5d5250cb3a3ad25989013b838ada8cafac18925`.
+  - `git log -1 --pretty=%s`: `docs: record controlled smoke retry authorization block`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Authorization evidence:
+  - Result: `CONTROLLED_SMOKE_RETRY_AUTHORIZATION_COLLECTED_NO_SEND`.
+  - A later separate Step may perform another controlled real-send retry.
+  - Controlled recipient may be reused, recorded only as `246****571@qq.com`.
+  - Secret env may be checked for presence only; values must not be output.
+  - `ALIYUN_DM_DRY_RUN=false` may be set process-locally for this one retry only.
+  - Non-sensitive env overlay may be used process-locally for Aliyun DirectMail account name, sender alias, and region.
+  - Smoke type: password reset only.
+  - Maximum send count: 1 email.
+  - Safe normalized `providerMessageId` and `providerErrorCode` may be recorded.
+  - The later smoke Step must not perform deploy, migration, seed/backfill, DB writes, real user account operations, production/VPS/production DB access, default runtime provider wiring, or provider raw full payload recording.
+- Execution evidence:
+  - Controlled smoke retry was not executed in this Step.
+  - No Aliyun API call executed.
+  - No real email/SMS was sent.
+  - No smoke harness was run.
+- Boundaries observed:
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+
 ## 2026-06-28 Step 47K-Auth - Aliyun DirectMail controlled smoke retry authorization evidence
 
 - Purpose:

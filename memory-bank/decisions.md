@@ -1,5 +1,23 @@
 # Decisions
 
+## D144 - Step 47K controlled smoke retry authorization collected for one password-reset email
+
+- Date: 2026-06-28.
+- Context: Step 47K-Auth previously blocked a real-send retry because the prompt only supplied a recommended authorization scope. The user then explicitly authorized a later separate controlled smoke retry after Step 47J-Fix corrected endpoint mapping and safe error diagnostics.
+- Decision:
+  - Record `CONTROLLED_SMOKE_RETRY_AUTHORIZATION_COLLECTED_NO_SEND`.
+  - Allow a later separate Step to retry controlled real send for password reset only.
+  - Limit the later retry to at most 1 email.
+  - Record recipient only as `246****571@qq.com`.
+  - Allow secret environment variable presence checks only, without outputting values.
+  - Allow process-local `ALIYUN_DM_DRY_RUN=false` for this single controlled retry only.
+  - Allow process-local non-sensitive Aliyun DirectMail env overlay.
+  - Allow safe normalized `providerMessageId` and `providerErrorCode` recording.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+- Boundaries:
+  - This decision does not authorize Aliyun API calls or real email/SMS in this authorization-record Step itself.
+  - The later smoke Step must not perform deploy, migration, seed/backfill, DB writes, real user account operations, production/VPS/production DB access, production runtime switching, default runtime provider wiring, provider raw full payload recording, cleanup, deletion, drop, or reset.
+
 ## D143 - Step 47K controlled smoke retry remains blocked pending explicit retry authorization
 
 - Date: 2026-06-28.

@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-06-28 Step 47K-Auth-Resume - Aliyun DirectMail controlled smoke retry authorization collected after endpoint fix
+
+- Status: CONTROLLED_SMOKE_RETRY_AUTHORIZATION_COLLECTED_NO_SEND.
+- Step identity:
+  - This is Step 47K-Auth-Resume.
+  - This Step only records supplemental authorization for a later controlled smoke retry after the Step 47J-Fix endpoint/error-classification patch.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read secrets, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `c5d5250cb3a3ad25989013b838ada8cafac18925`.
+  - Latest commit subject: `docs: record controlled smoke retry authorization block`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Authorization inputs recorded:
+  - A later separate Step is authorized to perform another real-send controlled smoke retry.
+  - Controlled recipient reuse is authorized, recorded only as `246****571@qq.com`.
+  - The later smoke Step may check secret environment variable presence only and must not output values.
+  - The later smoke Step may set `ALIYUN_DM_DRY_RUN=false` process-locally for this one controlled smoke retry only.
+  - The later smoke Step may use process-local non-sensitive env overlay for `ALIYUN_DM_ACCOUNT_NAME`, `ALIYUN_DM_FROM_ALIAS`, and `ALIYUN_DM_REGION`.
+  - Smoke type is password reset only.
+  - Maximum send count is 1 email.
+  - Safe normalized `providerMessageId` may be recorded.
+  - Safe normalized `providerErrorCode` may be recorded.
+  - The later smoke Step must not perform deploy, migration, seed/backfill, DB writes, real user account operations, production/VPS/production DB access, default runtime provider wiring, or provider raw full payload recording.
+- Controlled smoke retry status:
+  - Controlled smoke retry has not executed in this Step.
+  - No retry execution Prompt was generated in this Step.
+- Explicitly not done:
+  - No Aliyun API call.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No default runtime provider wiring changed; runtime remains `LOCAL_SAFE_STUB`.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - Step 47K-Auth-Resume-R: controlled smoke retry authorization collected review / commit gate.
+
 ## 2026-06-28 Step 47K-Auth - Aliyun DirectMail controlled smoke retry authorization after endpoint fix
 
 - Status: BLOCKED_BY_CONTROLLED_SMOKE_RETRY_AUTHORIZATION_MISSING.
