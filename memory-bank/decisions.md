@@ -1,5 +1,19 @@
 # Decisions
 
+## D149 - Step 47O marks local DirectMail readiness but defers production enablement
+
+- Date: 2026-06-28.
+- Context: Step 47M completed a password reset controlled smoke retry with provider `ACCEPTED` / delivery `SENT`, and Step 47N recorded user-confirmed mailbox receipt. Default runtime still uses `LOCAL_SAFE_STUB`; there has been no production runtime wiring, deploy, production smoke, or rollback execution.
+- Decision:
+  - Treat Aliyun DirectMail as accepted for local harness controlled smoke.
+  - Do not treat production real delivery as enabled.
+  - Do not switch default runtime from `LOCAL_SAFE_STUB` to Aliyun adapter in this Step.
+  - Recommend Step 47P to implement runtime wiring with safe default and config switch, keeping default no-send/local-stub behavior.
+  - Recommend enabling password reset real delivery before invite; keep invite deferred.
+  - Require separate authorization for production enablement, deploy, smoke, and rollback.
+- Boundaries:
+  - This decision does not authorize source-code changes in Step 47O, runtime wiring changes, production config injection, Aliyun API calls, real email/SMS, smoke harness execution, provider raw full payload recording, secret output, raw token output, full reset link output, plaintext recipient logging, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D148 - Step 47N confirms mailbox receipt but keeps production enablement separate
 
 - Date: 2026-06-28.

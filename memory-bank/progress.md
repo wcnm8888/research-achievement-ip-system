@@ -1,5 +1,59 @@
 # Progress
 
+## 2026-06-28 Step 47O - Real delivery production enablement readiness decision and archive
+
+- Status: PRODUCTION_ENABLEMENT_READY_FOR_SAFE_DEFAULT_WIRING_NOT_ENABLED.
+- Step identity:
+  - This is Step 47O.
+  - This Step is a production enablement readiness decision and archive.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read secrets, modify source code, modify schema/migration/seed/deploy config/package/lockfile, modify runtime wiring, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `583bc1055671898e9891f0e321516f0b48977194`.
+  - Latest commit subject: `docs: record DirectMail mailbox receipt confirmation`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Readiness decisions:
+  - Aliyun DirectMail may be considered accepted for local harness controlled smoke.
+  - Mailbox receipt has been manually confirmed for masked recipient `246****571@qq.com`.
+  - Production real delivery is not enabled.
+  - Directly switching default runtime from `LOCAL_SAFE_STUB` to Aliyun adapter is not allowed in this Step.
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+- Production enablement gaps:
+  - Runtime wiring design and implementation.
+  - Production secret/config injection plan.
+  - Production environment variable presence checks.
+  - Rollback/recovery plan.
+  - Production deploy authorization.
+  - Production smoke authorization.
+  - Operational logging and no-secret verification.
+  - Failure mode and support process.
+- Recommended split:
+  - Step 47P: runtime wiring implementation with safe default; local code only, default remains `LOCAL_SAFE_STUB` / dry-run.
+  - Step 47Q: local runtime wiring acceptance; no production deploy and no real email unless separately authorized.
+  - Step 47R: production enablement authorization for deploy, secrets/config, smoke, and rollback.
+  - Step 47S: production deploy plus production smoke, separately authorized.
+- Scope recommendation:
+  - Enable password reset real delivery first.
+  - Keep invite real delivery deferred until password reset production path is wired, deployed, smoked, and operationally accepted.
+- Explicitly not done:
+  - No production runtime wiring.
+  - No production config injection.
+  - No production deploy.
+  - No production smoke.
+  - No rollback plan execution.
+  - No Aliyun API call.
+  - No real email/SMS sent in this Step.
+  - No smoke harness run.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No source code change.
+  - No default runtime provider wiring changed; runtime remains `LOCAL_SAFE_STUB`.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47N - Mailbox receipt confirmation and delivery readiness archive
 
 - Status: MAILBOX_RECEIPT_CONFIRMED_DELIVERY_READINESS_ARCHIVED.

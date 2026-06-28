@@ -4,6 +4,41 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47O Archive - Real Delivery Production Enablement Readiness Decision - 2026-06-28
+
+- Step identity:
+  - This is Step 47O.
+  - This Step records production enablement readiness decisions only.
+  - It is not smoke execution, Aliyun API access, real email/SMS sending, smoke harness execution, secret access, source-code modification, schema/migration/seed/deploy/package changes, production runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `583bc1055671898e9891f0e321516f0b48977194`.
+  - Latest commit subject confirmed as `docs: record DirectMail mailbox receipt confirmation`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Readiness decision:
+  - Local harness controlled smoke is accepted.
+  - Human mailbox receipt is confirmed.
+  - Production real delivery is not enabled.
+  - This Step does not allow switching default runtime to Aliyun adapter.
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+- Recommended next implementation path:
+  - Step 47P: implement runtime wiring with a safe default and configuration switch; default must remain local stub/no-send.
+  - Step 47Q: local runtime wiring acceptance without production deploy.
+  - Step 47R: production enablement authorization covering runtime config, secrets, deploy, smoke, and rollback.
+  - Step 47S: production deploy and production smoke under separate authorization.
+- Scope recommendation:
+  - Start production enablement with password reset only.
+  - Keep invite real delivery deferred until password reset production path is accepted.
+- Production prerequisites:
+  - Runtime wiring design/implementation.
+  - Production secret/config injection.
+  - Env presence checks.
+  - Rollback/recovery plan.
+  - Deploy authorization.
+  - Production smoke authorization.
+  - No-secret operational logging verification.
+  - Failure/support process.
+
 ## Current Step 47N Archive - Mailbox Receipt Confirmation and Delivery Readiness - 2026-06-28
 
 - Step identity:
