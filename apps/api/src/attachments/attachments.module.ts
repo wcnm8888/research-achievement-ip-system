@@ -7,7 +7,11 @@ import { AttachmentController } from "./attachment.controller";
 import { AttachmentRepository } from "./attachment.repository";
 import { AttachmentService } from "./attachment.service";
 import { ATTACHMENT_STORAGE_ADAPTER } from "./storage/attachment-storage.provider";
-import { LocalAttachmentStorageAdapter } from "./storage/local-attachment-storage.adapter";
+import {
+  LOCAL_ATTACHMENT_STORAGE_ROOT,
+  LocalAttachmentStorageAdapter,
+  localAttachmentStorageRoot,
+} from "./storage/local-attachment-storage.adapter";
 
 @Module({
   imports: [DatabaseModule, AuthorizationModule, IdentityModule, AuditModule],
@@ -15,6 +19,10 @@ import { LocalAttachmentStorageAdapter } from "./storage/local-attachment-storag
   providers: [
     AttachmentRepository,
     AttachmentService,
+    {
+      provide: LOCAL_ATTACHMENT_STORAGE_ROOT,
+      useValue: localAttachmentStorageRoot,
+    },
     {
       provide: ATTACHMENT_STORAGE_ADAPTER,
       useClass: LocalAttachmentStorageAdapter,

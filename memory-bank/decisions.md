@@ -1,5 +1,19 @@
 # Decisions
 
+## D160 - Step 47Y fixes attachment storage DI and stops on database availability blocker
+
+- Date: 2026-06-28.
+- Context: Step 47Y diagnosed the local production-like API container restart loop after Step 47X-Resume. The prior non-sensitive logs pointed to Nest dependency resolution involving `LocalAttachmentStorageAdapter`.
+- Decision:
+  - Fix the attachment storage DI root cause using an explicit `LOCAL_ATTACHMENT_STORAGE_ROOT` injection token.
+  - Add a focused Nest provider-graph test so this dependency resolution path is covered.
+  - Retry the independent local production-like Compose stack after the fix.
+  - Record the remaining startup blocker as `BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_UNAVAILABLE_AFTER_ATTACHMENT_WIRING_FIX` because sanitized logs show Prisma `P1003`; do not infer or print database names or connection strings.
+  - Do not run migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or artifact removal.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+  - DirectMail default sending strategy remains unchanged.
+
 ## D159 - Step 47X-Resume stops on API unhealthy after compose build succeeds
 
 - Date: 2026-06-28.

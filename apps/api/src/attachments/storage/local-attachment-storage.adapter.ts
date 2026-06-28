@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
@@ -19,10 +19,14 @@ export const localAttachmentStorageRoot = path.resolve(
   "artifacts",
   "local-attachments",
 );
+export const LOCAL_ATTACHMENT_STORAGE_ROOT = Symbol("LOCAL_ATTACHMENT_STORAGE_ROOT");
 
 @Injectable()
 export class LocalAttachmentStorageAdapter implements AttachmentStorageAdapter {
-  constructor(private readonly storageRoot = localAttachmentStorageRoot) {}
+  constructor(
+    @Inject(LOCAL_ATTACHMENT_STORAGE_ROOT)
+    private readonly storageRoot = localAttachmentStorageRoot,
+  ) {}
 
   async putObject(input: AttachmentObjectPutInput): Promise<AttachmentObjectPutResult> {
     const targetPath = this.resolveObjectPath(input.objectKey);

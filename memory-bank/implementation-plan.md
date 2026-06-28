@@ -4,6 +4,29 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47Y Archive - Fix Production Container Attachment Storage Wiring - 2026-06-28
+
+- Step identity:
+  - This is Step 47Y.
+  - This Step fixes `LocalAttachmentStorageAdapter` dependency resolution in the production container and retries local production-like health acceptance.
+  - It is not migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or DirectMail strategy modification.
+- Fix:
+  - Root cause: compiled Nest metadata exposed the adapter's default constructor parameter as an unresolved `Object` dependency.
+  - Implemented explicit `LOCAL_ATTACHMENT_STORAGE_ROOT` injection token.
+  - Registered the storage root token in `AttachmentsModule`.
+  - Added focused Nest provider-graph test coverage.
+- Verification:
+  - API typecheck passed.
+  - Attachment/local storage tests passed.
+  - Production-like Docker build completed after the fix.
+- Result:
+  - The attachment storage dependency resolution issue is fixed.
+  - Local production-like API health remains blocked by a new sanitized Prisma `P1003` / database availability issue.
+  - API health and Web root returned no response because API did not become healthy.
+- Next:
+  - Open a separate local production-like database availability/schema readiness Step.
+  - Do not retry health acceptance until that database blocker is addressed or explicitly authorized.
+
 ## Current Step 47X-Resume Archive - Retry Local Production-Like Compose Startup - 2026-06-28
 
 - Step identity:

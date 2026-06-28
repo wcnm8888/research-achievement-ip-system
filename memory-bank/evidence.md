@@ -1,5 +1,54 @@
 # Evidence
 
+## 2026-06-28 Step 47Y - Attachment storage production container wiring evidence
+
+- Purpose:
+  - Diagnose and fix the local production-like API container startup failure involving `LocalAttachmentStorageAdapter`.
+  - Retry local production-like Compose startup and API/Web health after the fix.
+  - Keep `.env.production` values, secrets, tokens, full reset/invite links, cookies, private keys, connection strings, migration, seed/backfill, push, VPS access, production DB access, real email smoke, cleanup, deletion, drop/reset, and DirectMail strategy changes out of scope.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `18a4e3618bfc340a92f6b62a249a4d7ce095141f`.
+  - `git log -1 --pretty=%s`: `docs: record local production-like compose startup retry`.
+  - `git diff --name-status`: empty before this Step.
+- Diagnosis evidence:
+  - Read attachment storage/provider/module wiring files under `apps/api/src/attachments`.
+  - The failing production container category from Step 47X-Resume matched Nest dependency resolution involving `LocalAttachmentStorageAdapter`.
+  - Root cause: constructor default value without an explicit injection token allowed compiled metadata to expose an unresolved `Object` dependency to Nest DI.
+- Fix evidence:
+  - Added `LOCAL_ATTACHMENT_STORAGE_ROOT`.
+  - Registered `LOCAL_ATTACHMENT_STORAGE_ROOT` in `AttachmentsModule`.
+  - Injected `LOCAL_ATTACHMENT_STORAGE_ROOT` into `LocalAttachmentStorageAdapter`.
+  - Added a focused Nest provider-graph test for adapter resolution.
+- Verification evidence:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- attachments local-attachment-storage`: passed; 6 files / 55 tests passed.
+- Compose retry evidence:
+  - Attempted `docker compose -f docker-compose.production.yml up -d --build`.
+  - API and Web image builds completed.
+  - The previous `LocalAttachmentStorageAdapter` dependency resolution category was not observed after rebuild.
+  - Compose state after the attempt:
+    - `postgres`: running / healthy.
+    - `api`: restarting / unhealthy.
+    - `web`: created, waiting on healthy `api`.
+  - Sanitized API diagnostic category after the fix: Prisma `P1003` / database availability issue.
+  - Sanitized schema object extraction did not reveal a missing relation, table, or column.
+- Health evidence:
+  - API health `http://127.0.0.1:13001/api/health`: no response.
+  - Web root `http://127.0.0.1:18081/`: no response.
+  - Result: `BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_UNAVAILABLE_AFTER_ATTACHMENT_WIRING_FIX`.
+- Verification before commit:
+  - `git diff --check`: passed.
+  - Sensitive diff scan found no secret values, raw token, full reset/invite link, plaintext recipient email, cookie, private key, full connection string, or provider raw payload.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill executed.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+  - DirectMail default sending strategy was not modified.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+
 ## 2026-06-28 Step 47X-Resume - Retry local production-like compose startup evidence
 
 - Purpose:

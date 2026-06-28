@@ -1,8 +1,13 @@
+import { Test } from "@nestjs/testing";
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { LocalAttachmentStorageAdapter } from "./local-attachment-storage.adapter";
+import { ATTACHMENT_STORAGE_ADAPTER } from "./attachment-storage.provider";
+import {
+  LOCAL_ATTACHMENT_STORAGE_ROOT,
+  LocalAttachmentStorageAdapter,
+} from "./local-attachment-storage.adapter";
 
 describe("LocalAttachmentStorageAdapter", () => {
   it("puts, reads, and stats local attachment objects", async () => {
@@ -55,6 +60,28 @@ describe("LocalAttachmentStorageAdapter", () => {
     );
     expect(() => adapter.resolveObjectPath("attachments/../../escape.pdf")).toThrow(
       "Invalid attachment storage key.",
+    );
+  });
+
+  it("resolves through the Nest provider graph with an explicit storage root token", async () => {
+    const root = await makeStorageRoot();
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        {
+          provide: LOCAL_ATTACHMENT_STORAGE_ROOT,
+          useValue: root,
+        },
+        {
+          provide: ATTACHMENT_STORAGE_ADAPTER,
+          useClass: LocalAttachmentStorageAdapter,
+        },
+      ],
+    }).compile();
+
+    const adapter = moduleRef.get<LocalAttachmentStorageAdapter>(ATTACHMENT_STORAGE_ADAPTER);
+
+    expect(adapter.resolveObjectPath("attachments/safe/key.pdf")).toBe(
+      path.join(root, "attachments", "safe", "key.pdf"),
     );
   });
 });

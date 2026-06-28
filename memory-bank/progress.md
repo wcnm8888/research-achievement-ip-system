@@ -1,5 +1,50 @@
 # Progress
 
+## 2026-06-28 Step 47Y - Fix LocalAttachmentStorageAdapter production container wiring
+
+- Status: BLOCKED_BY_LOCAL_PRODUCTION_DATABASE_UNAVAILABLE_AFTER_ATTACHMENT_WIRING_FIX.
+- Step identity:
+  - This is Step 47Y.
+  - This Step diagnoses and fixes the production container startup failure involving `LocalAttachmentStorageAdapter`.
+  - It then retries the independent local `docker-compose.production.yml` production-like stack startup and API/Web health checks.
+- Root cause:
+  - `LocalAttachmentStorageAdapter` had a constructor parameter with a default string value.
+  - In the compiled production container, Nest treated that parameter as an unresolved `Object` dependency and failed dependency resolution.
+- Fix:
+  - Added explicit `LOCAL_ATTACHMENT_STORAGE_ROOT` provider token.
+  - Registered the token in `AttachmentsModule` with `localAttachmentStorageRoot`.
+  - Injected the token into `LocalAttachmentStorageAdapter` so production DI no longer attempts to resolve `Object`.
+  - Added a focused provider-graph test for Nest resolution of the attachment storage adapter.
+- Verification before compose retry:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- attachments local-attachment-storage`: passed; 6 files / 55 tests passed.
+- Compose retry:
+  - Command attempted: `docker compose -f docker-compose.production.yml up -d --build`.
+  - API and Web images rebuilt successfully after the wiring fix.
+  - The previous `LocalAttachmentStorageAdapter` Nest dependency resolution error was not observed after rebuild.
+  - Compose service state after startup attempt:
+    - `postgres`: running / healthy.
+    - `api`: restarting / unhealthy.
+    - `web`: created, not started because `api` did not become healthy.
+  - Sanitized API diagnostic category after the fix: Prisma `P1003` / database availability issue.
+  - Missing relation/table/column extraction did not confirm a schema object name, so this Step did not run migration, seed, or backfill.
+- Result:
+  - Attachment storage dependency resolution issue is fixed.
+  - Local production-like stack did not pass acceptance due to the new database availability blocker.
+  - API health `http://127.0.0.1:13001/api/health`: no response.
+  - Web root `http://127.0.0.1:18081/`: no response.
+  - No production-like DirectMail send path was exercised.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No real provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration, seed, or backfill.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+  - DirectMail default sending strategy was not modified.
+- Next:
+  - Open a separate local production-like database availability/schema readiness Step before retrying API/Web health.
+
 ## 2026-06-28 Step 47X-Resume - Retry local production-like compose startup
 
 - Status: BLOCKED_BY_LOCAL_PRODUCTION_LIKE_API_UNHEALTHY.
