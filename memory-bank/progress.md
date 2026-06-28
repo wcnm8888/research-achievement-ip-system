@@ -1,5 +1,54 @@
 # Progress
 
+## 2026-06-28 Step 47I-Auth - Aliyun DirectMail controlled smoke authorization gate
+
+- Status: BLOCKED_BY_CONTROLLED_SMOKE_AUTHORIZATION_MISSING.
+- Step identity:
+  - This is Step 47I-Auth.
+  - This Step collects authorization for a later controlled real-send smoke only.
+  - It is not smoke execution, real email/SMS sending, provider runtime wiring, production migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Canonical state:
+  - `git rev-parse HEAD`: `cdfc8dc542ba15e999f33f332a4b2aa8dfc09824`.
+  - Latest commit subject: `feat: add Aliyun DirectMail no-send adapter`.
+  - Tracked diff was empty before this memory-bank update.
+  - Old local artifacts remain untracked and were not staged, cleaned, deleted, or modified.
+- Existing non-sensitive facts:
+  - Provider: Aliyun DirectMail / 阿里云邮件推送 managed email API.
+  - SDK installed: `@alicloud/dm20151123`.
+  - Aliyun DirectMail adapter exists as no-send / local dry-run implementation.
+  - `ALIYUN_DM_DRY_RUN` remains default-safe: values other than `false` keep no-send behavior.
+  - `AccountLifecycleModule` does not register the Aliyun adapter; default runtime remains `LOCAL_SAFE_STUB`.
+  - Production public base URL: `https://production.wangyimin.cn/`.
+  - Sender domain/address/display name: `wzunew.uk` / `system@wzunew.uk` / 科研成果管理系统.
+  - Cloudflare DNS has passed Aliyun DirectMail DKIM/SPF/DMARC/MX verification.
+- Missing controlled-smoke authorization inputs:
+  - Explicit authorization for a later separate Step to send real test email.
+  - Controlled test recipient mailbox.
+  - Authorization for a later smoke Step to inspect runtime environment variable presence without printing values.
+  - Authorization for a later smoke Step to set `ALIYUN_DM_DRY_RUN=false` for one controlled test only.
+  - Smoke mail type: invite, password reset, or both.
+  - Send-count limit: one total email or one email per type.
+  - Final success criteria confirmation.
+  - Failure-handling policy confirmation for missing config, provider rejected, rate limited, network failure, and bounce/complaint.
+  - Whether safe-normalized `providerMessageId` may be recorded.
+  - Explicit confirmation that smoke Step must still prohibit production deploy, migration, seed/backfill, DB write, and real user account operation.
+- Outcome:
+  - Do not generate a smoke execution Prompt.
+  - Keep controlled smoke deferred until all missing inputs are explicitly provided.
+  - Keep runtime on `LOCAL_SAFE_STUB`.
+- Explicitly not done:
+  - No real secret or credential was read or recorded.
+  - No real email/SMS was sent.
+  - No Aliyun API call was made.
+  - No migration or seed/backfill was executed.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - User/ops must provide all missing controlled-smoke authorization inputs before a later smoke execution Prompt can be generated.
+
 ## 2026-06-28 Step 47H - Aliyun DirectMail provider-specific no-send / local dry-run implementation
 
 - Status: DONE as local no-send / dry-run implementation.

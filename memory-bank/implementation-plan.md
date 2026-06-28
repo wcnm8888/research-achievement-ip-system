@@ -4,6 +4,37 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47I-Auth Archive - Aliyun DirectMail Controlled Smoke Authorization Gate - 2026-06-28
+
+- Step identity:
+  - This is Step 47I-Auth.
+  - This Step is a controlled-smoke authorization collection gate only.
+  - It does not execute smoke, send real email/SMS, wire provider runtime, read secrets, configure SMTP/API, run migration, run seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Starting state:
+  - HEAD confirmed as `cdfc8dc542ba15e999f33f332a4b2aa8dfc09824`.
+  - Latest commit subject confirmed as `feat: add Aliyun DirectMail no-send adapter`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+- Authorization result:
+  - `BLOCKED_BY_CONTROLLED_SMOKE_AUTHORIZATION_MISSING`.
+  - Existing facts are sufficient to identify provider, sender, SDK, dry-run default, and public base URL.
+  - Existing facts are not sufficient to authorize real-send smoke.
+- Missing before any later smoke execution Step:
+  - Explicit yes/no authorization for a later real test email.
+  - Controlled test recipient mailbox.
+  - Permission to inspect runtime env var presence without printing values.
+  - Permission to set `ALIYUN_DM_DRY_RUN=false` for a one-time controlled test.
+  - Smoke mail type selection: invite, password reset, or both.
+  - Send-count limit.
+  - Success criteria confirmation.
+  - Failure policy for missing config, rejected send, rate limit, network failure, and bounce/complaint.
+  - Permission to record safe-normalized `providerMessageId`.
+  - Explicit no-production/no-DB/no-deploy/no-migration/no-seed/no-real-user boundary for the smoke Step.
+- Plan:
+  - Do not generate a smoke execution Prompt in this Step.
+  - Keep controlled smoke deferred until user/ops supplies the missing inputs.
+  - Keep production migration, seed/backfill, deploy, production smoke, and production acceptance as separate authorization gates.
+
 ## Current Step 47H Archive - Aliyun DirectMail No-Send / Local Dry-Run Implementation - 2026-06-28
 
 - Step identity:

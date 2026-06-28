@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-06-28 Step 47I-Auth - Aliyun DirectMail controlled smoke authorization evidence
+
+- Purpose:
+  - Collect authorization inputs for a later separate controlled real-send smoke.
+  - Keep smoke execution, real email/SMS, secret reading, Aliyun API calls, provider runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `cdfc8dc542ba15e999f33f332a4b2aa8dfc09824`.
+  - `git log -1 --pretty=%s`: `feat: add Aliyun DirectMail no-send adapter`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - `git status --short --untracked-files=all`: only old local artifacts were listed before this memory-bank update; they were not staged, cleaned, deleted, or modified.
+- Collected non-sensitive facts:
+  - Provider: Aliyun DirectMail / 阿里云邮件推送 managed email API.
+  - SDK installed: `@alicloud/dm20151123`.
+  - Aliyun adapter exists as no-send / local dry-run only.
+  - Default no-send remains in force unless a later authorized Step explicitly sets `ALIYUN_DM_DRY_RUN=false`.
+  - `AccountLifecycleModule` is not wired to the Aliyun adapter; runtime remains `LOCAL_SAFE_STUB`.
+  - Production public base URL: `https://production.wangyimin.cn/`.
+  - Sender domain/address: `wzunew.uk` / `system@wzunew.uk`.
+  - Cloudflare DNS passed Aliyun DirectMail DKIM/SPF/DMARC/MX verification.
+- Missing inputs:
+  - Explicit authorization for later real-send smoke.
+  - Controlled recipient mailbox.
+  - Authorization to inspect env var presence without outputting values.
+  - Authorization to set `ALIYUN_DM_DRY_RUN=false` for a one-time controlled test.
+  - Smoke mail type and send-count limit.
+  - Success criteria and failure policy confirmation.
+  - Permission to record safe-normalized `providerMessageId`.
+  - Explicit confirmation that the smoke Step will still prohibit production deploy, migration, seed/backfill, DB writes, and real user account operations.
+- Outcome:
+  - `BLOCKED_BY_CONTROLLED_SMOKE_AUTHORIZATION_MISSING`.
+  - No smoke execution Prompt generated.
+- Boundaries observed:
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, token, cookie, certificate, private key, real `DATABASE_URL`, or full connection string was read or recorded.
+  - No real email/SMS sent.
+  - No Aliyun API call executed.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+
 ## 2026-06-28 Step 47H - Aliyun DirectMail no-send implementation evidence
 
 - Purpose:

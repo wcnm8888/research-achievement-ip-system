@@ -1,5 +1,18 @@
 # Decisions
 
+## D137 - Step 47I controlled smoke remains blocked until explicit smoke authorization is complete
+
+- Date: 2026-06-28.
+- Context: Step 47H added Aliyun DirectMail no-send / local dry-run support and Step 47H-R committed it. Step 47I-Auth was opened to collect authorization for a later controlled real-send smoke, but no explicit real-send authorization, recipient mailbox, dry-run override permission, smoke mail-type selection, send-count limit, failure policy, or providerMessageId recording permission was supplied in this Step.
+- Decision:
+  - Output `BLOCKED_BY_CONTROLLED_SMOKE_AUTHORIZATION_MISSING`.
+  - Do not generate a smoke execution Prompt.
+  - Keep controlled smoke deferred.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Require a later explicit user/ops authorization bundle before any real email smoke can be executed.
+- Boundaries:
+  - This decision does not authorize real email/SMS, secret reading, Aliyun API calls, provider runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, cleanup, deletion, drop, or reset.
+
 ## D136 - Step 47H adds Aliyun DirectMail adapter as no-send dry-run only
 
 - Date: 2026-06-28.
