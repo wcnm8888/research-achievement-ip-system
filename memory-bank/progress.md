@@ -1,5 +1,54 @@
 # Progress
 
+## 2026-06-28 Step 47I - Aliyun DirectMail controlled smoke execution
+
+- Status: BLOCKED_BY_MISSING_CONFIG_NO_SEND.
+- Step identity:
+  - This is Step 47I.
+  - This Step was authorized for controlled smoke execution only through a local harness, but execution stopped before any send because required runtime environment variables were missing.
+  - It is not production runtime wiring, production access, migration, seed/backfill, deploy, push, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Canonical state:
+  - `git rev-parse HEAD`: `1e6f55d8f6b4722a22558764e75f3fed1be17382`.
+  - Latest commit subject: `docs: record controlled smoke authorization inputs`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Pre-send checks:
+  - `AccountLifecycleModule` still did not register `AliyunDirectMailAdapter`.
+  - `AccountLifecycleMailer` still used `LOCAL_SAFE_STUB`.
+  - `ALIYUN_DM_DRY_RUN` default remained safe unless explicitly set to `false` in an authorized smoke process.
+  - Required environment variable presence was checked without printing values.
+- Environment presence result:
+  - Required AccessKey environment variable names were present.
+  - Missing non-secret runtime configuration variable names: `ALIYUN_DM_ACCOUNT_NAME`, `ALIYUN_DM_FROM_ALIAS`, `ALIYUN_DM_REGION`.
+  - Failure category: `MISSING_CONFIG`.
+- Smoke result:
+  - Password reset email sent: no.
+  - Invite email sent: no.
+  - Total sent: 0.
+  - Recipient evidence stored only as masked value: `246****571@qq.com`.
+  - Provider status summary: not called.
+  - Provider message id: none.
+  - User receipt confirmation: not applicable because no email was sent.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed, 3 files / 18 tests.
+- Explicitly not done:
+  - No smoke harness send was executed.
+  - No Aliyun API call was made.
+  - No real email/SMS was sent.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was output or recorded.
+  - No migration or seed/backfill was executed.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No real user account operation.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - Configure the missing non-secret runtime environment variables in a future authorized setup step, then repeat controlled smoke only after a new explicit execution Step.
+  - Step 47I-R can review and commit this no-send `MISSING_CONFIG` smoke result record.
+
 ## 2026-06-28 Step 47I-Auth-Resume - Aliyun DirectMail controlled smoke authorization supplement
 
 - Status: CONTROLLED_SMOKE_AUTHORIZATION_COLLECTED_NO_SEND.

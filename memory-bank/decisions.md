@@ -1,5 +1,21 @@
 # Decisions
 
+## D139 - Step 47I controlled smoke stops on missing runtime configuration
+
+- Date: 2026-06-28.
+- Context: Step 47I was authorized to send at most one password reset and one invite email through a controlled local harness. Pre-send checks confirmed default runtime remained `LOCAL_SAFE_STUB`, but required Aliyun DirectMail runtime configuration names were incomplete.
+- Decision:
+  - Stop controlled smoke before any send.
+  - Record `BLOCKED_BY_MISSING_CONFIG_NO_SEND`.
+  - Record missing non-secret configuration variable names only: `ALIYUN_DM_ACCOUNT_NAME`, `ALIYUN_DM_FROM_ALIAS`, `ALIYUN_DM_REGION`.
+  - Do not call Aliyun API.
+  - Do not send password reset.
+  - Do not send invite.
+  - Do not retry in this Step.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+- Boundaries:
+  - This decision does not authorize secret reading, secret output, raw token output, full link output, plaintext recipient logging, provider raw full payload recording, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D138 - Step 47I controlled smoke authorization collected without execution
 
 - Date: 2026-06-28.

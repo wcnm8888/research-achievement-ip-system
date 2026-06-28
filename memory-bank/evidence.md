@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-06-28 Step 47I - Aliyun DirectMail controlled smoke execution evidence
+
+- Purpose:
+  - Execute an authorized controlled smoke only if pre-send safety and configuration checks pass.
+  - Keep production runtime wiring, production access, migration, seed/backfill, deploy, push, cleanup, deletion, drop/reset, real user account operations, and sensitive-config disclosure out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `1e6f55d8f6b4722a22558764e75f3fed1be17382`.
+  - `git log -1 --pretty=%s`: `docs: record controlled smoke authorization inputs`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - Existing old local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Pre-send evidence:
+  - `AccountLifecycleModule` still did not register `AliyunDirectMailAdapter`.
+  - `AccountLifecycleMailer` still used `LOCAL_SAFE_STUB`.
+  - `ALIYUN_DM_DRY_RUN` default remained safe unless explicitly overridden in an authorized smoke process.
+  - Required environment variable presence was checked without printing values.
+- Environment presence result:
+  - Required AccessKey environment variable names were present.
+  - Missing non-secret runtime configuration variable names: `ALIYUN_DM_ACCOUNT_NAME`, `ALIYUN_DM_FROM_ALIAS`, `ALIYUN_DM_REGION`.
+  - Failure category: `MISSING_CONFIG`.
+- Smoke result:
+  - Password reset email sent: no.
+  - Invite email sent: no.
+  - Total sent: 0.
+  - Masked recipient only: `246****571@qq.com`.
+  - Provider status summary: not called.
+  - Safe normalized provider message id: none.
+  - User receipt confirmation: not applicable because no email was sent.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed, 3 files / 18 tests.
+- Outcome:
+  - `BLOCKED_BY_MISSING_CONFIG_NO_SEND`.
+  - No retry was attempted.
+  - No invite send was attempted after missing config was detected.
+- Sensitive-output evidence:
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+- Boundaries observed:
+  - No real email/SMS sent.
+  - No Aliyun API call executed.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+
 ## 2026-06-28 Step 47I-Auth-Resume - Aliyun DirectMail controlled smoke authorization supplement evidence
 
 - Purpose:

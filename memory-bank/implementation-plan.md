@@ -4,6 +4,38 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47I Archive - Aliyun DirectMail Controlled Smoke Execution - 2026-06-28
+
+- Step identity:
+  - This is Step 47I.
+  - This Step attempted controlled smoke execution within the previously authorized two-email maximum.
+  - Execution stopped before any send because required runtime configuration was incomplete.
+  - It is not production runtime wiring, production access, migration, seed/backfill, deploy, push, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `1e6f55d8f6b4722a22558764e75f3fed1be17382`.
+  - Latest commit subject confirmed as `docs: record controlled smoke authorization inputs`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Pre-send gate:
+  - Runtime boundary checked: `AccountLifecycleModule` was not wired to `AliyunDirectMailAdapter`.
+  - Safe default checked: `AccountLifecycleMailer` remained `LOCAL_SAFE_STUB`; `ALIYUN_DM_DRY_RUN` remains no-send unless a later authorized smoke process sets it to `false`.
+  - Environment variable presence was checked without printing values.
+- Outcome:
+  - `BLOCKED_BY_MISSING_CONFIG_NO_SEND`.
+  - Missing non-secret runtime configuration variable names: `ALIYUN_DM_ACCOUNT_NAME`, `ALIYUN_DM_FROM_ALIAS`, `ALIYUN_DM_REGION`.
+  - Password reset sent: no.
+  - Invite sent: no.
+  - Total sent: 0.
+  - Provider API was not called.
+  - No provider message id was produced.
+  - Masked recipient only: `246****571@qq.com`.
+- Plan:
+  - Do not retry in this Step.
+  - Do not send invite after the pre-send missing-config failure.
+  - Do not create or execute a send harness until required configuration exists.
+  - Future work must first configure the missing non-secret runtime variables, then run a new authorized controlled-smoke execution Step.
+  - Keep production migration, seed/backfill, deploy, production runtime switching, default provider wiring, production access, and real user operations out of scope.
+
 ## Current Step 47I-Auth-Resume Archive - Aliyun DirectMail Controlled Smoke Authorization Supplement - 2026-06-28
 
 - Step identity:
