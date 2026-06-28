@@ -1,5 +1,54 @@
 # Progress
 
+## 2026-06-28 Step 47H-Auth-Collect - Aliyun DirectMail provider input collection
+
+- Status: PARTIAL AUTHORIZATION COLLECTED.
+- Canonical state:
+  - `git rev-parse HEAD`: `e8ef6a379e272c613326b3928f0d5c86e3332f65`.
+  - Latest commit subject: `docs: record delivery provider authorization block`.
+  - Tracked diff was empty before this collection update.
+- Collected non-sensitive provider/ops inputs:
+  - Provider / relay type: managed email API.
+  - Concrete provider: Aliyun DirectMail / 阿里云邮件推送.
+  - Dependency authorization: allow Aliyun official SDK.
+  - Sender domain: `wzunew.uk`.
+  - Sender address: `system@wzunew.uk`.
+  - Sender display name draft: `科研成果管理系统`.
+  - DNS/SPF/DKIM/DMARC responsibility: Cloudflare DNS administrator / user.
+  - DNS state: Aliyun DirectMail DKIM/SPF/DMARC/MX verification passed while DNS is hosted on Cloudflare, not Aliyun DNS.
+  - Production public base URL for reset/invite links: `https://production.wangyimin.cn/`.
+  - Secret strategy: credentials are stored in Windows user environment variables for local setup, and production should use deployment secret store / runtime environment injection.
+  - Secret rotation owner draft: Aliyun account administrator / user.
+  - Smoke authorization: not authorized now; user will provide a controlled test mailbox later when needed.
+- Recommended policies to carry into Step 47H unless user changes them:
+  - Password reset request rate limit: same account/email 3 times per 15 minutes; per IP 20 times per hour.
+  - Invite resend rate limit: same user once per 10 minutes; per admin 30 times per hour.
+  - Provider config missing: `SUPPRESSED`.
+  - Provider rate limited: `FAILED` or `SUPPRESSED`, not `QUEUED` unless a later outbox/worker is authorized.
+  - Permanent provider failure: `FAILED`.
+  - Bounce/complaint: deferred to a separate webhook/suppression-list Step.
+  - Production migration, seed/backfill, deploy, and smoke remain separately authorized Steps.
+- Template drafts prepared for later approval:
+  - Invite: "您已被邀请加入科研成果管理系统。请在链接有效期内完成账号设置；如链接过期，请联系管理员重新发送邀请。"
+  - Password reset: "我们收到了您的密码重置请求。请在链接有效期内完成密码重置；如非本人操作，请忽略此邮件或联系管理员。"
+  - Expiry copy: "链接将在系统配置的有效期后失效，过期后需重新申请。"
+  - No-secret logging rule: confirmed as required; do not log raw token, full link, credentials, or plaintext recipient email.
+- Current readiness:
+  - Enough to draft a no-send provider-specific implementation Prompt after one final review.
+  - Not enough to authorize real email smoke or production rollout.
+- Explicitly not done:
+  - No provider implemented.
+  - No dependency installed.
+  - No SMTP/API configured.
+  - No AccessKey, credential, secret, token, cookie, private key, `.env`, production connection string, or real `DATABASE_URL` was read or recorded.
+  - No real email/SMS sent.
+  - No migration or seed/backfill executed.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-27 Step 47H-Auth - Real delivery provider / ops authorization collection gate
 
 - Status: BLOCKED.

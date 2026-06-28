@@ -4,6 +4,31 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47H-Auth-Collect Archive - Aliyun DirectMail Provider Input Collection - 2026-06-28
+
+- Step identity:
+  - This is Step 47H-Auth-Collect.
+  - This Step collects non-sensitive provider/ops authorization inputs only.
+  - It is not provider implementation, dependency installation, SMTP/API configuration, secret access, real email/SMS sending, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Collected inputs:
+  - Provider type: managed email API.
+  - Provider: Aliyun DirectMail / 阿里云邮件推送.
+  - Dependency policy: Aliyun official SDK is allowed.
+  - Sender domain/address: `wzunew.uk` / `system@wzunew.uk`.
+  - Sender display name draft: `科研成果管理系统`.
+  - DNS owner: Cloudflare DNS administrator / user.
+  - DNS verification: Aliyun DirectMail DKIM/SPF/DMARC/MX passed while DNS remains hosted at Cloudflare.
+  - Production public base URL: `https://production.wangyimin.cn/`.
+  - Secret strategy: production secret store / runtime env injection; local Windows user env exists but was not read.
+  - Rotation owner draft: Aliyun account administrator / user.
+  - Smoke: deferred; user will provide controlled test mailbox only when needed.
+- Implementation guardrails for future Step 47H:
+  - Prefer a no-send implementation/dry-run first.
+  - Keep raw token transient and never persist raw token or full reset/invite link.
+  - Do not read real secrets in the implementation prompt.
+  - Do not send real email unless a later controlled-smoke Step explicitly authorizes recipient and send.
+  - Keep production migration, seed/backfill, deploy, and smoke as separate authorization gates.
+
 ## Current Step 47H-Auth Archive - Real Delivery Provider / Ops Authorization Collection Gate - 2026-06-27
 
 - Step identity:

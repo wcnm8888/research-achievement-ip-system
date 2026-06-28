@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-06-28 Step 47H-Auth-Collect - Aliyun DirectMail provider input collection evidence
+
+- Purpose:
+  - Record non-sensitive provider/ops inputs needed before Step 47H provider-specific implementation planning.
+  - Keep provider implementation, dependency installation, SMTP/API config, secret access, real email/SMS, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `e8ef6a379e272c613326b3928f0d5c86e3332f65`.
+  - `git log -1 --pretty=%s`: `docs: record delivery provider authorization block`.
+  - `git diff --name-status`: empty before this collection update.
+- User-provided / screenshot-supported facts:
+  - Provider selected: Aliyun DirectMail / 阿里云邮件推送.
+  - Provider type: managed email API.
+  - Dependency authorization: Aliyun official SDK is allowed.
+  - Sender domain: `wzunew.uk`.
+  - Sender address: `system@wzunew.uk`.
+  - Cloudflare hosts authoritative DNS for the domain.
+  - Aliyun DirectMail DKIM/SPF/DMARC/MX verification passed.
+  - Production public base URL: `https://production.wangyimin.cn/`.
+  - Windows user environment variables for Alibaba Cloud AccessKey were configured by the user, but this Step did not read, print, or validate their values.
+  - User will provide controlled smoke mailbox only when needed.
+- Template drafts:
+  - Invite: "您已被邀请加入科研成果管理系统。请在链接有效期内完成账号设置；如链接过期，请联系管理员重新发送邀请。"
+  - Password reset: "我们收到了您的密码重置请求。请在链接有效期内完成密码重置；如非本人操作，请忽略此邮件或联系管理员。"
+  - Expiry copy: "链接将在系统配置的有效期后失效，过期后需重新申请。"
+  - No-secret logging rule: do not log raw token, full link, credentials, or plaintext recipient email.
+- Remaining gates:
+  - Final review of collected policies before generating Step 47H Prompt.
+  - Real email smoke recipient and send authorization remain separate.
+  - Production migration, seed/backfill, deploy, and smoke remain separate.
+- Boundaries observed:
+  - No provider implemented.
+  - No dependency installed.
+  - No SMTP/API config.
+  - No real email/SMS sent.
+  - No `.env`, SMTP/API credential, AccessKey value, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+
 ## 2026-06-27 Step 47H-Auth - Real delivery provider / ops authorization collection evidence
 
 - Purpose:

@@ -1,5 +1,20 @@
 # Decisions
 
+## D135 - Step 47H selects Aliyun DirectMail for no-send implementation planning
+
+- Date: 2026-06-28.
+- Context: Provider/ops input collection resumed after Step 47H-Auth was blocked. The user selected Aliyun DirectMail, confirmed DNS records are managed in Cloudflare and Aliyun DirectMail DKIM/SPF/DMARC/MX verification passed, allowed Aliyun official SDK usage, selected the production public base URL, and deferred real smoke recipient authorization.
+- Decision:
+  - Provider / relay type is managed email API.
+  - Concrete provider is Aliyun DirectMail / 阿里云邮件推送.
+  - Aliyun official SDK is allowed for a future provider-specific implementation.
+  - Sender domain/address are `wzunew.uk` and `system@wzunew.uk`.
+  - Production public base URL is `https://production.wangyimin.cn/`.
+  - Secret values must remain outside repo, memory-bank, logs, and chat. Future implementation may reference environment variable names only.
+  - Real email smoke remains deferred until user separately provides a controlled test mailbox and explicit send authorization.
+- Boundaries:
+  - This decision does not authorize provider implementation, dependency installation in this Step, SMTP/API config, secret reading, real email/SMS, production migration, production seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, or reset.
+
 ## D134 - Step 47H provider implementation remains blocked until provider/ops inputs are complete
 
 - Date: 2026-06-27.
