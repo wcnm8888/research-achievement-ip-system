@@ -1,5 +1,18 @@
 # Decisions
 
+## D157 - Step 47W-Resume stops on Docker registry timeout
+
+- Date: 2026-06-28.
+- Context: Step 47W-Resume restored the missing env template and attempted to start the local production-like Compose stack using `docker-compose.production.yml`. The local `.env.production` file existed, but values were not read or output.
+- Decision:
+  - Record `BLOCKED_BY_DOCKER_REGISTRY_TIMEOUT_NO_STACK_START`.
+  - Do not retry automatically.
+  - Do not run migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or artifact removal.
+  - Keep DirectMail production sending strategy unchanged.
+  - Retry only after Docker registry/network access is available or required base images are available locally.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+
 ## D156 - Step 47V stack startup remains blocked by missing env file
 
 - Date: 2026-06-28.

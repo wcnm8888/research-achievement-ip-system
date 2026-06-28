@@ -1,5 +1,42 @@
 # Progress
 
+## 2026-06-28 Step 47W-Resume - Restore env template and local production-like compose acceptance
+
+- Status: BLOCKED_BY_DOCKER_REGISTRY_TIMEOUT_NO_STACK_START.
+- Step identity:
+  - This is Step 47W-Resume.
+  - This Step restores the `.env.production.example` template and attempts the local `docker-compose.production.yml` production-like stack startup.
+  - It uses the independent compose stack only, not the old `localhost:5176`, `local-prod-preview-proxy.cjs`, or `research-achievement-postgres-dev` regression path.
+- Starting state:
+  - `git rev-parse HEAD`: `50b48a8c1c6f0f2428b14c09e910ccf652ef3940`.
+  - Latest commit subject: `docs: record local production-like stack startup`.
+  - Initial tracked diff was only `.env.production.example` deleted.
+  - `.env.production` existence check returned present; values were not read or output.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Template restoration:
+  - `.env.production.example` was restored from HEAD content without `git restore` or `git checkout`.
+  - After re-adding the restored template, tracked diff was clean before memory-bank updates.
+- Compose attempt:
+  - Command attempted: `docker compose -f docker-compose.production.yml up -d --build`.
+  - Compose build/start failed before service startup.
+  - Non-sensitive failure reason: Docker registry authorization/token fetch timed out while resolving base images for `node:22-alpine` and `nginx:1.27-alpine`.
+  - Compose service status after failure was empty.
+- Result:
+  - Local production-like stack was not started.
+  - API health `http://127.0.0.1:13001/api/health` was not checked because the stack was not started.
+  - Web root `http://127.0.0.1:18081/` was not checked because the stack was not started.
+  - No production-like DirectMail send path was exercised.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No real provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration, seed, or backfill.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+  - Default DirectMail production sending strategy was not modified.
+- Next:
+  - Retry local production-like compose startup after Docker Hub/network access is available or required base images are available locally.
+
 ## 2026-06-28 Step 47V - Local production-like stack startup and health check
 
 - Status: BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START.

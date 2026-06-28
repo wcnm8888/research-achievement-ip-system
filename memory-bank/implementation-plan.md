@@ -4,6 +4,26 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47W-Resume Archive - Restore Env Template and Compose Startup Attempt - 2026-06-28
+
+- Step identity:
+  - This is Step 47W-Resume.
+  - This Step restores `.env.production.example` and attempts local production-like Docker Compose startup.
+  - It is not migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or artifact removal.
+- Starting state:
+  - HEAD confirmed as `50b48a8c1c6f0f2428b14c09e910ccf652ef3940`.
+  - Latest commit subject confirmed as `docs: record local production-like stack startup`.
+  - Initial tracked diff contained only deleted `.env.production.example`.
+- Result:
+  - `.env.production.example` was restored from HEAD content without destructive git commands.
+  - `.env.production` exists locally, but its values were not read or output.
+  - `docker compose -f docker-compose.production.yml up -d --build` failed during image metadata/token retrieval from Docker Hub.
+  - Local production-like stack was not started.
+  - API and Web health checks were not run.
+  - Result recorded as `BLOCKED_BY_DOCKER_REGISTRY_TIMEOUT_NO_STACK_START`.
+- Next:
+  - Retry after Docker registry/network access is available.
+
 ## Current Step 47V Archive - Local Production-Like Stack Startup - 2026-06-28
 
 - Step identity:
