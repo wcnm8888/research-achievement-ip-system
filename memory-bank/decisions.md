@@ -1,5 +1,18 @@
 # Decisions
 
+## D158 - Step 47X retry remains blocked by Docker registry timeout
+
+- Date: 2026-06-28.
+- Context: Step 47X retried the independent local `docker-compose.production.yml` startup after the env template was restored and `.env.production` existed locally. Docker and Compose were available, but `node:22-alpine` was not available locally.
+- Decision:
+  - Record `BLOCKED_BY_DOCKER_REGISTRY_TIMEOUT_NO_STACK_START`.
+  - Do not retry automatically.
+  - Do not modify Dockerfile, compose, dependencies, or DirectMail default sending strategy.
+  - Do not run migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or artifact removal.
+  - Retry only after Docker registry/network access is available or `node:22-alpine` is available locally.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+
 ## D157 - Step 47W-Resume stops on Docker registry timeout
 
 - Date: 2026-06-28.

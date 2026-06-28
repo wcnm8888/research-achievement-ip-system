@@ -4,6 +4,27 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47X Archive - Retry Local Production-Like Compose Startup - 2026-06-28
+
+- Step identity:
+  - This is Step 47X.
+  - This Step retries local production-like Docker Compose startup and API/Web health checks.
+  - It is not migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, Dockerfile/compose/dependency modification, or DirectMail strategy modification.
+- Starting state:
+  - HEAD confirmed as `4414f79fb1391605930e23e6492cbad4c3749c49`.
+  - Latest commit subject confirmed as `docs: record local production-like compose acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+  - `.env.production` existed; values were not read or output.
+- Result:
+  - Docker and Docker Compose were available.
+  - Local images included `postgres:16-alpine` and `nginx:1.27-alpine`; `node:22-alpine` was not present locally.
+  - `docker compose -f docker-compose.production.yml up -d --build` failed during Docker Hub token/metadata retrieval for `node:22-alpine`.
+  - Local production-like stack was not started.
+  - API and Web health checks were not run.
+  - Result recorded as `BLOCKED_BY_DOCKER_REGISTRY_TIMEOUT_NO_STACK_START`.
+- Next:
+  - Retry after Docker registry/network access is available or `node:22-alpine` exists locally.
+
 ## Current Step 47W-Resume Archive - Restore Env Template and Compose Startup Attempt - 2026-06-28
 
 - Step identity:

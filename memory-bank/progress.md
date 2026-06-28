@@ -1,5 +1,44 @@
 # Progress
 
+## 2026-06-28 Step 47X - Retry local production-like compose startup
+
+- Status: BLOCKED_BY_DOCKER_REGISTRY_TIMEOUT_NO_STACK_START.
+- Step identity:
+  - This is Step 47X.
+  - This Step retries the local `docker-compose.production.yml` production-like stack startup after Step 47W-Resume.
+  - It uses the independent compose stack only, not the old `localhost:5176`, `local-prod-preview-proxy.cjs`, or `research-achievement-postgres-dev` regression path.
+- Starting state:
+  - `git rev-parse HEAD`: `4414f79fb1391605930e23e6492cbad4c3749c49`.
+  - Latest commit subject: `docs: record local production-like compose acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+  - `.env.production` existence check returned present; values were not read or output.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Preflight:
+  - Docker was available.
+  - Docker Compose was available.
+  - Local image check found `postgres:16-alpine` and `nginx:1.27-alpine`.
+  - Local image check did not find `node:22-alpine`.
+- Compose retry:
+  - Command attempted: `docker compose -f docker-compose.production.yml up -d --build`.
+  - Compose build/start failed before service startup.
+  - Non-sensitive failure reason: Docker registry authorization/token fetch timed out while resolving `node:22-alpine`.
+  - Compose service status after failure was empty.
+- Result:
+  - Local production-like stack was not started.
+  - API health `http://127.0.0.1:13001/api/health` was not checked because the stack was not started.
+  - Web root `http://127.0.0.1:18081/` was not checked because the stack was not started.
+  - No production-like DirectMail send path was exercised.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No real provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration, seed, or backfill.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+  - Dockerfile, compose, dependencies, and DirectMail default sending strategy were not modified.
+- Next:
+  - Retry after Docker Hub/network access is available or `node:22-alpine` is available locally.
+
 ## 2026-06-28 Step 47W-Resume - Restore env template and local production-like compose acceptance
 
 - Status: BLOCKED_BY_DOCKER_REGISTRY_TIMEOUT_NO_STACK_START.
