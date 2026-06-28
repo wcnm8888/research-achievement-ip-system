@@ -28,6 +28,7 @@ describe("account lifecycle delivery adapter contract", () => {
       deliveryStatus: AccountLifecycleDeliveryStatus.SENT,
       adapter: "LOCAL_FAKE_PROVIDER",
       providerMessageId: "fake-message-001",
+      providerErrorCode: undefined,
       failureCategory: undefined,
     });
     expect(sentInputs).toHaveLength(1);
@@ -57,6 +58,7 @@ describe("account lifecycle delivery adapter contract", () => {
       deliveryStatus: AccountLifecycleDeliveryStatus.FAILED,
       adapter: "LOCAL_FAKE_PROVIDER",
       providerMessageId: undefined,
+      providerErrorCode: undefined,
       failureCategory: "PERMANENT",
     });
 

@@ -1,5 +1,52 @@
 # Progress
 
+## 2026-06-28 Step 47J-Fix - Aliyun DirectMail endpoint mapping and safe error classification patch
+
+- Status: DONE_LOCAL_PATCH_NO_SEND.
+- Step identity:
+  - This is Step 47J-Fix.
+  - This Step is a local adapter patch and test update.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read secrets, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `cfba4b1557228c7709c863f318f4af456b7e8cd9`.
+  - Latest commit subject: `docs: record Aliyun DirectMail failure diagnosis`.
+  - Tracked diff was empty before this patch.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Code changes:
+  - Added `resolveAliyunDirectMailEndpoint`.
+  - Mapped `cn-hangzhou` to `dm.aliyuncs.com`.
+  - Added explicit client config construction using the resolver.
+  - Kept dry-run default safe: `ALIYUN_DM_DRY_RUN !== "false"` remains no-send.
+  - Added safe provider error-code propagation through delivery normalization and safe projection.
+  - Added Aliyun error-code extraction from safe short code/name locations only; raw provider payload is not recorded.
+  - Mapped throttling/rate-limit to `RATE_LIMITED`.
+  - Mapped auth/signature/permission and invalid sender/account/address style codes to `CONFIGURATION`.
+  - Mapped network/timeout style codes to `TEMPORARY`.
+  - Unsafe provider error codes are dropped before safe projection.
+- Tests:
+  - Added endpoint resolver coverage for `cn-hangzhou -> dm.aliyuncs.com`, case normalization, unknown safe region fallback, and invalid region fallback.
+  - Added client config endpoint coverage.
+  - Added error classification tests for throttling, auth/signature/permission, invalid sender/account/address, network/timeout, and unsafe code dropping.
+  - Existing dry-run, missing-config, transient request, safe projection, and unsafe provider message id tests remain covered.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle-aliyun-directmail account-lifecycle`: passed, 3 files / 24 tests.
+- Explicitly not done:
+  - No Aliyun API call.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No default runtime provider wiring changed; runtime remains `LOCAL_SAFE_STUB`.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - Step 47J-Fix-R: endpoint/error classification patch review / commit gate.
+  - Any future real-send retry still requires Step 47K-Auth.
+
 ## 2026-06-28 Step 47J - Aliyun DirectMail permanent failure read-only diagnosis
 
 - Status: READ_ONLY_DIAGNOSIS_COMPLETED_NO_SEND.

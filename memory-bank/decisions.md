@@ -1,5 +1,20 @@
 # Decisions
 
+## D142 - Step 47J-Fix patches DirectMail endpoint mapping and safe error diagnostics
+
+- Date: 2026-06-28.
+- Context: Step 47J diagnosed the Step 47I-Resume permanent failure as likely endpoint mapping plus insufficient safe error classification. The adapter previously derived `dm.cn-hangzhou.aliyuncs.com`, while official DirectMail docs list `dm.aliyuncs.com` for `cn-hangzhou`.
+- Decision:
+  - Add an Aliyun DirectMail endpoint resolver.
+  - Map `cn-hangzhou` to `dm.aliyuncs.com`.
+  - Keep unknown safe region fallback explicit but unvalidated.
+  - Add safe provider error-code normalization and propagation through delivery safe projection.
+  - Map provider diagnostics into existing failure categories without expanding schema.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Do not retry smoke until a later Step 47K-Auth explicitly authorizes it.
+- Boundaries:
+  - This decision does not authorize Aliyun API calls, real email/SMS, smoke harness execution, secret output, raw token output, full link output, plaintext recipient logging, provider raw full payload recording, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D141 - Step 47J diagnoses Aliyun permanent failure as likely endpoint/error-classification issue
 
 - Date: 2026-06-28.

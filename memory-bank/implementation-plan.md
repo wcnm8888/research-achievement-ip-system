@@ -4,6 +4,32 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47J-Fix Archive - Aliyun DirectMail Endpoint/Error Classification Patch - 2026-06-28
+
+- Step identity:
+  - This is Step 47J-Fix.
+  - This Step patches local Aliyun DirectMail adapter code and tests only.
+  - It is not smoke execution, Aliyun API access, real email/SMS sending, secret access, production runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `cfba4b1557228c7709c863f318f4af456b7e8cd9`.
+  - Latest commit subject confirmed as `docs: record Aliyun DirectMail failure diagnosis`.
+  - Tracked diff was empty before implementation.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Implemented scope:
+  - Endpoint resolver added.
+  - `cn-hangzhou` now resolves to `dm.aliyuncs.com`.
+  - Client config now uses the resolver output for endpoint construction.
+  - Delivery result normalization now supports a safe optional provider error code.
+  - Aliyun adapter now extracts only safe short provider diagnostic codes and maps them to existing failure categories.
+  - Unsafe provider diagnostic values are dropped.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle-aliyun-directmail account-lifecycle` passed, 3 files / 24 tests.
+- Remaining rollout boundary:
+  - Do not retry controlled smoke in this Step.
+  - Do not wire provider into default runtime in this Step.
+  - A future real-send retry requires fresh Step 47K-Auth after this patch is reviewed and committed.
+
 ## Current Step 47J Archive - Aliyun DirectMail Permanent Failure Read-Only Diagnosis - 2026-06-28
 
 - Step identity:

@@ -123,12 +123,29 @@ export const createAliyunDirectMailSafeDryRunSummary = (
 });
 
 const createAliyunDirectMailClient: AliyunDirectMailClientFactory = (config) =>
-  new DirectMailClient({
+  new DirectMailClient(createAliyunDirectMailClientConfig(config));
+
+export const createAliyunDirectMailClientConfig = (
+  config: AliyunDirectMailConfig,
+): ConstructorParameters<typeof DirectMailClient>[0] =>
+  ({
     accessKeyId: config.accessKeyId,
     accessKeySecret: config.accessKeySecret,
     regionId: config.region,
-    endpoint: `dm.${config.region}.aliyuncs.com`,
-  } as ConstructorParameters<typeof DirectMailClient>[0]);
+    endpoint: resolveAliyunDirectMailEndpoint(config.region),
+  }) as ConstructorParameters<typeof DirectMailClient>[0];
+
+export const resolveAliyunDirectMailEndpoint = (region: string): string => {
+  const normalizedRegion = region.trim().toLowerCase();
+  const mappedEndpoint = aliyunDirectMailEndpointByRegion[normalizedRegion];
+  if (mappedEndpoint) {
+    return mappedEndpoint;
+  }
+  if (!safeAliyunRegionPattern.test(normalizedRegion)) {
+    return defaultAliyunDirectMailEndpoint;
+  }
+  return `dm.${normalizedRegion}.aliyuncs.com`;
+};
 
 const isAliyunDirectMailConfigUsable = (config: AliyunDirectMailConfig): boolean =>
   Boolean(
@@ -169,31 +186,106 @@ const renderAliyunDirectMailTextBody = (
 };
 
 const mapAliyunDirectMailError = (error: unknown): AccountLifecycleProviderResult => {
-  const category = classifyAliyunDirectMailFailure(error);
+  const providerErrorCode = normalizeAliyunDirectMailErrorCode(error);
+  const category = classifyAliyunDirectMailFailure(providerErrorCode);
   return {
-    status: category === "RATE_LIMITED" ? "RATE_LIMITED" : "FAILED",
+    status: mapAliyunFailureCategoryToProviderStatus(category),
     adapter: aliyunDirectMailAdapterName,
+    providerErrorCode,
     failureCategory: category,
   };
 };
 
-const classifyAliyunDirectMailFailure = (error: unknown): AccountLifecycleDeliveryFailureCategory => {
-  const code = getAliyunErrorCode(error).toLowerCase();
+export const normalizeAliyunDirectMailErrorCode = (error: unknown): string | undefined => {
+  for (const candidate of getAliyunErrorCodeCandidates(error)) {
+    const normalized = normalizeSafeAliyunDiagnosticCode(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return undefined;
+};
+
+const classifyAliyunDirectMailFailure = (
+  providerErrorCode: string | undefined,
+): AccountLifecycleDeliveryFailureCategory => {
+  const code = providerErrorCode?.toLowerCase() ?? "";
   if (code.includes("throttl") || code.includes("ratelimit") || code.includes("flowcontrol")) {
     return "RATE_LIMITED";
   }
-  if (code.includes("invalidaccesskey") || code.includes("forbidden") || code.includes("unauthorized")) {
+  if (
+    code.includes("timeout") ||
+    code.includes("timedout") ||
+    code.includes("econnreset") ||
+    code.includes("enotfound") ||
+    code.includes("network") ||
+    code.includes("temporar")
+  ) {
+    return "TEMPORARY";
+  }
+  if (
+    code.includes("accesskey") ||
+    code.includes("signature") ||
+    code.includes("forbidden") ||
+    code.includes("unauthorized") ||
+    code.includes("permission") ||
+    code.includes("accessdenied") ||
+    code.includes("ram") ||
+    code.includes("invalidmailaddress") ||
+    code.includes("invalidfromalias") ||
+    code.includes("invalidsender") ||
+    code.includes("invalidaccount")
+  ) {
     return "CONFIGURATION";
   }
   return "PERMANENT";
 };
 
-const getAliyunErrorCode = (error: unknown): string => {
-  if (!error || typeof error !== "object") {
-    return "";
+const mapAliyunFailureCategoryToProviderStatus = (
+  category: AccountLifecycleDeliveryFailureCategory,
+): AccountLifecycleProviderResult["status"] => {
+  if (category === "RATE_LIMITED") {
+    return "RATE_LIMITED";
   }
-  const record = error as { code?: unknown; name?: unknown };
-  return String(record.code ?? record.name ?? "");
+  if (category === "TEMPORARY") {
+    return "TEMPORARY_FAILURE";
+  }
+  return "FAILED";
+};
+
+const getAliyunErrorCodeCandidates = (error: unknown): string[] => {
+  if (!error || typeof error !== "object") {
+    return [];
+  }
+  const record = error as {
+    code?: unknown;
+    name?: unknown;
+    statusCode?: unknown;
+    data?: { code?: unknown; Code?: unknown };
+    response?: { body?: { code?: unknown; Code?: unknown } };
+  };
+  return [
+    record.code,
+    record.name,
+    record.data?.code,
+    record.data?.Code,
+    record.response?.body?.code,
+    record.response?.body?.Code,
+    typeof record.statusCode === "number" ? `HTTP_${record.statusCode}` : undefined,
+  ]
+    .filter((value): value is string | number => typeof value === "string" || typeof value === "number")
+    .map(String);
+};
+
+const normalizeSafeAliyunDiagnosticCode = (code: string): string | undefined => {
+  const trimmed = code.trim();
+  if (!trimmed || trimmed.length > aliyunProviderErrorCodeMaxLength) {
+    return undefined;
+  }
+  if (!safeAliyunProviderErrorCodePattern.test(trimmed) || unsafeAliyunProviderErrorCodePattern.test(trimmed)) {
+    return undefined;
+  }
+  return trimmed;
 };
 
 const normalizePublicBaseUrl = (publicBaseUrl: string): string => {
@@ -205,6 +297,16 @@ const optionalTrim = (value: string | undefined): string | undefined => {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 };
+
+const defaultAliyunDirectMailEndpoint = "dm.aliyuncs.com";
+const aliyunDirectMailEndpointByRegion: Record<string, string> = {
+  "cn-hangzhou": defaultAliyunDirectMailEndpoint,
+};
+const safeAliyunRegionPattern = /^[a-z0-9-]+$/;
+const aliyunProviderErrorCodeMaxLength = 128;
+const safeAliyunProviderErrorCodePattern = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
+const unsafeAliyunProviderErrorCodePattern =
+  /(@|https?:\/\/|token=|cookie=|password=|secret=|key=|-----BEGIN|[\r\n])/i;
 
 const defaultFromAlias = "\u79d1\u7814\u6210\u679c\u7ba1\u7406\u7cfb\u7edf";
 const inviteSubject = "\u79d1\u7814\u6210\u679c\u7ba1\u7406\u7cfb\u7edf\u8d26\u53f7\u9080\u8bf7";

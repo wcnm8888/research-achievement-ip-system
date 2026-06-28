@@ -34,6 +34,7 @@ export type AccountLifecycleProviderResult = {
   status: AccountLifecycleProviderStatus;
   adapter: string;
   providerMessageId?: string;
+  providerErrorCode?: string;
   failureCategory?: AccountLifecycleDeliveryFailureCategory;
 };
 
@@ -41,6 +42,7 @@ export type AccountLifecycleNormalizedDeliveryResult = {
   deliveryStatus: AccountLifecycleDeliveryStatus;
   adapter: string;
   providerMessageId?: string;
+  providerErrorCode?: string;
   failureCategory?: AccountLifecycleDeliveryFailureCategory;
 };
 
@@ -61,6 +63,7 @@ export const normalizeAccountLifecycleProviderResult = (
   deliveryStatus: mapProviderStatusToDeliveryStatus(result.status),
   adapter: result.adapter,
   providerMessageId: normalizeProviderMessageId(result.providerMessageId),
+  providerErrorCode: normalizeProviderErrorCode(result.providerErrorCode),
   failureCategory: result.failureCategory,
 });
 
@@ -91,6 +94,17 @@ export const normalizeProviderMessageId = (providerMessageId: string | undefined
   return trimmed.slice(0, providerMessageIdMaxLength);
 };
 
+export const normalizeProviderErrorCode = (providerErrorCode: string | undefined): string | undefined => {
+  if (!providerErrorCode) {
+    return undefined;
+  }
+  const trimmed = providerErrorCode.trim();
+  if (!trimmed || unsafeProviderDiagnosticPattern.test(trimmed) || !safeProviderDiagnosticPattern.test(trimmed)) {
+    return undefined;
+  }
+  return trimmed.slice(0, providerErrorCodeMaxLength);
+};
+
 export const createAccountLifecycleSafeDeliveryProjection = (
   input: AccountLifecycleDeliveryInput,
   result: AccountLifecycleNormalizedDeliveryResult,
@@ -102,9 +116,14 @@ export const createAccountLifecycleSafeDeliveryProjection = (
   deliveryStatus: result.deliveryStatus,
   adapter: result.adapter,
   providerMessageId: result.providerMessageId,
+  providerErrorCode: result.providerErrorCode,
   failureCategory: result.failureCategory,
 });
 
 const providerMessageIdMaxLength = 255;
+const providerErrorCodeMaxLength = 128;
 const unsafeProviderMessageIdPattern =
   /(@|https?:\/\/|token=|cookie=|password=|secret=|key=|-----BEGIN|[\r\n])/i;
+const unsafeProviderDiagnosticPattern =
+  /(@|https?:\/\/|token=|cookie=|password=|secret=|key=|-----BEGIN|[\r\n])/i;
+const safeProviderDiagnosticPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;

@@ -11,8 +11,11 @@ import {
   aliyunDirectMailDryRunAdapterName,
   buildAliyunDirectMailRequest,
   buildLifecycleLink,
+  createAliyunDirectMailClientConfig,
   createAliyunDirectMailConfigFromEnv,
   createAliyunDirectMailSafeDryRunSummary,
+  normalizeAliyunDirectMailErrorCode,
+  resolveAliyunDirectMailEndpoint,
 } from "./account-lifecycle-aliyun-directmail.adapter";
 
 describe("AliyunDirectMailAdapter", () => {
@@ -73,6 +76,22 @@ describe("AliyunDirectMailAdapter", () => {
     expect(singleSendMail).not.toHaveBeenCalled();
   });
 
+  it("resolves the documented cn-hangzhou DirectMail endpoint", () => {
+    expect(resolveAliyunDirectMailEndpoint("cn-hangzhou")).toBe("dm.aliyuncs.com");
+    expect(resolveAliyunDirectMailEndpoint("CN-HANGZHOU")).toBe("dm.aliyuncs.com");
+    expect(resolveAliyunDirectMailEndpoint("ap-southeast-1")).toBe("dm.ap-southeast-1.aliyuncs.com");
+    expect(resolveAliyunDirectMailEndpoint("bad region")).toBe("dm.aliyuncs.com");
+  });
+
+  it("builds Aliyun client config with the resolved endpoint", () => {
+    const clientConfig = createAliyunDirectMailClientConfig(makeConfig({ dryRun: false }));
+
+    expect(clientConfig).toMatchObject({
+      regionId: "cn-hangzhou",
+      endpoint: "dm.aliyuncs.com",
+    });
+  });
+
   it("builds the transient provider request with the link only in memory", () => {
     const input = makeDeliveryInput();
     const request = buildAliyunDirectMailRequest(input, makeConfig({ dryRun: true }));
@@ -126,10 +145,76 @@ describe("AliyunDirectMailAdapter", () => {
       deliveryStatus: "QUEUED",
       adapter: aliyunDirectMailAdapterName,
       providerMessageId: undefined,
+      providerErrorCode: "Throttling.User",
       failureCategory: "RATE_LIMITED",
     });
   });
+
+  it("maps Aliyun auth and permission failures to safe configuration results", async () => {
+    const accessDenied = await sendWithAliyunError({ code: "SignatureDoesNotMatch" });
+    const forbidden = await sendWithAliyunError({ code: "Forbidden.RAM" });
+
+    expect(accessDenied).toEqual({
+      deliveryStatus: "FAILED",
+      adapter: aliyunDirectMailAdapterName,
+      providerMessageId: undefined,
+      providerErrorCode: "SignatureDoesNotMatch",
+      failureCategory: "CONFIGURATION",
+    });
+    expect(forbidden.failureCategory).toBe("CONFIGURATION");
+    expect(forbidden.providerErrorCode).toBe("Forbidden.RAM");
+  });
+
+  it("maps invalid sender/account/address failures to safe configuration results", async () => {
+    const invalidSender = await sendWithAliyunError({
+      response: { body: { Code: "InvalidMailAddress.NotFound" } },
+    });
+    const invalidAlias = await sendWithAliyunError({ code: "InvalidFromAlias.Malformed" });
+
+    expect(invalidSender.failureCategory).toBe("CONFIGURATION");
+    expect(invalidSender.providerErrorCode).toBe("InvalidMailAddress.NotFound");
+    expect(invalidAlias.failureCategory).toBe("CONFIGURATION");
+    expect(invalidAlias.providerErrorCode).toBe("InvalidFromAlias.Malformed");
+  });
+
+  it("maps network and timeout failures to temporary safe results", async () => {
+    const timeout = await sendWithAliyunError({ code: "TimeoutError" });
+    const reset = await sendWithAliyunError({ name: "ECONNRESET" });
+
+    expect(timeout).toEqual({
+      deliveryStatus: "QUEUED",
+      adapter: aliyunDirectMailAdapterName,
+      providerMessageId: undefined,
+      providerErrorCode: "TimeoutError",
+      failureCategory: "TEMPORARY",
+    });
+    expect(reset.failureCategory).toBe("TEMPORARY");
+    expect(reset.providerErrorCode).toBe("ECONNRESET");
+  });
+
+  it("drops unsafe Aliyun provider error codes before safe projection", async () => {
+    const unsafeCode = "InvalidMailAddress.user@example.invalid";
+    const normalized = await sendWithAliyunError({ code: unsafeCode });
+    const safeCode = normalizeAliyunDirectMailErrorCode({ code: unsafeCode });
+
+    expect(safeCode).toBeUndefined();
+    expect(normalized.providerErrorCode).toBeUndefined();
+    expect(normalized.failureCategory).toBe("PERMANENT");
+  });
 });
+
+const sendWithAliyunError = async (error: unknown) => {
+  const adapter = new AliyunDirectMailAdapter(
+    makeConfig({ dryRun: false }),
+    () => ({
+      singleSendMail: vi.fn(async () => {
+        throw error;
+      }),
+    }),
+  );
+
+  return normalizeAccountLifecycleProviderResult(await adapter.send(makeDeliveryInput()));
+};
 
 const makeConfig = (overrides: Partial<AliyunDirectMailConfig>): AliyunDirectMailConfig => ({
   accessKeyId: "test-access-key-id",
