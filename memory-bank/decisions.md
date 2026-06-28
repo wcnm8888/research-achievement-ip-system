@@ -1,5 +1,18 @@
 # Decisions
 
+## D159 - Step 47X-Resume stops on API unhealthy after compose build succeeds
+
+- Date: 2026-06-28.
+- Context: Step 47X-Resume retried the independent local `docker-compose.production.yml` startup after `.env.production` existed locally and `node:22-alpine`, `postgres:16-alpine`, and `nginx:1.27-alpine` were available locally. Docker and Compose were available.
+- Decision:
+  - Record `BLOCKED_BY_LOCAL_PRODUCTION_LIKE_API_UNHEALTHY`.
+  - Do not run migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or artifact removal.
+  - Do not modify Dockerfile, compose, dependencies, or DirectMail default sending strategy in this Step.
+  - Do not treat this as database schema missing because sanitized diagnostics did not confirm missing relation, table, or column.
+  - Next work should be a separate local diagnosis/fix Step for the `LocalAttachmentStorageAdapter` Nest dependency resolution failure.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+
 ## D158 - Step 47X retry remains blocked by Docker registry timeout
 
 - Date: 2026-06-28.

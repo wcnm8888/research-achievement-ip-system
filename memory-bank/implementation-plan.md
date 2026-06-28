@@ -4,6 +4,30 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47X-Resume Archive - Retry Local Production-Like Compose Startup - 2026-06-28
+
+- Step identity:
+  - This is Step 47X-Resume.
+  - This Step retries local production-like Docker Compose startup and API/Web health checks after the base images are available locally.
+  - It is not migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, Dockerfile/compose/dependency modification, or DirectMail strategy modification.
+- Starting state:
+  - HEAD confirmed as `5233188959485ebf36638a17ce0e645c74111c9a`.
+  - Latest commit subject confirmed as `docs: record local production-like compose retry`.
+  - Tracked diff was empty before this memory-bank update.
+  - `.env.production` existed; values were not read or output.
+- Result:
+  - Docker and Docker Compose were available.
+  - Local images included `node:22-alpine`, `postgres:16-alpine`, and `nginx:1.27-alpine`.
+  - `docker compose -f docker-compose.production.yml up -d --build` completed image build but did not pass service acceptance.
+  - `postgres` became healthy.
+  - `api` stayed restarting/unhealthy due to a sanitized Nest dependency resolution failure involving `LocalAttachmentStorageAdapter`.
+  - `web` remained created and did not start because it depends on healthy `api`.
+  - API and Web health checks returned no response.
+  - Result recorded as `BLOCKED_BY_LOCAL_PRODUCTION_LIKE_API_UNHEALTHY`.
+- Next:
+  - Add a separate local diagnosis/fix Step for the `LocalAttachmentStorageAdapter` production container dependency issue.
+  - Retry local production-like compose acceptance only after that fix is reviewed and committed.
+
 ## Current Step 47X Archive - Retry Local Production-Like Compose Startup - 2026-06-28
 
 - Step identity:

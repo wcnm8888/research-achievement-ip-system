@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-06-28 Step 47X-Resume - Retry local production-like compose startup
+
+- Status: BLOCKED_BY_LOCAL_PRODUCTION_LIKE_API_UNHEALTHY.
+- Step identity:
+  - This is Step 47X-Resume.
+  - This Step retries the independent local `docker-compose.production.yml` production-like stack startup after the user made `node:22-alpine` available locally.
+  - It uses the independent compose stack only, not the old `localhost:5176`, `local-prod-preview-proxy.cjs`, or `research-achievement-postgres-dev` regression path.
+- Starting state:
+  - `git rev-parse HEAD`: `5233188959485ebf36638a17ce0e645c74111c9a`.
+  - Latest commit subject: `docs: record local production-like compose retry`.
+  - Tracked diff was empty before this memory-bank update.
+  - `.env.production` existence check returned present; values were not read or output.
+  - Local image check found `node:22-alpine`, `postgres:16-alpine`, and `nginx:1.27-alpine`.
+- Compose retry:
+  - Command attempted: `docker compose -f docker-compose.production.yml up -d --build`.
+  - Build completed and local images `research-achievement-production-api` and `research-achievement-production-web` were built.
+  - Compose service state after startup attempt:
+    - `postgres`: running / healthy.
+    - `api`: restarting / unhealthy.
+    - `web`: created, not started because `api` did not become healthy.
+  - Sanitized API diagnostic category: Nest dependency resolution failure for `LocalAttachmentStorageAdapter`.
+  - This was not confirmed as database schema missing, so no migration or seed/backfill was run.
+- Result:
+  - Local production-like stack did not pass acceptance.
+  - API health `http://127.0.0.1:13001/api/health`: no response.
+  - Web root `http://127.0.0.1:18081/`: no response.
+  - No production-like DirectMail send path was exercised.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No real provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration, seed, or backfill.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+  - Dockerfile, compose, dependencies, and DirectMail default sending strategy were not modified.
+- Next:
+  - Open a separate local fix/diagnosis Step for the `LocalAttachmentStorageAdapter` Nest dependency resolution failure before retrying local production-like acceptance.
+
 ## 2026-06-28 Step 47X - Retry local production-like compose startup
 
 - Status: BLOCKED_BY_DOCKER_REGISTRY_TIMEOUT_NO_STACK_START.

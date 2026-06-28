@@ -1,5 +1,46 @@
 # Evidence
 
+## 2026-06-28 Step 47X-Resume - Retry local production-like compose startup evidence
+
+- Purpose:
+  - Retry the independent local `docker-compose.production.yml` production-like stack startup and verify local API/Web health.
+  - Keep `.env.production` values, secrets, tokens, full reset/invite links, cookies, private keys, connection strings, migration, seed/backfill, push, VPS access, production DB access, real email smoke, cleanup, deletion, drop/reset, old local regression paths, and Dockerfile/compose/dependency changes out of scope.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `5233188959485ebf36638a17ce0e645c74111c9a`.
+  - `git log -1 --pretty=%s`: `docs: record local production-like compose retry`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - `.env.production` existence check returned present; values were not read or output.
+  - Docker and Docker Compose were available.
+- Image preflight evidence:
+  - Local images found: `node:22-alpine`, `postgres:16-alpine`, `nginx:1.27-alpine`.
+- Compose evidence:
+  - Attempted `docker compose -f docker-compose.production.yml up -d --build`.
+  - Build completed successfully for the API and Web local images.
+  - Compose startup failed because `api` did not become healthy.
+  - Compose state after the attempt:
+    - `postgres`: running / healthy.
+    - `api`: restarting / unhealthy.
+    - `web`: created, waiting on healthy `api`.
+  - Sanitized API log category: Nest dependency resolution failure involving `LocalAttachmentStorageAdapter`.
+  - Sanitized database/schema object extraction did not confirm missing relation, table, or column.
+- Health evidence:
+  - API health `http://127.0.0.1:13001/api/health`: no response.
+  - Web root `http://127.0.0.1:18081/`: no response.
+  - Result: `BLOCKED_BY_LOCAL_PRODUCTION_LIKE_API_UNHEALTHY`.
+  - Production-like DirectMail send path was not exercised.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive memory-bank diff scan found no secret values, raw token, full reset/invite link, plaintext recipient email, cookie, private key, full connection string, or provider raw payload.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill executed.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+  - Dockerfile, compose, dependencies, and DirectMail default sending strategy were not modified.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+
 ## 2026-06-28 Step 47X - Retry local production-like compose startup evidence
 
 - Purpose:
