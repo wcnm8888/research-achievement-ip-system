@@ -4,6 +4,36 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47Q Archive - Local Runtime Wiring Acceptance - 2026-06-28
+
+- Step identity:
+  - This is Step 47Q.
+  - This Step performs local acceptance for the Step 47P runtime wiring.
+  - It is not Aliyun API access, real email/SMS sending, real smoke harness execution, secret access, schema/migration/seed/deploy/package changes, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, DB write, real user operation, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `ec5c67bd2c5725ba895a6e9d81a97735cbe51c9d`.
+  - Latest commit subject confirmed as `feat: wire account lifecycle delivery with safe default`.
+  - Tracked diff was empty before Step 47Q.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Acceptance matrix:
+  - Default provider: accepted, resolves to `LOCAL_SAFE_STUB`, no Aliyun factory call.
+  - Unknown provider: accepted, resolves to `LOCAL_SAFE_STUB`, no Aliyun factory call.
+  - Aliyun dry-run default: accepted, explicit provider remains no-send when dry-run is not disabled.
+  - Aliyun missing live config: accepted, returns `SUPPRESSED` / `CONFIGURATION` and does not construct the adapter.
+  - Aliyun fake complete config: accepted, routes through fake adapter factory only.
+  - Delivery safety: accepted through safe projection and adapter tests.
+- Scope recommendation:
+  - Keep production runtime disabled until later production enablement authorization.
+  - Keep invite real delivery deferred.
+  - Continue with password reset first for production enablement.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed.
+  - `git diff --check`: passed.
+- Next:
+  - Step 47R: production enablement authorization.
+  - Step 47S: production deploy and production smoke only after explicit authorization.
+
 ## Current Step 47P Archive - Runtime Wiring Implementation With Safe Default - 2026-06-28
 
 - Step identity:

@@ -1,5 +1,53 @@
 # Progress
 
+## 2026-06-28 Step 47Q - Local runtime wiring acceptance and archive
+
+- Status: LOCAL_RUNTIME_WIRING_ACCEPTED_SAFE_DEFAULT.
+- Step identity:
+  - This is Step 47Q.
+  - This Step performs local runtime wiring acceptance for Step 47P.
+  - It does not call Aliyun API, send real email/SMS, run real smoke harness, read secrets, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, create real users, write DB data, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `ec5c67bd2c5725ba895a6e9d81a97735cbe51c9d`.
+  - Latest commit subject: `feat: wire account lifecycle delivery with safe default`.
+  - Tracked diff was empty before Step 47Q acceptance updates.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Acceptance results:
+  - Default path acceptance passed: no `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER` resolves to `LOCAL_SAFE_STUB`.
+  - Unknown provider acceptance passed: unknown provider resolves to `LOCAL_SAFE_STUB`.
+  - Aliyun dry-run/default no-send acceptance passed: explicit `aliyun_directmail` without `ALIYUN_DM_DRY_RUN=false` returns dry-run/no-send.
+  - Missing live config acceptance passed: `ALIYUN_DM_DRY_RUN=false` without required live secret env returns `SUPPRESSED` / `CONFIGURATION` and does not construct the Aliyun adapter.
+  - Fake complete config routing acceptance passed: complete fake config routes through the injected fake adapter factory, with no real network.
+  - Delivery safety acceptance passed through existing safe projection tests: raw token, full link, plaintext recipient, unsafe providerMessageId, and unsafe providerErrorCode do not enter safe persisted result shapes.
+- Test changes:
+  - Added negative assertions that default, unknown provider, and missing live config paths do not invoke the Aliyun adapter factory.
+  - No production runtime wiring or provider implementation behavior was changed.
+- Boundaries:
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+  - Production real delivery remains disabled.
+  - Invite real delivery remains deferred and is not production ready.
+  - Production wiring/deploy/smoke still requires later explicit authorization.
+  - No raw token, full reset/invite link, plaintext recipient email, provider credential, or provider raw full payload was recorded.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed.
+  - `git diff --check`: passed.
+  - Provider/network scan confirmed tests use fake factory/client and default runtime remains `LOCAL_SAFE_STUB`.
+  - Sensitive diff scan found no real AccessKey value, AccessKey Secret value, secret, real `DATABASE_URL`, raw token, full reset/invite link, plaintext recipient email, cookie, private key, production connection string, or provider raw full payload in this Step diff.
+- Next:
+  - Step 47R should collect production enablement authorization for runtime config, secret injection, deploy, smoke, and rollback.
+  - Step 47S should remain the separate production deploy/smoke boundary if authorized.
+- Explicitly not done:
+  - No Aliyun API call.
+  - No real email/SMS sent.
+  - No real smoke harness run.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47P - Runtime wiring implementation with safe default and archive
 
 - Status: RUNTIME_WIRING_IMPLEMENTED_SAFE_DEFAULT_NOT_PRODUCTION_ENABLED.

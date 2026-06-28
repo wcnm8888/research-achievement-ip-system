@@ -10,7 +10,8 @@ import { createAccountLifecycleDeliveryAdapterFromEnv } from "./account-lifecycl
 
 describe("account lifecycle delivery runtime wiring", () => {
   it("defaults to the local safe stub with no provider env", async () => {
-    const adapter = createAccountLifecycleDeliveryAdapterFromEnv({});
+    const createAliyunAdapter = vi.fn(() => makeAcceptedAdapter());
+    const adapter = createAccountLifecycleDeliveryAdapterFromEnv({}, createAliyunAdapter);
     const mailer = new AccountLifecycleMailer(adapter);
 
     await expect(mailer.enqueue(makeMailInput())).resolves.toEqual({
@@ -18,18 +19,24 @@ describe("account lifecycle delivery runtime wiring", () => {
       adapter: "LOCAL_SAFE_STUB",
       template: "PASSWORD_RESET",
     });
+    expect(createAliyunAdapter).not.toHaveBeenCalled();
   });
 
   it("fails safe to the local safe stub for unknown providers", async () => {
-    const adapter = createAccountLifecycleDeliveryAdapterFromEnv({
-      ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER: "unexpected_provider",
-    });
+    const createAliyunAdapter = vi.fn(() => makeAcceptedAdapter());
+    const adapter = createAccountLifecycleDeliveryAdapterFromEnv(
+      {
+        ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER: "unexpected_provider",
+      },
+      createAliyunAdapter,
+    );
     const mailer = new AccountLifecycleMailer(adapter);
 
     await expect(mailer.enqueue(makeMailInput())).resolves.toMatchObject({
       deliveryStatus: AccountLifecycleDeliveryStatus.QUEUED,
       adapter: "LOCAL_SAFE_STUB",
     });
+    expect(createAliyunAdapter).not.toHaveBeenCalled();
   });
 
   it("uses Aliyun dry-run when explicitly configured without disabling dry-run", async () => {
@@ -45,16 +52,21 @@ describe("account lifecycle delivery runtime wiring", () => {
   });
 
   it("suppresses Aliyun live delivery when required runtime config is missing", async () => {
-    const adapter = createAccountLifecycleDeliveryAdapterFromEnv({
-      ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER: "aliyun_directmail",
-      ALIYUN_DM_DRY_RUN: "false",
-    });
+    const createAliyunAdapter = vi.fn(() => makeAcceptedAdapter());
+    const adapter = createAccountLifecycleDeliveryAdapterFromEnv(
+      {
+        ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER: "aliyun_directmail",
+        ALIYUN_DM_DRY_RUN: "false",
+      },
+      createAliyunAdapter,
+    );
     const mailer = new AccountLifecycleMailer(adapter);
 
     await expect(mailer.enqueue(makeMailInput())).resolves.toMatchObject({
       deliveryStatus: AccountLifecycleDeliveryStatus.SUPPRESSED,
       adapter: aliyunDirectMailAdapterName,
     });
+    expect(createAliyunAdapter).not.toHaveBeenCalled();
   });
 
   it("routes explicit Aliyun live configuration through the configured adapter factory", async () => {
@@ -100,6 +112,13 @@ describe("account lifecycle delivery runtime wiring", () => {
     expect(serialized).not.toContain(input.recipientEmail);
     expect(serialized).not.toContain("https://");
   });
+});
+
+const makeAcceptedAdapter = (): AccountLifecycleDeliveryAdapter => ({
+  send: async () => ({
+    status: "ACCEPTED",
+    adapter: aliyunDirectMailAdapterName,
+  }),
 });
 
 const testRecipient = ["target", "example.invalid"].join("@");

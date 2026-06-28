@@ -1,5 +1,21 @@
 # Decisions
 
+## D151 - Step 47Q accepts local runtime wiring without production enablement
+
+- Date: 2026-06-28.
+- Context: Step 47P implemented configurable account lifecycle delivery runtime wiring with a safe default. Step 47Q locally accepted that wiring before any production enablement.
+- Decision:
+  - Accept the default runtime path as `LOCAL_SAFE_STUB`.
+  - Accept unknown provider fallback to `LOCAL_SAFE_STUB`.
+  - Accept Aliyun DirectMail dry-run/default no-send behavior.
+  - Accept missing live config fail-safe behavior as `SUPPRESSED` / `CONFIGURATION` without adapter construction.
+  - Accept fake complete config routing through injected fake adapter only.
+  - Keep production real delivery disabled.
+  - Keep invite real delivery deferred.
+  - Require later explicit production authorization before runtime config injection, deploy, production smoke, or rollback execution.
+- Boundaries:
+  - This decision does not authorize Aliyun API calls, real email/SMS, real smoke harness execution, secret access, production config injection, migration, seed/backfill, deploy, push, production/VPS/production DB access, production runtime enablement, cleanup, deletion, drop, or reset.
+
 ## D150 - Step 47P wires delivery runtime with safe default
 
 - Date: 2026-06-28.
