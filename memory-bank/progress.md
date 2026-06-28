@@ -1,5 +1,55 @@
 # Progress
 
+## 2026-06-28 Step 47R - Production delivery enablement authorization and archive
+
+- Status: BLOCKED_BY_PRODUCTION_DELIVERY_ENABLEMENT_AUTHORIZATION_MISSING.
+- Step identity:
+  - This is Step 47R.
+  - This Step collects and records production delivery enablement authorization only.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read secrets, modify source code, modify deployment config, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, create real users, write DB data, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `adbff6a5c0b7b527e9b142a0360555305c2052f8`.
+  - Latest commit subject: `test: accept account lifecycle delivery runtime wiring`.
+  - Tracked diff was empty before this memory-bank update.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Known readiness facts:
+  - Step 47M/47N accepted one password reset DirectMail controlled smoke and recorded manual mailbox receipt.
+  - Step 47P implemented runtime wiring with safe default.
+  - Step 47Q accepted local runtime wiring.
+  - Default and unknown provider paths remain `LOCAL_SAFE_STUB`.
+  - Explicit Aliyun provider selection is required before the Aliyun adapter path can be used.
+  - Dry-run remains no-send unless explicitly disabled in a later authorized production Step.
+  - Missing live provider credential configuration fails safe.
+  - Invite real delivery remains deferred.
+- Authorization result:
+  - Production delivery enablement authorization is incomplete.
+  - The current Step prompt lists required authorization items but does not explicitly grant them.
+  - No production execution Prompt was generated.
+- Missing authorization inputs:
+  - Whether a later Step may modify production runtime configuration for password reset DirectMail delivery.
+  - Whether only password reset is enabled while invite remains deferred.
+  - Production env/secret injection strategy and owner, without exposing values.
+  - Whether a later Step may check production env/secret presence without outputting values.
+  - Whether a later Step may modify deployment config or runtime environment variables.
+  - Whether deploy/restart of production API is allowed.
+  - Whether a production password reset smoke is allowed, including maximum count, masked recipient handling, and no full-link/token recording.
+  - Whether safe normalized provider message/error identifiers may be recorded.
+  - Rollback plan confirmation.
+  - Failure policy: stop on failed production smoke, do not retry, do not continue invite.
+  - Confirmation that production smoke must not include migration, seed/backfill, production DB writes, real user operations, raw provider payload recording, secret output, or full link/token output.
+  - Whether deploy config diff review is required first.
+  - Whether production API health/smoke baseline is required first.
+  - Whether push is allowed if a later deployment requires remote code.
+  - Whether Step 47S may combine config update, deploy/restart, production smoke, and rollback, or must be split.
+- Boundaries:
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+  - Production real delivery is not enabled.
+  - No production config, deploy config, source code, schema, migration, seed/backfill, package, or lockfile changed.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - User/ops must provide explicit production delivery enablement authorization inputs before Step 47S or an equivalent execution Prompt can be generated.
+
 ## 2026-06-28 Step 47Q - Local runtime wiring acceptance and archive
 
 - Status: LOCAL_RUNTIME_WIRING_ACCEPTED_SAFE_DEFAULT.

@@ -1,5 +1,19 @@
 # Decisions
 
+## D152 - Step 47R blocks production delivery enablement pending explicit authorization
+
+- Date: 2026-06-28.
+- Context: Step 47M/47N accepted the local harness password reset DirectMail path and Step 47P/47Q implemented and accepted safe-default runtime wiring. Production real delivery is still disabled. Step 47R was opened to collect production enablement authorization, but the current prompt supplied a checklist rather than explicit approval for the required production actions.
+- Decision:
+  - Record `BLOCKED_BY_PRODUCTION_DELIVERY_ENABLEMENT_AUTHORIZATION_MISSING`.
+  - Do not generate a production execution Prompt.
+  - Keep production real delivery disabled.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Keep invite real delivery deferred.
+  - Require explicit user/ops authorization before any production config change, deploy/restart, production smoke, rollback execution, push, production env presence check, or Step 47S execution.
+- Boundaries:
+  - This decision does not authorize Aliyun API calls, real email/SMS, smoke harness execution, secret access, source-code changes, deployment-config changes, production runtime changes, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, or reset.
+
 ## D151 - Step 47Q accepts local runtime wiring without production enablement
 
 - Date: 2026-06-28.

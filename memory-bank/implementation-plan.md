@@ -4,6 +4,38 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47R Archive - Production Delivery Enablement Authorization - 2026-06-28
+
+- Step identity:
+  - This is Step 47R.
+  - This Step records whether production delivery enablement is authorized.
+  - It is not Aliyun API access, real email/SMS sending, smoke harness execution, secret access, source-code modification, deployment-config modification, schema/migration/seed/deploy/package changes, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, DB write, real user operation, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `adbff6a5c0b7b527e9b142a0360555305c2052f8`.
+  - Latest commit subject confirmed as `test: accept account lifecycle delivery runtime wiring`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Result:
+  - `BLOCKED_BY_PRODUCTION_DELIVERY_ENABLEMENT_AUTHORIZATION_MISSING`.
+  - The prompt provided the checklist of required production authorization items but did not explicitly approve production config changes, deploy/restart, production smoke, push, rollback execution, or Step 47S execution shape.
+  - No production execution Prompt was generated.
+- Still required before production enablement:
+  - Explicit permission to enable password reset DirectMail delivery in production runtime configuration.
+  - Explicit confirmation that invite real delivery remains deferred.
+  - Production env/secret injection plan and ownership, without exposing values.
+  - Permission for env/secret presence checks without outputting values.
+  - Permission to change deployment/runtime configuration.
+  - Permission to deploy/restart production API.
+  - Permission and exact limits for production password reset smoke.
+  - Rollback plan confirmation.
+  - Failure handling confirmation.
+  - Decision on deploy-config diff review and production health baseline.
+  - Push/deploy authorization.
+  - Decision whether Step 47S is combined or split.
+- Next:
+  - Collect missing production authorization inputs.
+  - Keep default runtime on `LOCAL_SAFE_STUB` until a later explicitly authorized execution Step.
+
 ## Current Step 47Q Archive - Local Runtime Wiring Acceptance - 2026-06-28
 
 - Step identity:

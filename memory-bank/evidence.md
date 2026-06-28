@@ -1,5 +1,56 @@
 # Evidence
 
+## 2026-06-28 Step 47R - Production delivery enablement authorization evidence
+
+- Purpose:
+  - Collect and record whether production password reset DirectMail enablement is authorized.
+  - Keep Aliyun API calls, real email/SMS, smoke harness execution, secret reading, source-code changes, deployment-config changes, schema/migration/seed/deploy/package changes, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, DB writes, real user operations, and sensitive-config disclosure out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `adbff6a5c0b7b527e9b142a0360555305c2052f8`.
+  - `git log -1 --pretty=%s`: `test: accept account lifecycle delivery runtime wiring`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Authorization evidence:
+  - Known facts from prior Steps support local readiness: controlled smoke accepted and received, safe-default wiring implemented, and local runtime acceptance passed.
+  - Production real delivery is not enabled.
+  - The current prompt lists authorization questions but does not explicitly approve the production enablement actions.
+  - Result recorded as `BLOCKED_BY_PRODUCTION_DELIVERY_ENABLEMENT_AUTHORIZATION_MISSING`.
+  - No production execution Prompt was generated.
+- Missing authorization evidence:
+  - Production runtime configuration change approval is missing.
+  - Password-reset-only enablement and invite deferral confirmation is missing.
+  - Production env/secret injection plan and ownership are missing.
+  - Permission for production env/secret presence checks without outputting values is missing.
+  - Permission to modify deployment/runtime config is missing.
+  - Permission to deploy/restart production API is missing.
+  - Production password reset smoke authorization and limits are missing.
+  - Permission to record safe normalized provider identifiers is missing.
+  - Rollback plan confirmation is missing.
+  - Production smoke failure policy confirmation is missing.
+  - Production forbidden-action confirmation is missing.
+  - Deploy config diff review and production health baseline decisions are missing.
+  - Push authorization is missing if later deploy requires remote code.
+  - Step 47S combined-vs-split execution decision is missing.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive memory-bank diff scan: no real provider credential value, SMTP/API secret, real `DATABASE_URL`, raw token, full reset/invite link, plaintext recipient email, cookie, private key, production connection string, or provider raw full payload found.
+- Boundaries observed:
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+  - No `.env`, provider credential value, SMTP/API credential, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No Aliyun API call executed.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No source code changed.
+  - No deployment config changed.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No DB write.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47Q - Local runtime wiring acceptance evidence
 
 - Purpose:
