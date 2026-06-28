@@ -1,5 +1,59 @@
 # Progress
 
+## 2026-06-28 Step 47M - DirectMail post-ops password reset controlled smoke retry and archive
+
+- Status: CONTROLLED_SMOKE_RETRY_ACCEPTED_SENT.
+- Step identity:
+  - This is Step 47M.
+  - This Step performed the authorized post-ops password reset controlled smoke retry.
+  - It did not access production/VPS/production DB, execute migration, execute seed/backfill, deploy, push, create or operate a real business user account, write to a database, change default runtime wiring, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `fb613fdd2fbe2585c2e804b1bef18cbd1cc9f1b1`.
+  - Latest commit subject: `docs: record Aliyun DirectMail forbidden diagnosis`.
+  - Tracked diff was empty before this Step.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Manual ops verification summary recorded before retry:
+  - RAM user `dm-mailer` has `AliyunDirectMailFullAccess`.
+  - DirectMail console user status is normal.
+  - Sender domain `wzunew.uk` verification passed.
+  - Sender address `system@wzunew.uk` status is normal.
+  - Reply address verification passed.
+  - Daily quota, monthly quota, remaining free quota, and account balance were reported as available.
+  - Console showed no arrears, freeze, pending review, or risk-control prompt.
+  - User explicitly authorized one more password reset controlled smoke retry.
+- Pre-send checks:
+  - `AccountLifecycleModule` still uses `AccountLifecycleMailer`; Aliyun adapter is not wired into default runtime.
+  - `AccountLifecycleMailer` still uses `LOCAL_SAFE_STUB`.
+  - Aliyun endpoint resolver maps `cn-hangzhou` to `dm.aliyuncs.com`.
+  - `ALIYUN_DM_DRY_RUN` default remains no-send; it was set to `false` only inside the local smoke harness process.
+  - Required secret environment variables were present; values were not output or recorded.
+- Smoke execution:
+  - Mail type attempted: password reset.
+  - Send attempt count: 1.
+  - Accepted/sent count: 1.
+  - Provider status: `ACCEPTED`.
+  - Delivery status: `SENT`.
+  - Safe normalized providerMessageId: `61B5C05C-E9C6-5DC3-BC3C-3DEA8A256F9A`.
+  - Safe normalized providerErrorCode: none.
+  - Recipient recorded only as `246****571@qq.com`.
+  - User-side mailbox receipt confirmation remains manual.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle-aliyun-directmail account-lifecycle`: passed, 3 files / 24 tests.
+  - `corepack pnpm --dir apps/api exec tsx ../../.local-step47i/aliyun-directmail-smoke.ts`: completed the authorized single password-reset smoke retry and returned the safe summary above.
+- Explicitly not recorded:
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was output or recorded.
+- Explicitly not done:
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No DB write.
+  - No real user account operation.
+  - No default runtime provider wiring changed; runtime remains `LOCAL_SAFE_STUB`.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47L - Aliyun DirectMail Forbidden configuration diagnosis and archive
 
 - Status: FORBIDDEN_CONFIGURATION_DIAGNOSIS_ARCHIVED_NO_SEND.

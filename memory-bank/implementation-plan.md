@@ -4,6 +4,36 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47M Archive - DirectMail Post-Ops Password Reset Controlled Smoke Retry - 2026-06-28
+
+- Step identity:
+  - This is Step 47M.
+  - This Step executed and archived the authorized post-ops password reset controlled smoke retry.
+  - It is not production runtime wiring, production/VPS/production DB access, migration, seed/backfill, deploy, push, DB writes, real user account operations, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `fb613fdd2fbe2585c2e804b1bef18cbd1cc9f1b1`.
+  - Latest commit subject confirmed as `docs: record Aliyun DirectMail forbidden diagnosis`.
+  - Tracked diff was empty before this Step.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Ops verification summary:
+  - RAM user `dm-mailer` was reported to have `AliyunDirectMailFullAccess`.
+  - Sender domain, sender address, and reply address were reported verified/normal.
+  - DirectMail user status, quota, free quota, balance, and console risk/billing state were reported usable.
+- Execution result:
+  - Result: `CONTROLLED_SMOKE_RETRY_ACCEPTED_SENT`.
+  - Password reset send was attempted once.
+  - Accepted/sent: yes.
+  - Total attempts: 1.
+  - Total accepted/sent: 1.
+  - Provider status: `ACCEPTED`.
+  - Delivery status: `SENT`.
+  - Safe normalized providerMessageId: `61B5C05C-E9C6-5DC3-BC3C-3DEA8A256F9A`.
+  - Safe normalized providerErrorCode: none.
+  - Recipient evidence stored only as `246****571@qq.com`.
+- Follow-up:
+  - User still needs to manually confirm mailbox receipt.
+  - Keep default runtime on `LOCAL_SAFE_STUB`; this smoke does not authorize production runtime wiring.
+
 ## Current Step 47L Archive - Aliyun DirectMail Forbidden Configuration Diagnosis - 2026-06-28
 
 - Step identity:

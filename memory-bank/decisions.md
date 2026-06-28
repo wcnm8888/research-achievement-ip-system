@@ -1,5 +1,19 @@
 # Decisions
 
+## D147 - Step 47M post-ops controlled smoke is accepted by DirectMail
+
+- Date: 2026-06-28.
+- Context: After Step 47L diagnosed `Forbidden`, the user reported Aliyun-side manual checks and fixes, including RAM permission and sender/domain/account status. Step 47M then performed one authorized password-reset-only controlled smoke retry through the local harness.
+- Decision:
+  - Record `CONTROLLED_SMOKE_RETRY_ACCEPTED_SENT`.
+  - Treat provider status `ACCEPTED` and delivery status `SENT` as the provider-side smoke success.
+  - Record total attempts as 1 and total accepted/sent as 1.
+  - Record safe normalized providerMessageId `61B5C05C-E9C6-5DC3-BC3C-3DEA8A256F9A`.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Require user-side manual mailbox receipt confirmation separately.
+- Boundaries:
+  - This decision does not authorize production runtime switching, default runtime provider wiring, another real-send retry, provider raw full payload recording, secret output, raw token output, full reset link output, plaintext recipient logging, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, cleanup, deletion, drop, or reset.
+
 ## D146 - Step 47L treats Forbidden as Aliyun-side configuration until ops checklist is completed
 
 - Date: 2026-06-28.
