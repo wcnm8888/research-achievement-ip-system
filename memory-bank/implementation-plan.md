@@ -4,6 +4,26 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47T Archive - Local Production-Like Deployment Acceptance - 2026-06-28
+
+- Step identity:
+  - This is Step 47T.
+  - This Step is local production-like Docker Compose acceptance only.
+  - It is not VPS production acceptance, Step 38 production acceptance, migration, seed/backfill, push, deploy to VPS, production DB access, or real email smoke.
+- Starting state:
+  - HEAD confirmed as `21d335eb306d8e48e922b03312967189c060991b`.
+  - Latest commit subject confirmed as `docs: record production DirectMail enablement result`.
+  - Tracked diff was empty before this memory-bank update.
+- Result:
+  - `BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START`.
+  - Docker and Docker Compose were available.
+  - `.env.production` was missing.
+  - Because `docker-compose.production.yml` depends on `.env.production`, the local production-like stack was not built or started.
+  - Local API and Web health endpoints were not checked.
+  - Production-like DirectMail config presence was not checked.
+- Next:
+  - Supply a local `.env.production` outside version control or open a separate safe setup Step.
+
 ## Current Step 47S Archive - Production DirectMail Enablement Attempt - 2026-06-28
 
 - Step identity:

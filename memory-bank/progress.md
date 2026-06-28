@@ -1,5 +1,40 @@
 # Progress
 
+## 2026-06-28 Step 47T - Local production-like deployment acceptance
+
+- Status: BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START.
+- Step identity:
+  - This is Step 47T.
+  - This Step treats the local workspace as a production-like environment for local Docker Compose acceptance only.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+- Starting state:
+  - `git rev-parse HEAD`: `21d335eb306d8e48e922b03312967189c060991b`.
+  - Latest commit subject: `docs: record production DirectMail enablement result`.
+  - Tracked diff was empty before this memory-bank update.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Preflight:
+  - Docker was available.
+  - Docker Compose was available.
+  - `.env.production` existence check returned missing.
+  - `docker-compose.production.yml` requires `.env.production` for the production-like services.
+- Result:
+  - Local production-like stack was not built or started.
+  - API health at `http://127.0.0.1:13001/api/health` was not checked because the stack was not started.
+  - Web root at `http://127.0.0.1:18081/` was not checked because the stack was not started.
+  - Production-like DirectMail env/config presence was not checked because `.env.production` was missing and its contents were not read.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No real provider credential value, SMTP/API credential, raw token, full reset link, plaintext recipient email, provider raw full payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration, seed, or backfill.
+  - No push.
+  - No VPS access.
+  - No production DB access.
+  - No real email smoke.
+  - No cleanup/deletion/drop/reset/prune/remove.
+  - This does not change Step 38 production acceptance; it remains deferred.
+- Next:
+  - Provide a local `.env.production` file with appropriate non-committed local production-like values, or authorize a separate safe setup Step that creates it without exposing secret values.
+
 ## 2026-06-28 Step 47S - Production DirectMail password reset enablement, smoke, rollback if needed, and archive
 
 - Status: BLOCKED_BY_PRODUCTION_EXECUTION_CHANNEL_UNAVAILABLE_NO_PRODUCTION_CHANGE.

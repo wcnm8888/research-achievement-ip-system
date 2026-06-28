@@ -1,5 +1,18 @@
 # Decisions
 
+## D154 - Step 47T local production-like acceptance is blocked by missing env file
+
+- Date: 2026-06-28.
+- Context: Step 47T was opened to build/start the local production-like Docker Compose stack and check local API/Web health. The production compose file uses `.env.production`, but the local workspace does not contain that file.
+- Decision:
+  - Record `BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START`.
+  - Do not build or start the production-like Compose stack.
+  - Do not read or infer `.env.production` values.
+  - Do not check local production-like DirectMail config presence.
+  - Do not run migration, seed/backfill, push, VPS access, production DB access, or real email smoke.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+
 ## D153 - Step 47S production enablement is blocked by missing execution channel
 
 - Date: 2026-06-28.
