@@ -1,5 +1,21 @@
 # Decisions
 
+## D150 - Step 47P wires delivery runtime with safe default
+
+- Date: 2026-06-28.
+- Context: Step 47O accepted the Aliyun DirectMail local harness path at controlled-smoke level, but production real delivery remained disabled. The next required local step was runtime wiring with a safe default.
+- Decision:
+  - Implement configurable account lifecycle delivery adapter resolution.
+  - Keep absent or unknown `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER` values on local stub/no-send behavior.
+  - Allow explicit `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER=aliyun_directmail` to select the Aliyun DirectMail adapter path.
+  - Keep `ALIYUN_DM_DRY_RUN !== "false"` as no-send/dry-run.
+  - If live Aliyun mode is explicitly requested but required secret env values are missing, return safe `SUPPRESSED` / `CONFIGURATION` without constructing a live adapter.
+  - Keep default runtime behavior on `LOCAL_SAFE_STUB`.
+  - Keep production real delivery disabled until later explicit production enablement authorization.
+  - Recommend password reset first; keep invite real delivery deferred.
+- Boundaries:
+  - This decision does not authorize Aliyun API calls, real email/SMS, smoke harness execution, secret access, production config injection, migration, seed/backfill, deploy, push, production/VPS/production DB access, production runtime enablement, cleanup, deletion, drop, or reset.
+
 ## D149 - Step 47O marks local DirectMail readiness but defers production enablement
 
 - Date: 2026-06-28.

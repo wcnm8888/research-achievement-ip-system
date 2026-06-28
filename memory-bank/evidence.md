@@ -1,5 +1,46 @@
 # Evidence
 
+## 2026-06-28 Step 47P - Runtime wiring implementation with safe default evidence
+
+- Purpose:
+  - Implement local runtime delivery wiring with a safe default after Step 47O readiness.
+  - Keep Aliyun API calls, real email/SMS, smoke harness execution, secret reading, schema/migration/seed/deploy/package changes, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config disclosure out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `63ba5015a33eac1053149c4435818b4841bfca18`.
+  - `git log -1 --pretty=%s`: `docs: record real delivery production readiness decision`.
+  - `git diff --name-status`: empty before Step 47P code changes.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Implementation evidence:
+  - `AccountLifecycleModule` now provides an account lifecycle delivery adapter through a factory.
+  - Default and unknown provider values resolve to `LOCAL_SAFE_STUB`.
+  - Explicit `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER=aliyun_directmail` selects the Aliyun DirectMail adapter path.
+  - `ALIYUN_DM_DRY_RUN !== "false"` remains dry-run/no-send.
+  - Explicit live mode with missing required secret env resolves to safe `SUPPRESSED` / `CONFIGURATION`.
+  - `AccountLifecycleMailer` delegates to the configured adapter and returns only safe status, adapter, and template fields.
+  - Tests use fake factories/clients only and do not require real credentials or network.
+- Verification evidence:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed, 4 files and 30 tests.
+  - `git diff --check`: passed before commit.
+  - Provider/network scan: Aliyun SDK send remains inside the adapter implementation; default provider factory returns `LOCAL_SAFE_STUB` unless explicitly configured; tests use fake factories/clients.
+  - Sensitive diff scan: no real AccessKey value, AccessKey Secret value, SMTP/API secret, real `DATABASE_URL`, full reset/invite link, plaintext recipient email, cookie, private key, production connection string, or provider raw full payload found in this Step diff.
+- Boundaries observed:
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+  - Production real delivery is not enabled.
+  - Invite real delivery remains deferred.
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No Aliyun API call executed.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No DB write.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47O - Real delivery production enablement readiness decision evidence
 
 - Purpose:

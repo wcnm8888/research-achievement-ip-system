@@ -1,5 +1,33 @@
 # Design Spec - 一期基础刚需版
 
+## Step 47P - Runtime Wiring With Safe Default - 2026-06-28
+
+### Runtime Selection
+
+- `AccountLifecycleModule` owns account lifecycle delivery adapter selection.
+- Default behavior without configuration is `LOCAL_SAFE_STUB`.
+- Unknown `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER` values fall back to `LOCAL_SAFE_STUB`.
+- Explicit `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER=aliyun_directmail` selects the Aliyun DirectMail adapter path.
+- Aliyun DirectMail remains no-send by default because `ALIYUN_DM_DRY_RUN !== "false"` means dry-run.
+- Explicit live Aliyun mode with missing required secret env values returns safe `SUPPRESSED` / `CONFIGURATION` and does not construct the live adapter.
+
+### Safe Projection
+
+- `AccountLifecycleMailer` returns only:
+  - delivery status.
+  - adapter name.
+  - template.
+- The mail result must not include raw token, full reset/invite link, plaintext recipient email, provider credentials, or provider raw full payload.
+- Tests cover default stub, unknown provider fallback, Aliyun dry-run, missing live config suppression, fake live factory routing, and safe projection.
+
+### Production Boundary
+
+- Step 47P does not enable production real delivery.
+- Default runtime remains `LOCAL_SAFE_STUB`.
+- Password reset is the recommended first production enablement target.
+- Invite real delivery remains deferred until password reset production wiring, deploy, smoke, rollback, and support process are accepted.
+- Production deploy/smoke remains a later explicit authorization boundary.
+
 ## Step 46G - Password Reset / Invite Local Browser Acceptance - 2026-06-27
 
 ### Browser Acceptance Scope

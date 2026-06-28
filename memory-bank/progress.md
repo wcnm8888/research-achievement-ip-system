@@ -1,5 +1,48 @@
 # Progress
 
+## 2026-06-28 Step 47P - Runtime wiring implementation with safe default and archive
+
+- Status: RUNTIME_WIRING_IMPLEMENTED_SAFE_DEFAULT_NOT_PRODUCTION_ENABLED.
+- Step identity:
+  - This is Step 47P.
+  - This Step implements local runtime delivery wiring with a safe default.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read secrets, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `63ba5015a33eac1053149c4435818b4841bfca18`.
+  - Latest commit subject: `docs: record real delivery production readiness decision`.
+  - Tracked diff was empty before Step 47P code changes.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Runtime wiring:
+  - `AccountLifecycleModule` now resolves an `AccountLifecycleDeliveryAdapter` through a provider factory.
+  - Default provider is local stub/no-send when `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER` is absent or unknown.
+  - Explicit `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER=aliyun_directmail` may route to `AliyunDirectMailAdapter`.
+  - `ALIYUN_DM_DRY_RUN !== "false"` remains dry-run/no-send.
+  - `ALIYUN_DM_DRY_RUN=false` with missing required live secret env returns safe `SUPPRESSED` / `CONFIGURATION` and does not construct the live adapter.
+  - `AccountLifecycleMailer` delegates to the configured delivery adapter and only returns safe delivery status, adapter name, and template.
+- Safety boundaries:
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+  - Production real delivery is not enabled.
+  - Password reset is the first recommended production enablement target.
+  - Invite real delivery remains deferred until password reset production path is accepted.
+  - No raw token, full reset/invite link, plaintext recipient email, provider credential, or provider raw full payload is returned by the safe mail result.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed, 4 files and 30 tests.
+- Next:
+  - Step 47Q should perform local runtime wiring acceptance with no production deploy and no real email unless separately authorized.
+  - Production deploy/smoke remains a separate authorization boundary.
+- Explicitly not done:
+  - No Aliyun API call.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47O - Real delivery production enablement readiness decision and archive
 
 - Status: PRODUCTION_ENABLEMENT_READY_FOR_SAFE_DEFAULT_WIRING_NOT_ENABLED.

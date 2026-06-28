@@ -4,6 +4,37 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47P Archive - Runtime Wiring Implementation With Safe Default - 2026-06-28
+
+- Step identity:
+  - This is Step 47P.
+  - This Step implements local runtime delivery wiring with a safe default and records the result.
+  - It is not Aliyun API access, real email/SMS sending, smoke harness execution, secret access, schema/migration/seed/deploy/package changes, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `63ba5015a33eac1053149c4435818b4841bfca18`.
+  - Latest commit subject confirmed as `docs: record real delivery production readiness decision`.
+  - Tracked diff was empty before Step 47P.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Implementation:
+  - Added configurable account lifecycle delivery adapter resolution in `AccountLifecycleModule`.
+  - Kept absent or unknown provider values on local stub/no-send behavior.
+  - Added explicit Aliyun DirectMail selection through `ACCOUNT_LIFECYCLE_DELIVERY_PROVIDER=aliyun_directmail`.
+  - Preserved safe Aliyun default: `ALIYUN_DM_DRY_RUN !== "false"` means dry-run/no-send.
+  - Added missing-live-secret suppression for `ALIYUN_DM_DRY_RUN=false` so missing live config returns `SUPPRESSED` / `CONFIGURATION` without constructing a live adapter.
+  - Updated `AccountLifecycleMailer` to delegate to the configured adapter while returning only the safe mail result shape.
+  - Added module-level tests for default stub, unknown provider fallback, Aliyun dry-run, missing live config suppression, fake live factory routing, and safe result projection.
+- Scope recommendation:
+  - Keep production runtime disabled until a later authorized production enablement Step.
+  - Enable password reset first when production enablement is authorized.
+  - Keep invite real delivery deferred.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed, 4 files and 30 tests.
+- Next:
+  - Step 47Q: local runtime wiring acceptance.
+  - Step 47R: production enablement authorization.
+  - Step 47S: production deploy and production smoke only after explicit authorization.
+
 ## Current Step 47O Archive - Real Delivery Production Enablement Readiness Decision - 2026-06-28
 
 - Step identity:
