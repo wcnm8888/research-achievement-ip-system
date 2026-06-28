@@ -1,5 +1,65 @@
 # Progress
 
+## 2026-06-28 Step 47J - Aliyun DirectMail permanent failure read-only diagnosis
+
+- Status: READ_ONLY_DIAGNOSIS_COMPLETED_NO_SEND.
+- Step identity:
+  - This is Step 47J.
+  - This Step is read-only diagnosis for the Step 47I-Resume `FAILED` / `PERMANENT` result.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read secrets, patch code, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `c8e9e67d043c772d50069aabdd47086ecfc54b77`.
+  - Latest commit subject: `docs: record controlled smoke permanent failure`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Files and references read:
+  - `apps/api/src/account-lifecycle/account-lifecycle-aliyun-directmail.adapter.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-aliyun-directmail.adapter.spec.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts`.
+  - `apps/api/package.json`.
+  - `pnpm-lock.yaml`.
+  - `.local-step47i/aliyun-directmail-smoke.ts` for structure only; it was not run.
+  - Current Step 47I / 47I-Resume memory-bank records.
+  - Local installed SDK type definitions under `apps/api/node_modules/@alicloud/dm20151123`.
+  - Aliyun official DirectMail `SingleSendMail` and endpoint documentation.
+- Diagnosis:
+  - High-likelihood adapter issue: endpoint construction currently uses `dm.${region}.aliyuncs.com`, producing `dm.cn-hangzhou.aliyuncs.com` for `cn-hangzhou`; Aliyun official endpoint documentation lists China Hangzhou public endpoint as `dm.aliyuncs.com`.
+  - Parameter mapping mostly appears directionally correct:
+    - `AccountName` should be the sender address configured in DirectMail console; `system@wzunew.uk` matches the authorized sender address.
+    - `AddressType = 1` matches sender-address mode.
+    - `FromAlias` supports display names and must be no longer than 15 characters; the approved display name is below that limit.
+    - `TextBody` is acceptable because Aliyun requires either `HtmlBody` or `TextBody`.
+    - `ToAddress` is transient provider request data and is not logged or persisted by the adapter safe projection.
+  - Remaining configuration possibilities:
+    - Sender address might not be active/usable for API sending, might have send-type/status restrictions, or might be in a different DirectMail region than `cn-hangzhou`; this cannot be verified in this Step because console/API access is out of scope.
+    - RAM policy might lack `dm:SingleSendMail`; this cannot be verified without reading credentials or using console/API.
+    - Content rejection/spam policy is possible but less likely to diagnose without a safe provider code.
+  - Error classification problem:
+    - Current adapter only inspects `error.code` or `error.name`.
+    - Unknown Aliyun SDK errors collapse to `PERMANENT`, so a configuration, endpoint, permission, throttling, or network failure may be misclassified.
+    - Current controlled smoke deliberately did not record raw provider payload, so the exact provider error code is unavailable.
+- Recommendation:
+  - Do not retry smoke yet.
+  - Open `Step 47J-Fix` to patch adapter configuration and tests before another send attempt.
+  - Patch candidates:
+    - Add explicit endpoint mapping with `cn-hangzhou -> dm.aliyuncs.com`; keep region-aware endpoints for other Aliyun DirectMail regions.
+    - Add a safe provider error-code whitelist/category field that records only approved non-secret codes such as `InvalidMailAddress.NotFound`, `InvalidMailAddressStatus.Malformed`, `InvalidFromAlias.Malformed`, `InvalidSubject.Malformed`, `InvalidReceiverName.Malformed`, `InvalidSendMail.Spam`, `Signature`, throttling/rate-limit codes, and auth/permission codes.
+    - Add tests for endpoint mapping and common Aliyun error-code classification.
+  - After `Step 47J-Fix` and review/commit, require a fresh `Step 47K-Auth` before any new controlled real-send retry.
+- Explicitly not done:
+  - No Aliyun API call.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No cleanup/deletion/drop/reset.
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47I-Resume - Aliyun DirectMail controlled smoke retry with non-secret env overlay
 
 - Status: CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND.

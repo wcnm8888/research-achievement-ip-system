@@ -1,5 +1,19 @@
 # Decisions
 
+## D141 - Step 47J diagnoses Aliyun permanent failure as likely endpoint/error-classification issue
+
+- Date: 2026-06-28.
+- Context: Step 47I-Resume attempted a controlled password-reset smoke through `AliyunDirectMailAdapter` and received `FAILED` / `PERMANENT` with no accepted send and no safe provider message id. Step 47J reviewed adapter code, tests, delivery boundary, the local smoke harness structure, local SDK type definitions, and Aliyun official DirectMail documentation without calling Aliyun APIs or sending email.
+- Decision:
+  - Treat the current result as not actionable enough for another smoke retry.
+  - Prefer `Step 47J-Fix` before any future controlled send.
+  - Patch focus should be adapter endpoint mapping and safe provider error-code classification.
+  - Current endpoint derivation for `cn-hangzhou` is likely wrong because official DirectMail endpoint docs list China Hangzhou public endpoint as `dm.aliyuncs.com`.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Require new `Step 47K-Auth` before another real-send controlled smoke.
+- Boundaries:
+  - This decision does not authorize code changes in Step 47J, Aliyun API calls, real email/SMS, secret output, raw token output, full link output, plaintext recipient logging, provider raw full payload recording, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D140 - Step 47I-Resume stops after provider permanent failure on first controlled smoke attempt
 
 - Date: 2026-06-28.

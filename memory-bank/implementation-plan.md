@@ -4,6 +4,34 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47J Archive - Aliyun DirectMail Permanent Failure Read-Only Diagnosis - 2026-06-28
+
+- Step identity:
+  - This is Step 47J.
+  - This Step is read-only diagnosis only.
+  - It does not patch code, call Aliyun API, send real email/SMS, run smoke harness, read secrets, run migration, run seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Starting state:
+  - HEAD confirmed as `c8e9e67d043c772d50069aabdd47086ecfc54b77`.
+  - Latest commit subject confirmed as `docs: record controlled smoke permanent failure`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Diagnosis summary:
+  - Most likely implementation risk: DirectMail endpoint mapping. Current adapter derives `dm.cn-hangzhou.aliyuncs.com`, while official endpoint documentation lists China Hangzhou public endpoint as `dm.aliyuncs.com`.
+  - `AccountName=system@wzunew.uk` is correct if that exact sender address is active in Aliyun DirectMail console.
+  - `AddressType=1` matches sender-address mode.
+  - `FromAlias` can be a display name and the approved display name is within the documented 15-character limit.
+  - `TextBody` without `HtmlBody` is acceptable because one of them is required.
+  - `ToAddress` remains transient in provider request construction and is not written into safe projection or memory-bank.
+  - Current provider error classification is too coarse: unknown SDK/provider errors become `PERMANENT`, and no safe provider code is retained for diagnosis.
+- Recommended next steps:
+  - `Step 47J-Fix`: patch adapter endpoint mapping and safe error-code classification tests.
+  - `Step 47J-Config`: only needed if ops must verify sender address status, RAM permission, region, send type, quota, or console-side rejection policy.
+  - `Step 47K-Auth`: required before any future controlled smoke retry.
+- Do not:
+  - Do not retry smoke before adapter patch/review and renewed authorization.
+  - Do not wire Aliyun adapter into default runtime.
+  - Do not log provider raw payloads, full links, raw tokens, plaintext recipients, or secrets.
+
 ## Current Step 47I-Resume Archive - Aliyun DirectMail Controlled Smoke Retry - 2026-06-28
 
 - Step identity:

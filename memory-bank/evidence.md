@@ -1,5 +1,59 @@
 # Evidence
 
+## 2026-06-28 Step 47J - Aliyun DirectMail permanent failure read-only diagnosis evidence
+
+- Purpose:
+  - Diagnose the Step 47I-Resume `FAILED` / `PERMANENT` outcome without rerunning smoke or calling Aliyun.
+  - Keep code changes, real email/SMS, Aliyun API calls, secret reading, smoke harness execution, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config disclosure out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `c8e9e67d043c772d50069aabdd47086ecfc54b77`.
+  - `git log -1 --pretty=%s`: `docs: record controlled smoke permanent failure`.
+  - `git diff --name-status`: empty before this memory-bank update.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Read-only sources:
+  - `apps/api/src/account-lifecycle/account-lifecycle-aliyun-directmail.adapter.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-aliyun-directmail.adapter.spec.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts`.
+  - `apps/api/package.json`.
+  - `pnpm-lock.yaml`.
+  - `.local-step47i/aliyun-directmail-smoke.ts` structure only; it was not run.
+  - Local SDK type files under `apps/api/node_modules/@alicloud/dm20151123`.
+  - Aliyun official DirectMail `SingleSendMail` documentation.
+  - Aliyun official DirectMail endpoint documentation.
+- Official documentation findings:
+  - `SingleSendMail` requires sender address `AccountName`, `AddressType`, `ReplyToAddress`, `ToAddress`, and `Subject`; either `HtmlBody` or `TextBody` must be provided.
+  - `AddressType=1` means sender-address mode.
+  - `FromAlias` is a sender display name and must be no longer than 15 characters.
+  - China Hangzhou DirectMail public endpoint is documented as `dm.aliyuncs.com`, with region id `cn-hangzhou`.
+- Local SDK findings:
+  - Installed SDK package is `@alicloud/dm20151123@1.10.2`.
+  - SDK `SingleSendMailRequest` includes `accountName`, `addressType`, `fromAlias`, `htmlBody`, `replyAddress`, `replyAddressAlias`, `replyToAddress`, `subject`, `textBody`, and `toAddress`.
+  - SDK type for `replyToAddress` is boolean, while some OpenAPI documentation describes valid values as true/false strings; the current adapter boolean is aligned with installed SDK typing.
+- Diagnosis:
+  - Likely adapter defect: endpoint mapping for `cn-hangzhou` currently becomes `dm.cn-hangzhou.aliyuncs.com`; official docs list `dm.aliyuncs.com`.
+  - `AccountName=system@wzunew.uk` is plausible and matches the authorized sender address, but console-side sender status/API send type/RAM permission/region cannot be verified in this read-only Step.
+  - `FromAlias` display name is within the 15-character limit.
+  - `TextBody` is acceptable because one of text or HTML body is required.
+  - `ToAddress`, raw token, and full link remain transient in provider request construction and were not output or persisted by safe projections.
+  - Current error classification is too coarse and maps any unknown provider/SDK error to `PERMANENT`, losing actionable safe provider codes.
+- Recommended remediation:
+  - Open `Step 47J-Fix` to patch endpoint mapping and safe error classification, with targeted tests.
+  - Add a safe error-code whitelist/category projection so future smoke evidence can record de-identified provider codes without raw payload.
+  - Consider `Step 47J-Config` only for console-side checks that require human/operator verification.
+  - Require `Step 47K-Auth` before any future controlled smoke retry.
+- Boundaries observed:
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No Aliyun API call executed.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+
 ## 2026-06-28 Step 47I-Resume - Aliyun DirectMail controlled smoke retry evidence
 
 - Purpose:
