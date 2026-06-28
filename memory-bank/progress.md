@@ -1,5 +1,56 @@
 # Progress
 
+## 2026-06-28 Step 47H - Aliyun DirectMail provider-specific no-send / local dry-run implementation
+
+- Status: DONE as local no-send / dry-run implementation.
+- Canonical state before Step:
+  - `git rev-parse HEAD`: `355af8f2494676f3dc861ef1e4fc0f4f5a795973`.
+  - Latest commit subject: `docs: record Aliyun DirectMail authorization inputs`.
+  - Tracked diff was empty before implementation.
+- Provider:
+  - Provider type: managed email API.
+  - Provider: Aliyun DirectMail / 阿里云邮件推送.
+  - Installed SDK package: `@alicloud/dm20151123`.
+- Implementation:
+  - Added provider-specific `AliyunDirectMailAdapter`.
+  - Added dry-run default through `ALIYUN_DM_DRY_RUN`, where any value other than `false` keeps no-send behavior.
+  - Added environment contract by variable name only:
+    - `ALIBABA_CLOUD_ACCESS_KEY_ID`
+    - `ALIBABA_CLOUD_ACCESS_KEY_SECRET`
+    - `ALIYUN_DM_ACCOUNT_NAME`
+    - `ALIYUN_DM_FROM_ALIAS`
+    - `ALIYUN_DM_REGION`
+    - `ACCOUNT_LIFECYCLE_PUBLIC_BASE_URL`
+    - `ALIYUN_DM_DRY_RUN`
+  - Extended account lifecycle delivery safe projection helper.
+  - Extended `AccountLifecycleMailer` input shape with token id, recipient email, and expiry for future adapter handoff, while preserving `LOCAL_SAFE_STUB`.
+  - Extended lifecycle token issue handoff to include recipient email and expiry, without persisting raw token or full URL.
+  - Default Nest runtime still registers `AccountLifecycleMailer` only; Aliyun adapter is not wired into `AccountLifecycleModule`.
+- No-send / dry-run behavior:
+  - Dry-run does not instantiate or call the Aliyun client.
+  - Missing live-send config returns `SUPPRESSED` with `CONFIGURATION`.
+  - Transient provider request can build the full link in memory only.
+  - Safe projection and dry-run summary exclude raw token, full URL, and plaintext recipient email.
+  - Unsafe provider message ids are still dropped by existing normalization.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed, 3 files / 18 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm install --frozen-lockfile`: passed.
+- Explicitly not done:
+  - No controlled smoke.
+  - No real email/SMS sent.
+  - No real Aliyun send call executed.
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full production connection string was read or recorded.
+  - No migration or seed/backfill executed.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No cleanup/deletion/drop/reset.
+  - No outbox schema, worker, queue, or scheduler added.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+- Next:
+  - Step 47H-R: Aliyun DirectMail no-send implementation review / commit gate.
+
 ## 2026-06-28 Step 47H-Auth-Collect - Aliyun DirectMail provider input collection
 
 - Status: PARTIAL AUTHORIZATION COLLECTED.

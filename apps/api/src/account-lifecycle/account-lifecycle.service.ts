@@ -506,11 +506,14 @@ export class AccountLifecycleService {
       purpose: input.purpose,
       targetUserId: input.targetUser.id,
       emailHash: input.emailHash,
+      recipientEmail: input.targetUser.email,
+      expiresAt: input.expiresAt,
     };
   }
 
   private async deliverLifecycleToken(issue: LifecycleTokenIssue): Promise<AccountLifecycleDeliveryStatus> {
     const result = await this.mailer.enqueue({
+      tokenId: issue.tokenId,
       template:
         issue.purpose === AccountLifecycleTokenPurpose.INVITE_ACCEPT
           ? "INVITE_ACCEPT"
@@ -518,6 +521,8 @@ export class AccountLifecycleService {
       purpose: issue.purpose,
       targetUserId: issue.targetUserId,
       emailHash: issue.emailHash,
+      recipientEmail: issue.recipientEmail,
+      expiresAt: issue.expiresAt,
       token: issue.rawToken,
     });
 
@@ -610,6 +615,8 @@ type LifecycleTokenIssue = {
   purpose: AccountLifecycleTokenPurpose;
   targetUserId: string;
   emailHash: string | null;
+  recipientEmail: string;
+  expiresAt: Date;
 };
 
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();

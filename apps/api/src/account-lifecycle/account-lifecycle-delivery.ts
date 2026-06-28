@@ -44,6 +44,13 @@ export type AccountLifecycleNormalizedDeliveryResult = {
   failureCategory?: AccountLifecycleDeliveryFailureCategory;
 };
 
+export type AccountLifecycleSafeDeliveryProjection = AccountLifecycleNormalizedDeliveryResult & {
+  tokenId: string;
+  targetUserId: string;
+  emailHash: string | null;
+  correlationId: string;
+};
+
 export interface AccountLifecycleDeliveryAdapter {
   send(input: AccountLifecycleDeliveryInput): Promise<AccountLifecycleProviderResult>;
 }
@@ -83,6 +90,20 @@ export const normalizeProviderMessageId = (providerMessageId: string | undefined
   }
   return trimmed.slice(0, providerMessageIdMaxLength);
 };
+
+export const createAccountLifecycleSafeDeliveryProjection = (
+  input: AccountLifecycleDeliveryInput,
+  result: AccountLifecycleNormalizedDeliveryResult,
+): AccountLifecycleSafeDeliveryProjection => ({
+  tokenId: input.tokenId,
+  targetUserId: input.targetUserId,
+  emailHash: input.emailHash,
+  correlationId: input.correlationId,
+  deliveryStatus: result.deliveryStatus,
+  adapter: result.adapter,
+  providerMessageId: result.providerMessageId,
+  failureCategory: result.failureCategory,
+});
 
 const providerMessageIdMaxLength = 255;
 const unsafeProviderMessageIdPattern =

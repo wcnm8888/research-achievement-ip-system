@@ -738,6 +738,41 @@ If outbox is later required, create a separate Step 47G-schema / Step 47I with s
   - require forced password change on first login.
   - never display generated password after creation.
   - audit credential mode without recording the password.
+
+## Step 47H - Aliyun DirectMail No-Send Adapter - 2026-06-28
+
+### Scope
+
+- Provider-specific adapter for Aliyun DirectMail / 阿里云邮件推送.
+- Local no-send / dry-run only.
+- No controlled smoke, no real email/SMS, no production access, no outbox schema, no worker, no queue, no scheduler.
+
+### Runtime Boundary
+
+- Default runtime remains `AccountLifecycleMailer` with `LOCAL_SAFE_STUB`.
+- `AliyunDirectMailAdapter` is not registered in `AccountLifecycleModule` in this Step.
+- Future controlled-smoke wiring must be a separate authorization Step.
+
+### Environment Contract
+
+Variable names only:
+
+- `ALIBABA_CLOUD_ACCESS_KEY_ID`
+- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`
+- `ALIYUN_DM_ACCOUNT_NAME`
+- `ALIYUN_DM_FROM_ALIAS`
+- `ALIYUN_DM_REGION`
+- `ACCOUNT_LIFECYCLE_PUBLIC_BASE_URL`
+- `ALIYUN_DM_DRY_RUN`
+
+`ALIYUN_DM_DRY_RUN` defaults to no-send unless explicitly set to `false` in a later authorized Step.
+
+### Safety Rules
+
+- Raw token may exist only in process memory while building the provider request.
+- Full reset/invite link may exist only in the transient provider request.
+- Do not persist or log raw token, full link, plaintext recipient email, provider credentials, or full provider payload.
+- Missing config returns `SUPPRESSED` with configuration failure category.
   - revoke sessions when forced reset is issued.
 - Invite flow sets the user's chosen password before login, so invite acceptance does not need first-login forced change.
 

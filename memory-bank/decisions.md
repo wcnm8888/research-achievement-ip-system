@@ -1,5 +1,19 @@
 # Decisions
 
+## D136 - Step 47H adds Aliyun DirectMail adapter as no-send dry-run only
+
+- Date: 2026-06-28.
+- Context: Step 47H-Auth-Collect selected Aliyun DirectMail and allowed the official SDK. Real smoke remains deferred, and Step 47G chose synchronous post-commit adapter first with outbox deferred.
+- Decision:
+  - Install `@alicloud/dm20151123` for provider-specific adapter implementation.
+  - Add Aliyun DirectMail adapter as a local no-send / dry-run capability.
+  - Keep default runtime on `LOCAL_SAFE_STUB`; do not wire Aliyun adapter into `AccountLifecycleModule` in this Step.
+  - Keep `ALIYUN_DM_DRY_RUN` default-safe: real send remains disabled unless a later Step explicitly authorizes controlled smoke or production sending.
+  - Document environment variable names only; do not record or read secret values.
+  - Continue to avoid outbox schema, worker, queue, scheduler, or durable retry in this Step.
+- Boundaries:
+  - This decision does not authorize real email/SMS, controlled smoke, production migration, production seed/backfill, deploy, push, production/VPS/production DB access, sensitive-config access, cleanup, deletion, drop, or reset.
+
 ## D135 - Step 47H selects Aliyun DirectMail for no-send implementation planning
 
 - Date: 2026-06-28.

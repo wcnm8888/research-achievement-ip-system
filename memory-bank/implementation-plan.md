@@ -4,6 +4,30 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47H Archive - Aliyun DirectMail No-Send / Local Dry-Run Implementation - 2026-06-28
+
+- Step identity:
+  - This is Step 47H.
+  - This Step implements provider-specific Aliyun DirectMail no-send / local dry-run capability.
+  - It is not controlled smoke, real email/SMS sending, production migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, outbox, worker, queue, scheduler, or Phase 2 completion.
+- Implemented scope:
+  - Installed `@alicloud/dm20151123`.
+  - Added `account-lifecycle-aliyun-directmail.adapter.ts`.
+  - Added `account-lifecycle-aliyun-directmail.adapter.spec.ts`.
+  - Kept default runtime safe: `AccountLifecycleModule` still uses `AccountLifecycleMailer` / `LOCAL_SAFE_STUB`; Aliyun adapter is not registered as runtime mailer.
+  - Added dry-run default, missing-config suppression, transient in-memory link rendering, safe projection, and provider result normalization coverage.
+  - Extended mailer input and lifecycle issue handoff with recipient email and expiry for future adapter use.
+- Environment contract:
+  - Variable names are documented only; no values were read or recorded.
+  - `ALIYUN_DM_DRY_RUN` defaults to no-send unless explicitly set to `false` in a later authorized Step.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle` passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` passed.
+  - `corepack pnpm install --frozen-lockfile` passed.
+- Next:
+  - Step 47H-R should review and commit the no-send implementation.
+  - Controlled smoke remains deferred to a later explicit authorization Step.
+
 ## Current Step 47H-Auth-Collect Archive - Aliyun DirectMail Provider Input Collection - 2026-06-28
 
 - Step identity:

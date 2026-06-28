@@ -6,10 +6,13 @@ export type AccountLifecycleMailTemplate =
   | "PASSWORD_RESET";
 
 export type AccountLifecycleMailInput = {
+  tokenId: string;
   template: AccountLifecycleMailTemplate;
   purpose: AccountLifecycleTokenPurpose;
   targetUserId: string;
   emailHash: string | null;
+  recipientEmail: string;
+  expiresAt: Date;
   token: string;
 };
 
@@ -23,6 +26,7 @@ export type AccountLifecycleMailResult = {
 export class AccountLifecycleMailer {
   async enqueue(input: AccountLifecycleMailInput): Promise<AccountLifecycleMailResult> {
     void input.token;
+    void input.recipientEmail;
     return {
       deliveryStatus: AccountLifecycleDeliveryStatus.QUEUED,
       adapter: "LOCAL_SAFE_STUB",

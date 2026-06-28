@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-06-28 Step 47H - Aliyun DirectMail no-send implementation evidence
+
+- Purpose:
+  - Implement Aliyun DirectMail provider-specific adapter boundaries for local no-send / dry-run.
+  - Keep real email/SMS, controlled smoke, migration, seed/backfill, deploy, push, production/VPS/production DB access, outbox/worker/queue/scheduler, cleanup, deletion, drop/reset, and sensitive-config access out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `355af8f2494676f3dc861ef1e4fc0f4f5a795973`.
+  - `git log -1 --pretty=%s`: `docs: record Aliyun DirectMail authorization inputs`.
+  - `git diff --name-status`: empty before implementation.
+- Files changed:
+  - `apps/api/package.json`.
+  - `pnpm-lock.yaml`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-aliyun-directmail.adapter.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-aliyun-directmail.adapter.spec.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.service.ts`.
+  - Memory-bank records for Step 47H.
+- Dependency evidence:
+  - Installed package: `@alicloud/dm20151123`.
+  - Package is the Alibaba Cloud Dm SDK for Node.js.
+- Behavior evidence:
+  - Default runtime remains `LOCAL_SAFE_STUB`; `AccountLifecycleModule` was not changed to register the Aliyun adapter.
+  - `ALIYUN_DM_DRY_RUN` defaults to dry-run unless explicitly set to `false`.
+  - Dry-run does not instantiate or call the Aliyun client.
+  - Missing live-send config returns `SUPPRESSED` / `CONFIGURATION`.
+  - Full reset/invite link is constructed only inside the transient provider request builder.
+  - Safe projection and dry-run summary do not include raw token, full URL, or plaintext recipient email.
+  - Unsafe provider message ids are dropped by existing normalization before safe projection.
+- Validation:
+  - `git diff --check`: passed; only Git LF/CRLF working-copy warnings were printed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle`: passed, 3 files / 18 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm install --frozen-lockfile`: passed.
+  - Sensitive scan over Step 47H files found no real AccessKey, secret value, production connection string, private key, cookie, or full reset/invite link with token. Matches were limited to the unsafe-string regex and historical placeholder datasource evidence.
+  - Provider/network scan found the Aliyun SDK call only inside `AliyunDirectMailAdapter`; `AccountLifecycleModule` still registers `AccountLifecycleMailer` / `LOCAL_SAFE_STUB`, and tests use fake clients only.
+- Boundaries observed:
+  - No controlled smoke.
+  - No real email/SMS sent.
+  - No real Aliyun send call executed.
+  - No `.env`, SMTP/API credential, AccessKey value, AccessKey Secret value, token, cookie, certificate, private key, local test password, real `DATABASE_URL`, or full connection string was read or recorded.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No push/deploy.
+  - No deletion, cleanup, drop, reset, truncate, or data clearing.
+
 ## 2026-06-28 Step 47H-Auth-Collect - Aliyun DirectMail provider input collection evidence
 
 - Purpose:
