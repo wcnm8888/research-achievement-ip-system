@@ -1,5 +1,47 @@
 # Progress
 
+## 2026-06-28 Step 47N - Mailbox receipt confirmation and delivery readiness archive
+
+- Status: MAILBOX_RECEIPT_CONFIRMED_DELIVERY_READINESS_ARCHIVED.
+- Step identity:
+  - This is Step 47N.
+  - This Step records manual mailbox receipt confirmation and delivery readiness boundaries after Step 47M.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read screenshots/OCR, read secrets, modify source code, modify runtime wiring, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `15100f7e3388ab10d9dcbbb231c170222f8250fe`.
+  - Latest commit subject: `docs: record post-ops controlled smoke result`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Receipt confirmation:
+  - User manually confirmed the QQ mailbox received the Step 47M password reset test email.
+  - Recipient is recorded only as `246****571@qq.com`.
+  - The screenshot reportedly contains a full reset link/token; this Step did not read, OCR, copy, record, save, or commit that link/token.
+- Delivery readiness conclusion:
+  - Step 47M completed provider-side `ACCEPTED` / `SENT` for one password reset controlled smoke retry.
+  - Step 47N adds human mailbox receipt confirmation.
+  - Aliyun DirectMail local harness delivery path is accepted for controlled smoke at the provider and recipient-confirmation level.
+  - This is not production deploy, not production acceptance, and not default runtime provider wiring.
+- Production enablement still requires separate authorization and Steps:
+  - Runtime wiring decision and implementation.
+  - Config/secret injection strategy for production runtime.
+  - Production deploy.
+  - Production smoke.
+  - Rollback/recovery plan.
+- Explicitly not done:
+  - No screenshot OCR or link/token capture.
+  - No Aliyun API call.
+  - No real email/SMS sent in this Step.
+  - No smoke harness run.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No source code change.
+  - No default runtime provider wiring changed; runtime remains `LOCAL_SAFE_STUB`.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47M - DirectMail post-ops password reset controlled smoke retry and archive
 
 - Status: CONTROLLED_SMOKE_RETRY_ACCEPTED_SENT.

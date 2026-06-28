@@ -1,5 +1,49 @@
 # Evidence
 
+## 2026-06-28 Step 47N - Mailbox receipt confirmation and delivery readiness evidence
+
+- Purpose:
+  - Record user-confirmed mailbox receipt after Step 47M.
+  - Archive delivery readiness boundaries for Aliyun DirectMail local harness path.
+  - Keep Aliyun API calls, real email/SMS, smoke harness execution, screenshot OCR, secret reading, source-code changes, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config disclosure out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `15100f7e3388ab10d9dcbbb231c170222f8250fe`.
+  - `git log -1 --pretty=%s`: `docs: record post-ops controlled smoke result`.
+  - `git diff --name-status`: empty before this Step.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Receipt evidence:
+  - User manually confirmed the QQ mailbox received the password reset test email from Step 47M.
+  - Recipient evidence recorded only as `246****571@qq.com`.
+  - Screenshot content reportedly includes a full reset link/token; this Step did not OCR, copy, record, store, or commit that link/token.
+- Delivery readiness evidence:
+  - Step 47M provider status: `ACCEPTED`.
+  - Step 47M delivery status: `SENT`.
+  - Step 47M total accepted/sent: `1`.
+  - Step 47N adds human mailbox receipt confirmation.
+  - Aliyun DirectMail local harness delivery path is accepted for controlled smoke.
+- Remaining production boundary:
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+  - This is not production deploy.
+  - This is not production acceptance.
+  - This is not default runtime provider wiring.
+  - Production enablement still requires separate runtime wiring, production config injection, production deploy, production smoke, and rollback/recovery plan Steps.
+- Boundaries observed:
+  - No screenshot OCR or link/token capture.
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No Aliyun API call executed.
+  - No real email/SMS sent in this Step.
+  - No smoke harness run.
+  - No source code changed.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No DB write.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47M - DirectMail post-ops password reset controlled smoke retry evidence
 
 - Purpose:

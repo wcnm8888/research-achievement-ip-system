@@ -1,5 +1,18 @@
 # Decisions
 
+## D148 - Step 47N confirms mailbox receipt but keeps production enablement separate
+
+- Date: 2026-06-28.
+- Context: Step 47M completed one authorized password reset controlled smoke retry with provider `ACCEPTED` / delivery `SENT`. The user manually confirmed that the QQ mailbox received the test email. The screenshot reportedly contains a full reset link/token, which must not be read or recorded.
+- Decision:
+  - Record mailbox receipt confirmation for masked recipient `246****571@qq.com`.
+  - Treat the Aliyun DirectMail local harness path as ready at controlled-smoke level.
+  - Do not treat this as production deployment, production acceptance, or default runtime provider wiring.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+  - Require separate authorized Steps for runtime wiring, production config injection, deploy, production smoke, and rollback/recovery planning.
+- Boundaries:
+  - This decision does not authorize screenshot OCR, link/token capture, Aliyun API calls, real email/SMS, smoke harness execution, provider raw full payload recording, secret output, raw token output, full reset link output, plaintext recipient logging, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D147 - Step 47M post-ops controlled smoke is accepted by DirectMail
 
 - Date: 2026-06-28.

@@ -4,6 +4,33 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47N Archive - Mailbox Receipt Confirmation and Delivery Readiness - 2026-06-28
+
+- Step identity:
+  - This is Step 47N.
+  - This Step records mailbox receipt confirmation and readiness boundaries only.
+  - It is not smoke execution, Aliyun API access, real email/SMS sending, smoke harness execution, screenshot OCR, secret access, source-code modification, production runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `15100f7e3388ab10d9dcbbb231c170222f8250fe`.
+  - Latest commit subject confirmed as `docs: record post-ops controlled smoke result`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Receipt confirmation:
+  - User manually confirmed receiving the Step 47M password reset test email.
+  - Recipient evidence is stored only as `246****571@qq.com`.
+  - Screenshot content may include full reset link/token; do not OCR, copy, record, store, or commit the link/token.
+- Readiness conclusion:
+  - Aliyun DirectMail local harness path passed controlled smoke with provider `ACCEPTED` / `SENT`.
+  - Manual mailbox receipt was confirmed.
+  - This establishes delivery readiness for the local controlled harness path only.
+- Remaining production enablement:
+  - Runtime wiring.
+  - Production config/secret injection.
+  - Production deploy.
+  - Production smoke.
+  - Rollback/recovery plan.
+  - Each remains a separate authorized Step.
+
 ## Current Step 47M Archive - DirectMail Post-Ops Password Reset Controlled Smoke Retry - 2026-06-28
 
 - Step identity:
