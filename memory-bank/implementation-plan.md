@@ -4,6 +4,40 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47I-Auth-Resume Archive - Aliyun DirectMail Controlled Smoke Authorization Supplement - 2026-06-28
+
+- Step identity:
+  - This is Step 47I-Auth-Resume.
+  - This Step records supplemental authorization for a later controlled smoke execution Step.
+  - It is not smoke execution, real email/SMS sending, Aliyun API access, secret access, provider runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `a071e94310fde982fe73d20841f366a83d726c38`.
+  - Latest commit subject confirmed as `docs: record controlled smoke authorization block`.
+  - Tracked diff was empty before this memory-bank update.
+  - Controlled smoke was previously blocked.
+  - Default runtime remains `LOCAL_SAFE_STUB`.
+- Authorization result:
+  - `CONTROLLED_SMOKE_AUTHORIZATION_COLLECTED_NO_SEND`.
+  - User authorized a later separate controlled real-send smoke Step.
+  - The controlled recipient was provided, but memory-bank stores only masked evidence: `246****571@qq.com`.
+  - Later smoke may inspect required env var presence without printing values.
+  - Later smoke may set `ALIYUN_DM_DRY_RUN=false` for one controlled test run only.
+  - Later smoke may test password reset and invite, with a hard limit of one email per type and two emails total.
+  - Later smoke may record safe-normalized `providerMessageId`, but not provider raw full response payload.
+  - Later smoke must not output or persist secrets, raw token, full link, plaintext recipient email, or credentials.
+- Later smoke execution design constraints:
+  - Use a controlled harness that calls `AliyunDirectMailAdapter` directly.
+  - The harness may construct transient test raw tokens and full reset/invite links in memory only.
+  - Do not switch production runtime and do not wire Aliyun adapter into default runtime.
+  - Do not perform deploy, migration, seed/backfill, production/VPS/production DB access, DB write, or real user account operation.
+- Later smoke failure policy:
+  - Missing config, provider rejected, rate limited, and network failure all stop without retry and record only de-identified error category.
+  - Bounce/complaint handling is out of scope and requires a separate Step.
+- Plan:
+  - Current Step stops after recording authorization.
+  - Next Step should review and commit this authorization record.
+  - A later smoke execution Prompt may be generated only after the review/commit gate and must preserve the constraints above.
+
 ## Current Step 47I-Auth Archive - Aliyun DirectMail Controlled Smoke Authorization Gate - 2026-06-28
 
 - Step identity:

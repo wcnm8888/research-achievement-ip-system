@@ -1,5 +1,22 @@
 # Decisions
 
+## D138 - Step 47I controlled smoke authorization collected without execution
+
+- Date: 2026-06-28.
+- Context: Step 47I-Auth previously blocked controlled smoke because key authorization inputs were missing. The user later authorized a separate controlled smoke Step, supplied a controlled recipient mailbox, allowed one-time dry-run override, chose both password reset and invite smoke, set a two-email maximum, and defined success/failure and logging boundaries.
+- Decision:
+  - Record `CONTROLLED_SMOKE_AUTHORIZATION_COLLECTED_NO_SEND`.
+  - Store only masked recipient evidence in memory-bank: `246****571@qq.com`.
+  - Authorize a later separate smoke Step to send at most two test emails: one password reset and one invite.
+  - Authorize that later Step to check required runtime env var presence without printing values.
+  - Authorize that later Step to set `ALIYUN_DM_DRY_RUN=false` for one controlled smoke run only.
+  - Authorize safe-normalized `providerMessageId` recording.
+  - Require a controlled harness that directly calls `AliyunDirectMailAdapter`, without switching production runtime or wiring the provider into default runtime.
+  - Keep the current Step as no-send documentation only.
+- Boundaries:
+  - This decision does not execute smoke and does not authorize secret output, raw token output, full link output, plaintext recipient logging, provider raw full payload recording, deploy, migration, seed/backfill, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+  - Bounce/complaint handling remains out of scope and requires a separate Step.
+
 ## D137 - Step 47I controlled smoke remains blocked until explicit smoke authorization is complete
 
 - Date: 2026-06-28.
