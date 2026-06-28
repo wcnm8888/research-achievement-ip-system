@@ -4,6 +4,27 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47V Archive - Local Production-Like Stack Startup - 2026-06-28
+
+- Step identity:
+  - This is Step 47V.
+  - This Step attempts local production-like Docker Compose startup and API/Web health checks.
+  - It is not VPS production acceptance, Step 38 production acceptance, migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, or artifact removal.
+- Starting state:
+  - HEAD confirmed as `bc8e6d9c322666d00383df8ac73feb76f345483a`.
+  - Latest commit subject confirmed as `docs: add local production-like env readiness checklist`.
+  - Tracked diff was empty before this memory-bank update.
+- Result:
+  - `BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START`.
+  - Docker and Docker Compose were available.
+  - `.env.production` was missing.
+  - Because `docker-compose.production.yml` depends on `.env.production`, the local production-like stack was not built or started.
+  - Local API and Web health endpoints were not checked.
+  - Production-like DirectMail config presence was not checked.
+- Next:
+  - User manually creates private `.env.production` outside git.
+  - A later Step can start the local production-like stack and check API/Web health.
+
 ## Current Step 47U Archive - Local Production-Like Env Readiness Checklist - 2026-06-28
 
 - Step identity:

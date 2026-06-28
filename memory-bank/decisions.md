@@ -1,5 +1,19 @@
 # Decisions
 
+## D156 - Step 47V stack startup remains blocked by missing env file
+
+- Date: 2026-06-28.
+- Context: Step 47V was opened after Step 47U documented local production-like env variable names. The Step required a user-created private `.env.production`, but the local workspace still did not contain that file.
+- Decision:
+  - Record `BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START`.
+  - Do not build or start the local production-like Compose stack.
+  - Do not read or infer `.env.production` values.
+  - Do not check local API/Web health because the stack was not started.
+  - Do not check DirectMail production-like config presence.
+  - Do not run migration, seed/backfill, real email smoke, push, deploy, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or artifact removal.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+
 ## D155 - Step 47U records local production-like env names without real values
 
 - Date: 2026-06-28.

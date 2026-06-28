@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-06-28 Step 47V - Local production-like stack startup and health check
+
+- Status: BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START.
+- Step identity:
+  - This is Step 47V.
+  - This Step was intended to start the local `docker-compose.production.yml` production-like stack and check local API/Web health.
+  - It is not VPS production acceptance and not Step 38 production acceptance.
+- Starting state:
+  - `git rev-parse HEAD`: `bc8e6d9c322666d00383df8ac73feb76f345483a`.
+  - Latest commit subject: `docs: add local production-like env readiness checklist`.
+  - Tracked diff was empty before this memory-bank update.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Preflight:
+  - Docker was available.
+  - Docker Compose was available.
+  - `.env.production` existence check returned missing.
+  - `docker-compose.production.yml` requires `.env.production` for the local production-like services.
+- Result:
+  - Local production-like stack was not built or started.
+  - API health `http://127.0.0.1:13001/api/health` was not checked because the stack was not started.
+  - Web root `http://127.0.0.1:18081/` was not checked because the stack was not started.
+  - Production-like DirectMail config presence was not checked because `.env.production` was missing and values were not read.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No real provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration, seed, or backfill.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+  - Default DirectMail production sending strategy was not modified.
+- Next:
+  - Create a private local `.env.production` file manually outside git, then rerun a local production-like startup Step.
+
 ## 2026-06-28 Step 47U - Local production-like environment variable readiness check
 
 - Status: LOCAL_PRODUCTION_LIKE_ENV_READINESS_CHECKLIST_ADDED_NO_REAL_ENV_CREATED.

@@ -1,5 +1,39 @@
 # Evidence
 
+## 2026-06-28 Step 47V - Local production-like stack startup and health evidence
+
+- Purpose:
+  - Start the local `docker-compose.production.yml` production-like stack and verify local API/Web health if safe prerequisites are present.
+  - Keep `.env.production` values, secrets, tokens, full reset/invite links, cookies, private keys, connection strings, migration, seed/backfill, push, VPS access, production DB access, real email smoke, and cleanup out of scope.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `bc8e6d9c322666d00383df8ac73feb76f345483a`.
+  - `git log -1 --pretty=%s`: `docs: add local production-like env readiness checklist`.
+  - `git diff --name-status`: empty before this memory-bank update.
+- Preflight evidence:
+  - Docker availability check succeeded.
+  - Docker Compose availability check succeeded.
+  - `.env.production` existence check returned missing.
+  - `docker-compose.production.yml` requires `.env.production` for the local production-like services.
+- Result evidence:
+  - Result: `BLOCKED_BY_LOCAL_ENV_PRODUCTION_MISSING_NO_STACK_START`.
+  - Local production-like stack started: no.
+  - API health `http://127.0.0.1:13001/api/health`: not checked because stack was not started.
+  - Web root `http://127.0.0.1:18081/`: not checked because stack was not started.
+  - Production-like DirectMail config presence: not checked because `.env.production` was missing and values were not read.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive memory-bank diff scan found no secret values, raw token, full reset/invite link, plaintext recipient email, cookie, private key, full connection string, or provider raw payload.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No provider credential value, SMTP/API credential, raw token, full reset/invite link, plaintext recipient email, provider raw payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No stack build or start.
+  - No migration or seed/backfill executed.
+  - No real email smoke.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+  - Default DirectMail production sending strategy was not modified.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+
 ## 2026-06-28 Step 47U - Local production-like environment variable readiness evidence
 
 - Purpose:
