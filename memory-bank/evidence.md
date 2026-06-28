@@ -1,5 +1,61 @@
 # Evidence
 
+## 2026-06-28 Step 47L - Aliyun DirectMail Forbidden configuration diagnosis evidence
+
+- Purpose:
+  - Diagnose safe providerErrorCode `Forbidden` from Step 47K.
+  - Produce an ops checklist before any future retry.
+  - Keep Aliyun API calls, real email/SMS, smoke harness execution, secret reading, source-code changes, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop/reset, and sensitive-config disclosure out of scope.
+- Canonical-state evidence:
+  - `git rev-parse HEAD`: `7680a17b55207f6fa246f0bb30725a490b222d35`.
+  - `git log -1 --pretty=%s`: `docs: record controlled smoke retry result`.
+  - `git diff --name-status`: empty before this Step.
+  - Existing local artifacts remained untracked and were not staged, cleaned, deleted, or modified.
+- Local evidence reviewed:
+  - `memory-bank/progress.md`, `memory-bank/implementation-plan.md`, `memory-bank/decisions.md`, and `memory-bank/evidence.md` Step 47K records.
+  - `apps/api/src/account-lifecycle/account-lifecycle-aliyun-directmail.adapter.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-aliyun-directmail.adapter.spec.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.module.ts`.
+- Official documents reviewed:
+  - Aliyun DirectMail error code table: `Forbidden` means the user is not authorized to operate the specified resource, with guidance to check RAM DirectMail permissions.
+  - Aliyun DirectMail RAM user access control: product-level permissions include `AliyunDirectMailFullAccess`; minimal custom policy can allow `dm:SingleSendMail` on `acs:dm:*:*:*`; lack of product/interface permission or custom policy constraints can cause authorization errors.
+  - Aliyun DirectMail `SingleSendMail` API: authorization action is `dm:SingleSendMail`; `AccountName` is the sender address configured in the console; `AddressType=1` means sender-address mode; one of `TextBody` or `HtmlBody` is required; `FromAlias` is the sender display name.
+  - Aliyun DirectMail endpoint document: `cn-hangzhou` public endpoint is `dm.aliyuncs.com`.
+  - Aliyun DirectMail limits/specification document: sender address count, daily/monthly quota, free send limits, and API single-send recipient limits are product-side constraints that should be checked before retrying.
+- Diagnosis:
+  - Safe providerErrorCode: `Forbidden`.
+  - Accepted/sent: `0`.
+  - Highest-probability category: RAM permission or DirectMail interface authorization issue.
+  - Other likely categories: sender address not enabled/verified/API-usable, sender domain/account mismatch, service not activated, account frozen/in arrears/under review/risk-controlled, quota or send-type restriction, IP protection/condition restriction, or region/account mismatch.
+  - Lower-probability category: adapter parameter mapping, because current parameters align with official `SingleSendMail` semantics and endpoint has already been corrected.
+- Ops checklist:
+  - Confirm which Aliyun principal owns the current AccessKey without exposing key values.
+  - Confirm that principal has `AliyunDirectMailFullAccess` or a custom policy permitting `dm:SingleSendMail` on `acs:dm:*:*:*`.
+  - Confirm no explicit deny, resource-scope limit, condition key, MFA condition, IP protection/whitelist, user group, or assumed-role policy blocks DirectMail.
+  - Confirm DirectMail service is activated and the account is usable.
+  - Confirm account is not frozen, in arrears, pending review, risk-controlled, or quota-exhausted.
+  - Confirm `wzunew.uk` and `system@wzunew.uk` are verified/enabled in the same Aliyun account context used by the AccessKey.
+  - Confirm the sender address supports API sending.
+  - Confirm region/endpoint remain `cn-hangzhou` and `dm.aliyuncs.com`.
+  - Confirm daily/monthly quota and trial/send-type restrictions allow at least one password reset smoke email.
+- Recommendation:
+  - Do not continue retrying until ops completes the checklist and records what changed.
+  - After the Aliyun-side issue is fixed, use a new explicit authorization plus execution Step for at most one retry.
+- Boundaries observed:
+  - No `.env`, AccessKey value, AccessKey Secret value, SMTP/API credential, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, certificate, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No Aliyun API call executed.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No source code changed.
+  - No migration or seed/backfill executed.
+  - No production/VPS/production DB access.
+  - No production runtime switch or default runtime provider wiring.
+  - No DB write.
+  - No real user account operation.
+  - No push/deploy.
+  - No cleanup, deletion, drop, reset, truncate, or data clearing.
+
 ## 2026-06-28 Step 47K - Aliyun DirectMail password reset controlled smoke retry evidence
 
 - Purpose:

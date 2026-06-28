@@ -1,5 +1,17 @@
 # Decisions
 
+## D146 - Step 47L treats Forbidden as Aliyun-side configuration until ops checklist is completed
+
+- Date: 2026-06-28.
+- Context: Step 47K performed one authorized password-reset controlled smoke retry after endpoint correction. The provider returned safe normalized providerErrorCode `Forbidden`, provider status `FAILED`, failure category `CONFIGURATION`, and accepted/sent count `0`. Step 47L reviewed local adapter parameters and Aliyun official DirectMail/RAM documentation without another API call or send.
+- Decision:
+  - Treat `Forbidden` as an Aliyun-side configuration or authorization blocker unless ops proves otherwise.
+  - Do not retry again until RAM permissions, sender address status, domain/account binding, DirectMail activation/status, region/endpoint, quota, and risk-control checks are complete.
+  - Keep adapter parameter mapping unchanged for now.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+- Boundaries:
+  - This decision does not authorize another real-send retry, Aliyun API call, console login, provider raw full payload recording, secret output, raw token output, full reset link output, plaintext recipient logging, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D145 - Step 47K controlled smoke retry stops on Aliyun configuration failure
 
 - Date: 2026-06-28.

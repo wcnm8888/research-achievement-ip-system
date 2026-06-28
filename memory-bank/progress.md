@@ -1,5 +1,58 @@
 # Progress
 
+## 2026-06-28 Step 47L - Aliyun DirectMail Forbidden configuration diagnosis and archive
+
+- Status: FORBIDDEN_CONFIGURATION_DIAGNOSIS_ARCHIVED_NO_SEND.
+- Step identity:
+  - This is Step 47L.
+  - This Step is a read-only `Forbidden` configuration diagnosis and archive after Step 47K.
+  - It does not call Aliyun API, send real email/SMS, run smoke harness, read secrets, modify source code, execute migration, execute seed/backfill, deploy, push, access production/VPS/production DB, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `7680a17b55207f6fa246f0bb30725a490b222d35`.
+  - Latest commit subject: `docs: record controlled smoke retry result`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Inputs reviewed:
+  - Step 47K evidence: password reset controlled smoke retry attempted once, accepted/sent `0`, safe providerErrorCode `Forbidden`.
+  - Local adapter parameters: `AccountName`, `AddressType=1`, `ReplyToAddress=false`, `FromAlias`, transient `ToAddress`, `Subject`, and `TextBody`.
+  - Local module wiring: `AccountLifecycleModule` still uses `AccountLifecycleMailer`; `AccountLifecycleMailer` still uses `LOCAL_SAFE_STUB`.
+  - Aliyun official DirectMail error-code documentation.
+  - Aliyun official DirectMail `SingleSendMail` API documentation.
+  - Aliyun official DirectMail RAM authorization documentation.
+  - Aliyun official DirectMail endpoint documentation.
+  - Aliyun official DirectMail limits/specification documentation.
+- Diagnosis:
+  - High probability: RAM permission or policy issue. Aliyun documents `Forbidden` as not authorized to operate the specified resource and recommends checking whether the RAM sub-account has DirectMail permissions.
+  - High probability: the AccessKey principal may not have `dm:SingleSendMail` or may be constrained by an explicit deny, resource-scope limitation, condition, MFA/IP restriction, or inherited policy.
+  - Medium probability: the sender address `system@wzunew.uk` may not be active, verified, API-enabled, or bound to the same Aliyun account/principal used by the AccessKey.
+  - Medium probability: the DirectMail service, selected region, domain, quota, billing, review, freeze, risk-control, or send-type state may be limiting API sending.
+  - Low probability from current evidence: adapter parameter direction. The current request shape still matches official parameter intent: `AccountName` is a console sender address, `AddressType=1` means sender-address mode, `ReplyToAddress=false` is valid, `TextBody` satisfies the requirement that one of text/html body be supplied, and `cn-hangzhou` maps to `dm.aliyuncs.com`.
+- Manual ops checklist before another retry:
+  - Confirm the AccessKey belongs to the expected Aliyun account or RAM user/role.
+  - Confirm the principal has `AliyunDirectMailFullAccess` or a custom policy that includes `dm:SingleSendMail` on `acs:dm:*:*:*`.
+  - Confirm there is no explicit deny, resource-scope mismatch, condition restriction, MFA requirement, IP whitelist/protection mismatch, or group/role policy conflict.
+  - Confirm DirectMail is activated for the account and the account is not frozen, risk-controlled, in arrears, pending review, or otherwise restricted.
+  - Confirm `wzunew.uk` is verified and usable in the same Aliyun account/principal context.
+  - Confirm `system@wzunew.uk` exists as a DirectMail sender address, is enabled/verified, and supports API sending.
+  - Confirm the region/service endpoint pair remains `cn-hangzhou` and `dm.aliyuncs.com`.
+  - Confirm remaining daily/monthly quota and any trial, send-type, recipient, IP protection, or account-level sending restrictions.
+- Recommendation:
+  - Do not continue retrying until the Aliyun-side RAM permission, sender address, domain/account status, service activation, and quota/risk-control checklist is completed.
+  - After ops fixes the Aliyun-side issue, open a new authorization plus execution Step for at most one retry.
+- Explicitly not done:
+  - No Aliyun API call.
+  - No real email/SMS sent.
+  - No smoke harness run.
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was read, output, or recorded.
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No source code change.
+  - No default runtime provider wiring changed; runtime remains `LOCAL_SAFE_STUB`.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47K - Aliyun DirectMail password reset controlled smoke retry and archive
 
 - Status: CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND.

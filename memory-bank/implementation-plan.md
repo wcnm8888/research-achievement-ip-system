@@ -4,6 +4,36 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47L Archive - Aliyun DirectMail Forbidden Configuration Diagnosis - 2026-06-28
+
+- Step identity:
+  - This is Step 47L.
+  - This Step diagnoses the safe providerErrorCode `Forbidden` from Step 47K.
+  - It is not smoke execution, Aliyun API access, real email/SMS sending, smoke harness execution, secret access, source-code modification, production runtime wiring, migration, seed/backfill, deploy, push, production/VPS/production DB access, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `7680a17b55207f6fa246f0bb30725a490b222d35`.
+  - Latest commit subject confirmed as `docs: record controlled smoke retry result`.
+  - Tracked diff was empty before this memory-bank update.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Diagnosis summary:
+  - `Forbidden` is a safe normalized provider code and was recorded without provider raw payload.
+  - Accepted/sent remains `0`.
+  - The highest-probability root cause is Aliyun RAM or product/interface authorization.
+  - The next most likely causes are sender address/account binding, DirectMail service activation/status, region/account alignment, quota, or risk-control restrictions.
+  - Current adapter parameter direction remains reasonable and should not be changed before Aliyun-side checks are completed.
+- Manual verification checklist:
+  - AccessKey principal is the intended Aliyun account/RAM user/role.
+  - Principal has `AliyunDirectMailFullAccess` or a minimal custom policy containing `dm:SingleSendMail`.
+  - No explicit deny, resource-scope mismatch, condition, MFA, IP protection, or inherited group/role restriction blocks the call.
+  - DirectMail service is activated and account is not frozen, in arrears, under review, or risk-controlled.
+  - Sender domain and sender address are verified and enabled under the same Aliyun account/principal context.
+  - `system@wzunew.uk` supports API sending.
+  - Region and endpoint remain `cn-hangzhou` / `dm.aliyuncs.com`.
+  - Daily/monthly quota and account send-type restrictions permit the test send.
+- Recommended next step:
+  - Do not retry again until the above Aliyun-side checks are complete.
+  - After ops confirms/fixes configuration, open a new authorization plus execution Step for a single password-reset retry.
+
 ## Current Step 47K Archive - Aliyun DirectMail Password Reset Controlled Smoke Retry - 2026-06-28
 
 - Step identity:
