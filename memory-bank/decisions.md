@@ -1,5 +1,19 @@
 # Decisions
 
+## D145 - Step 47K controlled smoke retry stops on Aliyun configuration failure
+
+- Date: 2026-06-28.
+- Context: Step 47K executed the authorized password-reset-only controlled smoke retry after the endpoint mapping fix. The harness used process-local non-sensitive overlay and kept default runtime wiring on `LOCAL_SAFE_STUB`.
+- Decision:
+  - Record `CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND`.
+  - Treat the single password reset attempt as provider status `FAILED`, delivery status `FAILED`, and failure category `CONFIGURATION`.
+  - Record safe normalized providerErrorCode `Forbidden`.
+  - Record total attempts as 1 and total accepted/sent as 0.
+  - Do not retry again in this Step.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+- Boundaries:
+  - This decision does not authorize another real-send retry, provider raw full payload recording, secret output, raw token output, full reset link output, plaintext recipient logging, migration, seed/backfill, deploy, push, production/VPS/production DB access, DB writes, real user account operations, production runtime switching, default runtime provider wiring, cleanup, deletion, drop, or reset.
+
 ## D144 - Step 47K controlled smoke retry authorization collected for one password-reset email
 
 - Date: 2026-06-28.

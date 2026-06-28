@@ -1,5 +1,52 @@
 # Progress
 
+## 2026-06-28 Step 47K - Aliyun DirectMail password reset controlled smoke retry and archive
+
+- Status: CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND.
+- Step identity:
+  - This is Step 47K.
+  - This Step performed the authorized password reset controlled smoke retry after Step 47J-Fix.
+  - It did not access production/VPS/production DB, execute migration, execute seed/backfill, deploy, push, create or operate a real business user account, write to a database, change default runtime wiring, clean, delete, drop, reset, or complete Phase 2.
+- Canonical state:
+  - `git rev-parse HEAD`: `bbfb0e0927fd965ac0aa547c91431a567ffbe239`.
+  - Latest commit subject: `docs: record controlled smoke retry authorization inputs`.
+  - Tracked diff was empty before this Step.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Pre-send checks:
+  - `AccountLifecycleModule` still uses `AccountLifecycleMailer`; Aliyun adapter is not wired into default runtime.
+  - `AccountLifecycleMailer` still uses `LOCAL_SAFE_STUB`.
+  - Aliyun endpoint resolver maps `cn-hangzhou` to `dm.aliyuncs.com`.
+  - `ALIYUN_DM_DRY_RUN` default remains no-send; it was set to `false` only inside the local smoke harness process.
+  - Required secret environment variables were present; values were not output or recorded.
+- Smoke execution:
+  - Mail type attempted: password reset.
+  - Send attempt count: 1.
+  - Accepted/sent count: 0.
+  - Provider status: `FAILED`.
+  - Delivery status: `FAILED`.
+  - Failure category: `CONFIGURATION`.
+  - Safe normalized providerErrorCode: `Forbidden`.
+  - Safe normalized providerMessageId: none.
+  - Recipient recorded only as `246****571@qq.com`.
+  - Whether the mailbox received anything remains for user-side manual confirmation, but provider did not report accepted/sent.
+- Validation:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- account-lifecycle-aliyun-directmail account-lifecycle`: passed, 3 files / 24 tests.
+  - First root-level harness launch failed before business code because `tsx` was not found from the workspace root; provider was not called in that failed launch.
+  - `corepack pnpm --dir apps/api exec tsx ../../.local-step47i/aliyun-directmail-smoke.ts`: completed the authorized single password-reset smoke retry and returned the safe summary above.
+- Explicitly not recorded:
+  - No real secret, AccessKey value, AccessKey Secret value, SMTP/API secret, raw token, full reset link, plaintext recipient email, provider raw full response payload, cookie, private key, real `DATABASE_URL`, or production connection string was output or recorded.
+- Explicitly not done:
+  - No migration or seed/backfill.
+  - No deploy/push.
+  - No production/VPS/production DB access.
+  - No DB write.
+  - No real user account operation.
+  - No default runtime provider wiring changed; runtime remains `LOCAL_SAFE_STUB`.
+  - No cleanup/deletion/drop/reset.
+  - Phase 2 remains incomplete.
+  - Step 38 production acceptance remains deferred.
+
 ## 2026-06-28 Step 47K-Auth-Resume - Aliyun DirectMail controlled smoke retry authorization collected after endpoint fix
 
 - Status: CONTROLLED_SMOKE_RETRY_AUTHORIZATION_COLLECTED_NO_SEND.

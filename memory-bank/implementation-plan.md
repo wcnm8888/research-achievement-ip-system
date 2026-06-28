@@ -4,6 +4,34 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47K Archive - Aliyun DirectMail Password Reset Controlled Smoke Retry - 2026-06-28
+
+- Step identity:
+  - This is Step 47K.
+  - This Step executed and archived the authorized password reset controlled smoke retry.
+  - It is not production runtime wiring, production/VPS/production DB access, migration, seed/backfill, deploy, push, DB writes, real user account operations, cleanup, deletion, drop, reset, or Phase 2 completion.
+- Starting state:
+  - HEAD confirmed as `bbfb0e0927fd965ac0aa547c91431a567ffbe239`.
+  - Latest commit subject confirmed as `docs: record controlled smoke retry authorization inputs`.
+  - Tracked diff was empty before this Step.
+  - Default runtime remained `LOCAL_SAFE_STUB`.
+- Execution result:
+  - Result: `CONTROLLED_SMOKE_RETRY_PROVIDER_FAILED_NO_ACCEPTED_SEND`.
+  - Password reset send was attempted once.
+  - Accepted/sent: no.
+  - Total attempts: 1.
+  - Total accepted/sent: 0.
+  - Provider status: `FAILED`.
+  - Delivery status: `FAILED`.
+  - Failure category: `CONFIGURATION`.
+  - Safe normalized providerErrorCode: `Forbidden`.
+  - Safe normalized providerMessageId: none.
+  - Recipient evidence stored only as `246****571@qq.com`.
+- Follow-up:
+  - Do not retry again without a new authorization Step.
+  - Likely next path is an ops/provider configuration check for Aliyun DirectMail permission or sender authorization, without exposing secrets.
+  - Keep default runtime on `LOCAL_SAFE_STUB`.
+
 ## Current Step 47K-Auth-Resume Archive - Aliyun DirectMail Controlled Smoke Retry Authorization Collected - 2026-06-28
 
 - Step identity:
