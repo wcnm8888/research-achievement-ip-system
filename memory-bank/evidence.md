@@ -1,5 +1,62 @@
 # Evidence
 
+## 2026-06-29 Step 49A - Phase 2 production readiness refresh / local closeout evidence
+
+- Purpose:
+  - Refresh Phase 2 completed/local-only/deferred/blocked status after Step 47 and Step 48C/48D.
+  - Decide whether old Step 41B can be reused.
+  - Record the recommended next production entry without accessing VPS, production DB, secrets, or runtime delivery systems.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `7e7fe7c`.
+  - `git log -1 --pretty=%s`: `docs: record local production-like permission scope acceptance`.
+  - `git status --short --untracked-files=no`: empty before Step 49A memory-bank edits.
+  - `git status --short` showed existing untracked local artifacts; they were not read for sensitive contents, staged, cleaned, deleted, or modified.
+- Context reviewed:
+  - Top Step 47FINAL, Step 48A, Step 48B, Step 48C, and Step 48D entries in `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, `memory-bank/decisions.md`, and `memory-bank/evidence.md`.
+  - Step 39 / Step 41 / Step 41A / Step 41B keyword sections needed to evaluate old production-entry reuse.
+  - Non-sensitive production runbook/checklist boundaries in `deploy/runbook-production.md`, `deploy/checklist-production-cutover.md`, and `deploy/local-production-like-env-checklist.md`.
+  - Package script names from `package.json`.
+  - Migration directory names: `20260608080155_init_core_schema`, `20260623073332_add_auth_sessions`, `20260627090100_add_attachment_storage_metadata`, and `20260627103000_add_account_lifecycle_tokens`.
+  - `git diff --name-status` for package/lockfile/workspace, production compose, Dockerfiles, deploy docs, Prisma schema, migrations, and seed files returned no diff before Step 49A edits.
+- Completed local capability evidence:
+  - Step 47 recorded local production-like migration deploy, foundation/admin state, fixed Web `/api/` proxy, authenticated local-admin API acceptance, and reachable SPA shells.
+  - Step 48C recorded the minimal local business sample: one acceptance department, one researcher, one research secretary, one paper achievement, and one pending department-review workflow task.
+  - Step 48D recorded local-admin `0` achievement/dashboard counts as current exact-scope behavior and researcher/secretary scoped visibility as expected.
+  - DirectMail remains safe/default local no-send or `LOCAL_SAFE_STUB`; no production runtime real delivery is enabled.
+- Local-only / not production accepted evidence:
+  - All Step 47 and Step 48 runtime checks were local production-like evidence only.
+  - No Step 49A VPS connection, production-domain authenticated smoke, production DB access, deployment, restart, migration, seed/backfill, bootstrap, write acceptance, real email, or DirectMail runtime switch occurred.
+  - Step 38 production acceptance remains deferred.
+- Deferred / blocked evidence:
+  - VPS production acceptance remains deferred pending explicit authorization.
+  - Step 38 production acceptance remains deferred.
+  - DirectMail production runtime enablement remains deferred.
+  - Production write acceptance remains deferred.
+  - Fees, reminders, attachments, populated search, broader dashboard/warnings, settings/config CRUD, monitoring/backup, real data import, real business user batch creation, full approval archive closure, smoke-account disable, and synthetic production data cleanup remain separate candidates.
+- Step 41B reuse evidence:
+  - Old Step 41B was blocked because explicit production authorization was missing.
+  - Old Step 41B targeted the Step 41A deploy candidate and combined production deploy with GET-only smoke.
+  - Since then, Step 47/48 changed the canonical local readiness state and added local business-sample / scope evidence.
+  - Conclusion: old Step 41B should not be replayed directly; a new Step 49B GET-only production acceptance authorization is the safer next entry.
+- Recommended Step 49B evidence:
+  - Production runbook separates GET-only readonly smoke from write acceptance.
+  - GET-only checks should avoid POST/PATCH/PUT/DELETE, imports, exports, notifications, approvals, production writes, migration, seed, cleanup, and secret output.
+  - Authentication, if needed, must use a safe user/session handoff and record only redacted status summaries.
+- Gate judgment:
+  - Step 49A is documentation-only, so full lint/typecheck/test/build gates are not required.
+  - Minimum closeout gates for this Step: `git diff --check`, sensitive scan, commit, and tracked-diff clean after commit.
+  - Before Step 49B, confirm tracked diff clean and rerun full local gates only if any code/schema/package/compose/deploy/runtime changes occur.
+- Verification evidence:
+  - `git diff --check`: passed for the Step 49A documentation diff.
+  - Refined sensitive scan over Step 49A added lines: no assignment-style secrets, connection strings, private-key blocks, high-entropy token shapes, database URLs, or session cookie values found.
+  - Broad keyword scan only matched explicit boundary/prohibition wording such as password/token/cookie/secret; no actual secret values were found.
+  - Tracked diff scope before commit: `memory-bank/decisions.md`, `memory-bank/evidence.md`, `memory-bank/implementation-plan.md`, and `memory-bank/progress.md`.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package file, or lockfile was modified by Step 49A.
+  - No deploy, push, VPS access, production DB access, production write, local business-data mutation, migration, seed/backfill, bootstrap, real email, DirectMail runtime change, cleanup, deletion, reset, drop, restore, prune, or artifact removal occurred.
+
 ## 2026-06-29 Step 48D - Local production-like permission scope acceptance supplement evidence
 
 - Purpose:

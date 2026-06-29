@@ -1,5 +1,27 @@
 # Decisions
 
+## D171 - Step 49A refreshes Phase 2 readiness and replaces old Step 41B with a narrower Step 49B entry
+
+- Date: 2026-06-29.
+- Context: Step 47 completed local production-like stack/readiness acceptance. Step 48C accepted a minimal local production-like business sample. Step 48D accepted the current permission-scope behavior for the Step 48C sample. VPS production acceptance, Step 38 production acceptance, and DirectMail production runtime enablement remain deferred.
+- Decision:
+  - Record Step 49A as local documentation-only production-readiness refresh and closeout.
+  - Do not classify Step 49A as production acceptance, production deploy, production write acceptance, DirectMail runtime enablement, or Phase 2 completion.
+  - Treat local production-like stack/readiness and authenticated admin API checks from Step 47, minimal local business sample creation / submit / pending workflow task from Step 48C, permission-scope / dashboard / workflow count classification from Step 48D, and local DirectMail no-send/dry-run adapter readiness as completed locally.
+  - Treat Docker Compose production-like local stack evidence, authenticated local-admin API acceptance, local minimal business sample and permission-scope acceptance, and local DirectMail harness/no-send readiness as local-only accepted and not production accepted.
+  - Keep VPS production acceptance, Step 38 production acceptance, DirectMail production runtime enablement, production write acceptance, production migration/seed/bootstrap/deploy, real email, and production cleanup deferred.
+  - Do not reuse old Step 41B directly because it targeted an older Step 41A deploy candidate and combined production deploy with GET-only smoke. The correct next production entry is a new, narrower Step 49B authorization focused on VPS production GET-only acceptance.
+- Recommended next:
+  - Use `Step 49B - VPS production GET-only acceptance authorization`.
+  - Require explicit authorization naming the production target/domain and allowing read-only VPS/production GET-only smoke.
+  - Explicitly forbid deploy, restart, migration, seed/backfill, bootstrap, production writes, POST/PATCH/PUT/DELETE, production DB shell, cleanup, deletion, reset, drop, prune, real email, DirectMail runtime changes, and sensitive-config output.
+  - Keep any production write acceptance or DirectMail runtime enablement as later separate steps.
+- Gate decision:
+  - Step 49A itself needs documentation checks only: tracked diff review, `git diff --check`, sensitive scan, and commit.
+  - Full lint/typecheck/test/build gates are not required unless code, schema, package/lockfile, compose/deploy config, migration, or runtime behavior changes after Step 48D.
+- Boundaries:
+  - This decision does not authorize source-code changes, schema/migration changes, Docker/compose/deploy changes, dependency changes, migration, seed/backfill, data creation/modification/deletion, deploy, push, VPS access, production DB access, real email, DirectMail runtime switching, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D170 - Step 48D classifies local-admin achievement total 0 as current scope policy behavior
 
 - Date: 2026-06-29.

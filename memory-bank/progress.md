@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-06-29 Step 49A - Phase 2 production readiness refresh / local closeout
+
+- Status: STEP_49A_PRODUCTION_READINESS_REFRESH_RECORDED_LOCAL_CLOSEOUT_ONLY.
+- Step identity:
+  - Documentation-only Phase 2 readiness refresh after Step 47 and Step 48C/48D.
+  - No deploy, push, VPS access, production DB access, production write, migration, seed/backfill, bootstrap, real email, DirectMail runtime change, business-code change, business-data mutation, cleanup, deletion, reset, drop, restore, or prune.
+  - This Step is not production acceptance and does not complete Phase 2.
+- Starting state:
+  - `git rev-parse --short HEAD`: `7e7fe7c`.
+  - Latest commit subject: `docs: record local production-like permission scope acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+  - Existing untracked local artifacts were present and left untouched.
+- Completed / accepted locally:
+  - Step 47 local production-like stack/readiness closed: migration deploy completed locally, foundation/admin state present, Web `/api/` proxy fixed, local-admin authenticated API checks passed, and main SPA shells reachable.
+  - Step 48C minimal local business sample accepted: one acceptance department, one researcher, one research secretary, one paper achievement, and one pending department-review workflow task.
+  - Step 48D permission-scope supplement accepted: local-admin achievement/dashboard totals `0` are current exact-scope policy behavior, researcher/secretary scoped visibility works for the Step 48C sample, and workflow task counts remain assignee-scoped.
+  - Account lifecycle/password reset/invite local readiness and DirectMail no-send/dry-run adapter work remain available locally, with runtime still safe/default no-send.
+- Local-only accepted, not production accepted:
+  - Local Docker Compose production-like health and auth acceptance.
+  - Local minimal business sample and permission scope acceptance.
+  - Local DirectMail harness/no-send readiness.
+  - Step 36Fix / Step 37 / Step 38 production-facing behavior is still local evidence unless a later VPS/production step accepts it.
+- Deferred:
+  - VPS production acceptance.
+  - Step 38 production acceptance.
+  - DirectMail production runtime enablement and any real email.
+  - Production deploy/restart, migration, seed/backfill, bootstrap, DB access, and write acceptance.
+  - Approval approve/reject acceptance, fees, reminders, attachment metadata/download, populated search, broader non-zero dashboard/warnings, settings/config CRUD, monitoring/backup, real data import readiness, real business user batch creation, full approval archive closure.
+  - Smoke-account disable and synthetic production data archive/cleanup.
+- Blocked / authorization required:
+  - Any production or VPS action remains blocked without a fresh explicit authorization prompt.
+  - Old Step 41B should not be executed directly because it combined production deploy and GET-only smoke for the older Step 41A candidate and does not reflect the Step 47/48 state.
+- Next candidate:
+  - Recommended next step is `Step 49B - VPS production GET-only acceptance authorization`.
+  - Step 49B should be read-only: target/domain confirmation, HTTPS/Web/API GET smoke, authenticated GET-only checks via safe session handoff if available, and no writes or runtime changes.
+  - Do not include deploy, restart, migration, seed/backfill, bootstrap, POST/PATCH/PUT/DELETE, production DB shell, cleanup, real email, or DirectMail runtime changes in Step 49B.
+- Local gates judgment:
+  - No full lint/typecheck/test/build rerun is required for Step 49A because only memory-bank documentation changes.
+  - Before entering Step 49B, require tracked diff clean, `git diff --check`, sensitive scan, and a non-sensitive review of package scripts / production compose / migration filenames / runbook boundaries.
+  - Re-run full local gates only if code, schema, migration, package/lockfile, compose/deploy config, or runtime behavior changes after Step 48D.
+
 ## 2026-06-29 Step 48D - Local production-like permission scope acceptance supplement
 
 - Status: STEP_48D_PERMISSION_SCOPE_ACCEPTED_CURRENT_MODEL_ADMIN_ZERO_EXPECTED.
