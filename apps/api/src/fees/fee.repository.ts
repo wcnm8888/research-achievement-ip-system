@@ -15,6 +15,7 @@ import {
 } from "./domain/fee-repository.errors";
 import {
   CreateFeeRecordInput,
+  FeeArchiveInput,
   FeeAchievementParentRecord,
   FeeRecordQueryInput,
   FeeRecordRecord,
@@ -135,6 +136,41 @@ export class FeeRepository {
         archivedAt: null,
       },
       data: toFeeStatusTransitionData(input),
+    });
+
+    if (result.count !== 1) {
+      throw new FeeStatusTransitionConflictError(
+        input.feeRecordId,
+        input.expectedStatus,
+      );
+    }
+
+    const row = await client.feeRecord.findUnique({
+      where: { id: input.feeRecordId },
+      select: feeStateSelect,
+    });
+
+    if (!row) {
+      throw new CreatedFeeRecordNotFoundError(input.feeRecordId);
+    }
+
+    return toFeeStateRecord(row as Parameters<typeof toFeeStateRecord>[0]);
+  }
+
+  async archiveFeeInTransaction(
+    client: FeeTransactionClient,
+    input: FeeArchiveInput,
+  ): Promise<FeeStateRecord> {
+    const result = await client.feeRecord.updateMany({
+      where: {
+        id: input.feeRecordId,
+        payStatus: input.expectedStatus,
+        archivedAt: null,
+      },
+      data: {
+        archivedAt: input.archivedAt,
+        updatedById: input.updatedById ?? null,
+      },
     });
 
     if (result.count !== 1) {

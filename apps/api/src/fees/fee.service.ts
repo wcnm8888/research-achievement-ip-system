@@ -266,6 +266,58 @@ export class FeeService {
     );
   }
 
+  async archiveFee(
+    context: UserContext,
+    feeRecordId: string,
+    dto: ChangeFeeStatusDto,
+  ): Promise<FeeStateRecord> {
+    this.assertUserContext(context);
+    this.assertPermission(context, PermissionCode.feeManageDepartment);
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const feeClient = tx as FeeTransactionClient;
+        const auditClient = tx as AuditTransactionClient;
+        const current = await this.repository.findStateByIdWhereInTransaction(
+          feeClient,
+          feeRecordId,
+          this.policyQueryFactory.feeDepartmentWhere(
+            context,
+            PermissionCode.feeManageDepartment,
+          ),
+        );
+
+        if (!current) {
+          throw new FeeNotFoundError();
+        }
+
+        const archivedAt = new Date();
+        const next = await this.repository.archiveFeeInTransaction(feeClient, {
+          feeRecordId,
+          expectedStatus: current.payStatus,
+          archivedAt,
+          updatedById: context.userId,
+        });
+
+        await this.auditService.recordEventInTransaction(
+          auditClient,
+          this.toFeeAuditEvent(
+            context,
+            AuditActionCode.archive,
+            current,
+            next,
+            undefined,
+            dto.reason,
+          ),
+        );
+
+        return next;
+      });
+    } catch (error) {
+      throw this.mapRepositoryError(error);
+    }
+  }
+
   private async transitionFeeStatusWithReason(
     context: UserContext,
     feeRecordId: string,
@@ -396,7 +448,14 @@ export class FeeService {
 
 type FeeAuditRecord = Pick<
   FeeRecordRecord | FeeStateRecord,
-  "id" | "achievementId" | "departmentId" | "feeType" | "dueDate" | "paidDate" | "payStatus"
+  | "id"
+  | "achievementId"
+  | "departmentId"
+  | "feeType"
+  | "dueDate"
+  | "paidDate"
+  | "payStatus"
+  | "archivedAt"
 >;
 
 const toFeeAuditSummary = (
@@ -420,6 +479,7 @@ const toFeeAuditSummary = (
     ...(reason ? { reason } : {}),
     dueDate: toAuditDateString(record.dueDate),
     ...(record.paidDate ? { paidDate: toAuditDateString(record.paidDate) } : {}),
+    ...(record.archivedAt ? { archivedAt: toAuditDateString(record.archivedAt) } : {}),
   }) as AuditJsonValue;
 
 const parseOptionalDate = (value: string | undefined): Date | undefined =>

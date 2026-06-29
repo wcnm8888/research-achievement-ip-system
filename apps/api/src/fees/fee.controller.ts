@@ -168,6 +168,21 @@ export class FeeController {
       throw mapFeeServiceError(error);
     }
   }
+
+  @Post(":id/archive")
+  @HttpCode(200)
+  @RequirePermissions(PermissionCode.feeManageDepartment)
+  async archiveFee(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Body(changeFeeStatusValidationPipe) dto: ChangeFeeStatusDto,
+  ) {
+    try {
+      return await this.feeService.archiveFee(currentUser, feeRecordId, dto);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
 }
 
 const mapFeeServiceError = (error: unknown): Error => {

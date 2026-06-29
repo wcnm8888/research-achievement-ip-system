@@ -98,3 +98,10 @@ export type FeeStatusTransitionInput = {
   voucherNo?: string | null;
   archivedAt?: Date | null;
 };
+
+export type FeeArchiveInput = {
+  feeRecordId: string;
+  expectedStatus: PayStatusCode;
+  archivedAt: Date;
+  updatedById?: string | null;
+};

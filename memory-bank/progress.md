@@ -1,5 +1,45 @@
 # Progress
 
+## 2026-06-29 Step 51B - Fee soft archive API
+
+- Status: STEP_51B_FEE_SOFT_ARCHIVE_IMPLEMENTED_AND_ACCEPTED_LOCALLY.
+- Step identity:
+  - Implements phase-one fee soft archive.
+  - This is not migration/seed/backfill, not VPS/production acceptance, not deploy/push, not real email, and not cleanup.
+- Starting state:
+  - `HEAD`: `4e3dea8`.
+  - Latest commit subject: `feat: add fee warning API`.
+  - Tracked diff was empty before Step 51B changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented:
+  - `POST /api/fees/:id/archive`.
+  - Requires `fee:manage_department` and a non-empty reason.
+  - Sets `archivedAt` and `updatedById`.
+  - Keeps `payStatus` unchanged.
+  - Default list/detail/warnings continue to exclude archived fees through existing active filters.
+  - `includeArchived=true` list can still show archived records.
+  - Adds `ARCHIVE` audit event for the fee target.
+- Local Docker acceptance:
+  - API image rebuilt locally and API container restarted healthy.
+  - Research secretary archived Step50B fee `1ae2843c-ef99-4226-b6d3-3e952af09d59`.
+  - Archive HTTP status `200`.
+  - Archive response `payStatus=PENDING`, `archivedAt` set.
+  - DB `payStatus=PENDING`, `archivedAt` set, `updatedById` matched secretary.
+  - Default fee list no longer included the archived fee.
+  - `includeArchived=true` fee list included the archived fee.
+  - Fee warnings no longer included the archived fee.
+  - Fee archive audit count: `1`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: passed, 6 files / 83 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Remaining fee gaps:
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history beyond audit summaries.
+  - Production acceptance.
+
 ## 2026-06-29 Step 51A - Fee warning API surface
 
 - Status: STEP_51A_FEE_WARNING_API_IMPLEMENTED_AND_ACCEPTED_LOCALLY.

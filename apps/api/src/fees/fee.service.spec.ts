@@ -125,6 +125,11 @@ const createService = () => {
     transitionPayStatusInTransaction: vi
       .fn()
       .mockResolvedValue(makeFeeState({ payStatus: PayStatusCode.paid, paidDate })),
+    archiveFeeInTransaction: vi
+      .fn()
+      .mockResolvedValue(
+        makeFeeState({ archivedAt: new Date("2026-06-20T00:00:00.000Z") }),
+      ),
     isPrismaUniqueConflict: vi.fn((error: unknown) => (error as { code?: string })?.code === "P2002"),
   };
   const rbacPolicy = {
@@ -709,6 +714,94 @@ describe("FeeService.cancelFee", () => {
     ).rejects.toBeInstanceOf(FeeNotFoundError);
     expect(repository.transitionPayStatusInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("FeeService.archiveFee", () => {
+  it("denies archive when the user only has fee read permission", async () => {
+    const { auditService, repository, service } = createService();
+
+    await expect(
+      service.archiveFee(makeContext([PermissionCode.feeReadDepartment]), ids.feeRecord, {
+        reason: "local soft archive",
+      }),
+    ).rejects.toBeInstanceOf(FeePermissionDeniedError);
+    expect(repository.findStateByIdWhereInTransaction).not.toHaveBeenCalled();
+    expect(repository.archiveFeeInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("soft archives fees with reason in the shared audit transaction", async () => {
+    const { auditService, policyQueryFactory, repository, service } = createService();
+    const context = makeContext([PermissionCode.feeManageDepartment]);
+
+    const result = await service.archiveFee(context, ids.feeRecord, {
+      reason: "local soft archive",
+    });
+
+    expect(policyQueryFactory.feeDepartmentWhere).toHaveBeenCalledWith(
+      context,
+      PermissionCode.feeManageDepartment,
+    );
+    expect(repository.findStateByIdWhereInTransaction).toHaveBeenCalledWith(
+      tx,
+      ids.feeRecord,
+      feeManageWhere,
+    );
+    expect(repository.archiveFeeInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        feeRecordId: ids.feeRecord,
+        expectedStatus: PayStatusCode.pending,
+        updatedById: ids.user,
+      }),
+    );
+    expect(result.archivedAt).toEqual(new Date("2026-06-20T00:00:00.000Z"));
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        action: AuditActionCode.archive,
+        newValue: expect.objectContaining({
+          oldStatus: PayStatusCode.pending,
+          newStatus: PayStatusCode.pending,
+          reason: "local soft archive",
+          archivedAt: "2026-06-20T00:00:00.000Z",
+        }),
+      }),
+    );
+    expectAuditPayloadHasNoSensitiveFeeFields(
+      auditService.recordEventInTransaction.mock.calls[0]![1],
+    );
+  });
+
+  it("returns not found for missing, out-of-scope, or already archived fee records", async () => {
+    const { auditService, repository, service } = createService();
+    repository.findStateByIdWhereInTransaction.mockResolvedValueOnce(null);
+
+    await expect(
+      service.archiveFee(
+        makeContext([PermissionCode.feeManageDepartment]),
+        ids.feeRecord,
+        { reason: "not found path" },
+      ),
+    ).rejects.toBeInstanceOf(FeeNotFoundError);
+    expect(repository.archiveFeeInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("fails the shared transaction when archive audit write fails", async () => {
+    const { auditService, repository, service } = createService();
+    auditService.recordEventInTransaction.mockRejectedValueOnce(new Error("audit failed"));
+
+    await expect(
+      service.archiveFee(
+        makeContext([PermissionCode.feeManageDepartment]),
+        ids.feeRecord,
+        { reason: "audit should be atomic" },
+      ),
+    ).rejects.toThrow("audit failed");
+    expect(repository.archiveFeeInTransaction).toHaveBeenCalledOnce();
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledOnce();
   });
 });
 

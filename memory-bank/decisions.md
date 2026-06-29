@@ -1,5 +1,26 @@
 # Decisions
 
+## D179 - Step 51B adds fee soft archive without deleting records
+
+- Date: 2026-06-29.
+- Context: Step 50A/50B kept fee archive as a phase-one local gap. The schema already had `fee_records.archived_at`, and list/detail/warning queries already treated archived fees as inactive by default.
+- Decision:
+  - Add `POST /api/fees/:id/archive` as a soft archive operation.
+  - Require `fee:manage_department` and a non-empty reason.
+  - Set `archivedAt` and `updatedById`, but keep `payStatus` unchanged.
+  - Keep archived records readable through `includeArchived=true` list only; default list/detail/warnings remain active-only.
+  - Record a fee `ARCHIVE` audit event with a non-sensitive reason summary.
+- Rationale:
+  - This satisfies the phase-one archive requirement without data deletion, new schema, migration, or production work.
+  - Preserving `payStatus` avoids conflating payment lifecycle with record visibility lifecycle.
+- Not complete:
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history outside audit summaries.
+  - Production acceptance.
+- Boundaries:
+  - This decision does not authorize schema/migration changes, seed/backfill, dependency changes, DirectMail runtime changes, real email, push/deploy, VPS access, production DB access, production writes, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D178 - Step 51A adds an explicit fee warning API
 
 - Date: 2026-06-29.

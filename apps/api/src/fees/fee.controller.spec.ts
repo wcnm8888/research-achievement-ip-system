@@ -41,6 +41,7 @@ type FeeServiceMock = {
   markFeePaid: ReturnType<typeof vi.fn>;
   waiveFee: ReturnType<typeof vi.fn>;
   cancelFee: ReturnType<typeof vi.fn>;
+  archiveFee: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -146,6 +147,10 @@ const createServiceMock = (): FeeServiceMock => ({
   markFeePaid: vi.fn().mockResolvedValue(makePaidFeeState()),
   waiveFee: vi.fn().mockResolvedValue(makeTerminalFeeState(PayStatusCode.waived)),
   cancelFee: vi.fn().mockResolvedValue(makeTerminalFeeState(PayStatusCode.cancelled)),
+  archiveFee: vi.fn().mockResolvedValue({
+    ...makeFeeRecord(),
+    archivedAt: new Date("2026-06-20T00:00:00.000Z"),
+  }),
 });
 
 describe("FeeController HTTP", () => {
@@ -196,9 +201,16 @@ describe("FeeController HTTP", () => {
         .send({ reason: "duplicate fee record" })
         .expect(403);
 
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/archive`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "local archive" })
+        .expect(403);
+
       expect(service.createFee).not.toHaveBeenCalled();
       expect(service.waiveFee).not.toHaveBeenCalled();
       expect(service.cancelFee).not.toHaveBeenCalled();
+      expect(service.archiveFee).not.toHaveBeenCalled();
     });
   });
 
@@ -344,6 +356,25 @@ describe("FeeController HTTP", () => {
     });
   });
 
+  it("archives a fee with fee:manage_department and required reason", async () => {
+    await withTestApp([PermissionCode.feeManageDepartment], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/archive`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "local soft archive" })
+        .expect(200);
+
+      expect(response.body.archivedAt).toBeTruthy();
+      expect(service.archiveFee).toHaveBeenCalledWith(
+        expect.any(Object),
+        ids.feeRecord,
+        expect.objectContaining({
+          reason: "local soft archive",
+        }),
+      );
+    });
+  });
+
   it("rejects invalid UUID params with 400", async () => {
     await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
       await request(app.getHttpServer() as Server)
@@ -393,11 +424,18 @@ describe("FeeController HTTP", () => {
         .send({ reason: "x".repeat(501) })
         .expect(400);
 
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/archive`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "   " })
+        .expect(400);
+
       expect(service.listFees).not.toHaveBeenCalled();
       expect(service.createFee).not.toHaveBeenCalled();
       expect(service.markFeePaid).not.toHaveBeenCalled();
       expect(service.waiveFee).not.toHaveBeenCalled();
       expect(service.cancelFee).not.toHaveBeenCalled();
+      expect(service.archiveFee).not.toHaveBeenCalled();
       },
     );
   });

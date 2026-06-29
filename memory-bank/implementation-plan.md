@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 51B Archive - Fee Soft Archive API - 2026-06-29
+
+- Step identity:
+  - This Step implements phase-one fee soft archive.
+  - This is local Docker implementation/acceptance only. It is not VPS/production acceptance and not production write acceptance.
+  - No schema, migration, seed/backfill, dependency, package/lockfile, DirectMail runtime strategy, VPS, production DB, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `4e3dea8`.
+  - Latest commit: `feat: add fee warning API`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Implemented:
+  - `POST /api/fees/:id/archive`.
+  - Requires `fee:manage_department`.
+  - Requires a non-empty `reason` body using the existing fee reason DTO.
+  - Performs a soft archive only: sets `archivedAt` and `updatedById`, keeps `payStatus` unchanged, and does not delete records.
+  - Uses the existing fee department scope and archived-null guard.
+  - Appends a fee `ARCHIVE` audit event with a non-sensitive reason summary.
+- Accepted local Docker result:
+  - Local API image rebuilt and API container restarted healthy.
+  - Research secretary archived Step50B fee `1ae2843c-ef99-4226-b6d3-3e952af09d59`.
+  - Archive response HTTP `200`, `payStatus=PENDING`, `archivedAt` set.
+  - DB `payStatus=PENDING`, `archivedAt` set, `updatedById` equals the secretary.
+  - Default `/api/fees?achievementId=<sample>` no longer includes the archived fee.
+  - `/api/fees?achievementId=<sample>&includeArchived=true` includes the archived fee.
+  - `/api/fees/warnings?today=2026-06-29&dueSoonDays=30&take=20` no longer includes the archived fee.
+  - Fee archive audit count for the target fee: `1`.
+- Tests:
+  - Fee tests passed: 6 files, 83 tests.
+  - API typecheck passed.
+- Remaining fee gaps:
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history beyond audit summaries.
+  - Production acceptance.
+
 ## Current Step 51A Archive - Fee Warning API Surface - 2026-06-29
 
 - Step identity:

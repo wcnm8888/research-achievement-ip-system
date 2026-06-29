@@ -409,3 +409,50 @@ describe("FeeRepository.transitionPayStatus", () => {
     ).rejects.toBeInstanceOf(FeeStatusTransitionConflictError);
   });
 });
+
+describe("FeeRepository.archiveFee", () => {
+  it("soft archives active fee records with an optimistic status guard", async () => {
+    const { repository, tx } = createRepository();
+    const archivedAt = new Date("2026-06-20T00:00:00.000Z");
+    tx.feeRecord.findUnique.mockResolvedValueOnce({
+      ...makeStateRow(),
+      archivedAt,
+    });
+
+    const result = await repository.archiveFeeInTransaction(
+      tx as unknown as FeeTransactionClient,
+      {
+        feeRecordId: ids.feeRecord,
+        expectedStatus: PayStatusCode.pending,
+        archivedAt,
+        updatedById: ids.user,
+      },
+    );
+
+    expect(tx.feeRecord.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: ids.feeRecord,
+        payStatus: PayStatusCode.pending,
+        archivedAt: null,
+      },
+      data: {
+        archivedAt,
+        updatedById: ids.user,
+      },
+    });
+    expect(result.archivedAt).toEqual(archivedAt);
+  });
+
+  it("maps stale archive updates to a transition conflict", async () => {
+    const { repository, tx } = createRepository();
+    tx.feeRecord.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      repository.archiveFeeInTransaction(tx as unknown as FeeTransactionClient, {
+        feeRecordId: ids.feeRecord,
+        expectedStatus: PayStatusCode.pending,
+        archivedAt: new Date("2026-06-20T00:00:00.000Z"),
+      }),
+    ).rejects.toBeInstanceOf(FeeStatusTransitionConflictError);
+  });
+});

@@ -1,5 +1,59 @@
 # Evidence
 
+## 2026-06-29 Step 51B - Fee soft archive API evidence
+
+- Purpose:
+  - Implement and accept a local Docker fee soft archive API for phase-one fee lifecycle needs.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `4e3dea8`.
+  - Latest commit subject: `feat: add fee warning API`.
+  - `git status --short --untracked-files=no`: empty before Step 51B changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Code evidence:
+  - Added `FeeRepository.archiveFeeInTransaction`.
+  - Added `FeeService.archiveFee`.
+  - Added `POST /api/fees/:id/archive`.
+  - Archive uses existing `ChangeFeeStatusDto` reason validation.
+  - Archive uses fee department scope, `payStatus` optimistic guard, and `archivedAt: null` guard.
+  - Archive writes `archivedAt` and `updatedById` only; it does not delete and does not change `payStatus`.
+  - Fee audit summaries can include `archivedAt` and reason.
+- Test evidence:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: passed.
+  - Fee test result: 6 files passed, 83 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+- Local Docker evidence:
+  - `docker compose -f docker-compose.production.yml build --progress plain api`: passed.
+  - `docker compose -f docker-compose.production.yml up -d api`: API recreated locally.
+  - API health returned `healthy`.
+  - Compose reported the existing orphan container from prior local runs; it was not cleaned due safety rules.
+  - Research secretary local session archived fee `1ae2843c-ef99-4226-b6d3-3e952af09d59`.
+  - Runtime summary:
+    - before default fee list HTTP `200`, target fee visible.
+    - before warnings HTTP `200`, target fee visible.
+    - archive HTTP `200`.
+    - after default fee list HTTP `200`, target fee hidden.
+    - after `includeArchived=true` fee list HTTP `200`, target fee visible.
+    - after warnings HTTP `200`, target fee hidden.
+    - archive response `payStatus=PENDING`, `archivedAt` set.
+    - DB `payStatus=PENDING`, `archivedAt` set.
+    - DB `updatedById` matched research secretary.
+    - fee archive audit count `1`.
+- Credential/session evidence:
+  - A temporary random local password was rotated in-process for the Step48C research secretary to obtain a real local session.
+  - Password values, cookie values, tokens, secrets, connection strings, private keys, full reset/invite links, plaintext session values, and provider payloads were not printed or recorded.
+- Not covered:
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history outside audit summaries.
+  - Production acceptance.
+- Verification still required before commit:
+  - `git diff --check`.
+  - Sensitive scan over committed added lines.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, provider raw payload, or raw audit payload was recorded.
+  - No schema, migration, seed/backfill, dependency, package/lockfile, DirectMail runtime strategy, VPS access, production DB access, push, deploy, real email, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 51A - Fee warning API surface evidence
 
 - Purpose:
