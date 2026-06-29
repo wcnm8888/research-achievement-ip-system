@@ -1,5 +1,51 @@
 # Progress
 
+## 2026-06-29 Step 52A - Import dry-run readiness scope and backend plan
+
+- Status: STEP_52A_IMPORT_DRY_RUN_READINESS_INVENTORIED_AND_DEPARTMENT_METADATA_BACKEND_PLAN_RECOMMENDED.
+- Step identity:
+  - Audits current import/upload/dry-run readiness.
+  - Records the minimal safe backend plan for phase-one import dry-run.
+  - Documentation-only; no source implementation, schema/migration/seed/backfill, dependency/package/lockfile change, real import write, frontend UI, Docker/deploy change, VPS/production access, push/deploy, cleanup, deletion, reset, drop, restore, or prune.
+- Starting state:
+  - `HEAD`: `6c42562`.
+  - Latest commit subject: `docs: record local docker settings acceptance`.
+  - Tracked diff was empty before Step 52A memory-bank changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Findings:
+  - No dedicated import/dry-run API, ImportModule, import service/repository/DTO, import tests, Web import page, or Web import API client exists.
+  - Existing multipart upload is attachment-specific and can only provide a file-upload pattern.
+  - Existing `dry-run` code is account-lifecycle delivery/provider behavior, not data import validation.
+  - Department, account-management, and settings modules provide reusable `system:config` guarded admin patterns.
+  - Achievements are too complex for the first dry-run because they involve type-specific data, contributors, owner/department scoping, workflow, fees, attachments, and later write semantics.
+- Decision recorded:
+  - Step 52B should implement backend-only department metadata CSV dry-run first.
+  - User/account metadata dry-run should follow after department dry-run, because it depends on department and role resolution and has credential/invite boundaries.
+  - Achievement import dry-run remains deferred.
+- Step 52B API contract summary:
+  - `POST /api/imports/departments/dry-run`.
+  - `multipart/form-data` with `file`.
+  - CSV only; suggested limit `1 MB` and `500` rows.
+  - Required columns: `code`, `name`.
+  - Optional column: `parentCode`.
+  - Validate structure, code/name formats, duplicate codes, parent existence, self-parent, file-local parent cycles, unknown columns, and formula-like cell values.
+  - Return a row-level report with stable error codes and no database writes.
+- Dependency result:
+  - Multipart support exists through `@nestjs/platform-express`/Multer.
+  - No CSV parser dependency was found.
+  - No Excel parser dependency was found.
+  - Step 52A installed nothing; standard CSV support in Step 52B needs parser-dependency authorization or a deliberately narrow tested CSV subset.
+  - Excel is deferred.
+- No-write boundary:
+  - Dry-run must not create/update/upsert/delete/archive/restore business rows.
+  - Dry-run must not write audit rows, credentials, invites, lifecycle tokens, workflow records, attachments, or stored import files.
+  - Tests should assert that write and audit methods are not called.
+- Frontend:
+  - Web import UI is explicitly deferred to Step 52C after backend contract and tests.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+
 ## 2026-06-29 Step 51F - Settings frontend local Docker acceptance
 
 - Status: STEP_51F_SETTINGS_API_INTEGRATIONS_LOCAL_DOCKER_ACCEPTED_WITH_BROWSER_INTERACTION_LIMITATION.

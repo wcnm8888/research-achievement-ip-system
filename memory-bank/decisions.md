@@ -1,5 +1,31 @@
 # Decisions
 
+## D184 - Step 52A starts import readiness with department metadata dry-run
+
+- Date: 2026-06-29.
+- Context: Phase-one local gaps still include import dry-run readiness. Current code has account, department, achievement, attachment, and settings surfaces, but no dedicated business data import endpoint or import UI.
+- Decision:
+  - Start import dry-run with backend-only department metadata CSV validation in Step 52B.
+  - Use `POST /api/imports/departments/dry-run` as the first backend contract.
+  - Require `system:config` and parse an uploaded CSV from memory.
+  - Validate only `code`, `name`, and optional `parentCode`.
+  - Return a row-level validation report with stable error codes.
+  - Do not write any DB rows, audit rows, uploaded files, credentials, invites, workflow records, achievements, attachments, or business data.
+  - Defer Web UI/API-client integration to Step 52C.
+  - Defer user/account metadata dry-run until after department dry-run, because account rows depend on department/role resolution and have credential/invite boundaries.
+  - Defer achievement import dry-run because achievement creation is type-specific and workflow-coupled.
+- Rationale:
+  - Department metadata is the smallest useful import surface and has no credential, invite, attachment, or workflow semantics.
+  - Existing department management already defines the relevant field constraints and `system:config` admin boundary.
+  - A strict no-write dry-run keeps the Step 52B backend testable without production data risk.
+- Dependency decision:
+  - Do not install dependencies in Step 52A.
+  - The repo has multipart support through `@nestjs/platform-express`/Multer, but no CSV or Excel parser dependency.
+  - Standard CSV parsing in Step 52B should request parser-dependency authorization, or else explicitly accept a narrow tested CSV subset.
+  - Excel is deferred because `xlsx`/`exceljs` are not present.
+- Boundaries:
+  - This decision does not authorize real import execution, source implementation in Step 52A, schema/migration changes, seed/backfill, dependency installation, package/lockfile changes, Docker/compose/deploy changes, business-data writes, audit writes, uploaded-file persistence, secrets access, `.env` reads, VPS access, production DB access, push/deploy, cleanup, deletion, reset, drop, restore, or prune.
+
 ## D183 - Step 51F accepts local Docker Settings metadata with session auth
 
 - Date: 2026-06-29.

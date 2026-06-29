@@ -4,6 +4,77 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 52A Archive - Import dry-run readiness scope and backend plan - 2026-06-29
+
+- Step identity:
+  - This Step audits current import/upload/dry-run readiness and records the smallest safe backend plan for phase-one import dry-run.
+  - This is documentation-only. It does not implement import parsing, real import writes, frontend UI, Prisma schema, migration, seed/backfill, dependency installation, package/lockfile changes, Docker/compose/deploy changes, VPS/production access, production DB access, push, deploy, cleanup, deletion, reset, drop, restore, or prune work.
+- Starting state:
+  - `HEAD`: `6c42562`.
+  - Latest commit: `docs: record local docker settings acceptance`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Current capability inventory:
+  - Backend has no dedicated import module, import controller, import service, import repository, import DTOs, import tests, import Web client methods, or import UI.
+  - Search found no data-import dry-run endpoint for departments, users/accounts, or achievements.
+  - Existing `dry-run` references are account-lifecycle delivery adapter behavior for email/provider safety, not business data import validation.
+  - Existing upload capability is attachment-specific multipart handling under `/api/achievements/:achievementId/attachments`; it can inform file-size and `FileInterceptor` patterns but should not be reused as a business import endpoint.
+  - Existing admin write patterns:
+    - `departments` exposes list/tree/detail/create/update/disable/enable under `system:config`.
+    - `account-management` exposes user list/detail/create/status/role/department management under `system:config`, plus invite/password reset endpoints under account lifecycle permissions.
+    - `settings/api-integrations` exposes non-sensitive metadata CRUD under `system:config`.
+  - Web has Accounts, Departments, and Settings management pages, but no import page, import route, import API-client method, or upload/dry-run UI for CSV/Excel imports.
+  - Prisma has the relevant business models for dry-run validation: `Department`, `User`, `Role`, `UserRole`, `Achievement`, `Attachment`, and `AuditLog`.
+- Parser/dependency inventory:
+  - `@nestjs/platform-express` is present and brings multipart upload capability through Multer.
+  - No direct CSV parser dependency was found in `package.json`, `apps/api/package.json`, `apps/web/package.json`, or `pnpm-lock.yaml` (`csv-parse`, `fast-csv`, `papaparse` absent).
+  - No Excel parser dependency was found (`xlsx`, `exceljs` absent).
+  - Step 52A installs nothing. Standard CSV parsing in Step 52B should either request a backend parser dependency such as `csv-parse`, or explicitly accept a narrow, tested CSV subset if dependency installation remains out of scope.
+  - Excel import should be deferred because there is no existing parser dependency.
+- Dry-run type decision:
+  - Do not start with achievement import dry-run. Achievement import is high-complexity because it would need type-specific details, contributors, owner/department scoping, secret level, workflow state, fees/attachments implications, and later audit/write semantics.
+  - Step 52B should start with department metadata CSV dry-run as the smallest safe backend surface.
+  - User/account metadata dry-run is a close next candidate, but should follow department dry-run because account rows need department resolution, role validation, credential/invite boundaries, and email uniqueness checks.
+- Step 52B backend contract:
+  - Add a backend-only `ImportsModule` imported by `AppModule`.
+  - Runtime endpoint: `POST /api/imports/departments/dry-run`.
+  - Request: `multipart/form-data` with `file` field only; accept `.csv` / `text/csv` / `application/vnd.ms-excel` only for CSV bytes, not Excel workbooks.
+  - Suggested limits: max file size `1 MB`, max rows `500`, UTF-8 text, one header row.
+  - Required columns: `code`, `name`.
+  - Optional column: `parentCode`.
+  - Excluded columns for Step 52B: `id`, `status`, `archivedAt`, `createdAt`, `updatedAt`, passwords, users, roles, achievements, attachments, and any free-form secret/config fields.
+  - Validation:
+    - `code`: non-empty, 1-64 chars, `^[A-Z0-9_]+$`.
+    - `name`: non-empty, 1-200 chars after trim.
+    - `parentCode`: optional; if present, must reference an active existing department code or another row in the file.
+    - Reject duplicate department codes inside the file.
+    - Report existing DB department codes as review/warning rows, not writes.
+    - Detect parent self-reference and file-local parent cycles.
+    - Reject unknown columns in strict mode for the first implementation.
+    - Reject formula-like cell values beginning with `=`, `+`, `-`, or `@` to reduce spreadsheet injection risk in later exports.
+  - Response shape:
+    - `importType: "DEPARTMENT_METADATA"`.
+    - `dryRun: true`.
+    - `file`: non-sensitive name, size, mime type, and encoding.
+    - `columns`: required, optional, and received header names.
+    - `summary`: total rows, valid rows, error rows, warning rows, create candidates, existing-code rows.
+    - `rows`: row number, parsed non-sensitive fields, row status, candidate action, errors, and warnings.
+    - Error object shape: `{ field, code, message }`; codes should be stable machine-readable values such as `REQUIRED`, `INVALID_FORMAT`, `DUPLICATE_IN_FILE`, `UNKNOWN_PARENT`, `PARENT_CYCLE`, `EXISTING_CODE`, and `UNKNOWN_COLUMN`.
+- No-write technical boundary:
+  - Dry-run must not call `create`, `update`, `upsert`, `delete`, `archive`, `restore`, `seed`, migration, backfill, or `auditService.recordEvent`.
+  - Dry-run must not create departments, users/accounts, achievements, attachments, workflow records, audit rows, credentials, invites, or lifecycle tokens.
+  - The service should use read-only repository queries only, such as active department lookup by code.
+  - The uploaded file should be parsed from memory and not persisted to local storage or object storage.
+  - Tests in Step 52B should assert that repository write and audit methods are not invoked.
+- Permission and audit boundary:
+  - Require `UserContextGuard`, `PermissionGuard`, and `PermissionCode.systemConfig`.
+  - Return 403 before parsing/service execution when permission is missing.
+  - Do not write an audit log for dry-run in Step 52B, because that would violate the explicit no-DB-write dry-run boundary.
+  - Later real import execution, if authorized in a separate Step, must have its own write contract and audit policy.
+- Frontend split:
+  - Step 52B should be backend-only with tests.
+  - Step 52C should add Web API client/types and a guarded import dry-run UI only after the backend contract passes.
+
 ## Current Step 51F Archive - Settings frontend local Docker acceptance - 2026-06-29
 
 - Step identity:

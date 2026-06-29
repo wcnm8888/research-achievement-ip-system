@@ -1,5 +1,67 @@
 # Evidence
 
+## 2026-06-29 Step 52A - Import dry-run readiness scope and backend plan evidence
+
+- Purpose:
+  - Audit current import/upload/dry-run readiness.
+  - Define the smallest safe backend plan for phase-one import dry-run.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `6c4256293e3fae19e91ee1ef0c7ea71896551711`.
+  - Latest commit subject: `docs: record local docker settings acceptance`.
+  - Tracked diff was empty before Step 52A memory-bank changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Memory-bank context read:
+  - Step 51F confirms Settings metadata local Docker acceptance under real session auth and no sensitive-value recording.
+  - Step 51D/51E confirms the current `settings/api-integrations` backend/frontend pattern for `system:config` guarded metadata CRUD.
+  - Step 50A still listed import dry-run readiness as a phase-one local implementation candidate.
+- Code inventory evidence:
+  - Search found no dedicated backend import module, import controller, import service, import repository, import DTOs, or import tests.
+  - Search found no Web import page, import route, or import API-client methods.
+  - Existing `dry-run` references are account-lifecycle delivery/provider tests and adapter behavior, not data import validation.
+  - `apps/api/src/app.module.ts` imports account management, achievements, attachments, departments, settings, and other modules, but no import module.
+  - `apps/api/src/account-management` exposes user/admin operations under `system:config` and validates email/name/department/roles.
+  - `apps/api/src/department-management` exposes department metadata operations under `system:config` and validates code/name/parent.
+  - `apps/api/src/attachments/attachment.controller.ts` uses `FileInterceptor` for multipart upload, which can inform a dry-run file-upload boundary.
+  - `apps/web/src/api-client.ts` has account, department, attachment, and settings methods, but no import methods.
+- Schema evidence:
+  - `Department` has unique `code`, `name`, optional `parentId`, `status`, timestamps, and `archivedAt`.
+  - `User` has unique `email`, `name`, `departmentId`, `status`, and relations to credentials, roles, achievements, sessions, and lifecycle tokens.
+  - `Role`/`UserRole` are required for account metadata validation.
+  - `Achievement` has type-specific details, contributors, ownership, status, secret level, workflow implications, fees, and attachment relationships.
+  - `AuditLog` exists, but Step 52B dry-run should not write audit rows because dry-run is explicitly no-DB-write.
+- Parser/dependency evidence:
+  - `apps/api/package.json` includes `@nestjs/platform-express`, so multipart upload is available.
+  - No direct CSV parser dependency was found in package manifests or lockfile.
+  - No Excel parser dependency was found in package manifests or lockfile.
+  - Step 52A installed no dependency and changed no package or lockfile.
+- Recommended Step 52B backend contract:
+  - Endpoint: `POST /api/imports/departments/dry-run`.
+  - Permission: `system:config`.
+  - Request: multipart `file`, CSV only, suggested `1 MB` and `500` row limits.
+  - Columns: required `code`, `name`; optional `parentCode`.
+  - Report: file metadata, received columns, summary counts, and row-level errors/warnings.
+  - Stable error codes should include required-field, invalid-format, duplicate-in-file, unknown-parent, parent-cycle, existing-code, unknown-column, and formula-like-cell cases.
+- No-write boundary evidence:
+  - Step 52B should use read-only lookup queries only.
+  - Step 52B should not call create/update/upsert/delete/archive/restore, `prisma.$transaction`, migration, seed/backfill, storage writes, or audit writes.
+  - Step 52B tests should assert that write and audit methods are not called.
+- Not covered:
+  - Source implementation.
+  - CSV parser dependency installation.
+  - Excel parsing.
+  - User/account import dry-run.
+  - Achievement import dry-run.
+  - Frontend import UI.
+  - Real import execution.
+  - Local Docker runtime acceptance.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, provider credential, SMTP credential, DirectMail credential, or real provider secret was recorded.
+  - No source code, Prisma schema, migration, seed/backfill, dependency, package/lockfile, Docker/compose/deploy config, VPS access, production DB access, push, deploy, business-data write, audit write, uploaded-file persistence, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 51F - Settings frontend local Docker acceptance evidence
 
 - Purpose:
