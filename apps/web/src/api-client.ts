@@ -1,12 +1,16 @@
 import type {
   AccountUserDetail,
   AccountUserListResponse,
+  ApiIntegrationListResponse,
+  ApiIntegrationMetadata,
+  ApiIntegrationReasonInput,
   AssignAccountUserRoleInput,
   AssignAccountUserRoleResponse,
   ChangeAccountUserDepartmentInput,
   CreateInviteInput,
   CreateDepartmentInput,
   CreateAccountUserInput,
+  CreateApiIntegrationInput,
   DepartmentDetail,
   DepartmentListResponse,
   DepartmentReasonInput,
@@ -18,6 +22,7 @@ import type {
   InviteAcceptInput,
   InviteAcceptResponse,
   InviteIssueResponse,
+  ListApiIntegrationsQuery,
   ListAccountUsersQuery,
   ListDepartmentsQuery,
   PasswordResetConfirmInput,
@@ -27,6 +32,7 @@ import type {
   PasswordResetRequestResponse,
   PasswordResetRevokeResponse,
   RevokeAccountUserRoleInput,
+  UpdateApiIntegrationInput,
   UpdateDepartmentInput,
 } from "./types";
 
@@ -112,6 +118,21 @@ export type AccountManagementApiClient = ApiClient & {
     userId: string,
     payload?: { reason?: string | null },
   ): Promise<PasswordResetRevokeResponse>;
+  listApiIntegrations(query?: ListApiIntegrationsQuery): Promise<ApiIntegrationListResponse>;
+  getApiIntegration(integrationId: string): Promise<ApiIntegrationMetadata>;
+  createApiIntegration(payload: CreateApiIntegrationInput): Promise<ApiIntegrationMetadata>;
+  updateApiIntegration(
+    integrationId: string,
+    payload: UpdateApiIntegrationInput,
+  ): Promise<ApiIntegrationMetadata>;
+  archiveApiIntegration(
+    integrationId: string,
+    payload?: ApiIntegrationReasonInput,
+  ): Promise<ApiIntegrationMetadata>;
+  restoreApiIntegration(
+    integrationId: string,
+    payload?: ApiIntegrationReasonInput,
+  ): Promise<ApiIntegrationMetadata>;
 };
 
 export type ApiClientOptions = {
@@ -404,6 +425,60 @@ export const createApiClient = (
       options,
     );
     return response as PasswordResetRevokeResponse;
+  },
+  async listApiIntegrations(query?: ListApiIntegrationsQuery) {
+    const response = await request(
+      "/settings/api-integrations",
+      demoUserId,
+      { method: "GET", query },
+      options,
+    );
+    return response as ApiIntegrationListResponse;
+  },
+  async getApiIntegration(integrationId: string) {
+    const response = await request(
+      `/settings/api-integrations/${integrationId}`,
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as ApiIntegrationMetadata;
+  },
+  async createApiIntegration(payload: CreateApiIntegrationInput) {
+    const response = await request(
+      "/settings/api-integrations",
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as ApiIntegrationMetadata;
+  },
+  async updateApiIntegration(integrationId: string, payload: UpdateApiIntegrationInput) {
+    const response = await request(
+      `/settings/api-integrations/${integrationId}`,
+      demoUserId,
+      { method: "PATCH", body: payload },
+      options,
+    );
+    return response as ApiIntegrationMetadata;
+  },
+  async archiveApiIntegration(integrationId: string, payload: ApiIntegrationReasonInput = {}) {
+    const response = await request(
+      `/settings/api-integrations/${integrationId}/archive`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as ApiIntegrationMetadata;
+  },
+  async restoreApiIntegration(integrationId: string, payload: ApiIntegrationReasonInput = {}) {
+    const response = await request(
+      `/settings/api-integrations/${integrationId}/restore`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as ApiIntegrationMetadata;
   },
 });
 

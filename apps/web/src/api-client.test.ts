@@ -605,6 +605,124 @@ describe("account management API client", () => {
   });
 });
 
+describe("settings API integration API client", () => {
+  it("serializes listApiIntegrations filters and pagination", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        items: [makeApiIntegrationResponse()],
+        total: 1,
+        page: 2,
+        pageSize: 20,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    const result = await client.listApiIntegrations({
+      keyword: "doi",
+      provider: "DOI",
+      enabled: true,
+      includeArchived: true,
+      page: 2,
+      pageSize: 20,
+    });
+
+    expect(result.total).toBe(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(
+      "http://localhost/api/settings/api-integrations?keyword=doi&provider=DOI&enabled=true&includeArchived=true&page=2&pageSize=20",
+    );
+    expect(init.method).toBe("GET");
+    expect(init.credentials).toBe("include");
+  });
+
+  it("calls create, update, archive, and restore paths without sensitive response fields", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json(makeApiIntegrationResponse()))
+      .mockResolvedValueOnce(Response.json(makeApiIntegrationResponse({ timeoutMs: 5000 })))
+      .mockResolvedValueOnce(
+        Response.json(
+          makeApiIntegrationResponse({
+            enabled: false,
+            archivedAt: "2026-06-29T01:00:00.000Z",
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(Response.json(makeApiIntegrationResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    const created = await client.createApiIntegration({
+      code: "DOI_LOOKUP",
+      provider: "DOI",
+      enabled: true,
+      timeoutMs: 3000,
+      configRef: "doi.lookup.default",
+    });
+    const updated = await client.updateApiIntegration("integration-1", {
+      timeoutMs: 5000,
+      configRef: null,
+    });
+    const archived = await client.archiveApiIntegration("integration-1", {
+      reason: "unused",
+    });
+    const restored = await client.restoreApiIntegration("integration-1", {
+      reason: "restore",
+    });
+
+    expect(created.code).toBe("DOI_LOOKUP");
+    expect(updated.timeoutMs).toBe(5000);
+    expect(archived.archivedAt).toBeTruthy();
+    expect(restored.archivedAt).toBeNull();
+
+    const [createUrl, createInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [updateUrl, updateInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [archiveUrl, archiveInit] = fetchMock.mock.calls[2] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [restoreUrl, restoreInit] = fetchMock.mock.calls[3] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(createUrl).toBe("http://localhost/api/settings/api-integrations");
+    expect(createInit.method).toBe("POST");
+    expect(createInit.body).toBe(
+      JSON.stringify({
+        code: "DOI_LOOKUP",
+        provider: "DOI",
+        enabled: true,
+        timeoutMs: 3000,
+        configRef: "doi.lookup.default",
+      }),
+    );
+    expect(updateUrl).toBe("http://localhost/api/settings/api-integrations/integration-1");
+    expect(updateInit.method).toBe("PATCH");
+    expect(updateInit.body).toBe(JSON.stringify({ timeoutMs: 5000, configRef: null }));
+    expect(archiveUrl).toBe(
+      "http://localhost/api/settings/api-integrations/integration-1/archive",
+    );
+    expect(archiveInit.body).toBe(JSON.stringify({ reason: "unused" }));
+    expect(restoreUrl).toBe(
+      "http://localhost/api/settings/api-integrations/integration-1/restore",
+    );
+    expect(restoreInit.body).toBe(JSON.stringify({ reason: "restore" }));
+
+    const serialized = JSON.stringify([created, updated, archived, restored]);
+    expect(serialized).not.toContain("raw-provider-value");
+  });
+});
+
 describe("account lifecycle public auth API client", () => {
   it("posts reset request, reset confirm, and invite accept without demo identity headers", async () => {
     const fetchMock = vi
@@ -947,4 +1065,22 @@ const makeDepartmentResponse = (
   createdAt: "2026-06-24T00:00:00.000Z",
   updatedAt: "2026-06-24T00:00:00.000Z",
   archivedAt: overrides.status === "ARCHIVED" ? "2026-06-25T00:00:00.000Z" : null,
+});
+
+const makeApiIntegrationResponse = (
+  overrides: {
+    enabled?: boolean;
+    timeoutMs?: number;
+    archivedAt?: string | null;
+  } = {},
+) => ({
+  id: "integration-1",
+  code: "DOI_LOOKUP",
+  provider: "DOI",
+  enabled: overrides.enabled ?? true,
+  timeoutMs: overrides.timeoutMs ?? 3000,
+  configRef: "doi.lookup.default",
+  createdAt: "2026-06-29T00:00:00.000Z",
+  updatedAt: "2026-06-29T00:00:00.000Z",
+  archivedAt: overrides.archivedAt ?? null,
 });

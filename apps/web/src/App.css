@@ -266,6 +266,22 @@ body {
   overflow-wrap: anywhere;
 }
 
+.settings-api-filter-bar {
+  width: 100%;
+}
+
+.settings-api-keyword {
+  width: min(100%, 320px);
+}
+
+.settings-api-filter-select {
+  width: 180px;
+}
+
+.settings-api-table .ant-table-cell {
+  vertical-align: top;
+}
+
 .dashboard-distribution-line {
   display: flex;
   min-width: 0;
@@ -913,6 +929,8 @@ body {
   .audit-take-input,
   .department-keyword,
   .department-filter-select,
+  .settings-api-keyword,
+  .settings-api-filter-select,
   .search-keyword,
   .search-target-select,
   .search-filter-select,

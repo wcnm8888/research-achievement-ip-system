@@ -705,3 +705,61 @@ export type AssignAccountUserRoleResponse = {
   user: AccountUserDetail;
   userRoleId: string;
 };
+
+export type ApiIntegrationProvider =
+  | "DOI"
+  | "EMAIL"
+  | "HR"
+  | "FINANCE"
+  | "PATENT"
+  | "STORAGE"
+  | "SEARCH"
+  | "OTHER";
+
+export type ApiIntegrationMetadata = {
+  id: string;
+  code: string;
+  provider: ApiIntegrationProvider;
+  enabled: boolean;
+  timeoutMs: number;
+  configRef: string | null;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt: string | null;
+};
+
+export type ApiIntegrationListResponse = {
+  items: ApiIntegrationMetadata[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type ListApiIntegrationsQuery = {
+  keyword?: string;
+  provider?: ApiIntegrationProvider;
+  enabled?: boolean;
+  includeArchived?: boolean;
+  page?: number;
+  pageSize?: number;
+};
+
+export type CreateApiIntegrationInput = {
+  code: string;
+  provider: ApiIntegrationProvider;
+  enabled?: boolean;
+  timeoutMs?: number;
+  configRef?: string | null;
+};
+
+export type UpdateApiIntegrationInput = {
+  code?: string;
+  provider?: ApiIntegrationProvider;
+  enabled?: boolean;
+  timeoutMs?: number;
+  configRef?: string | null;
+};
+
+export type ApiIntegrationReasonInput = {
+  reason?: string | null;
+};

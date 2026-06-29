@@ -1,5 +1,32 @@
 # Decisions
 
+## D182 - Step 51E routes Settings to API integration metadata management
+
+- Date: 2026-06-29.
+- Context: Step 51D added backend `/api/settings/api-integrations`. Step 51E needed a frontend management page without expanding Settings into secrets management or broader configuration domains.
+- Decision:
+  - Add a dedicated `SettingsApiIntegrations` page and route the Settings navigation item to it.
+  - Keep the old Step 20B `SettingsBoundary` component as historical boundary/test coverage, but do not use it as the active Settings route.
+  - Add Web API client methods and shared Web types for Step 51D's API integration metadata contract.
+  - Gate the page in the frontend with `system:config`; unauthorized users should not request the Settings API.
+  - Support list/detail/create/update/archive/restore.
+  - Show enabled/disabled and active/archived states explicitly.
+  - Label `configRef` as a non-sensitive reference name/config reference.
+- Rationale:
+  - This completes the smallest phase-one Settings/config user workflow on top of Step 51D.
+  - Reusing existing Ant Design tables, drawers, modals, and `DataState` keeps the operational UI consistent with Department and Account management.
+  - Keeping `configRef` as a reference label avoids creating a secrets manager.
+- Not complete:
+  - Local Docker UI/API acceptance.
+  - Runtime adapter switching.
+  - Role/permission CRUD.
+  - Dynamic dictionary CRUD.
+  - Reminder-rule configuration.
+  - DirectMail runtime changes.
+  - Production acceptance.
+- Boundaries:
+  - This decision does not authorize backend business logic changes, schema/migration changes, seed/backfill, dependency changes, Docker/compose/deploy config changes, DirectMail runtime changes, real external calls, import/export, real email, push/deploy, VPS access, production DB access, production writes, cleanup, deletion, reset, drop, restore, prune, or sensitive-value access.
+
 ## D181 - Step 51D implements backend-only API integration settings CRUD
 
 - Date: 2026-06-29.

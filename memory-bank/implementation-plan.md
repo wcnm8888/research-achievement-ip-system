@@ -4,6 +4,46 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 51E Archive - Settings API integrations frontend management page - 2026-06-29
+
+- Step identity:
+  - This Step implements the frontend Settings/config management surface for Step 51D API integrations metadata.
+  - Scope is frontend UI/API client/types/tests plus memory-bank records.
+  - No backend business logic, Prisma schema, migration, seed/backfill, dependency, package/lockfile, Docker/compose/deploy config, DirectMail runtime strategy, VPS, production DB, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `c24f564`.
+  - Latest commit: `feat: add API integration settings endpoints`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Implemented:
+  - Added `SettingsApiIntegrations` page and routed Settings navigation to it.
+  - Added Web types for API integration metadata, list query, create/update payloads, lifecycle reason payloads, and provider codes.
+  - Added API client methods for:
+    - `listApiIntegrations`.
+    - `getApiIntegration`.
+    - `createApiIntegration`.
+    - `updateApiIntegration`.
+    - `archiveApiIntegration`.
+    - `restoreApiIntegration`.
+  - Page supports list, detail drawer, create drawer, edit drawer, archive modal, and restore modal.
+  - Page displays enabled/disabled and active/archived state.
+  - Non-`system:config` users see a frontend permission boundary and do not request `/settings/api-integrations`.
+  - Empty/loading/error states use existing `DataState` patterns.
+- Boundary:
+  - UI manages only non-sensitive metadata: `code`, `provider`, `enabled`, `timeoutMs`, `configRef`.
+  - `configRef` is labelled as a non-sensitive reference name/config reference, not a secret value.
+  - No real provider credential, API key, SMTP password, DirectMail credential, env value, connection string, token, cookie, or private key input is added.
+- Tests:
+  - Settings/API-client targeted Web tests passed: 2 files / 43 tests.
+  - Web typecheck passed.
+  - Web full test suite passed: 17 files / 263 tests.
+  - Web build passed with the existing Vite chunk-size warning.
+- Not covered:
+  - Local Docker route/API acceptance.
+  - Runtime adapter switching.
+  - Secrets management.
+  - Role/permission CRUD, dynamic dictionaries, and reminder-rule editing.
+
 ## Current Step 51D Archive - Settings API integrations backend CRUD - 2026-06-29
 
 - Step identity:

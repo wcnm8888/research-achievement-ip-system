@@ -1,5 +1,39 @@
 # Progress
 
+## 2026-06-29 Step 51E - Settings API integrations frontend management page
+
+- Status: STEP_51E_SETTINGS_API_INTEGRATIONS_FRONTEND_UI_IMPLEMENTED.
+- Step identity:
+  - Implements the frontend Settings page for API integration metadata management.
+  - This is not backend business-logic work, not schema/migration/seed/backfill, not runtime provider switching, not DirectMail behavior change, not VPS/production access, not push/deploy, and not cleanup.
+- Starting state:
+  - `HEAD`: `c24f564`.
+  - Latest commit subject: `feat: add API integration settings endpoints`.
+  - Tracked diff was empty before Step 51E changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented:
+  - `SettingsApiIntegrations` page with list/detail/create/update/archive/restore flows.
+  - Settings navigation now routes to `SettingsApiIntegrations`.
+  - Web API client methods for `/settings/api-integrations`.
+  - Web shared types for API integration metadata and payloads.
+  - CSS for the Settings API filter bar/table responsive sizing.
+- Security and UX:
+  - Page requires `system:config` in the frontend boundary.
+  - Without `system:config`, the page renders a permission state and does not request the Settings API.
+  - UI only exposes `code`, `provider`, `enabled`, `timeoutMs`, and `configRef`.
+  - `configRef` copy states that it is a non-sensitive reference name/config reference.
+  - No field is added for real provider secrets, API keys, SMTP passwords, DirectMail credentials, tokens, cookies, connection strings, or private keys.
+  - Loading/empty/error states reuse existing `DataState` behavior.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- SettingsApiIntegrations api-client`: passed, 2 files / 43 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web test`: passed, 17 files / 263 tests.
+  - `corepack pnpm --filter @research-ip/web build`: passed with the existing Vite chunk-size warning.
+  - Local Docker API/UI acceptance was not run in this Step.
+- Remaining:
+  - Optional local Docker browser/API acceptance.
+  - Runtime provider switching and secrets management remain excluded.
+
 ## 2026-06-29 Step 51D - Settings API integrations backend CRUD
 
 - Status: STEP_51D_SETTINGS_API_INTEGRATIONS_BACKEND_CRUD_IMPLEMENTED.

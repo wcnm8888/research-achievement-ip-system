@@ -28,7 +28,7 @@ import { Dashboard } from "./Dashboard";
 import { DepartmentManagement } from "./DepartmentManagement";
 import { Fees } from "./Fees";
 import { Search } from "./Search";
-import { SettingsBoundary } from "./SettingsBoundary";
+import { SettingsApiIntegrations } from "./SettingsApiIntegrations";
 import { Workbench } from "./Workbench";
 import { WorkflowTasks } from "./WorkflowTasks";
 
@@ -91,8 +91,8 @@ export const navItems: NavItem[] = [
   {
     key: "settings",
     label: "系统配置",
-    step: "Step 20B",
-    description: "Step 20B 提供系统配置边界 / 只读能力盘点，不实现 settings/config API 或配置 CRUD。",
+    step: "Step 51E",
+    description: "Step 51E provides API integrations metadata management through system:config.",
   },
   {
     key: "account-management",
@@ -341,7 +341,7 @@ export function App() {
             ) : activeKey === "audit" ? (
               <AuditLogs demoUserId={businessContextId} />
             ) : activeKey === "settings" ? (
-              <SettingsBoundary demoUserId={businessContextId} />
+              <SettingsApiIntegrations demoUserId={businessContextId} authUser={authUser} />
             ) : activeKey === "account-management" ? (
               <AccountManagement demoUserId={businessContextId} authUser={authUser} />
             ) : activeKey === "department-management" ? (
@@ -584,7 +584,7 @@ function LegacyDemoApp() {
           ) : activeKey === "audit" ? (
             <AuditLogs demoUserId={demoUserId} />
           ) : activeKey === "settings" ? (
-            <SettingsBoundary demoUserId={demoUserId} />
+            <SettingsApiIntegrations demoUserId={demoUserId} authUser={null} />
           ) : (
             <BoundaryPage
               item={navItems.find((item) => item.key === activeKey) ?? fallbackNavItem}

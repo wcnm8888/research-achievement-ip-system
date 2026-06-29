@@ -1,5 +1,53 @@
 # Evidence
 
+## 2026-06-29 Step 51E - Settings API integrations frontend management page evidence
+
+- Purpose:
+  - Implement the frontend Settings management page for Step 51D API integration metadata.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `c24f564`.
+  - Latest commit subject: `feat: add API integration settings endpoints`.
+  - `git status --short --untracked-files=no`: empty before Step 51E changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Code evidence:
+  - Added `apps/web/src/SettingsApiIntegrations.tsx`.
+  - Added `apps/web/src/SettingsApiIntegrations.test.tsx`.
+  - Updated `apps/web/src/App.tsx` to route Settings to `SettingsApiIntegrations`.
+  - Updated `apps/web/src/api-client.ts` with Settings API integration methods.
+  - Updated `apps/web/src/types.ts` with API integration metadata and payload types.
+  - Updated `apps/web/src/App.css` for Settings API filter/table layout.
+  - Updated `apps/web/src/api-client.test.ts` for API client route coverage.
+- UI evidence:
+  - Page includes list, detail drawer, create drawer, edit drawer, archive modal, and restore modal.
+  - Table shows integration code, provider, enabled state, active/archived state, timeout, config reference, and updated time.
+  - Filter bar supports keyword, provider, enabled, and include-archived.
+  - Empty/loading/error states use existing `DataState`.
+  - Non-`system:config` users render a permission state and do not call the Settings API.
+- Metadata boundary evidence:
+  - UI fields are limited to `code`, `provider`, `enabled`, `timeoutMs`, and `configRef`.
+  - `configRef` is labelled as a non-sensitive reference name/config reference.
+  - UI does not add fields for provider secrets, API keys, SMTP passwords, DirectMail credentials, tokens, cookies, connection strings, private keys, or env-file values.
+- Test evidence:
+  - `corepack pnpm --filter @research-ip/web test -- SettingsApiIntegrations api-client`: passed.
+  - Targeted result: 2 files passed, 43 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web test`: passed.
+  - Web full test result: 17 files passed, 263 tests passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed.
+  - Build emitted the existing Vite chunk-size warning.
+- Not covered:
+  - Local Docker browser/API acceptance.
+  - Runtime adapter switching.
+  - Secrets management.
+  - Production/VPS acceptance.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie, secret, AccessKey, private key, connection string, provider credential, SMTP credential, DirectMail credential, or real provider secret was recorded.
+  - No backend business logic, Prisma schema, migration, seed/backfill, dependency, package/lockfile, Docker/compose/deploy config, DirectMail runtime strategy, VPS access, production DB access, push, deploy, real external call, real email, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 51D - Settings API integrations backend CRUD evidence
 
 - Purpose:
