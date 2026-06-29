@@ -1,5 +1,71 @@
 # Progress
 
+## 2026-06-29 Step 48C - Local production-like minimal business data acceptance
+
+- Status: STEP_48C_LOCAL_MINIMAL_BUSINESS_SAMPLE_ACCEPTED.
+- Step identity:
+  - This Step created and verified a minimal local production-like business sample.
+  - This is local Docker Compose production-like test data only, not VPS / real production data.
+  - This Step did not read `.env.production`, run full `prisma/seed.cjs`, run backfill, run migration, send real email, modify DirectMail strategy, push, deploy, access VPS, access production DB, delete, clean up, reset, drop, restore, or prune.
+- Starting state:
+  - `git log -1 --oneline`: `8e4360d docs: record local production-like empty-state acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+  - Existing untracked local artifacts were present and left untouched.
+  - Local `postgres`, `api`, and `web` services were running / healthy.
+- Credential boundary:
+  - The user supplied the local-admin test credential in the active chat for this Step.
+  - The password was used only in current-process login request bodies.
+  - No password, cookie, token, secret, connection string, full reset/invite link, plaintext session value, or provider raw payload is recorded in memory-bank.
+- Created local acceptance sample:
+  - Department:
+    - Code: `STEP48C_20260629041937`.
+    - ID: `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - Users:
+    - Researcher ID: `078a3fd2-076b-4dc0-87ec-d45b716dde72`.
+    - Research secretary ID: `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+    - User count for this Step 48C stamp: `2`.
+  - Achievement:
+    - ID: `dc91da43-e234-4b26-9550-30ba4912206f`.
+    - Type: `PAPER`.
+    - Status after submit: `PENDING_DEPARTMENT_REVIEW`.
+  - Workflow task:
+    - ID: `f4ac40e8-a718-4658-8575-dc20245c9c4b`.
+    - Step: `DEPARTMENT_REVIEW`.
+    - Status: `PENDING`.
+    - Assigned secretary pending task count: `1`.
+- API acceptance:
+  - `/api/auth/me`: local-admin login succeeded; permission count `21`.
+  - `/api/account-management/users`: returned `2` users for the Step 48C stamp.
+  - `/api/departments`: returned `1` Step 48C department.
+  - `/api/achievements`: researcher scope returned `1` Step 48C achievement; admin scope returned `0`, treated as permission/range behavior rather than a data creation failure.
+  - `/api/workflow/tasks/my`: secretary scope returned `1` pending department-review task.
+  - `/api/dashboard/summary`: secretary scope showed `achievementTotal=1` and pending workflow task bucket count `1`; admin scope showed `achievementTotal=0` due scope.
+  - `/api/audit-logs`: returned `50` masked audit items with local-admin.
+  - A read-only `/api/audit-logs?pageSize=10` probe returned HTTP 400 because that query parameter is not part of the API contract; the corrected `/api/audit-logs` check passed.
+- Web route acceptance:
+  - `/`: HTTP 200 SPA shell.
+  - `/achievements`: HTTP 200 SPA shell.
+  - `/workflow`: HTTP 200 SPA shell.
+  - `/dashboard`: HTTP 200 SPA shell.
+  - `/audit`: HTTP 200 SPA shell.
+  - `/accounts`: HTTP 200 SPA shell.
+  - `/departments`: HTTP 200 SPA shell.
+- Result:
+  - Local-admin login succeeded.
+  - Minimal local test data creation succeeded.
+  - 成果管理 is no longer only empty under the researcher scope.
+  - A core business flow was observed: researcher creates a draft achievement, submits it, and a research secretary receives a pending department-review workflow task.
+  - Main API and Web route checks returned reasonable statuses.
+- Still requiring richer samples / later scope:
+  - Approval approve/reject execution was not performed; the pending task was left available for future acceptance.
+  - Fees, reminders, and attachment metadata/download were not created because this Step's core flow did not require them.
+  - Search populated-result acceptance was not in this Step's requested API list and remains a later candidate if needed.
+  - Browser-authenticated page rendering still has the local HTTP / Secure-cookie caveat from prior steps; Web route checks verified SPA shell reachability.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No full demo seed, backfill, migration, real email, DirectMail default strategy change, push, deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, prune, or test-data deletion occurred.
+
 ## 2026-06-29 Step 48B - Local production-like empty-state read-only acceptance
 
 - Status: STEP_48B_BLOCKED_AUTHENTICATED_EMPTY_STATE_NOT_COMPLETED.

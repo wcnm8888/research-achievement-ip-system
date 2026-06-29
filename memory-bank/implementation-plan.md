@@ -4,6 +4,39 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 48C Archive - Local Production-Like Minimal Business Data Acceptance - 2026-06-29
+
+- Step identity:
+  - This Step created and verified a minimal local production-like business sample.
+  - This is local test data only.
+  - This Step did not read `.env.production`, run full demo seed, run backfill, run migration, send real email, modify DirectMail behavior, push, deploy, access VPS, access production DB, delete, cleanup, reset, drop, restore, or prune.
+- Created sample:
+  - Department `STEP48C_20260629041937`, ID `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - Researcher user ID `078a3fd2-076b-4dc0-87ec-d45b716dde72`.
+  - Research secretary user ID `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+  - Paper achievement ID `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - Workflow task ID `f4ac40e8-a718-4658-8575-dc20245c9c4b`.
+- Accepted core flow:
+  - local-admin authenticated successfully.
+  - local-admin created the department and two users through API.
+  - researcher authenticated and created a paper achievement.
+  - researcher submitted the draft.
+  - achievement status became `PENDING_DEPARTMENT_REVIEW`.
+  - secretary authenticated and saw one pending `DEPARTMENT_REVIEW` task.
+- API / route results:
+  - `/api/auth/me`: OK for local-admin.
+  - `/api/account-management/users`: two Step 48C users found.
+  - `/api/departments`: one Step 48C department found.
+  - `/api/achievements`: researcher sees one Step 48C achievement; admin sees zero due scope.
+  - `/api/workflow/tasks/my`: secretary sees one pending task.
+  - `/api/dashboard/summary`: secretary sees one achievement and one pending workflow task; admin sees zero achievements for this sample due scope.
+  - `/api/audit-logs`: returned masked audit items.
+  - Main Web routes returned HTTP 200 SPA shell.
+- Deferred:
+  - Do not approve/reject the pending task unless a later Step authorizes workflow action acceptance.
+  - Fees, reminders, attachment metadata/download, and populated search remain separate sample expansion work.
+  - Browser-authenticated page acceptance may need HTTPS or a controlled test harness because of Secure-cookie behavior on local HTTP.
+
 ## Current Step 48B Archive - Local Production-Like Empty-State Read-Only Acceptance Blocked - 2026-06-29
 
 - Step identity:

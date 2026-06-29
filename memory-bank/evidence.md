@@ -1,5 +1,70 @@
 # Evidence
 
+## 2026-06-29 Step 48C - Local production-like minimal business data acceptance evidence
+
+- Purpose:
+  - Use local-admin to create the minimal local production-like business sample authorized for Step 48C.
+  - Verify core API and Web route behavior without running full demo seed, migration, backfill, real email, production deploy, or cleanup.
+- Starting state evidence:
+  - `git log -1 --oneline`: `8e4360d docs: record local production-like empty-state acceptance`.
+  - `git diff --stat`: empty before Step 48C memory-bank edits.
+  - Compose status from Step start: local `postgres`, `api`, and `web` were running / healthy.
+- Credential handling evidence:
+  - The user supplied the local-admin test credential in the active chat for this Step.
+  - The password was used only in current-process request bodies.
+  - Cookie values were used only as transient in-process request headers.
+  - No password, cookie value, token, secret, connection string, full reset/invite link, plaintext session value, or provider raw payload is recorded here.
+- Execution evidence:
+  - Initial PowerShell cookie replay returned 401 after login; switching to Node `fetch` with explicit transient `Cookie` header returned `/auth/me` HTTP 200.
+  - A local Step 48C department was created:
+    - Code: `STEP48C_20260629041937`.
+    - ID: `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - Two local Step 48C users were created:
+    - Researcher ID: `078a3fd2-076b-4dc0-87ec-d45b716dde72`.
+    - Research secretary ID: `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+  - One local Step 48C paper achievement was created:
+    - ID: `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - The researcher submitted the draft achievement:
+    - Resulting achievement status: `PENDING_DEPARTMENT_REVIEW`.
+  - One workflow task was observed for the research secretary:
+    - ID: `f4ac40e8-a718-4658-8575-dc20245c9c4b`.
+    - Step: `DEPARTMENT_REVIEW`.
+    - Status: `PENDING`.
+- API acceptance evidence:
+  - `/api/auth/me`: local-admin authenticated successfully; permission count `21`.
+  - `/api/account-management/users`: returned `2` users for the Step 48C stamp.
+  - `/api/departments`: returned `1` Step 48C department.
+  - `/api/achievements`: researcher scope returned `1` Step 48C achievement with status `PENDING_DEPARTMENT_REVIEW`.
+  - `/api/achievements/:id`: researcher scope returned detail with status `PENDING_DEPARTMENT_REVIEW`.
+  - `/api/achievements`: admin scope returned `0` for the Step 48C achievement, treated as policy scope behavior.
+  - `/api/workflow/tasks/my`: secretary scope returned `1` pending task.
+  - `/api/workflow/tasks/:taskId`: secretary scope returned task detail with status `PENDING`.
+  - `/api/dashboard/summary`: secretary scope returned achievement total `1` and pending workflow task bucket count `1`.
+  - `/api/dashboard/summary`: admin scope returned achievement total `0` for this sample due scope.
+  - `/api/audit-logs`: returned `50` masked audit items.
+  - A read-only `/api/audit-logs?pageSize=10` probe returned HTTP 400 because `pageSize` is not accepted by that DTO; corrected `/api/audit-logs` passed.
+- Web route evidence:
+  - `/`: HTTP 200 SPA shell.
+  - `/achievements`: HTTP 200 SPA shell.
+  - `/workflow`: HTTP 200 SPA shell.
+  - `/dashboard`: HTTP 200 SPA shell.
+  - `/audit`: HTTP 200 SPA shell.
+  - `/accounts`: HTTP 200 SPA shell.
+  - `/departments`: HTTP 200 SPA shell.
+- Acceptance conclusion:
+  - Minimal local business sample creation succeeded.
+  - 成果管理 is no longer only empty under researcher scope.
+  - One core business flow is observable: create draft achievement, submit it, and receive a department-review workflow task.
+  - Main requested APIs and Web routes returned reasonable states.
+- Deferred / remaining sample gaps:
+  - Approval action acceptance is deferred; the pending task remains available.
+  - Fee creation/status, reminder confirmation, attachment metadata/download, and populated search acceptance were not performed.
+  - Browser-authenticated page rendering still has the local HTTP / Secure-cookie caveat.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No full demo seed, backfill, migration, real email, DirectMail default strategy change, push, deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, prune, or test-data deletion occurred.
+
 ## 2026-06-29 Step 48B - Local production-like empty-state read-only acceptance evidence
 
 - Purpose:

@@ -1,5 +1,35 @@
 # Decisions
 
+## D169 - Step 48C accepts a minimal local production-like business sample
+
+- Date: 2026-06-29.
+- Context: Step 48B was blocked because no authenticated local session or usable password was available. The user then supplied the local-admin test credential in the active chat and authorized Step 48C to create/modify minimal local production-like test business data.
+- Decision:
+  - Accept Step 48C as a local-only minimal business-data acceptance, not production/VPS data work.
+  - Keep the sample intentionally small:
+    - one Step 48C acceptance department.
+    - one researcher test account.
+    - one research secretary test account.
+    - one paper achievement.
+    - one submitted department-review workflow task.
+  - Do not run full demo seed.
+  - Do not create fee, reminder, or attachment samples unless a later Step explicitly needs those flows.
+  - Do not delete or clean up the local sample in this Step.
+- Accepted behavior:
+  - Local-admin login succeeded.
+  - Account and department creation paths worked locally.
+  - Researcher-created achievement became visible under researcher scope.
+  - Submitting the achievement moved it to `PENDING_DEPARTMENT_REVIEW`.
+  - Research secretary saw one pending `DEPARTMENT_REVIEW` task.
+  - Secretary dashboard reflected the one visible achievement and one pending workflow task.
+  - Admin achievement/dashboard counts remained `0` for this sample because achievement visibility is scope/policy-dependent; this is not treated as a creation failure.
+- Next:
+  - A later Step can execute approve/reject acceptance against the pending task if authorized.
+  - Fees, reminders, attachment metadata/download, and populated search acceptance remain separate sample-expansion candidates.
+  - Browser-authenticated rendering may need HTTPS or a controlled cookie/header harness because production-like cookies are `Secure` while the local preview is plain HTTP.
+- Boundaries:
+  - This decision does not authorize reading secrets, full demo seed, backfill, migration, real email, DirectMail runtime switching, source-code changes, schema/migration changes, Docker/compose/deploy changes, dependency changes, push/deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, prune, or test-data deletion.
+
 ## D168 - Step 48B blocks authenticated empty-state acceptance without a usable local-admin login
 
 - Date: 2026-06-29.
