@@ -1,5 +1,24 @@
 # Progress
 
+## 2026-06-29 Step 47AB - Local production-like Web API proxy fix
+
+- Status: LOCAL_PRODUCTION_LIKE_WEB_API_PROXY_FIXED.
+- User-visible issue:
+  - Local production-like Web opened at `http://127.0.0.1:18081/`, but the production sign-in screen showed `服务不可用`.
+- Root cause:
+  - `deploy/nginx/web-container.conf` served SPA routes with `try_files`, but did not proxy `/api/` to the compose API service.
+  - `http://127.0.0.1:18081/api/auth/me` returned the Web `index.html` instead of an API response.
+- Fix:
+  - Added an Nginx `location /api/` block proxying to `http://api:3000/api/` inside the local production-like compose network.
+- Validation:
+  - Rebuilt/restarted the local production-like Web stack with `docker compose -f docker-compose.production.yml up -d --build web`.
+  - Compose services are running / healthy: `postgres`, `api`, `web`.
+  - Web-routed API health `http://127.0.0.1:18081/api/health`: HTTP 200.
+  - Web-routed unauthenticated session check `http://127.0.0.1:18081/api/auth/me`: HTTP 401, confirming the request now reaches API instead of returning HTML.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No migration, seed, backfill, real email, push/deploy/VPS access/production DB access, cleanup, deletion, drop, reset, or prune.
+
 ## 2026-06-28 Step 47AA - Local production-like database target fix and migration deploy
 
 - Status: LOCAL_PRODUCTION_LIKE_MIGRATION_AND_STARTUP_ACCEPTED.

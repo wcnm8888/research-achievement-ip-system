@@ -1,5 +1,30 @@
 # Evidence
 
+## 2026-06-29 Step 47AB - Local production-like Web API proxy fix evidence
+
+- Purpose:
+  - Fix the local production-like Web sign-in `服务不可用` state after API/Web health were otherwise healthy.
+- Starting state evidence:
+  - Compose services were running / healthy: `postgres`, `api`, `web`.
+  - API health `http://127.0.0.1:13001/api/health`: HTTP 200.
+  - Web root `http://127.0.0.1:18081/`: HTTP 200.
+  - Web-routed `http://127.0.0.1:18081/api/auth/me` returned the Web `index.html`, showing `/api` was not proxied by the Web container.
+- Change evidence:
+  - Updated `deploy/nginx/web-container.conf`.
+  - Added `location /api/` proxying to `http://api:3000/api/` with standard forwarded headers.
+- Runtime evidence:
+  - Ran `docker compose -f docker-compose.production.yml up -d --build web`.
+  - Compose services after restart:
+    - `postgres`: running / healthy.
+    - `api`: running / healthy.
+    - `web`: running / healthy.
+  - `http://127.0.0.1:18081/api/health`: HTTP 200.
+  - `http://127.0.0.1:18081/api/auth/me`: HTTP 401, which is the expected unauthenticated API response.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No secret, token, cookie, private key, connection string, raw token, full reset/invite link, plaintext recipient email, or provider raw payload was recorded.
+  - No migration, seed, backfill, real email, push/deploy/VPS access/production DB access, cleanup, deletion, drop, reset, or prune.
+
 ## 2026-06-28 Step 47AA - Local production-like migration deploy and startup evidence
 
 - Purpose:
