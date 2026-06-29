@@ -1,5 +1,40 @@
 # Progress
 
+## 2026-06-29 Step 50C - Local Docker attachment API/DB acceptance
+
+- Status: STEP_50C_LOCAL_DOCKER_ATTACHMENT_ACCEPTED.
+- Step identity:
+  - Local Docker production-like acceptance for real attachment upload/list/detail/download against the Step48C/49 achievement.
+  - This is not source implementation, not migration/seed/backfill, not VPS/production acceptance, not deploy/push, not real email, and not cleanup.
+- Starting state:
+  - `HEAD`: `02fc0d5`.
+  - Latest commit subject: `fix: normalize fee dates for richer sample acceptance`.
+  - Tracked diff was empty before Step 50C documentation changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Completed:
+  - Used the Step48C researcher account for upload/list/detail with a temporary random local password rotated in-process.
+  - Uploaded a generated minimal PDF test file, not a private user file.
+  - Validated DB metadata and local `LOCAL_DISK` storage-backed download.
+  - Created one minimal local `ATTACHMENT_DOWNLOAD` grant for system-admin to validate direct download permission.
+- Accepted API/DB result:
+  - Upload: HTTP 201.
+  - List: HTTP 200, count `1`, uploaded attachment visible.
+  - Researcher detail: HTTP 200.
+  - Researcher download: HTTP 403, expected missing `attachment:download`.
+  - System-admin detail: HTTP 404, expected parent-scope boundary.
+  - System-admin direct-grant download: HTTP 200.
+  - Download response: `application/pdf`, length `48`.
+  - Download body checksum matched DB checksum.
+  - Attachment metadata: `ACTIVE`, version `1`, provider `LOCAL_DISK`, size `48`.
+  - Upload audit count: `1`; download audit count after verification: `2`.
+- Boundaries / gaps:
+  - Attachment archive/delete was not exercised.
+  - Virus scanning, S3/object storage, voucher attachment, dashboard/search effects, and production storage acceptance remain open.
+  - No test data was deleted or cleaned.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+
 ## 2026-06-29 Step 50B - Local Docker richer sample acceptance
 
 - Status: STEP_50B_LOCAL_DOCKER_RICHER_SAMPLE_ACCEPTED_WITH_FIX.

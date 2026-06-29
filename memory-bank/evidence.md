@@ -1,5 +1,74 @@
 # Evidence
 
+## 2026-06-29 Step 50C - Local Docker attachment API/DB acceptance evidence
+
+- Purpose:
+  - Validate real local Docker attachment upload/list/detail/download behavior without using private user files.
+  - Record permission boundaries for metadata read versus download.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `02fc0d5`.
+  - Latest commit subject: `fix: normalize fee dates for richer sample acceptance`.
+  - `git status --short --untracked-files=no`: empty before Step 50C documentation changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Code/context evidence:
+  - `apps/api/src/attachments/attachment.controller.ts` exposes:
+    - `POST /api/achievements/:achievementId/attachments`.
+    - `GET /api/achievements/:achievementId/attachments`.
+    - `GET /api/achievements/:achievementId/attachments/:attachmentId`.
+    - `GET /api/achievements/:achievementId/attachments/:attachmentId/download`.
+  - Upload allows PDF/PNG/JPEG/DOC/DOCX/XLS/XLSX with header checks and max size 10 MB.
+  - Local storage provider writes under local Docker app workspace `deploy/artifacts/local-attachments`.
+  - Role permissions observed:
+    - `RESEARCHER`: `attachment:read_metadata`.
+    - `RESEARCH_SECRETARY`: `attachment:read_metadata`.
+    - `SYSTEM_ADMIN`: `attachment:read_metadata`, `attachment:download`.
+- Credential/session evidence:
+  - Temporary random local passwords were rotated in-process for the Step48C researcher and local system-admin to obtain real local sessions.
+  - Password values, cookie values, tokens, secrets, connection strings, private keys, full reset/invite links, plaintext session values, and provider payloads were not printed or recorded.
+- Upload/list/detail evidence:
+  - Researcher user: `078a3fd2-076b-4dc0-87ec-d45b716dde72`.
+  - Achievement: `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - Generated test file: minimal PDF bytes, size `48`, not sourced from user files.
+  - Attachment ID: `387289d6-e0a4-4b97-96c0-084326c6cc1c`.
+  - Upload HTTP status: `201`.
+  - List HTTP status: `200`, count `1`, uploaded attachment visible.
+  - Detail HTTP status as researcher: `200`, uploaded attachment visible.
+  - DB metadata:
+    - status `ACTIVE`.
+    - version `1`.
+    - provider `LOCAL_DISK`.
+    - size `48`.
+    - checksum matched uploaded bytes.
+    - storage key prefix `attachments/ACHIEVEMENT/dc91da43-e234-4b26-9550-30ba4912206f`.
+  - Upload audit count for attachment: `1`.
+- Download permission evidence:
+  - Researcher download HTTP status: `403`, expected because researcher lacks `attachment:download`.
+  - Minimal local `ATTACHMENT_DOWNLOAD` direct grant was created for system-admin:
+    - grant ID `c5fa6b8b-42cf-4d1e-96e5-e4aa2743e282`.
+    - resource type `ATTACHMENT`.
+    - target attachment `387289d6-e0a4-4b97-96c0-084326c6cc1c`.
+  - System-admin metadata detail HTTP status: `404`, expected parent achievement scope boundary.
+  - System-admin direct-grant download HTTP status: `200`.
+  - Download content type: `application/pdf`.
+  - Download content length: `48`.
+  - Download body size: `48`.
+  - Download body checksum matched DB checksum.
+  - Download audit count after verification: `2`.
+- Not covered:
+  - Attachment archive/delete.
+  - Virus scanning.
+  - Object storage / S3.
+  - Voucher attachment integration.
+  - Attachment search/dashboard effects.
+  - Production storage acceptance.
+- Verification still required before commit:
+  - `git diff --check`.
+  - Sensitive scan over committed added lines.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, provider raw payload, or raw audit payload was recorded.
+  - No source code, schema, migration, seed/backfill, Docker/compose/deploy config, dependency, package, lockfile, DirectMail runtime strategy, VPS access, production DB access, push, deploy, real email, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 50B - Local Docker richer sample acceptance evidence
 
 - Purpose:

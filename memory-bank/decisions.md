@@ -1,5 +1,29 @@
 # Decisions
 
+## D176 - Step 50C accepts local attachment upload and direct-grant download
+
+- Date: 2026-06-29.
+- Context: Phase-one local Docker scope needs real attachment API/DB acceptance before deciding whether attachment implementation gaps remain. The current attachment controller exposes upload/list/detail/download under achievement attachments, and role permissions separate metadata read from download.
+- Decision:
+  - Accept local Docker attachment upload/list/detail for the Step48C researcher-owned achievement.
+  - Treat researcher download HTTP 403 as expected because the researcher role has `attachment:read_metadata` but not `attachment:download`.
+  - Validate download through a minimal local `ATTACHMENT_DOWNLOAD` direct resource grant to system-admin.
+  - Keep system-admin parent metadata visibility blocked as expected under the current exact-scope model; direct attachment download should not imply parent achievement metadata read.
+- Accepted behavior:
+  - Upload persisted attachment metadata and local disk object.
+  - Researcher can list and read metadata.
+  - System-admin with direct attachment grant can download the object and the body checksum matches DB checksum.
+  - Upload/download audit events are appended.
+- Not complete:
+  - Attachment archive/delete.
+  - Virus scanning.
+  - S3/object storage production storage.
+  - Voucher attachment integration.
+  - Search/dashboard attachment effects.
+  - Production storage acceptance.
+- Boundaries:
+  - This decision does not authorize source-code changes, schema/migration changes, seed/backfill, dependency changes, Docker/compose/deploy config changes, DirectMail runtime changes, real email, push/deploy, VPS access, production DB access, production writes, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D175 - Step 50B normalizes fee date strings and accepts richer local sample
 
 - Date: 2026-06-29.

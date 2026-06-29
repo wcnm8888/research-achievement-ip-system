@@ -4,6 +4,37 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 50C Archive - Local Docker Attachment API/DB Acceptance - 2026-06-29
+
+- Step identity:
+  - This Step accepts real local Docker attachment upload/list/detail/download behavior against the Step48C/49 sample achievement.
+  - This is local Docker acceptance only. It is not VPS/production acceptance, not production storage acceptance, and not production write acceptance.
+  - No source code, schema, migration, seed/backfill, Docker/compose/deploy config, dependency, package, lockfile, DirectMail runtime strategy, VPS, production DB, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `02fc0d5`.
+  - Latest commit: `fix: normalize fee dates for richer sample acceptance`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Accepted local Docker result:
+  - Researcher uploaded a generated minimal PDF test file through `POST /api/achievements/<achievement>/attachments`.
+  - Upload returned HTTP 201.
+  - `/api/achievements/<achievement>/attachments?take=20`: HTTP 200, list count `1`, uploaded attachment visible.
+  - `/api/achievements/<achievement>/attachments/<attachment>` as researcher: HTTP 200, uploaded attachment visible.
+  - DB attachment metadata persisted: `ACTIVE`, version `1`, provider `LOCAL_DISK`, size `48`, checksum matched uploaded bytes.
+  - Upload audit count for the attachment: `1`.
+  - Researcher download returned HTTP 403 because `RESEARCHER` has metadata read permission but not `attachment:download`.
+  - A minimal local `ATTACHMENT_DOWNLOAD` resource grant was created for local system-admin to validate direct download permission without broadening admin achievement scope.
+  - System-admin attachment metadata detail stayed blocked by parent scope (`404`), while direct download returned HTTP 200.
+  - Download response: `application/pdf`, length `48`, downloaded body checksum matched DB checksum.
+  - Download audit count after verification: `2`.
+- Capability boundary recorded:
+  - Current default roles give `attachment:read_metadata` to researcher/secretary, but `attachment:download` only to system-admin.
+  - Direct `ATTACHMENT_DOWNLOAD` grant permits download of one attachment without granting parent achievement metadata visibility.
+  - Attachment archive/delete, virus scanning, S3/object storage, voucher attachment integration, dashboard/search attachment effects, and production storage acceptance remain later gaps.
+- Next:
+  - Step 50D should cover reject path with a separate local achievement sample.
+  - Step 51 implementation should start with confirmed phase-one gaps such as fee warnings or fee archive.
+
 ## Current Step 50B Archive - Local Docker Richer Sample Acceptance - 2026-06-29
 
 - Step identity:
