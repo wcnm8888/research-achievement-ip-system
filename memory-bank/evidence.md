@@ -1,5 +1,88 @@
 # Evidence
 
+## 2026-06-29 Step 52D - Local Docker department import dry-run acceptance evidence
+
+- Purpose:
+  - Accept Step 52B/52C department CSV dry-run in the local Docker production-like stack.
+  - Verify API, Web UI, permission boundary, and no-write boundary locally.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `29fba66`.
+  - Latest commit subject: `feat: add department import dry-run UI`.
+  - Tracked diff was empty before Step 52D memory-bank changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Environment boundary evidence:
+  - `.env.production` existence was confirmed.
+  - `.env.production` contents were not read or output.
+  - No `.env` values were read or output.
+- Docker evidence:
+  - `docker compose -f docker-compose.production.yml build api web`: passed.
+  - `docker compose -f docker-compose.production.yml up -d api web`: passed.
+  - `docker compose -f docker-compose.production.yml ps`: `postgres`, `api`, and `web` healthy.
+  - Compose reported an existing orphan container warning during startup; no cleanup or `--remove-orphans` was run.
+  - API logs showed `ImportsModule dependencies initialized`.
+  - API logs showed `Mapped {/api/imports/departments/dry-run, POST} route`.
+- HTTP evidence:
+  - `http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `http://127.0.0.1:18081/`: HTTP 200.
+  - `http://127.0.0.1:18081/department-management`: HTTP 200.
+- API session evidence:
+  - Local session auth was used.
+  - Admin acceptance user: `local-admin@wzunew.uk`, `system:config=true`, permission count `21`.
+  - Non-admin acceptance user: role `RESEARCHER`, `system:config=false`, permission count `6`.
+  - Temporary local authentication material and cookies were not printed, recorded, or committed.
+- API dry-run evidence:
+  - Valid CSV as admin:
+    - HTTP 201.
+    - `importType=DEPARTMENT_METADATA`.
+    - `dryRun=true`.
+    - Summary: `totalRows=2`, `validRows=2`, `errorRows=0`, `warningRows=0`, `createCandidates=2`, `existingCodeRows=0`.
+    - Columns: required `code,name`; optional `parentCode`; received `code,name,parentCode`.
+    - Rows: both `VALID` with candidate action `CREATE`.
+  - Invalid CSV as admin:
+    - HTTP 201.
+    - `dryRun=true`.
+    - Summary: `totalRows=1`, `validRows=0`, `errorRows=1`, `warningRows=0`.
+    - Row status `ERROR`, candidate action `SKIP`.
+    - Stable error codes: `UNKNOWN_COLUMN`, `FORMULA_LIKE_VALUE`, `INVALID_FORMAT`, `UNKNOWN_PARENT`.
+  - Valid CSV as researcher:
+    - HTTP 403.
+    - Missing-permission response.
+- No-write evidence:
+  - Department count after login and before dry-runs: `3`.
+  - Department count after valid, invalid, and forbidden dry-runs: `3`.
+  - AuditLog count after login and before dry-runs: `98`.
+  - AuditLog count after valid, invalid, and forbidden dry-runs: `98`.
+  - Dry-run did not create, update, delete, archive, or restore departments.
+  - Dry-run did not add audit rows.
+- Web evidence:
+  - Playwright package was present but bundled browser executable was missing.
+  - No browser binary was installed.
+  - The installed system Chrome executable was used for local browser acceptance.
+  - Short-lived local session records were created for browser contexts and revoked after the check; no cookie/session value was output or recorded.
+  - Admin browser evidence:
+    - Web root HTTP 200.
+    - Department CSV dry-run UI visible.
+    - CSV upload sent one `POST /api/imports/departments/dry-run` request.
+    - Dry-run response HTTP 201.
+    - UI rendered summary counts.
+    - UI rendered required/optional/received columns.
+    - UI rendered row-level `EXISTING_CODE` warning using existing department code `INSTITUTE_ROOT`.
+    - UI rendered row-level `INVALID_FORMAT`, `FORMULA_LIKE_VALUE`, and `UNKNOWN_PARENT` errors.
+    - UI did not render `Execute import`, `Confirm import`, `Run import`, `确认导入`, or `执行导入`.
+  - Non-admin browser evidence:
+    - Web root HTTP 200.
+    - User had no `system:config`.
+    - Department dry-run UI was not visible.
+    - DepartmentManagement navigation entry was not visible.
+    - Zero dry-run requests were sent.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, provider credential, SMTP credential, DirectMail credential, or real provider secret was recorded.
+  - No Prisma schema, migration, seed/backfill, dependency, package/lockfile, Docker/compose/deploy config, VPS access, production DB access, push, deploy, real import execution, Department write by dry-run, audit write by dry-run, uploaded-file persistence, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 52C - Web department import dry-run UI evidence
 
 - Purpose:

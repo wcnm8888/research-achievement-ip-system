@@ -1,5 +1,29 @@
 # Decisions
 
+## D187 - Step 52D accepts local Docker department dry-run without enabling import writes
+
+- Date: 2026-06-29.
+- Context: Step 52B/52C added a backend and Web department CSV dry-run. Step 52D needed production-like local Docker acceptance for API, Web, permission, and no-write boundaries without adding features.
+- Decision:
+  - Accept department metadata CSV dry-run in the local Docker production-like stack.
+  - Treat `POST /api/imports/departments/dry-run` as verified under real session auth.
+  - Treat `system:config` as the required permission boundary for both API and Web UI.
+  - Treat the dry-run no-write boundary as locally accepted because Department and AuditLog counts did not change across valid, invalid, and forbidden dry-runs.
+  - Keep the UI as report-only; do not add real import execution controls.
+  - Keep Excel and real import execution deferred.
+- Rationale:
+  - The local Docker stack exercised the production build, API prefix, session guard, browser-served Web UI, and database-backed lookup path.
+  - Row-level invalid CSV evidence proves stable validation-code rendering without needing any import write path.
+  - Count checks after login and before dry-run isolate dry-run side effects from ordinary session-auth activity.
+- Not complete:
+  - User/account metadata dry-run.
+  - Achievement dry-run.
+  - Excel parser support.
+  - Real import execution.
+  - VPS/production acceptance.
+- Boundaries:
+  - This decision does not authorize backend write paths, DB writes by import dry-run, audit writes by import dry-run, uploaded-file persistence, schema/migration changes, seed/backfill, dependency installation, package/lockfile changes, Docker/compose/deploy config changes, production access, secrets access, `.env` reads, push/deploy, cleanup, deletion, reset, drop, restore, or prune.
+
 ## D186 - Step 52C keeps department import dry-run as guarded Web validation only
 
 - Date: 2026-06-29.

@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-06-29 Step 52D - Local Docker department import dry-run acceptance
+
+- Status: STEP_52D_LOCAL_DOCKER_DEPARTMENT_IMPORT_DRY_RUN_ACCEPTED.
+- Step identity:
+  - Performs local Docker production-like acceptance for the Step 52B backend and Step 52C Web department CSV dry-run.
+  - This is not feature implementation, not real import execution, not Department write work, not schema/migration/seed/backfill, not dependency/package/lockfile change, not Docker/deploy config change, not VPS/production access, and not cleanup.
+- Starting state:
+  - `HEAD`: `29fba66`.
+  - Latest commit subject: `feat: add department import dry-run UI`.
+  - Tracked diff was empty before Step 52D memory-bank changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Local Docker:
+  - Confirmed `.env.production` exists without reading its contents.
+  - Rebuilt local production-like `api` and `web` images.
+  - Restarted `api` and `web`; `postgres`, `api`, and `web` reported healthy.
+  - Existing orphan container warning was observed and left untouched.
+  - API logs confirmed `ImportsModule` and `POST /api/imports/departments/dry-run` route mapping.
+- HTTP checks:
+  - API health returned HTTP 200.
+  - Web root returned HTTP 200.
+  - Web department-management path returned HTTP 200.
+- API acceptance:
+  - Local session auth was used; no `X-Demo-User-Id` production-like bypass was used.
+  - Admin session with `system:config` returned valid dry-run HTTP 201, `DEPARTMENT_METADATA`, `dryRun=true`, and row-level report.
+  - Invalid CSV returned HTTP 201 with stable row-level errors `UNKNOWN_COLUMN`, `FORMULA_LIKE_VALUE`, `INVALID_FORMAT`, and `UNKNOWN_PARENT`.
+  - Researcher session without `system:config` returned HTTP 403.
+- No-write acceptance:
+  - Department count stayed `3 -> 3` across valid, invalid, and forbidden dry-runs.
+  - AuditLog count stayed `98 -> 98` across valid, invalid, and forbidden dry-runs.
+- Web acceptance:
+  - System Chrome was driven through Playwright without installing browser binaries.
+  - Admin browser session saw the Department CSV dry-run UI, uploaded CSV, received HTTP 201, and rendered summary, columns, row warning, and row errors.
+  - Admin UI did not render real import execution controls.
+  - Researcher browser session did not see the dry-run UI or DepartmentManagement navigation entry and made zero dry-run requests.
+  - Short-lived browser session records were revoked after the check; no cookie/session value was recorded.
+- Remaining:
+  - User/account metadata dry-run.
+  - Achievement import dry-run.
+  - Excel parser support.
+  - Real import execution remains out of scope.
+
 ## 2026-06-29 Step 52C - Web department import dry-run UI
 
 - Status: STEP_52C_WEB_DEPARTMENT_IMPORT_DRY_RUN_UI_IMPLEMENTED.

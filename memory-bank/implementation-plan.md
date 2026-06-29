@@ -4,6 +4,61 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 52D Archive - Local Docker department import dry-run acceptance - 2026-06-29
+
+- Step identity:
+  - This Step performs local Docker production-like acceptance for Step 52B/52C department CSV dry-run.
+  - This is acceptance documentation only after local Docker verification.
+  - No feature implementation, real import execution, Department create/update/delete/archive/restore, audit write by dry-run, Prisma schema change, migration, seed/backfill, dependency/package/lockfile change, VPS/production access, production DB access, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `29fba66`.
+  - Latest commit: `feat: add department import dry-run UI`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Local Docker stack:
+  - `.env.production` existence was confirmed only; contents were not read or output.
+  - Rebuilt `api` and `web` images with `docker compose -f docker-compose.production.yml build api web`.
+  - Restarted `api` and `web`; `postgres`, `api`, and `web` were healthy.
+  - Compose reported an existing orphan container warning; no cleanup or `--remove-orphans` was run.
+  - API route mapping confirmed `POST /api/imports/departments/dry-run`.
+- HTTP acceptance:
+  - `http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `http://127.0.0.1:18081/`: HTTP 200.
+  - `http://127.0.0.1:18081/department-management`: HTTP 200.
+- API dry-run acceptance:
+  - Used local session auth, not `X-Demo-User-Id`.
+  - Local admin account with `system:config` completed valid CSV dry-run.
+  - Valid CSV response:
+    - HTTP 201.
+    - `importType: DEPARTMENT_METADATA`.
+    - `dryRun: true`.
+    - Summary: `totalRows=2`, `validRows=2`, `errorRows=0`, `warningRows=0`, `createCandidates=2`, `existingCodeRows=0`.
+    - Columns returned required `code,name`, optional `parentCode`, received `code,name,parentCode`.
+  - Invalid CSV row-level report:
+    - HTTP 201.
+    - `dryRun: true`.
+    - Summary: `totalRows=1`, `validRows=0`, `errorRows=1`, `warningRows=0`.
+    - Stable row error codes included `UNKNOWN_COLUMN`, `FORMULA_LIKE_VALUE`, `INVALID_FORMAT`, and `UNKNOWN_PARENT`.
+  - Non-`system:config` researcher session returned HTTP 403 with missing-permission response.
+- No-write acceptance:
+  - Department count after login and before dry-runs: `3`.
+  - Department count after valid, invalid, and forbidden dry-runs: `3`.
+  - AuditLog count after login and before dry-runs: `98`.
+  - AuditLog count after valid, invalid, and forbidden dry-runs: `98`.
+  - This confirms dry-run did not create departments and did not add audit rows.
+- Web acceptance:
+  - Used system Chrome through Playwright without installing browsers or dependencies.
+  - The bundled Playwright browser binary was missing, so the acceptance used the installed system Chrome executable.
+  - A short-lived local session was injected into the browser context and revoked after the check; no cookie/session value was output or recorded.
+  - Admin session opened Web root with HTTP 200, navigated to DepartmentManagement, saw the dry-run card, uploaded CSV, and received one dry-run request with HTTP 201.
+  - UI showed summary, required/optional/received columns, row-level `EXISTING_CODE` warning, and row-level `INVALID_FORMAT`, `FORMULA_LIKE_VALUE`, and `UNKNOWN_PARENT` errors.
+  - UI did not show real import execution entries such as execute/confirm/run import controls.
+  - Non-`system:config` researcher session opened Web root with HTTP 200, did not see the dry-run UI or DepartmentManagement navigation entry, and sent zero dry-run requests.
+- Next:
+  - User/account metadata dry-run remains a later step.
+  - Achievement import dry-run and Excel parsing remain deferred.
+  - Real import execution remains a separate write-path design requiring explicit authorization.
+
 ## Current Step 52C Archive - Web department import dry-run UI - 2026-06-29
 
 - Step identity:
