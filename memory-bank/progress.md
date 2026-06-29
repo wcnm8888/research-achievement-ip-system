@@ -1,5 +1,44 @@
 # Progress
 
+## 2026-06-29 Step 52C - Web department import dry-run UI
+
+- Status: STEP_52C_WEB_DEPARTMENT_IMPORT_DRY_RUN_UI_IMPLEMENTED.
+- Step identity:
+  - Implements frontend-only Web API client/types and department CSV dry-run UI for the Step 52B backend API.
+  - This is not backend work, not real import execution, not DB write, not audit write, not file persistence, not schema/migration/seed/backfill, not dependency/package/lockfile change, not Docker/deploy work, not VPS/production access, and not cleanup.
+- Starting state:
+  - `HEAD`: `746fbf2`.
+  - Latest commit subject: `feat: add department import dry-run API`.
+  - Tracked diff was empty before Step 52C changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented:
+  - Added department import dry-run types in `apps/web/src/types.ts`.
+  - Added `dryRunDepartmentImport({ file })` to `AccountManagementApiClient`.
+  - Added a department CSV dry-run card to `DepartmentManagement`.
+  - The card is behind the existing `system:config` DepartmentManagement permission boundary.
+  - The UI supports single CSV selection, frontend CSV/size precheck, submit loading state, empty state, backend error state, and result rendering.
+- API/client contract:
+  - Uses `POST /api/imports/departments/dry-run`.
+  - Sends `multipart/form-data` through existing `requestForm`.
+  - Sends only `file` in `FormData`.
+  - Does not manually override multipart `Content-Type`.
+- Result rendering:
+  - Displays `dryRun=true`, CSV-only, and no database-write copy.
+  - Displays summary counts, required/optional/received columns, and row-level parsed fields/errors/warnings.
+  - Does not expose confirm-import, execute-import, run-import, or real import write controls.
+- Permission boundary:
+  - Without `system:config`, the existing permission branch returns before the dry-run UI is mounted.
+  - Tests assert the dry-run route text is absent in the no-permission render and no fetch request is made.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement api-client`: passed, 2 files / 50 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed with the existing Vite large-chunk warning.
+- Remaining:
+  - User/account metadata dry-run.
+  - Achievement import dry-run.
+  - Excel parser support.
+  - Real import execution remains out of scope.
+
 ## 2026-06-29 Step 52B - Backend department metadata CSV dry-run API
 
 - Status: STEP_52B_DEPARTMENT_METADATA_CSV_DRY_RUN_API_IMPLEMENTED.

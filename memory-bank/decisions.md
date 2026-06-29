@@ -1,5 +1,29 @@
 # Decisions
 
+## D186 - Step 52C keeps department import dry-run as guarded Web validation only
+
+- Date: 2026-06-29.
+- Context: Step 52B added backend `POST /api/imports/departments/dry-run` for read-only department metadata CSV validation. Step 52C needed Web integration without introducing a real import write path.
+- Decision:
+  - Add frontend types and `AccountManagementApiClient.dryRunDepartmentImport({ file })`.
+  - Reuse existing `requestForm`/`FormData` behavior and do not manually set multipart `Content-Type`.
+  - Mount the UI in DepartmentManagement instead of adding a heavier navigation surface.
+  - Rely on the existing DepartmentManagement `system:config` permission boundary.
+  - Display dry-run reports only; do not add confirm-import, execute-import, run-import, or real write controls.
+  - Keep Excel workbook support deferred.
+- Rationale:
+  - DepartmentManagement already owns department metadata workflows and has the correct permission gating.
+  - A page-local dry-run card is enough for phase-one readiness and avoids new routing complexity.
+  - Reusing `requestForm` preserves browser-managed multipart boundaries.
+  - Keeping UI language explicit about `dryRun=true`, CSV-only, and no database writes reduces operator confusion.
+- Not complete:
+  - User/account dry-run UI.
+  - Achievement dry-run UI.
+  - Excel parser support.
+  - Real import execution.
+- Boundaries:
+  - This decision does not authorize backend write paths, DB writes, audit writes, uploaded-file persistence, schema/migration changes, seed/backfill, dependency installation, package/lockfile changes, Docker/compose/deploy changes, production access, secrets access, `.env` reads, push/deploy, cleanup, deletion, reset, drop, restore, or prune.
+
 ## D185 - Step 52B implements dry-run as read-only department metadata CSV validation
 
 - Date: 2026-06-29.

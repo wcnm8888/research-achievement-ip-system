@@ -8,16 +8,21 @@ import {
   buildDepartmentTreeQuery,
   buildUpdateDepartmentPayload,
   createDepartmentFromForm,
+  DepartmentImportDryRunPanel,
+  DepartmentImportDryRunResultView,
   DepartmentManagement,
+  dryRunDepartmentImport,
   executeDepartmentOperation,
   fetchDepartmentDetail,
   fetchDepartments,
   fetchDepartmentTree,
   updateDepartmentFromForm,
+  validateDepartmentImportCsvFile,
 } from "./DepartmentManagement";
 import type {
   DepartmentDetail,
   DepartmentImpactSummary,
+  DepartmentImportDryRunResult,
   DepartmentListResponse,
   DepartmentTreeResponse,
 } from "./types";
@@ -55,6 +60,68 @@ const impactSummary: DepartmentImpactSummary = {
   feeRecordsCount: 3,
 };
 
+const departmentImportDryRunResult: DepartmentImportDryRunResult = {
+  importType: "DEPARTMENT_METADATA",
+  dryRun: true,
+  file: {
+    name: "departments.csv",
+    size: 96,
+    mimeType: "text/csv",
+    encoding: "utf-8",
+  },
+  columns: {
+    required: ["code", "name"],
+    optional: ["parentCode"],
+    received: ["code", "name", "parentCode"],
+  },
+  summary: {
+    totalRows: 3,
+    validRows: 2,
+    errorRows: 1,
+    warningRows: 1,
+    createCandidates: 1,
+    existingCodeRows: 1,
+  },
+  rows: [
+    {
+      rowNumber: 2,
+      parsed: {
+        code: "RESEARCH_CENTER",
+        name: "Research Center",
+        parentCode: null,
+      },
+      status: "WARNING",
+      candidateAction: "REVIEW_EXISTING",
+      errors: [],
+      warnings: [
+        {
+          field: "code",
+          code: "EXISTING_CODE",
+          message: "Department code already exists.",
+        },
+      ],
+    },
+    {
+      rowNumber: 3,
+      parsed: {
+        code: "AI_LAB",
+        name: "AI Lab",
+        parentCode: "MISSING_PARENT",
+      },
+      status: "ERROR",
+      candidateAction: "SKIP",
+      errors: [
+        {
+          field: "parentCode",
+          code: "UNKNOWN_PARENT",
+          message: "Parent department code was not found.",
+        },
+      ],
+      warnings: [],
+    },
+  ],
+};
+
 describe("department management permission boundary", () => {
   it("renders a permission boundary and does not request departments without system:config", () => {
     const fetchMock = vi.fn();
@@ -66,6 +133,7 @@ describe("department management permission boundary", () => {
 
     expect(html).toContain("当前账号无权访问部门维护");
     expect(html).toContain("不会请求 /departments");
+    expect(html).not.toContain("/imports/departments/dry-run");
     expect(fetchMock).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();
@@ -81,6 +149,11 @@ describe("department management permission boundary", () => {
     expect(html).toContain("权限 scope 仍是精确 departmentId");
     expect(html).toContain("department-management-page");
     expect(html).toContain("department-filter-bar");
+    expect(html).toContain("Department CSV dry-run");
+    expect(html).toContain("dryRun=true");
+    expect(html).toContain("CSV-only");
+    expect(html).toContain("without writing the database");
+    expect(html).toContain("POST /imports/departments/dry-run");
   });
 });
 
@@ -159,6 +232,101 @@ describe("department management API helpers", () => {
       pageSize: 10,
     });
     await expect(fetchDepartmentTree(client, {})).resolves.toEqual({ items: [] });
+  });
+
+  it("runs department import dry-run through the department client without write helpers", async () => {
+    const file = new File(["code,name\nAI_LAB,AI Lab"], "departments.csv", {
+      type: "text/csv",
+    });
+    const client = {
+      dryRunDepartmentImport: vi.fn(async () => departmentImportDryRunResult),
+    } as unknown as Pick<AccountManagementApiClient, "dryRunDepartmentImport">;
+
+    await expect(dryRunDepartmentImport(client, file)).resolves.toEqual(
+      departmentImportDryRunResult,
+    );
+    expect(client.dryRunDepartmentImport).toHaveBeenCalledWith({ file });
+  });
+});
+
+describe("department import dry-run UI", () => {
+  it("validates CSV-only file selection before dry-run submission", () => {
+    expect(
+      validateDepartmentImportCsvFile({
+        name: "departments.csv",
+        size: 1024,
+        type: "text/csv",
+      }),
+    ).toBeNull();
+    expect(
+      validateDepartmentImportCsvFile({
+        name: "departments.xlsx",
+        size: 1024,
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+    ).toContain("Only .csv");
+    expect(
+      validateDepartmentImportCsvFile({
+        name: "departments.csv",
+        size: 1024 * 1024 + 1,
+        type: "text/csv",
+      }),
+    ).toContain("1 MB");
+  });
+
+  it("renders summary, row errors, and warnings from a dry-run result", () => {
+    const html = renderToStaticMarkup(
+      <DepartmentImportDryRunResultView result={departmentImportDryRunResult} />,
+    );
+
+    expect(html).toContain("Dry-run report ready");
+    expect(html).toContain("DEPARTMENT_METADATA");
+    expect(html).toContain("Total rows");
+    expect(html).toContain("3");
+    expect(html).toContain("EXISTING_CODE");
+    expect(html).toContain("UNKNOWN_PARENT");
+    expect(html).toContain("MISSING_PARENT");
+  });
+
+  it("renders backend dry-run errors as a front-end error state", () => {
+    const html = renderToStaticMarkup(
+      <DepartmentImportDryRunPanel
+        file={new File(["code,name"], "departments.csv", { type: "text/csv" })}
+        loading={false}
+        error={{
+          kind: "bad-request",
+          status: 400,
+          message: "CSV validation failed.",
+          detail: "Unknown column: ownerEmail.",
+        }}
+        result={null}
+        onFileChange={vi.fn()}
+        onRunDryRun={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("CSV validation failed.");
+    expect(html).toContain("Unknown column: ownerEmail.");
+  });
+
+  it("does not render any real import execution entry", () => {
+    const html = renderToStaticMarkup(
+      <DepartmentImportDryRunPanel
+        file={null}
+        loading={false}
+        error={null}
+        result={null}
+        onFileChange={vi.fn()}
+        onRunDryRun={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("Run dry-run");
+    expect(html).not.toContain("Execute import");
+    expect(html).not.toContain("Confirm import");
+    expect(html).not.toContain("Run import");
+    expect(html).not.toContain("确认导入");
+    expect(html).not.toContain("执行导入");
   });
 });
 

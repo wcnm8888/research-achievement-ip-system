@@ -233,6 +233,58 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("X-Demo-User-Id")).toBe("user-id");
   });
 
+  it("sends department import dry-run as multipart form data", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        importType: "DEPARTMENT_METADATA",
+        dryRun: true,
+        file: {
+          name: "departments.csv",
+          size: 25,
+          mimeType: "text/csv",
+          encoding: "utf-8",
+        },
+        columns: {
+          required: ["code", "name"],
+          optional: ["parentCode"],
+          received: ["code", "name", "parentCode"],
+        },
+        summary: {
+          totalRows: 1,
+          validRows: 1,
+          errorRows: 0,
+          warningRows: 0,
+          createCandidates: 1,
+          existingCodeRows: 0,
+        },
+        rows: [],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const file = new File(["code,name\nRD,Research"], "departments.csv", {
+      type: "text/csv",
+    });
+    const client = createApiClient("admin-user-id");
+    await expect(client.dryRunDepartmentImport({ file })).resolves.toMatchObject({
+      importType: "DEPARTMENT_METADATA",
+      dryRun: true,
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+    const body = init.body as FormData;
+
+    expect(url).toBe("http://localhost/api/imports/departments/dry-run");
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("file")).toBe(file);
+    expect(headers.get("Content-Type")).toBeNull();
+    expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
   it("downloads attachment blobs with credentials and demo user context", async () => {
     const blob = new Blob(["download body"], { type: "application/pdf" });
     const fetchMock = vi.fn(async () => new Response(blob, { status: 200 }));

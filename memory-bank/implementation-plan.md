@@ -4,6 +4,46 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 52C Archive - Web department import dry-run UI - 2026-06-29
+
+- Step identity:
+  - This Step adds Web API client/types and a guarded UI for the backend department metadata CSV dry-run API.
+  - Scope is frontend-only plus memory-bank records.
+  - No backend route, real import execution, DB write, audit write, uploaded-file persistence, Prisma schema change, migration, seed/backfill, dependency/package/lockfile change, Docker/compose/deploy change, VPS/production access, production DB access, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `746fbf2`.
+  - Latest commit: `feat: add department import dry-run API`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Implemented:
+  - Added Web result/input types matching `POST /api/imports/departments/dry-run`.
+  - Added `dryRunDepartmentImport({ file })` on `AccountManagementApiClient`.
+  - The client builds `FormData` with only the `file` field and delegates to existing `requestForm`.
+  - The client does not manually set multipart `Content-Type`.
+  - Added a department management page dry-run card under the existing `system:config` department-management permission boundary.
+- UI behavior:
+  - Single `.csv` file selection.
+  - Frontend pre-check for `.csv` extension and `1 MB` file size.
+  - Loading, empty, backend error, and success/report states.
+  - Displays `dryRun=true`, CSV-only, and no database-write boundary copy.
+  - Displays summary counts, required/optional/received columns, and row-level parsed fields/errors/warnings.
+  - Does not render any real import execution, confirm-import, or run-import control.
+- Permission boundary:
+  - The UI is mounted only after the existing `system:config` branch succeeds.
+  - Without `system:config`, DepartmentManagement returns the existing permission boundary and does not expose `/imports/departments/dry-run`.
+- Limitations:
+  - Excel workbook upload remains deferred.
+  - Real import execution remains deferred.
+  - User/account and achievement import dry-run UIs remain deferred.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement api-client`: passed, 2 files / 50 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed with the existing Vite large-chunk warning.
+- Next:
+  - Step 52D can add user/account metadata dry-run planning or backend work.
+  - A later Step can add Excel parsing only after dependency authorization or a documented parser plan.
+  - Real import execution should remain a separate, explicitly authorized write-path design.
+
 ## Current Step 52B Archive - Backend department metadata CSV dry-run API - 2026-06-29
 
 - Step identity:

@@ -12,6 +12,8 @@ import type {
   CreateAccountUserInput,
   CreateApiIntegrationInput,
   DepartmentDetail,
+  DepartmentImportDryRunInput,
+  DepartmentImportDryRunResult,
   DepartmentListResponse,
   DepartmentReasonInput,
   DepartmentTreeResponse,
@@ -84,6 +86,9 @@ export type AccountManagementApiClient = ApiClient & {
     departmentId: string,
     payload?: DepartmentReasonInput,
   ): Promise<DepartmentDetail>;
+  dryRunDepartmentImport(
+    input: DepartmentImportDryRunInput,
+  ): Promise<DepartmentImportDryRunResult>;
   listAccountUsers(query?: ListAccountUsersQuery): Promise<AccountUserListResponse>;
   getAccountUser(userId: string): Promise<AccountUserDetail>;
   createAccountUser(payload: CreateAccountUserInput): Promise<AccountUserDetail>;
@@ -310,6 +315,17 @@ export const createApiClient = (
       options,
     );
     return response as DepartmentDetail;
+  },
+  async dryRunDepartmentImport(input: DepartmentImportDryRunInput) {
+    const body = new FormData();
+    body.append("file", input.file);
+    const response = await requestForm(
+      "/imports/departments/dry-run",
+      demoUserId,
+      body,
+      options,
+    );
+    return response as DepartmentImportDryRunResult;
   },
   async listAccountUsers(query?: ListAccountUsersQuery) {
     const response = await request(

@@ -511,6 +511,71 @@ export type DisableDepartmentResponse = {
   impactSummary: DepartmentImpactSummary;
 };
 
+export type DepartmentImportDryRunIssueCode =
+  | "REQUIRED"
+  | "INVALID_FORMAT"
+  | "DUPLICATE_IN_FILE"
+  | "UNKNOWN_PARENT"
+  | "PARENT_CYCLE"
+  | "EXISTING_CODE"
+  | "UNKNOWN_COLUMN"
+  | "FORMULA_LIKE_VALUE";
+
+export type DepartmentImportDryRunIssue = {
+  field: string;
+  code: DepartmentImportDryRunIssueCode;
+  message: string;
+};
+
+export type DepartmentImportDryRunRowStatus = "VALID" | "WARNING" | "ERROR";
+
+export type DepartmentImportDryRunCandidateAction =
+  | "CREATE"
+  | "REVIEW_EXISTING"
+  | "SKIP";
+
+export type DepartmentImportDryRunRow = {
+  rowNumber: number;
+  parsed: {
+    code: string | null;
+    name: string | null;
+    parentCode: string | null;
+  };
+  status: DepartmentImportDryRunRowStatus;
+  candidateAction: DepartmentImportDryRunCandidateAction;
+  errors: DepartmentImportDryRunIssue[];
+  warnings: DepartmentImportDryRunIssue[];
+};
+
+export type DepartmentImportDryRunResult = {
+  importType: "DEPARTMENT_METADATA";
+  dryRun: true;
+  file: {
+    name: string;
+    size: number;
+    mimeType: string;
+    encoding: "utf-8";
+  };
+  columns: {
+    required: string[];
+    optional: string[];
+    received: string[];
+  };
+  summary: {
+    totalRows: number;
+    validRows: number;
+    errorRows: number;
+    warningRows: number;
+    createCandidates: number;
+    existingCodeRows: number;
+  };
+  rows: DepartmentImportDryRunRow[];
+};
+
+export type DepartmentImportDryRunInput = {
+  file: File;
+};
+
 export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED" | "PENDING_ACTIVATION";
 
 export type AccountCredentialStatus = "ACTIVE" | "DISABLED";
