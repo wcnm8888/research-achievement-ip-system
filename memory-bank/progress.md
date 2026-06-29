@@ -1,5 +1,75 @@
 # Progress
 
+## 2026-06-29 Step 48A - Local production-like business data and empty-state acceptance design
+
+- Status: STEP_48A_DESIGNED_EMPTY_STATE_AND_MINIMAL_SAMPLE_SCOPE.
+- Step identity:
+  - This opens Step 48 as a design / acceptance-scope step only.
+  - This Step does not create, modify, delete, seed, backfill, migrate, or import business data.
+  - This Step does not modify source code, schema, migration, Dockerfile, compose, deploy config, dependencies, or runtime delivery settings.
+  - This Step does not send email, access VPS, access production DB, push, deploy, cleanup, delete, reset, drop, restore, or prune.
+- Starting state:
+  - `git rev-parse HEAD`: `7be2751482e46f838d834cc486a03d1096178a7c`.
+  - Latest commit subject: `docs: close step 47 local production-like acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+  - Existing untracked local artifacts were present and left untouched.
+- Context read:
+  - Latest Step 47FINAL sections from `memory-bank/progress.md`, `memory-bank/decisions.md`, and `memory-bank/evidence.md`.
+  - Current Web route/page files for workbench, achievements, workflow, fees, search, dashboard, audit, account management, and department management.
+  - Current API controller/service boundaries for achievements, workflow, fees, reminders, attachments, dashboard, account management, and department management.
+  - `prisma/seed-foundation.cjs` and `prisma/seed.cjs` for seed strategy comparison only.
+  - Local Docker Compose production-like service status was checked read-only and remained healthy for `postgres`, `api`, and `web`.
+- Empty business-data pages that should still be usable:
+  - App shell and authenticated navigation: login/session shell, permission-filtered navigation, logout entry, and page switching.
+  - Workbench: dashboard summary loads with zero counts where no business records exist; "my approval tasks" shows explicit empty state.
+  - Achievements: list filters, refresh, create-drawer entry, and empty table state remain usable; no submit/create action is part of Step 48A.
+  - Workflow: `GET /workflow/tasks/my` can return an empty list and the page should show no fake tasks or broken action affordances.
+  - Fees: fee list, filters, warning groups, and empty detail prompt remain usable when no fee records exist; write drawers may be opened for UI validation but not submitted in Step 48A.
+  - Search: no-result / empty result state is valid with no achievements or fees.
+  - Dashboard: zero totals and empty distributions are valid and should render without layout or runtime errors.
+  - Audit logs: page remains usable with existing masked audit data or filter-driven empty results; audit logs are not considered business sample data.
+  - Account management and department management: foundation/admin data may be present and is sufficient for readonly acceptance of lists, filters, selectors, and permissions; these are foundation surfaces, not business-data proof.
+  - Settings boundary: remains a boundary/readonly capability page and does not need business records.
+- Pages / flows that need controlled business samples for meaningful acceptance:
+  - Achievement detail across at least one real achievement type, including contributors and typed detail fields.
+  - Achievement submit / void / archive state affordances, if a later Step authorizes actual write testing.
+  - Workflow task detail and approve/reject affordances; a pending department-review task requires a submitted achievement and an active department reviewer.
+  - Fee detail, due-date warning grouping, mark-paid / waive / cancel affordances; these require at least one fee record tied to an achievement and department.
+  - Reminder confirmation or reminder status acceptance; this requires at least one reminder task, normally tied to a fee due date.
+  - Attachment metadata/detail/download acceptance; this requires attachment metadata tied to a visible achievement, and download acceptance additionally requires a real local object or a separately authorized storage fixture.
+  - Search result grouping and detail drill-in; this requires at least one visible achievement and one visible fee.
+  - Dashboard non-zero distribution / warning acceptance; this requires achievements, fees, workflow tasks, and optionally reminders.
+- Seed decision:
+  - Do not run full `prisma/seed.cjs` directly in the production-like local environment by default.
+  - Rationale: the full demo seed creates broad fixed demo departments, roles, users, user roles, achievements, contributors, fees, reminders, and attachment metadata. That is useful for demos, but too broad for controlled production-like acceptance and can blur foundation data versus business sample data.
+  - `prisma/seed-foundation.cjs` is foundation-only and already aligned with baseline roles/permissions/departments; it does not create achievements, fees, workflow tasks, or attachments.
+  - Preferred direction is a separately authorized minimal business sample, explicitly named and scoped for local production-like acceptance.
+- Minimal business sample strategy for later authorization:
+  - Reuse an existing active foundation department where possible; create one clearly named local acceptance department only if existing foundation departments are not suitable for reviewer and ownership scopes.
+  - Ensure two active acceptance users in the same department: one researcher / submitter and one research secretary / reviewer. Use clearly local/test identity names and do not record passwords in memory-bank.
+  - Create one minimal achievement owned by the researcher in `DRAFT` or `PENDING_DEPARTMENT_REVIEW` depending on whether Step 48B intends to test only data presence or actual submit flow.
+  - Create one pending workflow task assigned to the secretary, preferably by authorized submit flow rather than direct task fabrication, so state-machine behavior remains realistic.
+  - Create one pending or due-soon fee tied to the achievement and department to validate fee list/detail/warning/search/dashboard behavior.
+  - Create one reminder task tied to the fee only if reminder acceptance is in scope; otherwise defer reminders to a later Step to avoid extra writes.
+  - Create attachment metadata only if attachment metadata acceptance is in scope; download acceptance should require either a real local object fixture or be limited to metadata-only acceptance.
+  - Keep sample count intentionally small: one department if needed, two users if needed, one achievement, one workflow task, one fee, optional one reminder, optional one attachment metadata record.
+- Recommended Step 48 split:
+  - Step 48B: read-only empty-state browser/API acceptance on the current local production-like stack. No seed, no business writes, no write-button final submission.
+  - Step 48C: separately authorized minimal business sample creation plan and execution. Define exact object names, counts, creation path, rollback/archive strategy without deletion, and acceptance checks before writing anything.
+  - Step 48D: post-sample business flow acceptance. Verify achievement detail, workflow task detail, fee detail/warnings, search results, dashboard non-zero data, and optional reminder/attachment scope.
+  - Full demo seed remains a separate explicit authorization Step, not the default path.
+- Result:
+  - Empty-state acceptance scope is defined.
+  - Minimal business sample strategy is defined.
+  - Direct demo seed is not recommended for the current production-like environment.
+  - Step 48B / 48C / 48D follow-up boundaries are defined.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No local API write, seed, backfill, migration, or database business-data mutation was executed.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, package file, lockfile, or dependency file was modified.
+  - No real email, push, deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 47FINAL - Local production-like and DirectMail readiness closeout
 
 - Status: STEP_47_CLOSED_LOCAL_PRODUCTION_LIKE_ACCEPTANCE_READY_FOR_STEP_48.

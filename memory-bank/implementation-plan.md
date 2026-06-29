@@ -4,6 +4,47 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 48A Archive - Local Production-Like Business Data and Empty-State Acceptance Design - 2026-06-29
+
+- Step identity:
+  - This opens Step 48 with design and acceptance-scope confirmation only.
+  - This Step is documentation-only and does not write business data.
+  - It does not run seed, backfill, migration, local API writes, source changes, real email, deploy, push, VPS access, production DB access, cleanup, deletion, reset, drop, restore, or prune.
+- Starting state:
+  - HEAD was `7be2751482e46f838d834cc486a03d1096178a7c` / `docs: close step 47 local production-like acceptance`.
+  - Tracked diff was empty before Step 48A documentation changes.
+  - Existing untracked local artifacts were present and ignored.
+  - Local production-like compose services were checked read-only and remained healthy for `postgres`, `api`, and `web`.
+- Empty-state acceptance scope:
+  - App shell and authenticated navigation should work with no business records.
+  - Workbench should render zero/empty dashboard metrics and empty approval task list without fake data.
+  - Achievements should render empty list/filter state and allow non-submitted UI inspection.
+  - Workflow should render empty `GET /workflow/tasks/my` state without fake tasks.
+  - Fees should render empty list, empty warning groups, and empty detail prompt; no fee write submission in empty-state acceptance.
+  - Search should render empty/no-result state.
+  - Dashboard should render zero totals and empty distributions.
+  - Audit, account management, and department management can be accepted against foundation/admin data or filter-driven empty states; these do not prove business sample readiness.
+  - Settings remains a boundary page.
+- Business-sample-dependent scope:
+  - Achievement detail / contributors / typed detail fields.
+  - Achievement submit, void, archive state behavior.
+  - Workflow task detail and approve/reject actions.
+  - Fee detail, due-soon/overdue warning behavior, mark-paid/waive/cancel actions.
+  - Reminder status/confirm behavior.
+  - Attachment metadata and download behavior.
+  - Search result grouping and detail drill-in.
+  - Dashboard non-zero distributions and warnings.
+- Seed strategy:
+  - Do not run the full demo seed by default.
+  - `prisma/seed-foundation.cjs` is foundation-only and aligns with baseline roles/permissions/departments.
+  - `prisma/seed.cjs` creates broad demo departments, users, roles, achievements, contributors, fees, reminders, and attachment metadata; useful for demo, but too broad for local production-like acceptance unless separately authorized.
+  - Prefer a minimal local acceptance sample with explicit object names/counts and a non-deleting rollback/archive policy.
+- Recommended follow-up plan:
+  - Step 48B: read-only empty-state acceptance. Verify Web/API empty business states and page usability without data writes.
+  - Step 48C: minimal business sample authorization and creation plan. Confirm exact objects, creation path, expected IDs/names policy, storage fixture policy, and no-deletion cleanup/archive approach before executing.
+  - Step 48D: post-sample acceptance. Verify achievement detail, workflow task, fee detail/warnings, search, dashboard, and optional reminder/attachment flows.
+  - Separate Step only if needed: full demo seed authorization, with explicit acceptance of demo pollution and recovery strategy.
+
 ## Current Step 47FINAL Archive - Local Production-Like and DirectMail Readiness Closeout - 2026-06-29
 
 - Step identity:

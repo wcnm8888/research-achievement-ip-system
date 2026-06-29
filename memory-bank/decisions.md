@@ -1,5 +1,46 @@
 # Decisions
 
+## D167 - Step 48A uses empty-state-first acceptance and defers minimal business samples
+
+- Date: 2026-06-29.
+- Context: Step 47 closed with the local production-like Docker Compose stack accepted, foundation/admin state present, and authenticated API acceptance passing. Business records such as achievements, workflow tasks, fees, reminders, and attachments remain empty because Step 47 did not create demo/business data. Step 48A was opened to design local production-like business-data and empty-state acceptance only.
+- Decision:
+  - Start Step 48 with read-only empty-state acceptance before creating business samples.
+  - Treat these pages as usable in empty business-data state:
+    - app shell / authenticated navigation.
+    - workbench summary and empty approval tasks.
+    - achievements list and empty table / filter state.
+    - workflow my tasks empty list.
+    - fees list, warning groups, and empty detail prompt.
+    - search no-result state.
+    - dashboard zero totals and empty distributions.
+    - audit logs page, including filter-driven empty results.
+    - account and department management foundation-data lists.
+    - settings boundary page.
+  - Treat these flows as requiring controlled business samples before meaningful acceptance:
+    - achievement detail and state actions.
+    - workflow task detail / approve / reject.
+    - fee detail and status transitions.
+    - reminder confirmation / reminder status acceptance.
+    - attachment metadata and any download path.
+    - search result grouping / drill-in.
+    - dashboard non-zero distributions and warnings.
+  - Do not run full `prisma/seed.cjs` by default in the production-like local environment.
+  - Prefer a separately authorized minimal business sample over demo seed pollution.
+- Minimal sample shape if later authorized:
+  - Reuse an existing active foundation department where possible; create one local acceptance department only if necessary.
+  - Use two active local acceptance users in the same department: researcher / submitter and research secretary / reviewer.
+  - Use one achievement, one pending workflow task, one fee, optional one reminder, and optional one attachment metadata record.
+  - Prefer creating workflow tasks through the real submit path when write acceptance is authorized, rather than direct task fabrication.
+  - Attachment download acceptance requires a real local object fixture or must be scoped to metadata-only acceptance.
+- Next:
+  - Step 48B: read-only local production-like empty-state browser/API acceptance.
+  - Step 48C: explicit minimal business sample creation plan and authorization gate.
+  - Step 48D: post-sample business flow acceptance.
+  - Full demo seed may only be considered in a separate explicit authorization Step.
+- Boundaries:
+  - This decision does not authorize source-code changes, schema/migration changes, Docker/compose/deploy changes, dependency changes, business data creation/modification/deletion, seed/backfill/migration execution, API writes, real email, push/deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D166 - Step 47 closes with local production-like acceptance and Step 48 business entry
 
 - Date: 2026-06-29.

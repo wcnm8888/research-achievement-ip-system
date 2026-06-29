@@ -1,5 +1,52 @@
 # Evidence
 
+## 2026-06-29 Step 48A - Local production-like business data and empty-state acceptance design evidence
+
+- Purpose:
+  - Design Step 48 local production-like business-data and empty-state acceptance scope.
+  - Compare demo seed versus minimal business sample strategy without writing data.
+  - Define follow-up execution split for Step 48B / 48C / 48D.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `7be2751482e46f838d834cc486a03d1096178a7c`.
+  - `git log -1 --pretty=%s`: `docs: close step 47 local production-like acceptance`.
+  - `git diff --stat`: empty before Step 48A memory-bank edits.
+  - `git status --short --untracked-files=all`: tracked diff was empty; existing untracked local artifacts were present and not touched.
+- Read context:
+  - Latest Step 47FINAL archive entries from `memory-bank/progress.md`, `memory-bank/decisions.md`, and `memory-bank/evidence.md`.
+  - Current Web routing and page files under `apps/web/src` for workbench, achievements, workflow, fees, search, dashboard, audit logs, account management, and department management.
+  - Current API controller/service boundaries under `apps/api/src` for achievements, workflow, fees, reminders, attachments, dashboard, account management, and department management.
+  - `prisma/seed-foundation.cjs` and `prisma/seed.cjs` for seed-structure comparison only.
+- Read-only environment evidence:
+  - `docker compose -f docker-compose.production.yml ps` showed `postgres`, `api`, and `web` running and healthy.
+  - No authenticated API write or data-changing endpoint was called.
+- Code/seed observations:
+  - Web routes include workbench, achievements, workflow, fees, search, dashboard, audit, settings, account management, and department management.
+  - Existing page components include explicit empty states for achievements, workflow tasks, fees, search, dashboard, audit logs, account management, and department management.
+  - Achievement, workflow, fee, reminder, attachment, account, and department APIs expose both read and write/action routes; Step 48A only used these to classify acceptance needs.
+  - Workflow review task creation depends on an active same-department research secretary / reviewer.
+  - Fee records depend on a visible achievement and active department.
+  - Attachment metadata can be tied to achievements; download acceptance requires storage object availability, not metadata alone.
+  - `prisma/seed-foundation.cjs` creates/upserts foundation departments, roles, permissions, and role permissions and reports business object counts; it does not create achievements, fees, workflow tasks, or attachments.
+  - `prisma/seed.cjs` creates/upserts broad demo departments, roles, permissions, users, user roles, achievements, contributors, fees, reminders, and attachment metadata.
+- Acceptance design evidence:
+  - Empty business-data acceptance should cover page reachability, auth navigation, zero/empty render states, filters, refresh controls, no fake data, and no runtime errors.
+  - Business sample acceptance is needed for meaningful detail/action flows: achievement detail, workflow review, fee detail/status, reminders, attachments, search results, and non-zero dashboard metrics.
+  - Full demo seed is not recommended as the default production-like route because it writes a broad demo dataset and can obscure controlled acceptance scope.
+  - Preferred later route is a minimal, explicitly authorized business sample: reuse or create one active department if needed, two scoped users, one achievement, one workflow task, one fee, optional one reminder, optional one attachment metadata fixture.
+- Follow-up split evidence:
+  - Step 48B should perform read-only empty-state Web/API acceptance without seed or data writes.
+  - Step 48C should seek explicit authorization and define exact minimal sample objects before any write.
+  - Step 48D should verify business flows after sample creation.
+  - Full demo seed requires a separate explicit authorization Step.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No seed, backfill, migration, local API write, database business-data creation, update, or deletion was executed.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package file, or lockfile was modified.
+  - No real email was sent.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, reset, drop, restore, prune, or artifact removal occurred.
+
 ## 2026-06-29 Step 47FINAL - Local production-like and DirectMail readiness closeout evidence
 
 - Purpose:
