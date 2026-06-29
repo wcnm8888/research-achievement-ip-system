@@ -1,5 +1,47 @@
 # Evidence
 
+## 2026-06-29 Step 47AD - Local production-like authenticated acceptance evidence
+
+- Purpose:
+  - Complete local-admin authenticated page acceptance for the local production-like Compose stack.
+  - Do not read `.env.production`, record credentials, send real email, change DirectMail defaults, run seed/backfill/migration, push/deploy, access VPS/production DB, or clean artifacts.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `5353034ca5fe592183f4d7304dd354bd279ca002`.
+  - `git log -1 --pretty=%s`: `docs: record local production-like login acceptance`.
+  - `git diff --name-status`: empty before this memory-bank update.
+- Stack evidence:
+  - Compose status showed:
+    - `postgres`: running / healthy.
+    - `api`: running / healthy.
+    - `web`: running / healthy.
+  - `http://127.0.0.1:13001/api/health`: HTTP 200, `application/json`.
+  - `http://127.0.0.1:18081/`: HTTP 200, `text/html`.
+  - `http://127.0.0.1:18081/api/auth/me`: HTTP 401 in the checked request context.
+- Authentication blocker:
+  - Target account: `local-admin@wzunew.uk`.
+  - No usable ephemeral password value was available in the active execution context.
+  - Login was not attempted.
+  - Result: `BLOCKED_BY_EPHEMERAL_LOCAL_ADMIN_PASSWORD_NOT_AVAILABLE_IN_CONTEXT`.
+- Anonymous API evidence:
+  - Representative Web-routed APIs returned unauthenticated responses where auth is required.
+  - These checks confirm auth enforcement but do not count as authenticated page acceptance.
+- Unverified scope:
+  - Authenticated `/api/auth/me` was not verified.
+  - Authenticated access to 工作台, 成果管理, 审批管理, 统计看板, 审计日志, 账号管理, and 部门维护 was not verified.
+  - Post-login empty states caused by missing demo/business data were not verified.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive memory-bank diff scan found no password, token, cookie, secret, private key, connection string, full reset/invite link, or provider raw payload.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No real email was sent.
+  - DirectMail default sending strategy was not modified.
+  - No seed/backfill/migration.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+
 ## 2026-06-29 Step 47AC - Local production-like login and basic business acceptance evidence
 
 - Purpose:

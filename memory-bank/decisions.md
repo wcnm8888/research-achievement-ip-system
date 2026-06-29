@@ -1,5 +1,20 @@
 # Decisions
 
+## D164 - Step 47AD remains blocked without usable ephemeral local-admin password
+
+- Date: 2026-06-29.
+- Context: Step 47AD was opened to complete authenticated local-admin acceptance. The prompt authorized use of an ephemeral local test password said to have been provided in chat, but no usable password value was available in the active execution context.
+- Decision:
+  - Record `BLOCKED_BY_EPHEMERAL_LOCAL_ADMIN_PASSWORD_NOT_AVAILABLE_IN_CONTEXT`.
+  - Do not read `.env.production`, inspect password storage, search for passwords, output credentials, or infer a password.
+  - Do not attempt login without credentials.
+  - Do not claim authenticated administrator page acceptance without completing login.
+  - Keep real email delivery, DirectMail strategy changes, seed/backfill/migration, push/deploy/VPS access/production DB access, and cleanup out of scope.
+- Next:
+  - Continue with a safe credential handoff method, preferably user-entered password in a local browser session.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+
 ## D163 - Step 47AC blocks authenticated acceptance without local-admin password
 
 - Date: 2026-06-29.

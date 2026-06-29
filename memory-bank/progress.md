@@ -1,5 +1,44 @@
 # Progress
 
+## 2026-06-29 Step 47AD - Local production-like authenticated acceptance
+
+- Status: BLOCKED_BY_EPHEMERAL_LOCAL_ADMIN_PASSWORD_NOT_AVAILABLE_IN_CONTEXT.
+- Step identity:
+  - This is Step 47AD.
+  - This Step was intended to complete local-admin authenticated page acceptance on the local Docker Compose production-like stack.
+  - It is not VPS production acceptance and not Step 38 production acceptance.
+- Starting state:
+  - `git rev-parse HEAD`: `5353034ca5fe592183f4d7304dd354bd279ca002`.
+  - Latest commit subject: `docs: record local production-like login acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+- Stack / entry checks:
+  - `postgres`: running / healthy.
+  - `api`: running / healthy.
+  - `web`: running / healthy.
+  - API health `http://127.0.0.1:13001/api/health`: HTTP 200.
+  - Web root `http://127.0.0.1:18081/`: HTTP 200.
+  - Web API proxy `/api/auth/me`: HTTP 401 in the checked request context.
+- Authentication blocker:
+  - Target login account: `local-admin@wzunew.uk`.
+  - The Step prompt said an ephemeral local test password had been provided in chat, but the current executable context did not contain a usable password value.
+  - The agent did not ask the user to paste the password into memory-bank, did not read `.env.production`, did not inspect password hashes, did not search for passwords, and did not infer credentials.
+  - Login was not attempted without credentials.
+- Page/API acceptance:
+  - Authenticated `/api/auth/me` was not verified.
+  - Authenticated access to 工作台, 成果管理, 审批管理, 统计看板, 审计日志, 账号管理, and 部门维护 was not verified.
+  - Anonymous checks for representative Web-routed APIs returned 401 where auth is required; this confirms the stack enforces auth but does not satisfy authenticated acceptance.
+  - Business-data empty states were not verified after login.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No real email was sent.
+  - DirectMail default sending strategy was not modified.
+  - No seed/backfill/migration.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+- Next:
+  - Re-run authenticated acceptance with a safe credential handoff available in the active context, preferably manual password entry in a browser session controlled by the user.
+
 ## 2026-06-29 Step 47AC - Local production-like login and basic business acceptance
 
 - Status: BLOCKED_BY_LOCAL_ADMIN_PASSWORD_UNAVAILABLE.

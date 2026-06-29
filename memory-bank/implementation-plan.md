@@ -4,6 +4,23 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47AD Archive - Local Production-Like Authenticated Acceptance - 2026-06-29
+
+- Step identity:
+  - This is Step 47AD.
+  - This Step was intended to complete authenticated local-admin page acceptance in the local production-like stack.
+  - It is not real email delivery, DirectMail default strategy change, seed/backfill/migration, push, deploy, VPS access, production DB access, cleanup, deletion, reset, drop, or prune.
+- Result:
+  - Local production-like stack remains healthy.
+  - API health and Web root returned HTTP 200.
+  - Web API proxy `/api/auth/me` returned HTTP 401 for the anonymous checked request.
+  - Authenticated login was blocked because no usable ephemeral local-admin password was available in the active execution context.
+- Decision:
+  - Record `BLOCKED_BY_EPHEMERAL_LOCAL_ADMIN_PASSWORD_NOT_AVAILABLE_IN_CONTEXT`.
+  - Do not claim authenticated page acceptance until login can be completed without recording credentials.
+- Next:
+  - Repeat acceptance with user-entered password in a browser session or another safe ephemeral credential path.
+
 ## Current Step 47AC Archive - Local Production-Like Login and Basic Business Acceptance - 2026-06-29
 
 - Step identity:
