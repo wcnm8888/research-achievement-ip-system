@@ -1,5 +1,33 @@
 # Decisions
 
+## D181 - Step 51D implements backend-only API integration settings CRUD
+
+- Date: 2026-06-29.
+- Context: Step 51C found that Prisma already had `ApiIntegration`/`ApiCallLog` metadata models, while backend Settings/config routes were missing. The user authorized a backend-only implementation for `/api/settings/api-integrations`.
+- Decision:
+  - Add a dedicated `SettingsModule` with controller/service/repository/DTOs for API integration metadata.
+  - Route the endpoints under `settings/api-integrations`; runtime global prefix makes them `/api/settings/api-integrations`.
+  - Require `system:config` on all routes.
+  - Support list/detail/create/update/soft archive/restore.
+  - Use soft archive, not hard delete, because `api_call_logs` relates to integration `code`.
+  - Archive also sets `enabled=false`; restore clears `archivedAt` and leaves `enabled` under explicit metadata control.
+  - Record `CONFIG_UPDATE` audit events for create/update/archive/restore.
+- Rationale:
+  - This closes the smallest phase-one Settings/config backend gap without schema/migration or frontend expansion.
+  - Reusing the department/account admin guard and audit pattern keeps the security boundary consistent.
+  - Keeping `configRef` as a reference label/alias avoids turning Settings/config into a secrets manager.
+- Not complete:
+  - Frontend Settings CRUD UI.
+  - Local Docker API acceptance.
+  - Runtime adapter switching.
+  - Role/permission CRUD.
+  - Dynamic dictionary CRUD.
+  - Reminder-rule configuration.
+  - DirectMail runtime changes.
+  - Production acceptance.
+- Boundaries:
+  - This decision does not authorize schema/migration changes, seed/backfill, dependency changes, Docker/compose/deploy config changes, DirectMail runtime changes, real external calls, import/export, real email, push/deploy, VPS access, production DB access, production writes, cleanup, deletion, reset, drop, restore, prune, or sensitive-value access.
+
 ## D180 - Step 51C limits Settings/config CRUD to non-sensitive integration metadata
 
 - Date: 2026-06-29.

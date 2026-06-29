@@ -1,5 +1,67 @@
 # Evidence
 
+## 2026-06-29 Step 51D - Settings API integrations backend CRUD evidence
+
+- Purpose:
+  - Implement backend-only Settings/config CRUD for `api_integrations` non-sensitive metadata.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `87ae3c8`.
+  - Latest commit subject: `docs: plan settings config crud implementation`.
+  - `git status --short --untracked-files=no`: empty before Step 51D changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Code evidence:
+  - Added `apps/api/src/settings/settings.module.ts`.
+  - Added `apps/api/src/settings/api-integration-settings.controller.ts`.
+  - Added `apps/api/src/settings/api-integration-settings.service.ts`.
+  - Added `apps/api/src/settings/api-integration-settings.repository.ts`.
+  - Added `apps/api/src/settings/dto/api-integration-settings.dto.ts`.
+  - Added `apps/api/src/settings/settings.errors.ts`.
+  - Updated `apps/api/src/app.module.ts` to import `SettingsModule`.
+- Route evidence:
+  - Controller path: `settings/api-integrations`.
+  - Runtime global prefix from `main.ts` makes the public API path `/api/settings/api-integrations`.
+  - Supported actions:
+    - list.
+    - detail.
+    - create.
+    - update.
+    - archive.
+    - restore.
+- Permission and validation evidence:
+  - Every controller route has `@RequirePermissions(PermissionCode.systemConfig)`.
+  - Controller tests assert no-system-config callers receive HTTP 403 and service methods are not called.
+  - DTO tests through controller HTTP assert invalid provider, invalid `timeoutMs`, empty `code`, and extra fields return HTTP 400.
+  - `ParseUUIDPipe` is used for `:id`.
+- Metadata boundary evidence:
+  - Create/update DTOs expose only `code`, `provider`, `enabled`, `timeoutMs`, and `configRef`.
+  - `configRef` validation allows reference-label characters only and treats empty/null as no reference.
+  - No provider credential, API key, SMTP password, DirectMail credential, connection string, env value, or runtime secret field is exposed.
+- Lifecycle and audit evidence:
+  - Archive is soft lifecycle: repository sets `enabled=false` and `archivedAt`.
+  - Restore clears `archivedAt`.
+  - Physical delete is not implemented.
+  - Service records `CONFIG_UPDATE` audit events against `SYSTEM_CONFIG` for create/update/archive/restore.
+  - Service tests assert audit metadata for old/new values and lifecycle operations without secret-bearing fields.
+- Test evidence:
+  - `corepack pnpm --filter @research-ip/api test -- settings`: passed.
+  - Settings targeted result: 3 files passed, 12 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test`: passed.
+  - API full test result: 72 files passed, 639 tests passed.
+- Not covered:
+  - Frontend Settings page.
+  - Local Docker API acceptance.
+  - Runtime provider switching.
+  - Secrets management.
+  - Production/VPS acceptance.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie, secret, AccessKey, private key, connection string, provider credential, SMTP credential, DirectMail credential, or real provider secret was recorded.
+  - No Prisma schema, migration, seed/backfill, dependency, package/lockfile, Docker/compose/deploy config, DirectMail runtime strategy, VPS access, production DB access, push, deploy, real external call, real email, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 51C - Settings/config CRUD inventory and minimal plan evidence
 
 - Purpose:

@@ -1,5 +1,50 @@
 # Progress
 
+## 2026-06-29 Step 51D - Settings API integrations backend CRUD
+
+- Status: STEP_51D_SETTINGS_API_INTEGRATIONS_BACKEND_CRUD_IMPLEMENTED.
+- Step identity:
+  - Implements backend-only Settings/config API for `api_integrations` non-sensitive metadata.
+  - This is not frontend Settings work, not schema/migration/seed/backfill, not runtime provider switching, not DirectMail behavior change, not VPS/production access, not push/deploy, and not cleanup.
+- Starting state:
+  - `HEAD`: `87ae3c8`.
+  - Latest commit subject: `docs: plan settings config crud implementation`.
+  - Tracked diff was empty before Step 51D changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented:
+  - `apps/api/src/settings/settings.module.ts`.
+  - `ApiIntegrationSettingsController`.
+  - `ApiIntegrationSettingsService`.
+  - `ApiIntegrationSettingsRepository`.
+  - DTOs and settings-specific error classes.
+  - `AppModule` imports `SettingsModule`.
+- API contract:
+  - Runtime path with global API prefix:
+    - `GET /api/settings/api-integrations`.
+    - `GET /api/settings/api-integrations/:id`.
+    - `POST /api/settings/api-integrations`.
+    - `PATCH /api/settings/api-integrations/:id`.
+    - `POST /api/settings/api-integrations/:id/archive`.
+    - `POST /api/settings/api-integrations/:id/restore`.
+- Security and validation:
+  - Every route requires `system:config`.
+  - No-system-config callers return 403 before service execution.
+  - DTO validation rejects invalid provider, invalid timeout, empty code, and extra fields.
+  - Managed fields are limited to non-sensitive metadata: `code`, `provider`, `enabled`, `timeoutMs`, `configRef`.
+  - `configRef` is only a reference label/alias, not a secret value.
+- Audit:
+  - Create/update/archive/restore record `CONFIG_UPDATE` audit events against `SYSTEM_CONFIG`.
+  - Audit summaries include only metadata and lifecycle operation names.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- settings`: passed, 3 files / 12 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api test`: passed, 72 files / 639 tests.
+  - Local Docker API acceptance was not run in this Step; coverage is from unit/controller/AppModule tests.
+- Remaining:
+  - Step 51E Web Settings surface.
+  - Local Docker API acceptance if desired.
+  - Runtime provider switching and secrets management remain excluded.
+
 ## 2026-06-29 Step 51C - Settings/config CRUD inventory and minimal plan
 
 - Status: STEP_51C_SETTINGS_CONFIG_CRUD_INVENTORIED_AND_BACKEND_STEP_RECOMMENDED.

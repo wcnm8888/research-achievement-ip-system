@@ -13,6 +13,7 @@ import { HealthController } from "./health.controller";
 import { IdentityModule } from "./identity/identity.module";
 import { RemindersModule } from "./reminders/reminders.module";
 import { SearchModule } from "./search/search.module";
+import { SettingsModule } from "./settings/settings.module";
 import { WorkflowModule } from "./workflow/workflow.module";
 
 @Module({
@@ -31,6 +32,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     DashboardModule,
     AccountManagementModule,
     DepartmentManagementModule,
+    SettingsModule,
   ],
   controllers: [HealthController],
 })

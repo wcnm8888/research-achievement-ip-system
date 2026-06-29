@@ -4,6 +4,47 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 51D Archive - Settings API integrations backend CRUD - 2026-06-29
+
+- Step identity:
+  - This Step implements the phase-one minimal backend Settings/config API for `api_integrations`.
+  - Scope is backend-only plus tests and memory-bank records.
+  - No frontend Settings page, Prisma schema, migration, seed/backfill, dependency, package/lockfile, Docker/compose/deploy config, DirectMail runtime strategy, VPS, production DB, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `87ae3c8`.
+  - Latest commit: `docs: plan settings config crud implementation`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Implemented:
+  - Added `SettingsModule` and imported it into `AppModule`.
+  - Added backend routes under `/api/settings/api-integrations` at runtime:
+    - `GET /api/settings/api-integrations`.
+    - `GET /api/settings/api-integrations/:id`.
+    - `POST /api/settings/api-integrations`.
+    - `PATCH /api/settings/api-integrations/:id`.
+    - `POST /api/settings/api-integrations/:id/archive`.
+    - `POST /api/settings/api-integrations/:id/restore`.
+  - Added DTO validation for list filters, create/update payloads, and lifecycle reasons.
+  - Added service/repository split using existing Prisma `apiIntegration` model.
+  - Added `system:config` guard on every endpoint.
+  - Added `CONFIG_UPDATE` audit events against `SYSTEM_CONFIG` for create/update/archive/restore.
+  - Archive is soft lifecycle only: sets `enabled=false` and `archivedAt`; restore clears `archivedAt`.
+- Boundary:
+  - API manages only non-sensitive metadata: `code`, `provider`, `enabled`, `timeoutMs`, `configRef`.
+  - `configRef` is treated as a non-sensitive reference label/alias, not a secret value.
+  - No credential value, provider key, API key, SMTP password, DirectMail credential, env value, connection string, or runtime secret is stored or exposed by the new API.
+- Tests:
+  - Settings targeted tests passed: 3 files / 12 tests.
+  - API full test suite passed: 72 files / 639 tests.
+  - API typecheck passed.
+- Not covered:
+  - Frontend Settings management UI.
+  - Local Docker API acceptance.
+  - Runtime provider switching.
+  - Role/permission CRUD, dynamic dictionaries, reminder-rule editing, and secrets management.
+- Next:
+  - Step 51E should implement the Web Settings integration-metadata surface against the new backend API.
+
 ## Current Step 51C Archive - Settings/config CRUD inventory and minimal implementation plan - 2026-06-29
 
 - Step identity:
