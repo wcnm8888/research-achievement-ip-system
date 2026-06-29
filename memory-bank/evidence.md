@@ -1,5 +1,73 @@
 # Evidence
 
+## 2026-06-29 Step 50B - Local Docker richer sample acceptance evidence
+
+- Purpose:
+  - Accept richer local Docker production-like behavior for fee, reminder, search, and dashboard sample data.
+  - Keep the step local-only and avoid VPS/production, real email, migration, seed/backfill, cleanup, and sensitive output.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `7799d42`.
+  - Latest commit subject: `docs: map phase one local docker gaps`.
+  - Local `postgres`, `api`, and `web` services were running / healthy before the runtime fix rebuild.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Runtime failure evidence:
+  - Initial `POST /api/fees` with a valid `dueDate` string returned HTTP 500.
+  - API logs showed `PrismaClientValidationError`: `dueDate` was passed as a string where Prisma expected `DateTime` / `Date`.
+  - The failure occurred after auth/permission checks, so it was a persistence mapping issue.
+- Fix evidence:
+  - `apps/api/src/fees/domain/fee-prisma.mapper.ts` normalizes:
+    - `dueDate` through `new Date(...)`.
+    - non-null `paidDate` through `new Date(...)`.
+  - `apps/api/src/fees/fee.repository.spec.ts` covers:
+    - HTTP date strings before fee create writes.
+    - HTTP paid-date strings before fee transition writes.
+- Test/build evidence:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: passed, 6 files / 72 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - Local API image was rebuilt with `docker compose -f docker-compose.production.yml build --progress plain api`.
+  - Local API container was recreated with `docker compose -f docker-compose.production.yml up -d api`.
+  - API health returned `healthy`.
+  - Compose reported one orphan container from prior local runs; it was not cleaned due safety rules.
+- Credential/session evidence:
+  - A temporary random local password was rotated in-process for the Step48C research secretary account and used only for local `/api/auth/login`.
+  - Password values, cookie values, tokens, secrets, connection strings, private keys, full reset/invite links, plaintext session values, and provider payloads were not printed or recorded.
+- Local sample evidence:
+  - Fee record ID: `1ae2843c-ef99-4226-b6d3-3e952af09d59`.
+  - Fee due date: `2026-07-06`.
+  - Reminder task ID: `e66ef71c-bbd8-4b7e-8491-24aa2a4eaa68`.
+  - Reminder was created as local `SENT` DB state to validate confirm behavior without real email.
+- API acceptance evidence:
+  - `/api/auth/me`: HTTP 200.
+  - `/api/fees?achievementId=<sample>&take=20`: HTTP 200.
+  - Fee list count: `1`.
+  - Created fee visible in list: `true`.
+  - `/api/fees/<fee>`: HTTP 200.
+  - Fee detail visible: `true`.
+  - Fee pay status: `PENDING`.
+  - `/api/reminders/<reminder>/confirm`: HTTP 200.
+  - Reminder transitioned `SENT -> CONFIRMED`.
+  - Reminder `confirmedAt` was set.
+  - `/api/dashboard/summary?dueSoonDays=30`: HTTP 200.
+  - Dashboard achievement total: `1`.
+  - Dashboard fee pending count: `1`.
+  - Dashboard fee due-soon count: `1`.
+  - Dashboard confirmed reminder count: `1`.
+  - `/api/search?keyword=<feeId>&targetTypes=FEE_RECORD&take=10`: HTTP 200, total `1`.
+  - `/api/search?keyword=20260629041937&targetTypes=ACHIEVEMENT&take=10`: HTTP 200, total `1`.
+  - Fee audit count: `1`.
+  - Reminder audit count: `1`.
+- Capability boundary evidence:
+  - `/api/search?keyword=STEP50B_20260629&targetTypes=FEE_RECORD&take=10` returned HTTP 200 but total `0`.
+  - Code inspection confirmed fee search currently supports fee ID / achievement ID matching, not voucher text.
+  - Reminder scheduler/generation was not executed; only confirm was accepted through public API.
+- Verification still required before commit:
+  - `git diff --check`.
+  - Sensitive scan over committed added lines.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, provider raw payload, or raw audit payload was recorded.
+  - No schema, migration, seed/backfill, package/lockfile, DirectMail runtime strategy, VPS access, production DB access, push, deploy, real email, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 50A - Phase one local Docker goal gap map evidence
 
 - Purpose:

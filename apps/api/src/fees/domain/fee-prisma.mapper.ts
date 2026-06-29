@@ -20,7 +20,7 @@ export const toFeeRecordCreateData = (
   feeType: input.feeType,
   fundSource: input.fundSource ?? null,
   amount: input.amount,
-  dueDate: input.dueDate,
+  dueDate: toPrismaDate(input.dueDate),
   voucherNo: input.voucherNo ?? null,
   createdById: input.createdById ?? null,
   updatedById: input.updatedById ?? null,
@@ -55,7 +55,9 @@ export const toFeeStatusTransitionData = (
 ): Prisma.FeeRecordUncheckedUpdateInput => ({
   payStatus: input.nextStatus,
   updatedById: input.updatedById ?? null,
-  ...(input.paidDate !== undefined ? { paidDate: input.paidDate } : {}),
+  ...(input.paidDate !== undefined
+    ? { paidDate: input.paidDate === null ? null : toPrismaDate(input.paidDate) }
+    : {}),
   ...(input.voucherNo !== undefined ? { voucherNo: input.voucherNo } : {}),
   ...(input.archivedAt !== undefined ? { archivedAt: input.archivedAt } : {}),
 });
@@ -101,3 +103,6 @@ export const toFeeAchievementParentRecord = (
   ownerUserId: row.ownerUserId,
   secretLevel: row.secretLevel,
 });
+
+const toPrismaDate = (value: Date | string): Date =>
+  value instanceof Date ? value : new Date(value);

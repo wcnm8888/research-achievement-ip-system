@@ -163,6 +163,24 @@ describe("FeeRepository.create", () => {
     });
   });
 
+  it("normalizes HTTP date strings before writing fee records", async () => {
+    const { repository, tx } = createRepository();
+
+    await repository.createInTransaction(tx as unknown as FeeTransactionClient, {
+      achievementId: ids.achievement,
+      departmentId: ids.department,
+      feeType: FeeTypeCode.patentAnnual,
+      amount: 1200.5,
+      dueDate: "2026-07-01",
+    });
+
+    expect(tx.feeRecord.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        dueDate: new Date("2026-07-01"),
+      }),
+    });
+  });
+
   it("does not expose broad mutation or removal helpers", () => {
     const { repository } = createRepository();
     const multiChangeMethod = ["update", "Many"].join("");
@@ -301,6 +319,28 @@ describe("FeeRepository.transitionPayStatus", () => {
     expect(tx.feeRecord.findUnique).toHaveBeenCalledWith({
       where: { id: ids.feeRecord },
       select: expect.objectContaining({ payStatus: true }),
+    });
+  });
+
+  it("normalizes HTTP paid-date strings before writing fee transitions", async () => {
+    const { repository, tx } = createRepository();
+
+    await repository.transitionPayStatusInTransaction(tx as unknown as FeeTransactionClient, {
+      feeRecordId: ids.feeRecord,
+      expectedStatus: PayStatusCode.pending,
+      nextStatus: PayStatusCode.paid,
+      paidDate: "2026-06-18",
+    });
+
+    expect(tx.feeRecord.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: ids.feeRecord,
+        payStatus: PayStatusCode.pending,
+        archivedAt: null,
+      },
+      data: expect.objectContaining({
+        paidDate: new Date("2026-06-18"),
+      }),
     });
   });
 

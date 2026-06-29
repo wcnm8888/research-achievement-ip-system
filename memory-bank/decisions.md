@@ -1,5 +1,26 @@
 # Decisions
 
+## D175 - Step 50B normalizes fee date strings and accepts richer local sample
+
+- Date: 2026-06-29.
+- Context: Step 50B tried to create a local Docker fee sample through `POST /api/fees` using a valid HTTP `dueDate` string. The route accepted the DTO but failed at Prisma persistence with HTTP 500 because the mapper forwarded a string to a `DateTime @db.Date` field.
+- Decision:
+  - Treat this as a real local Docker defect in the fee persistence boundary, not as a test-data issue.
+  - Normalize fee `dueDate` and non-null `paidDate` to `Date` in the Prisma mapper.
+  - Keep the fix narrow and covered by repository tests.
+  - Accept Step 50B richer local sample after rebuilding the local API container and re-running targeted API checks.
+- Accepted behavior:
+  - Fee create/list/detail works in local Docker for the Step48C/49 sample achievement.
+  - Dashboard now shows non-zero achievement, fee pending, fee due-soon, and confirmed reminder counts in the secretary scope.
+  - Search returns the created fee when queried by fee ID and returns the existing achievement by its title keyword.
+  - Reminder confirm route transitions a local `SENT` reminder to `CONFIRMED` without real email.
+- Capability boundary:
+  - Fee search does not currently search voucher text.
+  - Reminder scheduler/generation remains unaccepted in Docker.
+  - Fee warning surface and fee archive remain implementation candidates.
+- Boundaries:
+  - This decision does not authorize schema/migration changes, seed/backfill, dependency changes, Docker/compose/deploy config changes, DirectMail runtime changes, real email, push/deploy, VPS access, production DB access, production writes, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D174 - Step 50A narrows the next local work to phase-one Docker gaps
 
 - Date: 2026-06-29.

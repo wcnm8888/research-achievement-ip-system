@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 50B Archive - Local Docker Richer Sample Acceptance - 2026-06-29
+
+- Step identity:
+  - This Step accepts richer local Docker production-like sample behavior for fees, reminders, search, and dashboard.
+  - This Step also includes one narrow source fix found during acceptance: HTTP date strings for fee `dueDate` / `paidDate` are normalized to `Date` before Prisma writes.
+  - This is local Docker acceptance only. It is not VPS/production acceptance, not production write acceptance, not real email enablement, and not Phase 2 completion.
+  - No schema, migration, seed/backfill, Docker/compose/deploy config, dependency, package, lockfile, DirectMail runtime strategy, VPS, production DB, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `7799d42`.
+  - Latest commit: `docs: map phase one local docker gaps`.
+  - Existing untracked local artifacts remained untouched.
+- Runtime finding and fix:
+  - `POST /api/fees` initially returned HTTP 500 in local Docker when passed a valid HTTP `dueDate` string.
+  - Root cause: `CreateFeeRecordDto` accepts date strings, but the fee Prisma mapper forwarded `dueDate` directly to Prisma for a `DateTime @db.Date` field.
+  - Fix: normalize `dueDate` and non-null `paidDate` through `new Date(...)` in `apps/api/src/fees/domain/fee-prisma.mapper.ts`.
+  - Added repository tests for HTTP date-string normalization on fee create and paid-date transitions.
+- Accepted local Docker result:
+  - A local Step50B fee record was created for the existing Step48C/49 sample achievement.
+  - `/api/auth/me`: HTTP 200 for the Step48C research secretary session.
+  - `/api/fees?achievementId=<sample>&take=20`: HTTP 200, list count `1`, created fee visible.
+  - `/api/fees/<fee>`: HTTP 200, created fee visible, `payStatus=PENDING`.
+  - `/api/reminders/<reminder>/confirm`: HTTP 200.
+  - Reminder transitioned `SENT -> CONFIRMED`, with `confirmedAt` set.
+  - `/api/dashboard/summary?dueSoonDays=30`: HTTP 200, achievement total `1`, fee pending count `1`, fee due-soon count `1`, confirmed reminder count `1`.
+  - `/api/search?keyword=<feeId>&targetTypes=FEE_RECORD&take=10`: HTTP 200, total `1`.
+  - `/api/search?keyword=20260629041937&targetTypes=ACHIEVEMENT&take=10`: HTTP 200, total `1`.
+  - Fee audit count `1`; reminder audit count `1`.
+- Capability boundary recorded:
+  - Fee search currently supports fee ID / achievement ID, not voucher number or arbitrary voucher text.
+  - Reminder generation/sending scheduler was not executed; a local `SENT` reminder task was created directly to validate the public confirm route without real email.
+  - Fee warnings endpoint/surface, fee archive, finance workflow, voucher attachment, persisted reason history, and production acceptance remain later gaps.
+- Next:
+  - Step 50C should accept real local Docker attachment upload/list/detail/download.
+  - Step 50D should cover reject path with a separate achievement sample.
+  - Step 51 should implement only confirmed phase-one gaps, one module per Step.
+
 ## Current Step 50A Archive - Phase One Local Docker Goal Gap Map - 2026-06-29
 
 - Step identity:

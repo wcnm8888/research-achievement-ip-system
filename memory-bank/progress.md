@@ -1,5 +1,47 @@
 # Progress
 
+## 2026-06-29 Step 50B - Local Docker richer sample acceptance
+
+- Status: STEP_50B_LOCAL_DOCKER_RICHER_SAMPLE_ACCEPTED_WITH_FIX.
+- Step identity:
+  - Local Docker production-like acceptance for fee, reminder, search, and dashboard richer sample behavior.
+  - Includes a narrow fee persistence fix found during acceptance.
+  - This is not VPS/production acceptance, not production write acceptance, not deploy/push, not real email, not migration/seed/backfill, and not cleanup.
+- Starting state:
+  - `HEAD`: `7799d42`.
+  - Latest commit subject: `docs: map phase one local docker gaps`.
+  - Existing untracked local artifacts were present and left untouched.
+- Runtime issue found:
+  - `POST /api/fees` returned HTTP 500 in local Docker for a valid `dueDate` string.
+  - Root cause: fee mapper passed HTTP date strings directly to Prisma `DateTime @db.Date` writes.
+- Code change:
+  - `apps/api/src/fees/domain/fee-prisma.mapper.ts` now normalizes fee `dueDate` and non-null `paidDate` to `Date`.
+  - `apps/api/src/fees/fee.repository.spec.ts` adds coverage for HTTP date-string normalization on create and status transition data.
+- Local Docker acceptance:
+  - API container rebuilt locally with the fix and returned healthy.
+  - Temporary random local password was rotated in-process for the Step48C research secretary to obtain a real local session; no password/cookie/token was printed or recorded.
+  - Created one local Step50B fee record for the existing Step48C/49 sample achievement.
+  - Created one local `SENT` reminder task directly in DB to validate the public confirm route without sending real email.
+  - Confirmed the reminder through `POST /api/reminders/<id>/confirm`.
+- Accepted API result:
+  - `/api/auth/me`: HTTP 200.
+  - `/api/fees?achievementId=<sample>&take=20`: HTTP 200, count `1`, created fee visible.
+  - `/api/fees/<fee>`: HTTP 200, `payStatus=PENDING`.
+  - `/api/dashboard/summary?dueSoonDays=30`: HTTP 200, achievement total `1`, fee pending count `1`, due-soon fee count `1`, confirmed reminder count `1`.
+  - `/api/search?keyword=<feeId>&targetTypes=FEE_RECORD&take=10`: HTTP 200, total `1`.
+  - `/api/search?keyword=20260629041937&targetTypes=ACHIEVEMENT&take=10`: HTTP 200, total `1`.
+  - Reminder state: `SENT -> CONFIRMED`, `confirmedAt` set.
+  - Audit counts: fee `1`, reminder `1`.
+- Boundaries / gaps:
+  - Fee search currently searches fee ID / achievement ID, not voucher text.
+  - Reminder scheduler/generation route was not executed.
+  - Fee warnings endpoint/surface, fee archive, finance review/approval, voucher attachment, persisted reason history, and production acceptance remain open.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed after excluding prose-only false positives.
+
 ## 2026-06-29 Step 50A - Phase one local Docker goal gap map
 
 - Status: STEP_50A_PHASE_ONE_LOCAL_DOCKER_GAP_MAP_RECORDED.
