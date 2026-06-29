@@ -4,6 +4,24 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47AC Archive - Local Production-Like Login and Basic Business Acceptance - 2026-06-29
+
+- Step identity:
+  - This is Step 47AC.
+  - This Step checks local production-like stack readiness and attempts local-admin login/business page acceptance.
+  - It is not real email delivery, DirectMail default strategy change, push, deploy, VPS access, production DB access, cleanup, deletion, reset, drop, or prune.
+- Result:
+  - Local production-like stack is healthy.
+  - API health and Web root returned HTTP 200.
+  - Web API proxy `/api/auth/me` returned HTTP 401 for the anonymous checked request.
+  - SPA shell returned HTTP 200 for the requested business paths.
+  - Admin login was blocked because the local-admin password was unavailable and was not read, searched, inferred, or output.
+- Decision:
+  - Record `BLOCKED_BY_LOCAL_ADMIN_PASSWORD_UNAVAILABLE`.
+  - Do not claim authenticated page acceptance until a safe password entry path exists.
+- Next:
+  - Repeat acceptance with a user-entered local-admin password in an interactive browser session or an explicitly authorized ephemeral test password.
+
 ## Current Step 47AA Archive - Local Production-Like Database Target Fix and Migration Deploy - 2026-06-28
 
 - Step identity:

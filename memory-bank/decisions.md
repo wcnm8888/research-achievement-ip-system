@@ -1,5 +1,19 @@
 # Decisions
 
+## D163 - Step 47AC blocks authenticated acceptance without local-admin password
+
+- Date: 2026-06-29.
+- Context: Step 47AC checked the running local production-like stack after the Web API proxy fix. The stack was healthy and local Web/API endpoints were reachable, but the local-admin password was not available to the agent.
+- Decision:
+  - Record `BLOCKED_BY_LOCAL_ADMIN_PASSWORD_UNAVAILABLE`.
+  - Do not read `.env.production`, inspect password storage, search for passwords, output credentials, or infer a password.
+  - Do not claim administrator login/session/page acceptance without completing login.
+  - Keep real email delivery, DirectMail strategy changes, push/deploy/VPS access/production DB access, and cleanup out of scope.
+- Next:
+  - Continue with a safe credential handoff method, preferably user-entered password in a local browser session.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+
 ## D162 - Step 47AA local production-like database migration and startup accepted
 
 - Date: 2026-06-28.

@@ -1,5 +1,42 @@
 # Progress
 
+## 2026-06-29 Step 47AC - Local production-like login and basic business acceptance
+
+- Status: BLOCKED_BY_LOCAL_ADMIN_PASSWORD_UNAVAILABLE.
+- Step identity:
+  - This is Step 47AC.
+  - This Step checks the local production-like Docker Compose stack and prepares local-admin login/basic business acceptance.
+  - It does not handle real email delivery.
+- Starting state:
+  - `git rev-parse HEAD`: `564885bd3c2a729261b0cc6f2eeb25c4134936aa`.
+  - Latest commit subject: `fix: proxy local production web api routes`.
+  - Tracked diff was empty before this memory-bank update.
+- Stack / entry checks:
+  - `postgres`: running / healthy.
+  - `api`: running / healthy.
+  - `web`: running / healthy.
+  - API health `http://127.0.0.1:13001/api/health`: HTTP 200.
+  - Web root `http://127.0.0.1:18081/`: HTTP 200.
+  - Web API proxy `/api/auth/me` through `http://127.0.0.1:18081/api/auth/me`: HTTP 401 when anonymous, confirming no active session in the checked request context.
+  - Frontend shell routes returned HTTP 200 for `/`, `/achievements`, `/workflow`, `/dashboard`, `/audit`, `/accounts`, and `/departments`.
+- Login acceptance:
+  - Target login account: `local-admin@wzunew.uk`.
+  - Login was not completed because the local-admin password was not available to this Step.
+  - The agent did not read `.env.production`, search for passwords, inspect password hashes, output a password, or infer credentials.
+  - Post-login session and authenticated page acceptance remain blocked until the user enters the password manually in an interactive browser flow or provides an explicitly authorized ephemeral test password.
+- Page acceptance:
+  - Authenticated access to 工作台, 成果管理, 审批管理, 统计看板, 审计日志, 账号管理, and 部门维护 was not verified in this Step because login could not be completed.
+  - Business-data empty states were not verified post-login.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No real email was sent.
+  - DirectMail default sending strategy was not modified.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+- Next:
+  - Re-run login acceptance after a safe credential handoff is available, preferably by letting the user type the password into a local browser session without recording it.
+
 ## 2026-06-29 Step 47AB - Local production-like Web API proxy fix
 
 - Status: LOCAL_PRODUCTION_LIKE_WEB_API_PROXY_FIXED.

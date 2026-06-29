@@ -1,5 +1,53 @@
 # Evidence
 
+## 2026-06-29 Step 47AC - Local production-like login and basic business acceptance evidence
+
+- Purpose:
+  - Verify local production-like stack health, Web entry, and local-admin login readiness.
+  - Do not handle real email delivery or modify DirectMail defaults.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `564885bd3c2a729261b0cc6f2eeb25c4134936aa`.
+  - `git log -1 --pretty=%s`: `fix: proxy local production web api routes`.
+  - `git diff --name-status`: empty before this memory-bank update.
+- Stack evidence:
+  - Compose status showed:
+    - `postgres`: running / healthy.
+    - `api`: running / healthy.
+    - `web`: running / healthy.
+  - `http://127.0.0.1:13001/api/health`: HTTP 200, `application/json`.
+  - `http://127.0.0.1:18081/`: HTTP 200, `text/html`.
+- Anonymous/session evidence:
+  - `http://127.0.0.1:18081/api/auth/me`: HTTP 401 in the checked request context, confirming the test request had no active authenticated session.
+- Frontend shell evidence:
+  - The following local Web paths returned HTTP 200 with the SPA shell:
+    - `/`
+    - `/achievements`
+    - `/workflow`
+    - `/dashboard`
+    - `/audit`
+    - `/accounts`
+    - `/departments`
+- Login blocker:
+  - Target account: `local-admin@wzunew.uk`.
+  - The local-admin password was not available to this Step.
+  - The agent did not read `.env.production`, inspect password storage, search for passwords, output credentials, or infer a password.
+  - Result: `BLOCKED_BY_LOCAL_ADMIN_PASSWORD_UNAVAILABLE`.
+- Unverified scope:
+  - Admin login was not completed.
+  - Session-after-login was not verified.
+  - Authenticated access to 工作台, 成果管理, 审批管理, 统计看板, 审计日志, 账号管理, and 部门维护 was not verified.
+  - Post-login empty states caused by missing demo/business data were not verified.
+- Verification evidence:
+  - `git diff --check`: passed before commit.
+  - Sensitive memory-bank diff scan found no password, token, cookie, secret, private key, connection string, full reset/invite link, or provider raw payload.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No real email was sent.
+  - DirectMail default sending strategy was not modified.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+
 ## 2026-06-29 Step 47AB - Local production-like Web API proxy fix evidence
 
 - Purpose:
