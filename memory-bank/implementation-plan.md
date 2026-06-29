@@ -4,6 +4,41 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 48D Archive - Local Production-Like Permission Scope Acceptance Supplement - 2026-06-29
+
+- Step identity:
+  - This Step supplements Step 48C by investigating role scope, dashboard scope, and workflow statistics.
+  - Runtime checks were read-only and used the existing Step 48C sample.
+  - This Step did not create, modify, delete, seed, backfill, migrate, clean up, deploy, push, access VPS, access production DB, or change source code.
+- Runtime comparison:
+  - local-admin:
+    - `SYSTEM_ADMIN`, permission count `21`, no scoped departments.
+    - achievements total for Step 48C stamp: `0`.
+    - dashboard achievement total: `0`.
+    - workflow pending tasks: `0`.
+    - account users and departments for Step 48C stamp are visible.
+  - researcher:
+    - `RESEARCHER`, permission count `6`, scoped to Step 48C department.
+    - achievements total for Step 48C stamp: `1`.
+    - dashboard achievement total: `1`.
+    - workflow endpoint: HTTP 403 because no review permission.
+    - account/departments endpoints: HTTP 403.
+  - research secretary:
+    - `RESEARCH_SECRETARY`, permission count `8`, scoped to Step 48C department.
+    - achievements total for Step 48C stamp: `1`.
+    - dashboard achievement total: `1`.
+    - pending workflow tasks: `1`.
+    - account/departments endpoints: HTTP 403.
+- Conclusion:
+  - local-admin count `0` is expected under the current exact-scope policy.
+  - Dashboard achievement totals are not institute-wide; they use the same readable achievement policy as the achievement list.
+  - Workflow task counts are assignee-scoped, not admin-wide.
+  - No code bug is classified in this Step.
+- Follow-up if product requirements differ:
+  - Open a separate design/implementation Step for global/institute achievement visibility or institute dashboard semantics.
+  - Define whether `SYSTEM_ADMIN`, `dashboard:read_institute`, a leader role, or a new permission should see all achievements.
+  - Add tests before changing policy.
+
 ## Current Step 48C Archive - Local Production-Like Minimal Business Data Acceptance - 2026-06-29
 
 - Step identity:

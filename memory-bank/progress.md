@@ -1,5 +1,73 @@
 # Progress
 
+## 2026-06-29 Step 48D - Local production-like permission scope acceptance supplement
+
+- Status: STEP_48D_PERMISSION_SCOPE_ACCEPTED_CURRENT_MODEL_ADMIN_ZERO_EXPECTED.
+- Step identity:
+  - This Step investigated local production-like permission scope, dashboard scope, and workflow statistics using the Step 48C sample.
+  - This Step is read-only for runtime data. It did not create, update, delete, seed, backfill, migrate, or clean up business data.
+  - This Step did not modify source code, schema, migration, Dockerfile, compose, deploy config, dependencies, or runtime delivery settings.
+- Starting state:
+  - `git log -1 --oneline`: `047497d docs: record local production-like minimal business data acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+  - Existing untracked local artifacts were present and left untouched.
+  - Local `postgres`, `api`, and `web` services were running / healthy.
+- Step 48C sample under test:
+  - Department code: `STEP48C_20260629041937`.
+  - Department ID: `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - Researcher ID: `078a3fd2-076b-4dc0-87ec-d45b716dde72`.
+  - Research secretary ID: `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+  - Achievement ID: `dc91da43-e234-4b26-9550-30ba4912206f`.
+- Runtime role comparison:
+  - local-admin:
+    - Role codes: `SYSTEM_ADMIN`.
+    - Permission count: `21`.
+    - `scopedDepartmentIds`: empty.
+    - `/api/achievements?keyword=20260629041937`: HTTP 200, total `0`.
+    - `/api/dashboard/summary`: HTTP 200, achievement total `0`, pending workflow tasks `0`.
+    - `/api/workflow/tasks/my?status=PENDING`: HTTP 200, total `0`.
+    - `/api/account-management/users?keyword=20260629041937`: HTTP 200, total `2`.
+    - `/api/departments?keyword=STEP48C`: HTTP 200, total `1`.
+  - researcher:
+    - Role codes: `RESEARCHER`.
+    - Permission count: `6`.
+    - `scopedDepartmentIds`: Step 48C department only.
+    - `/api/achievements?keyword=20260629041937`: HTTP 200, total `1`, status `PENDING_DEPARTMENT_REVIEW`.
+    - `/api/dashboard/summary`: HTTP 200, achievement total `1`, status bucket `PENDING_DEPARTMENT_REVIEW=1`, pending workflow tasks `0`.
+    - `/api/workflow/tasks/my?status=PENDING`: HTTP 403, expected because researcher lacks department-review permission.
+    - `/api/account-management/users` and `/api/departments`: HTTP 403, expected because those routes require `system:config`.
+  - research secretary:
+    - Role codes: `RESEARCH_SECRETARY`.
+    - Permission count: `8`.
+    - `scopedDepartmentIds`: Step 48C department only.
+    - `/api/achievements?keyword=20260629041937`: HTTP 200, total `1`, status `PENDING_DEPARTMENT_REVIEW`.
+    - `/api/dashboard/summary`: HTTP 200, achievement total `1`, status bucket `PENDING_DEPARTMENT_REVIEW=1`, pending workflow tasks `1`.
+    - `/api/workflow/tasks/my?status=PENDING`: HTTP 200, total `1`, target achievement ID `dc91da43-e234-4b26-9550-30ba4912206f`.
+    - `/api/account-management/users` and `/api/departments`: HTTP 403, expected because those routes require `system:config`.
+- Web route checks:
+  - `/achievements`: HTTP 200 SPA shell.
+  - `/workflow`: HTTP 200 SPA shell.
+  - `/dashboard`: HTTP 200 SPA shell.
+  - `/accounts`: HTTP 200 SPA shell.
+  - `/departments`: HTTP 200 SPA shell.
+- Code basis:
+  - `apps/api/src/authorization/policy/policy-query.factory.ts` builds achievement visibility from owner permission plus exact scoped department IDs. If no branch exists, it returns `id in []`.
+  - `apps/api/src/achievements/achievement.service.ts` uses `achievementReadableWhere(context)` for list/detail reads.
+  - `apps/api/src/dashboard/dashboard.service.ts` uses the same `achievementReadableWhere(context)` for achievement totals and distributions.
+  - `apps/api/src/dashboard/dashboard.repository.ts` groups workflow tasks by `assigneeId = context.userId`.
+  - `apps/api/src/workflow/workflow.service.ts` requires `achievement:review_department` and lists tasks for `assigneeId = context.userId`.
+  - Account and department management list routes require `system:config`.
+- Judgment:
+  - The local-admin achievement count `0` is expected under the current exact-scope RBAC/data policy, not a Step 48C data creation failure.
+  - Dashboard achievement total also returning `0` for local-admin is the same current scope behavior, because dashboard reuses achievement readable policy.
+  - Workflow pending task count `0` for local-admin is expected because workflow dashboard/tasks are assignee-scoped, and the Step 48C task is assigned to the research secretary.
+  - This is not classified as a code bug in Step 48D.
+  - Product implication: if future requirements expect system admins or institute-level dashboard users to see all achievements, that needs a separate explicit permission/scope design such as global/institute achievement read semantics; it should not be patched ad hoc in this Step.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No real email, DirectMail strategy change, full seed, backfill, migration, push, deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, prune, or test-data deletion occurred.
+
 ## 2026-06-29 Step 48C - Local production-like minimal business data acceptance
 
 - Status: STEP_48C_LOCAL_MINIMAL_BUSINESS_SAMPLE_ACCEPTED.

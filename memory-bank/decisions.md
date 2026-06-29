@@ -1,5 +1,25 @@
 # Decisions
 
+## D170 - Step 48D classifies local-admin achievement total 0 as current scope policy behavior
+
+- Date: 2026-06-29.
+- Context: Step 48C created a local Step48C department, researcher, research secretary, paper achievement, and pending department-review workflow task. Researcher and research secretary scopes saw the achievement, while local-admin saw achievement/dashboard count `0`. Step 48D compared runtime behavior across local-admin, researcher, and secretary and read the relevant RBAC/scope/dashboard/workflow code.
+- Decision:
+  - Classify local-admin achievement count `0` as expected under the current exact-scope permission model.
+  - Classify local-admin dashboard achievement total `0` as the same policy scope behavior, because dashboard achievement metrics reuse `achievementReadableWhere(context)`.
+  - Classify local-admin workflow pending count `0` as expected assignee-scope behavior, because workflow task aggregation and `/workflow/tasks/my` are current-user-assignee scoped.
+  - Do not patch business code in Step 48D.
+- Basis:
+  - `SYSTEM_ADMIN` has broad permissions but no `scopedDepartmentIds` in the observed local-admin context.
+  - `achievementReadableWhere` grants visibility through own achievements and exact scoped departments, not through global admin role alone.
+  - The Step 48C achievement belongs to the researcher and Step48C department.
+  - The Step 48C workflow task is assigned to the research secretary.
+  - Account/departments admin routes require `system:config`, which local-admin has and researcher/secretary do not.
+- Product note:
+  - If system admins, institute leaders, or `dashboard:read_institute` users should see all achievements or institute-wide dashboard counts, that is a separate product/authorization design change. It should define global/institute read semantics and tests before code changes.
+- Boundaries:
+  - This decision does not authorize source-code changes, schema/migration changes, Docker/compose/deploy changes, dependency changes, seed/backfill/migration, data creation/modification/deletion, real email, DirectMail runtime changes, push/deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D169 - Step 48C accepts a minimal local production-like business sample
 
 - Date: 2026-06-29.
