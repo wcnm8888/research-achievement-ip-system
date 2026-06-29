@@ -1,5 +1,39 @@
 # Progress
 
+## 2026-06-29 Step 51A - Fee warning API surface
+
+- Status: STEP_51A_FEE_WARNING_API_IMPLEMENTED_AND_ACCEPTED_LOCALLY.
+- Step identity:
+  - Implements a phase-one local fee warning API surface.
+  - This is not migration/seed/backfill, not VPS/production acceptance, not deploy/push, not real email, and not cleanup.
+- Starting state:
+  - `HEAD`: `2e31322`.
+  - Latest commit subject: `docs: record local docker reject path acceptance`.
+  - Tracked diff was empty before Step 51A changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented:
+  - `GET /api/fees/warnings`.
+  - Query DTO supports `today`, `dueSoonDays`, and `take`.
+  - Repository warning query scopes through current fee-readable policy, excludes archived fees, includes `PENDING` / `OVERDUE`, and limits to the due-soon window.
+  - Service response includes generated summary counts and warning items with `warningType` and `daysUntilDue`.
+- Local Docker acceptance:
+  - API image rebuilt locally and API container restarted healthy.
+  - Research secretary session called `/api/fees/warnings?today=2026-06-29&dueSoonDays=30&take=20`.
+  - Response HTTP `200`.
+  - `total=1`, `overdueCount=0`, `dueSoonCount=1`.
+  - First warning: Step50B fee `1ae2843c-ef99-4226-b6d3-3e952af09d59`, `DUE_SOON`, `PENDING`, `daysUntilDue=7`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: passed, 6 files / 76 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Remaining fee gaps:
+  - Fee archive.
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history.
+  - Production acceptance.
+
 ## 2026-06-29 Step 50D - Local Docker reject path acceptance
 
 - Status: STEP_50D_LOCAL_DOCKER_REJECT_PATH_ACCEPTED.

@@ -9,7 +9,12 @@ import { ScopeType } from "../authorization/constants/scope-type";
 import { IDENTITY_ADAPTER } from "../identity/identity-adapter.token";
 import { UserContext } from "../identity/user-context";
 import { PrismaService } from "../database/prisma.service";
-import { FeeTypeCode, FundSourceCode, PayStatusCode } from "./domain/fee-domain.types";
+import {
+  FeeTypeCode,
+  FeeWarningTypeCode,
+  FundSourceCode,
+  PayStatusCode,
+} from "./domain/fee-domain.types";
 import {
   FeeAccessDeniedError,
   FeeConflictError,
@@ -30,6 +35,7 @@ const ids = {
 
 type FeeServiceMock = {
   listFees: ReturnType<typeof vi.fn>;
+  getFeeWarnings: ReturnType<typeof vi.fn>;
   getFee: ReturnType<typeof vi.fn>;
   createFee: ReturnType<typeof vi.fn>;
   markFeePaid: ReturnType<typeof vi.fn>;
@@ -93,6 +99,22 @@ const makePaidFeeState = () => ({
   archivedAt: null,
 });
 
+const makeFeeWarningSummary = () => ({
+  generatedAt: new Date("2026-06-18T00:00:00.000Z"),
+  today: "2026-06-18",
+  dueSoonDays: 30,
+  total: 1,
+  overdueCount: 0,
+  dueSoonCount: 1,
+  items: [
+    {
+      ...makeFeeRecord(),
+      warningType: FeeWarningTypeCode.dueSoon,
+      daysUntilDue: 13,
+    },
+  ],
+});
+
 const makeTerminalFeeState = (payStatus: PayStatusCode) => ({
   id: ids.feeRecord,
   achievementId: ids.achievement,
@@ -118,6 +140,7 @@ const makeCreatePayload = () => ({
 
 const createServiceMock = (): FeeServiceMock => ({
   listFees: vi.fn().mockResolvedValue([makeFeeRecord()]),
+  getFeeWarnings: vi.fn().mockResolvedValue(makeFeeWarningSummary()),
   getFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   createFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   markFeePaid: vi.fn().mockResolvedValue(makePaidFeeState()),
@@ -254,6 +277,30 @@ describe("FeeController HTTP", () => {
         expect.objectContaining({
           paidDate: "2026-06-18T00:00:00.000Z",
           voucherNo: "VOUCHER-001",
+        }),
+      );
+    });
+  });
+
+  it("reads fee warnings with fee:read_department and validated query", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/fees/warnings")
+        .set("X-Demo-User-Id", ids.user)
+        .query({ today: "2026-06-18", dueSoonDays: "15", take: "5" })
+        .expect(200);
+
+      expect(response.body.total).toBe(1);
+      expect(response.body.items[0].warningType).toBe(FeeWarningTypeCode.dueSoon);
+      expect(service.getFeeWarnings).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          departmentId: ids.department,
+        }),
+        expect.objectContaining({
+          today: "2026-06-18",
+          dueSoonDays: 15,
+          take: 5,
         }),
       );
     });

@@ -20,7 +20,10 @@ import {
   FeeRecordRecord,
   FeeStateRecord,
   FeeStatusTransitionInput,
+  FeeWarningQueryInput,
+  FeeWarningRecord,
 } from "./domain/fee-repository.types";
+import { FeeWarningTypeCode, PayStatusCode } from "./domain/fee-domain.types";
 
 const defaultFeeTake = 50;
 
@@ -55,6 +58,27 @@ export class FeeRepository {
     });
 
     return rows.map((row) => toFeeRecord(row as Parameters<typeof toFeeRecord>[0]));
+  }
+
+  async findWarnings(input: FeeWarningQueryInput): Promise<FeeWarningRecord[]> {
+    const today = toUtcDateOnly(input.today);
+    const dueSoonEnd = addUtcDays(today, input.dueSoonDays);
+    const rows = await this.prisma.feeRecord.findMany({
+      where: {
+        AND: [
+          input.where,
+          { archivedAt: null },
+          { payStatus: { in: [PayStatusCode.pending, PayStatusCode.overdue] } },
+          { dueDate: { lte: dueSoonEnd } },
+        ],
+      },
+      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+      take: input.take ?? defaultFeeTake,
+    });
+
+    return rows.map((row) =>
+      toFeeWarningRecord(row as Parameters<typeof toFeeRecord>[0], today),
+    );
   }
 
   async findByIdWhere(
@@ -188,4 +212,35 @@ const isPrismaKnownRequestError = (error: unknown): error is { code: string } =>
   }
 
   return typeof (error as { code?: unknown }).code === "string";
+};
+
+const toFeeWarningRecord = (
+  row: Parameters<typeof toFeeRecord>[0],
+  today: Date,
+): FeeWarningRecord => {
+  const record = toFeeRecord(row);
+  const dueDate = toUtcDateOnly(record.dueDate);
+  const daysUntilDue = Math.round(
+    (dueDate.getTime() - today.getTime()) / millisecondsPerDay,
+  );
+
+  return {
+    ...record,
+    warningType:
+      record.payStatus === PayStatusCode.overdue || daysUntilDue < 0
+        ? FeeWarningTypeCode.overdue
+        : FeeWarningTypeCode.dueSoon,
+    daysUntilDue,
+  };
+};
+
+const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+const toUtcDateOnly = (value: Date): Date =>
+  new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+
+const addUtcDays = (value: Date, days: number): Date => {
+  const next = new Date(value.getTime());
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
 };

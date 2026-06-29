@@ -12,7 +12,12 @@ import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
 import { FeeRepository } from "./fee.repository";
 import { FeeService } from "./fee.service";
-import { FeeTypeCode, FundSourceCode, PayStatusCode } from "./domain/fee-domain.types";
+import {
+  FeeTypeCode,
+  FeeWarningTypeCode,
+  FundSourceCode,
+  PayStatusCode,
+} from "./domain/fee-domain.types";
 import {
   FeeAchievementParentRecord,
   FeeRecordRecord,
@@ -106,6 +111,13 @@ const makeParent = (
 const createService = () => {
   const repository = {
     findMany: vi.fn().mockResolvedValue([makeFeeRecord()]),
+    findWarnings: vi.fn().mockResolvedValue([
+      {
+        ...makeFeeRecord(),
+        warningType: FeeWarningTypeCode.dueSoon,
+        daysUntilDue: 13,
+      },
+    ]),
     findByIdWhere: vi.fn().mockResolvedValue(makeFeeRecord()),
     findAchievementParentByIdWhere: vi.fn().mockResolvedValue(makeParent()),
     createInTransaction: vi.fn().mockResolvedValue(makeFeeRecord()),
@@ -213,6 +225,45 @@ describe("FeeService.getFee", () => {
     await expect(service.getFee(makeContext(), ids.feeRecord)).rejects.toBeInstanceOf(
       FeeNotFoundError,
     );
+  });
+});
+
+describe("FeeService.getFeeWarnings", () => {
+  it("uses readable scope and returns warning counts", async () => {
+    const { repository, policyQueryFactory, service } = createService();
+    const context = makeContext([PermissionCode.feeReadDepartment]);
+
+    const result = await service.getFeeWarnings(context, {
+      today: "2026-06-18",
+      dueSoonDays: 15,
+      take: 10,
+    });
+
+    expect(policyQueryFactory.feeReadableWhere).toHaveBeenCalledWith(context);
+    expect(repository.findWarnings).toHaveBeenCalledWith({
+      where: feeReadableWhere,
+      today: new Date("2026-06-18T00:00:00.000Z"),
+      dueSoonDays: 15,
+      take: 10,
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        today: "2026-06-18",
+        dueSoonDays: 15,
+        total: 1,
+        overdueCount: 0,
+        dueSoonCount: 1,
+      }),
+    );
+  });
+
+  it("denies warning reads when neither fee read nor manage permission is present", async () => {
+    const { repository, service } = createService();
+
+    await expect(service.getFeeWarnings(makeContext([]), {})).rejects.toBeInstanceOf(
+      FeePermissionDeniedError,
+    );
+    expect(repository.findWarnings).not.toHaveBeenCalled();
   });
 });
 

@@ -18,6 +18,7 @@ import {
   FeeAchievementParentRecord,
   FeeRecordRecord,
   FeeStateRecord,
+  FeeWarningRecord,
 } from "./domain/fee-repository.types";
 import {
   FeeConflictError,
@@ -28,11 +29,22 @@ import {
   FeeAccessDeniedError,
 } from "./domain/fee-service.errors";
 import { assertFeeTransition } from "./domain/fee-state-machine";
-import { PayStatusCode } from "./domain/fee-domain.types";
+import { FeeWarningTypeCode, PayStatusCode } from "./domain/fee-domain.types";
 import { ChangeFeeStatusDto } from "./dto/change-fee-status.dto";
 import { CreateFeeRecordDto } from "./dto/create-fee-record.dto";
 import { FeeQueryDto } from "./dto/fee-query.dto";
+import { FeeWarningQueryDto } from "./dto/fee-warning-query.dto";
 import { MarkFeePaidDto } from "./dto/mark-fee-paid.dto";
+
+export type FeeWarningSummary = {
+  generatedAt: Date;
+  today: string;
+  dueSoonDays: number;
+  total: number;
+  overdueCount: number;
+  dueSoonCount: number;
+  items: FeeWarningRecord[];
+};
 
 @Injectable()
 export class FeeService {
@@ -89,6 +101,36 @@ export class FeeService {
     }
 
     return record;
+  }
+
+  async getFeeWarnings(
+    context: UserContext,
+    query: FeeWarningQueryDto = {},
+  ): Promise<FeeWarningSummary> {
+    this.assertUserContext(context);
+    this.assertAnyPermission(context, [
+      PermissionCode.feeReadDepartment,
+      PermissionCode.feeManageDepartment,
+    ]);
+
+    const today = toUtcDateOnly(parseOptionalDate(query.today) ?? new Date());
+    const dueSoonDays = query.dueSoonDays ?? 30;
+    const items = await this.repository.findWarnings({
+      where: this.policyQueryFactory.feeReadableWhere(context),
+      today,
+      dueSoonDays,
+      take: query.take,
+    });
+
+    return {
+      generatedAt: new Date(),
+      today: toDateOnlyString(today),
+      dueSoonDays,
+      total: items.length,
+      overdueCount: items.filter((item) => item.warningType === FeeWarningTypeCode.overdue).length,
+      dueSoonCount: items.filter((item) => item.warningType === FeeWarningTypeCode.dueSoon).length,
+      items,
+    };
   }
 
   async createFee(
@@ -385,3 +427,8 @@ const parseOptionalDate = (value: string | undefined): Date | undefined =>
 
 const toAuditDateString = (value: Date | string): string =>
   value instanceof Date ? value.toISOString() : value;
+
+const toUtcDateOnly = (value: Date): Date =>
+  new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+
+const toDateOnlyString = (value: Date): string => value.toISOString().slice(0, 10);

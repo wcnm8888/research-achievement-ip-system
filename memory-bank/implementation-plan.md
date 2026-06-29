@@ -4,6 +4,38 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 51A Archive - Fee Warning API Surface - 2026-06-29
+
+- Step identity:
+  - This Step implements the phase-one local fee warning API surface.
+  - This is local Docker implementation/acceptance only. It is not VPS/production acceptance and not production write acceptance.
+  - No schema, migration, seed/backfill, dependency, package/lockfile, DirectMail runtime strategy, VPS, production DB, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `2e31322`.
+  - Latest commit: `docs: record local docker reject path acceptance`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Implemented:
+  - `GET /api/fees/warnings`.
+  - Query options: `today`, `dueSoonDays`, `take`.
+  - Returns the current user's readable, active fee warnings for `PENDING` / `OVERDUE` records due within the configured window.
+  - Warning items include `warningType` (`OVERDUE` or `DUE_SOON`) and `daysUntilDue`.
+  - Summary includes `today`, `dueSoonDays`, `total`, `overdueCount`, `dueSoonCount`, and `items`.
+- Accepted local Docker result:
+  - Local API image rebuilt and API container restarted healthy.
+  - Research secretary called `/api/fees/warnings?today=2026-06-29&dueSoonDays=30&take=20`.
+  - Response HTTP `200`, total `1`, overdue count `0`, due-soon count `1`.
+  - First warning matched Step50B fee `1ae2843c-ef99-4226-b6d3-3e952af09d59`, `warningType=DUE_SOON`, `payStatus=PENDING`, `daysUntilDue=7`.
+- Tests:
+  - Fee tests passed: 6 files, 76 tests.
+  - API typecheck passed.
+- Remaining fee gaps:
+  - Fee archive.
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history.
+  - Production acceptance.
+
 ## Current Step 50D Archive - Local Docker Reject Path Acceptance - 2026-06-29
 
 - Step identity:

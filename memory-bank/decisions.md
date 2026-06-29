@@ -1,5 +1,26 @@
 # Decisions
 
+## D178 - Step 51A adds an explicit fee warning API
+
+- Date: 2026-06-29.
+- Context: Step 50B confirmed fee/dashboard data works locally but also recorded that phase-one still lacked an explicit fee warning endpoint or equivalent warning surface.
+- Decision:
+  - Add `GET /api/fees/warnings` as the phase-one fee warning API surface.
+  - Keep it read-only and scoped through the existing fee-readable policy.
+  - Include only active, not archived, `PENDING` / `OVERDUE` fees due within the configured warning window.
+  - Return summary counts plus warning items with `warningType` and `daysUntilDue`.
+- Rationale:
+  - This satisfies the phase-one "basic warning" need without adding scheduler behavior, finance workflow, migrations, or production storage/deploy changes.
+  - It reuses existing fee visibility and DTO validation patterns.
+- Not complete:
+  - Fee archive.
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history.
+  - Production acceptance.
+- Boundaries:
+  - This decision does not authorize schema/migration changes, seed/backfill, dependency changes, DirectMail runtime changes, real email, push/deploy, VPS access, production DB access, production writes, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D177 - Step 50D accepts local department-review reject path
 
 - Date: 2026-06-29.

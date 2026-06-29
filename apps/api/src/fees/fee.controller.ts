@@ -24,6 +24,7 @@ import { UserContext } from "../identity/user-context";
 import { ChangeFeeStatusDto } from "./dto/change-fee-status.dto";
 import { CreateFeeRecordDto } from "./dto/create-fee-record.dto";
 import { FeeQueryDto } from "./dto/fee-query.dto";
+import { FeeWarningQueryDto } from "./dto/fee-warning-query.dto";
 import { MarkFeePaidDto } from "./dto/mark-fee-paid.dto";
 import { FeeService } from "./fee.service";
 import {
@@ -44,6 +45,10 @@ const feeValidationPipe = new ValidationPipe(feeValidationOptions);
 const feeQueryValidationPipe = new ValidationPipe({
   ...feeValidationOptions,
   expectedType: FeeQueryDto,
+});
+const feeWarningQueryValidationPipe = new ValidationPipe({
+  ...feeValidationOptions,
+  expectedType: FeeWarningQueryDto,
 });
 const createFeeValidationPipe = new ValidationPipe({
   ...feeValidationOptions,
@@ -75,6 +80,19 @@ export class FeeController {
   ) {
     try {
       return await this.feeService.listFees(currentUser, query);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
+
+  @Get("warnings")
+  @RequirePermissions(PermissionCode.feeReadDepartment)
+  async getFeeWarnings(
+    @CurrentUser() currentUser: UserContext,
+    @Query(feeWarningQueryValidationPipe) query: FeeWarningQueryDto = {},
+  ) {
+    try {
+      return await this.feeService.getFeeWarnings(currentUser, query);
     } catch (error) {
       throw mapFeeServiceError(error);
     }

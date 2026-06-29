@@ -27,3 +27,11 @@ export const PayStatusCode = {
 
 export type PayStatusCode = (typeof PayStatusCode)[keyof typeof PayStatusCode];
 
+export const FeeWarningTypeCode = {
+  overdue: "OVERDUE",
+  dueSoon: "DUE_SOON",
+} as const;
+
+export type FeeWarningTypeCode =
+  (typeof FeeWarningTypeCode)[keyof typeof FeeWarningTypeCode];
+

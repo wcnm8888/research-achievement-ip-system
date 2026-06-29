@@ -1,5 +1,58 @@
 # Evidence
 
+## 2026-06-29 Step 51A - Fee warning API surface evidence
+
+- Purpose:
+  - Implement and accept an explicit local Docker fee warning API for phase-one basic warnings.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `2e31322`.
+  - Latest commit subject: `docs: record local docker reject path acceptance`.
+  - `git status --short --untracked-files=no`: empty before Step 51A changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Code evidence:
+  - Added `FeeWarningTypeCode` domain values: `OVERDUE`, `DUE_SOON`.
+  - Added `FeeWarningQueryDto` with `today`, `dueSoonDays`, and `take`.
+  - Added repository warning query for active, readable, `PENDING` / `OVERDUE` fee records due within the warning window.
+  - Added service summary with `generatedAt`, `today`, `dueSoonDays`, `total`, `overdueCount`, `dueSoonCount`, and `items`.
+  - Added controller route `GET /api/fees/warnings` before `GET /api/fees/:id`.
+- Test evidence:
+  - `corepack pnpm --filter @research-ip/api test -- fee`: passed.
+  - Fee test result: 6 files passed, 76 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+- Local Docker evidence:
+  - `docker compose -f docker-compose.production.yml build --progress plain api`: passed.
+  - `docker compose -f docker-compose.production.yml up -d api`: API recreated locally.
+  - API health returned `healthy`.
+  - Compose reported the existing orphan container from prior local runs; it was not cleaned due safety rules.
+  - Research secretary local session called `/api/fees/warnings?today=2026-06-29&dueSoonDays=30&take=20`.
+  - Response:
+    - HTTP `200`.
+    - today `2026-06-29`.
+    - dueSoonDays `30`.
+    - total `1`.
+    - overdueCount `0`.
+    - dueSoonCount `1`.
+    - first fee ID `1ae2843c-ef99-4226-b6d3-3e952af09d59`.
+    - first warning type `DUE_SOON`.
+    - first pay status `PENDING`.
+    - first daysUntilDue `7`.
+- Credential/session evidence:
+  - A temporary random local password was rotated in-process for the Step48C research secretary to obtain a real local session.
+  - Password values, cookie values, tokens, secrets, connection strings, private keys, full reset/invite links, plaintext session values, and provider payloads were not printed or recorded.
+- Not covered:
+  - Fee archive.
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history.
+  - Production acceptance.
+- Verification still required before commit:
+  - `git diff --check`.
+  - Sensitive scan over committed added lines.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, provider raw payload, or raw audit payload was recorded.
+  - No schema, migration, seed/backfill, dependency, package/lockfile, DirectMail runtime strategy, VPS access, production DB access, push, deploy, real email, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 50D - Local Docker reject path acceptance evidence
 
 - Purpose:

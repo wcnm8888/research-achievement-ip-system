@@ -10,7 +10,12 @@ import { ScopeType } from "../authorization/constants/scope-type";
 import { PrismaService } from "../database/prisma.service";
 import { IDENTITY_ADAPTER } from "../identity/identity-adapter.token";
 import { UserContext } from "../identity/user-context";
-import { FeeTypeCode, FundSourceCode, PayStatusCode } from "./domain/fee-domain.types";
+import {
+  FeeTypeCode,
+  FeeWarningTypeCode,
+  FundSourceCode,
+  PayStatusCode,
+} from "./domain/fee-domain.types";
 import { FeeService } from "./fee.service";
 
 const ids = {
@@ -23,6 +28,7 @@ const ids = {
 
 type FeeServiceMock = {
   listFees: ReturnType<typeof vi.fn>;
+  getFeeWarnings: ReturnType<typeof vi.fn>;
   getFee: ReturnType<typeof vi.fn>;
   createFee: ReturnType<typeof vi.fn>;
   markFeePaid: ReturnType<typeof vi.fn>;
@@ -86,6 +92,22 @@ const makePaidFeeState = () => ({
   archivedAt: null,
 });
 
+const makeFeeWarningSummary = () => ({
+  generatedAt: new Date("2026-06-18T00:00:00.000Z"),
+  today: "2026-06-18",
+  dueSoonDays: 30,
+  total: 1,
+  overdueCount: 0,
+  dueSoonCount: 1,
+  items: [
+    {
+      ...makeFeeRecord(),
+      warningType: FeeWarningTypeCode.dueSoon,
+      daysUntilDue: 13,
+    },
+  ],
+});
+
 const makeTerminalFeeState = (payStatus: PayStatusCode) => ({
   id: ids.feeRecord,
   achievementId: ids.achievement,
@@ -111,6 +133,7 @@ const makeCreatePayload = () => ({
 
 const createServiceMock = (): FeeServiceMock => ({
   listFees: vi.fn().mockResolvedValue([makeFeeRecord()]),
+  getFeeWarnings: vi.fn().mockResolvedValue(makeFeeWarningSummary()),
   getFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   createFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   markFeePaid: vi.fn().mockResolvedValue(makePaidFeeState()),
@@ -149,13 +172,16 @@ describe("Fee routes through AppModule", () => {
     });
   });
 
-  it("does not expose GET /fees/warnings as a warnings API", async () => {
+  it("exposes fee warnings through AppModule", async () => {
     await withAppModule([PermissionCode.feeReadDepartment], async (app, service) => {
-      await request(app.getHttpServer() as Server)
+      const response = await request(app.getHttpServer() as Server)
         .get("/fees/warnings")
         .set("X-Demo-User-Id", ids.user)
-        .expect(400);
+        .expect(200);
 
+      expect(response.body.total).toBe(1);
+      expect(response.body.items[0].warningType).toBe(FeeWarningTypeCode.dueSoon);
+      expect(service.getFeeWarnings).toHaveBeenCalledOnce();
       expect(service.listFees).not.toHaveBeenCalled();
       expect(service.getFee).not.toHaveBeenCalled();
       expect(service.createFee).not.toHaveBeenCalled();

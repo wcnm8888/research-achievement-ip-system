@@ -6,7 +6,12 @@ import { AchievementStatusCode } from "../achievements/domain/achievement-domain
 import { PrismaService } from "../database/prisma.service";
 import { FeeRepository, FeeTransactionClient } from "./fee.repository";
 import { FeeStatusTransitionConflictError } from "./domain/fee-repository.errors";
-import { FeeTypeCode, FundSourceCode, PayStatusCode } from "./domain/fee-domain.types";
+import {
+  FeeTypeCode,
+  FeeWarningTypeCode,
+  FundSourceCode,
+  PayStatusCode,
+} from "./domain/fee-domain.types";
 
 type ExplicitDependency = { index: number; param: unknown };
 
@@ -234,6 +239,53 @@ describe("FeeRepository reads", () => {
         ],
       },
     });
+  });
+
+  it("finds active due warnings with pending/overdue status and stable ordering", async () => {
+    const { repository, prisma } = createRepository();
+    prisma.feeRecord.findMany.mockResolvedValueOnce([
+      {
+        ...makeRow(),
+        dueDate: new Date("2026-06-17T00:00:00.000Z"),
+        payStatus: PayStatusCode.pending,
+      },
+      {
+        ...makeRow(),
+        id: "80000000-0000-4000-8000-000000000002",
+        dueDate: new Date("2026-06-25T00:00:00.000Z"),
+        payStatus: PayStatusCode.pending,
+      },
+    ]);
+
+    const result = await repository.findWarnings({
+      where: { departmentId: { in: [ids.department] } },
+      today: new Date("2026-06-18T08:00:00.000Z"),
+      dueSoonDays: 7,
+      take: 10,
+    });
+
+    expect(prisma.feeRecord.findMany).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          { departmentId: { in: [ids.department] } },
+          { archivedAt: null },
+          { payStatus: { in: [PayStatusCode.pending, PayStatusCode.overdue] } },
+          { dueDate: { lte: new Date("2026-06-25T00:00:00.000Z") } },
+        ],
+      },
+      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+      take: 10,
+    });
+    expect(result).toEqual([
+      expect.objectContaining({
+        warningType: FeeWarningTypeCode.overdue,
+        daysUntilDue: -1,
+      }),
+      expect.objectContaining({
+        warningType: FeeWarningTypeCode.dueSoon,
+        daysUntilDue: 7,
+      }),
+    ]);
   });
 
   it("finds fee state with a caller-provided policy where", async () => {

@@ -1,7 +1,12 @@
 import { DepartmentStatus, Prisma } from "@prisma/client";
 import { SecretLevelCode } from "../../authorization/constants/secret-level-code";
 import { AchievementStatusCode } from "../../achievements/domain/achievement-domain.types";
-import { FeeTypeCode, FundSourceCode, PayStatusCode } from "./fee-domain.types";
+import {
+  FeeTypeCode,
+  FeeWarningTypeCode,
+  FundSourceCode,
+  PayStatusCode,
+} from "./fee-domain.types";
 
 export type FeeRecordRecord = {
   id: string;
@@ -69,6 +74,18 @@ export type FeeRecordQueryInput = {
   dueDateFrom?: Date;
   dueDateTo?: Date;
   includeArchived?: boolean;
+  take?: number;
+};
+
+export type FeeWarningRecord = FeeRecordRecord & {
+  warningType: FeeWarningTypeCode;
+  daysUntilDue: number;
+};
+
+export type FeeWarningQueryInput = {
+  where: Prisma.FeeRecordWhereInput;
+  today: Date;
+  dueSoonDays: number;
   take?: number;
 };
 
