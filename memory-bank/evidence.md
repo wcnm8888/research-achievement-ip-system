@@ -1,5 +1,55 @@
 # Evidence
 
+## 2026-06-29 Step 51C - Settings/config CRUD inventory and minimal plan evidence
+
+- Purpose:
+  - Audit current local Docker codebase capability for Settings/config CRUD.
+  - Define the smallest safe implementation path for phase-one needs.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `0273a59`.
+  - Latest commit subject: `feat: add fee soft archive`.
+  - `git status --short --untracked-files=no`: empty before Step 51C documentation changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Code inventory evidence:
+  - `apps/api/src/app.module.ts` imports account, department, fee, reminder, search, dashboard, audit, auth, workflow, attachment, and database modules; it does not import a Settings/config module.
+  - Search found no backend `ApiIntegration` controller/service/repository/DTO/module under `apps/api/src`.
+  - `apps/web/src/SettingsBoundary.tsx` defines a readonly boundary with `apiStatus: "none"` and `requestPolicy: "NO_BUSINESS_API_REQUEST"`.
+  - `apps/web/src/App.tsx` routes the settings nav item to `SettingsBoundary`, not a CRUD page.
+  - `apps/web/src/api-client.ts` exposes department and account management methods, but no Settings/config or api-integration methods.
+  - `apps/api/src/authorization/constants/permission-code.ts` already defines `system:config`.
+  - `apps/api/src/department-management/*` provides the closest reusable admin CRUD pattern: `system:config` guard, DTO validation, service/repository split, transaction writes, and `CONFIG_UPDATE` audit events.
+- Schema evidence:
+  - `prisma/schema.prisma` already defines `ApiIntegrationProvider`: `DOI`, `EMAIL`, `HR`, `FINANCE`, `PATENT`, `STORAGE`, `SEARCH`, `OTHER`.
+  - `ApiIntegration` maps to `api_integrations` with `id`, unique `code`, `provider`, `enabled`, `timeoutMs`, `configRef`, timestamps, and `archivedAt`.
+  - `ApiCallLog` maps to `api_call_logs` and relates to `ApiIntegration.code`; therefore the planned lifecycle should avoid physical deletion.
+- Minimal plan evidence:
+  - Backend Step 51D should add `/api/settings/api-integrations` only for non-sensitive metadata.
+  - Expected backend routes:
+    - `GET /api/settings/api-integrations`.
+    - `GET /api/settings/api-integrations/:id`.
+    - `POST /api/settings/api-integrations`.
+    - `PATCH /api/settings/api-integrations/:id`.
+    - `POST /api/settings/api-integrations/:id/archive`.
+    - `POST /api/settings/api-integrations/:id/restore`.
+  - All write routes should require `system:config` and record `CONFIG_UPDATE` audit summaries.
+  - `configRef` must remain a reference label/alias only, not a sensitive value.
+  - No migration/seed/backfill is expected for Step 51D because the model already exists.
+- Not covered:
+  - Source implementation.
+  - Frontend Settings CRUD UI.
+  - Runtime adapter switching.
+  - Role/permission CRUD.
+  - Dynamic dictionaries.
+  - Reminder-rule editing.
+  - Production/VPS acceptance.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No credential value, generated key, provider payload, full connection detail, private key material, or raw runtime configuration value was recorded.
+  - No source code, schema, migration, seed/backfill, Docker/compose/deploy config, dependency, package/lockfile, DirectMail runtime strategy, VPS access, production DB access, push, deploy, real external call, real email, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 51B - Fee soft archive API evidence
 
 - Purpose:

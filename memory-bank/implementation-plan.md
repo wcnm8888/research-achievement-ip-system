@@ -4,6 +4,41 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 51C Archive - Settings/config CRUD inventory and minimal implementation plan - 2026-06-29
+
+- Step identity:
+  - This Step audits the local Docker codebase capability for phase-one Settings/config CRUD and records the minimal implementation plan.
+  - This is documentation-only. It is not a backend/frontend implementation Step.
+  - No source code, schema, migration, seed/backfill, dependency, package/lockfile, Docker/compose/deploy config, DirectMail runtime strategy, VPS, production DB, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `0273a59`.
+  - Latest commit: `feat: add fee soft archive`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Current capability inventory:
+  - Backend has no dedicated settings/config module, controller, service, repository, DTO, app-module import, or Web API client methods for Settings/config CRUD.
+  - Web `SettingsBoundary` remains a Step 20B readonly capability inventory page. It declares `NO API` and `NO_BUSINESS_API_REQUEST`.
+  - Reusable admin patterns exist:
+    - `departments` CRUD is guarded by `UserContextGuard`, `PermissionGuard`, and `system:config`.
+    - `account-management` user/admin routes use the same guarded admin boundary.
+    - department writes record `CONFIG_UPDATE` audit events against `SYSTEM_CONFIG`.
+  - Existing Prisma schema already has the non-sensitive metadata shape for `api_integrations`: `id`, `code`, `provider`, `enabled`, `timeout_ms`, `config_ref`, `created_at`, `updated_at`, `archived_at`.
+  - Existing `api_call_logs` relates to `api_integrations.code`, so hard-delete must not be the default lifecycle.
+- Minimal CRUD boundary:
+  - Manage only non-sensitive integration metadata for `api_integrations`.
+  - Allowed fields: `code`, `provider`, `enabled`, `timeoutMs`, and `configRef` as a non-sensitive reference name or alias only.
+  - Excluded: credential values, env-file reads, runtime provider activation, DirectMail strategy changes, real external calls, generated keys, connection details, import/export, and production configuration management.
+  - Lifecycle should be create/read/update plus soft archive/restore, not physical delete.
+  - Default list should exclude archived rows; `includeArchived=true` can expose archived metadata.
+  - All write operations should require `system:config` and append `CONFIG_UPDATE` audit summaries without recording sensitive values.
+- Recommended Step split:
+  - Step 51D: backend-only minimal contract for `/api/settings/api-integrations`, including DTO validation, repository/service/controller, module import, focused tests, and no schema/migration.
+  - Step 51E: frontend Settings page replacement from readonly boundary to a guarded integration-metadata management surface, only after Step 51D passes.
+  - Keep role/permission CRUD, dynamic dictionaries, reminder-rule editing, runtime adapter switching, DirectMail changes, and secrets management as later separate Steps.
+- Decision:
+  - Proceed to Step 51D for backend implementation if the user wants the next coding Step.
+  - Do not implement a full Settings/config product surface in Step 51C.
+
 ## Current Step 51B Archive - Fee Soft Archive API - 2026-06-29
 
 - Step identity:

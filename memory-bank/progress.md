@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-06-29 Step 51C - Settings/config CRUD inventory and minimal plan
+
+- Status: STEP_51C_SETTINGS_CONFIG_CRUD_INVENTORIED_AND_BACKEND_STEP_RECOMMENDED.
+- Step identity:
+  - Audits current local Docker codebase capability around Settings/config CRUD.
+  - Records a minimal implementation plan for phase-one needs.
+  - Documentation-only; no app source, Prisma schema, migration, seed/backfill, Docker/compose/deploy config, dependency, package/lockfile, DirectMail runtime strategy, VPS/production access, push/deploy, cleanup, deletion, reset, drop, restore, or prune work.
+- Starting state:
+  - `HEAD`: `0273a59`.
+  - Latest commit subject: `feat: add fee soft archive`.
+  - Tracked diff was empty before Step 51C documentation changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Findings:
+  - No backend Settings/config CRUD API exists.
+  - No `ApiIntegration` controller/service/repository/DTO/module exists.
+  - No Settings/config Web API client methods exist.
+  - Current Web settings route renders `SettingsBoundary`, a readonly Step 20B inventory page that does not call business APIs.
+  - Prisma already has `ApiIntegration` and `ApiCallLog` models suitable for non-sensitive integration metadata without a schema change.
+  - Existing `departments` and `account-management` modules provide reusable `system:config` guarded admin patterns.
+- Minimal implementation boundary:
+  - CRUD object: `api_integrations` non-sensitive metadata only.
+  - Fields: `code`, `provider`, `enabled`, `timeoutMs`, `configRef` as a non-sensitive reference name/alias.
+  - Lifecycle: list/detail/create/update/soft archive/restore; no hard delete.
+  - Writes require `system:config` and `CONFIG_UPDATE` audit summaries.
+  - Exclude credential values, env reads, runtime provider switching, DirectMail behavior, real external calls, import/export, production configuration, and secrets management.
+- Next:
+  - Step 51D should implement backend-only `/api/settings/api-integrations` contract and tests.
+  - Step 51E should implement the Web Settings management surface after Step 51D.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+
 ## 2026-06-29 Step 51B - Fee soft archive API
 
 - Status: STEP_51B_FEE_SOFT_ARCHIVE_IMPLEMENTED_AND_ACCEPTED_LOCALLY.

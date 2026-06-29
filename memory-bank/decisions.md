@@ -1,5 +1,34 @@
 # Decisions
 
+## D180 - Step 51C limits Settings/config CRUD to non-sensitive integration metadata
+
+- Date: 2026-06-29.
+- Context: Step 50A identified Settings/config CRUD as a phase-one local gap. Step 51C rechecked the current backend schema, app module, admin modules, Web settings route, and API client surface.
+- Decision:
+  - Treat the immediate Settings/config CRUD candidate as `api_integrations` metadata management only.
+  - Reuse the existing schema fields: `code`, `provider`, `enabled`, `timeoutMs`, `configRef`, timestamps, and `archivedAt`.
+  - Do not create a secrets manager or runtime configuration switch.
+  - Use soft archive/restore instead of hard delete because `api_call_logs` relates to integration `code`.
+  - Gate backend write APIs with `system:config` and record non-sensitive `CONFIG_UPDATE` audit summaries.
+  - Split implementation:
+    - Step 51D backend contract and tests.
+    - Step 51E Web Settings surface.
+- Rationale:
+  - The schema already has the needed non-sensitive metadata model, so Step 51D should not need migration/seed work.
+  - Existing department/account admin code provides proven guard, DTO, transaction, and audit patterns.
+  - Keeping sensitive values outside Settings/config avoids broadening the product into production credential management.
+- Not complete:
+  - Backend settings/config API.
+  - Web Settings CRUD UI.
+  - Role/permission CRUD.
+  - Dynamic dictionary CRUD.
+  - Reminder-rule configuration.
+  - Runtime adapter switching.
+  - DirectMail runtime changes.
+  - Production acceptance.
+- Boundaries:
+  - This decision does not authorize source implementation in Step 51C, schema/migration changes, seed/backfill, dependency changes, Docker/compose/deploy config changes, DirectMail runtime changes, real external calls, import/export, real email, push/deploy, VPS access, production DB access, production writes, cleanup, deletion, reset, drop, restore, prune, or sensitive-value access.
+
 ## D179 - Step 51B adds fee soft archive without deleting records
 
 - Date: 2026-06-29.
