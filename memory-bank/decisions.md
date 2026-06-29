@@ -1,5 +1,37 @@
 # Decisions
 
+## D174 - Step 50A narrows the next local work to phase-one Docker gaps
+
+- Date: 2026-06-29.
+- Context: The user explicitly paused VPS/production work and chose to target the local Docker system against the phase-one goal in `研究院科研成果管理系统说明.html`. Step 49D had already closed the local create/submit/approve/archive path for one paper sample.
+- Decision:
+  - Use the requirements HTML phase-one target as the local planning boundary:
+    - achievement registration / approval / archive.
+    - fee ledger.
+    - basic reminders.
+    - general search.
+    - basic dashboard.
+    - baseline RBAC and core API reservation.
+  - Keep phase-two items out of the immediate local mainline unless needed as a narrow dependency:
+    - transformation full chain.
+    - custom reports.
+    - mobile app.
+    - deep third-party integration.
+    - big-data performance optimization.
+    - production operations monitoring.
+  - Treat the next safest progress as local Docker richer sample acceptance before new implementation.
+  - Prefer this order:
+    - Step 50B fee/reminder/search/dashboard richer sample acceptance.
+    - Step 50C real local attachment API/DB acceptance.
+    - Step 50D reject-path acceptance with a separate sample.
+    - Step 51 implementation of confirmed phase-one gaps.
+- Rationale:
+  - Existing local Docker evidence proves the core paper approval/archive path but does not yet prove fee/reminder/search/dashboard populated behavior.
+  - Running richer local acceptance first avoids implementing endpoints that may already exist but lack end-to-end Docker evidence.
+  - Keeping VPS and production writes deferred matches the user's current boundary and avoids mixing local product progress with production risk.
+- Boundaries:
+  - This decision does not authorize source-code changes, schema/migration changes, Docker/compose/deploy changes, dependency changes, business-data mutation, migration, seed/backfill, large sample creation, deploy, push, VPS access, production DB access, real email, DirectMail runtime switching, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D173 - Step 49D accepts local archive closure for the Step48C sample
 
 - Date: 2026-06-29.

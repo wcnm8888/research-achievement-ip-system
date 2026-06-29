@@ -4,6 +4,57 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 50A Archive - Phase One Local Docker Goal Gap Map - 2026-06-29
+
+- Step identity:
+  - This Step maps the local Docker production-like system against the phase-one target in `研究院科研成果管理系统说明.html`.
+  - Phase-one target: core achievement registration, approval/archive, fee ledger, basic reminders, general search, basic dashboard, baseline RBAC, and core API reservation.
+  - This Step is documentation-only. It does not change source code, schema, migration, Docker/compose/deploy config, dependencies, package files, local business data, DirectMail behavior, or production state.
+  - VPS, production DB, deploy/push, production writes, real email, migration/seed/backfill, cleanup, deletion, reset, drop, restore, and prune remain out of scope.
+- Current local Docker baseline:
+  - Step 47 accepted the local production-like Docker stack, local migration deploy, foundation/admin state, Web `/api/` proxy, and authenticated local-admin API checks.
+  - Step 48C accepted one minimal local business sample: department, researcher, research secretary, paper achievement, and department-review task.
+  - Step 49C accepted department-review approve.
+  - Step 49D accepted final archive closure.
+  - These are local Docker production-like acceptances only; they are not VPS/production acceptance.
+- Gap map:
+  - Achievement registration / approval / archive:
+    - Local accepted: paper create, submit, department approve, final archive, workflow completion, scoped dashboard, and audit behavior.
+    - Not yet covered locally: reject path, multi-level approval, terminal-state negative retry, patent sample, software copyright sample, authenticated browser state beyond SPA shell.
+    - Phase-two/deferred: configurable multi-node workflow by type/secret level.
+  - Fee ledger:
+    - Code/local prior acceptance exists for fee create, mark-paid, waive, and cancel.
+    - Not yet accepted in current Docker richer sample: fee rows tied to the Step48/49 business sample, dashboard fee warning counts, search fee result, reminder coupling.
+    - Need implementation: fee warning endpoint or equivalent explicit warning surface, fee archive.
+    - Deferred beyond current local target: finance approval workflow, voucher attachment integration, persisted reason history.
+  - Basic reminders:
+    - Code exists for reminder domain/service/repository and confirm route.
+    - Not yet accepted in Docker richer sample: generated or inserted local reminder tied to a fee and confirm behavior.
+    - Need clarification/implementation later: scheduled generation and second催办 behavior.
+  - Search:
+    - Code exists for database-backed achievement/fee search.
+    - Not yet accepted in Docker richer sample: populated result and drill-in against local Docker sample data.
+    - Deferred beyond phase-one local target: Meilisearch/external search, Chinese segmentation, search analytics.
+  - Dashboard:
+    - Local accepted for achievement/workflow status movement.
+    - Not yet accepted with richer data: fee overdue/due-soon counts, reminder status counts, fee/search-influenced non-zero metrics.
+    - Product gap already recorded: institute-wide/global dashboard semantics are not current system-admin exact-scope behavior.
+  - RBAC / departments / accounts / audit:
+    - Local accepted: system-admin account/department visibility, scoped researcher/secretary achievement visibility, archive permission boundary, audit mask/read boundary.
+    - Product gap: leader/institute role semantics remain separate design work if required.
+  - Settings/config / API reservation:
+    - Current system has department/account management and `api_integrations` schema shape, but no general settings/config CRUD page or safe admin API for integration config.
+    - Need implementation later: settings/config CRUD limited to non-secret metadata; secrets must remain outside memory-bank/log output.
+  - Operations / import:
+    - Local Docker runbooks/checklists exist, but production operations are intentionally deferred.
+    - Need implementation later: local import dry-run readiness and backup/monitoring runbook/checklists, without production writes.
+- Recommended next local order:
+  - Step 50B: Docker richer sample acceptance for fee, reminder, search, and dashboard.
+  - Step 50C: real local Docker attachment upload/list/detail/download acceptance.
+  - Step 50D: reject-path acceptance with a separate sample.
+  - Step 51A: implement explicit fee warning API/surface if Step 50B confirms the warning path is missing.
+  - Step 51B+: implement fee archive, settings/config CRUD, import dry-run readiness, and local operations/backup checklist as separate steps.
+
 ## Current Step 49D Archive - Local Production-Like Archive Closure Acceptance - 2026-06-29
 
 - Step identity:

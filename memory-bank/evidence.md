@@ -1,5 +1,55 @@
 # Evidence
 
+## 2026-06-29 Step 50A - Phase one local Docker goal gap map evidence
+
+- Purpose:
+  - Compare the requirements HTML phase-one target with current local Docker production-like evidence.
+  - Produce a local-only next-step order without implementing code or mutating business data.
+- Source evidence read:
+  - `研究院科研成果管理系统说明.html`:
+    - phase-one target includes core achievement registration, approval, fee ledger, basic reminders, general search, basic dashboard, baseline permissions, and core API reservation.
+    - phase-two target includes transformation full chain, custom reports, advanced search, mobile app, deep third-party integration, performance optimization, and operations monitoring.
+  - Step 47/48/49 memory-bank records:
+    - local Docker production-like stack and authenticated API acceptance.
+    - minimal local paper sample creation and submit.
+    - department-review approve.
+    - archive closure.
+- Repo capability evidence checked:
+  - Web routes/components exist for achievements, workflow, dashboard, audit, accounts, departments, fees, search, settings boundary, and attachment detail behavior.
+  - API controllers/modules exist for achievements, workflow, fees, reminders confirm, search, dashboard, audit, account management, departments, and attachments.
+  - Prisma schema contains fee, reminder, attachment, and API integration entities.
+- Gap classification evidence:
+  - Local Docker accepted:
+    - paper create/submit/approve/archive path.
+    - scoped dashboard movement for achievement/workflow.
+    - audit append/read-boundary behavior.
+    - baseline RBAC scope behavior.
+  - Code exists but needs Docker richer sample acceptance:
+    - fee records.
+    - reminder confirm.
+    - database search.
+    - dashboard fee/reminder metrics.
+    - attachment upload/list/detail/download.
+  - Needs implementation or later design:
+    - explicit fee warning endpoint/surface.
+    - fee archive.
+    - settings/config CRUD for non-secret metadata.
+    - import dry-run readiness.
+    - local operations/backup checklist.
+    - institute/global dashboard semantics if product requires it.
+  - Deferred outside current local mainline:
+    - VPS/production acceptance.
+    - DirectMail production runtime enablement.
+    - real email.
+    - transformation full chain.
+    - mobile app.
+    - deep third-party integration.
+- Verification:
+  - This Step will use `git diff --check`.
+  - Sensitive scan scope is committed added lines only.
+- Boundaries observed:
+  - No source code, schema, migration, Docker/compose/deploy config, dependency, package/lockfile, local business data, VPS/production, real email, cleanup, deletion, reset, drop, restore, or prune action was performed.
+
 ## 2026-06-29 Step 49D - Local production-like archive closure acceptance evidence
 
 - Purpose:

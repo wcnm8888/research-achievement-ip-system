@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-06-29 Step 50A - Phase one local Docker goal gap map
+
+- Status: STEP_50A_PHASE_ONE_LOCAL_DOCKER_GAP_MAP_RECORDED.
+- Step identity:
+  - Documentation-only gap map from `研究院科研成果管理系统说明.html` phase-one target to the current local Docker production-like system.
+  - This is not source implementation, not business-data mutation, not migration/seed/backfill, not VPS/production acceptance, not deploy/push, not real email, and not cleanup.
+- Starting state:
+  - `HEAD`: `9115b49`.
+  - Latest commit subject: `docs: record local production-like archive closure acceptance`.
+  - Tracked diff was empty before Step 50A documentation changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Completed:
+  - Read the phase-one target from the requirements HTML:
+    - core achievement registration.
+    - approval.
+    - fee ledger.
+    - basic reminders.
+    - general search.
+    - basic dashboard.
+    - baseline permissions and core API reservation.
+  - Compared the target to the latest Step 47/48/49 local Docker evidence.
+  - Separated current status into:
+    - locally accepted.
+    - code exists but not yet accepted in Docker richer sample.
+    - needs implementation.
+    - deferred beyond phase-one local target.
+- Key classification:
+  - Achievement create/submit/approve/archive is locally accepted for a paper sample.
+  - Reject path, patent/soft-copyright samples, multi-level approval, and terminal negative retries remain uncovered.
+  - Fee create/mark-paid/waive/cancel has prior local acceptance, but Docker richer sample for fee/dashboard/search/reminder is still needed.
+  - Reminder confirm and search APIs exist, but Docker populated acceptance remains needed.
+  - Settings/config CRUD, fee warnings, fee archive, import dry-run readiness, and local operations/backup checklist remain implementation candidates.
+- Next:
+  - Step 50B should run local Docker richer sample acceptance for fee/reminder/search/dashboard before implementing new code.
+  - Step 50C should accept real local Docker attachment upload/list/detail/download.
+  - Step 50D should cover reject path with a separate sample.
+  - Step 51 should implement only confirmed phase-one gaps, one module per Step.
+
 ## 2026-06-29 Step 49D - Local production-like archive closure acceptance
 
 - Status: STEP_49D_LOCAL_ARCHIVE_CLOSURE_ACCEPTED.
