@@ -1,5 +1,56 @@
 # Evidence
 
+## 2026-06-29 Step 47FINAL - Local production-like and DirectMail readiness closeout evidence
+
+- Purpose:
+  - Close Step 47 by recording final local production-like readiness, DirectMail readiness boundary, incomplete work, and Step 48 entry.
+  - This Step is documentation-only.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `872cd7e43d85889299ae7715820d0545ea1757bd`.
+  - `git log -1 --pretty=%s`: `docs: record local production-like authenticated acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+- Read context:
+  - Recent Step 47AA through Step 47AD sections from `memory-bank/progress.md`.
+  - Recent Step 47AA through Step 47AD sections from `memory-bank/evidence.md`.
+  - Recent Step 47AA through Step 47AD archive / decision sections from `memory-bank/implementation-plan.md` and `memory-bank/decisions.md`.
+- Local production-like readiness evidence carried forward:
+  - Step 47AA: local production-like target database was created as needed and `prisma migrate deploy` succeeded.
+  - Step 47AB: Web container Nginx `/api/` proxy was fixed and accepted.
+  - Step 47AD-Resume: local-admin authenticated acceptance passed.
+  - Latest authenticated acceptance recorded `postgres`, `api`, and `web` as running / healthy.
+  - Latest authenticated acceptance recorded `/api/auth/me` as HTTP 200 and main authenticated APIs as HTTP 200.
+  - Latest authenticated acceptance recorded main Web routes returning HTTP 200 with the SPA shell.
+- Foundation / admin readiness evidence carried forward:
+  - Local foundation baseline data is present for the accepted local production-like path.
+  - The local-admin account exists and authenticated successfully.
+  - Authenticated user had 1 role and 21 permissions in Step 47AD-Resume evidence.
+  - Step 47FINAL did not execute seed/backfill.
+- Business data state:
+  - Achievements API returned HTTP 200 with `items=0`.
+  - Workflow my tasks API returned HTTP 200 with `items=0`.
+  - These are treated as expected empty states because Step 47 did not create demo/business records.
+- DirectMail / delivery boundary:
+  - Password reset/account lifecycle local implementation and no-secret delivery boundaries were completed in earlier Step 47 work.
+  - Runtime delivery default remains `LOCAL_SAFE_STUB`.
+  - Aliyun DirectMail controlled harness smoke previously reached accepted/sent and human mailbox receipt confirmation.
+  - Production/runtime real delivery remains separate and was not enabled by this closeout.
+- Deferred scope:
+  - VPS production acceptance remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - Step 48 should begin business data / empty-state / page-level acceptance from the local production-like stack, not production deploy.
+- Verification evidence:
+  - `git diff --check`: passed, with line-ending warnings only.
+  - Sensitive memory-bank diff scan: passed; no password, token, cookie value, secret, private key, connection string, full reset/invite link, plaintext recipient, or provider raw payload was present.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No Docker Compose command was run.
+  - No migration, seed, or backfill was executed.
+  - No real email was sent.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency file, or DirectMail default sending strategy was modified.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+
 ## 2026-06-29 Step 47AD-Resume - Local production-like authenticated acceptance evidence
 
 - Purpose:

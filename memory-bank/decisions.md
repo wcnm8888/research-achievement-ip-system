@@ -1,5 +1,26 @@
 # Decisions
 
+## D166 - Step 47 closes with local production-like acceptance and Step 48 business entry
+
+- Date: 2026-06-29.
+- Context: Step 47 moved from password reset/invite migration readiness through DirectMail provider readiness and local production-like stack acceptance. The latest local authenticated acceptance passed for local-admin against the Docker Compose production-like stack.
+- Decision:
+  - Close Step 47 as `STEP_47_CLOSED_LOCAL_PRODUCTION_LIKE_ACCEPTANCE_READY_FOR_STEP_48`.
+  - Treat local production-like stack readiness as accepted:
+    - Local production-like database migration deploy completed.
+    - Local foundation/admin state is present for acceptance.
+    - Web `/api/` proxy is fixed.
+    - Authenticated local-admin API acceptance passed.
+    - Main SPA shells are reachable.
+  - Treat achievements and workflow task empty lists as Step 48 business data / empty-state acceptance input, not a Step 47 blocker.
+  - Keep runtime delivery on `LOCAL_SAFE_STUB`; DirectMail controlled harness success does not mean production/runtime real delivery is enabled.
+  - Keep VPS production acceptance incomplete and Step 38 production acceptance deferred.
+- Next:
+  - Step 48 should start from local production-like business page/data acceptance.
+  - Any production/VPS work, real email delivery enablement, migration, seed/backfill, deploy/push, production DB access, or cleanup must be separately authorized.
+- Boundaries:
+  - This decision does not authorize code changes, Docker Compose execution, migration, seed/backfill, real email, DirectMail runtime switching, deploy, push, VPS access, production DB access, cleanup, deletion, drop, reset, prune, or secret access.
+
 ## D165 - Step 47AD-Resume accepts local production-like authenticated flow with Secure-cookie caveat
 
 - Date: 2026-06-29.

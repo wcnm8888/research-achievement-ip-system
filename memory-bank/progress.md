@@ -1,5 +1,53 @@
 # Progress
 
+## 2026-06-29 Step 47FINAL - Local production-like and DirectMail readiness closeout
+
+- Status: STEP_47_CLOSED_LOCAL_PRODUCTION_LIKE_ACCEPTANCE_READY_FOR_STEP_48.
+- Step identity:
+  - This is Step 47FINAL.
+  - This Step is a documentation closeout only.
+  - It does not run Docker Compose, migration, seed/backfill, business acceptance, DirectMail smoke, deploy, push, VPS access, production DB access, cleanup, deletion, reset, drop, or prune.
+- Starting state:
+  - `git rev-parse HEAD`: `872cd7e43d85889299ae7715820d0545ea1757bd`.
+  - Latest commit subject: `docs: record local production-like authenticated acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+- Final Step 47 local production-like status:
+  - Local `docker-compose.production.yml` production-like stack has been brought up and accepted in prior Step 47 work.
+  - `postgres`, `api`, and `web` were recorded healthy in the latest authenticated acceptance.
+  - Local production-like database target was corrected and created as needed.
+  - `prisma migrate deploy` completed locally against the production-like compose database.
+  - Foundation baseline data is present for the local production-like acceptance path; the local-admin account exists and authenticated successfully.
+  - Web Nginx `/api/` proxy was fixed and accepted.
+  - Authenticated API acceptance passed for local-admin.
+  - Main SPA shells are reachable.
+- Final Step 47 data-state / business readiness:
+  - Achievements and workflow task lists returned HTTP 200 with empty lists.
+  - The empty business data state is expected because Step 47 did not create demo/business records.
+  - Step 48 should focus on business data, empty-state behavior, and page-level business acceptance rather than stack bootstrapping.
+- Final Step 47 account lifecycle / delivery status:
+  - Password reset request / account lifecycle local path is implemented and locally tested.
+  - Runtime delivery default remains `LOCAL_SAFE_STUB`; Step 47FINAL does not continue real email enablement.
+  - Aliyun DirectMail controlled smoke previously reached provider accepted/sent and human mailbox receipt confirmation at the controlled harness layer.
+  - DirectMail production/runtime real delivery is not the active mainline for the next step and is not enabled by this closeout.
+- Still incomplete / deferred:
+  - VPS production acceptance is not complete.
+  - Step 38 production acceptance remains deferred.
+  - Production runtime real delivery enablement remains separate and would need explicit authorization if resumed.
+  - Business data and page empty-state acceptance remains for Step 48.
+- Step 48 entry:
+  - Start from the accepted local production-like stack and authenticated local-admin path.
+  - Verify business pages with empty states and, if explicitly authorized, add or use controlled local business data.
+  - Keep real email, production/VPS work, production DB access, deploy/push, migration, seed/backfill, and cleanup out of scope unless separately authorized.
+- Boundaries:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No real email was sent.
+  - DirectMail default sending strategy was not modified.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, or dependency file was modified.
+  - No seed/backfill/migration was executed.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+
 ## 2026-06-29 Step 47AD-Resume - Local production-like authenticated acceptance completed
 
 - Status: LOCAL_PRODUCTION_LIKE_AUTHENTICATED_ACCEPTANCE_PASSED_WITH_HTTP_SECURE_COOKIE_NOTE.

@@ -4,6 +4,36 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47FINAL Archive - Local Production-Like and DirectMail Readiness Closeout - 2026-06-29
+
+- Step identity:
+  - This is Step 47FINAL.
+  - This Step closes Step 47 with documentation only.
+  - It is not code change, Docker Compose execution, migration, seed/backfill, real email, DirectMail runtime enablement, deploy, push, VPS access, production DB access, cleanup, deletion, reset, drop, or prune.
+- Final status:
+  - Step 47 is closed for local production-like stack/readiness acceptance.
+  - Local production-like Docker Compose stack readiness has been accepted.
+  - Local migration deploy completed in Step 47AA.
+  - Local foundation baseline/admin state is present for acceptance; local-admin authenticated successfully.
+  - Web `/api/` proxy was fixed in Step 47AB.
+  - Authenticated local-admin API acceptance passed in Step 47AD-Resume.
+  - Main SPA shells are reachable.
+- Data / business readiness:
+  - Business records were not created in Step 47.
+  - Achievements and workflow lists are currently empty and should be handled as Step 48 business data / empty-state acceptance.
+- Delivery readiness:
+  - Password reset/account lifecycle local request path is implemented.
+  - Runtime delivery remains `LOCAL_SAFE_STUB`.
+  - DirectMail controlled harness path was previously accepted, but production/runtime real delivery is not enabled by Step 47FINAL.
+- Deferred:
+  - VPS production acceptance remains incomplete.
+  - Step 38 production acceptance remains deferred.
+  - Production DirectMail runtime enablement remains separate and requires explicit authorization if resumed.
+- Step 48 entry:
+  - Use the accepted local production-like stack and local-admin authenticated path.
+  - Verify business pages, empty states, and optional controlled local business data only if separately authorized.
+  - Keep production/VPS, real email, migration, seed/backfill, deploy/push, production DB access, and cleanup out of scope by default.
+
 ## Current Step 47AD-Resume Archive - Local Production-Like Authenticated Acceptance Completed - 2026-06-29
 
 - Step identity:
