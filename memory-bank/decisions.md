@@ -1,5 +1,29 @@
 # Decisions
 
+## D173 - Step 49D accepts local archive closure for the Step48C sample
+
+- Date: 2026-06-29.
+- Context: Step 49C advanced the Step48C paper achievement to `PENDING_ARCHIVE` and moved the active workflow instance to current step `ARCHIVE`. Step 49D was opened to test whether the final archive route closes the loop in the local production-like stack.
+- Decision:
+  - Accept the local archive closure path for the Step48C sample.
+  - Treat the expected business result as:
+    - achievement `PENDING_ARCHIVE -> ARCHIVED`.
+    - workflow instance `ACTIVE / ARCHIVE -> COMPLETED / null`.
+    - department-review workflow task remains `APPROVED`.
+    - archive audit events are recorded for the achievement and workflow instance.
+  - Treat research-secretary HTTP 403 on archive as expected because `RESEARCH_SECRETARY` lacks `achievement:archive`.
+  - Treat system-admin archive success as expected because `SYSTEM_ADMIN` has `achievement:archive`, even though system-admin still has no scoped departments for list/dashboard visibility under the current read policy.
+  - Keep secretary `/api/audit-logs` HTTP 403 as expected masked-audit permission behavior; use system-admin/audit DB summaries for archive audit verification.
+- Not complete:
+  - Reject path.
+  - Multi-level approval.
+  - Re-archive/idempotency or terminal-state retry.
+  - Richer fee/reminder/attachment/search sample expansion.
+  - Authenticated browser state beyond route shell checks.
+  - VPS/production acceptance and production write acceptance.
+- Boundaries:
+  - This decision does not authorize source-code changes, schema/migration changes, Docker/compose/deploy changes, dependency changes, migration, seed/backfill, large sample creation, Step48C data deletion, deploy, push, VPS access, production DB access, real email, DirectMail runtime switching, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D172 - Step 49C accepts the local Step48C department-review approve path
 
 - Date: 2026-06-29.

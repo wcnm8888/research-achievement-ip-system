@@ -4,6 +4,51 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 49D Archive - Local Production-Like Archive Closure Acceptance - 2026-06-29
+
+- Step identity:
+  - This Step uses the existing Step48C/49C local production-like sample to accept the archive closure path.
+  - This is local production-like acceptance only. It is not VPS production acceptance, not Step 38 production acceptance, not DirectMail production runtime enablement, and not Phase 2 completion.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package, or lockfile was changed.
+  - No VPS access, production DB access, push, deploy, migration, seed/backfill, real email, DirectMail runtime change, cleanup, deletion, reset, drop, restore, prune, or Step48C data deletion occurred.
+- Starting state:
+  - `HEAD`: `c0ef815`.
+  - Latest commit: `docs: record local production-like workflow action acceptance`.
+  - Tracked diff was empty at Step start.
+  - Existing untracked local artifacts remained untouched.
+  - Step49C had advanced achievement `dc91da43-e234-4b26-9550-30ba4912206f` to `PENDING_ARCHIVE`, version `3`.
+  - Workflow instance `85aa18b6-cc2b-47d9-8d47-9383851749c9` was `ACTIVE`, current step `ARCHIVE`.
+- Permission model:
+  - Existing local archive-capable user: `local-admin@wzunew.uk`, role `SYSTEM_ADMIN`, permission count `21`, scoped department list empty.
+  - Step48C research secretary has role `RESEARCH_SECRETARY`, permission count `8`, and does not have `achievement:archive`.
+  - Secretary archive attempt against the Step48C achievement returned HTTP 403 with missing-permission behavior.
+- Execution:
+  - Temporary random local passwords were rotated in-process for the Step48C research secretary and local system-admin test accounts only to obtain real local sessions; values were not printed, recorded, committed, or stored in memory-bank.
+  - `POST /api/achievements/dc91da43-e234-4b26-9550-30ba4912206f/archive` as system-admin returned HTTP 201.
+- Accepted result:
+  - Achievement status changed from `PENDING_ARCHIVE` to `ARCHIVED`.
+  - Achievement version changed from `3` to `4`.
+  - `archivedAt` is set.
+  - `archivedById` and `updatedById` are the local system-admin ID `6f2d717a-3112-4549-aa28-ee4dddee68a1`.
+  - Workflow task `f4ac40e8-a718-4658-8575-dc20245c9c4b` remains `APPROVED`.
+  - Workflow instance `85aa18b6-cc2b-47d9-8d47-9383851749c9` changed from `ACTIVE` / `ARCHIVE` to `COMPLETED` / `null`, with `completedAt` set.
+  - System-admin `/api/audit-logs` returned HTTP 200 for achievement and workflow targets; archive audit events were recorded for the achievement and workflow instance.
+  - Secretary post-archive `/api/achievements?keyword=20260629041937` returned HTTP 200, total `1`, first status `ARCHIVED`.
+  - Secretary dashboard returned achievement total `1`, `PENDING_ARCHIVE=0`, `ARCHIVED=1`, workflow `APPROVED=1`.
+  - System-admin achievement/dashboard totals remained `0` under the current exact-scope read policy, even though archive action itself succeeded through `achievement:archive`.
+  - Web routes `/achievements`, `/workflow`, `/dashboard`, and `/audit` returned HTTP 200 SPA shells.
+- Not covered:
+  - Reject path.
+  - Multi-level approval.
+  - Re-archive/idempotency or terminal-state negative archive retry.
+  - Fee, reminder, attachment, populated search, and broader dashboard warning sample expansion.
+  - Authenticated browser page state beyond SPA shell route reachability.
+  - VPS/production acceptance and production write acceptance.
+- Next:
+  - The Step48C sample has now completed the local create/submit, department approve, and archive closure path.
+  - Further local acceptance should use separate samples for reject-path, negative terminal-state checks, or fee/reminder/attachment/search expansion.
+  - Production readiness should continue through a separate authorized GET-only production/VPS step, not through this local acceptance.
+
 ## Current Step 49C Archive - Local Production-Like Workflow Action Acceptance - 2026-06-29
 
 - Step identity:

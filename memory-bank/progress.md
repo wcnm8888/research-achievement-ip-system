@@ -1,5 +1,54 @@
 # Progress
 
+## 2026-06-29 Step 49D - Local production-like archive closure acceptance
+
+- Status: STEP_49D_LOCAL_ARCHIVE_CLOSURE_ACCEPTED.
+- Step identity:
+  - Local production-like archive closure acceptance using the existing Step48C/49C sample.
+  - This is not VPS/production acceptance and not production write acceptance.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package file, lockfile, DirectMail runtime setting, VPS, production DB, real email, cleanup, deletion, reset, drop, restore, prune, seed, or backfill work.
+- Starting state:
+  - `HEAD`: `c0ef815`.
+  - Latest commit subject: `docs: record local production-like workflow action acceptance`.
+  - Tracked diff was empty before Step 49D documentation changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - Achievement `dc91da43-e234-4b26-9550-30ba4912206f`: `PENDING_ARCHIVE`, version `3`.
+  - Workflow instance `85aa18b6-cc2b-47d9-8d47-9383851749c9`: `ACTIVE`, current step `ARCHIVE`.
+- Permission boundary:
+  - Step48C research secretary attempted archive and received HTTP 403 / missing permissions.
+  - Existing system-admin local test account had `SYSTEM_ADMIN`, permission count `21`, and `achievement:archive`.
+  - System-admin had no scoped departments; its achievement list/dashboard totals stayed `0` under current exact-scope read policy, but the archive action route was allowed by `achievement:archive`.
+- Credential/session handling:
+  - Temporary random local passwords were rotated in-process for the Step48C research secretary and local system-admin test accounts.
+  - Password, cookie, token, secret, connection string, private key, full reset/invite link, plaintext session value, and provider payload were not printed or recorded.
+- Action:
+  - `POST /api/achievements/dc91da43-e234-4b26-9550-30ba4912206f/archive` as system-admin returned HTTP 201.
+- Post-action API/DB/Web acceptance:
+  - Achievement transitioned `PENDING_ARCHIVE -> ARCHIVED`.
+  - Achievement version changed `3 -> 4`.
+  - `archivedAt` was set.
+  - `archivedById` and `updatedById`: `6f2d717a-3112-4549-aa28-ee4dddee68a1`.
+  - Workflow task `f4ac40e8-a718-4658-8575-dc20245c9c4b` remained `APPROVED`.
+  - Workflow instance transitioned `ACTIVE / ARCHIVE -> COMPLETED / null`, with `completedAt` set.
+  - Secretary `/api/achievements?keyword=20260629041937`: HTTP 200, total `1`, first status `ARCHIVED`.
+  - Secretary `/api/dashboard/summary`: HTTP 200, achievement total `1`, `PENDING_ARCHIVE=0`, `ARCHIVED=1`, workflow `APPROVED=1`.
+  - Secretary `/api/audit-logs`: HTTP 403, expected missing masked audit-read permission.
+  - System-admin `/api/audit-logs` returned HTTP 200 for both achievement and workflow targets.
+  - Archive audit events were recorded for the achievement and workflow instance.
+  - Web routes `/achievements`, `/workflow`, `/dashboard`, and `/audit`: HTTP 200 SPA shell.
+- Accepted business result:
+  - PENDING_ARCHIVE can be archived by a local user with `achievement:archive`.
+  - A user without `achievement:archive` is blocked before the archive action.
+  - Archive closure completes the active workflow instance and leaves the department-review task approved.
+  - Dashboard and audit behavior match the current scope/permission model.
+- Not covered:
+  - Reject path.
+  - Multi-level approval.
+  - Re-archive/idempotency or terminal-state retry.
+  - Fee/reminder/attachment/search richer sample expansion.
+  - Authenticated browser page state beyond SPA shell route reachability.
+  - VPS/production acceptance.
+
 ## 2026-06-29 Step 49C - Local production-like workflow action acceptance
 
 - Status: STEP_49C_LOCAL_WORKFLOW_APPROVE_ACCEPTED.

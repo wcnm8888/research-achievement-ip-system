@@ -1,5 +1,88 @@
 # Evidence
 
+## 2026-06-29 Step 49D - Local production-like archive closure acceptance evidence
+
+- Purpose:
+  - Use the existing Step48C/49C local sample to execute archive closure after `PENDING_ARCHIVE`.
+  - Verify permission boundary, achievement state, workflow state, dashboard, audit, and Web route outcomes.
+  - Keep the step local-only and avoid VPS/production, real email, migration, seed/backfill, cleanup, and sensitive output.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `c0ef815`.
+  - `git log -1 --pretty=%s`: `docs: record local production-like workflow action acceptance`.
+  - `git status --short --untracked-files=no`: empty before Step 49D documentation changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+  - Local `postgres`, `api`, and `web` services were running / healthy.
+- Code/context evidence:
+  - `apps/api/src/achievements/achievement.controller.ts` exposes `POST /api/achievements/:id/archive`.
+  - `apps/api/src/achievements/achievement.service.ts` requires user context, `achievement:archive`, current achievement status `PENDING_ARCHIVE`, and archive-ready workflow instance before transition.
+  - Archive transition sets achievement `ARCHIVED`, `archivedById`, `archivedAt`, and `updatedById`.
+  - Archive completion transitions the active workflow instance to `COMPLETED`, clears current step, and records workflow archive audit.
+  - `prisma/seed-foundation.cjs` gives `achievement:archive` to `SYSTEM_ADMIN`, not to `RESEARCH_SECRETARY`.
+- Pre-action local sample evidence:
+  - Achievement `dc91da43-e234-4b26-9550-30ba4912206f`: status `PENDING_ARCHIVE`, version `3`, no `archivedAt`, no `archivedById`.
+  - Workflow task `f4ac40e8-a718-4658-8575-dc20245c9c4b`: status `APPROVED`, `completedAt` set from Step49C.
+  - Workflow instance `85aa18b6-cc2b-47d9-8d47-9383851749c9`: status `ACTIVE`, current step `ARCHIVE`, target achievement `dc91da43-e234-4b26-9550-30ba4912206f`, no `completedAt`.
+  - Archive-capable local user found: `local-admin@wzunew.uk`, ID `6f2d717a-3112-4549-aa28-ee4dddee68a1`, role `SYSTEM_ADMIN`, scope `GLOBAL`.
+- Credential/session evidence:
+  - Temporary random local passwords were rotated for the Step48C research-secretary and local system-admin test credentials and used only in-process for `/api/auth/login`.
+  - Password values, cookie values, tokens, secrets, connection strings, private keys, full reset/invite links, plaintext session values, and provider payloads were not printed or recorded.
+- Permission-boundary evidence:
+  - Step48C research secretary archive attempt:
+    - `POST /api/achievements/dc91da43-e234-4b26-9550-30ba4912206f/archive`: HTTP 403.
+    - Error classification: required permission missing.
+  - System-admin `/api/auth/me`: HTTP 200, role `SYSTEM_ADMIN`, permission count `21`, scoped department list empty.
+- Archive action evidence:
+  - `POST /api/achievements/dc91da43-e234-4b26-9550-30ba4912206f/archive` as system-admin: HTTP 201.
+  - Response status: `ARCHIVED`.
+  - Response version: `4`.
+  - Response included `archivedAt`.
+  - Response `archivedById`: `6f2d717a-3112-4549-aa28-ee4dddee68a1`.
+- Post-action API evidence:
+  - System-admin `/api/achievements?keyword=20260629041937`: HTTP 200, total `0`, consistent with current exact-scope read policy and empty scoped departments.
+  - System-admin `/api/dashboard/summary`: HTTP 200, achievement total `0`, `PENDING_ARCHIVE=0`, `ARCHIVED=0`, workflow `APPROVED=0`.
+  - System-admin `/api/audit-logs?targetId=<achievement>&take=5`: HTTP 200, count `3`.
+  - System-admin `/api/audit-logs?targetId=<workflow>&take=5`: HTTP 200, count `1`.
+  - Secretary `/api/achievements?keyword=20260629041937`: HTTP 200, total `1`, first status `ARCHIVED`.
+  - Secretary `/api/workflow/tasks/my?status=APPROVED`: HTTP 200, count `1`.
+  - Secretary `/api/dashboard/summary`: HTTP 200, achievement total `1`, `PENDING_ARCHIVE=0`, `ARCHIVED=1`, workflow `APPROVED=1`.
+  - Secretary `/api/audit-logs`: HTTP 403, expected missing masked audit-read permission.
+- Post-action DB/audit evidence:
+  - Achievement `dc91da43-e234-4b26-9550-30ba4912206f`: status `ARCHIVED`, version `4`, `archivedAt` set, `archivedById=6f2d717a-3112-4549-aa28-ee4dddee68a1`, `updatedById=6f2d717a-3112-4549-aa28-ee4dddee68a1`.
+  - Workflow task `f4ac40e8-a718-4658-8575-dc20245c9c4b`: status `APPROVED`, completed timestamp unchanged.
+  - Workflow instance `85aa18b6-cc2b-47d9-8d47-9383851749c9`: status `COMPLETED`, current step `null`, `completedAt` set.
+  - Archive audit event for achievement:
+    - audit ID `ead3f202-169d-4ee7-aa62-5f12c3946fb8`.
+    - action `ARCHIVE`.
+    - actor `6f2d717a-3112-4549-aa28-ee4dddee68a1`.
+    - target type `ACHIEVEMENT`.
+    - target ID `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - Archive audit event for workflow instance:
+    - audit ID `5130be68-9dc3-4f93-ac5d-4d408c63547b`.
+    - action `ARCHIVE`.
+    - actor `6f2d717a-3112-4549-aa28-ee4dddee68a1`.
+    - target type `WORKFLOW_INSTANCE`.
+    - target ID `85aa18b6-cc2b-47d9-8d47-9383851749c9`.
+- Web route evidence:
+  - `GET http://127.0.0.1:18081/achievements`: HTTP 200.
+  - `GET http://127.0.0.1:18081/workflow`: HTTP 200.
+  - `GET http://127.0.0.1:18081/dashboard`: HTTP 200.
+  - `GET http://127.0.0.1:18081/audit`: HTTP 200.
+- Verification evidence:
+  - `git diff --check`: passed for the Step 49D documentation diff.
+  - Sensitive scan over Step 49D added lines: no assignment-style secrets, private keys, database URLs, or session cookie values found.
+- Not covered:
+  - Reject path.
+  - Multi-level approval.
+  - Re-archive/idempotency or terminal-state retry.
+  - Fee, reminder, attachment, populated search, and broader dashboard warning sample expansion.
+  - Authenticated browser page state beyond SPA shell route reachability.
+  - VPS/production acceptance and production write acceptance.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, provider raw payload, or raw audit payload was recorded.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package file, or lockfile was modified.
+  - No VPS access, production DB access, push, deploy, migration, seed/backfill, real email, DirectMail runtime switch, large sample creation, Step48C test-data deletion, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 49C - Local production-like workflow action acceptance evidence
 
 - Purpose:
