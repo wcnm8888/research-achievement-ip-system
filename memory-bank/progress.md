@@ -1,5 +1,41 @@
 # Progress
 
+## 2026-06-29 Step 50D - Local Docker reject path acceptance
+
+- Status: STEP_50D_LOCAL_DOCKER_REJECT_PATH_ACCEPTED.
+- Step identity:
+  - Local Docker production-like acceptance for department-review reject using a separate new PAPER sample.
+  - This is not source implementation, not migration/seed/backfill, not VPS/production acceptance, not deploy/push, not real email, and not cleanup.
+- Starting state:
+  - `HEAD`: `387ba90`.
+  - Latest commit subject: `docs: record local docker attachment acceptance`.
+  - Tracked diff was empty before Step 50D documentation changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Completed:
+  - Researcher created and submitted one new Step50D PAPER achievement.
+  - Research secretary found the pending department-review workflow task for that achievement.
+  - Research secretary rejected the task with a non-empty local comment.
+  - A follow-up DB summary query initially selected a non-existent relation field and failed after the action; the verification was rerun with the correct workflow instance query.
+- Accepted API/DB result:
+  - Achievement ID: `e5a759ef-223e-4df5-a198-3f69adcceaea`.
+  - Workflow task ID: `ee52a28d-a456-4859-a748-0b955f4635d6`.
+  - Achievement API/DB status: `DEPARTMENT_REJECTED`.
+  - Achievement version: `3`.
+  - Workflow task DB status: `REJECTED`, with `completedAt` set.
+  - Workflow instance DB status: `COMPLETED`, current step `null`, with `completedAt` set.
+  - Secretary pending task count for the achievement: `0`.
+  - Secretary rejected task count for the achievement: `1`.
+  - Researcher dashboard `DEPARTMENT_REJECTED`: `1`.
+  - Secretary dashboard `DEPARTMENT_REJECTED`: `1`.
+  - Audit counts: achievement target `2`, workflow-task reject `1`.
+- Boundaries / gaps:
+  - Multi-level approval and terminal-state negative retry were not exercised.
+  - Patent/software-copyright reject samples were not created.
+  - No test data was deleted or cleaned.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+
 ## 2026-06-29 Step 50C - Local Docker attachment API/DB acceptance
 
 - Status: STEP_50C_LOCAL_DOCKER_ATTACHMENT_ACCEPTED.

@@ -1,5 +1,61 @@
 # Evidence
 
+## 2026-06-29 Step 50D - Local Docker reject path acceptance evidence
+
+- Purpose:
+  - Validate department-review reject behavior with a separate local Docker sample.
+  - Avoid mutating the completed Step48C/49 archive sample.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `387ba90`.
+  - Latest commit subject: `docs: record local docker attachment acceptance`.
+  - `git status --short --untracked-files=no`: empty before Step 50D documentation changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Code/context evidence:
+  - `POST /api/achievements` creates drafts.
+  - `POST /api/achievements/:id/submit` submits drafts.
+  - `POST /api/workflow/tasks/:taskId/reject` rejects department-review tasks.
+  - Reject DTO requires a non-empty comment.
+  - Reject service maps to task `REJECTED`, workflow instance `COMPLETED`, current step `null`, and achievement `DEPARTMENT_REJECTED`.
+- Credential/session evidence:
+  - Temporary random local passwords were rotated in-process for the Step48C researcher and research secretary to obtain real local sessions.
+  - Password values, cookie values, tokens, secrets, connection strings, private keys, full reset/invite links, plaintext session values, and provider payloads were not printed or recorded.
+- Execution evidence:
+  - Researcher created one new local PAPER sample with title marker `STEP50D_20260629`.
+  - Researcher submitted the draft.
+  - Research secretary found the pending task for that achievement.
+  - Research secretary rejected it with a non-empty local comment.
+  - The first script's post-action DB summary failed after the reject action because it selected a non-existent Prisma relation field; follow-up verification used `workflowInstance.findFirst({ targetId })`.
+- Accepted result evidence:
+  - Achievement ID: `e5a759ef-223e-4df5-a198-3f69adcceaea`.
+  - Workflow task ID: `ee52a28d-a456-4859-a748-0b955f4635d6`.
+  - Achievement detail API as researcher: HTTP 200.
+  - Achievement API status: `DEPARTMENT_REJECTED`.
+  - Achievement DB status: `DEPARTMENT_REJECTED`.
+  - Achievement DB version: `3`.
+  - Secretary `/api/workflow/tasks/my?status=PENDING&achievementId=<achievement>`: count `0`.
+  - Secretary `/api/workflow/tasks/my?status=REJECTED&achievementId=<achievement>`: count `1`.
+  - Workflow instance DB status: `COMPLETED`.
+  - Workflow instance current step: `null`.
+  - Workflow instance `completedAt`: set.
+  - Workflow task DB status: `REJECTED`.
+  - Workflow task `completedAt`: set.
+  - Researcher dashboard `DEPARTMENT_REJECTED`: `1`.
+  - Secretary dashboard `DEPARTMENT_REJECTED`: `1`.
+  - Achievement audit count: `2`.
+  - Workflow-task reject audit count: `1`.
+- Not covered:
+  - Multi-level approval.
+  - Terminal-state retry/negative checks.
+  - Patent/software-copyright reject samples.
+  - Authenticated browser page state beyond API/runtime evidence.
+- Verification still required before commit:
+  - `git diff --check`.
+  - Sensitive scan over committed added lines.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, provider raw payload, or raw audit payload was recorded.
+  - No source code, schema, migration, seed/backfill, Docker/compose/deploy config, dependency, package, lockfile, DirectMail runtime strategy, VPS access, production DB access, push, deploy, real email, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 50C - Local Docker attachment API/DB acceptance evidence
 
 - Purpose:

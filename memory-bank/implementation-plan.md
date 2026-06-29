@@ -4,6 +4,33 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 50D Archive - Local Docker Reject Path Acceptance - 2026-06-29
+
+- Step identity:
+  - This Step accepts the department-review reject path with a separate local Docker PAPER achievement sample.
+  - This is local Docker acceptance only. It is not VPS/production acceptance and not production write acceptance.
+  - No source code, schema, migration, seed/backfill, Docker/compose/deploy config, dependency, package, lockfile, DirectMail runtime strategy, VPS, production DB, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `387ba90`.
+  - Latest commit: `docs: record local docker attachment acceptance`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Accepted local Docker result:
+  - Researcher created a new local Step50D PAPER draft and submitted it.
+  - Research secretary received one pending workflow task for that achievement and rejected it with a non-empty local comment.
+  - Achievement `e5a759ef-223e-4df5-a198-3f69adcceaea` ended as `DEPARTMENT_REJECTED` through API and DB.
+  - Achievement version ended at `3`.
+  - Workflow task `ee52a28d-a456-4859-a748-0b955f4635d6` ended as `REJECTED`, with `completedAt` set.
+  - Workflow instance ended as `COMPLETED`, current step `null`, with `completedAt` set.
+  - Secretary pending tasks for this achievement became `0`; rejected tasks became `1`.
+  - Researcher and secretary dashboards both showed `DEPARTMENT_REJECTED=1` in their scoped achievement buckets.
+  - Audit counts: achievement target `2`, workflow-task reject `1`.
+- Capability boundary recorded:
+  - Reject path is now locally accepted for one department-review task.
+  - Multi-level approval, terminal-state retry/negative checks, richer patent/software-copyright reject samples, and authenticated browser rendering remain later optional coverage.
+- Next:
+  - Step 51 can begin implementation of confirmed phase-one local gaps, starting with explicit fee warnings or fee archive as separate steps.
+
 ## Current Step 50C Archive - Local Docker Attachment API/DB Acceptance - 2026-06-29
 
 - Step identity:

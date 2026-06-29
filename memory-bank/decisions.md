@@ -1,5 +1,29 @@
 # Decisions
 
+## D177 - Step 50D accepts local department-review reject path
+
+- Date: 2026-06-29.
+- Context: The local Docker mainline had already accepted create/submit/approve/archive for one paper sample, but reject was still uncovered. Step 50D created a separate local PAPER sample to avoid changing the completed archive evidence.
+- Decision:
+  - Accept department-review reject locally for a separate Step50D sample.
+  - Treat the expected terminal state as:
+    - achievement `DEPARTMENT_REJECTED`.
+    - workflow task `REJECTED`.
+    - workflow instance `COMPLETED` with no current step.
+  - Keep the completed Step48C/49 archive sample unchanged.
+- Accepted behavior:
+  - Researcher can create and submit the new sample.
+  - Assigned research secretary can reject with a non-empty comment.
+  - Dashboard reflects one `DEPARTMENT_REJECTED` achievement in researcher and secretary scopes.
+  - Audit append occurs for the reject workflow task.
+- Not complete:
+  - Multi-level approval.
+  - Terminal-state retry/negative checks.
+  - Patent/software-copyright reject samples.
+  - Authenticated browser rendering beyond API/runtime evidence.
+- Boundaries:
+  - This decision does not authorize source-code changes, schema/migration changes, seed/backfill, dependency changes, Docker/compose/deploy config changes, DirectMail runtime changes, real email, push/deploy, VPS access, production DB access, production writes, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D176 - Step 50C accepts local attachment upload and direct-grant download
 
 - Date: 2026-06-29.
