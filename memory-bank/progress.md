@@ -1,5 +1,52 @@
 # Progress
 
+## 2026-06-29 Step 51F - Settings frontend local Docker acceptance
+
+- Status: STEP_51F_SETTINGS_API_INTEGRATIONS_LOCAL_DOCKER_ACCEPTED_WITH_BROWSER_INTERACTION_LIMITATION.
+- Step identity:
+  - Runs local Docker production-like acceptance for Step 51D backend and Step 51E frontend.
+  - This is local-only acceptance, not VPS/production acceptance, not schema/migration/seed/backfill, not DirectMail runtime work, not feature implementation, not push/deploy, and not cleanup.
+- Starting state:
+  - `HEAD`: `03eaf55`.
+  - Latest commit subject: `feat: add API integration settings UI`.
+  - Tracked diff was empty before Step 51F memory-bank changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Docker/Web health:
+  - Rebuilt/restarted local Docker `api` and `web` services.
+  - `api`, `web`, and `postgres` were healthy.
+  - `/` and `/settings` via `http://localhost:18081` returned HTTP 200.
+  - `/api/auth/me` through the Web proxy returned HTTP 401 anonymously.
+  - API health returned HTTP 200.
+- API acceptance:
+  - Production-like API rejected `X-Demo-User-Id` with HTTP 401.
+  - Local temporary random password rotation was used in-process for local test accounts only to obtain real session cookies; password/cookie/token values were not output or recorded.
+  - `system:config` local-admin session completed:
+    - list: HTTP 200.
+    - create: HTTP 201.
+    - detail: HTTP 200.
+    - update: HTTP 200.
+    - archive: HTTP 201.
+    - restore: HTTP 201.
+    - filtered list: HTTP 200.
+  - Accepted metadata record:
+    - `id`: `3def5240-a2c3-4726-8d57-d6f16a31ae39`.
+    - `code`: `LOCAL_STEP51F_20260629094656`.
+    - `provider`: `OTHER`.
+    - `enabled`: `false` on create, `true` after patch.
+    - `timeoutMs`: `3000` on create, `4500` after patch.
+    - `configRef`: `local.step51f.reference` then `local.step51f.reference.v2`.
+    - final `archivedAt`: `null` after restore.
+  - Non-`system:config` Step48C researcher session returned HTTP 403 for Settings list.
+- Frontend acceptance:
+  - Local Docker Web `/settings` route is reachable.
+  - Anonymous session boundary is enforced before authenticated Settings UI access.
+  - `corepack pnpm --filter @research-ip/web test -- SettingsApiIntegrations.test.tsx api-client.test.ts`: passed, 2 files / 43 tests.
+  - Full browser list/create/update/archive/restore interaction was not run because Playwright was not installed and no dependency installation was performed.
+- Security boundary:
+  - Managed metadata stayed limited to `code`, `provider`, `enabled`, `timeoutMs`, and `configRef`.
+  - `configRef` was treated only as a non-sensitive reference label.
+  - No `.env` / `.env.production`, password, cookie, token, secret, AccessKey, private key, connection string, provider credential, SMTP credential, DirectMail credential, or real provider secret was read from files, output, or recorded.
+
 ## 2026-06-29 Step 51E - Settings API integrations frontend management page
 
 - Status: STEP_51E_SETTINGS_API_INTEGRATIONS_FRONTEND_UI_IMPLEMENTED.

@@ -1,5 +1,54 @@
 # Evidence
 
+## 2026-06-29 Step 51F - Settings frontend local Docker acceptance evidence
+
+- Purpose:
+  - Accept Step 51D/51E Settings API integration metadata backend and frontend in local Docker production-like mode.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `03eaf55`.
+  - Latest commit subject: `feat: add API integration settings UI`.
+  - `git status --short --untracked-files=no`: empty before Step 51F memory-bank changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Docker health evidence:
+  - `docker compose -f docker-compose.production.yml ps`: `api`, `web`, and `postgres` healthy after local rebuild/restart.
+  - `http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `http://localhost:18081/`: HTTP 200.
+  - `http://localhost:18081/settings`: HTTP 200.
+  - `http://localhost:18081/api/auth/me`: HTTP 401 without a session.
+  - Compose reported an existing orphan container warning during rebuild; no cleanup or prune was run.
+- Auth/session evidence:
+  - `GET /api/settings/api-integrations?page=1&pageSize=1` with `X-Demo-User-Id` against the production-like API returned HTTP 401.
+  - Local-only in-process temporary random password rotation was used for local test accounts to obtain real session cookies.
+  - No password, cookie value, session token, secret, hash, connection string, or env value was printed or recorded.
+  - `local-admin@wzunew.uk` authenticated successfully and `/api/auth/me` returned HTTP 200 with `system:config` and permission count `21`.
+- Settings API evidence:
+  - Accepted record:
+    - `id`: `3def5240-a2c3-4726-8d57-d6f16a31ae39`.
+    - `code`: `LOCAL_STEP51F_20260629094656`.
+    - `provider`: `OTHER`.
+  - `GET /api/settings/api-integrations?page=1&pageSize=5&includeArchived=true`: HTTP 200, total `1`.
+  - `POST /api/settings/api-integrations`: HTTP 201.
+    - Body used non-sensitive metadata: `enabled=false`, `timeoutMs=3000`, `configRef=local.step51f.reference`.
+  - `GET /api/settings/api-integrations/:id`: HTTP 200.
+  - `PATCH /api/settings/api-integrations/:id`: HTTP 200.
+    - Updated non-sensitive metadata: `enabled=true`, `timeoutMs=4500`, `configRef=local.step51f.reference.v2`.
+  - `POST /api/settings/api-integrations/:id/archive`: HTTP 201 and response had `archivedAt`.
+  - `POST /api/settings/api-integrations/:id/restore`: HTTP 201 and response had `archivedAt: null`.
+  - `GET /api/settings/api-integrations?keyword=LOCAL_STEP51F_20260629094656&includeArchived=true&page=1&pageSize=10`: HTTP 200, total `1`.
+- Permission evidence:
+  - Step48C researcher local session had role `RESEARCHER`, permission count `6`, and no `system:config`.
+  - The same researcher session received HTTP 403 from `GET /api/settings/api-integrations?page=1&pageSize=1`.
+- Frontend evidence:
+  - Local Docker Web served `/settings` with HTTP 200.
+  - Anonymous Web proxy `/api/auth/me` returned HTTP 401, so Settings UI access remains session-gated.
+  - `corepack pnpm --filter @research-ip/web test -- SettingsApiIntegrations.test.tsx api-client.test.ts`: passed.
+  - Targeted Web test result: 2 files passed, 43 tests passed.
+  - Full browser CRUD interaction was not run because Playwright was not installed locally and dependency installation was not in scope.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie, secret, AccessKey, private key, connection string, provider credential, SMTP credential, DirectMail credential, or real provider secret was recorded.
+  - No migration, seed/backfill, VPS access, production DB access, push, deploy, real external call, real email, DirectMail default strategy change, cleanup, deletion, reset, drop, restore, prune, or untracked artifact modification occurred.
+
 ## 2026-06-29 Step 51E - Settings API integrations frontend management page evidence
 
 - Purpose:

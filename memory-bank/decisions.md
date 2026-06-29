@@ -1,5 +1,28 @@
 # Decisions
 
+## D183 - Step 51F accepts local Docker Settings metadata with session auth
+
+- Date: 2026-06-29.
+- Context: Step 51D/51E added backend and frontend management for `/api/settings/api-integrations`. Step 51F needed local Docker production-like acceptance without using demo headers as production auth and without exposing credentials.
+- Decision:
+  - Accept the local Docker backend Settings API integration metadata flow with real session auth.
+  - Treat `X-Demo-User-Id` returning HTTP 401 in the production-like API as expected.
+  - Use local-only in-process temporary random password rotation for local test accounts when a usable active-chat credential is unavailable, while never printing or recording password/cookie/token/secret values.
+  - Record accepted Settings metadata only as non-sensitive `code`, `provider`, `enabled`, `timeoutMs`, `configRef`, lifecycle status, and non-sensitive record ID.
+  - Treat POST archive/restore returning HTTP 201 as acceptable current controller behavior for the local acceptance.
+  - Keep frontend browser acceptance at route reachability plus targeted UI/API-client tests when Playwright is unavailable and dependency installation is not authorized.
+- Rationale:
+  - This verifies the deployed local Docker API/controller/guard/service/repository path rather than only unit tests.
+  - Session auth is the intended production-like identity boundary; demo headers must not become production auth.
+  - `configRef` remains a reference label and the Settings surface remains outside secrets management.
+- Not complete:
+  - Full browser-driven create/update/archive/restore interaction.
+  - Runtime adapter switching.
+  - Secrets management.
+  - VPS/production acceptance.
+- Boundaries:
+  - This decision does not authorize schema/migration changes, seed/backfill, dependency installation, DirectMail runtime changes, real external calls, import/export, real email, push/deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, prune, or sensitive-value access/output.
+
 ## D182 - Step 51E routes Settings to API integration metadata management
 
 - Date: 2026-06-29.

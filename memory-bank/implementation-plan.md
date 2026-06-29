@@ -4,6 +4,52 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 51F Archive - Settings frontend local Docker acceptance - 2026-06-29
+
+- Step identity:
+  - This Step performs local Docker production-like acceptance for Step 51D/51E Settings API integrations.
+  - Scope is local Docker/API/Web acceptance and memory-bank records.
+  - No feature implementation, backend business logic change, frontend source change, Prisma schema change, migration, seed/backfill, dependency/package change, DirectMail runtime strategy change, VPS/production DB access, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `03eaf55`.
+  - Latest commit: `feat: add API integration settings UI`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Local Docker result:
+  - Rebuilt/restarted local Docker `api` and `web` services after confirming the starting stack.
+  - `api`, `web`, and `postgres` were healthy in `docker compose -f docker-compose.production.yml ps`.
+  - `http://localhost:18081/`: HTTP 200.
+  - `http://localhost:18081/settings`: HTTP 200.
+  - `http://localhost:18081/api/auth/me`: HTTP 401 anonymously, confirming session protection.
+  - `http://127.0.0.1:13001/api/health`: HTTP 200.
+- Authenticated Settings API acceptance:
+  - Production-like API correctly rejected `X-Demo-User-Id` demo header with HTTP 401.
+  - Used local-only in-process temporary random password rotation for local test accounts to obtain real sessions; no password, cookie, token, secret, or hash was printed or recorded.
+  - `local-admin@wzunew.uk` session had `system:config` and permission count `21`.
+  - Accepted non-sensitive API integration metadata:
+    - `code`: `LOCAL_STEP51F_20260629094656`.
+    - `id`: `3def5240-a2c3-4726-8d57-d6f16a31ae39`.
+    - `provider`: `OTHER`.
+    - `configRef`: `local.step51f.reference` -> `local.step51f.reference.v2`.
+  - CRUD/lifecycle statuses:
+    - List before: HTTP 200, total `1`.
+    - Create: HTTP 201.
+    - Detail: HTTP 200.
+    - Patch: HTTP 200.
+    - Archive: HTTP 201 with `archivedAt`.
+    - Restore: HTTP 201 with `archivedAt: null`.
+    - Filtered list by code: HTTP 200, total `1`.
+  - Non-`system:config` Step48C researcher session returned HTTP 403 for `GET /api/settings/api-integrations`.
+- Frontend acceptance:
+  - Web route `/settings` was served by the local Docker web container with HTTP 200.
+  - Anonymous `/api/auth/me` through the web proxy returned HTTP 401, so browser access remains session-gated.
+  - Settings frontend targeted tests passed: 2 files / 43 tests.
+  - Full browser CRUD interaction was not executed because Playwright was not installed locally and no dependency installation was authorized.
+- Boundary:
+  - Accepted metadata is limited to `code`, `provider`, `enabled`, `timeoutMs`, and `configRef`.
+  - `configRef` remained a non-sensitive reference label, not a provider secret.
+  - No real provider credential, API key, SMTP password, DirectMail credential, env value, connection string, token, cookie, or private key was recorded.
+
 ## Current Step 51E Archive - Settings API integrations frontend management page - 2026-06-29
 
 - Step identity:
