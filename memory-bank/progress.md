@@ -1,5 +1,52 @@
 # Progress
 
+## 2026-06-29 Step 52B - Backend department metadata CSV dry-run API
+
+- Status: STEP_52B_DEPARTMENT_METADATA_CSV_DRY_RUN_API_IMPLEMENTED.
+- Step identity:
+  - Implements backend-only department metadata CSV dry-run.
+  - This is not frontend work, not real import execution, not DB write, not audit write, not file persistence, not schema/migration/seed/backfill, not dependency/package/lockfile change, not Docker/deploy work, not VPS/production access, and not cleanup.
+- Starting state:
+  - `HEAD`: `95afdbe`.
+  - Latest commit subject: `docs: plan import dry-run readiness`.
+  - Tracked diff was empty before Step 52B changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented:
+  - `apps/api/src/imports/imports.module.ts`.
+  - `DepartmentImportDryRunController`.
+  - `DepartmentImportDryRunService`.
+  - `DepartmentImportDryRunRepository`.
+  - `AppModule` imports `ImportsModule`.
+- API contract:
+  - Runtime route with global API prefix: `POST /api/imports/departments/dry-run`.
+  - Multipart request field: `file`.
+  - CSV-only input; `.csv` with `text/csv` or `application/vnd.ms-excel`.
+  - Max file size: `1 MB`.
+  - Max data rows: `500`.
+  - Columns: required `code`, `name`; optional `parentCode`; unknown columns strict error.
+  - Response: `DEPARTMENT_METADATA`, `dryRun: true`, file metadata, column metadata, summary counts, and row-level report.
+- Validation and limitations:
+  - Built-in parser is deliberately narrow because no CSV parser dependency exists and no dependency installation was authorized.
+  - Parser supports UTF-8, comma delimiter, double-quote escaping, and one header row.
+  - Parser does not support Excel workbooks or delimiter autodetection.
+  - Excel remains deferred.
+  - Validations cover required fields, code format, duplicate file codes, unknown parent, self parent, file-local parent cycle, existing DB code warning, unknown column, and formula-like cell values.
+- No-write boundary:
+  - Dry-run uses read-only department code lookup.
+  - No repository write methods were added.
+  - No audit, credential, invite, workflow, attachment, storage, transaction, migration, seed, or backfill path is called.
+  - Permission failure returns 403 before service execution.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- imports`: passed, 4 files / 15 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+- Remaining:
+  - Step 52C Web UI/API-client integration.
+  - User/account metadata dry-run.
+  - Achievement import dry-run.
+  - Excel parser support.
+  - Real import execution remains out of scope.
+
 ## 2026-06-29 Step 52A - Import dry-run readiness scope and backend plan
 
 - Status: STEP_52A_IMPORT_DRY_RUN_READINESS_INVENTORIED_AND_DEPARTMENT_METADATA_BACKEND_PLAN_RECOMMENDED.

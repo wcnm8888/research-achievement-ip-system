@@ -1,5 +1,31 @@
 # Decisions
 
+## D185 - Step 52B implements dry-run as read-only department metadata CSV validation
+
+- Date: 2026-06-29.
+- Context: Step 52A selected department metadata dry-run as the smallest import readiness backend surface. Step 52B needed a real API without dependency installation or any DB write.
+- Decision:
+  - Add `ImportsModule` and `POST /api/imports/departments/dry-run`.
+  - Keep the first dry-run target to department metadata only.
+  - Accept CSV input only and keep Excel workbook parsing deferred.
+  - Use a narrow built-in CSV parser because no parser dependency exists and package/lockfile changes were out of scope.
+  - Require `system:config` with existing `UserContextGuard` and `PermissionGuard`.
+  - Return row-level validation results with stable error/warning codes instead of writing records.
+  - Treat existing DB department codes as warning/review rows.
+  - Do not record audit logs for dry-run because the Step 52B boundary is no DB writes.
+- Rationale:
+  - Department metadata validation is useful without credentials, workflow, attachments, or achievement-specific complexity.
+  - A read-only repository boundary makes no-write behavior easy to test and review.
+  - Built-in parser keeps the Step unblocked while clearly documenting CSV limitations.
+- Not complete:
+  - Frontend import UI.
+  - User/account dry-run.
+  - Achievement dry-run.
+  - Excel parser support.
+  - Real import execution.
+- Boundaries:
+  - This decision does not authorize DB writes, audit writes, uploaded-file persistence, schema/migration changes, seed/backfill, dependency installation, package/lockfile changes, Docker/compose/deploy changes, production access, secrets access, `.env` reads, push/deploy, cleanup, deletion, reset, drop, restore, or prune.
+
 ## D184 - Step 52A starts import readiness with department metadata dry-run
 
 - Date: 2026-06-29.

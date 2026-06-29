@@ -11,6 +11,7 @@ import { DepartmentManagementModule } from "./department-management/department-m
 import { FeesModule } from "./fees/fees.module";
 import { HealthController } from "./health.controller";
 import { IdentityModule } from "./identity/identity.module";
+import { ImportsModule } from "./imports/imports.module";
 import { RemindersModule } from "./reminders/reminders.module";
 import { SearchModule } from "./search/search.module";
 import { SettingsModule } from "./settings/settings.module";
@@ -33,6 +34,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     AccountManagementModule,
     DepartmentManagementModule,
     SettingsModule,
+    ImportsModule,
   ],
   controllers: [HealthController],
 })

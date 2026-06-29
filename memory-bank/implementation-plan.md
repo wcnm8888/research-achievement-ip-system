@@ -4,6 +4,64 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 52B Archive - Backend department metadata CSV dry-run API - 2026-06-29
+
+- Step identity:
+  - This Step implements backend-only department metadata CSV dry-run.
+  - Scope is API/controller/service/repository/tests plus memory-bank records.
+  - No frontend UI/API client, real import execution, DB write, audit write, uploaded-file persistence, Prisma schema change, migration, seed/backfill, dependency/package/lockfile change, Docker/compose/deploy change, VPS/production access, production DB access, push, deploy, cleanup, deletion, reset, drop, restore, or prune work occurred.
+- Starting state:
+  - `HEAD`: `95afdbe`.
+  - Latest commit: `docs: plan import dry-run readiness`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts remained untouched.
+- Implemented:
+  - Added `ImportsModule` and imported it into `AppModule`.
+  - Added backend route:
+    - `POST /api/imports/departments/dry-run`.
+  - Added multipart `file` handling with in-memory parsing only.
+  - Added CSV-only upload boundary:
+    - `.csv` filename required.
+    - `text/csv` and `application/vnd.ms-excel` MIME types accepted for CSV bytes.
+    - Excel workbook bytes and `.xlsx` are rejected.
+    - Max upload size is `1 MB`.
+  - Added a narrow built-in CSV parser because no CSV parser dependency exists and dependency installation was out of scope.
+  - Parser limitation is explicit in code: UTF-8, comma delimiter, double-quote escaping, one header row, no delimiter autodetection, no Excel workbook parsing.
+- Dry-run contract:
+  - Import type: `DEPARTMENT_METADATA`.
+  - Required columns: `code`, `name`.
+  - Optional column: `parentCode`.
+  - Unknown columns are strict validation errors.
+  - Max data rows: `500`.
+  - Response contains:
+    - `file` metadata with non-sensitive name, size, mime type, and `utf-8` encoding.
+    - `columns.required`, `columns.optional`, `columns.received`.
+    - `summary.totalRows`, `validRows`, `errorRows`, `warningRows`, `createCandidates`, `existingCodeRows`.
+    - row-level `rowNumber`, parsed `code`/`name`/`parentCode`, `status`, `candidateAction`, `errors`, and `warnings`.
+  - Stable validation codes include `REQUIRED`, `INVALID_FORMAT`, `DUPLICATE_IN_FILE`, `UNKNOWN_PARENT`, `PARENT_CYCLE`, `EXISTING_CODE`, `UNKNOWN_COLUMN`, and `FORMULA_LIKE_VALUE`.
+- Validation:
+  - `code`: trim, required, 1-64 chars, `^[A-Z0-9_]+$`.
+  - `name`: trim, required, 1-200 chars.
+  - `parentCode`: optional; if present, same code format and must reference an active existing department code or another file row.
+  - Duplicate file-local `code` values are row errors.
+  - Existing DB department `code` values are returned as warning/review rows, not writes.
+  - Self parent and file-local parent cycles are detected.
+  - Formula-like values beginning with `=`, `+`, `-`, or `@` are rejected.
+- No-write boundary:
+  - Repository exposes only `findDepartmentsByCodes`.
+  - No create/update/upsert/delete/archive/restore methods were added.
+  - Service does not inject `PrismaService`, `AuditService`, storage, account lifecycle, workflow, attachment, or credential services.
+  - Controller uses guards before file parsing/service execution; missing `system:config` returns 403 and service is not called.
+  - Tests assert Prisma write methods, `$transaction`, and `auditLog.create` are not called.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- imports`: passed, 4 files / 15 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+- Next:
+  - Step 52C should add Web API client/types and a guarded import dry-run UI.
+  - User/account metadata dry-run remains a later backend step.
+  - Achievement import dry-run and Excel parsing remain deferred.
+
 ## Current Step 52A Archive - Import dry-run readiness scope and backend plan - 2026-06-29
 
 - Step identity:

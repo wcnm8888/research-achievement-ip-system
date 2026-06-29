@@ -1,5 +1,75 @@
 # Evidence
 
+## 2026-06-29 Step 52B - Backend department metadata CSV dry-run API evidence
+
+- Purpose:
+  - Implement backend-only `POST /api/imports/departments/dry-run`.
+  - Validate department metadata CSV files without writing DB rows, audit rows, files, credentials, invites, workflow records, attachments, or real business data.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `95afdbe`.
+  - Latest commit subject: `docs: plan import dry-run readiness`.
+  - Tracked diff was empty before Step 52B changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+- Code evidence:
+  - Added `apps/api/src/imports/imports.module.ts`.
+  - Added `apps/api/src/imports/department-import-dry-run.controller.ts`.
+  - Added `apps/api/src/imports/department-import-dry-run.service.ts`.
+  - Added `apps/api/src/imports/department-import-dry-run.repository.ts`.
+  - Updated `apps/api/src/app.module.ts` to import `ImportsModule`.
+  - Added controller, service, repository, and AppModule route tests under `apps/api/src/imports`.
+- Route evidence:
+  - Controller path: `imports/departments`.
+  - Route: `POST dry-run`.
+  - Runtime global prefix makes the public API path `/api/imports/departments/dry-run`.
+- Request boundary evidence:
+  - `multipart/form-data` file field is required.
+  - Upload is in memory only.
+  - File size limit is `1 MB`.
+  - Only `.csv` with `text/csv` or `application/vnd.ms-excel` is accepted.
+  - Excel workbook bytes and `.xlsx` are rejected.
+- Parser evidence:
+  - No CSV/Excel dependency was added.
+  - Built-in parser is explicitly limited to UTF-8, comma delimiter, double-quote escaping, one header row, no delimiter autodetection, and no Excel workbook parsing.
+  - Data rows over `500` are rejected as invalid CSV input.
+- Validation evidence:
+  - Required fields: `code`, `name`.
+  - Optional field: `parentCode`.
+  - Unknown columns are reported with `UNKNOWN_COLUMN`.
+  - Missing required values are reported with `REQUIRED`.
+  - Invalid department codes are reported with `INVALID_FORMAT`.
+  - Duplicate file-local department codes are reported with `DUPLICATE_IN_FILE`.
+  - Unknown parents are reported with `UNKNOWN_PARENT`.
+  - Self parent and file-local parent cycles are reported with `PARENT_CYCLE`.
+  - Existing DB department codes are warning/review rows with `EXISTING_CODE`.
+  - Formula-like values beginning with `=`, `+`, `-`, or `@` are reported with `FORMULA_LIKE_VALUE`.
+- No-write evidence:
+  - Repository exposes only `findDepartmentsByCodes`.
+  - Repository test asserts `department.create`, `department.update`, `department.upsert`, `department.delete`, `auditLog.create`, and `$transaction` are not called.
+  - Service does not inject `PrismaService`, `AuditService`, storage, account lifecycle, workflow, attachment, or credential services.
+  - Controller test asserts 403 without `system:config` happens before service execution, even with invalid upload bytes.
+  - No audit module is imported by `ImportsModule`.
+- Test evidence:
+  - `corepack pnpm --filter @research-ip/api test -- imports`: passed.
+  - Result: 4 test files passed, 15 tests passed.
+  - Covered valid CSV, missing required field, invalid code, duplicate code in file, unknown parent, self parent, parent cycle, existing DB code warning, unknown column, formula-like value, 403 before parsing/service execution, no repository write, no audit write, and AppModule route exposure.
+- Build/type evidence:
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+- Not covered:
+  - Frontend import UI/API client.
+  - User/account metadata dry-run.
+  - Achievement dry-run.
+  - Excel parsing.
+  - Real import execution.
+  - Local Docker runtime acceptance.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, provider credential, SMTP credential, DirectMail credential, or real provider secret was recorded.
+  - No Prisma schema, migration, seed/backfill, dependency, package/lockfile, Docker/compose/deploy config, VPS access, production DB access, push, deploy, business-data write, audit write, uploaded-file persistence, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 52A - Import dry-run readiness scope and backend plan evidence
 
 - Purpose:
