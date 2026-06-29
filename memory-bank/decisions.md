@@ -1,5 +1,25 @@
 # Decisions
 
+## D168 - Step 48B blocks authenticated empty-state acceptance without a usable local-admin login
+
+- Date: 2026-06-29.
+- Context: Step 48B attempted read-only local production-like empty-state acceptance after Step 48A decided against running the full demo seed. The local compose stack was healthy and Web routes served the SPA shell, but no usable local-admin password or authenticated session value was available in the active execution context.
+- Decision:
+  - Do not read `.env.production`, historical sensitive notes, cookies, tokens, or connection strings to recover credentials.
+  - Do not guess or brute-force the local-admin password.
+  - Treat unauthenticated HTTP 401 responses from protected business APIs as normal authentication boundary evidence, not as empty-state business acceptance.
+  - Mark Step 48B as blocked until a usable ephemeral local-admin test password is provided in the active chat or an authenticated local session is made available without exposing secret values.
+- Observed read-only results:
+  - Local `postgres`, `api`, and `web` services were running / healthy.
+  - Web/API health returned HTTP 200.
+  - Main Web routes returned HTTP 200 SPA shell.
+  - Main business APIs returned HTTP 401 without a session.
+- Next:
+  - Resume Step 48B authenticated empty-state API/browser checks after the local-admin login precondition is satisfied.
+  - Keep Step 48C minimal business sample creation separate and unauthorized until Step 48B empty-state acceptance is completed or deliberately superseded.
+- Boundaries:
+  - This decision does not authorize reading secrets, source-code changes, schema/migration changes, Docker/compose/deploy changes, dependency changes, business data creation/modification/deletion, seed/backfill/migration execution, API writes beyond an explicitly authorized login, real email, push/deploy, VPS access, production DB access, cleanup, deletion, reset, drop, restore, or prune.
+
 ## D167 - Step 48A uses empty-state-first acceptance and defers minimal business samples
 
 - Date: 2026-06-29.

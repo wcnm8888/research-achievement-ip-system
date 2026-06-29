@@ -1,5 +1,59 @@
 # Progress
 
+## 2026-06-29 Step 48B - Local production-like empty-state read-only acceptance
+
+- Status: STEP_48B_BLOCKED_AUTHENTICATED_EMPTY_STATE_NOT_COMPLETED.
+- Step identity:
+  - This Step attempted local production-like empty-state read-only acceptance.
+  - This Step did not create, modify, delete, seed, backfill, migrate, import, or clean up business data.
+  - This Step did not modify source code, schema, migration, Dockerfile, compose, deploy config, dependencies, or runtime delivery settings.
+  - This Step did not send email, access VPS, access production DB, push, deploy, delete, reset, drop, restore, or prune.
+- Starting state:
+  - `git log -1 --oneline`: `44c8610 docs: plan step 48 local business data acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+  - Existing untracked local artifacts were present and left untouched.
+- Environment:
+  - `docker compose -f docker-compose.production.yml ps` showed local `postgres`, `api`, and `web` running / healthy.
+  - Web proxy health endpoint returned HTTP 200.
+  - API health endpoint returned HTTP 200.
+- Authentication blocker:
+  - No usable local-admin password or authenticated session value was available in the active execution context.
+  - `.env.production` was not read.
+  - No password, cookie, token, secret, connection string, or reset/invite link was read, output, or recorded.
+  - Because login could not be performed safely, authenticated empty-state API and browser acceptance remains incomplete.
+- Unauthenticated API boundary observed:
+  - `GET /api/auth/me`: HTTP 401 via Web proxy without a session.
+  - `GET /api/dashboard/summary`: HTTP 401 without a session.
+  - `GET /api/achievements`: HTTP 401 without a session.
+  - `GET /api/workflow/tasks/my`: HTTP 401 without a session.
+  - `GET /api/audit-logs`: HTTP 401 without a session.
+  - `GET /api/account-management/users`: HTTP 401 without a session.
+  - `GET /api/departments`: HTTP 401 without a session.
+  - `GET /api/fees`: HTTP 401 without a session.
+  - `GET /api/search`: HTTP 401 without a session.
+  - Classification: normal permission/authentication boundary, not an empty-state business-data result.
+- Web route shell checks:
+  - `GET /`: HTTP 200 SPA shell.
+  - `GET /achievements`: HTTP 200 SPA shell.
+  - `GET /workflow`: HTTP 200 SPA shell.
+  - `GET /dashboard`: HTTP 200 SPA shell.
+  - `GET /audit`: HTTP 200 SPA shell.
+  - `GET /accounts`: HTTP 200 SPA shell.
+  - `GET /departments`: HTTP 200 SPA shell.
+  - Classification: route serving is healthy, but authenticated page-level empty states were not accepted because login was not available.
+- Current module classification from this Step:
+  - App shell / unauthenticated login boundary: partially accepted as reachable; authenticated shell not re-accepted.
+  - Dashboard, achievements, workflow, audit, account management, departments, fees, search APIs: protected by 401 without session; authenticated empty-state status not verified in this Step.
+  - Web routes: SPA shell reachable; actual page state after login not verified in this Step.
+  - Step 48C minimal business sample remains needed for achievement detail, workflow task detail/actions, fee detail/warnings/actions, reminder acceptance, attachment metadata/download, search results, and dashboard non-zero distributions.
+- Required resume condition:
+  - Resume Step 48B only after a usable ephemeral local-admin test password is provided in the active chat, or after the user establishes an authenticated local session that Codex can use without reading or recording secret values.
+  - Do not read `.env.production` or historical sensitive notes to recover credentials.
+- Result:
+  - Local production-like stack and route serving remain healthy.
+  - Unauthenticated API protection is normal.
+  - Authenticated empty-state acceptance is blocked and not claimed as passed.
+
 ## 2026-06-29 Step 48A - Local production-like business data and empty-state acceptance design
 
 - Status: STEP_48A_DESIGNED_EMPTY_STATE_AND_MINIMAL_SAMPLE_SCOPE.

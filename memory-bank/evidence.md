@@ -1,5 +1,55 @@
 # Evidence
 
+## 2026-06-29 Step 48B - Local production-like empty-state read-only acceptance evidence
+
+- Purpose:
+  - Perform read-only empty-state acceptance against the local production-like stack without creating business samples or running demo seed.
+  - Record whether main API and Web surfaces show normal empty state, foundation data, permission prompts, errors, or require Step 48C samples.
+- Starting state evidence:
+  - `git log -1 --oneline`: `44c8610 docs: plan step 48 local business data acceptance`.
+  - `git diff --stat`: empty before Step 48B memory-bank edits.
+  - `git status --short --branch`: branch was ahead of `origin/main`; tracked diff was empty; existing untracked local artifacts were present and not touched.
+- Stack evidence:
+  - `docker compose -f docker-compose.production.yml ps`: local `postgres`, `api`, and `web` were running / healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `GET http://127.0.0.1:18081/api/health`: HTTP 200.
+- Authentication evidence:
+  - `GET http://127.0.0.1:18081/api/auth/me`: HTTP 401 without a session.
+  - No usable local-admin password or authenticated session value was available in the active execution context.
+  - Login was not attempted because doing so safely requires the password to be supplied in the active chat or an already established authenticated session.
+- Requested API checks without session:
+  - `GET /api/dashboard/summary`: HTTP 401.
+  - `GET /api/achievements`: HTTP 401.
+  - `GET /api/workflow/tasks/my`: HTTP 401.
+  - `GET /api/audit-logs`: HTTP 401.
+  - `GET /api/account-management/users`: HTTP 401.
+  - `GET /api/departments`: HTTP 401.
+  - `GET /api/fees`: HTTP 401.
+  - `GET /api/search`: HTTP 401.
+  - Classification: normal authentication boundary, not authenticated empty-state acceptance.
+- Requested Web route shell checks:
+  - `GET /`: HTTP 200, SPA shell.
+  - `GET /achievements`: HTTP 200, SPA shell.
+  - `GET /workflow`: HTTP 200, SPA shell.
+  - `GET /dashboard`: HTTP 200, SPA shell.
+  - `GET /audit`: HTTP 200, SPA shell.
+  - `GET /accounts`: HTTP 200, SPA shell.
+  - `GET /departments`: HTTP 200, SPA shell.
+  - Classification: route serving accepted, authenticated page state not accepted.
+- Acceptance result:
+  - Normal empty-state API/page acceptance could not be completed in this Step.
+  - Normal foundation-data API/page acceptance could not be completed in this Step.
+  - Permission/authentication boundary was observed as expected for unauthenticated requests.
+  - Step 48C sample-dependent flows remain: achievement detail/action, workflow task detail/action, fee detail/warnings/action, reminders, attachments, search populated results, dashboard non-zero metrics.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No seed, backfill, migration, local API write, database business-data creation, update, or deletion was executed.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package file, or lockfile was modified.
+  - No real email was sent.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, reset, drop, restore, prune, or artifact removal occurred.
+
 ## 2026-06-29 Step 48A - Local production-like business data and empty-state acceptance design evidence
 
 - Purpose:
