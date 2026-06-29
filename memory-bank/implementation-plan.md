@@ -4,6 +4,35 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 47AD-Resume Archive - Local Production-Like Authenticated Acceptance Completed - 2026-06-29
+
+- Step identity:
+  - This resumes Step 47AD with an explicitly authorized ephemeral local-admin credential available in the active execution context.
+  - This Step completes local Docker Compose production-like authenticated acceptance.
+  - It is not real email delivery, DirectMail default strategy change, seed/backfill/migration, push, deploy, VPS access, production DB access, cleanup, deletion, reset, drop, or prune.
+- Result:
+  - Local production-like stack remained healthy.
+  - Login API returned HTTP 200.
+  - `/api/auth/me` returned HTTP 200 via both Web proxy and direct API checks using an in-process transient cookie header.
+  - The authenticated user matched `local-admin@wzunew.uk`, with 1 role and 21 permissions.
+  - Major authenticated APIs returned HTTP 200:
+    - dashboard summary
+    - achievements
+    - workflow my tasks
+    - audit logs
+    - account management users
+    - departments
+  - Major Web routes returned HTTP 200 with the SPA shell.
+  - Achievements and workflow task lists were empty because no demo seed or business data creation was performed.
+- Security note:
+  - The production-like session cookie has the `Secure` attribute; local plain HTTP browser persistence may require HTTPS or a controlled transient test header.
+  - No cookie value, password, token, secret, connection string, or full reset/invite link was recorded.
+- Decision:
+  - Record `LOCAL_PRODUCTION_LIKE_AUTHENTICATED_ACCEPTANCE_PASSED_WITH_HTTP_SECURE_COOKIE_NOTE`.
+  - Keep production/VPS acceptance and Step 38 production acceptance deferred.
+- Next:
+  - Continue only with explicitly authorized next production-readiness or VPS-production acceptance steps.
+
 ## Current Step 47AD Archive - Local Production-Like Authenticated Acceptance - 2026-06-29
 
 - Step identity:

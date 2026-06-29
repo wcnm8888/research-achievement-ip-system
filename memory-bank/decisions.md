@@ -1,5 +1,28 @@
 # Decisions
 
+## D165 - Step 47AD-Resume accepts local production-like authenticated flow with Secure-cookie caveat
+
+- Date: 2026-06-29.
+- Context: The user explicitly authorized use of an ephemeral local-admin test password in the active chat after Step 47AD had previously been blocked. The local production-like stack was healthy and the goal was authenticated local acceptance without recording credentials or changing runtime configuration.
+- Decision:
+  - Record `LOCAL_PRODUCTION_LIKE_AUTHENTICATED_ACCEPTANCE_PASSED_WITH_HTTP_SECURE_COOKIE_NOTE`.
+  - Treat the server-side authenticated local production-like path as accepted:
+    - Login API returned HTTP 200.
+    - `/api/auth/me` returned HTTP 200.
+    - Main authenticated APIs and SPA routes were reachable.
+  - Record that the production-like session cookie is `Secure`; local plain HTTP browser persistence has a known limitation and was validated with an in-process transient cookie header instead.
+  - Do not record the ephemeral password, cookie value, token, secret, connection string, or full reset/invite link.
+  - Do not create business data, run seed/backfill/migration, send real email, modify DirectMail defaults, push/deploy, access VPS, or access production DB.
+- Evidence:
+  - Authenticated user matched `local-admin@wzunew.uk`.
+  - Role count: 1.
+  - Permission count: 21.
+  - Dashboard, achievements, workflow tasks, audit logs, account users, and departments APIs returned HTTP 200.
+  - Requested Web routes returned HTTP 200 with the SPA shell.
+- Boundaries:
+  - This decision does not alter Step 38 production acceptance, which remains deferred.
+  - This is not VPS production acceptance.
+
 ## D164 - Step 47AD remains blocked without usable ephemeral local-admin password
 
 - Date: 2026-06-29.

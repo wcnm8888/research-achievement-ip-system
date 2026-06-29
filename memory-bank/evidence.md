@@ -1,5 +1,58 @@
 # Evidence
 
+## 2026-06-29 Step 47AD-Resume - Local production-like authenticated acceptance evidence
+
+- Purpose:
+  - Complete local-admin authenticated acceptance for the local production-like Compose stack after the user provided an explicitly authorized ephemeral local test credential in the active chat.
+  - Do not record credentials, read `.env.production`, send real email, change DirectMail defaults, run seed/backfill/migration, push/deploy, access VPS/production DB, or clean artifacts.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `b2f67ffc422eb0908ed8225d5bb4238df070a0ee`.
+  - `git log -1 --pretty=%s`: `docs: record local production-like authenticated acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+- Stack evidence:
+  - Compose status showed `postgres`, `api`, and `web` running / healthy.
+  - API health and Web root remained reachable on local production-like URLs.
+- Authentication evidence:
+  - Login API via `http://127.0.0.1:18081/api/auth/login`: HTTP 200.
+  - Login response had a session cookie present and `Secure` attribute present; cookie value was not output or recorded.
+  - A transient in-process cookie header was used only to verify authenticated API access because the production-like cookie is `Secure` while the local test endpoint is plain HTTP.
+  - `/api/auth/me` via Web proxy: HTTP 200.
+  - `/api/auth/me` via direct API port: HTTP 200.
+  - Authenticated email match: true for `local-admin@wzunew.uk`.
+  - Role count: 1.
+  - Permission count: 21.
+- Authenticated API evidence:
+  - `GET /api/dashboard/summary`: HTTP 200, JSON object.
+  - `GET /api/achievements`: HTTP 200, `items=0`.
+  - `GET /api/workflow/tasks/my`: HTTP 200, `items=0`.
+  - `GET /api/audit-logs`: HTTP 200, `items=36`.
+  - `GET /api/account-management/users`: HTTP 200, `items=3`.
+  - `GET /api/departments`: HTTP 200, `items=2`.
+- Web route evidence:
+  - `/`: HTTP 200, SPA shell.
+  - `/achievements`: HTTP 200, SPA shell.
+  - `/workflow`: HTTP 200, SPA shell.
+  - `/dashboard`: HTTP 200, SPA shell.
+  - `/audit`: HTTP 200, SPA shell.
+  - `/accounts`: HTTP 200, SPA shell.
+  - `/departments`: HTTP 200, SPA shell.
+- Data-state evidence:
+  - Achievements and workflow task lists are empty because no demo seed or business data creation was performed in this Step.
+  - Audit logs, account users, and departments returned existing local production-like rows.
+- Verification evidence:
+  - `git diff --check`: passed, with line-ending warnings only.
+  - Sensitive memory-bank diff scan: passed; no password, token, cookie value, secret, private key, connection string, full reset/invite link, plaintext recipient, or provider raw payload was present.
+- Boundaries observed:
+  - No `.env.production` values were read or output.
+  - The ephemeral local test password was not recorded.
+  - No token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No real email was sent.
+  - DirectMail default sending strategy was not modified.
+  - No seed/backfill/migration.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup, deletion, drop, reset, prune, restore, or artifact removal.
+  - This is not VPS production acceptance and not Step 38 production acceptance.
+
 ## 2026-06-29 Step 47AD - Local production-like authenticated acceptance evidence
 
 - Purpose:

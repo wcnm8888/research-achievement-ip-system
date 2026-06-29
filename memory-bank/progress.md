@@ -1,5 +1,53 @@
 # Progress
 
+## 2026-06-29 Step 47AD-Resume - Local production-like authenticated acceptance completed
+
+- Status: LOCAL_PRODUCTION_LIKE_AUTHENTICATED_ACCEPTANCE_PASSED_WITH_HTTP_SECURE_COOKIE_NOTE.
+- Step identity:
+  - This resumes Step 47AD after the user explicitly authorized use of the ephemeral local-admin test password in the active chat.
+  - This is local Docker Compose production-like acceptance only.
+  - It is not VPS production acceptance and not Step 38 production acceptance.
+- Starting state:
+  - `git rev-parse HEAD`: `b2f67ffc422eb0908ed8225d5bb4238df070a0ee`.
+  - Latest commit subject: `docs: record local production-like authenticated acceptance`.
+  - Tracked diff was empty before this memory-bank update.
+- Stack health:
+  - `postgres`: running / healthy.
+  - `api`: running / healthy.
+  - `web`: running / healthy.
+  - API health remained reachable.
+  - Web root remained reachable.
+- Authentication acceptance:
+  - Login account: `local-admin@wzunew.uk`.
+  - Login API through the Web proxy returned HTTP 200.
+  - Login response included the expected session cookie name, but the cookie value was not output or recorded.
+  - The cookie was marked `Secure`; this is expected for the production-like runtime, and local plain HTTP browser persistence may require HTTPS or a controlled test header.
+  - A transient in-process cookie header was used only for acceptance checks; the cookie value was not logged, written, or stored.
+  - `/api/auth/me` returned HTTP 200 through both the Web proxy and direct API port.
+  - Authenticated user email matched `local-admin@wzunew.uk`.
+  - Authenticated user had 1 role and 21 permissions.
+- Page / API acceptance:
+  - 工作台 / dashboard summary API: HTTP 200.
+  - 成果管理 / achievements API: HTTP 200, `items=0`; treated as expected empty state because no demo/business data was created.
+  - 审批管理 / workflow my tasks API: HTTP 200, `items=0`; treated as expected empty state.
+  - 统计看板 / dashboard route and summary: HTTP 200.
+  - 审计日志 API: HTTP 200, `items=36`.
+  - 账号管理 API: HTTP 200, `items=3`.
+  - 部门维护 API: HTTP 200, `items=2`.
+  - SPA routes `/`, `/achievements`, `/workflow`, `/dashboard`, `/audit`, `/accounts`, and `/departments` returned HTTP 200 with the Web shell.
+- Boundaries:
+  - `.env.production` values were not read or output.
+  - The ephemeral local test password was not written to memory-bank, logs, source, commits, or final records.
+  - No token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, or provider raw payload was recorded.
+  - No real email was sent.
+  - DirectMail default sending strategy was not modified.
+  - No seed/backfill/migration.
+  - No push/deploy/VPS access/production DB access.
+  - No cleanup/deletion/drop/reset/prune/artifact removal.
+- Next:
+  - Local production-like authenticated acceptance is complete with the noted local HTTP `Secure` cookie caveat.
+  - Production/VPS acceptance remains separate and requires explicit authorization.
+
 ## 2026-06-29 Step 47AD - Local production-like authenticated acceptance
 
 - Status: BLOCKED_BY_EPHEMERAL_LOCAL_ADMIN_PASSWORD_NOT_AVAILABLE_IN_CONTEXT.
