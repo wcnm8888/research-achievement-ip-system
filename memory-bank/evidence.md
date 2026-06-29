@@ -1,5 +1,80 @@
 # Evidence
 
+## 2026-06-29 Step 49C - Local production-like workflow action acceptance evidence
+
+- Purpose:
+  - Use the existing Step48C minimal local business sample to execute one department-review workflow action.
+  - Verify achievement state, workflow task state, dashboard, audit, and Web route outcomes.
+  - Keep the step local-only and avoid VPS/production, real email, migration, seed/backfill, cleanup, and sensitive output.
+- Starting state evidence:
+  - Prompt expected `HEAD=fc4799d`.
+  - Observed `git rev-parse --short HEAD`: `edd0335`.
+  - Latest commit subject: `docs: refresh phase 2 production readiness`.
+  - `git status --short --untracked-files=no`: empty before Step 49C documentation changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, or modified.
+  - `docker compose -f docker-compose.production.yml ps`: local `postgres`, `api`, and `web` were running / healthy.
+- Code/context evidence:
+  - `apps/api/src/workflow/workflow.controller.ts` exposes `POST /api/workflow/tasks/:taskId/approve` and `POST /api/workflow/tasks/:taskId/reject`.
+  - `apps/api/src/workflow/workflow.service.ts` maps approve to task `APPROVED`, workflow current step `ARCHIVE`, and achievement `PENDING_ARCHIVE`.
+  - Reject requires a non-empty comment and maps to task `REJECTED`, completed workflow instance, and achievement `DEPARTMENT_REJECTED`; this path was not executed.
+  - `apps/api/src/dashboard/dashboard.service.ts` groups achievement statuses through the readable achievement policy and workflow tasks by current user.
+  - `/api/audit-logs` requires masked audit-read permission.
+- Pre-action local sample evidence:
+  - Secretary ID: `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+  - Secretary role: `RESEARCH_SECRETARY`; permission count `8`; scoped department `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - Achievement ID: `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - Achievement status before action: `PENDING_DEPARTMENT_REVIEW`; version `2`.
+  - Workflow task ID: `f4ac40e8-a718-4658-8575-dc20245c9c4b`.
+  - Workflow task before action: status `PENDING`, step `DEPARTMENT_REVIEW`, assignee `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+  - Workflow instance before action: `ACTIVE`, current step `DEPARTMENT_REVIEW`, target achievement `dc91da43-e234-4b26-9550-30ba4912206f`.
+- Credential/session evidence:
+  - A temporary random local password was rotated for the Step48C research-secretary local test credential and used only in-process for `/api/auth/login`.
+  - A second temporary rotation was used for post-action API verification after the first script lost its output during a Web-route address error.
+  - Password values, cookie values, tokens, secrets, connection strings, private keys, full reset/invite links, plaintext session values, and provider payloads were not printed or recorded.
+- Execution evidence:
+  - `POST /api/workflow/tasks/f4ac40e8-a718-4658-8575-dc20245c9c4b/approve` was executed once.
+  - The first script reached the approve action, then failed later when checking Web routes through `127.0.0.1:80` from inside the API container; that address error did not roll back the approve transaction.
+  - Follow-up read-only verification confirmed the action outcome.
+- Post-action API evidence:
+  - `/api/auth/me`: HTTP 200, user `eabce226-4adc-4c43-ba4f-772ab21fd2ad`, role `RESEARCH_SECRETARY`, permission count `8`, scoped department `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - `/api/workflow/tasks/my?status=PENDING`: HTTP 200, count `0`.
+  - `/api/workflow/tasks/my?status=APPROVED`: HTTP 200, count `1`, first status `APPROVED`, first target achievement `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - `/api/achievements?keyword=20260629041937`: HTTP 200, total `1`, first status `PENDING_ARCHIVE`.
+  - `/api/dashboard/summary`: HTTP 200, achievement total `1`, `PENDING_DEPARTMENT_REVIEW=0`, `PENDING_ARCHIVE=1`, workflow `PENDING=0`, workflow `APPROVED=1`.
+  - `/api/audit-logs?targetId=<achievement>&take=5` as secretary: HTTP 403.
+  - `/api/audit-logs?targetId=<task>&take=5` as secretary: HTTP 403.
+  - Classification: audit API 403 is expected because the secretary lacks masked audit-read permission.
+- Post-action DB/audit evidence:
+  - Achievement `dc91da43-e234-4b26-9550-30ba4912206f`: status `PENDING_ARCHIVE`, version `3`, updated by the Step48C research secretary.
+  - Workflow task `f4ac40e8-a718-4658-8575-dc20245c9c4b`: status `APPROVED`, `completedAt` set.
+  - Workflow instance `85aa18b6-cc2b-47d9-8d47-9383851749c9`: status `ACTIVE`, current step `ARCHIVE`, target achievement unchanged.
+  - Audit summary found an `APPROVE` event:
+    - audit ID `a2401115-5cb7-4a81-a7b7-4703ca45631b`.
+    - actor `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+    - target type `WORKFLOW_TASK`.
+    - target task `f4ac40e8-a718-4658-8575-dc20245c9c4b`.
+    - target department `e620fd8e-7ad9-424e-b5df-97211a734358`.
+- Web route evidence:
+  - `GET http://127.0.0.1:18081/workflow`: HTTP 200.
+  - `GET http://127.0.0.1:18081/achievements`: HTTP 200.
+  - `GET http://127.0.0.1:18081/dashboard`: HTTP 200.
+  - `GET http://127.0.0.1:18081/audit`: HTTP 200.
+- Verification evidence:
+  - `git diff --check`: passed for the Step 49C documentation diff.
+  - Sensitive scan over Step 49C added lines: no assignment-style secrets, private keys, database URLs, or session cookie values found.
+- Not covered:
+  - Reject path.
+  - Multi-level approval.
+  - Archive closure / final archive action.
+  - Fee, reminder, attachment, populated search, and broader dashboard warning sample expansion.
+  - Authenticated browser page state beyond SPA shell route reachability.
+  - VPS/production acceptance and production write acceptance.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No password, token, cookie value, connection string, secret, private key, full reset/invite link, plaintext session value, provider raw payload, or raw audit payload was recorded.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package file, or lockfile was modified.
+  - No VPS access, production DB access, push, deploy, migration, seed/backfill, real email, DirectMail runtime switch, large sample creation, Step48C test-data deletion, cleanup, deletion, reset, drop, restore, or prune occurred.
+
 ## 2026-06-29 Step 49A - Phase 2 production readiness refresh / local closeout evidence
 
 - Purpose:

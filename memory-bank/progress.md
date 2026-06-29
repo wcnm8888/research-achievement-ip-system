@@ -1,5 +1,55 @@
 # Progress
 
+## 2026-06-29 Step 49C - Local production-like workflow action acceptance
+
+- Status: STEP_49C_LOCAL_WORKFLOW_APPROVE_ACCEPTED.
+- Step identity:
+  - Local production-like approval-action acceptance using the existing Step48C sample.
+  - This is not VPS/production acceptance and not production write acceptance.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package file, lockfile, DirectMail runtime setting, VPS, production DB, real email, cleanup, deletion, reset, drop, restore, prune, seed, or backfill work.
+- Starting state:
+  - Prompt expected `HEAD=fc4799d`; observed `HEAD=edd0335`.
+  - Latest commit subject was still `docs: refresh phase 2 production readiness`.
+  - Tracked diff was empty before Step 49C documentation changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Credential/session handling:
+  - The Step48C research secretary account was used.
+  - A temporary random local password was rotated in-process for that local test credential and used only to obtain a real session through `/api/auth/login`.
+  - Password, cookie, token, secret, connection string, private key, full reset/invite link, plaintext session value, and provider payload were not printed or recorded.
+- Pre-action state:
+  - Secretary ID: `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+  - Secretary role: `RESEARCH_SECRETARY`, permission count `8`, scoped department `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - Achievement ID: `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - Achievement status: `PENDING_DEPARTMENT_REVIEW`; version `2`.
+  - Workflow task ID: `f4ac40e8-a718-4658-8575-dc20245c9c4b`.
+  - Workflow task status: `PENDING`; step `DEPARTMENT_REVIEW`; assignee was the Step48C research secretary.
+- Action:
+  - Preferred approve path was used.
+  - `POST /api/workflow/tasks/f4ac40e8-a718-4658-8575-dc20245c9c4b/approve` completed the department-review action.
+  - The first execution did not preserve the raw response summary because a later Web route probe used an in-container Web address that refused connection; persisted DB state and subsequent API checks confirm the approve transaction succeeded.
+- Post-action API/DB/Web acceptance:
+  - `/api/auth/me`: HTTP 200, user `eabce226-4adc-4c43-ba4f-772ab21fd2ad`, role `RESEARCH_SECRETARY`, permission count `8`.
+  - `/api/workflow/tasks/my?status=PENDING`: HTTP 200, count `0`.
+  - `/api/workflow/tasks/my?status=APPROVED`: HTTP 200, count `1`, first status `APPROVED`, target achievement `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - `/api/achievements?keyword=20260629041937`: HTTP 200, total `1`, first status `PENDING_ARCHIVE`.
+  - `/api/dashboard/summary`: HTTP 200, achievement total `1`, `PENDING_DEPARTMENT_REVIEW=0`, `PENDING_ARCHIVE=1`, workflow `PENDING=0`, workflow `APPROVED=1`.
+  - `/api/audit-logs` as the research secretary returned HTTP 403, expected missing masked audit-read permission.
+  - Local DB audit summary found one recent `APPROVE` audit event for target type `WORKFLOW_TASK`, target task `f4ac40e8-a718-4658-8575-dc20245c9c4b`, actor `eabce226-4adc-4c43-ba4f-772ab21fd2ad`.
+  - Web routes `/workflow`, `/achievements`, `/dashboard`, and `/audit`: HTTP 200 SPA shell.
+- Accepted business result:
+  - Achievement transitioned `PENDING_DEPARTMENT_REVIEW -> PENDING_ARCHIVE`.
+  - Workflow task transitioned `PENDING -> APPROVED`.
+  - Workflow instance stayed `ACTIVE` and moved to current step `ARCHIVE`.
+  - Dashboard reflected the status movement.
+  - Audit append occurred, but the secretary cannot read masked audit logs through API.
+- Not covered:
+  - Reject path.
+  - Multi-level approval.
+  - Archive closure.
+  - Fee/reminder/attachment/search richer sample expansion.
+  - Authenticated browser page state beyond SPA shell route reachability.
+  - VPS/production acceptance.
+
 ## 2026-06-29 Step 49A - Phase 2 production readiness refresh / local closeout
 
 - Status: STEP_49A_PRODUCTION_READINESS_REFRESH_RECORDED_LOCAL_CLOSEOUT_ONLY.

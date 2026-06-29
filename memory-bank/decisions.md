@@ -1,5 +1,29 @@
 # Decisions
 
+## D172 - Step 49C accepts the local Step48C department-review approve path
+
+- Date: 2026-06-29.
+- Context: Step 48C left a local production-like paper achievement in `PENDING_DEPARTMENT_REVIEW` with a pending Step48C research-secretary workflow task. Step 48D confirmed the current exact-scope permission behavior. Step 49C was opened to exercise one local workflow action without production/VPS work.
+- Decision:
+  - Accept the Step48C department-review approve path locally.
+  - Treat the expected business result as:
+    - achievement `PENDING_DEPARTMENT_REVIEW -> PENDING_ARCHIVE`.
+    - workflow task `PENDING -> APPROVED`.
+    - workflow instance remains `ACTIVE` and moves to current step `ARCHIVE`.
+    - dashboard reflects `PENDING_DEPARTMENT_REVIEW=0`, `PENDING_ARCHIVE=1`, workflow `PENDING=0`, workflow `APPROVED=1` for the secretary scope.
+  - Treat `/api/audit-logs` returning HTTP 403 for the research secretary as expected permission behavior, not an audit failure.
+  - Treat local DB audit summary as sufficient to prove an append-only `APPROVE` audit event was recorded for the workflow task because the acting secretary lacks masked audit-read permission.
+  - Record that a temporary local Step48C secretary password was rotated and used only in-process for a real session; do not record the value.
+- Not complete:
+  - Reject path.
+  - Archive closure.
+  - Multi-level approval.
+  - Richer fee/reminder/attachment/search sample expansion.
+  - Authenticated browser state beyond route shell checks.
+  - VPS/production acceptance and production write acceptance.
+- Boundaries:
+  - This decision does not authorize source-code changes, schema/migration changes, Docker/compose/deploy changes, dependency changes, migration, seed/backfill, large sample creation, Step48C data deletion, deploy, push, VPS access, production DB access, real email, DirectMail runtime switching, cleanup, deletion, reset, drop, restore, prune, or secret access.
+
 ## D171 - Step 49A refreshes Phase 2 readiness and replaces old Step 41B with a narrower Step 49B entry
 
 - Date: 2026-06-29.

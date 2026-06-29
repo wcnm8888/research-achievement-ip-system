@@ -4,6 +4,48 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 49C Archive - Local Production-Like Workflow Action Acceptance - 2026-06-29
+
+- Step identity:
+  - This Step uses the existing Step 48C local production-like sample to accept one department-review workflow action.
+  - This is local production-like acceptance only. It is not VPS production acceptance, not Step 38 production acceptance, not DirectMail production runtime enablement, and not Phase 2 completion.
+  - No source code, schema, migration, Dockerfile, compose, deploy config, dependency, package, or lockfile was changed.
+  - No VPS access, production DB access, push, deploy, migration, seed/backfill, real email, DirectMail runtime change, cleanup, deletion, reset, drop, restore, prune, or Step48C data deletion occurred.
+- Starting state:
+  - Expected `HEAD` from prompt: `fc4799d`.
+  - Observed `HEAD`: `edd0335`, latest commit subject `docs: refresh phase 2 production readiness`.
+  - Tracked diff was empty at Step start.
+  - Existing untracked local artifacts remained untouched.
+- Execution:
+  - Step48C research secretary user was active with role `RESEARCH_SECRETARY`, permission count `8`, and scoped department `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - The Step48C achievement `dc91da43-e234-4b26-9550-30ba4912206f` started as `PENDING_DEPARTMENT_REVIEW`, version `2`.
+  - The Step48C workflow task `f4ac40e8-a718-4658-8575-dc20245c9c4b` started as `PENDING`, step `DEPARTMENT_REVIEW`, assigned to the Step48C research secretary.
+  - A temporary random local password was rotated for the Step48C research secretary credential and used in-process for real `/api/auth/login`; the value was not printed, recorded, committed, or stored in memory-bank.
+  - `POST /api/workflow/tasks/f4ac40e8-a718-4658-8575-dc20245c9c4b/approve` completed the local department-review action. The first run lost its response summary because a later Web-route check used the wrong in-container Web address, but the persisted state and subsequent API verification confirm the approve transaction succeeded.
+- Accepted result:
+  - Achievement status changed from `PENDING_DEPARTMENT_REVIEW` to `PENDING_ARCHIVE`.
+  - Achievement version changed from `2` to `3`.
+  - Workflow task status changed from `PENDING` to `APPROVED`; `completedAt` is set.
+  - Workflow instance remains `ACTIVE` and moved from `DEPARTMENT_REVIEW` to `ARCHIVE`.
+  - `/api/auth/me`: HTTP 200 for the research secretary.
+  - `/api/workflow/tasks/my?status=PENDING`: HTTP 200, count `0`.
+  - `/api/workflow/tasks/my?status=APPROVED`: HTTP 200, count `1`, target achievement ID `dc91da43-e234-4b26-9550-30ba4912206f`.
+  - `/api/achievements?keyword=20260629041937`: HTTP 200, total `1`, first status `PENDING_ARCHIVE`.
+  - `/api/dashboard/summary`: HTTP 200, achievement total `1`, `PENDING_DEPARTMENT_REVIEW=0`, `PENDING_ARCHIVE=1`, workflow `PENDING=0`, workflow `APPROVED=1`.
+  - `/api/audit-logs` as research secretary returned HTTP 403, expected because the secretary does not have masked audit-read permission.
+  - Local DB audit verification found an `APPROVE` event targeting the workflow task, actor `eabce226-4adc-4c43-ba4f-772ab21fd2ad`, target department `e620fd8e-7ad9-424e-b5df-97211a734358`.
+  - Web routes `/workflow`, `/achievements`, `/dashboard`, and `/audit` returned HTTP 200 SPA shells through the local production-like Web service.
+- Not covered:
+  - Reject path.
+  - Multi-level approval.
+  - Archive closure / final archive action.
+  - Fee, reminder, attachment, populated search, and broader dashboard warning sample expansion.
+  - Browser-authenticated state rendering beyond SPA shell reachability.
+  - VPS/production acceptance and production write acceptance.
+- Next:
+  - If local business-flow acceptance continues, the next local candidate is archive closure for the now `PENDING_ARCHIVE` achievement, or reject-path coverage with a separate sample.
+  - If production readiness continues, Step 49B remains the recommended production entry: VPS production GET-only acceptance authorization only.
+
 ## Current Step 49A Archive - Phase 2 Production Readiness Refresh / Local Closeout - 2026-06-29
 
 - Step identity:
