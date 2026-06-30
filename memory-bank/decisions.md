@@ -1,5 +1,27 @@
 # Decisions
 
+## D189 - Account passwords cannot be rotated without exact current-task authorization
+
+- Date: 2026-06-30.
+- Context: Step 53B found that the local `local-admin@wzunew.uk` account existed and was active, but the user-provided password no longer matched the stored credential hash. Earlier local acceptance had used temporary password rotation to obtain sessions, which made later local healthcheck acceptance fail and created operator confusion.
+- Decision:
+  - Add root `AGENTS.md` with account password safety rules.
+  - Do not modify, rotate, reset, or repair any account password unless the user explicitly authorizes the exact account and scope in the current task.
+  - Do not rotate local test account passwords as a convenience for obtaining sessions.
+  - If local login is needed, prefer a user-provided credential or an active user-provided browser session.
+  - If password repair is explicitly authorized, record only non-sensitive evidence: account email, user status, credential status, role summary, and boolean verification result.
+  - Do not print or record passwords, password hashes, cookies, session tokens, reset tokens, invite tokens, or connection strings.
+- Rationale:
+  - Password rotation breaks future local acceptance when the new password is intentionally not recorded.
+  - Local acceptance should not trade short-term convenience for hidden credential drift.
+  - Exact authorization keeps emergency local repairs possible while preventing accidental account lockout or credential loss.
+- Step 53B accepted local exception:
+  - The user explicitly authorized restoring the local `local-admin@wzunew.uk` password.
+  - Only that local Docker account credential hash and password timestamp were changed.
+  - No other account, role, session, business data, schema, migration, seed, backup, or production resource was changed.
+- Boundaries:
+  - This decision does not authorize future password changes, secret reads, `.env` / `.env.production` content reads, cookie/session/token output, backup/restore, migration, seed/backfill, VPS access, production DB access, push, deploy, cleanup, deletion, reset, drop, prune, or untracked-artifact cleanup.
+
 ## D188 - Step 53A treats backup readiness as local runbook work only
 
 - Date: 2026-06-30.

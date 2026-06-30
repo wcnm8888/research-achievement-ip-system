@@ -1,5 +1,62 @@
 # Progress
 
+## 2026-06-30 Step 53B - Local read-only healthcheck acceptance and login repair
+
+- Status: STEP_53B_LOCAL_HEALTHCHECK_ACCEPTED_WITH_LOCAL_ADMIN_PASSWORD_REPAIRED.
+- Step identity:
+  - Completed local Docker production-like read-only healthcheck acceptance.
+  - Fixed the production login 401 UI message so invalid credentials no longer show the old demo-user prompt.
+  - Added an explicit repository rule forbidding account password changes unless the exact account/scope is authorized in the current task.
+- Starting state:
+  - `HEAD`: `c8d43fe`.
+  - Latest commit subject: `docs: plan local operations backup readiness`.
+  - Tracked diff was empty before Step 53B changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was confirmed only; contents were not read or output.
+- Investigation result:
+  - The local-admin account existed, was `ACTIVE`, had an `ACTIVE` credential, and held `SYSTEM_ADMIN`.
+  - Login failed because the supplied password did not match the stored credential hash.
+  - Recent failed login attempts showed `INVALID_CREDENTIALS`.
+  - The screenshot's demo-user message came from frontend generic 401 mapping, not from demo-user auth being active.
+- Implemented:
+  - `apps/web/src/App.tsx`: added login-specific unauthorized message mapping.
+  - `apps/web/src/App.test.tsx`: added regression coverage.
+  - `AGENTS.md`: added account password safety rules.
+- Authorized local DB repair:
+  - Restored the local `local-admin@wzunew.uk` credential hash after the user explicitly authorized that exact account.
+  - Verification reported the account and credential active, `SYSTEM_ADMIN` role present, and supplied-password hash match true.
+  - No password, hash, cookie, token, session value, or connection string was output or recorded.
+- Local health acceptance:
+  - Docker compose `postgres`, `api`, and `web`: healthy.
+  - Direct API health: HTTP 200, `status=ok`.
+  - Web root: HTTP 200.
+  - Web `/healthz`: HTTP 200.
+  - Web `/api/health` proxy: HTTP 200, `status=ok`.
+  - Anonymous `/api/auth/me`: HTTP 401.
+  - Session-only local login: HTTP 200.
+  - Authenticated GET-only smoke:
+    - `/api/auth/me`: HTTP 200.
+    - `/api/dashboard/summary`: HTTP 200.
+    - `/api/achievements`: HTTP 200.
+    - `/api/fees/warnings`: HTTP 200.
+    - `/api/workflow/tasks/my`: HTTP 200.
+    - `/api/search?keyword=healthcheck&targetTypes=ACHIEVEMENT`: HTTP 200.
+    - `/api/departments/tree`: HTTP 200.
+- Boundaries observed:
+  - No `.env` or `.env.production` contents were read or output.
+  - No backup artifact was created, overwritten, or deleted.
+  - No restore/drop/reset/prune/delete/clean command was run.
+  - No migration, seed, backfill, VPS access, production DB access, push, deploy, package/lockfile change, or untracked-artifact cleanup occurred.
+  - Only the explicitly authorized local-admin credential hash was changed in local Docker DB.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App api-client`: passed, 3 files / 42 tests.
+  - `corepack pnpm --filter @research-ip/web build`: passed with the existing Vite large-chunk warning.
+  - Rebuilt the local Docker production-like `web` image and recreated only the local `web` container so the running page serves the new frontend bundle.
+  - After recreate, `web` returned to healthy and local health endpoints stayed HTTP 200.
+  - Compose reported an existing orphan container warning; no cleanup or `--remove-orphans` was run.
+- Remaining:
+  - Search DTO optional-array behavior can be fixed separately; Step 53B used an explicit valid `targetTypes` parameter for smoke.
+
 ## 2026-06-30 Step 53A - Local operations and backup readiness runbook
 
 - Status: STEP_53A_LOCAL_OPERATIONS_BACKUP_READINESS_DOCUMENTED.

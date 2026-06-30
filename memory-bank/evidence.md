@@ -1,5 +1,83 @@
 # Evidence
 
+## 2026-06-30 Step 53B - Local healthcheck acceptance and login repair evidence
+
+- Purpose:
+  - Investigate why the local production sign-in page rejected `local-admin@wzunew.uk`.
+  - Fix the misleading production login error text.
+  - Restore the explicitly authorized local-admin password.
+  - Complete local Docker production-like read-only healthcheck acceptance.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `c8d43fe`.
+  - Latest commit subject: `docs: plan local operations backup readiness`.
+  - Tracked diff was empty before Step 53B changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, moved, or modified.
+- Environment boundary evidence:
+  - `.env.production` existence was confirmed.
+  - `.env.production` contents were not read or output.
+  - No `.env` values were read or output.
+- Symptom evidence:
+  - User screenshot showed production sign-in with `local-admin@wzunew.uk` and an error message equivalent to "please select or switch demo user".
+  - API login with the supplied local credential initially returned HTTP 401.
+  - Frontend code investigation found that generic API 401 mapping still used the old demo-user message, so production login invalid-credential errors were misleading.
+- Local DB read-only investigation evidence:
+  - `local-admin@wzunew.uk` existed in local Docker production-like DB.
+  - User status: `ACTIVE`.
+  - Credential status: `ACTIVE`.
+  - Role summary: `SYSTEM_ADMIN`.
+  - Recent failed login attempts showed `INVALID_CREDENTIALS`.
+  - Local password verification against the stored hash returned `false` before repair.
+  - No password hash, password, cookie, session token, reset token, invite token, or connection string was output.
+- Local password repair evidence:
+  - User explicitly authorized restoring the `local-admin@wzunew.uk` password.
+  - Updated only the local Docker production-like credential hash and `passwordUpdatedAt` for that account.
+  - Post-repair verification:
+    - User status: `ACTIVE`.
+    - Credential status: `ACTIVE`.
+    - Role summary: `SYSTEM_ADMIN`.
+    - Supplied-password hash match: `true`.
+  - No other account, role, permission, session, business row, schema, migration, seed, backup artifact, or production resource was changed.
+- Code evidence:
+  - `apps/web/src/App.tsx` adds `mapLoginErrorMessage` and uses it in production login failure handling.
+  - Login-specific HTTP 401 now maps to an account/password error instead of the old demo-user switching prompt.
+  - `apps/web/src/App.test.tsx` covers the production login 401 mapping and preserves non-401 behavior.
+  - `AGENTS.md` records the account password safety rule for future agents.
+- Local Docker health evidence:
+  - `docker compose -f docker-compose.production.yml ps` showed `postgres`, `api`, and `web` healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200, `status=ok`.
+  - `GET http://127.0.0.1:18081/`: HTTP 200.
+  - `GET http://127.0.0.1:18081/healthz`: HTTP 200.
+  - `GET http://127.0.0.1:18081/api/health`: HTTP 200, `status=ok`.
+  - Anonymous `GET http://127.0.0.1:18081/api/auth/me`: HTTP 401.
+- Authenticated GET-only smoke evidence:
+  - Local login for session-only smoke: HTTP 200.
+  - Cookie/session value was used only in memory and was not printed or recorded.
+  - Authenticated `GET /api/auth/me`: HTTP 200.
+  - Authenticated `GET /api/dashboard/summary`: HTTP 200.
+  - Authenticated `GET /api/achievements`: HTTP 200.
+  - Authenticated `GET /api/fees/warnings`: HTTP 200.
+  - Authenticated `GET /api/workflow/tasks/my`: HTTP 200.
+  - Authenticated `GET /api/search?keyword=healthcheck&targetTypes=ACHIEVEMENT`: HTTP 200.
+  - Authenticated `GET /api/departments/tree`: HTTP 200.
+- Search smoke note:
+  - `GET /api/search?keyword=healthcheck` returned HTTP 400 because current runtime validation requires a valid `targetTypes` value.
+  - The accepted health smoke used `targetTypes=ACHIEVEMENT`.
+  - Fixing optional-array validation is deferred to a separate source-code Step.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App api-client`: passed, 3 files / 42 tests.
+  - `corepack pnpm --filter @research-ip/web build`: passed with the existing Vite large-chunk warning.
+  - Local Docker `web` image rebuild completed after the first command timed out; no cleanup was run.
+  - `docker compose -f docker-compose.production.yml up -d web`: recreated only local `web`.
+  - `web` returned to healthy.
+  - Post-recreate local HTTP checks returned HTTP 200 for direct API health, Web root, Web `/healthz`, and Web `/api/health`.
+  - Compose reported an existing orphan container warning; no `--remove-orphans` cleanup was run.
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No `.env` or `.env.production` contents were read or output.
+  - No password, password hash, cookie, token, secret, AccessKey, private key, full connection string, reset token, invite token, or session value was recorded.
+  - No backup, `pg_dump`, `pg_restore`, restore, drop, reset, prune, delete, clean, migration, seed, backfill, VPS access, production DB access, push, deploy, or untracked-artifact cleanup occurred.
+
 ## 2026-06-30 Step 53A - Local operations and backup readiness runbook evidence
 
 - Purpose:

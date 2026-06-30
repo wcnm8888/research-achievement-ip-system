@@ -6,6 +6,7 @@ import {
   loginAndRefreshCurrentUser,
   logoutAndClearCurrentUser,
   mapAuthCheckErrorToStatus,
+  mapLoginErrorMessage,
   navItems,
   shouldShowDemoIdentityControls,
 } from "./App";
@@ -65,6 +66,23 @@ describe("production auth mode helpers", () => {
     expect(mapAuthCheckErrorToStatus(unauthorized)).toBe("anonymous");
     expect(mapAuthCheckErrorToStatus(forbidden)).toBe("error");
     expect(mapAuthCheckErrorToStatus(new Error("network"))).toBe("error");
+  });
+
+  it("maps production login 401 to an account-password error", () => {
+    const unauthorized: ApiError = {
+      kind: "unauthorized",
+      status: 401,
+      message: "请选择或切换演示用户",
+    };
+    const forbidden: ApiError = {
+      kind: "forbidden",
+      status: 403,
+      message: "当前角色无权限",
+    };
+
+    expect(mapLoginErrorMessage(unauthorized)).toBe("邮箱或密码错误。");
+    expect(mapLoginErrorMessage(forbidden)).toBe("当前角色无权限");
+    expect(mapLoginErrorMessage(new Error("network"))).toBe("Login failed.");
   });
 
   it("shows account management navigation only to system config users", () => {

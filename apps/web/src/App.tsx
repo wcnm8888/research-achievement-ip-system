@@ -147,6 +147,14 @@ export const loginAndRefreshCurrentUser = async (
   return response.user;
 };
 
+export const mapLoginErrorMessage = (error: unknown): string => {
+  if (isApiError(error) && error.kind === "unauthorized") {
+    return "邮箱或密码错误。";
+  }
+
+  return isApiError(error) ? error.message : "Login failed.";
+};
+
 export const logoutAndClearCurrentUser = async (authClient: AuthClient): Promise<null> => {
   await authClient.logout();
   return null;
@@ -234,7 +242,7 @@ export function App() {
     } catch (error) {
       setAuthUser(null);
       setAuthStatus(mapAuthCheckErrorToStatus(error));
-      setAuthError(isApiError(error) ? error.message : "Login failed.");
+      setAuthError(mapLoginErrorMessage(error));
     } finally {
       setLoginSubmitting(false);
     }

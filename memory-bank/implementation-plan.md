@@ -4,6 +4,59 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 53B Archive - Local read-only healthcheck acceptance and login repair - 2026-06-30
+
+- Step identity:
+  - This Step completed local Docker production-like healthcheck acceptance after repairing the explicitly authorized local-admin password mismatch.
+  - It also fixed a production login UI message bug where login 401 errors reused the old demo-user prompt.
+  - It added a repository rule forbidding account password changes unless the exact account and scope are explicitly authorized in the current task.
+- Starting state:
+  - `HEAD`: `c8d43fe`.
+  - Latest commit: `docs: plan local operations backup readiness`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was confirmed only; contents were not read or output.
+- Root cause:
+  - API returned HTTP 401 because the supplied local-admin password did not match the stored credential hash.
+  - The local-admin account itself existed, was `ACTIVE`, had an `ACTIVE` credential, and held `SYSTEM_ADMIN`.
+  - The production login page displayed the misleading old demo message because `handleLogin` surfaced the generic API 401 text from `mapApiErrorMessage`.
+  - Search health smoke needed an explicit valid `targetTypes=ACHIEVEMENT` parameter because current Search DTO validation rejects omitted targetTypes in this runtime.
+- Implemented:
+  - Added production login-specific 401 mapping in `apps/web/src/App.tsx`: login failures now show an account/password error instead of the demo-user switching prompt.
+  - Added a Web regression test for the production login 401 message.
+  - Added root `AGENTS.md` with account password safety rules:
+    - Do not modify any account password unless the user explicitly authorizes the exact account and scope in the current task.
+    - Do not rotate local test account passwords as a convenience for obtaining sessions.
+    - Do not store or print passwords, hashes, cookies, session tokens, reset tokens, or invite tokens.
+- Local password repair:
+  - User explicitly authorized restoring the local `local-admin@wzunew.uk` password.
+  - Updated only that local Docker production-like account credential hash and `passwordUpdatedAt`.
+  - Did not output old hash, new hash, password, cookie, session token, or connection string.
+  - Did not modify other accounts, roles, permissions, sessions, business data, schema, migrations, seed, or backup artifacts.
+- Local healthcheck acceptance:
+  - `postgres`, `api`, and `web` reported healthy.
+  - API direct health returned HTTP 200 and `status=ok`.
+  - Web root returned HTTP 200.
+  - Web `/healthz` returned HTTP 200.
+  - Web `/api/health` proxy returned HTTP 200 and `status=ok`.
+  - Anonymous `GET /api/auth/me` returned HTTP 401.
+  - Local login for session-only smoke returned HTTP 200.
+  - Authenticated GET-only smoke returned HTTP 200 for:
+    - `/api/auth/me`.
+    - `/api/dashboard/summary`.
+    - `/api/achievements`.
+    - `/api/fees/warnings`.
+    - `/api/workflow/tasks/my`.
+    - `/api/search?keyword=healthcheck&targetTypes=ACHIEVEMENT`.
+    - `/api/departments/tree`.
+- Boundaries:
+  - No `.env` or `.env.production` contents were read or output.
+  - No password, cookie, token, secret, AccessKey, private key, full connection string, or password hash was recorded.
+  - No backup, `pg_dump`, `pg_restore`, restore, drop, reset, prune, delete, clean, migration, seed, backfill, VPS access, production DB access, push, deploy, or untracked-artifact cleanup occurred.
+- Next:
+  - Future local healthcheck scripts should use the explicit `targetTypes=ACHIEVEMENT` search smoke parameter until Search DTO optional-array behavior is fixed separately.
+  - Any future password repair must repeat explicit account/scope authorization and record only non-sensitive evidence.
+
 ## Current Step 53A Archive - Local operations and backup readiness runbook - 2026-06-30
 
 - Step identity:
