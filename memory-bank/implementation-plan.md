@@ -4,6 +4,39 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 56C Archive - Voucher attachment Web UI integration - 2026-06-30
+
+- Step identity:
+  - This Step integrates the Step 56B fee voucher attachment backend API into Web Fees detail UI/client code.
+  - Scope is `apps/web` Fees attachment client/UI, existing Web attachment helper reuse, focused Web tests, and memory-bank updates.
+  - No backend behavior, Prisma schema, migration, seed/backfill, dependency/package/lockfile, production/VPS, Docker production-like acceptance, real business attachment operation, business-data write, account/password work, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked artifact handling occurred.
+- Implemented Web contract:
+  - List fee voucher attachments through `GET /fees/:feeRecordId/voucher-attachments`.
+  - Upload fee voucher attachments through `POST /fees/:feeRecordId/voucher-attachments`.
+  - Read attachment detail metadata through `GET /fees/:feeRecordId/voucher-attachments/:attachmentId`.
+  - Download through `GET /fees/:feeRecordId/voucher-attachments/:attachmentId/download`.
+- UI behavior:
+  - Fees detail drawer now shows a fee voucher attachment section.
+  - A fee record may show zero or more voucher attachments.
+  - Section covers loading, empty, error, upload pending, upload success, upload failure, detail metadata, and download failure states.
+  - Upload uses the existing attachment file validation and multipart payload shape.
+  - Download uses the authenticated backend blob route; backend denial is surfaced as non-sensitive UI copy.
+- Permission behavior:
+  - Upload entry is management-mode only and requires `fee:manage_department` on the current Web auth context.
+  - Read-only metadata is available to fee read, manage, or review users; search readonly mode remains metadata-only.
+  - Finance reviewers are read-only by default and do not see the upload entry.
+  - Final department scope and download authorization remain backend-owned.
+- Tests:
+  - Fees tests cover client route paths, multipart payload shape, download route, no-call guards, upload/read visibility, reviewer read-only behavior, and updated boundary copy.
+  - AchievementDetail tests still pass after exporting reusable safe attachment download helpers.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Fees`: PASS, 1 file / 48 tests.
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail Fees`: PASS, 2 files / 77 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Deferred:
+  - Docker/browser real upload/list/detail/download acceptance remains a later explicitly scoped non-production Step.
+  - Production/VPS rollout remains out of scope.
+
 ## Current Step 56B Archive - Voucher attachment backend-only API implementation - 2026-06-30
 
 - Step identity:

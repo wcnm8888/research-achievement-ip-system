@@ -1,5 +1,23 @@
 # Decisions
 
+## D204 - Fee voucher Web UI reuses existing attachment client patterns
+
+- Date: 2026-06-30.
+- Context: Step 56C connects the Fees UI to the Step 56B backend-only voucher attachment API.
+- Decision:
+  - Keep Step 56C Web-only and do not change backend behavior, Prisma schema, role seeds, package files, or production configuration.
+  - Add fee voucher attachment client helpers in the Fees Web module for list, upload, detail metadata, and download routes.
+  - Reuse the existing achievement attachment helper patterns for multipart form data, frontend file validation, safe metadata view models, download naming, blob save, and attachment error display.
+  - Show upload only in management detail mode for users with `fee:manage_department`.
+  - Show metadata as read-only for fee read, manage, or review users; finance reviewers remain read-only by default.
+  - Let the backend decide download authorization and show a non-sensitive error if the backend denies the request.
+- Rationale:
+  - The backend already owns department scope, relation binding, and download policy.
+  - Reusing existing attachment helpers keeps the Web integration small and consistent with AchievementDetail.
+  - Keeping review users read-only matches Step 56A/56B least-privilege scope.
+- Boundaries:
+  - This decision does not authorize backend changes, schema changes, migrations, seeds, production/VPS access, real business attachment operations, account/password work, `.env` / `.env.production` content reads, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling.
+
 ## D203 - Fee voucher backend uses Attachment download permission plus fee visibility
 
 - Date: 2026-06-30.

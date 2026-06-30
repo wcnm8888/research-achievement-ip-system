@@ -8,11 +8,14 @@ import {
   buildFeeQuery,
   buildFeeReviewActionPayload,
   buildFeeStatusActionPayload,
+  buildFeeVoucherAttachmentFormData,
   buildMarkFeePaidPayload,
   canManageDepartmentFees,
   canMarkFeePaid,
+  canReadFeeVoucherAttachments,
   canReviewDepartmentFees,
   canReviewFee,
+  canUploadFeeVoucherAttachments,
   canWaiveOrCancelFee,
   classifyFeeWarningRecords,
   cancelFee,
@@ -20,9 +23,12 @@ import {
   createFeeRecord,
   createFeeRecordForDemoUser,
   deriveFeeWarningSummary,
+  downloadFeeVoucherAttachment,
   feeVoucherAttachmentBoundary,
   fetchFeeDetail,
   fetchFeeRecords,
+  fetchFeeVoucherAttachmentDetail,
+  fetchFeeVoucherAttachments,
   getFeeDetailState,
   getFeeListState,
   getFeeReviewStatusLabel,
@@ -41,6 +47,9 @@ import {
   shouldShowFeeDetailMarkPaidAction,
   shouldShowFeeDetailReviewActions,
   shouldShowFeeDetailStatusActions,
+  shouldLoadFeeVoucherAttachmentDetail,
+  shouldLoadFeeVoucherAttachments,
+  uploadFeeVoucherAttachment,
   validateCreateFeeForm,
   validateFeeReviewActionForm,
   validateFeeStatusActionForm,
@@ -48,7 +57,7 @@ import {
   waiveFee,
   waiveFeeForDemoUser,
 } from "./Fees";
-import type { FeeRecord } from "./types";
+import type { AttachmentMetadata, FeeRecord } from "./types";
 
 const baseFee: FeeRecord = {
   id: "fee-id",
@@ -68,6 +77,25 @@ const baseFee: FeeRecord = {
   updatedById: "updater-id",
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-02T00:00:00.000Z",
+  archivedAt: null,
+};
+
+const baseFeeAttachment: AttachmentMetadata = {
+  id: "attachment-id",
+  relationType: "FEE_RECORD",
+  relationId: "fee-id",
+  fileName: "receipt.pdf",
+  mimeType: "application/pdf",
+  sizeBytes: 1024,
+  storageProvider: "LOCAL",
+  originalName: "receipt.pdf",
+  storedName: null,
+  version: 1,
+  uploaderId: "uploader-id",
+  secretLevel: "INTERNAL",
+  status: "ACTIVE",
+  createdAt: "2026-06-01T00:00:00.000Z",
+  updatedAt: "2026-06-01T00:00:00.000Z",
   archivedAt: null,
 };
 
@@ -177,6 +205,105 @@ describe("fetchFeeDetail", () => {
     expect(client.post).not.toHaveBeenCalled();
     expect(client.patch).not.toHaveBeenCalled();
     expectNoAttachmentOrWarningsCalls(client);
+  });
+});
+
+describe("fee voucher attachment client", () => {
+  it("lists and reads fee voucher attachment metadata through Step 56B routes", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce([baseFeeAttachment])
+      .mockResolvedValueOnce(baseFeeAttachment) as unknown as ApiClient["get"];
+    const client: ApiClient = {
+      get,
+      post: vi.fn(),
+      patch: vi.fn(),
+    };
+
+    await expect(fetchFeeVoucherAttachments(client, "fee-id")).resolves.toEqual([
+      baseFeeAttachment,
+    ]);
+    await expect(
+      fetchFeeVoucherAttachmentDetail(client, "fee-id", "attachment-id"),
+    ).resolves.toEqual(baseFeeAttachment);
+
+    expect(client.get).toHaveBeenCalledWith("/fees/fee-id/voucher-attachments", {
+      take: 50,
+    });
+    expect(client.get).toHaveBeenCalledWith(
+      "/fees/fee-id/voucher-attachments/attachment-id",
+    );
+  });
+
+  it("uploads fee voucher attachments as multipart form data", async () => {
+    const postForm = vi.fn().mockResolvedValue(baseFeeAttachment) as unknown as NonNullable<
+      ApiClient["postForm"]
+    >;
+    const client: ApiClient = {
+      get: vi.fn(),
+      post: vi.fn(),
+      patch: vi.fn(),
+      postForm,
+    };
+    const file = new File(["synthetic"], "receipt.pdf", { type: "application/pdf" });
+    const formData = buildFeeVoucherAttachmentFormData({
+      file,
+      displayName: " receipt ",
+      secretLevel: "INTERNAL",
+    });
+
+    expect(formData.get("file")).toBe(file);
+    expect(formData.get("displayName")).toBe("receipt");
+    expect(formData.get("secretLevel")).toBe("INTERNAL");
+
+    await expect(
+      uploadFeeVoucherAttachment(client, "fee-id", {
+        file,
+        displayName: "receipt",
+        secretLevel: "INTERNAL",
+      }),
+    ).resolves.toEqual(baseFeeAttachment);
+    expect(postForm).toHaveBeenCalledWith(
+      "/fees/fee-id/voucher-attachments",
+      expect.any(FormData),
+    );
+  });
+
+  it("downloads fee voucher attachment blobs through the authenticated route", async () => {
+    const blob = new Blob(["synthetic"], { type: "application/pdf" });
+    const downloadBlob = vi.fn().mockResolvedValue(blob) as unknown as NonNullable<
+      ApiClient["downloadBlob"]
+    >;
+    const client: ApiClient = {
+      get: vi.fn(),
+      post: vi.fn(),
+      patch: vi.fn(),
+      downloadBlob,
+    };
+
+    await expect(
+      downloadFeeVoucherAttachment(client, "fee-id", "attachment-id"),
+    ).resolves.toBe(blob);
+    expect(downloadBlob).toHaveBeenCalledWith(
+      "/fees/fee-id/voucher-attachments/attachment-id/download",
+    );
+  });
+
+  it("does not issue fee voucher attachment calls without required ids or demo user", async () => {
+    const client = createClient([]);
+
+    await expect(fetchFeeVoucherAttachments(client, "   ")).resolves.toEqual([]);
+    await expect(fetchFeeVoucherAttachmentDetail(client, "fee-id", "   ")).resolves.toBeNull();
+    await expect(downloadFeeVoucherAttachment(client, "fee-id", "")).resolves.toBeNull();
+    expect(shouldLoadFeeVoucherAttachments(null, "fee-id")).toBe(false);
+    expect(shouldLoadFeeVoucherAttachments("demo-user-id", "fee-id")).toBe(true);
+    expect(
+      shouldLoadFeeVoucherAttachmentDetail("demo-user-id", "fee-id", "attachment-id"),
+    ).toBe(true);
+    expect(
+      shouldLoadFeeVoucherAttachmentDetail("demo-user-id", "fee-id", "   "),
+    ).toBe(false);
+    expect(client.get).not.toHaveBeenCalled();
   });
 });
 
@@ -560,6 +687,27 @@ describe("fee write visibility", () => {
     ).toBe(false);
     expect(canManageDepartmentFees(undefined)).toBe(false);
     expect(
+      canUploadFeeVoucherAttachments({
+        permissionCodes: ["fee:manage_department"],
+      }),
+    ).toBe(true);
+    expect(
+      canUploadFeeVoucherAttachments({
+        permissionCodes: ["fee:review_department"],
+      }),
+    ).toBe(false);
+    expect(
+      canReadFeeVoucherAttachments({
+        permissionCodes: ["fee:read_department"],
+      }),
+    ).toBe(true);
+    expect(
+      canReadFeeVoucherAttachments({
+        permissionCodes: ["fee:review_department"],
+      }),
+    ).toBe(true);
+    expect(canReadFeeVoucherAttachments(undefined, "search-readonly")).toBe(true);
+    expect(
       shouldShowFeeDetailMarkPaidAction(baseFee, "management", false),
     ).toBe(false);
     expect(shouldShowFeeDetailMarkPaidAction(baseFee, "management", true)).toBe(true);
@@ -625,23 +773,20 @@ describe("fee write visibility", () => {
 });
 
 describe("voucher attachment boundary", () => {
-  it("states voucherNo is a voucher number, not a voucher attachment feature", () => {
-    expect(feeVoucherAttachmentBoundary.title).toBe("凭证附件能力边界");
-    expect(feeVoucherAttachmentBoundary.description).toContain("voucherNo");
-    expect(feeVoucherAttachmentBoundary.description).toContain("凭证编号");
-    expect(feeVoucherAttachmentBoundary.description).toContain("不等于凭证附件文件");
-    expect(feeVoucherAttachmentBoundary.description).toContain("不提供费用凭证附件上传/下载");
-    expect(feeVoucherAttachmentBoundary.description).toContain("后续单独确认费用凭证附件接口与数据路线");
+  it("states the fee voucher attachment API integration boundary", () => {
+    expect(feeVoucherAttachmentBoundary.title).toBe("费用凭证附件");
+    expect(feeVoucherAttachmentBoundary.description).toContain("后端费用凭证附件 API");
+    expect(feeVoucherAttachmentBoundary.description).toContain("metadata");
+    expect(feeVoucherAttachmentBoundary.description).toContain("上传多个文件");
+    expect(feeVoucherAttachmentBoundary.description).toContain("认证路由下载");
   });
 
-  it("does not claim fake voucher attachment success or download capability", () => {
+  it("keeps the boundary copy free of fake local-only capability claims", () => {
     const copy = `${feeVoucherAttachmentBoundary.title} ${feeVoucherAttachmentBoundary.description}`;
 
-    expect(copy).not.toContain("上传成功");
-    expect(copy).not.toContain("可下载凭证文件");
-    expect(copy).not.toContain("凭证文件已上传");
+    expect(copy).not.toContain("本地假数据");
     expect(copy).not.toContain("下载地址");
-    expect(copy).not.toContain("上传控件");
+    expect(copy).not.toContain("绕过权限");
   });
 });
 

@@ -1,5 +1,34 @@
 # Evidence
 
+## 2026-06-30 Step 56C - Voucher attachment Web UI integration evidence
+
+- Purpose:
+  - Add Web/client integration for fee voucher attachments against the Step 56B backend API.
+  - Keep backend behavior, schema, production/VPS, real business attachment operations, and Docker production-like acceptance out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `d0f04a2`.
+  - Latest commit subject: `feat(api): add fee voucher attachment endpoints`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 56C implementation.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - `apps/web/src/Fees.tsx` now defines fee voucher attachment client helpers for list, upload, detail metadata, and download.
+  - `apps/web/src/Fees.tsx` adds the Fees detail drawer voucher attachment section with loading, empty, error, upload, success, failure, metadata detail, and download-denied display states.
+  - `apps/web/src/AchievementDetail.tsx` exports existing safe download filename and blob-save helpers for Web reuse.
+  - `apps/web/src/types.ts` adds a fee voucher upload input alias reusing the existing attachment upload shape.
+  - `apps/web/src/Fees.test.ts` covers route paths, multipart form data, blob download route, no-call guards, upload visibility, metadata visibility, read-only reviewer behavior, and boundary copy.
+- Verification evidence:
+  - `corepack pnpm --filter @research-ip/web test -- Fees`: PASS, 1 file / 48 tests.
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail Fees`: PASS, 2 files / 77 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS; only existing Windows line-ending warnings were printed.
+  - Added-lines forbidden-field/credential scan: PASS; no forbidden attachment storage field, credential marker, private key marker, access-key-like value, connection string, or cookie/token/password assignment was found in added lines.
+- Boundaries observed:
+  - No `apps/api` backend behavior was modified.
+  - No Prisma schema, migration, seed, backfill, dependency/package/lockfile, production/VPS, Docker production-like acceptance, account/password, business-data, or real business attachment operation occurred.
+  - No password, cookie, token, credential value, private key, connection string, raw session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+  - No cleanup, deletion, reset, drop, prune, push, deploy, or existing untracked-artifact operation occurred.
+
 ## 2026-06-30 Step 56B - Voucher attachment backend-only API implementation evidence
 
 - Purpose:

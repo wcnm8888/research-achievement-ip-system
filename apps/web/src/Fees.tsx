@@ -14,9 +14,21 @@ import {
   Table,
   Tag,
   Typography,
+  message,
 } from "antd";
 import type { TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  buildAchievementAttachmentFormData,
+  buildAttachmentMetadataViewModel,
+  formatAttachmentSize,
+  getAttachmentDownloadFileName,
+  mapAttachmentDownloadErrorToDisplay,
+  mapAttachmentMetadataErrorToDisplay,
+  mapAttachmentUploadErrorToDisplay,
+  saveAttachmentBlob,
+  validateAttachmentUploadFile,
+} from "./AchievementDetail";
 import {
   createApiClient,
   isApiError,
@@ -27,6 +39,9 @@ import {
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import type {
   ApproveFeeReviewInput,
+  AttachmentDetailMetadata,
+  AttachmentListQuery,
+  AttachmentMetadata,
   ChangeFeeStatusInput,
   CreateFeeRecordInput,
   FeeQuery,
@@ -38,6 +53,8 @@ import type {
   MarkFeePaidInput,
   PayStatusCode,
   RejectFeeReviewInput,
+  SecretLevelCode,
+  UploadFeeVoucherAttachmentInput,
 } from "./types";
 
 type Loadable<T> = {
@@ -129,15 +146,16 @@ export type FeeWarningClassification = {
 type FeeDetailContentMode = "management" | "search-readonly";
 
 const defaultTake = 100;
+const feeVoucherAttachmentDefaultTake = 50;
 const dueSoonDays = 30;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const amountPattern = /^\d+(?:\.\d{1,2})?$/;
 const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
 
 export const feeVoucherAttachmentBoundary = {
-  title: "凭证附件能力边界",
+  title: "费用凭证附件",
   description:
-    "voucherNo 仅表示凭证编号，不等于凭证附件文件。Step 15 不提供费用凭证附件上传/下载，不生成下载入口；真实附件能力需要后续单独确认费用凭证附件接口与数据路线。",
+    "本区块接入后端费用凭证附件 API，绑定当前费用记录，可读取安全 metadata、上传多个文件并通过认证路由下载；权限、范围与脱敏仍以后端为准。",
 };
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
@@ -601,8 +619,8 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         <PermissionHint description="当前没有 X-Demo-User-Id，费用管理不会发起业务请求。选择科研秘书或具备费用读取权限的演示上下文后，列表会统一由后端权限策略裁剪。" />
         <BoundaryNotice
           title="等待演示上下文"
-          description="Step 15 已收口费用台账、详情、前端派生预警和写入口前端准备；当前无用户时不发业务请求，也不触发真实写入或凭证附件上传/下载。"
-          step="Step 15D"
+          description="当前无用户时不发业务请求，也不触发费用写入或凭证附件请求；选择具备费用权限的上下文后才读取后端数据。"
+          step="Step 56C"
         />
       </Space>
     );
@@ -630,7 +648,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           </Space>
         }
       />
-      <PermissionHint description="Step 15D 收口费用凭证附件边界：voucherNo 仅是凭证编号；费用凭证附件上传/下载、真实写入验收、独立 warnings API 和 Step 14 DataGap 均需后续单独确认。" />
+      <PermissionHint description="费用台账、详情、凭证附件与前端派生预警均以后端返回和权限范围为准；独立 warnings API 与生产验收不在本步范围内。" />
 
       <Card className="shell-card" title="基础预警摘要" extra={<Tag>前端派生</Tag>}>
         <Row gutter={[16, 16]}>
@@ -768,10 +786,13 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
       <BoundaryNotice
         title={feeVoucherAttachmentBoundary.title}
         description={feeVoucherAttachmentBoundary.description}
-        step="Step 15 overall: DONE_WITHOUT_REAL_WRITE_RISK"
+        step="Step 56C: backend API integrated in Web"
       />
       <FeeDetailDrawer
+        apiClient={apiClient}
+        authUser={authUser}
         detail={feeDetail}
+        demoUserId={demoUserId}
         feeRecordId={selectedFeeId}
         canManageFees={canManageFees}
         canReviewFees={canReviewFees}
@@ -825,7 +846,10 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
 }
 
 function FeeDetailDrawer({
+  apiClient,
+  authUser,
   detail,
+  demoUserId,
   feeRecordId,
   canManageFees,
   canReviewFees,
@@ -835,7 +859,10 @@ function FeeDetailDrawer({
   onClose,
   onRetry,
 }: {
+  apiClient: ApiClient;
+  authUser?: FeePermissionContext;
   detail: Loadable<FeeRecord>;
+  demoUserId: string | null;
   feeRecordId: string | null;
   canManageFees: boolean;
   canReviewFees: boolean;
@@ -871,6 +898,9 @@ function FeeDetailDrawer({
       >
         {detail.data ? (
           <FeeDetailContent
+            apiClient={apiClient}
+            authUser={authUser}
+            demoUserId={demoUserId}
             mode="management"
             record={detail.data}
             canManageFees={canManageFees}
@@ -949,13 +979,23 @@ export function ReadonlyFeeDetailDrawer({
         emptyText={state.emptyText}
         onRetry={loadDetail}
       >
-        {detail.data ? <FeeDetailContent mode="search-readonly" record={detail.data} /> : null}
+        {detail.data ? (
+          <FeeDetailContent
+            apiClient={apiClient}
+            demoUserId={demoUserId}
+            mode="search-readonly"
+            record={detail.data}
+          />
+        ) : null}
       </DataState>
     </Drawer>
   );
 }
 
 function FeeDetailContent({
+  apiClient,
+  authUser,
+  demoUserId,
   mode = "management",
   record,
   canManageFees = true,
@@ -964,6 +1004,9 @@ function FeeDetailContent({
   onOpenStatusAction,
   onOpenReviewAction,
 }: {
+  apiClient: ApiClient;
+  authUser?: FeePermissionContext;
+  demoUserId: string | null;
   mode?: FeeDetailContentMode;
   record: FeeRecord;
   canManageFees?: boolean;
@@ -984,8 +1027,8 @@ function FeeDetailContent({
         message={mode === "search-readonly" ? "检索中心只读费用详情" : "只读费用详情"}
         description={
           mode === "search-readonly"
-            ? "本区域只展示 GET /fees/:id 已返回字段；不会提供标记缴费、新增费用、附件上传下载、warnings API 或任何写入口。"
-            : "本区域只展示 GET /fees/:id 已返回字段；voucherNo 仅为凭证编号，不补造成果标题、附件、审批、审计或凭证文件能力。"
+            ? "本区域只展示 GET /fees/:id 已返回字段与可读附件 metadata；不会提供标记缴费、新增费用、warnings API 或任何写入口。"
+            : "本区域只展示后端已返回字段与费用凭证附件 metadata；费用写入、附件下载和范围判断均以后端权限为准。"
         }
       />
       <Alert
@@ -1019,6 +1062,14 @@ function FeeDetailContent({
         <Descriptions.Item label="凭证编号">{record.voucherNo ?? "未登记"}</Descriptions.Item>
       </Descriptions>
 
+      <FeeVoucherAttachmentSection
+        apiClient={apiClient}
+        authUser={authUser}
+        demoUserId={demoUserId}
+        feeRecordId={record.id}
+        mode={mode}
+      />
+
       {showReviewActions ? (
         <Alert
           showIcon
@@ -1043,7 +1094,7 @@ function FeeDetailContent({
           showIcon
           type="warning"
           message="可标记缴费"
-          description="该费用当前处于待缴或逾期状态，可登记 paidDate / voucherNo 凭证编号后调用现有 POST /fees/:id/mark-paid。本轮浏览器验收不执行真实提交，也不上传或下载凭证附件。"
+          description="该费用当前处于待缴或逾期状态，可打开标记缴费表单；真实提交由用户显式操作触发，附件能力在上方独立区块处理。"
           action={
             <Button size="small" onClick={() => onOpenMarkPaid?.(record)}>
               标记缴费
@@ -1055,7 +1106,7 @@ function FeeDetailContent({
           showIcon
           type="info"
           message="检索中心只读边界"
-          description="本视图只补齐费用检索结果的只读详情联动；标记缴费、创建费用、真实凭证附件、warnings API、审计日志和系统配置均不在 Step 16D 范围内。"
+          description="本视图只补齐费用检索结果的只读详情联动；标记缴费、创建费用、warnings API、审计日志和系统配置均不在本步范围内。"
         />
       ) : (
         <Alert
@@ -1096,6 +1147,484 @@ function FeeDetailContent({
         </Descriptions.Item>
       </Descriptions>
     </Space>
+  );
+}
+
+function FeeVoucherAttachmentSection({
+  apiClient,
+  authUser,
+  demoUserId,
+  feeRecordId,
+  mode,
+}: {
+  apiClient: ApiClient;
+  authUser?: FeePermissionContext;
+  demoUserId: string | null;
+  feeRecordId: string;
+  mode: FeeDetailContentMode;
+}) {
+  const [attachments, setAttachments] =
+    useState<Loadable<AttachmentMetadata[]>>(emptyLoadable);
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [secretLevel, setSecretLevel] = useState<SecretLevelCode | undefined>("INTERNAL");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<ApiError | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<ApiError | null>(null);
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | null>(null);
+  const canLoadAttachments =
+    shouldLoadFeeVoucherAttachments(demoUserId, feeRecordId) &&
+    canReadFeeVoucherAttachments(authUser, mode);
+  const canUpload = canLoadAttachments && canUploadFeeVoucherAttachments(authUser, mode);
+
+  const loadAttachments = useCallback(async () => {
+    if (!canLoadAttachments) {
+      setAttachments(emptyLoadable);
+      return;
+    }
+
+    setAttachments({ loading: true, data: null, error: null });
+
+    try {
+      const data = await fetchFeeVoucherAttachments(apiClient, feeRecordId);
+      setAttachments({ loading: false, data, error: null });
+    } catch (error) {
+      setAttachments({
+        loading: false,
+        data: null,
+        error: mapAttachmentMetadataErrorToDisplay(normalizeError(error)),
+      });
+    }
+  }, [apiClient, canLoadAttachments, feeRecordId]);
+
+  useEffect(() => {
+    void loadAttachments();
+  }, [loadAttachments]);
+
+  useEffect(() => {
+    setSelectedAttachmentId(null);
+    setSelectedFile(null);
+    setDisplayName("");
+    setSecretLevel("INTERNAL");
+    setUploadError(null);
+    setUploadSuccess(null);
+    setDownloadError(null);
+  }, [feeRecordId]);
+
+  const items = attachments.data ?? [];
+
+  const onUpload = async () => {
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    if (!selectedFile) {
+      setUploadError({
+        kind: "bad-request",
+        message: "请选择要上传的费用凭证附件",
+      });
+      return;
+    }
+
+    const validation = validateAttachmentUploadFile(selectedFile);
+    if (!validation.ok) {
+      setUploadError({
+        kind: "bad-request",
+        message: validation.message,
+      });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const uploaded = await uploadFeeVoucherAttachment(apiClient, feeRecordId, {
+        file: selectedFile,
+        displayName,
+        secretLevel,
+      });
+      setSelectedFile(null);
+      setDisplayName("");
+      setSecretLevel("INTERNAL");
+      setUploadSuccess(`费用凭证附件 ${uploaded?.fileName || selectedFile.name} 上传成功`);
+      await loadAttachments();
+    } catch (error) {
+      setUploadError(mapAttachmentUploadErrorToDisplay(normalizeError(error)));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onDownload = async (attachment: AttachmentMetadata) => {
+    setDownloadError(null);
+    setDownloadingAttachmentId(attachment.id);
+
+    try {
+      const blob = await downloadFeeVoucherAttachment(apiClient, feeRecordId, attachment.id);
+      if (blob) {
+        saveAttachmentBlob(blob, getAttachmentDownloadFileName(attachment));
+        void message.success("费用凭证附件下载已开始");
+      }
+    } catch (error) {
+      setDownloadError(mapAttachmentDownloadErrorToDisplay(normalizeError(error)));
+    } finally {
+      setDownloadingAttachmentId(null);
+    }
+  };
+
+  return (
+    <>
+      <Divider orientation="left">费用凭证附件</Divider>
+      <Space direction="vertical" size={12} className="full-width">
+        {canUpload ? (
+          <FeeVoucherAttachmentUploadPanel
+            displayName={displayName}
+            file={selectedFile}
+            secretLevel={secretLevel}
+            uploading={uploading}
+            uploadError={uploadError}
+            uploadSuccess={uploadSuccess}
+            onDisplayNameChange={setDisplayName}
+            onFileChange={setSelectedFile}
+            onSecretLevelChange={setSecretLevel}
+            onUpload={() => void onUpload()}
+          />
+        ) : (
+          <Alert
+            showIcon
+            type="info"
+            message={mode === "search-readonly" ? "只读附件视图" : "附件上传入口未开放"}
+            description={
+              mode === "search-readonly"
+                ? "当前入口只展示后端允许读取的费用凭证附件 metadata，下载结果仍由后端权限判断。"
+                : "只有具备费用管理权限并处于对应范围内的用户才显示上传入口；审核用户默认只读。"
+            }
+          />
+        )}
+        {!canLoadAttachments ? (
+          <Alert
+            showIcon
+            type="warning"
+            message="等待可读上下文"
+            description="未选择演示用户或当前账号缺少费用可读权限时，不读取费用凭证附件 metadata。"
+          />
+        ) : (
+          <DataState
+            loading={attachments.loading}
+            error={attachments.error}
+            empty={!attachments.loading && !attachments.error && items.length === 0}
+            emptyText="未返回费用凭证附件 metadata"
+            onRetry={() => void loadAttachments()}
+          >
+            <FeeVoucherAttachmentList
+              attachments={items}
+              downloadingAttachmentId={downloadingAttachmentId}
+              selectedAttachmentId={selectedAttachmentId}
+              onDownload={(attachment) => void onDownload(attachment)}
+              onSelectAttachment={setSelectedAttachmentId}
+            />
+          </DataState>
+        )}
+        {downloadError ? (
+          <Alert
+            showIcon
+            type="error"
+            message={downloadError.message}
+            description={downloadError.detail}
+          />
+        ) : null}
+        {selectedAttachmentId ? (
+          <FeeVoucherAttachmentDetailPanel
+            apiClient={apiClient}
+            attachmentId={selectedAttachmentId}
+            demoUserId={demoUserId}
+            feeRecordId={feeRecordId}
+            onClose={() => setSelectedAttachmentId(null)}
+          />
+        ) : null}
+      </Space>
+    </>
+  );
+}
+
+function FeeVoucherAttachmentUploadPanel({
+  displayName,
+  file,
+  onDisplayNameChange,
+  onFileChange,
+  onSecretLevelChange,
+  onUpload,
+  secretLevel,
+  uploadError,
+  uploading,
+  uploadSuccess,
+}: {
+  displayName: string;
+  file: File | null;
+  onDisplayNameChange: (value: string) => void;
+  onFileChange: (file: File | null) => void;
+  onSecretLevelChange: (value: SecretLevelCode | undefined) => void;
+  onUpload: () => void;
+  secretLevel?: SecretLevelCode;
+  uploadError: ApiError | null;
+  uploading: boolean;
+  uploadSuccess: string | null;
+}) {
+  const fileValidation = file ? validateAttachmentUploadFile(file) : null;
+
+  return (
+    <div className="attachment-upload-panel">
+      <Space direction="vertical" size={10} className="full-width">
+        <Space size={10} wrap className="attachment-upload-controls">
+          <input
+            key={file ? `${file.name}:${file.size}:${file.lastModified}` : "empty"}
+            aria-label="选择费用凭证附件"
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+            onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+          />
+          <Input
+            className="attachment-display-name-input"
+            placeholder="显示文件名，可留空"
+            value={displayName}
+            onChange={(event) => onDisplayNameChange(event.target.value)}
+          />
+          <Select
+            allowClear
+            className="attachment-secret-select"
+            placeholder="附件密级"
+            value={secretLevel}
+            options={[
+              { label: "公开", value: "PUBLIC" },
+              { label: "内部", value: "INTERNAL" },
+              { label: "秘密", value: "SECRET" },
+              { label: "机密", value: "CONFIDENTIAL" },
+            ]}
+            onChange={(value) => onSecretLevelChange(value)}
+          />
+          <Button
+            type="primary"
+            loading={uploading}
+            disabled={!file || fileValidation?.ok === false}
+            onClick={onUpload}
+          >
+            上传附件
+          </Button>
+        </Space>
+        <Typography.Text type="secondary">
+          支持 PDF、PNG、JPG、DOC、DOCX、XLS、XLSX；单个文件不超过 10 MB。前端预检仅改善交互，最终以后端校验为准。
+        </Typography.Text>
+        {file ? (
+          <Typography.Text type={fileValidation?.ok ? "secondary" : "danger"}>
+            已选择：{file.name}（{formatAttachmentSize(file.size)}）
+            {fileValidation?.ok ? "" : `；${fileValidation?.message}`}
+          </Typography.Text>
+        ) : null}
+        {uploadSuccess ? <Alert showIcon type="success" message={uploadSuccess} /> : null}
+        {uploadError ? (
+          <Alert
+            showIcon
+            type="error"
+            message={uploadError.message}
+            description={uploadError.detail}
+          />
+        ) : null}
+      </Space>
+    </div>
+  );
+}
+
+function FeeVoucherAttachmentList({
+  attachments,
+  downloadingAttachmentId,
+  onDownload,
+  onSelectAttachment,
+  selectedAttachmentId,
+}: {
+  attachments: AttachmentMetadata[];
+  downloadingAttachmentId: string | null;
+  onDownload: (attachment: AttachmentMetadata) => void;
+  onSelectAttachment: (attachmentId: string) => void;
+  selectedAttachmentId: string | null;
+}) {
+  return (
+    <div className="attachment-metadata-list">
+      {attachments.map((attachment) => {
+        const model = buildAttachmentMetadataViewModel(attachment);
+
+        return (
+          <div className="attachment-metadata-card" key={attachment.id}>
+            <div className="attachment-metadata-main">
+              <Space size={8} wrap>
+                <Typography.Text strong>{model.fileName}</Typography.Text>
+                <Tag>v{model.version}</Tag>
+                <Tag color={getFeeVoucherAttachmentStatusTagColor(attachment.status)}>
+                  {model.statusLabel}
+                </Tag>
+                <Tag color={attachment.secretLevel === "PUBLIC" ? "default" : "orange"}>
+                  {model.secretLevelLabel}
+                </Tag>
+              </Space>
+              <Typography.Text type="secondary" className="attachment-metadata-id">
+                附件 ID：{model.id}
+              </Typography.Text>
+              <Space size={8} wrap>
+                <Button
+                  size="small"
+                  type={selectedAttachmentId === attachment.id ? "primary" : "default"}
+                  onClick={() => onSelectAttachment(attachment.id)}
+                >
+                  查看 metadata 详情
+                </Button>
+                <Button
+                  size="small"
+                  loading={downloadingAttachmentId === attachment.id}
+                  onClick={() => onDownload(attachment)}
+                >
+                  下载
+                </Button>
+              </Space>
+            </div>
+            <div className="attachment-metadata-grid">
+              <FeeVoucherMetadataLine label="原始名" value={model.originalName} />
+              <FeeVoucherMetadataLine label="类型" value={model.mimeType} />
+              <FeeVoucherMetadataLine label="大小" value={model.sizeLabel} />
+              <FeeVoucherMetadataLine label="上传者" value={model.uploaderId} />
+              <FeeVoucherMetadataLine label="关联对象" value={model.relationId} />
+              <FeeVoucherMetadataLine label="创建时间" value={model.createdAt} />
+              <FeeVoucherMetadataLine label="更新时间" value={model.updatedAt} />
+              <FeeVoucherMetadataLine label="归档时间" value={model.archivedAt} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FeeVoucherAttachmentDetailPanel({
+  apiClient,
+  attachmentId,
+  demoUserId,
+  feeRecordId,
+  onClose,
+}: {
+  apiClient: ApiClient;
+  attachmentId: string;
+  demoUserId: string | null;
+  feeRecordId: string;
+  onClose: () => void;
+}) {
+  const [detail, setDetail] =
+    useState<Loadable<AttachmentDetailMetadata>>(emptyLoadable);
+  const canLoadDetail = shouldLoadFeeVoucherAttachmentDetail(
+    demoUserId,
+    feeRecordId,
+    attachmentId,
+  );
+
+  const loadDetail = useCallback(async () => {
+    if (!canLoadDetail) {
+      setDetail(emptyLoadable);
+      return;
+    }
+
+    setDetail({ loading: true, data: null, error: null });
+
+    try {
+      const data = await fetchFeeVoucherAttachmentDetail(
+        apiClient,
+        feeRecordId,
+        attachmentId,
+      );
+      setDetail({ loading: false, data, error: null });
+    } catch (error) {
+      setDetail({
+        loading: false,
+        data: null,
+        error: mapAttachmentMetadataErrorToDisplay(normalizeError(error)),
+      });
+    }
+  }, [apiClient, attachmentId, canLoadDetail, feeRecordId]);
+
+  useEffect(() => {
+    void loadDetail();
+  }, [loadDetail]);
+
+  const model = detail.data ? buildAttachmentMetadataViewModel(detail.data) : null;
+
+  return (
+    <div className="attachment-detail-metadata-panel">
+      <Space direction="vertical" size={12} className="full-width">
+        <div className="attachment-detail-metadata-heading">
+          <Space direction="vertical" size={2}>
+            <Typography.Text strong>费用凭证附件 metadata</Typography.Text>
+            <Typography.Text type="secondary">
+              GET /fees/:feeRecordId/voucher-attachments/:attachmentId
+            </Typography.Text>
+          </Space>
+          <Button size="small" onClick={onClose}>
+            关闭详情
+          </Button>
+        </div>
+        {!canLoadDetail ? (
+          <Alert
+            showIcon
+            type="warning"
+            message="等待可读上下文"
+            description="未选择演示用户或缺少附件 ID 时，不读取费用凭证附件 detail metadata。"
+          />
+        ) : (
+          <DataState
+            loading={detail.loading}
+            error={detail.error}
+            empty={!detail.loading && !detail.error && !detail.data}
+            emptyText="未返回费用凭证附件 detail metadata"
+            onRetry={() => void loadDetail()}
+          >
+            {model ? <FeeVoucherAttachmentDetailContent model={model} /> : null}
+          </DataState>
+        )}
+      </Space>
+    </div>
+  );
+}
+
+function FeeVoucherAttachmentDetailContent({
+  model,
+}: {
+  model: ReturnType<typeof buildAttachmentMetadataViewModel>;
+}) {
+  return (
+    <div className="attachment-detail-metadata-grid">
+      <FeeVoucherMetadataLine label="附件 ID" value={model.id} />
+      <FeeVoucherMetadataLine label="文件名" value={model.fileName} />
+      <FeeVoucherMetadataLine label="关联类型" value={model.relationType} />
+      <FeeVoucherMetadataLine label="关联对象" value={model.relationId} />
+      <FeeVoucherMetadataLine label="版本" value={`v${model.version}`} />
+      <FeeVoucherMetadataLine label="上传者" value={model.uploaderId} />
+      <FeeVoucherMetadataLine label="密级" value={model.secretLevelLabel} />
+      <FeeVoucherMetadataLine label="状态" value={model.statusLabel} />
+      <FeeVoucherMetadataLine label="创建时间" value={model.createdAt} />
+      <FeeVoucherMetadataLine label="更新时间" value={model.updatedAt} />
+      <FeeVoucherMetadataLine label="归档时间" value={model.archivedAt} />
+    </div>
+  );
+}
+
+function FeeVoucherMetadataLine({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="attachment-metadata-line">
+      <Typography.Text type="secondary">{label}</Typography.Text>
+      <Typography.Text>{renderAttachmentMetadataValue(value)}</Typography.Text>
+    </div>
   );
 }
 
@@ -1521,6 +2050,86 @@ export const fetchFeeDetail = async (
   }
 
   return client.get<FeeRecord>(`/fees/${trimmedId}`);
+};
+
+export const fetchFeeVoucherAttachments = async (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+  query: AttachmentListQuery = { take: feeVoucherAttachmentDefaultTake },
+): Promise<AttachmentMetadata[]> => {
+  const trimmedId = feeRecordId?.trim();
+
+  if (!trimmedId) {
+    return [];
+  }
+
+  return client.get<AttachmentMetadata[]>(
+    `/fees/${trimmedId}/voucher-attachments`,
+    query,
+  );
+};
+
+export const fetchFeeVoucherAttachmentDetail = async (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+  attachmentId: string | null | undefined,
+): Promise<AttachmentDetailMetadata | null> => {
+  const trimmedFeeId = feeRecordId?.trim();
+  const trimmedAttachmentId = attachmentId?.trim();
+
+  if (!trimmedFeeId || !trimmedAttachmentId) {
+    return null;
+  }
+
+  return client.get<AttachmentDetailMetadata>(
+    `/fees/${trimmedFeeId}/voucher-attachments/${trimmedAttachmentId}`,
+  );
+};
+
+export const buildFeeVoucherAttachmentFormData = (
+  input: UploadFeeVoucherAttachmentInput,
+): FormData => buildAchievementAttachmentFormData(input);
+
+export const uploadFeeVoucherAttachment = (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+  input: UploadFeeVoucherAttachmentInput,
+): Promise<AttachmentMetadata | null> => {
+  const trimmedId = feeRecordId?.trim();
+
+  if (!trimmedId) {
+    return Promise.resolve(null);
+  }
+
+  if (!client.postForm) {
+    throw new Error("Fee voucher attachment upload requires multipart API client support.");
+  }
+
+  return client.postForm<AttachmentMetadata>(
+    `/fees/${trimmedId}/voucher-attachments`,
+    buildFeeVoucherAttachmentFormData(input),
+  );
+};
+
+export const downloadFeeVoucherAttachment = (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+  attachmentId: string | null | undefined,
+): Promise<Blob | null> => {
+  const trimmedFeeId = feeRecordId?.trim();
+  const trimmedAttachmentId = attachmentId?.trim();
+
+  if (!trimmedFeeId || !trimmedAttachmentId) {
+    return Promise.resolve(null);
+  }
+
+  if (!client.downloadBlob) {
+    throw new Error("Fee voucher attachment download requires blob API client support.");
+  }
+
+  return client.downloadBlob(
+    `/fees/${trimmedFeeId}/voucher-attachments/${trimmedAttachmentId}/download`,
+  );
 };
 
 export const createFeeRecord = async (
@@ -2099,6 +2708,36 @@ export const canReviewDepartmentFees = (
   authUser: FeePermissionContext,
 ): boolean => Boolean(authUser?.permissionCodes.includes("fee:review_department"));
 
+export const canReadFeeVoucherAttachments = (
+  authUser: FeePermissionContext,
+  mode: FeeDetailContentMode = "management",
+): boolean =>
+  mode === "search-readonly" ||
+  Boolean(
+    authUser?.permissionCodes.some((permission) =>
+      ["fee:read_department", "fee:manage_department", "fee:review_department"].includes(
+        permission,
+      ),
+    ),
+  );
+
+export const canUploadFeeVoucherAttachments = (
+  authUser: FeePermissionContext,
+  mode: FeeDetailContentMode = "management",
+): boolean => mode === "management" && canManageDepartmentFees(authUser);
+
+export const shouldLoadFeeVoucherAttachments = (
+  demoUserId: string | null,
+  feeRecordId: string | null | undefined,
+): boolean => Boolean(demoUserId?.trim() && feeRecordId?.trim());
+
+export const shouldLoadFeeVoucherAttachmentDetail = (
+  demoUserId: string | null,
+  feeRecordId: string | null | undefined,
+  attachmentId: string | null | undefined,
+): boolean =>
+  Boolean(demoUserId?.trim() && feeRecordId?.trim() && attachmentId?.trim());
+
 export const shouldShowFeeDetailMarkPaidAction = (
   record: Pick<FeeRecord, "payStatus">,
   mode: FeeDetailContentMode = "management",
@@ -2399,6 +3038,30 @@ const formatDateTime = (value: string | null | undefined): string => {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+};
+
+const renderAttachmentMetadataValue = (value: React.ReactNode): React.ReactNode => {
+  if (value === null || value === undefined || value === "") {
+    return "未返回";
+  }
+
+  return value;
+};
+
+const getFeeVoucherAttachmentStatusTagColor = (value: string): string => {
+  if (value === "ACTIVE") {
+    return "green";
+  }
+
+  if (value === "BLOCKED") {
+    return "red";
+  }
+
+  if (value === "ARCHIVED") {
+    return "default";
+  }
+
+  return "blue";
 };
 
 const parseDateOnlyMs = (value: string | null | undefined): number | null => {

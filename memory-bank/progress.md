@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-06-30 Step 56C - Voucher attachment Web UI integration
+
+- Status: STEP_56C_VOUCHER_ATTACHMENT_WEB_UI_IMPLEMENTED.
+- Step identity:
+  - Implemented Web/client integration for the fee voucher attachment backend API from Step 56B.
+  - No backend behavior, Prisma schema, migration, seed/backfill, dependency/package/lockfile, production/VPS, Docker production-like acceptance, account/password work, `.env` / `.env.production` content read, real business attachment operation, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked artifact handling occurred.
+- Implemented:
+  - Added Web client helpers for fee voucher attachment list, upload, detail metadata, and download routes.
+  - Reused existing attachment FormData shaping, file validation, safe metadata view model, download filename, blob save, and attachment error-display helpers.
+  - Added Fees detail drawer voucher attachment section with loading, empty, error, uploading, success, failure, metadata detail, and backend-mediated download states.
+  - Updated voucher attachment boundary copy from the earlier non-integrated state to the Step 56C API-integrated state.
+  - Added a small shared Web upload-input alias for fee voucher attachment upload.
+- Permission/UI behavior:
+  - Upload entry is visible only in management detail mode for users with `fee:manage_department`; finance reviewers remain read-only by default.
+  - Metadata read is visible for fee read, manage, or review users; search readonly mode remains metadata-only and relies on the backend for final authorization.
+  - Download buttons call the authenticated backend route and show non-sensitive failure messages when denied.
+- Verification so far:
+  - `corepack pnpm --filter @research-ip/web test -- Fees`: PASS, 1 file / 48 tests.
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail Fees`: PASS, 2 files / 77 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Next:
+  - Run final whitespace and added-lines scans.
+  - Commit as `feat(web): add fee voucher attachment UI`.
+  - Later explicit acceptance can cover real local browser upload/list/detail/download in a controlled non-production runtime.
+
 ## 2026-06-30 Step 56B - Voucher attachment backend-only API implementation
 
 - Status: STEP_56B_VOUCHER_ATTACHMENT_BACKEND_API_IMPLEMENTED.

@@ -263,6 +263,8 @@ export type UploadAchievementAttachmentInput = {
   displayName?: string;
 };
 
+export type UploadFeeVoucherAttachmentInput = UploadAchievementAttachmentInput;
+
 export type FeeTypeCode =
   | "PATENT_APPLICATION"
   | "PATENT_ANNUAL"

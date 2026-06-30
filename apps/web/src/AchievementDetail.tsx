@@ -1704,7 +1704,7 @@ const getFileExtension = (fileName: string): string => {
   return parts.length > 1 ? parts.at(-1) ?? "" : "";
 };
 
-const getAttachmentDownloadFileName = (attachment: AttachmentMetadata): string =>
+export const getAttachmentDownloadFileName = (attachment: AttachmentMetadata): string =>
   toSafeDownloadFileName(attachment.originalName || attachment.fileName || "attachment");
 
 const toSafeDownloadFileName = (fileName: string): string => {
@@ -1718,7 +1718,7 @@ const toSafeDownloadFileName = (fileName: string): string => {
   return safe || "attachment";
 };
 
-const saveAttachmentBlob = (blob: Blob, fileName: string): void => {
+export const saveAttachmentBlob = (blob: Blob, fileName: string): void => {
   if (typeof document === "undefined" || typeof URL === "undefined") {
     return;
   }
