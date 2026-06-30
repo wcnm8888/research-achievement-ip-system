@@ -1,5 +1,41 @@
 # Progress
 
+## 2026-06-30 Step 55I - Finance review capability closure
+
+- Status: STEP_55I_FINANCE_REVIEW_CAPABILITY_CLOSED_LOCALLY_DOCS_ONLY.
+- Step identity:
+  - Closes Finance review/approval documentation after Step 55A through Step 55H.
+  - Documentation-only; no Docker, migration, seed, backup, restore, code, Prisma schema, API, UI, business-data, account/password, production/VPS, push/deploy, cleanup, deletion, reset, drop, prune, or untracked-artifact operation.
+  - `.env` / `.env.production` contents were not read or output.
+- Starting state:
+  - `HEAD`: `ac64731`.
+  - Latest commit subject: `docs: record local finance reviewer acceptance`.
+  - Tracked diff was empty before Step 55I documentation edits.
+  - Existing untracked local artifacts were present and left untouched.
+- Completed local finance review capability:
+  - `FeeReviewStatus` schema contract and FeeRecord review fields are in place.
+  - `fee:review_department` permission is in place.
+  - Backend approve/reject endpoints are implemented and tested.
+  - Web Fees review status and approve/reject UI are implemented and tested.
+  - Review is independent from payment state and voucher fields.
+  - Explicit department-scope policy is documented and accepted.
+  - `FINANCE_REVIEWER` role contract exists with `user_context:read`, `fee:read_department`, and `fee:review_department`.
+  - Local Docker acceptance passed for fee review and for department-scoped `FINANCE_REVIEWER`.
+- Production prerequisites:
+  - Production migration deploy for fee review schema.
+  - Production seed/permission rollout for `fee:review_department` and `FINANCE_REVIEWER`.
+  - Department-scoped `FINANCE_REVIEWER` assignment for each review department.
+  - Separately authorized production acceptance before claiming production readiness.
+- Deferred:
+  - Voucher attachment integration.
+  - Persisted reason history / review history table.
+  - Workflow task integration.
+  - Production/VPS acceptance.
+  - Broader finance module beyond fee-record review.
+- Next:
+  - Step 56A can start voucher attachment integration scope/backend planning.
+  - A production rollout planning Step is also possible, but only with explicit high-risk authorization.
+
 ## 2026-06-30 Step 55H - Local Docker finance reviewer acceptance
 
 - Status: STEP_55H_LOCAL_FINANCE_REVIEWER_ACCEPTANCE_PASSED.
@@ -319,14 +355,14 @@
   - Isolated restore drill.
   - User/account import dry-run.
   - Achievement import dry-run.
-  - Finance review/approval.
+  - Finance review/approval was deferred at Step 54A time; Steps 55A-55I now close it locally as a fee-record review capability.
   - Voucher attachment integration.
   - Persisted reason history.
   - Attachment binary backup coverage.
   - Backup retention/encryption/offsite policy.
 - Recommended next:
   - If backup confidence needs to increase, run a separately authorized isolated local restore drill.
-  - If phase-one product work continues, choose finance review/approval or voucher attachment integration first.
+  - If phase-one product work continues after Step 55I, choose voucher attachment integration or a separately authorized production finance-review rollout plan.
   - Production/VPS work must be handled in a separate high-risk authorization Step.
 - Boundaries observed:
   - No account password was modified.
@@ -888,7 +924,7 @@
   - `git diff --check`: passed.
   - Sensitive scan over added lines: passed.
 - Remaining fee gaps:
-  - Finance review/approval.
+  - Finance review/approval was not complete in Step 51B; Steps 55A-55I later close it locally, while production rollout remains deferred.
   - Voucher attachment integration.
   - Persisted reason history beyond audit summaries.
   - Production acceptance.
@@ -922,7 +958,7 @@
   - Sensitive scan over added lines: passed.
 - Remaining fee gaps:
   - Fee archive.
-  - Finance review/approval.
+  - Finance review/approval was not complete in Step 51A; Steps 55A-55I later close it locally, while production rollout remains deferred.
   - Voucher attachment integration.
   - Persisted reason history.
   - Production acceptance.

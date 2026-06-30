@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 55I Archive - Finance review capability closure - 2026-06-30
+
+- Step identity:
+  - This Step closes the Finance review/approval capability documentation after Steps 55A through 55H.
+  - Scope is memory-bank documentation only.
+  - No backend API, Web UI, Prisma schema, migration, seed, Docker, backup/restore, business-data write, account/password work, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked artifact handling occurred.
+  - No `.env` / `.env.production` content, password, cookie, token, secret, AccessKey, private key, connection string, or raw session value was read, output, recorded, staged, or committed.
+- Completed local capability summary:
+  - Fee review schema contract exists through `FeeReviewStatus` and `FeeRecord.reviewStatus`, `reviewedById`, and `reviewedAt`.
+  - Review permission exists as `fee:review_department`.
+  - Backend approve/reject API exists:
+    - `POST /api/fees/:id/review/approve`.
+    - `POST /api/fees/:id/review/reject`.
+  - Web Fees page exposes review status and permission-gated approve/reject entry points.
+  - Review transitions are separate from payment lifecycle and do not change `payStatus`, `paidDate`, `voucherNo`, or `archivedAt`.
+  - Department scope policy is explicit: permission alone is not enough; reviewer scope must include the target department.
+  - `FINANCE_REVIEWER` is the least-privilege production role contract for daily fee review.
+  - Local Docker production-like acceptance passed for schema/API/Web and for department-scoped `FINANCE_REVIEWER`.
+- Production prerequisites before real rollout:
+  - Run production migration deploy for the fee review schema under a separately authorized production rollout Step.
+  - Roll out production seed/permission updates so `fee:review_department` and `FINANCE_REVIEWER` exist in production.
+  - Assign `FINANCE_REVIEWER` with department scope for each department the reviewer may review.
+  - Run production acceptance only after explicit authorization naming the production target and permitted actions.
+- Still deferred:
+  - Voucher attachment integration.
+  - Persisted reason history or review-history table.
+  - Workflow task integration for fee review.
+  - VPS/production acceptance.
+  - Broader finance module beyond fee-record review.
+- Current readiness status:
+  - Finance review/approval is no longer a current local phase-one incomplete product item.
+  - It remains not production-accepted until the production prerequisites above are authorized and completed.
+- Recommended next:
+  - Step 56A can start voucher attachment integration scope/backend planning.
+  - Alternatively, open a high-risk production rollout planning Step for finance review, but only with explicit authorization for production target, migration/seed rollout, reviewer assignment, and acceptance scope.
+
 ## Current Step 55H Archive - Local Docker finance reviewer acceptance - 2026-06-30
 
 - Step identity:
@@ -396,14 +432,14 @@
   - Isolated restore drill.
   - User/account import dry-run.
   - Achievement import dry-run.
-  - Finance review/approval.
+  - Finance review/approval was deferred at Step 54A time; Steps 55A-55I now close it locally as a fee-record review capability.
   - Voucher attachment integration.
   - Persisted reason history.
   - Attachment binary backup coverage.
   - Backup retention, encryption, and offsite policy.
 - Recommended next steps:
   - To improve backup credibility, open a separate isolated local restore drill Step with explicit authorization before any restore/drop/reset/clean action.
-  - To continue phase-one product functionality, prioritize either finance review/approval or voucher attachment integration.
+  - To continue phase-one product functionality after Step 55I, prioritize voucher attachment integration or a separately authorized production finance-review rollout plan.
   - Any production/VPS work must be opened as a separate high-risk authorization Step that names the target and permitted actions.
 - Hard boundaries:
   - Do not modify account passwords.
@@ -1044,7 +1080,7 @@
   - Fee tests passed: 6 files, 83 tests.
   - API typecheck passed.
 - Remaining fee gaps:
-  - Finance review/approval.
+  - Finance review/approval was not complete in Step 51B; Steps 55A-55I later close it locally, while production rollout remains deferred.
   - Voucher attachment integration.
   - Persisted reason history beyond audit summaries.
   - Production acceptance.
@@ -1076,7 +1112,7 @@
   - API typecheck passed.
 - Remaining fee gaps:
   - Fee archive.
-  - Finance review/approval.
+  - Finance review/approval was not complete in Step 51A; Steps 55A-55I later close it locally, while production rollout remains deferred.
   - Voucher attachment integration.
   - Persisted reason history.
   - Production acceptance.

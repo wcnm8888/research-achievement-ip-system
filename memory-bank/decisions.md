@@ -1,5 +1,39 @@
 # Decisions
 
+## D201 - Finance review is locally closed but production rollout remains gated
+
+- Date: 2026-06-30.
+- Context: Step 55I closes the Finance review/approval capability documentation after Step 55A through Step 55H delivered schema, permission, backend API, Web UI, explicit scope policy, `FINANCE_REVIEWER`, and local Docker acceptance.
+- Decision:
+  - Treat Finance review/approval as locally complete for the minimum fee-record review capability.
+  - Do not continue listing Finance review/approval as a current local phase-one incomplete product item.
+  - Keep production rollout unclaimed until separately authorized production migration, seed/permission rollout, department-scoped reviewer assignment, and production acceptance are completed.
+  - Keep the minimum capability fee-specific; do not expand it into voucher attachment review, workflow tasks, persisted reason history, or a broader finance module in this closure Step.
+- Completed local capability:
+  - `FeeReviewStatus` and FeeRecord latest review fields.
+  - `fee:review_department`.
+  - Fee-specific approve/reject backend API.
+  - Web Fees review status and review actions.
+  - Explicit department-scope policy.
+  - `FINANCE_REVIEWER` least-privilege role contract.
+  - Local Docker acceptance for both fee review and scoped finance reviewer behavior.
+- Production prerequisites:
+  - Production migration deploy.
+  - Production seed/permission rollout.
+  - Department-scoped `FINANCE_REVIEWER` assignment.
+  - Separately authorized production acceptance.
+- Deferred:
+  - Voucher attachment integration.
+  - Persisted reason history / review history table.
+  - Workflow task integration.
+  - Production/VPS acceptance.
+  - Broader finance module.
+- Next:
+  - Prefer Step 56A for voucher attachment integration scope/backend planning if continuing product functionality.
+  - Alternatively open a high-risk production rollout planning Step, but only with explicit authorization.
+- Boundaries:
+  - This decision does not authorize Docker, migration, seed, backup, restore, code changes, business-data writes, account password changes, secret reads/output, `.env` / `.env.production` content reads, production/VPS access, push/deploy, cleanup, deletion, reset, drop, prune, or untracked-artifact handling.
+
 ## D200 - FINANCE_REVIEWER acceptance confirms explicit department scope
 
 - Date: 2026-06-30.
@@ -196,9 +230,10 @@
 - Decision:
   - Mark phase-one local readiness as closed for local-only status documentation.
   - Treat the completed local readiness set as: Docker production-like stack, authenticated API smoke, minimal/richer business sample, approval approve/reject/archive closure, attachments, fees warnings/archive, Settings API integrations, department import dry-run backend/Web/local acceptance, local healthcheck, and local Postgres backup artifact/list verification.
-  - Keep VPS / production acceptance, DirectMail production runtime / real email, isolated restore drill, user/account import dry-run, achievement import dry-run, finance review/approval, voucher attachment integration, persisted reason history, attachment binary backup coverage, and backup retention/encryption/offsite policy explicitly deferred.
+  - Keep VPS / production acceptance, DirectMail production runtime / real email, isolated restore drill, user/account import dry-run, achievement import dry-run, voucher attachment integration, persisted reason history, attachment binary backup coverage, and backup retention/encryption/offsite policy explicitly deferred.
+  - Finance review/approval was deferred at Step 54A time; Steps 55A-55I now close it locally as a fee-record review capability while production rollout remains gated.
   - Recommend a separate isolated local restore drill only if backup credibility needs to be strengthened, with explicit authorization before any restore/drop/reset/clean action.
-  - Recommend finance review/approval or voucher attachment integration as the next phase-one product-functionality candidate.
+  - Recommend voucher attachment integration as the next phase-one product-functionality candidate after Step 55I, or a separately authorized production finance-review rollout plan.
   - Require a separate high-risk authorization Step for any production/VPS work.
 - Rationale:
   - Consolidating local-only readiness avoids confusing completed local evidence with production acceptance.
@@ -515,7 +550,7 @@
   - This satisfies the phase-one archive requirement without data deletion, new schema, migration, or production work.
   - Preserving `payStatus` avoids conflating payment lifecycle with record visibility lifecycle.
 - Not complete:
-  - Finance review/approval.
+  - Finance review/approval was not complete in Step 51B; Steps 55A-55I later close it locally, while production rollout remains deferred.
   - Voucher attachment integration.
   - Persisted reason history outside audit summaries.
   - Production acceptance.
@@ -536,7 +571,7 @@
   - It reuses existing fee visibility and DTO validation patterns.
 - Not complete:
   - Fee archive.
-  - Finance review/approval.
+  - Finance review/approval was not complete in Step 51A; Steps 55A-55I later close it locally, while production rollout remains deferred.
   - Voucher attachment integration.
   - Persisted reason history.
   - Production acceptance.
