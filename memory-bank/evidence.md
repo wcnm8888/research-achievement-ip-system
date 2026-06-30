@@ -1,5 +1,63 @@
 # Evidence
 
+## 2026-06-30 Step 55H - Local Docker finance reviewer acceptance evidence
+
+- Purpose:
+  - Validate `FINANCE_REVIEWER` in the local Docker production-like stack.
+  - Confirm a department-scoped finance reviewer can review scoped fees, cannot perform fee manage operations, and cannot review non-scope fees.
+  - Keep this Step limited to local acceptance and memory-bank updates.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `67fa518`.
+  - Latest commit subject: `feat: add finance reviewer role seed contract`.
+  - `git status --short --branch` showed existing untracked local artifacts and no tracked changes before Step 55H memory-bank edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env.production` existence was confirmed without reading contents.
+- Local Docker evidence:
+  - `docker compose -f docker-compose.production.yml ps`: `postgres`, `api`, and `web` healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `GET http://127.0.0.1:18081/`: HTTP 200.
+  - `GET http://127.0.0.1:18081/fees`: HTTP 200.
+  - `docker compose -f docker-compose.production.yml exec -T api node prisma/seed-foundation.cjs`: completed locally; summary included `FINANCE_REVIEWER`, `fee:review_department`, and expected foundation counts.
+- API acceptance evidence:
+  - Reused an existing local active credentialed non-manage user; no password was created, changed, read, or output.
+  - Added department-scoped `FINANCE_REVIEWER` assignment for the local target department.
+  - Created local minimum fee samples for scoped review, non-scope review denial, manage denial, and Web review.
+  - `/api/auth/me`: HTTP 200.
+  - Permission checks:
+    - `fee:review_department`: present.
+    - `fee:read_department`: present.
+    - `fee:manage_department`: absent.
+    - `system:config`: absent.
+  - Scope check: `scopedDepartmentIds` included the target department.
+  - Scoped pending fee approve: HTTP 200 and `reviewStatus=APPROVED`.
+  - Non-scope pending fee review: HTTP 404 and `reviewStatus` remained `PENDING`.
+  - Fee manage denial:
+    - `POST /fees`: HTTP 403.
+    - `POST /fees/:id/mark-paid`: HTTP 403.
+    - `POST /fees/:id/waive`: HTTP 403.
+    - `POST /fees/:id/cancel`: HTTP 403.
+    - `POST /fees/:id/archive`: HTTP 403.
+  - Manage denial left `payStatus`, `paidDate`, `voucherNo`, and `archivedAt` unchanged.
+  - Audit check: one `FEE_RECORD` + `APPROVE` audit row existed for the scoped review; serialized audit did not contain amount or voucher probe markers.
+- Web acceptance evidence:
+  - Browser session used the same temporary local reviewer session only in memory; no raw cookie/session value was output or recorded.
+  - Reviewer opened the Fees page.
+  - Page showed `reviewStatus`.
+  - Scoped pending fee row showed approve/reject actions before review.
+  - Fee manage entries were absent:
+    - create.
+    - mark-paid.
+    - waive.
+    - cancel.
+    - archive.
+  - Non-scope fee was not visible.
+  - Web approve emitted one review request, updated the target row to approved, and removed repeat approve/reject actions.
+  - No fee manage request was emitted during the Web review flow.
+- Boundaries observed:
+  - No `.env` / `.env.production` contents were read or output.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, or raw session value was read, output, recorded, staged, or committed.
+  - No VPS/production DB access, push, deploy, restore, drop, reset, prune, cleanup, deletion, backup/restore run, local business-data deletion, or existing untracked artifact handling occurred.
+
 ## 2026-06-30 Step 55G - Finance reviewer role contract evidence
 
 - Purpose:

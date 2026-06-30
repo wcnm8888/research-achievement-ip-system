@@ -1,5 +1,24 @@
 # Decisions
 
+## D200 - FINANCE_REVIEWER acceptance confirms explicit department scope
+
+- Date: 2026-06-30.
+- Context: Step 55H validated the Step 55G `FINANCE_REVIEWER` role contract in the local Docker production-like stack.
+- Decision:
+  - Keep `FINANCE_REVIEWER` as the production setup path for daily fee review.
+  - Require explicit department-scoped assignment for each department the reviewer may review.
+  - Keep fee review separate from fee manage operations.
+  - Keep non-scope fee records unavailable for review under the existing department-scope policy.
+- Acceptance result:
+  - A scoped `FINANCE_REVIEWER` had `fee:review_department` and `fee:read_department`.
+  - The same user did not have `fee:manage_department` or `system:config`.
+  - The user could approve a pending fee in scope.
+  - The user could not review a non-scope fee; the fee stayed unchanged.
+  - The user could not create, mark-paid, waive, cancel, or archive fees.
+  - Web showed review actions only for scoped pending fees and did not expose fee manage entries.
+- Boundaries:
+  - This decision records local acceptance only. It does not authorize production DB/VPS access, deployment, account password changes, secret reads/output, `.env` / `.env.production` content reads, destructive operations, deletion, cleanup, reset, drop, restore, prune, or existing untracked-artifact handling.
+
 ## D199 - Finance review uses a dedicated department-scoped reviewer role
 
 - Date: 2026-06-30.

@@ -1,5 +1,40 @@
 # Progress
 
+## 2026-06-30 Step 55H - Local Docker finance reviewer acceptance
+
+- Status: STEP_55H_LOCAL_FINANCE_REVIEWER_ACCEPTANCE_PASSED.
+- Step identity:
+  - Validates the Step 55G `FINANCE_REVIEWER` role contract in the local Docker production-like stack.
+  - Keeps the Step to local acceptance and documentation only; no backend API, Web UI, Prisma schema, migration, or seed source was changed.
+  - Uses local Docker DB writes only where allowed for acceptance setup and sample data.
+- Starting state:
+  - `HEAD`: `67fa518`.
+  - Latest commit subject: `feat: add finance reviewer role seed contract`.
+  - Tracked diff was empty before Step 55H memory-bank edits.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was checked without reading contents.
+- Local setup:
+  - Rebuilt/restarted local API/Web as needed; Docker `postgres`, `api`, and `web` ended healthy.
+  - Ran local foundation seed in the API container; `FINANCE_REVIEWER` and `fee:review_department` were present afterward.
+  - Reused an existing local active credentialed non-manage user and added a department-scoped `FINANCE_REVIEWER` assignment.
+  - Created temporary local session rows and minimum local fee samples; no password was changed.
+- API acceptance:
+  - `/api/auth/me` returned HTTP 200 for the scoped reviewer.
+  - Reviewer had `fee:review_department` and `fee:read_department`.
+  - Reviewer did not have `fee:manage_department` or `system:config`.
+  - Reviewer `scopedDepartmentIds` included the target department.
+  - Target department pending fee approve returned HTTP 200 and `reviewStatus=APPROVED`.
+  - Non-scope department review returned HTTP 404 and left review status unchanged.
+  - `POST /fees`, `mark-paid`, `waive`, `cancel`, and `archive` returned HTTP 403 and left business fields unchanged.
+  - Review audit existed and did not contain amount or voucher probe markers.
+- Web acceptance:
+  - Web `/` and `/fees` returned HTTP 200.
+  - Scoped reviewer opened Fees, saw `reviewStatus`, and saw approve/reject on a pending scoped fee.
+  - Fee manage entries were not visible.
+  - Web approve changed the row to approved and removed repeat review actions.
+  - Non-scope fee was not visible.
+  - No Web fee manage request was emitted.
+
 ## 2026-06-30 Step 55G - Finance reviewer role contract
 
 - Status: STEP_55G_FINANCE_REVIEWER_ROLE_CONTRACT_IMPLEMENTED.
