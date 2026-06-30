@@ -4,6 +4,35 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 56D Archive - Voucher attachment local Docker production-like acceptance - 2026-06-30
+
+- Step identity:
+  - This Step verifies the Step 56B fee voucher attachment backend API and Step 56C Fees Web UI together in local Docker production-like mode.
+  - Scope is local Docker startup/health, local synthetic API acceptance, local browser Web acceptance, focused tests/typechecks, and memory-bank updates.
+  - No VPS/production, deploy, push, production migration, production seed/backfill, account/password change, `.env` / `.env.production` content read, cleanup, deletion, reset, drop, prune, or existing untracked artifact handling occurred.
+- Local Docker runtime:
+  - `docker-compose.production.yml` ran Postgres, API, and Web locally.
+  - API health and Web root returned 200.
+  - Compose services were healthy after rebuilding and restarting API/Web.
+- API acceptance:
+  - Manager empty list, upload, list, detail, and download succeeded with a synthetic local fixture.
+  - Reviewer could list/read metadata but upload and download were denied.
+  - Cross-department access was denied.
+  - No-permission access was denied.
+- Web acceptance:
+  - Local Chrome DevTools drove the Docker-served Web app through the Fees navigation state.
+  - Manager saw upload UI, uploaded a synthetic local fixture, saw metadata/detail, and downloaded successfully.
+  - Reviewer saw metadata, did not see upload UI, and received backend denial on download.
+  - Browser-origin cross-department and no-permission checks returned expected denial statuses.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/attachments/attachment.controller.spec.ts src/attachments/attachment.service.spec.ts src/attachments/attachment.app-module.spec.ts`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Deferred:
+  - Production/VPS acceptance and deployment remain separate explicitly authorized work.
+  - Local synthetic data and local browser/fixture artifacts were not cleaned up because cleanup/deletion was out of scope.
+
 ## Current Step 56C Archive - Voucher attachment Web UI integration - 2026-06-30
 
 - Step identity:

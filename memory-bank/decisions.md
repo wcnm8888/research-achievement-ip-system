@@ -1,5 +1,21 @@
 # Decisions
 
+## D205 - Voucher attachment accepted locally, production rollout remains separate
+
+- Date: 2026-06-30.
+- Context: Step 56D verifies the Step 56B backend API and Step 56C Web UI together in local Docker production-like mode.
+- Decision:
+  - Treat fee voucher attachment as locally accepted for the current backend API plus Web UI scope.
+  - Keep production/VPS rollout unclaimed until a separately authorized production step covers production migration status, runtime configuration, role assignment, and production acceptance.
+  - Do not introduce schema, permission, package, storage-provider, or Web/backend behavior changes in Step 56D because the local Docker acceptance passed without code fixes.
+  - Keep reviewer behavior as Step 56B/56C defined it: metadata read-only by default, no upload entry, and download denied unless explicit attachment download capability is granted.
+- Rationale:
+  - Local Docker acceptance exercised the same packaged API/Web services behind the local production-like compose stack.
+  - The observed manager, reviewer, cross-department, and no-permission outcomes matched the Step 56A/56B/56C contract.
+  - Avoiding code changes in an acceptance-only step keeps the diff limited to evidence and rollout documentation.
+- Boundaries:
+  - This decision does not authorize VPS/production access, deployment, production data changes, migrations, seeds, account/password changes, environment content reads, cleanup, deletion, reset, drop, prune, push, or existing untracked-artifact handling.
+
 ## D204 - Fee voucher Web UI reuses existing attachment client patterns
 
 - Date: 2026-06-30.

@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-06-30 Step 56D - Voucher attachment local Docker production-like acceptance
+
+- Status: STEP_56D_VOUCHER_ATTACHMENT_LOCAL_DOCKER_ACCEPTED.
+- Step identity:
+  - Verified the Step 56B backend API and Step 56C Web UI together in the local Docker production-like stack.
+  - This was local-only acceptance; no VPS/production, deploy, push, production migration, production seed/backfill, account/password change, `.env` / `.env.production` content read, cleanup, deletion, reset, drop, prune, or existing untracked artifact handling occurred.
+- Local environment:
+  - `docker-compose.production.yml` ran local Postgres, API, and Web.
+  - API health endpoint returned 200.
+  - Web root returned 200.
+  - Docker services were healthy after rebuilding/restarting API and Web.
+- Acceptance completed:
+  - API voucher attachment flow covered empty list, upload of a synthetic local fixture, list metadata, detail metadata, successful manager download, reviewer metadata read, reviewer upload denial, reviewer download denial, cross-department denial, and no-permission denial.
+  - Web flow used local Chrome DevTools against the Docker-served Web app.
+  - Manager saw the upload entry, uploaded a synthetic local fixture, saw metadata/detail, and downloaded through the backend route.
+  - Reviewer saw metadata, did not see upload, and download returned 403.
+  - Cross-department browser-origin request returned 404.
+  - No-permission browser-origin request returned 403.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/attachments/attachment.controller.spec.ts src/attachments/attachment.service.spec.ts src/attachments/attachment.app-module.spec.ts`: PASS, 3 files / 48 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts`: PASS, 1 file / 48 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Notes:
+  - The first API test command used non-existent spec filenames and failed with "No test files found"; the command was corrected to the actual attachment spec files.
+  - Local synthetic test records and local browser/fixture artifacts were created for acceptance and not cleaned up because cleanup/deletion was out of scope.
+- Next:
+  - Run final whitespace and added-lines scans.
+  - Commit as `docs: verify voucher attachment local acceptance`.
+  - Production/VPS rollout remains a separate explicitly authorized step.
+
 ## 2026-06-30 Step 56C - Voucher attachment Web UI integration
 
 - Status: STEP_56C_VOUCHER_ATTACHMENT_WEB_UI_IMPLEMENTED.

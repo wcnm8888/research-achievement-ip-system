@@ -1,5 +1,59 @@
 # Evidence
 
+## 2026-06-30 Step 56D - Voucher attachment local Docker production-like acceptance evidence
+
+- Purpose:
+  - Verify fee voucher attachment backend API and Web UI as a closed local Docker production-like flow.
+  - Keep VPS/production, deploy, production migration, production seed/backfill, account/password work, cleanup, deletion, and existing untracked artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `fe38cc8`.
+  - Latest commit subject: `feat(web): add fee voucher attachment UI`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 56D acceptance/documentation.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env.production` existence was confirmed through file listing only; `.env` / `.env.production` contents were not read or output.
+- Local Docker evidence:
+  - `docker compose -f docker-compose.production.yml build api web`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d api web`: PASS.
+  - `docker compose -f docker-compose.production.yml ps`: Postgres, API, and Web healthy.
+  - `http://127.0.0.1:13001/api/health`: 200.
+  - `http://127.0.0.1:18081/`: 200.
+  - Existing orphan-container warning was observed during compose commands; no cleanup command was run.
+- API acceptance evidence:
+  - Local synthetic API acceptance stamp: `mr0g9gcj`.
+  - Manager empty voucher list: 200, count 0.
+  - Manager synthetic upload: 201, relation `FEE_RECORD`.
+  - Manager list after upload: 200, count 1.
+  - Manager detail metadata: 200.
+  - Manager download through backend route: 200.
+  - Reviewer metadata list/detail: 200.
+  - Reviewer upload denied: 403.
+  - Reviewer download denied: 403.
+  - Manager cross-department list denied: 404.
+  - No-permission list denied: 403.
+- Web acceptance evidence:
+  - Local synthetic Web acceptance stamp: `s56d-ui-mr0h4gi2-79092b`.
+  - Fee record under manager department: `9b75a8f4-1838-4e7a-9abc-2dae80570946`.
+  - Cross-department fee record: `7c8ccaa9-108a-47af-a459-cf7dd0a53657`.
+  - Manager initial attachment panel empty before upload: true.
+  - Manager synthetic fixture upload surfaced metadata in the Fees detail drawer.
+  - Manager download through backend route: 200.
+  - Reviewer metadata visible: true.
+  - Reviewer upload input visible: false.
+  - Reviewer download through backend route: 403.
+  - Cross-department browser-origin voucher attachment request: 404.
+  - No-permission browser-origin fee request: 403.
+- Automated verification evidence:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts`: PASS, 1 file / 48 tests.
+  - Initial API focused test command used non-existent filenames and failed with "No test files found"; this was command selection error only.
+  - `corepack pnpm --filter @research-ip/api test -- src/attachments/attachment.controller.spec.ts src/attachments/attachment.service.spec.ts src/attachments/attachment.app-module.spec.ts`: PASS, 3 files / 48 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundaries observed:
+  - No backend or Web code changes were required.
+  - No Prisma schema, migration, seed, backfill, package/lockfile, production/VPS, deploy, push, account/password change, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+  - Synthetic local test records, short-lived local sessions, isolated browser profiles, and a synthetic local fixture file were created for acceptance only and were not cleaned up.
+  - No password, credential value, private key, connection string, raw session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+
 ## 2026-06-30 Step 56C - Voucher attachment Web UI integration evidence
 
 - Purpose:
