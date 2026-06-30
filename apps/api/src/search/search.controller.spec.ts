@@ -155,8 +155,37 @@ describe("SearchController HTTP", () => {
     });
   });
 
+  it("allows keyword search without target type filter", async () => {
+    await withTestApp([PermissionCode.userContextRead], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get("/search")
+        .set("X-Demo-User-Id", ids.user)
+        .query({
+          keyword: "healthcheck",
+        })
+        .expect(200);
+
+      expect(service.search).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          departmentId: ids.department,
+        }),
+        expect.objectContaining({
+          keyword: "healthcheck",
+        }),
+      );
+      expect(service.search.mock.calls[0]?.[1].targetTypes).toBeUndefined();
+    });
+  });
+
   it("rejects invalid enum, invalid UUID, and excessive take query values with 400", async () => {
     await withTestApp([PermissionCode.userContextRead], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get("/search")
+        .set("X-Demo-User-Id", ids.user)
+        .query({ targetTypes: "UNKNOWN" })
+        .expect(400);
+
       await request(app.getHttpServer() as Server)
         .get("/search")
         .set("X-Demo-User-Id", ids.user)

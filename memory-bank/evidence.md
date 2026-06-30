@@ -1,5 +1,56 @@
 # Evidence
 
+## 2026-06-30 Step 53C - Search optional targetTypes healthcheck regression evidence
+
+- Purpose:
+  - Fix the Search DTO optional `targetTypes` regression.
+  - Accept `GET /api/search?keyword=healthcheck` without `targetTypes` under authenticated local production-like smoke.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `0089eaa`.
+  - Latest commit subject: `fix: clarify production login errors`.
+  - Tracked diff was empty before Step 53C changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, moved, or modified.
+- Context evidence:
+  - Read `AGENTS.md`.
+  - Read Step 53B archive/progress and D189.
+  - Read Search controller, DTO, service, controller tests, AppModule tests, and Web Search call path.
+  - `.env` / `.env.production` contents were not read or output.
+- Root cause evidence:
+  - `SearchQueryDto.targetTypes` used an inline transform that returned `[value]` for any non-array value.
+  - When `targetTypes` was omitted but another query field such as `keyword` was present, the transform converted the omitted value to `[undefined]`.
+  - `@IsEnum(SearchTargetTypeCode, { each: true })` rejected `[undefined]`, causing HTTP 400.
+- Code evidence:
+  - `apps/api/src/search/dto/search-query.dto.ts` now uses `toOptionalArray`.
+  - `toOptionalArray` returns `undefined` for omitted, null, empty string, and empty-array values.
+  - Legal single/repeated target types still normalize to arrays.
+  - Illegal target types still reach enum validation.
+  - Added SearchController and AppModule tests for keyword-only search without targetTypes.
+  - Added invalid targetTypes checks preserving HTTP 400.
+  - Web Search source was read only; no Web changes were required.
+- Verification evidence:
+  - First `corepack pnpm --filter @research-ip/api test -- search` run failed because the new assertions expected the `targetTypes` property to be absent, while ValidationPipe preserves it as `undefined`.
+  - Adjusted assertions to verify `targetTypes === undefined`.
+  - `corepack pnpm --filter @research-ip/api test -- search`: passed, 5 files / 25 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+- Local Docker smoke evidence:
+  - Rebuilt the local Docker production-like `api` image.
+  - Recreated only the local `api` service.
+  - Compose reported an existing orphan container warning; no cleanup or `--remove-orphans` was run.
+  - Local `api` returned healthy after recreate.
+  - Local login for session-only smoke returned HTTP 200; cookie/session value was used only in memory and was not output or recorded.
+  - Authenticated `GET /api/search?keyword=healthcheck`: HTTP 200.
+  - Authenticated `GET /api/search?keyword=healthcheck&targetTypes=ACHIEVEMENT`: HTTP 200.
+  - Authenticated `GET /api/search?keyword=healthcheck&targetTypes=UNKNOWN`: HTTP 400.
+- Final checks:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No account password was modified, rotated, reset, or repaired.
+  - No password, password hash, cookie, token, secret, AccessKey, private key, full connection string, reset token, invite token, or session value was recorded.
+  - No `.env` or `.env.production` contents were read or output.
+  - No backup, `pg_dump`, `pg_restore`, restore, drop, reset, prune, delete, clean, migration, seed, backfill, VPS access, production DB access, push, deploy, package/lockfile change, business-data write, or untracked-artifact cleanup occurred.
+
 ## 2026-06-30 Step 53B - Local healthcheck acceptance and login repair evidence
 
 - Purpose:

@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-06-30 Step 53C - Search optional targetTypes healthcheck regression fix
+
+- Status: STEP_53C_SEARCH_OPTIONAL_TARGET_TYPES_FIXED_AND_ACCEPTED.
+- Step identity:
+  - Fixes Search DTO runtime validation so `targetTypes` is truly optional.
+  - This is not a search feature expansion, not Web behavior work, not account/password work, not migration/seed/backfill, not backup/restore, not production/VPS work, and not cleanup.
+- Starting state:
+  - `HEAD`: `0089eaa`.
+  - Latest commit subject: `fix: clarify production login errors`.
+  - Tracked diff was empty before Step 53C changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Root cause:
+  - `targetTypes` used `@Transform(({ value }) => Array.isArray(value) ? value : [value])`.
+  - With a query such as `?keyword=healthcheck`, class-transformer passed `undefined` for the omitted `targetTypes` field.
+  - The transform produced `[undefined]`; enum validation then rejected it with HTTP 400.
+- Implemented:
+  - Replaced the inline transform with `toOptionalArray`.
+  - Omitted/null/empty `targetTypes` now stays `undefined`.
+  - Legal single/repeated values still validate as arrays.
+  - Illegal values still return HTTP 400.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- search`: passed, 5 files / 25 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - Local Docker `api` image was rebuilt and only local `api` was recreated for production-like smoke.
+  - After recreate, local `api` returned healthy.
+  - Authenticated Docker smoke:
+    - `GET /api/search?keyword=healthcheck`: HTTP 200.
+    - `GET /api/search?keyword=healthcheck&targetTypes=ACHIEVEMENT`: HTTP 200.
+    - `GET /api/search?keyword=healthcheck&targetTypes=UNKNOWN`: HTTP 400.
+  - Compose reported an existing orphan container warning; no cleanup or `--remove-orphans` was run.
+- Boundaries observed:
+  - No account password was modified, rotated, reset, or repaired.
+  - No password, hash, cookie, token, session value, reset token, invite token, or connection string was output or recorded.
+  - No `.env` or `.env.production` contents were read or output.
+  - No backup, restore, drop, reset, prune, delete, clean, migration, seed, backfill, VPS access, production DB access, push, deploy, package/lockfile change, business-data write, or untracked-artifact cleanup occurred.
+
 ## 2026-06-30 Step 53B - Local read-only healthcheck acceptance and login repair
 
 - Status: STEP_53B_LOCAL_HEALTHCHECK_ACCEPTED_WITH_LOCAL_ADMIN_PASSWORD_REPAIRED.

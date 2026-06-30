@@ -1,5 +1,22 @@
 # Decisions
 
+## D190 - Search targetTypes transform preserves optional omission
+
+- Date: 2026-06-30.
+- Context: Step 53B local healthcheck needed `GET /api/search?keyword=healthcheck` to pass without adding a target type filter. The endpoint returned HTTP 400 because the DTO transform converted omitted `targetTypes` into `[undefined]`.
+- Decision:
+  - Keep `targetTypes` optional in the Search API contract.
+  - Transform omitted, null, empty string, and empty-array `targetTypes` to `undefined`.
+  - Continue normalizing legal single/repeated `targetTypes` values to arrays.
+  - Preserve enum validation for illegal target types, so `targetTypes=UNKNOWN` still returns HTTP 400.
+  - Do not change Search service target resolution or broaden search behavior beyond the existing "undefined means all supported target types" logic.
+- Rationale:
+  - The regression was in query parsing, not in Search service policy or search semantics.
+  - Keeping invalid enum values rejected preserves the API boundary while letting optional filters be optional.
+  - A narrow DTO fix avoids unnecessary Web changes and avoids changing search result permissions.
+- Boundaries:
+  - This decision does not authorize account password changes, credential/session/token output, `.env` reads, schema/migration/seed/backfill, search feature expansion, package/lockfile changes, business-data writes, backup/restore, VPS access, production DB access, push, deploy, cleanup, deletion, reset, drop, prune, or untracked-artifact handling.
+
 ## D189 - Account passwords cannot be rotated without exact current-task authorization
 
 - Date: 2026-06-30.

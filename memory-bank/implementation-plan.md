@@ -4,6 +4,47 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 53C Archive - Search optional targetTypes healthcheck regression fix - 2026-06-30
+
+- Step identity:
+  - This Step fixes the Search query validation regression found during Step 53B healthcheck acceptance.
+  - Scope is limited to Search DTO query parsing/validation and targeted Search tests.
+  - No search feature expansion, schema/migration/seed/backfill, package/lockfile change, backup/restore, production/VPS work, business-data write, account password change, cleanup, deletion, or untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `0089eaa`.
+  - Latest commit: `fix: clarify production login errors`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Root cause:
+  - `SearchQueryDto.targetTypes` was marked optional, but its transform wrapped every non-array value with `[value]`.
+  - When `keyword` was present and `targetTypes` was omitted, the validation pipe transformed the missing field to `targetTypes: [undefined]`.
+  - `@IsEnum(SearchTargetTypeCode, { each: true })` then rejected the array item and returned HTTP 400.
+- Implemented:
+  - Added `toOptionalArray` in `apps/api/src/search/dto/search-query.dto.ts`.
+  - `targetTypes` now remains `undefined` when omitted, null, empty string, or an empty array.
+  - Single legal values and repeated legal values still normalize to arrays.
+  - Illegal values still reach enum validation and return HTTP 400.
+- Tests:
+  - Added SearchController coverage for keyword-only search without targetTypes returning HTTP 200.
+  - Added AppModule coverage for keyword-only search without targetTypes returning HTTP 200.
+  - Added invalid `targetTypes=UNKNOWN` checks to preserve HTTP 400 behavior.
+  - Web Search code was read only; no Web source change was needed.
+- Local Docker smoke:
+  - Rebuilt and recreated local `api` only so the running production-like API used the fix.
+  - Compose reported the existing orphan container warning; no cleanup was run.
+  - API returned healthy after recreate.
+  - Authenticated local GET-only smoke:
+    - `GET /api/search?keyword=healthcheck`: HTTP 200.
+    - `GET /api/search?keyword=healthcheck&targetTypes=ACHIEVEMENT`: HTTP 200.
+    - `GET /api/search?keyword=healthcheck&targetTypes=UNKNOWN`: HTTP 400.
+- Boundaries:
+  - Used the existing local-admin credential only for in-memory local smoke; no password, cookie, session token, hash, or connection string was output or recorded.
+  - No account password was modified, rotated, reset, or repaired.
+  - No `.env` or `.env.production` contents were read or output.
+- Next:
+  - Step 53B healthcheck can now use `GET /api/search?keyword=healthcheck` without a target type filter.
+
 ## Current Step 53B Archive - Local read-only healthcheck acceptance and login repair - 2026-06-30
 
 - Step identity:

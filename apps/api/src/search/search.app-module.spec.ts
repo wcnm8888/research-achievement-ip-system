@@ -141,6 +141,29 @@ describe("Search routes through AppModule", () => {
     });
   });
 
+  it("allows keyword search through AppModule without target type filter", async () => {
+    await withAppModule([PermissionCode.userContextRead], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get("/search")
+        .set("X-Demo-User-Id", ids.user)
+        .query({
+          keyword: "healthcheck",
+        })
+        .expect(200);
+
+      expect(service.search).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          departmentId: ids.department,
+        }),
+        expect.objectContaining({
+          keyword: "healthcheck",
+        }),
+      );
+      expect(service.search.mock.calls[0]?.[1].targetTypes).toBeUndefined();
+    });
+  });
+
   it("returns 401 through AppModule when user context is missing", async () => {
     await withAppModule(null, async (app, service, identityAdapter) => {
       const response = await request(app.getHttpServer() as Server)
@@ -167,6 +190,12 @@ describe("Search routes through AppModule", () => {
 
   it("rejects invalid query values through AppModule", async () => {
     await withAppModule([PermissionCode.userContextRead], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get("/search")
+        .set("X-Demo-User-Id", ids.user)
+        .query({ targetTypes: "UNKNOWN" })
+        .expect(400);
+
       await request(app.getHttpServer() as Server)
         .get("/search")
         .set("X-Demo-User-Id", ids.user)

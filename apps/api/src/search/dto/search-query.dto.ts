@@ -25,7 +25,7 @@ export class SearchQueryDto {
   keyword?: string;
 
   @IsOptional()
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @Transform(({ value }) => toOptionalArray(value))
   @IsArray()
   @ArrayUnique()
   @IsEnum(SearchTargetTypeCode, { each: true })
@@ -58,3 +58,16 @@ export class SearchQueryDto {
   @Max(50)
   take?: number;
 }
+
+const toOptionalArray = (value: unknown): unknown[] | undefined => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const filtered = value.filter((item) => item !== undefined && item !== null && item !== "");
+    return filtered.length ? filtered : undefined;
+  }
+
+  return [value];
+};
