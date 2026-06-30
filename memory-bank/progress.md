@@ -1,5 +1,49 @@
 # Progress
 
+## 2026-06-30 Step 55A - Finance review/approval scope and backend plan
+
+- Status: STEP_55A_FINANCE_REVIEW_APPROVAL_SCOPE_PLANNED.
+- Step identity:
+  - Documentation-only current-state review and backend contract plan.
+  - No API, UI, schema, migration, seed/backfill, package/lockfile, runtime, database, Docker, account/password, production/VPS, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact operation.
+- Starting state:
+  - `HEAD`: `4525f79`.
+  - Latest commit subject: `docs: close phase one local readiness status`.
+  - Tracked diff was empty before Step 55A memory-bank changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Context reviewed:
+  - `AGENTS.md`.
+  - Top memory-bank Step 54A / 53D / 50A sections and related Step 51A/51B fee warning/archive decisions.
+  - API Fees, Workflow, Audit, Authorization, and Account Management patterns.
+  - Web Fees, WorkflowTasks, workflow task helper, AccountManagement permission patterns, and related types.
+  - Prisma Fee / Workflow / User / Role / Permission / Audit models and enums.
+- Findings:
+  - Current `FeeRecord` has no finance review status, reviewer, reviewed-at field, review reason field, or review history relation.
+  - Current `payStatus` is payment lifecycle only and should not be overloaded as finance review state.
+  - Current fee actions already show the desired patterns for scoped policy checks, transactions, optimistic guards, required reason DTOs, and audit summaries.
+  - Current workflow engine is achievement-specific; reuse for fee review would require target enum, step, repository, service, Web type, and UI expansion.
+  - Current permissions include `fee:read_department` and `fee:manage_department`, but no finance review or fee approval permission.
+  - Current Web Fees page does not model review/approval and keeps voucher attachment integration explicitly out of scope.
+- Plan recorded:
+  - Minimum object: fee record review, not payment/voucher review.
+  - Minimum path: fee-specific review action first, not generic workflow reuse.
+  - Minimum state: add persisted latest review status/reviewer/reviewed-at fields before API implementation.
+  - Permission: prefer `fee:review_department`.
+  - Pay status: approve/reject review must not change `payStatus`.
+  - Reason: reuse sanitized audit summaries first; no persisted reason history table in the minimum version.
+  - Voucher attachment integration: not a prerequisite.
+- Step 55B recommendation:
+  - First allow schema/permission contract work. If schema/migration remains disallowed, defer review API implementation rather than creating an audit-only API with no queryable review state.
+- Verification:
+  - `git diff --check`: passed.
+  - Added-lines sensitive value scan: passed.
+- Boundaries observed:
+  - No account password was modified.
+  - No secrets, credentials, cookies, tokens, hashes, connection strings, AccessKeys, private keys, or `.env` / `.env.production` values were read or output.
+  - Existing untracked artifacts were not staged, cleaned, moved, deleted, or modified.
+  - No business data write, migration, seed, backfill, production/VPS access, push, or deploy occurred.
+
 ## 2026-06-30 Step 54A - Phase-one local readiness closure and remaining gaps
 
 - Status: STEP_54A_PHASE_ONE_LOCAL_READINESS_CLOSED_DOCUMENTED.

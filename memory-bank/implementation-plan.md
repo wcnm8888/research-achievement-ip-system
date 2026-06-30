@@ -4,6 +4,64 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 55A Archive - Finance review/approval scope and backend plan - 2026-06-30
+
+- Step identity:
+  - This Step is documentation-only current-state review and backend contract planning for future Finance review/approval.
+  - No API, UI, schema, migration, seed/backfill, package/lockfile, runtime, database, Docker, account/password, VPS/production, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact work occurred.
+- Starting state:
+  - `HEAD`: `4525f79`.
+  - Latest commit: `docs: close phase one local readiness status`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Current capability findings:
+  - `FeeRecord` currently supports fee identity, achievement/department scope, `payStatus`, `paidDate`, `voucherNo`, actor IDs, timestamps, and `archivedAt`.
+  - `PayStatus` is a payment lifecycle only: `PENDING`, `PAID`, `OVERDUE`, `WAIVED`, `CANCELLED`.
+  - Existing fee actions are create, list/detail, warnings, mark-paid, waive, cancel, and soft archive. Waive/cancel/archive require a non-empty reason and record safe audit summaries.
+  - Fee archive intentionally preserves `payStatus`; this pattern should carry into finance review so record visibility/review lifecycle does not overwrite payment lifecycle.
+  - There is no persisted finance review status, reviewer, reviewed-at timestamp, review reason, review history table, or finance-specific permission.
+  - Existing workflow is achievement-specific: `WorkflowTargetType` is only `ACHIEVEMENT`, workflow steps are `DEPARTMENT_REVIEW` and `ARCHIVE`, and task actions mutate achievement status. Reusing workflow for fee review would require workflow target/step expansion and branching beyond the minimum plan.
+  - Existing Web Fees surface has no finance review UI/type; it explicitly treats `voucherNo` as a number only and does not provide voucher attachment upload/download.
+- Minimum scope recommendation:
+  - Scope the first finance review/approval capability to fee record review, not payment execution and not voucher attachment review.
+  - Use a fee-specific review action first, instead of extending the generic workflow task engine.
+  - Add a persisted review state to `FeeRecord` before implementing the action API; audit-only review is not enough because list/detail cannot answer the current review state.
+  - Keep `payStatus` unchanged on approve/reject. Finance review approval/rejection should update only the review fields and audit event; payment remains controlled by mark-paid/waive/cancel.
+  - Do not require voucher attachment integration before finance review. `voucherNo` remains optional text; attachment integration stays a later Step.
+  - Do not add persisted reason history in the minimum version. Record the submitted reason/comment in sanitized `AuditLog` summaries first; revisit a first-class history table only when UI/history requirements are explicit.
+- Proposed minimum backend contract:
+  - New fee review state:
+    - Add a review status field on `fee_records`, with minimum values equivalent to pending/approved/rejected.
+    - Add reviewer and reviewed-at fields so the latest decision is queryable without scanning audit logs.
+    - Keep reason/comment out of the fee row for now unless the product requires showing latest rejection reason outside audit.
+  - New permission:
+    - Prefer `fee:review_department` because the reviewed resource is a department-scoped fee record and the action includes both approve and reject.
+    - Do not use `fee:approve` as the first permission because it names only one decision.
+    - Do not introduce `finance:review` unless a broader finance module with non-fee resources is opened.
+  - New action API shape:
+    - `POST /api/fees/:id/review/approve` with optional `reason` or `comment`.
+    - `POST /api/fees/:id/review/reject` with required `reason`.
+    - Both require `fee:review_department`, current user context, and department scope on the fee.
+    - Both reject archived fees.
+    - Both allow only pending review to transition to approved/rejected in the minimum state machine.
+    - Both return the updated fee state including review fields.
+  - Audit:
+    - Reuse `AuditActionType.APPROVE` / `REJECT` with target type `FEE_RECORD`, or add domain-level audit codes that map to those existing persisted actions.
+    - Include non-sensitive summary fields: feeRecordId, achievementId, oldReviewStatus, newReviewStatus, payStatus, reviewedAt, and reason/comment when provided.
+  - Repository/service:
+    - Follow current fee transaction, optimistic status guard, policy query, DTO validation, and audit-in-transaction patterns.
+    - Keep review transition separate from `assertFeeTransition`, because that state machine is payment-specific.
+- Step 55B recommendation:
+  - Step 55B should first implement the schema/permission contract for fee review, including Prisma schema/migration, generated client, permission constants, seed/foundation mapping, domain types, DTO contract, and focused tests.
+  - If Step 55B is constrained to no migration/schema work, then it should not implement the review API; an audit-only API would create an unqueryable review capability.
+  - The fee-specific backend API should follow after, or be included in the same Step only if schema/migration and permission changes are explicitly allowed.
+- Hard boundaries:
+  - Do not modify account passwords.
+  - Do not read or output secrets, credentials, cookies, tokens, hashes, connection strings, AccessKeys, private keys, or `.env` / `.env.production` values.
+  - Do not write business data, run migration/seed/backfill, access VPS/production DB, push, deploy, or touch existing untracked artifacts.
+  - Do not implement API/UI in this planning Step.
+
 ## Current Step 54A Archive - Phase-one local readiness closure and remaining gaps - 2026-06-30
 
 - Step identity:

@@ -1,5 +1,40 @@
 # Decisions
 
+## D193 - Finance review starts as fee-specific review state, not workflow reuse
+
+- Date: 2026-06-30.
+- Context: Step 55A reviewed the current Fee, Workflow, Audit, Authorization, Account Management, Web Fees, WorkflowTasks, AccountManagement, and Prisma model patterns to define the smallest future Finance review/approval backend scope. Step 54A had kept Finance review/approval, voucher attachment integration, and persisted reason history explicitly deferred.
+- Decision:
+  - Scope the minimum Finance review/approval object to `FeeRecord`.
+  - Do not treat payment execution, paid voucher verification, or voucher attachment review as part of the first Finance review/approval capability.
+  - Do not reuse the current workflow task engine for the minimum implementation because it is achievement-specific: `WorkflowTargetType` only supports `ACHIEVEMENT`, current steps are `DEPARTMENT_REVIEW` and `ARCHIVE`, and actions mutate achievement state.
+  - Use a fee-specific review state and action contract first.
+  - Add persisted latest review state before API implementation; audit-only review is insufficient because current fee list/detail cannot query current approval status.
+  - Keep `payStatus` unchanged on review approve/reject. Payment status remains controlled by mark-paid, waive, cancel, overdue/warning logic, and archive visibility remains independent through `archivedAt`.
+  - Prefer a new `fee:review_department` permission. Avoid `fee:approve` because the action set includes reject, and avoid `finance:review` until a broader finance module exists.
+  - Reuse sanitized `AuditLog` summaries for review reasons/comments in the minimum version. Do not add a persisted reason history table until UI/history requirements justify it.
+  - Keep voucher attachment integration behind this work; `voucherNo` remains a text field and does not require attachment upload/download before review.
+- Proposed minimum backend contract:
+  - Add fee review status values equivalent to pending/approved/rejected.
+  - Add latest reviewer and reviewed-at fields to `fee_records`.
+  - Add fee-specific review endpoints:
+    - `POST /api/fees/:id/review/approve` with optional reason/comment.
+    - `POST /api/fees/:id/review/reject` with required reason.
+  - Gate both endpoints with `fee:review_department` and department scope.
+  - Reject archived fees and non-pending review transitions.
+  - Return updated fee state including review fields.
+  - Record audit target `FEE_RECORD` with approve/reject action and non-sensitive old/new review summaries.
+- Rationale:
+  - `payStatus` is already a payment lifecycle and overloading it would corrupt warning, paid, waive, cancel, and archive semantics.
+  - A workflow reuse path would introduce schema and service expansion across workflow target types, steps, Web types, and task UI before the product needs generic fee workflow.
+  - Persisting the latest review state provides a queryable contract while audit remains the append-only evidence channel.
+  - A fee-scoped permission matches existing `fee:read_department` / `fee:manage_department` conventions.
+- Step 55B guidance:
+  - Step 55B should first allow schema/permission contract work: Prisma schema/migration, permission constants, seed/foundation mapping, generated client, domain types, DTO contract, and focused tests.
+  - If schema/migration and permission changes are not allowed in Step 55B, do not implement the review API yet.
+- Boundaries:
+  - This decision does not authorize API/UI implementation in Step 55A, account password changes, secret reads/output, `.env` / `.env.production` content reads, business-data writes, migration/seed/backfill, production/VPS access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+
 ## D192 - Phase-one local readiness is closed as local-only with explicit deferred gaps
 
 - Date: 2026-06-30.
