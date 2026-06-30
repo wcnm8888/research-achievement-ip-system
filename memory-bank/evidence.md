@@ -1,5 +1,42 @@
 # Evidence
 
+## 2026-06-30 Step 55G - Finance reviewer role contract evidence
+
+- Purpose:
+  - Add a minimum production role contract for department-scoped fee review: `FINANCE_REVIEWER`.
+  - Avoid using global `SYSTEM_ADMIN` as the daily fee review role.
+  - Keep this Step limited to role constants, seed/foundation contract, focused tests, Web role label/type sync, and memory-bank updates.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `f4ab9ba`.
+  - Latest commit subject: `docs: decide fee review scope policy`.
+  - `git status --short --branch` showed existing untracked local artifacts and no tracked changes before Step 55G changes.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - `RoleCode.financeReviewer` maps to `FINANCE_REVIEWER`.
+  - Foundation seed includes role `FINANCE_REVIEWER` / `Finance Reviewer`.
+  - Foundation `FINANCE_REVIEWER` permissions are exactly the minimum review set:
+    - `user_context:read`.
+    - `fee:read_department`.
+    - `fee:review_department`.
+  - Foundation tests assert `FINANCE_REVIEWER` has `fee:review_department`, lacks `fee:manage_department`, and lacks `system:config`.
+  - Demo seed includes the role and the same minimum permission mapping, without creating a user.
+  - Web account-management role types and selector labels include `FINANCE_REVIEWER`.
+- Verification evidence:
+  - `node --check prisma/seed-foundation.cjs`: passed.
+  - `node --check prisma/seed-foundation.test.cjs`: passed.
+  - `node --check prisma/seed.cjs`: passed.
+  - `corepack pnpm test:seed:foundation`: passed, 7 tests.
+  - `corepack pnpm --filter @research-ip/api test -- authorization.constants`: passed, 1 file / 4 tests.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement`: passed, 1 file / 21 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+- Boundaries observed:
+  - No account password was modified.
+  - No real account or demo user was created.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, raw session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+  - No migration, seed, backfill, local business-data write, VPS/production DB access, push, deploy, restore, drop, reset, prune, cleanup, deletion, backup/restore run, or existing untracked artifact handling occurred.
+
 ## 2026-06-30 Step 55F - Fee review department scope policy decision evidence
 
 - Purpose:

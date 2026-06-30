@@ -607,6 +607,7 @@ export type AccountRoleCode =
   | "RESEARCH_SECRETARY"
   | "DEPARTMENT_ADMIN"
   | "SYSTEM_ADMIN"
+  | "FINANCE_REVIEWER"
   | "AUDITOR"
   | "LEADER"
   | "SECRET_MANAGER";

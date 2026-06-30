@@ -4,6 +4,37 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 55G Archive - Finance reviewer role contract - 2026-06-30
+
+- Step identity:
+  - This Step adds the minimum production role contract for department-scoped fee review.
+  - Scope is role constants, seed/foundation role-permission contract, focused tests, Web role label/type sync, and memory-bank updates.
+  - No account password change, real account creation, `.env` / `.env.production` content read/output, migration/seed/backfill execution, local business-data write, VPS/production DB access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked artifact handling occurred.
+- Starting state:
+  - `HEAD`: `f4ab9ba`.
+  - Latest commit: `docs: decide fee review scope policy`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented contract:
+  - Added `RoleCode.financeReviewer = "FINANCE_REVIEWER"`.
+  - Added foundation role `FINANCE_REVIEWER` / `Finance Reviewer`.
+  - Added foundation role-permission mapping:
+    - `user_context:read`.
+    - `fee:read_department`.
+    - `fee:review_department`.
+  - Explicitly kept `FINANCE_REVIEWER` out of `fee:manage_department`, `system:config`, account lifecycle, settings, achievement workflow, and broader management permissions.
+  - Added demo seed role and role-permission mapping only; no demo user was created.
+  - Synchronized Web account-management role type and role selector label so admins can assign the new department-scoped role.
+- Tests/verification:
+  - `corepack pnpm test:seed:foundation`: passed, 7 tests.
+  - `corepack pnpm --filter @research-ip/api test -- authorization.constants`: passed, 1 file / 4 tests.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement`: passed, 1 file / 21 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+- Production setup:
+  - Fee review production setup should assign `FINANCE_REVIEWER` with `scopeType = DEPARTMENT` for each department the reviewer may review.
+  - `SYSTEM_ADMIN` remains available for administration but is no longer the daily fee review role recommendation.
+
 ## Current Step 55F Archive - Fee review department scope policy decision - 2026-06-30
 
 - Step identity:

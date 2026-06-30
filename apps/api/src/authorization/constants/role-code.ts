@@ -3,6 +3,7 @@ export const RoleCode = {
   researchSecretary: "RESEARCH_SECRETARY",
   departmentAdmin: "DEPARTMENT_ADMIN",
   systemAdmin: "SYSTEM_ADMIN",
+  financeReviewer: "FINANCE_REVIEWER",
   auditor: "AUDITOR",
   leader: "LEADER",
   secretManager: "SECRET_MANAGER",

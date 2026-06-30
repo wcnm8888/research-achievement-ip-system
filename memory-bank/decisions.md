@@ -1,5 +1,26 @@
 # Decisions
 
+## D199 - Finance review uses a dedicated department-scoped reviewer role
+
+- Date: 2026-06-30.
+- Context: Step 55G implements the Step 55F policy by adding a minimal production role contract for fee review instead of using global `SYSTEM_ADMIN` as the daily reviewer role.
+- Decision:
+  - Add role code `FINANCE_REVIEWER`.
+  - Grant `FINANCE_REVIEWER` only:
+    - `user_context:read`.
+    - `fee:read_department`.
+    - `fee:review_department`.
+  - Do not grant `fee:manage_department`.
+  - Do not grant `system:config`, account lifecycle, settings, achievement workflow, or other management permissions.
+  - Add the role to foundation and demo seed contracts, but do not create any user.
+  - Synchronize Account Management role type/selector label so operators can assign the role with department scope.
+- Rationale:
+  - Fee review needs read access to department fee records and the review action permission, but not fee operational management.
+  - A dedicated role keeps Step 55F's explicit department-scope policy usable in production without overloading `SYSTEM_ADMIN`.
+  - Assigning `FINANCE_REVIEWER` as a department-scoped role keeps review authority auditable and least-privilege aligned.
+- Boundaries:
+  - This decision does not authorize account creation, password changes, production DB/VPS access, migration/seed/backfill execution, business-data writes, secret reads/output, `.env` / `.env.production` content reads, deployment, push, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+
 ## D198 - Fee review keeps explicit department scope instead of global admin expansion
 
 - Date: 2026-06-30.

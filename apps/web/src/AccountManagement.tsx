@@ -139,6 +139,7 @@ const roleOptions: Array<{ label: string; value: AccountRoleCode }> = [
   { label: "科研秘书", value: "RESEARCH_SECRETARY" },
   { label: "部门管理员", value: "DEPARTMENT_ADMIN" },
   { label: "系统管理员", value: "SYSTEM_ADMIN" },
+  { label: "Finance Reviewer", value: "FINANCE_REVIEWER" },
   { label: "审计员", value: "AUDITOR" },
   { label: "负责人", value: "LEADER" },
   { label: "保密员", value: "SECRET_MANAGER" },

@@ -14,6 +14,9 @@ const {
 const unique = (items) => new Set(items).size === items.length;
 const accountLifecyclePermissionCodes = ["account:invite", "account:reset_password"];
 const feeReviewPermissionCode = "fee:review_department";
+const financeReviewerRoleCode = "FINANCE_REVIEWER";
+const feeManagePermissionCode = "fee:manage_department";
+const systemConfigPermissionCode = "system:config";
 
 describe("foundation seed facts", () => {
   it("uses unique stable codes", () => {
@@ -67,16 +70,31 @@ describe("foundation seed facts", () => {
     }
   });
 
-  it("grants fee review only to SYSTEM_ADMIN in the foundation matrix", () => {
+  it("grants finance reviewer the minimum fee review permissions", () => {
+    const roleCodes = new Set(roles.map((role) => role.code));
     const permissionCodes = new Set(permissions.map((permission) => permission.code));
+    assert.equal(roleCodes.has(financeReviewerRoleCode), true);
     assert.equal(permissionCodes.has(feeReviewPermissionCode), true);
+    assert.equal(permissionCodes.has(feeManagePermissionCode), true);
+    assert.equal(permissionCodes.has(systemConfigPermissionCode), true);
+
+    const reviewerPermissions = rolePermissionMatrix[financeReviewerRoleCode];
+    assert.equal(Array.isArray(reviewerPermissions), true);
+    assert.equal(reviewerPermissions.includes("user_context:read"), true);
+    assert.equal(reviewerPermissions.includes("fee:read_department"), true);
+    assert.equal(reviewerPermissions.includes(feeReviewPermissionCode), true);
+    assert.equal(reviewerPermissions.includes(feeManagePermissionCode), false);
+    assert.equal(reviewerPermissions.includes(systemConfigPermissionCode), false);
+  });
+
+  it("keeps fee review out of operational department roles", () => {
     assert.equal(rolePermissionMatrix.SYSTEM_ADMIN.includes(feeReviewPermissionCode), true);
+    assert.equal(rolePermissionMatrix[financeReviewerRoleCode].includes(feeReviewPermissionCode), true);
 
     for (const [roleCode, matrixPermissionCodes] of Object.entries(rolePermissionMatrix)) {
-      if (roleCode === "SYSTEM_ADMIN") {
+      if (roleCode === "SYSTEM_ADMIN" || roleCode === financeReviewerRoleCode) {
         continue;
       }
-
       assert.equal(
         matrixPermissionCodes.includes(feeReviewPermissionCode),
         false,

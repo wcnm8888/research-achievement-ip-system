@@ -24,6 +24,12 @@ const roles = [
     status: "ACTIVE",
   },
   {
+    code: "FINANCE_REVIEWER",
+    name: "Finance Reviewer",
+    description: "Department-scoped finance fee reviewer.",
+    status: "ACTIVE",
+  },
+  {
     code: "RESEARCHER",
     name: "Researcher",
     description: "Research staff role for own achievement workflows.",
@@ -87,6 +93,11 @@ const permissions = [
 
 const rolePermissionMatrix = {
   SYSTEM_ADMIN: permissions.map((permission) => permission.code),
+  FINANCE_REVIEWER: [
+    "user_context:read",
+    "fee:read_department",
+    "fee:review_department",
+  ],
   RESEARCHER: [
     "user_context:read",
     "achievement:create",

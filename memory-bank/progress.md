@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-06-30 Step 55G - Finance reviewer role contract
+
+- Status: STEP_55G_FINANCE_REVIEWER_ROLE_CONTRACT_IMPLEMENTED.
+- Step identity:
+  - Adds the minimum production role contract for department-scoped fee review.
+  - Does not create users, modify passwords, read `.env` / `.env.production` contents, run migration/seed/backfill, write local business data, access VPS/production DB, push/deploy, cleanup, delete, reset, drop, restore, prune, or touch existing untracked artifacts.
+- Starting state:
+  - `HEAD`: `f4ab9ba`.
+  - Latest commit subject: `docs: decide fee review scope policy`.
+  - Tracked diff was empty before Step 55G changes.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented:
+  - Added backend `RoleCode.financeReviewer`.
+  - Added foundation `FINANCE_REVIEWER` role.
+  - Mapped `FINANCE_REVIEWER` to only `user_context:read`, `fee:read_department`, and `fee:review_department`.
+  - Kept `FINANCE_REVIEWER` away from `fee:manage_department`, `system:config`, account lifecycle, settings, achievement workflow, and management permissions.
+  - Added demo seed role and role-permission mapping without adding any user.
+  - Added focused foundation seed assertions for the finance reviewer contract.
+  - Synced Web account-management role type and selector label.
+- Verification:
+  - `node --check prisma/seed-foundation.cjs`: passed.
+  - `node --check prisma/seed-foundation.test.cjs`: passed.
+  - `node --check prisma/seed.cjs`: passed.
+  - `corepack pnpm test:seed:foundation`: passed, 7 tests.
+  - `corepack pnpm --filter @research-ip/api test -- authorization.constants`: passed, 1 file / 4 tests.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement`: passed, 1 file / 21 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+
 ## 2026-06-30 Step 55F - Fee review department scope policy decision
 
 - Status: STEP_55F_FEE_REVIEW_SCOPE_POLICY_DECIDED_DOCS_ONLY.

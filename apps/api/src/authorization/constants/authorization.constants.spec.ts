@@ -12,6 +12,10 @@ describe("authorization constants", () => {
     expect(RoleCode.departmentAdmin).toBe("DEPARTMENT_ADMIN");
   });
 
+  it("includes the finance reviewer role", () => {
+    expect(RoleCode.financeReviewer).toBe("FINANCE_REVIEWER");
+  });
+
   it("includes the confirmed Step 4A granular permissions", () => {
     expect(PermissionCode.userContextRead).toBe("user_context:read");
     expect(PermissionCode.attachmentReadMetadata).toBe("attachment:read_metadata");
