@@ -4,6 +4,47 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 55D Archive - Fee review Web UI and client integration - 2026-06-30
+
+- Step identity:
+  - This Step adds Web API client/types and Fees page review operation entry points for the Step 55C backend endpoints.
+  - Scope is frontend client, types, Fees UI, focused tests, and memory-bank updates only.
+  - No backend schema/API change, Prisma change, migration/seed/backfill, Web production deploy, Docker acceptance, account/password change, business-data write, production/VPS access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `faf33de`.
+  - Latest commit: `feat: add fee review backend API`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Implemented Web contract:
+  - Added `FeeReviewStatusCode`, `reviewStatus`, `reviewedById`, and `reviewedAt` to Web fee types.
+  - Added `ApproveFeeReviewInput` and `RejectFeeReviewInput`.
+  - Added `createApiClient().approveFeeReview(feeId, payload)` for `POST /fees/:id/review/approve`.
+  - Added `createApiClient().rejectFeeReview(feeId, payload)` for `POST /fees/:id/review/reject`.
+  - Added Fees page review status display in the list and detail drawer.
+  - Added a dedicated review action drawer separate from mark-paid / waive / cancel.
+  - Shows approve/reject actions only when the current user has `fee:review_department` and the record `reviewStatus` is `PENDING`.
+  - Approval reason is optional; rejection reason is required.
+  - Successful review actions refresh the list and current detail.
+- Preserved boundaries:
+  - Review UI does not change or submit `payStatus`, `paidDate`, `voucherNo`, amount, or archived state.
+  - Review actions do not expose voucher attachment upload/download.
+  - No workflow task UI was added.
+  - No production import, VPS, Docker, migration, seed, or backend write path was added beyond calling the authorized Step 55C endpoints.
+- Tests updated:
+  - API client tests cover approve/reject review paths and JSON payloads.
+  - Fees tests cover review helper paths, payload shaping, reason validation, permission visibility, pending-only review action visibility, enum labels, and no voucher attachment/warnings calls.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Fees api-client`: passed, 2 files / 78 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed with existing Vite chunk-size warning.
+  - `git diff --check`: passed.
+  - Staged added-lines sensitive value scan: passed.
+- Next:
+  - Docker/browser acceptance remains deferred.
+  - Voucher attachment integration remains deferred.
+  - Broader role rollout for `fee:review_department` remains a product/seed decision.
+
 ## Current Step 55C Archive - Fee review approve/reject backend API - 2026-06-30
 
 - Step identity:

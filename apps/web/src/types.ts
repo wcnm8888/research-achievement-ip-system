@@ -274,6 +274,8 @@ export type FundSourceCode = "PROJECT" | "DEPARTMENT" | "INSTITUTE" | "OTHER";
 
 export type PayStatusCode = "PENDING" | "PAID" | "OVERDUE" | "WAIVED" | "CANCELLED";
 
+export type FeeReviewStatusCode = "PENDING" | "APPROVED" | "REJECTED";
+
 export type FeeRecord = {
   id: string;
   achievementId: string;
@@ -285,6 +287,9 @@ export type FeeRecord = {
   paidDate: string | null;
   payStatus: PayStatusCode;
   voucherNo: string | null;
+  reviewStatus: FeeReviewStatusCode;
+  reviewedById: string | null;
+  reviewedAt: string | null;
   createdById: string | null;
   updatedById: string | null;
   createdAt: string;
@@ -317,6 +322,14 @@ export type ChangeFeeStatusInput = {
   reason: string;
 };
 
+export type ApproveFeeReviewInput = {
+  reason?: string | null;
+};
+
+export type RejectFeeReviewInput = {
+  reason: string;
+};
+
 export type FeeStateRecord = Pick<
   FeeRecord,
   | "id"
@@ -327,6 +340,9 @@ export type FeeStateRecord = Pick<
   | "paidDate"
   | "payStatus"
   | "voucherNo"
+  | "reviewStatus"
+  | "reviewedById"
+  | "reviewedAt"
   | "updatedById"
   | "archivedAt"
 >;

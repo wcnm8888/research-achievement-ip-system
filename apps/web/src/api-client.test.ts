@@ -307,6 +307,54 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("X-Demo-User-Id")).toBe("user-id");
     expect(headers.get("Content-Type")).toBeNull();
   });
+
+  it("posts fee review approve and reject actions with JSON payloads", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          id: "fee-id",
+          reviewStatus: "APPROVED",
+          payStatus: "PENDING",
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          id: "fee-id",
+          reviewStatus: "REJECTED",
+          payStatus: "PENDING",
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("reviewer-user-id");
+    await expect(client.approveFeeReview("fee-id", { reason: "finance checked" }))
+      .resolves.toMatchObject({ reviewStatus: "APPROVED" });
+    await expect(client.rejectFeeReview("fee-id", { reason: "missing support" }))
+      .resolves.toMatchObject({ reviewStatus: "REJECTED" });
+
+    const [approveUrl, approveInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [rejectUrl, rejectInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(approveUrl).toBe("http://localhost/api/fees/fee-id/review/approve");
+    expect(approveInit.method).toBe("POST");
+    expect(approveInit.body).toBe(JSON.stringify({ reason: "finance checked" }));
+    expect(rejectUrl).toBe("http://localhost/api/fees/fee-id/review/reject");
+    expect(rejectInit.method).toBe("POST");
+    expect(rejectInit.body).toBe(JSON.stringify({ reason: "missing support" }));
+
+    const serializedPayloads = JSON.stringify([approveInit.body, rejectInit.body]);
+    expect(serializedPayloads).not.toContain("amount");
+    expect(serializedPayloads).not.toContain("voucherNo");
+    expect(serializedPayloads).not.toContain("VOUCHER");
+  });
 });
 
 describe("account management API client", () => {

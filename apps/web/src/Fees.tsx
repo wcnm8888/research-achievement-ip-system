@@ -26,15 +26,18 @@ import {
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import type {
+  ApproveFeeReviewInput,
   ChangeFeeStatusInput,
   CreateFeeRecordInput,
   FeeQuery,
   FeeRecord,
+  FeeReviewStatusCode,
   FeeStateRecord,
   FeeTypeCode,
   FundSourceCode,
   MarkFeePaidInput,
   PayStatusCode,
+  RejectFeeReviewInput,
 } from "./types";
 
 type Loadable<T> = {
@@ -72,7 +75,13 @@ export type MarkFeePaidFormValues = {
 
 export type FeeStatusActionKind = "waive" | "cancel";
 
+export type FeeReviewActionKind = "approve" | "reject";
+
 export type FeeStatusActionFormValues = {
+  reason: string;
+};
+
+export type FeeReviewActionFormValues = {
   reason: string;
 };
 
@@ -81,6 +90,8 @@ export type CreateFeeFormErrors = Partial<Record<keyof CreateFeeFormValues, stri
 export type MarkFeePaidFormErrors = Partial<Record<keyof MarkFeePaidFormValues, string>>;
 
 export type FeeStatusActionFormErrors = Partial<Record<keyof FeeStatusActionFormValues, string>>;
+
+export type FeeReviewActionFormErrors = Partial<Record<keyof FeeReviewActionFormValues, string>>;
 
 type MutationState = {
   loading: boolean;
@@ -180,6 +191,22 @@ const payStatusColors: Record<PayStatusCode, string> = {
   CANCELLED: "default",
 };
 
+const reviewStatusOptions: Array<{ label: string; value: FeeReviewStatusCode }> = [
+  { label: "待审核", value: "PENDING" },
+  { label: "已通过", value: "APPROVED" },
+  { label: "已拒绝", value: "REJECTED" },
+];
+
+const reviewStatusLabels = Object.fromEntries(
+  reviewStatusOptions.map((option) => [option.value, option.label]),
+) as Record<FeeReviewStatusCode, string>;
+
+const reviewStatusColors: Record<FeeReviewStatusCode, string> = {
+  PENDING: "processing",
+  APPROVED: "success",
+  REJECTED: "error",
+};
+
 export function Fees({ demoUserId, authUser }: FeesProps) {
   const [draftFilters, setDraftFilters] = useState<FeeFilters>({});
   const [appliedFilters, setAppliedFilters] = useState<FeeFilters>({});
@@ -205,9 +232,19 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
   );
   const [statusActionErrors, setStatusActionErrors] = useState<FeeStatusActionFormErrors>({});
   const [statusActionStatus, setStatusActionStatus] = useState<MutationState>(emptyMutationState);
+  const [reviewAction, setReviewAction] = useState<{
+    kind: FeeReviewActionKind;
+    record: FeeRecord;
+  } | null>(null);
+  const [reviewActionForm, setReviewActionForm] = useState<FeeReviewActionFormValues>(
+    createDefaultFeeReviewActionForm,
+  );
+  const [reviewActionErrors, setReviewActionErrors] = useState<FeeReviewActionFormErrors>({});
+  const [reviewActionStatus, setReviewActionStatus] = useState<MutationState>(emptyMutationState);
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
   const query = useMemo(() => buildFeeQuery(appliedFilters), [appliedFilters]);
   const canManageFees = canManageDepartmentFees(authUser);
+  const canReviewFees = canReviewDepartmentFees(authUser);
 
   const loadFees = useCallback(() => {
     if (!demoUserId) {
@@ -316,6 +353,19 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
     setStatusAction(null);
     setStatusActionErrors({});
     setStatusActionStatus(emptyMutationState());
+  };
+
+  const openReviewActionDrawer = useCallback((kind: FeeReviewActionKind, record: FeeRecord) => {
+    setReviewAction({ kind, record });
+    setReviewActionForm(createDefaultFeeReviewActionForm());
+    setReviewActionErrors({});
+    setReviewActionStatus(emptyMutationState());
+  }, []);
+
+  const closeReviewActionDrawer = () => {
+    setReviewAction(null);
+    setReviewActionErrors({});
+    setReviewActionStatus(emptyMutationState());
   };
 
   const submitCreateFee = () => {
@@ -459,15 +509,86 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
       );
   };
 
+  const submitReviewAction = () => {
+    if (!canReviewFees || !reviewAction || !canReviewFee(reviewAction.record)) {
+      return;
+    }
+
+    const result = buildFeeReviewActionPayload(reviewAction.kind, reviewActionForm);
+    setReviewActionErrors(result.errors);
+
+    if (!result.payload) {
+      return;
+    }
+
+    setReviewActionStatus({ loading: true, error: null, successMessage: null });
+    const actionRequest =
+      reviewAction.kind === "approve"
+        ? approveFeeReviewForDemoUser(
+            apiClient,
+            demoUserId,
+            reviewAction.record.id,
+            result.payload,
+          )
+        : rejectFeeReviewForDemoUser(
+            apiClient,
+            demoUserId,
+            reviewAction.record.id,
+            result.payload as RejectFeeReviewInput,
+          );
+
+    void actionRequest
+      .then((updated) => {
+        if (!updated) {
+          setReviewActionStatus({
+            loading: false,
+            error: mapFeeMutationErrorToDisplay({
+              kind: "unauthorized",
+              message: "请选择演示用户后再执行费用审核",
+            }),
+            successMessage: null,
+          });
+          return;
+        }
+
+        setReviewActionStatus({
+          loading: false,
+          error: null,
+          successMessage:
+            reviewAction.kind === "approve"
+              ? "费用审核已通过。列表和当前详情会刷新。"
+              : "费用审核已拒绝。列表和当前详情会刷新。",
+        });
+        loadFees();
+        loadFeeDetail(reviewAction.record.id);
+      })
+      .catch((error: unknown) =>
+        setReviewActionStatus({
+          loading: false,
+          error: mapFeeMutationErrorToDisplay(normalizeError(error)),
+          successMessage: null,
+        }),
+      );
+  };
+
   const columns = useMemo(
     () =>
       buildFeeColumns(
         openFeeDetail,
         openMarkPaidDrawer,
         openStatusActionDrawer,
+        openReviewActionDrawer,
         canManageFees,
+        canReviewFees,
       ),
-    [canManageFees, openFeeDetail, openMarkPaidDrawer, openStatusActionDrawer],
+    [
+      canManageFees,
+      canReviewFees,
+      openFeeDetail,
+      openMarkPaidDrawer,
+      openReviewActionDrawer,
+      openStatusActionDrawer,
+    ],
   );
 
   if (!demoUserId) {
@@ -639,7 +760,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
               showSizeChanger: false,
               showTotal: (total) => `当前返回 ${total} 条`,
             }}
-            scroll={{ x: 1120 }}
+            scroll={{ x: 1248 }}
           />
         </DataState>
       </Card>
@@ -653,8 +774,10 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         detail={feeDetail}
         feeRecordId={selectedFeeId}
         canManageFees={canManageFees}
+        canReviewFees={canReviewFees}
         onOpenMarkPaid={openMarkPaidDrawer}
         onOpenStatusAction={openStatusActionDrawer}
+        onOpenReviewAction={openReviewActionDrawer}
         onClose={closeFeeDetail}
         onRetry={retryFeeDetail}
       />
@@ -687,6 +810,16 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         onClose={closeStatusActionDrawer}
         onSubmit={submitStatusAction}
       />
+      <FeeReviewActionDrawer
+        action={reviewAction}
+        values={reviewActionForm}
+        errors={reviewActionErrors}
+        status={reviewActionStatus}
+        canReviewFees={canReviewFees}
+        onChange={(patch) => setReviewActionForm((current) => ({ ...current, ...patch }))}
+        onClose={closeReviewActionDrawer}
+        onSubmit={submitReviewAction}
+      />
     </Space>
   );
 }
@@ -695,16 +828,20 @@ function FeeDetailDrawer({
   detail,
   feeRecordId,
   canManageFees,
+  canReviewFees,
   onOpenMarkPaid,
   onOpenStatusAction,
+  onOpenReviewAction,
   onClose,
   onRetry,
 }: {
   detail: Loadable<FeeRecord>;
   feeRecordId: string | null;
   canManageFees: boolean;
+  canReviewFees: boolean;
   onOpenMarkPaid: (record: FeeRecord) => void;
   onOpenStatusAction: (kind: FeeStatusActionKind, record: FeeRecord) => void;
+  onOpenReviewAction: (kind: FeeReviewActionKind, record: FeeRecord) => void;
   onClose: () => void;
   onRetry: () => void;
 }) {
@@ -737,8 +874,10 @@ function FeeDetailDrawer({
             mode="management"
             record={detail.data}
             canManageFees={canManageFees}
+            canReviewFees={canReviewFees}
             onOpenMarkPaid={onOpenMarkPaid}
             onOpenStatusAction={onOpenStatusAction}
+            onOpenReviewAction={onOpenReviewAction}
           />
         ) : null}
       </DataState>
@@ -820,17 +959,22 @@ function FeeDetailContent({
   mode = "management",
   record,
   canManageFees = true,
+  canReviewFees = false,
   onOpenMarkPaid,
   onOpenStatusAction,
+  onOpenReviewAction,
 }: {
   mode?: FeeDetailContentMode;
   record: FeeRecord;
   canManageFees?: boolean;
+  canReviewFees?: boolean;
   onOpenMarkPaid?: (record: FeeRecord) => void;
   onOpenStatusAction?: (kind: FeeStatusActionKind, record: FeeRecord) => void;
+  onOpenReviewAction?: (kind: FeeReviewActionKind, record: FeeRecord) => void;
 }) {
   const showMarkPaidAction = shouldShowFeeDetailMarkPaidAction(record, mode, canManageFees);
   const showStatusActions = shouldShowFeeDetailStatusActions(record, mode, canManageFees);
+  const showReviewActions = shouldShowFeeDetailReviewActions(record, mode, canReviewFees);
 
   return (
     <Space direction="vertical" size={16} className="full-width">
@@ -865,8 +1009,34 @@ function FeeDetailContent({
             {getPayStatusLabel(record.payStatus)}
           </Tag>
         </Descriptions.Item>
+        <Descriptions.Item label="审核状态">
+          <Tag color={reviewStatusColors[record.reviewStatus] ?? "default"}>
+            {getFeeReviewStatusLabel(record.reviewStatus)}
+          </Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="审核人 ID">{record.reviewedById ?? "未审核"}</Descriptions.Item>
+        <Descriptions.Item label="审核时间">{formatDateTime(record.reviewedAt)}</Descriptions.Item>
         <Descriptions.Item label="凭证编号">{record.voucherNo ?? "未登记"}</Descriptions.Item>
       </Descriptions>
+
+      {showReviewActions ? (
+        <Alert
+          showIcon
+          type="info"
+          message="可执行费用审核"
+          description="审核通过或拒绝只更新 reviewStatus、reviewedById 和 reviewedAt；不会改变缴费状态、缴费日期、凭证编号或归档状态。"
+          action={
+            <Space>
+              <Button size="small" onClick={() => onOpenReviewAction?.("approve", record)}>
+                审核通过
+              </Button>
+              <Button size="small" danger onClick={() => onOpenReviewAction?.("reject", record)}>
+                审核拒绝
+              </Button>
+            </Space>
+          }
+        />
+      ) : null}
 
       {showMarkPaidAction ? (
         <Alert
@@ -1207,6 +1377,90 @@ function FeeStatusActionDrawer({
   );
 }
 
+function FeeReviewActionDrawer({
+  action,
+  values,
+  errors,
+  status,
+  canReviewFees,
+  onChange,
+  onClose,
+  onSubmit,
+}: {
+  action: { kind: FeeReviewActionKind; record: FeeRecord } | null;
+  values: FeeReviewActionFormValues;
+  errors: FeeReviewActionFormErrors;
+  status: MutationState;
+  canReviewFees: boolean;
+  onChange: (patch: Partial<FeeReviewActionFormValues>) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  const record = action?.record ?? null;
+  const title = action?.kind === "approve" ? "费用审核通过" : "费用审核拒绝";
+  const submitLabel = action?.kind === "approve" ? "确认通过" : "确认拒绝";
+  const reasonRequired = action?.kind === "reject";
+
+  return (
+    <Drawer
+      className="fee-form-drawer"
+      title={title}
+      width={560}
+      open={Boolean(action)}
+      onClose={onClose}
+      destroyOnClose
+      extra={
+        <Button type="text" onClick={onClose}>
+          关闭
+        </Button>
+      }
+    >
+      <Space direction="vertical" size={16} className="full-width">
+        {record ? (
+          <Alert
+            showIcon
+            type={canReviewFees && canReviewFee(record) ? "info" : "warning"}
+            message={
+              canReviewFees && canReviewFee(record)
+                ? "当前费用可审核"
+                : "当前费用不可重复审核"
+            }
+            description={`费用 ${record.id} 当前审核状态：${getFeeReviewStatusLabel(record.reviewStatus)}。审核不会改变缴费状态、缴费日期、凭证编号或归档状态。`}
+          />
+        ) : null}
+        <MutationStateAlert state={status} />
+        <div className="fee-form-grid fee-form-grid-single">
+          <FormField label="审核原因" error={errors.reason} required={reasonRequired}>
+            <Input.TextArea
+              value={values.reason}
+              maxLength={500}
+              rows={5}
+              placeholder={
+                action?.kind === "approve"
+                  ? "可选，1-500 个字符；不填写则不提交 reason"
+                  : "拒绝原因必填，1-500 个字符"
+              }
+              onChange={(event) => onChange({ reason: event.target.value })}
+            />
+          </FormField>
+        </div>
+        <div className="fee-form-actions">
+          <Button onClick={onClose}>取消</Button>
+          <Button
+            type="primary"
+            danger={action?.kind === "reject"}
+            loading={status.loading}
+            disabled={!record || !canReviewFees || !canReviewFee(record)}
+            onClick={onSubmit}
+          >
+            {submitLabel}
+          </Button>
+        </div>
+      </Space>
+    </Drawer>
+  );
+}
+
 function MutationStateAlert({ state }: { state: MutationState }) {
   if (state.error) {
     return <Alert showIcon type="error" message={state.error.message} description={state.error.detail} />;
@@ -1367,6 +1621,60 @@ export const cancelFeeForDemoUser = async (
   return cancelFee(client, feeRecordId, input);
 };
 
+export const approveFeeReview = async (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+  input: ApproveFeeReviewInput = {},
+): Promise<FeeStateRecord | null> => {
+  const trimmedId = feeRecordId?.trim();
+
+  if (!trimmedId) {
+    return null;
+  }
+
+  return client.post<FeeStateRecord>(`/fees/${trimmedId}/review/approve`, input);
+};
+
+export const rejectFeeReview = async (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+  input: RejectFeeReviewInput,
+): Promise<FeeStateRecord | null> => {
+  const trimmedId = feeRecordId?.trim();
+
+  if (!trimmedId) {
+    return null;
+  }
+
+  return client.post<FeeStateRecord>(`/fees/${trimmedId}/review/reject`, input);
+};
+
+export const approveFeeReviewForDemoUser = async (
+  client: ApiClient,
+  demoUserId: string | null,
+  feeRecordId: string | null | undefined,
+  input: ApproveFeeReviewInput = {},
+): Promise<FeeStateRecord | null> => {
+  if (!demoUserId?.trim()) {
+    return null;
+  }
+
+  return approveFeeReview(client, feeRecordId, input);
+};
+
+export const rejectFeeReviewForDemoUser = async (
+  client: ApiClient,
+  demoUserId: string | null,
+  feeRecordId: string | null | undefined,
+  input: RejectFeeReviewInput,
+): Promise<FeeStateRecord | null> => {
+  if (!demoUserId?.trim()) {
+    return null;
+  }
+
+  return rejectFeeReview(client, feeRecordId, input);
+};
+
 export const refreshFeesAfterMutation = async ({
   client,
   demoUserId,
@@ -1472,6 +1780,10 @@ export const createDefaultFeeStatusActionForm = (): FeeStatusActionFormValues =>
   reason: "",
 });
 
+export const createDefaultFeeReviewActionForm = (): FeeReviewActionFormValues => ({
+  reason: "",
+});
+
 export const buildCreateFeeRecordPayload = (
   values: CreateFeeFormValues,
 ): { payload: CreateFeeRecordInput | null; errors: CreateFeeFormErrors } => {
@@ -1530,6 +1842,36 @@ export const buildFeeStatusActionPayload = (
     errors,
     payload: {
       reason: values.reason.trim(),
+    },
+  };
+};
+
+export const buildFeeReviewActionPayload = (
+  kind: FeeReviewActionKind,
+  values: FeeReviewActionFormValues,
+): {
+  payload: ApproveFeeReviewInput | RejectFeeReviewInput | null;
+  errors: FeeReviewActionFormErrors;
+} => {
+  const errors = validateFeeReviewActionForm(kind, values);
+
+  if (Object.keys(errors).length > 0) {
+    return { payload: null, errors };
+  }
+
+  const reason = values.reason.trim();
+
+  if (kind === "approve") {
+    return {
+      errors,
+      payload: reason ? { reason } : {},
+    };
+  }
+
+  return {
+    errors,
+    payload: {
+      reason,
     },
   };
 };
@@ -1598,6 +1940,22 @@ export const validateFeeStatusActionForm = (
     errors.reason = "请输入原因。";
   } else if (reason.length > 500) {
     errors.reason = "原因不能超过 500 个字符。";
+  }
+
+  return errors;
+};
+
+export const validateFeeReviewActionForm = (
+  kind: FeeReviewActionKind,
+  values: FeeReviewActionFormValues,
+): FeeReviewActionFormErrors => {
+  const errors: FeeReviewActionFormErrors = {};
+  const reason = values.reason.trim();
+
+  if (kind === "reject" && !reason) {
+    errors.reason = "请输入审核拒绝原因。";
+  } else if (reason.length > 500) {
+    errors.reason = "审核原因不能超过 500 个字符。";
   }
 
   return errors;
@@ -1730,9 +2088,16 @@ export const canMarkFeePaid = (record: Pick<FeeRecord, "payStatus">): boolean =>
 export const canWaiveOrCancelFee = (record: Pick<FeeRecord, "payStatus">): boolean =>
   record.payStatus === "PENDING" || record.payStatus === "OVERDUE";
 
+export const canReviewFee = (record: Pick<FeeRecord, "reviewStatus">): boolean =>
+  record.reviewStatus === "PENDING";
+
 export const canManageDepartmentFees = (
   authUser: FeePermissionContext,
 ): boolean => Boolean(authUser?.permissionCodes.includes("fee:manage_department"));
+
+export const canReviewDepartmentFees = (
+  authUser: FeePermissionContext,
+): boolean => Boolean(authUser?.permissionCodes.includes("fee:review_department"));
 
 export const shouldShowFeeDetailMarkPaidAction = (
   record: Pick<FeeRecord, "payStatus">,
@@ -1745,6 +2110,12 @@ export const shouldShowFeeDetailStatusActions = (
   mode: FeeDetailContentMode = "management",
   canManageFees = true,
 ): boolean => mode === "management" && canManageFees && canWaiveOrCancelFee(record);
+
+export const shouldShowFeeDetailReviewActions = (
+  record: Pick<FeeRecord, "reviewStatus">,
+  mode: FeeDetailContentMode = "management",
+  canReviewFees = true,
+): boolean => mode === "management" && canReviewFees && canReviewFee(record);
 
 export const mapFeeDetailErrorToDisplay = (error: ApiError): ApiError => {
   if (error.kind === "forbidden" || error.kind === "unauthorized") {
@@ -1830,11 +2201,16 @@ export const getFeeTypeLabel = (value: FeeTypeCode | string): string =>
 export const getPayStatusLabel = (value: PayStatusCode | string): string =>
   payStatusLabels[value as PayStatusCode] ?? value;
 
+export const getFeeReviewStatusLabel = (value: FeeReviewStatusCode | string): string =>
+  reviewStatusLabels[value as FeeReviewStatusCode] ?? value;
+
 const buildFeeColumns = (
   onOpenDetail: (record: FeeRecord) => void,
   onOpenMarkPaid: (record: FeeRecord) => void,
   onOpenStatusAction: (kind: FeeStatusActionKind, record: FeeRecord) => void,
+  onOpenReviewAction: (kind: FeeReviewActionKind, record: FeeRecord) => void,
   canManageFees = true,
+  canReviewFees = false,
 ): TableProps<FeeRecord>["columns"] => [
   {
     title: "费用记录",
@@ -1856,6 +2232,17 @@ const buildFeeColumns = (
     width: 128,
     render: (value: PayStatusCode) => (
       <Tag color={payStatusColors[value] ?? "default"}>{getPayStatusLabel(value)}</Tag>
+    ),
+  },
+  {
+    title: "审核状态",
+    dataIndex: "reviewStatus",
+    key: "reviewStatus",
+    width: 128,
+    render: (value: FeeReviewStatusCode) => (
+      <Tag color={reviewStatusColors[value] ?? "default"}>
+        {getFeeReviewStatusLabel(value)}
+      </Tag>
     ),
   },
   {
@@ -1928,6 +2315,16 @@ const buildFeeColumns = (
             </Button>
             <Button size="small" danger onClick={() => onOpenStatusAction("cancel", item)}>
               取消
+            </Button>
+          </>
+        ) : null}
+        {canReviewFees && canReviewFee(item) ? (
+          <>
+            <Button size="small" onClick={() => onOpenReviewAction("approve", item)}>
+              审核通过
+            </Button>
+            <Button size="small" danger onClick={() => onOpenReviewAction("reject", item)}>
+              审核拒绝
             </Button>
           </>
         ) : null}

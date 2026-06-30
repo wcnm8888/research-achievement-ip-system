@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-06-30 Step 55D - Fee review Web UI and client integration
+
+- Status: STEP_55D_FEE_REVIEW_WEB_UI_IMPLEMENTED.
+- Step identity:
+  - Adds frontend API client/types and Fees page review UI for the Step 55C backend review endpoints.
+  - Does not modify backend schema/API, Prisma, migrations, seeds, Web production deploy, Docker acceptance, business data, account passwords, production/VPS, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked artifacts.
+- Starting state:
+  - `HEAD`: `faf33de`.
+  - Latest commit subject: `feat: add fee review backend API`.
+  - Tracked diff was empty before Step 55D changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Implemented:
+  - Added Web fee review fields and review input types.
+  - Added semantic API client methods for approve/reject review endpoints.
+  - Added Fees list/detail review status display.
+  - Added dedicated approve/reject review drawer and helpers.
+  - Gated review actions by `fee:review_department` and `reviewStatus = PENDING`.
+  - Kept review UI independent from mark-paid, waive, cancel, archive, and voucher attachment boundaries.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Fees api-client`: passed, 2 files / 78 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed with existing Vite chunk-size warning.
+  - `git diff --check`: passed.
+  - Staged added-lines sensitive value scan: passed.
+- Boundaries observed:
+  - No account password was modified.
+  - No secrets, credentials, cookies, tokens, connection strings, AccessKeys, private keys, or `.env` / `.env.production` values were read or output.
+  - Existing untracked artifacts were not staged, cleaned, moved, deleted, or modified.
+  - No backend API/schema change, migration deploy, seed, backfill, business-data write, Docker acceptance, production/VPS access, push, or deploy occurred.
+
 ## 2026-06-30 Step 55C - Fee review approve/reject backend API
 
 - Status: STEP_55C_FEE_REVIEW_BACKEND_API_IMPLEMENTED.

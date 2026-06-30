@@ -1,5 +1,43 @@
 # Evidence
 
+## 2026-06-30 Step 55D - Fee review Web UI and client integration evidence
+
+- Purpose:
+  - Add Web API client/types and Fees page review UI for Step 55C fee review approve/reject endpoints.
+  - Keep this Step limited to frontend UI/client/tests and memory-bank updates.
+  - Avoid Docker acceptance, backend schema/API changes, Prisma changes, migrations, seeds, voucher attachment integration, workflow task UI, and production access.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `faf33de`.
+  - Latest commit subject: `feat: add fee review backend API`.
+  - `git status --short --branch` showed existing untracked local artifacts and no tracked changes before Step 55D changes.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+- Context evidence:
+  - Read `AGENTS.md`.
+  - Read targeted memory-bank Step 55C / 55B / 55A sections.
+  - Read Web `api-client.ts`, `api-client.test.ts`, `types.ts`, `Fees.tsx`, and `Fees.test.ts`.
+  - Read Account Management / Department Management permission and operation drawer patterns.
+  - Read Step 55C backend fee DTO/response shape only to confirm review fields and endpoint contract.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - Web fee types now expose `reviewStatus`, `reviewedById`, and `reviewedAt`.
+  - Web review input types distinguish optional approval reason from required rejection reason.
+  - API client exposes `approveFeeReview` and `rejectFeeReview` semantic methods.
+  - Fees page shows review status in list/detail and exposes approve/reject only under `fee:review_department` plus pending review status.
+  - Review action drawer submits only review reason payloads.
+  - Review actions refresh the list and current detail after success.
+  - No voucher attachment upload/download, workflow task UI, backend API/schema change, or Docker acceptance was added.
+- Verification evidence:
+  - `corepack pnpm --filter @research-ip/web test -- Fees api-client`: passed, 2 files / 78 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web build`: passed with existing Vite chunk-size warning.
+- Final diff checks:
+  - `git diff --check`: passed.
+  - Staged added-lines sensitive value scan: passed; no sensitive values detected in staged added lines.
+- Boundaries observed:
+  - No account password was modified.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+  - No backend API/schema change, Prisma change, business-data write, migration deploy, seed, backfill, Web production deploy, Docker acceptance, production/VPS access, push, deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling occurred.
+
 ## 2026-06-30 Step 55C - Fee review approve/reject backend API evidence
 
 - Purpose:

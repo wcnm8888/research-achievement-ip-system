@@ -1,5 +1,26 @@
 # Decisions
 
+## D196 - Fee review Web UI is permission-gated and separated from payment actions
+
+- Date: 2026-06-30.
+- Context: Step 55D connects the Web app to the Step 55C fee review approve/reject backend API. The user explicitly limited this Step to frontend UI/client/tests and excluded Docker acceptance, backend schema/API changes, Prisma, migrations, seeds, and production access.
+- Decision:
+  - Add Web fee review fields to the shared Web fee types.
+  - Add semantic API client methods for `POST /fees/:id/review/approve` and `POST /fees/:id/review/reject`.
+  - Display `reviewStatus` in the Fees list and detail view.
+  - Show approve/reject actions only for users with `fee:review_department` and records with `reviewStatus = PENDING`.
+  - Use a dedicated review drawer rather than reusing mark-paid, waive, cancel, or archive drawers.
+  - Keep approval reason optional and rejection reason required.
+  - Refresh list/detail after successful review actions.
+  - Do not include amount or `voucherNo` in review action payloads.
+  - Do not add voucher attachment upload/download or workflow task UI.
+- Rationale:
+  - Review is a separate lifecycle from payment, so the UI should not blend review controls into payment status actions.
+  - Permission-gated visibility prevents unauthorized users from seeing or triggering review requests.
+  - A dedicated drawer makes the payload boundary obvious: review submits only optional/required reason data.
+- Boundaries:
+  - This decision does not authorize backend API/schema changes, Prisma changes, migrations, seeds, Docker acceptance, Web production deploy, voucher attachment integration, workflow task reuse, role expansion, account password changes, secret reads/output, `.env` / `.env.production` content reads, business-data writes, production/VPS access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+
 ## D195 - Fee review API uses fee-specific state transition, not payment or workflow mutation
 
 - Date: 2026-06-30.

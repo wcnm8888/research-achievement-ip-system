@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ApiClient } from "./api-client";
 import {
+  approveFeeReview,
+  approveFeeReviewForDemoUser,
   buildCreateFeeRecordPayload,
   buildFeeDetailOpenRequest,
   buildFeeQuery,
+  buildFeeReviewActionPayload,
   buildFeeStatusActionPayload,
   buildMarkFeePaidPayload,
   canManageDepartmentFees,
   canMarkFeePaid,
+  canReviewDepartmentFees,
+  canReviewFee,
   canWaiveOrCancelFee,
   classifyFeeWarningRecords,
   cancelFee,
@@ -20,6 +25,7 @@ import {
   fetchFeeRecords,
   getFeeDetailState,
   getFeeListState,
+  getFeeReviewStatusLabel,
   getFeeTypeLabel,
   getPayStatusLabel,
   groupFeeWarnings,
@@ -30,9 +36,13 @@ import {
   mapFeeDetailErrorToDisplay,
   mapFeeMutationErrorToDisplay,
   refreshFeesAfterMutation,
+  rejectFeeReview,
+  rejectFeeReviewForDemoUser,
   shouldShowFeeDetailMarkPaidAction,
+  shouldShowFeeDetailReviewActions,
   shouldShowFeeDetailStatusActions,
   validateCreateFeeForm,
+  validateFeeReviewActionForm,
   validateFeeStatusActionForm,
   validateMarkFeePaidForm,
   waiveFee,
@@ -51,6 +61,9 @@ const baseFee: FeeRecord = {
   paidDate: null,
   payStatus: "PENDING",
   voucherNo: null,
+  reviewStatus: "PENDING",
+  reviewedById: null,
+  reviewedAt: null,
   createdById: "creator-id",
   updatedById: "updater-id",
   createdAt: "2026-06-01T00:00:00.000Z",
@@ -208,6 +221,9 @@ describe("fee write helpers", () => {
       paidDate: "2026-07-02T00:00:00.000Z",
       payStatus: "PAID" as const,
       voucherNo: "VOUCHER-PAID",
+      reviewStatus: "PENDING" as const,
+      reviewedById: null,
+      reviewedAt: null,
       updatedById: "updater-id",
       archivedAt: null,
     };
@@ -239,6 +255,9 @@ describe("fee write helpers", () => {
       paidDate: null,
       payStatus: "WAIVED" as const,
       voucherNo: null,
+      reviewStatus: "PENDING" as const,
+      reviewedById: null,
+      reviewedAt: null,
       updatedById: "updater-id",
       archivedAt: null,
     };
@@ -269,6 +288,58 @@ describe("fee write helpers", () => {
     await expect(cancelFee(client, "   ", payload)).resolves.toBeNull();
     await expect(waiveFeeForDemoUser(client, null, "fee-id", payload)).resolves.toBeNull();
     await expect(cancelFeeForDemoUser(client, "   ", "fee-id", payload)).resolves.toBeNull();
+    expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it("requests fee review approve and reject endpoints with review-only payloads", async () => {
+    const approved = {
+      id: "fee-id",
+      achievementId: "achievement-id",
+      departmentId: "department-id",
+      feeType: "PATENT_ANNUAL" as const,
+      dueDate: "2026-07-01T00:00:00.000Z",
+      paidDate: null,
+      payStatus: "PENDING" as const,
+      voucherNo: null,
+      reviewStatus: "APPROVED" as const,
+      reviewedById: "reviewer-id",
+      reviewedAt: "2026-07-02T00:00:00.000Z",
+      updatedById: "updater-id",
+      archivedAt: null,
+    };
+    const rejected = { ...approved, reviewStatus: "REJECTED" as const };
+    const approveClient = createClient([], approved);
+    const rejectClient = createClient([], rejected);
+
+    await expect(approveFeeReview(approveClient, "fee-id", {})).resolves.toEqual(approved);
+    await expect(
+      rejectFeeReview(rejectClient, "fee-id", { reason: "missing support" }),
+    ).resolves.toEqual(rejected);
+
+    expect(approveClient.post).toHaveBeenCalledWith("/fees/fee-id/review/approve", {});
+    expect(rejectClient.post).toHaveBeenCalledWith("/fees/fee-id/review/reject", {
+      reason: "missing support",
+    });
+    const serializedPayloads = JSON.stringify([
+      (approveClient.post as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[1],
+      (rejectClient.post as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[1],
+    ]);
+    expect(serializedPayloads).not.toContain("amount");
+    expect(serializedPayloads).not.toContain("voucherNo");
+    expect(serializedPayloads).not.toContain("VOUCHER");
+    expectNoAttachmentOrWarningsCalls(approveClient);
+    expectNoAttachmentOrWarningsCalls(rejectClient);
+  });
+
+  it("does not request review endpoints without a demo user or fee id", async () => {
+    const client = createClient([], baseFee);
+
+    await expect(approveFeeReview(client, "   ", {})).resolves.toBeNull();
+    await expect(rejectFeeReview(client, "   ", { reason: "missing support" })).resolves.toBeNull();
+    await expect(approveFeeReviewForDemoUser(client, null, "fee-id", {})).resolves.toBeNull();
+    await expect(
+      rejectFeeReviewForDemoUser(client, "   ", "fee-id", { reason: "missing support" }),
+    ).resolves.toBeNull();
     expect(client.post).not.toHaveBeenCalled();
   });
 });
@@ -447,6 +518,32 @@ describe("fee form validation and payload shaping", () => {
       },
     });
   });
+
+  it("validates and builds fee review action payloads", () => {
+    expect(validateFeeReviewActionForm("approve", { reason: "   " })).toEqual({});
+    expect(validateFeeReviewActionForm("reject", { reason: "   " })).toEqual({
+      reason: "请输入审核拒绝原因。",
+    });
+    expect(validateFeeReviewActionForm("approve", { reason: "x".repeat(501) })).toEqual({
+      reason: "审核原因不能超过 500 个字符。",
+    });
+    expect(buildFeeReviewActionPayload("approve", { reason: "   " })).toEqual({
+      errors: {},
+      payload: {},
+    });
+    expect(buildFeeReviewActionPayload("approve", { reason: "  finance checked  " })).toEqual({
+      errors: {},
+      payload: {
+        reason: "finance checked",
+      },
+    });
+    expect(buildFeeReviewActionPayload("reject", { reason: " missing support " })).toEqual({
+      errors: {},
+      payload: {
+        reason: "missing support",
+      },
+    });
+  });
 });
 
 describe("fee write visibility", () => {
@@ -496,6 +593,33 @@ describe("fee write visibility", () => {
     ).toBe(false);
     expect(
       shouldShowFeeDetailStatusActions({ ...baseFee, payStatus: "PAID" }, "management"),
+    ).toBe(false);
+  });
+
+  it("uses fee:review_department and pending review status for review action visibility", () => {
+    expect(
+      canReviewDepartmentFees({
+        permissionCodes: ["fee:review_department"],
+      }),
+    ).toBe(true);
+    expect(
+      canReviewDepartmentFees({
+        permissionCodes: ["fee:manage_department"],
+      }),
+    ).toBe(false);
+    expect(canReviewDepartmentFees(undefined)).toBe(false);
+    expect(canReviewFee(baseFee)).toBe(true);
+    expect(canReviewFee({ ...baseFee, reviewStatus: "APPROVED" })).toBe(false);
+    expect(canReviewFee({ ...baseFee, reviewStatus: "REJECTED" })).toBe(false);
+    expect(shouldShowFeeDetailReviewActions(baseFee, "management", true)).toBe(true);
+    expect(shouldShowFeeDetailReviewActions(baseFee, "management", false)).toBe(false);
+    expect(shouldShowFeeDetailReviewActions(baseFee, "search-readonly", true)).toBe(false);
+    expect(
+      shouldShowFeeDetailReviewActions(
+        { ...baseFee, reviewStatus: "APPROVED" },
+        "management",
+        true,
+      ),
     ).toBe(false);
   });
 });
@@ -828,6 +952,10 @@ describe("fee labels", () => {
   it("keeps backend enums visible with user-facing labels", () => {
     expect(getFeeTypeLabel("PATENT_ANNUAL")).toBe("专利年费");
     expect(getPayStatusLabel("PENDING")).toBe("待缴");
+    expect(getFeeReviewStatusLabel("PENDING")).toBe("待审核");
+    expect(getFeeReviewStatusLabel("APPROVED")).toBe("已通过");
+    expect(getFeeReviewStatusLabel("REJECTED")).toBe("已拒绝");
     expect(getPayStatusLabel("UNKNOWN")).toBe("UNKNOWN");
+    expect(getFeeReviewStatusLabel("UNKNOWN")).toBe("UNKNOWN");
   });
 });

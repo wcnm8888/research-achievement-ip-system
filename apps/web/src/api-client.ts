@@ -21,6 +21,8 @@ import type {
   DisableAccountUserResponse,
   DisableDepartmentResponse,
   EnableAccountUserInput,
+  ApproveFeeReviewInput,
+  FeeStateRecord,
   InviteAcceptInput,
   InviteAcceptResponse,
   InviteIssueResponse,
@@ -34,6 +36,7 @@ import type {
   PasswordResetRequestResponse,
   PasswordResetRevokeResponse,
   RevokeAccountUserRoleInput,
+  RejectFeeReviewInput,
   UpdateApiIntegrationInput,
   UpdateDepartmentInput,
 } from "./types";
@@ -138,6 +141,14 @@ export type AccountManagementApiClient = ApiClient & {
     integrationId: string,
     payload?: ApiIntegrationReasonInput,
   ): Promise<ApiIntegrationMetadata>;
+  approveFeeReview(
+    feeRecordId: string,
+    payload?: ApproveFeeReviewInput,
+  ): Promise<FeeStateRecord>;
+  rejectFeeReview(
+    feeRecordId: string,
+    payload: RejectFeeReviewInput,
+  ): Promise<FeeStateRecord>;
 };
 
 export type ApiClientOptions = {
@@ -495,6 +506,24 @@ export const createApiClient = (
       options,
     );
     return response as ApiIntegrationMetadata;
+  },
+  async approveFeeReview(feeRecordId: string, payload: ApproveFeeReviewInput = {}) {
+    const response = await request(
+      `/fees/${feeRecordId}/review/approve`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as FeeStateRecord;
+  },
+  async rejectFeeReview(feeRecordId: string, payload: RejectFeeReviewInput) {
+    const response = await request(
+      `/fees/${feeRecordId}/review/reject`,
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as FeeStateRecord;
   },
 });
 
