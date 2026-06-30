@@ -4,6 +4,41 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 53D Archive - Local Postgres backup artifact verification - 2026-06-30
+
+- Step identity:
+  - This Step verifies local Docker production-like Postgres backup artifact creation.
+  - Scope is limited to local `pg_dump -Fc` artifact creation and `pg_restore --list` verification.
+  - No restore drill, restore execution, drop, reset, prune, delete, clean, migration, seed/backfill, VPS/production access, production DB access, push, deploy, dependency/package/lockfile change, business-data write, account/password work, or untracked-artifact cleanup occurred.
+- Starting state:
+  - `HEAD`: `526f08b`.
+  - Latest commit: `fix: allow search without target type filter`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was confirmed only; contents were not read or output.
+- Readiness checks:
+  - `postgres`, `api`, and `web` were healthy in `docker compose -f docker-compose.production.yml ps`.
+  - `.gitignore` contains `deploy/artifacts/`, covering the selected local backup artifact directory.
+  - `git check-ignore -v` confirmed the dump, restore-list sidecar, and SHA256 sidecar were ignored by `deploy/artifacts/`.
+- Backup artifact verification:
+  - Artifact basename: `research-achievement-local-production-like-postgres-20260630-094149`.
+  - Dump size: `126424` bytes.
+  - Restore-list sidecar size: `21629` bytes.
+  - Restore-list line count: `262`.
+  - Final local `pg_dump -Fc` command category exit status: `0`.
+  - Final local `pg_restore --list` command category exit status: `0`.
+  - `docker cp` copy-out for dump and restore-list both exited `0`.
+  - SHA256 sidecar was generated in the ignored artifact directory and was not committed.
+- Boundaries:
+  - Artifact files stayed under `deploy/artifacts/local-backups/` and were not staged or committed.
+  - No backup artifact was deleted, overwritten, cleaned, or moved.
+  - No container or local cleanup was run.
+  - No `.env` or `.env.production` contents, passwords, cookies, tokens, secrets, AccessKeys, private keys, connection strings, account credentials, or session values were read, output, recorded, staged, or committed.
+  - No account password was modified, rotated, reset, or repaired.
+- Next:
+  - A future local restore drill still requires a separate Step and explicit confirmation before any restore/drop/reset/clean action.
+  - Production/VPS backup design and verification remain deferred to the production/VPS phase.
+
 ## Current Step 53C Archive - Search optional targetTypes healthcheck regression fix - 2026-06-30
 
 - Step identity:

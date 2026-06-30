@@ -1,5 +1,22 @@
 # Decisions
 
+## D191 - Local backup verification is artifact-only until a confirmed restore drill
+
+- Date: 2026-06-30.
+- Context: Step 53D needed to verify the Step 53A local backup readiness checklist by creating one local Docker production-like Postgres dump artifact and validating its archive manifest with `pg_restore --list`.
+- Decision:
+  - Allow local artifact creation under `deploy/artifacts/local-backups/` because `deploy/artifacts/` is ignored by git.
+  - Use local Docker Postgres container environment variables for `pg_dump -Fc`; do not record or output connection strings or credentials.
+  - Validate the dump with `pg_restore --list` only.
+  - Keep dump, restore-list, and SHA256 sidecar files ignored and out of commits.
+  - Treat any restore drill as a separate future Step requiring explicit confirmation before restore/drop/reset/clean actions.
+- Rationale:
+  - Artifact creation plus list validation proves that the local backup path can produce a usable custom-format dump without mutating application data.
+  - Keeping artifacts ignored avoids leaking operational outputs into git.
+  - Separating restore drills preserves the Step 53A destructive-action boundary.
+- Boundaries:
+  - This decision does not authorize production/VPS backup work, production DB access, restore execution, drop/reset/prune/delete/clean, migration/seed/backfill, business-data writes, account/password changes, credential/session/token output, `.env` reads, push/deploy, package/lockfile changes, or cleanup of untracked artifacts.
+
 ## D190 - Search targetTypes transform preserves optional omission
 
 - Date: 2026-06-30.

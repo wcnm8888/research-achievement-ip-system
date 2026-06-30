@@ -1,5 +1,39 @@
 # Progress
 
+## 2026-06-30 Step 53D - Local Postgres backup artifact verification
+
+- Status: STEP_53D_LOCAL_POSTGRES_BACKUP_ARTIFACT_VERIFIED.
+- Step identity:
+  - Verifies one local Docker production-like Postgres backup artifact.
+  - This is backup artifact creation plus restore-list validation only.
+  - This is not a restore drill, not production/VPS work, not schema/migration/seed/backfill, not account/password work, not business-data write work, not package/lockfile work, not push/deploy, and not cleanup.
+- Starting state:
+  - `HEAD`: `526f08b`.
+  - Latest commit subject: `fix: allow search without target type filter`.
+  - Tracked diff was empty before Step 53D memory-bank changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was confirmed only; contents were not read or output.
+- Verification:
+  - `docker compose -f docker-compose.production.yml ps`: `postgres`, `api`, and `web` healthy.
+  - Artifact directory: `deploy/artifacts/local-backups/`.
+  - `.gitignore` covers `deploy/artifacts/`.
+  - `git check-ignore -v` confirmed the generated dump, restore-list sidecar, and SHA256 sidecar are ignored.
+  - Artifact basename: `research-achievement-local-production-like-postgres-20260630-094149`.
+  - Dump size: `126424` bytes.
+  - Restore-list sidecar: `21629` bytes, `262` lines.
+  - Final local `pg_dump -Fc` command category exit status: `0`.
+  - Final local `pg_restore --list` command category exit status: `0`.
+  - Copy-out from the local Postgres container for dump and restore-list both exited `0`.
+- Boundaries observed:
+  - No restore, drop, reset, prune, delete, clean, migration, seed, backfill, VPS access, production DB access, push, deploy, dependency install, package/lockfile change, business-data write, account/password change, or untracked-artifact cleanup occurred.
+  - No `.env` or `.env.production` contents were read or output.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, account credential, or session value was output or recorded.
+  - Generated backup artifacts remained ignored and were not staged or committed.
+  - No backup artifact was deleted, overwritten, cleaned, or moved.
+- Deferred:
+  - Local restore drill remains deferred to a separate explicitly confirmed Step.
+  - Production/VPS backup capability remains deferred to the production/VPS phase.
+
 ## 2026-06-30 Step 53C - Search optional targetTypes healthcheck regression fix
 
 - Status: STEP_53C_SEARCH_OPTIONAL_TARGET_TYPES_FIXED_AND_ACCEPTED.

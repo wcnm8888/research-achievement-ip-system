@@ -1,5 +1,58 @@
 # Evidence
 
+## 2026-06-30 Step 53D - Local Postgres backup artifact verification evidence
+
+- Purpose:
+  - Verify one local Docker production-like Postgres backup artifact according to the Step 53A readiness runbook.
+  - Confirm `pg_restore --list` can read the generated custom-format dump.
+  - Record only non-sensitive artifact evidence.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `526f08b`.
+  - Latest commit subject: `fix: allow search without target type filter`.
+  - Tracked diff was empty before Step 53D memory-bank changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, moved, or modified.
+- Environment boundary evidence:
+  - `.env.production` existence was confirmed.
+  - `.env.production` contents were not read or output.
+  - No `.env` values were read or output.
+- Context evidence:
+  - Read `AGENTS.md`.
+  - Read Step 53C and Step 53A memory-bank entries.
+  - Read D190, D189, and D188.
+  - Read `docker-compose.production.yml`.
+  - Read `.gitignore` ignore rule for `deploy/artifacts/`.
+- Local service health evidence:
+  - `docker compose -f docker-compose.production.yml ps` reported:
+    - `research-achievement-production-postgres-1`: healthy.
+    - `research-achievement-production-api-1`: healthy.
+    - `research-achievement-production-web-1`: healthy.
+- Artifact evidence:
+  - Artifact directory: `deploy/artifacts/local-backups/`.
+  - Artifact basename: `research-achievement-local-production-like-postgres-20260630-094149`.
+  - Dump file: `<basename>.dump`.
+  - Restore-list sidecar: `<basename>.restore-list.txt`.
+  - SHA256 sidecar: `<basename>.sha256`.
+  - Dump size: `126424` bytes.
+  - Restore-list size: `21629` bytes.
+  - Restore-list line count: `262`.
+  - Final local `pg_dump -Fc` command category exit status: `0`.
+  - Final local `pg_restore --list` command category exit status: `0`.
+  - Dump copy-out from the local Postgres container exit status: `0`.
+  - Restore-list copy-out from the local Postgres container exit status: `0`.
+  - `git check-ignore -v` confirmed all three generated artifact files are ignored by `.gitignore:19:deploy/artifacts/`.
+- Command note:
+  - One initial Windows quoting attempt returned a shell syntax error before backup creation.
+  - The final command passed the container-side command string as a single shell argument, used container environment variables, and did not output credentials or connection details.
+- Git artifact evidence:
+  - Generated dump, restore-list, and SHA256 sidecar were not staged.
+  - Generated dump, restore-list, and SHA256 sidecar were not committed.
+  - No backup artifact was deleted, overwritten, cleaned, or moved.
+- Boundaries observed:
+  - No restore drill was performed.
+  - No `pg_restore` data restore was executed.
+  - No restore, drop, reset, prune, delete, clean, migration, seed, backfill, VPS access, production DB access, push, deploy, dependency install, package/lockfile change, business-data write, account/password change, or untracked-artifact cleanup occurred.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, account credential, or session value was recorded.
+
 ## 2026-06-30 Step 53C - Search optional targetTypes healthcheck regression evidence
 
 - Purpose:
