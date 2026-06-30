@@ -4,6 +4,51 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 54A Archive - Phase-one local readiness closure and remaining gaps - 2026-06-30
+
+- Step identity:
+  - This Step closes the phase-one local production-like readiness status.
+  - Scope is documentation-only status consolidation in memory-bank.
+  - No feature implementation, Docker operation, backup creation, restore drill, database command, schema/migration/seed/backfill, account/password work, production/VPS access, push, deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `5b2168b`.
+  - Latest commit: `docs: record local postgres backup artifact verification`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Phase-one local readiness completed:
+  - Docker production-like stack: locally established and accepted with `postgres`, `api`, and `web` health surfaces.
+  - Authenticated API smoke: local session-based GET smoke accepted for auth identity, dashboard, achievements, fees warnings, workflow tasks, search, and department tree.
+  - Minimal and richer business samples: local paper achievement sample, scoped users/departments, fee/reminder sample, and dashboard/search visibility evidence accepted.
+  - Approval approve/reject/archive closure: approve path, reject path, and archive closure accepted locally with workflow, achievement, dashboard, and audit evidence.
+  - Attachments: upload/list/detail/download accepted locally, with current permission boundaries recorded.
+  - Fees warnings/archive: warnings endpoint/surface and soft archive behavior accepted locally.
+  - Settings API integrations: backend CRUD, Web management page, and local acceptance completed without real secrets or runtime provider activation.
+  - Department import dry-run: backend API, Web UI, permission boundary, no-write count checks, and local Docker acceptance completed.
+  - Local healthcheck: production-like service health and authenticated read-only smoke accepted.
+  - Local Postgres backup artifact/list verification: one local custom-format dump artifact and `pg_restore --list` verification accepted; artifacts stayed ignored and out of git.
+- Deferred and not complete:
+  - VPS / production acceptance.
+  - DirectMail production runtime and real email delivery.
+  - Isolated restore drill.
+  - User/account import dry-run.
+  - Achievement import dry-run.
+  - Finance review/approval.
+  - Voucher attachment integration.
+  - Persisted reason history.
+  - Attachment binary backup coverage.
+  - Backup retention, encryption, and offsite policy.
+- Recommended next steps:
+  - To improve backup credibility, open a separate isolated local restore drill Step with explicit authorization before any restore/drop/reset/clean action.
+  - To continue phase-one product functionality, prioritize either finance review/approval or voucher attachment integration.
+  - Any production/VPS work must be opened as a separate high-risk authorization Step that names the target and permitted actions.
+- Hard boundaries:
+  - Do not modify account passwords.
+  - Do not read or output secrets, credentials, cookies, tokens, hashes, connection strings, or `.env` / `.env.production` values.
+  - Do not clean, move, stage, or delete untracked local artifacts.
+  - Do not run restore, drop, reset, prune, delete, cleanup, or destructive commands.
+  - Do not push or deploy.
+
 ## Current Step 53D Archive - Local Postgres backup artifact verification - 2026-06-30
 
 - Step identity:

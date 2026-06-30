@@ -1,5 +1,23 @@
 # Decisions
 
+## D192 - Phase-one local readiness is closed as local-only with explicit deferred gaps
+
+- Date: 2026-06-30.
+- Context: Step 54A follows the Step 53D local Postgres backup artifact/list verification. The phase-one local production-like track now has evidence for the stack, authenticated smoke, business samples, approval closure, attachments, fees warnings/archive, Settings API integrations, department import dry-run, healthcheck, and local backup artifact/list verification. The user limited this Step to documentation closure only.
+- Decision:
+  - Mark phase-one local readiness as closed for local-only status documentation.
+  - Treat the completed local readiness set as: Docker production-like stack, authenticated API smoke, minimal/richer business sample, approval approve/reject/archive closure, attachments, fees warnings/archive, Settings API integrations, department import dry-run backend/Web/local acceptance, local healthcheck, and local Postgres backup artifact/list verification.
+  - Keep VPS / production acceptance, DirectMail production runtime / real email, isolated restore drill, user/account import dry-run, achievement import dry-run, finance review/approval, voucher attachment integration, persisted reason history, attachment binary backup coverage, and backup retention/encryption/offsite policy explicitly deferred.
+  - Recommend a separate isolated local restore drill only if backup credibility needs to be strengthened, with explicit authorization before any restore/drop/reset/clean action.
+  - Recommend finance review/approval or voucher attachment integration as the next phase-one product-functionality candidate.
+  - Require a separate high-risk authorization Step for any production/VPS work.
+- Rationale:
+  - Consolidating local-only readiness avoids confusing completed local evidence with production acceptance.
+  - The remaining gaps differ materially in risk: restore drill and production/VPS work need explicit operational authorization, while finance/voucher work are product-functionality follow-ups.
+  - Keeping the boundary explicit prevents accidental credential exposure, account-password drift, untracked-artifact cleanup, destructive database work, push, or deploy.
+- Boundaries:
+  - This decision does not authorize account password changes, secret reads/output, `.env` / `.env.production` content reads, untracked-artifact cleanup, restore/drop/reset/prune/delete/clean commands, Docker operations, backup creation, database commands, schema/migration/seed/backfill, production/VPS access, push, or deploy.
+
 ## D191 - Local backup verification is artifact-only until a confirmed restore drill
 
 - Date: 2026-06-30.
