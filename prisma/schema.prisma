@@ -203,6 +203,12 @@ enum PayStatus {
   CANCELLED
 }
 
+enum FeeReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ReminderTargetType {
   FEE_RECORD
 }
@@ -341,6 +347,7 @@ model User {
   reminderTasks         ReminderTask[]           @relation("ReminderReceiver")
   notifications         Notification[]           @relation("NotificationReceiver")
   uploadedAttachments   Attachment[]             @relation("AttachmentUploader")
+  reviewedFeeRecords    FeeRecord[]              @relation("FeeReviewer")
   auditLogs             AuditLog[]               @relation("AuditActor")
   searchLogs            SearchLog[]
   sessions              UserSession[]
@@ -723,6 +730,9 @@ model FeeRecord {
   paidDate      DateTime?   @map("paid_date") @db.Date
   payStatus     PayStatus   @default(PENDING) @map("pay_status")
   voucherNo     String?     @map("voucher_no") @db.VarChar(120)
+  reviewStatus  FeeReviewStatus @default(PENDING) @map("review_status")
+  reviewedById  String?     @map("reviewed_by_id") @db.Uuid
+  reviewedAt    DateTime?   @map("reviewed_at")
   createdById   String?     @map("created_by_id") @db.Uuid
   updatedById   String?     @map("updated_by_id") @db.Uuid
   createdAt     DateTime    @default(now()) @map("created_at")
@@ -731,9 +741,12 @@ model FeeRecord {
 
   achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Restrict)
   department  Department  @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  reviewedBy  User?       @relation("FeeReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
 
   @@unique([achievementId, feeType, dueDate])
   @@index([dueDate, payStatus])
+  @@index([reviewStatus])
+  @@index([reviewedById])
   @@index([achievementId])
   @@index([departmentId])
   @@map("fee_records")

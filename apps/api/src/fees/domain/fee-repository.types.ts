@@ -2,6 +2,7 @@ import { DepartmentStatus, Prisma } from "@prisma/client";
 import { SecretLevelCode } from "../../authorization/constants/secret-level-code";
 import { AchievementStatusCode } from "../../achievements/domain/achievement-domain.types";
 import {
+  FeeReviewStatusCode,
   FeeTypeCode,
   FeeWarningTypeCode,
   FundSourceCode,
@@ -19,6 +20,9 @@ export type FeeRecordRecord = {
   paidDate: Date | null;
   payStatus: PayStatusCode;
   voucherNo: string | null;
+  reviewStatus: FeeReviewStatusCode;
+  reviewedById: string | null;
+  reviewedAt: Date | null;
   createdById: string | null;
   updatedById: string | null;
   createdAt: Date;
@@ -36,6 +40,9 @@ export type FeeStateRecord = Pick<
   | "paidDate"
   | "payStatus"
   | "voucherNo"
+  | "reviewStatus"
+  | "reviewedById"
+  | "reviewedAt"
   | "updatedById"
   | "archivedAt"
 >;

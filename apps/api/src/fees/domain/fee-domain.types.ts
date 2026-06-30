@@ -27,6 +27,15 @@ export const PayStatusCode = {
 
 export type PayStatusCode = (typeof PayStatusCode)[keyof typeof PayStatusCode];
 
+export const FeeReviewStatusCode = {
+  pending: "PENDING",
+  approved: "APPROVED",
+  rejected: "REJECTED",
+} as const;
+
+export type FeeReviewStatusCode =
+  (typeof FeeReviewStatusCode)[keyof typeof FeeReviewStatusCode];
+
 export const FeeWarningTypeCode = {
   overdue: "OVERDUE",
   dueSoon: "DUE_SOON",

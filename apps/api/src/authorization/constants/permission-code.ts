@@ -11,6 +11,7 @@ export const PermissionCode = {
   attachmentDownload: "attachment:download",
   feeReadDepartment: "fee:read_department",
   feeManageDepartment: "fee:manage_department",
+  feeReviewDepartment: "fee:review_department",
   reminderReadDepartment: "reminder:read_department",
   auditReadMasked: "audit:read_masked",
   dashboardReadInstitute: "dashboard:read_institute",

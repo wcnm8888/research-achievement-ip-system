@@ -13,6 +13,7 @@ import { UserContext } from "../identity/user-context";
 import { FeeRepository } from "./fee.repository";
 import { FeeService } from "./fee.service";
 import {
+  FeeReviewStatusCode,
   FeeTypeCode,
   FeeWarningTypeCode,
   FundSourceCode,
@@ -71,6 +72,9 @@ const makeFeeRecord = (overrides: Partial<FeeRecordRecord> = {}): FeeRecordRecor
   paidDate: null,
   payStatus: PayStatusCode.pending,
   voucherNo: "VOUCHER-001",
+  reviewStatus: FeeReviewStatusCode.pending,
+  reviewedById: null,
+  reviewedAt: null,
   createdById: ids.user,
   updatedById: ids.user,
   createdAt: new Date("2026-06-01T00:00:00.000Z"),
@@ -88,6 +92,9 @@ const makeFeeState = (overrides: Partial<FeeStateRecord> = {}): FeeStateRecord =
   paidDate: null,
   payStatus: PayStatusCode.pending,
   voucherNo: "VOUCHER-001",
+  reviewStatus: FeeReviewStatusCode.pending,
+  reviewedById: null,
+  reviewedAt: null,
   updatedById: ids.user,
   archivedAt: null,
   ...overrides,

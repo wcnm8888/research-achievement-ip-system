@@ -44,6 +44,7 @@ const ids = {
     resourceGrantRevoke: "30000000-0000-4000-8000-000000000021",
     accountInvite: "30000000-0000-4000-8000-000000000022",
     accountResetPassword: "30000000-0000-4000-8000-000000000023",
+    feeReviewDepartment: "30000000-0000-4000-8000-000000000024",
   },
   users: {
     researcher: "40000000-0000-4000-8000-000000000001",
@@ -165,6 +166,7 @@ async function seedRolesAndPermissions() {
     [ids.permissions.auditReadMasked, "audit:read_masked", "audit", "read_masked", "Read masked audit logs", "ACTIVE"],
     [ids.permissions.departmentReadDepartment, "department:read_department", "department", "read_department", "Read department-scoped department data", "ACTIVE"],
     [ids.permissions.feeReadDepartment, "fee:read_department", "fee", "read_department", "Read department fee records", "ACTIVE"],
+    [ids.permissions.feeReviewDepartment, "fee:review_department", "fee", "review_department", "Review department fee records", "ACTIVE"],
     [ids.permissions.resourceGrantCreate, "resource_grant:create", "resource_grant", "create", "Create resource access grants", "ACTIVE"],
     [ids.permissions.resourceGrantRevoke, "resource_grant:revoke", "resource_grant", "revoke", "Revoke resource access grants", "ACTIVE"],
     [ids.permissions.accountInvite, "account:invite", "account", "invite", "Invite accounts", "ACTIVE"],
@@ -201,6 +203,7 @@ async function seedRolesAndPermissions() {
     [ids.roles.departmentAdmin, ids.permissions.userContextRead],
     [ids.roles.departmentAdmin, ids.permissions.attachmentReadMetadata],
     [ids.roles.systemAdmin, ids.permissions.achievementArchive],
+    [ids.roles.systemAdmin, ids.permissions.feeReviewDepartment],
     [ids.roles.systemAdmin, ids.permissions.auditReadMasked],
     [ids.roles.systemAdmin, ids.permissions.systemConfig],
     [ids.roles.systemAdmin, ids.permissions.userContextRead],

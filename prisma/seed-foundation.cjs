@@ -66,6 +66,7 @@ const permissions = [
   ["attachment:download", "attachment", "download", "Download authorized attachment"],
   ["fee:read_department", "fee", "read_department", "Read department fee records"],
   ["fee:manage_department", "fee", "manage_department", "Manage department fees"],
+  ["fee:review_department", "fee", "review_department", "Review department fee records"],
   ["reminder:read_department", "reminder", "read_department", "Read department reminders"],
   ["audit:read_masked", "audit", "read_masked", "Read masked audit logs"],
   ["dashboard:read_institute", "dashboard", "read_institute", "Read institute dashboard"],

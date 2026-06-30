@@ -224,6 +224,9 @@ const feeStateSelect = {
   paidDate: true,
   payStatus: true,
   voucherNo: true,
+  reviewStatus: true,
+  reviewedById: true,
+  reviewedAt: true,
   updatedById: true,
   archivedAt: true,
 } satisfies Prisma.FeeRecordSelect;

@@ -1,5 +1,45 @@
 # Progress
 
+## 2026-06-30 Step 55B - Fee review schema and permission contract
+
+- Status: STEP_55B_FEE_REVIEW_SCHEMA_PERMISSION_CONTRACT_IMPLEMENTED.
+- Step identity:
+  - Adds the minimum FeeRecord finance review schema, permission, seed, domain mapping, and focused tests.
+  - Does not implement approve/reject API or Web UI.
+  - Does not run migration deploy, seed/backfill, business-data writes, account/password changes, production/VPS access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+- Starting state:
+  - `HEAD`: `3a92983`.
+  - Latest commit subject: `docs: plan finance review approval scope`.
+  - Tracked diff was empty before Step 55B changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Implemented:
+  - Added Prisma `FeeReviewStatus` enum: `PENDING`, `APPROVED`, `REJECTED`.
+  - Added `FeeRecord.reviewStatus`, `reviewedById`, `reviewedAt`, reviewer relation, and supporting indexes.
+  - Added migration file `20260630093000_add_fee_review_contract`.
+  - Added `PermissionCode.feeReviewDepartment`.
+  - Added `fee:review_department` to foundation seed and demo seed.
+  - Granted fee review only to `SYSTEM_ADMIN` in foundation/demo matrices; did not auto-grant it to research secretary or department admin.
+  - Added `FeeReviewStatusCode` and exposed review fields through fee repository records, state records, mapper, and state select.
+  - Updated focused fee repository/service fixtures and authorization/seed tests.
+- Verification:
+  - `corepack pnpm prisma:validate`: first failed because shell `DATABASE_URL` was absent; no `.env` was read.
+  - `corepack pnpm prisma:validate` with a one-process placeholder `DATABASE_URL`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- fees`: passed, 6 files / 84 tests.
+  - `corepack pnpm test:seed:foundation`: passed, 6 tests.
+  - `corepack pnpm --filter @research-ip/api test -- authorization.constants`: passed, 1 file / 3 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: first failed against stale generated Prisma client types.
+  - `corepack pnpm prisma generate` with a one-process placeholder `DATABASE_URL`: completed without database access or tracked generated-file diff.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `git diff --cached --check`: passed.
+  - Staged added-lines sensitive value scan: passed.
+- Boundaries observed:
+  - No account password was modified.
+  - No secrets, credentials, cookies, tokens, hashes, connection strings, AccessKeys, private keys, or `.env` / `.env.production` values were read or output.
+  - Existing untracked artifacts were not staged, cleaned, moved, deleted, or modified.
+  - No migration deploy, seed, backfill, business-data write, production/VPS access, push, or deploy occurred.
+
 ## 2026-06-30 Step 55A - Finance review/approval scope and backend plan
 
 - Status: STEP_55A_FINANCE_REVIEW_APPROVAL_SCOPE_PLANNED.

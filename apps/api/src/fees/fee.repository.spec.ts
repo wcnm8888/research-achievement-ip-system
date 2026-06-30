@@ -7,6 +7,7 @@ import { PrismaService } from "../database/prisma.service";
 import { FeeRepository, FeeTransactionClient } from "./fee.repository";
 import { FeeStatusTransitionConflictError } from "./domain/fee-repository.errors";
 import {
+  FeeReviewStatusCode,
   FeeTypeCode,
   FeeWarningTypeCode,
   FundSourceCode,
@@ -27,11 +28,13 @@ const ids = {
   achievement: "30000000-0000-4000-8000-000000000001",
   department: "10000000-0000-4000-8000-000000000001",
   user: "40000000-0000-4000-8000-000000000001",
+  reviewer: "40000000-0000-4000-8000-000000000002",
 };
 
 const createdAt = new Date("2026-06-01T00:00:00.000Z");
 const updatedAt = new Date("2026-06-01T00:00:00.000Z");
 const dueDate = new Date("2026-07-01T00:00:00.000Z");
+const reviewedAt = new Date("2026-06-22T00:00:00.000Z");
 
 const makeRow = () => ({
   id: ids.feeRecord,
@@ -44,6 +47,9 @@ const makeRow = () => ({
   paidDate: null,
   payStatus: PayStatusCode.pending,
   voucherNo: null,
+  reviewStatus: FeeReviewStatusCode.pending,
+  reviewedById: null,
+  reviewedAt: null,
   createdById: ids.user,
   updatedById: ids.user,
   createdAt,
@@ -60,6 +66,9 @@ const makeStateRow = () => ({
   paidDate: null,
   payStatus: PayStatusCode.pending,
   voucherNo: null,
+  reviewStatus: FeeReviewStatusCode.pending,
+  reviewedById: null,
+  reviewedAt: null,
   updatedById: ids.user,
   archivedAt: null,
 });
@@ -145,6 +154,26 @@ describe("FeeRepository.create", () => {
     expect(result).toEqual(expect.objectContaining({ id: ids.feeRecord }));
   });
 
+  it("maps the default pending review contract when creating fee records", async () => {
+    const { repository } = createRepository();
+
+    const result = await repository.create({
+      achievementId: ids.achievement,
+      departmentId: ids.department,
+      feeType: FeeTypeCode.patentAnnual,
+      amount: "1200.50",
+      dueDate,
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        reviewStatus: FeeReviewStatusCode.pending,
+        reviewedById: null,
+        reviewedAt: null,
+      }),
+    );
+  });
+
   it("can create fee records with a caller-provided transaction client", async () => {
     const { repository, prisma, tx } = createRepository();
 
@@ -225,10 +254,23 @@ describe("FeeRepository reads", () => {
 
   it("finds a fee record by id through caller-provided policy where", async () => {
     const { repository, prisma } = createRepository();
+    prisma.feeRecord.findFirst.mockResolvedValueOnce({
+      ...makeRow(),
+      reviewStatus: FeeReviewStatusCode.approved,
+      reviewedById: ids.reviewer,
+      reviewedAt,
+    });
 
     await expect(
       repository.findByIdWhere(ids.feeRecord, { departmentId: { in: [ids.department] } }),
-    ).resolves.toEqual(expect.objectContaining({ id: ids.feeRecord }));
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: ids.feeRecord,
+        reviewStatus: FeeReviewStatusCode.approved,
+        reviewedById: ids.reviewer,
+        reviewedAt,
+      }),
+    );
 
     expect(prisma.feeRecord.findFirst).toHaveBeenCalledWith({
       where: {
@@ -305,7 +347,13 @@ describe("FeeRepository reads", () => {
           { archivedAt: null },
         ],
       },
-      select: expect.objectContaining({ payStatus: true, dueDate: true }),
+      select: expect.objectContaining({
+        payStatus: true,
+        dueDate: true,
+        reviewStatus: true,
+        reviewedById: true,
+        reviewedAt: true,
+      }),
     });
   });
 
@@ -370,7 +418,12 @@ describe("FeeRepository.transitionPayStatus", () => {
     });
     expect(tx.feeRecord.findUnique).toHaveBeenCalledWith({
       where: { id: ids.feeRecord },
-      select: expect.objectContaining({ payStatus: true }),
+      select: expect.objectContaining({
+        payStatus: true,
+        reviewStatus: true,
+        reviewedById: true,
+        reviewedAt: true,
+      }),
     });
   });
 

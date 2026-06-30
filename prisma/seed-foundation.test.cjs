@@ -13,6 +13,7 @@ const {
 
 const unique = (items) => new Set(items).size === items.length;
 const accountLifecyclePermissionCodes = ["account:invite", "account:reset_password"];
+const feeReviewPermissionCode = "fee:review_department";
 
 describe("foundation seed facts", () => {
   it("uses unique stable codes", () => {
@@ -63,6 +64,24 @@ describe("foundation seed facts", () => {
           `${roleCode} must not receive ${permissionCode}`,
         );
       }
+    }
+  });
+
+  it("grants fee review only to SYSTEM_ADMIN in the foundation matrix", () => {
+    const permissionCodes = new Set(permissions.map((permission) => permission.code));
+    assert.equal(permissionCodes.has(feeReviewPermissionCode), true);
+    assert.equal(rolePermissionMatrix.SYSTEM_ADMIN.includes(feeReviewPermissionCode), true);
+
+    for (const [roleCode, matrixPermissionCodes] of Object.entries(rolePermissionMatrix)) {
+      if (roleCode === "SYSTEM_ADMIN") {
+        continue;
+      }
+
+      assert.equal(
+        matrixPermissionCodes.includes(feeReviewPermissionCode),
+        false,
+        `${roleCode} must not receive ${feeReviewPermissionCode}`,
+      );
     }
   });
 

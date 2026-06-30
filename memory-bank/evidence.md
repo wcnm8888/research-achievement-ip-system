@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-06-30 Step 55B - Fee review schema and permission contract evidence
+
+- Purpose:
+  - Establish the minimum queryable FeeRecord finance review/approval schema and permission contract.
+  - Keep this Step limited to schema/migration/permission/domain contract and focused tests.
+  - Avoid implementing approve/reject API or Web UI.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `3a92983`.
+  - Latest commit subject: `docs: plan finance review approval scope`.
+  - `git status --short --branch` showed existing untracked local artifacts and no tracked changes before Step 55B changes.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+- Context evidence:
+  - Read `AGENTS.md`.
+  - Read targeted memory-bank Step 55A / 54A sections.
+  - Read Prisma schema sections for FeeRecord, enums, User, Permission, RolePermission, and Audit.
+  - Read `prisma/seed.cjs`, `prisma/seed-foundation.cjs`, and `prisma/seed-foundation.test.cjs`.
+  - Read `apps/api/src/authorization/constants/permission-code.ts`.
+  - Read Fee domain types, mapper, repository, service, DTO/test patterns, and authorization constants tests.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - `prisma/schema.prisma` now includes `FeeReviewStatus` and `FeeRecord` review fields.
+  - `prisma/migrations/20260630093000_add_fee_review_contract/migration.sql` adds the enum, columns, indexes, and reviewer FK. The migration file was created but not executed.
+  - `PermissionCode.feeReviewDepartment` maps to `fee:review_department`.
+  - `prisma/seed-foundation.cjs` includes the permission; foundation matrix gives it only through `SYSTEM_ADMIN`.
+  - `prisma/seed.cjs` includes a stable demo permission id and maps it only to demo `SYSTEM_ADMIN`.
+  - `FeeReviewStatusCode` was added in fee domain constants.
+  - Fee record/state types, mapper, and repository state select now expose `reviewStatus`, `reviewedById`, and `reviewedAt`.
+  - No fee approve/reject controller route, service method, repository transition method, or Web UI was added.
+- Verification evidence:
+  - `corepack pnpm prisma:validate`: failed initially because the shell did not have `DATABASE_URL`; no `.env` file was read.
+  - `corepack pnpm prisma:validate` with one-process placeholder `DATABASE_URL`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- fees`: passed, 6 files / 84 tests.
+  - `corepack pnpm test:seed:foundation`: passed, 6 tests.
+  - `corepack pnpm --filter @research-ip/api test -- authorization.constants`: passed, 1 file / 3 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: failed initially because generated Prisma client types were stale and did not include `reviewStatus`.
+  - `corepack pnpm prisma generate` with one-process placeholder `DATABASE_URL`: completed; it did not run migrations, seeds, backfills, or connect to a database.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed after Prisma client generation.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+- Final diff checks:
+  - `git diff --cached --check`: passed.
+  - Staged added-lines sensitive value scan: passed; no sensitive values detected in staged added lines.
+- Boundaries observed:
+  - No account password was modified.
+  - No password, hash, cookie, token, secret, AccessKey, private key, connection string, session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+  - No business-data write, migration deploy, seed, backfill, API approve/reject implementation, Web UI implementation, production/VPS access, push, deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling occurred.
+
 ## 2026-06-30 Step 55A - Finance review/approval scope and backend plan evidence
 
 - Purpose:

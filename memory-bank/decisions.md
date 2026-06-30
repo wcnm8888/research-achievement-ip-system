@@ -1,5 +1,30 @@
 # Decisions
 
+## D194 - Fee review schema contract is persisted, but review action remains deferred
+
+- Date: 2026-06-30.
+- Context: Step 55B implements the schema and permission contract proposed by Step 55A. The user explicitly limited this Step to schema/migration/permission/domain contract and focused tests, with no approve/reject API and no Web UI.
+- Decision:
+  - Add `FeeReviewStatus` as a separate lifecycle from `PayStatus`.
+  - Persist latest review state on `fee_records` through `review_status`, `reviewed_by_id`, and `reviewed_at`.
+  - Keep review reason/history out of schema for the minimum contract.
+  - Keep `payStatus` unchanged and do not extend fee payment transitions in this Step.
+  - Add `fee:review_department` as the review permission.
+  - Grant `fee:review_department` only to `SYSTEM_ADMIN` in both foundation and demo seed matrices for now.
+  - Do not grant the permission to `RESEARCH_SECRETARY` or `DEPARTMENT_ADMIN` until the product explicitly decides that departmental fee managers are also finance reviewers.
+  - Expose review fields through Fee domain records and repository state selects so future list/detail/status responses can query current review state.
+  - Do not add `POST /fees/:id/review/approve`, `POST /fees/:id/review/reject`, Web controls, or workflow task integration in Step 55B.
+- Rationale:
+  - Persisting latest review state avoids an audit-only capability that cannot answer current review status in fee list/detail queries.
+  - Separating review status from `payStatus` preserves existing payment, warning, waive, cancel, and archive semantics.
+  - Restricting initial permission assignment to `SYSTEM_ADMIN` avoids silently expanding finance authority to roles that currently manage operational fee records.
+  - Domain mapper/select support is enough for the next backend API Step without creating an action surface now.
+- Next:
+  - A later API Step can add fee-specific approve/reject actions gated by `fee:review_department`.
+  - That Step should reject archived fees, only allow pending review transitions, write sanitized audit summaries, and keep `payStatus` unchanged.
+- Boundaries:
+  - This decision does not authorize approve/reject API implementation, Web UI, workflow task reuse, account password changes, secret reads/output, `.env` / `.env.production` content reads, migration deploy, seed/backfill execution, business-data writes, production/VPS access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+
 ## D193 - Finance review starts as fee-specific review state, not workflow reuse
 
 - Date: 2026-06-30.

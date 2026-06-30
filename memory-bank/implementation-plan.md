@@ -4,6 +4,64 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 55B Archive - Fee review schema and permission contract - 2026-06-30
+
+- Step identity:
+  - This Step implements the minimum FeeRecord finance review/approval schema and permission contract.
+  - Scope is schema/migration/permission/domain contract and focused tests only.
+  - No approve/reject API, Web UI, account/password change, business-data write, migration deploy, seed/backfill execution, VPS/production access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `3a92983`.
+  - Latest commit: `docs: plan finance review approval scope`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Implemented schema contract:
+  - Added Prisma enum `FeeReviewStatus` with `PENDING`, `APPROVED`, and `REJECTED`.
+  - Added `FeeRecord.reviewStatus`, default `PENDING`, mapped to `fee_records.review_status`.
+  - Added nullable `FeeRecord.reviewedById`, mapped to `fee_records.reviewed_by_id`.
+  - Added nullable `FeeRecord.reviewedAt`, mapped to `fee_records.reviewed_at`.
+  - Added `FeeRecord.reviewedBy` relation to `User` and `User.reviewedFeeRecords` reverse relation.
+  - Added indexes on `reviewStatus` and `reviewedById`.
+  - Added migration file `prisma/migrations/20260630093000_add_fee_review_contract/migration.sql`.
+  - Did not add persisted review reason/history table.
+  - Did not change `payStatus` semantics or fee payment state transitions.
+- Implemented permission contract:
+  - Added `PermissionCode.feeReviewDepartment = "fee:review_department"`.
+  - Added `fee:review_department` to `prisma/seed-foundation.cjs`.
+  - Foundation role matrix grants it only through `SYSTEM_ADMIN`, because `SYSTEM_ADMIN` receives all foundation permissions.
+  - Did not grant it to `RESEARCH_SECRETARY`, `DEPARTMENT_ADMIN`, or other non-system roles in foundation seed.
+  - Added `fee:review_department` to demo `prisma/seed.cjs` with a stable permission id and mapped it to demo `SYSTEM_ADMIN` only.
+- Implemented Fee domain contract:
+  - Added `FeeReviewStatusCode` domain constant/type.
+  - Extended `FeeRecordRecord` and `FeeStateRecord` with `reviewStatus`, `reviewedById`, and `reviewedAt`.
+  - Extended Fee Prisma mapper to return review fields.
+  - Extended Fee state select so future status-returning APIs can include review fields without adding approve/reject endpoints now.
+  - Existing create/read/mark-paid/waive/cancel/archive behavior remains unchanged.
+- Tests updated:
+  - Fee repository tests cover pending review default mapping, detail mapping of approved review fields, and state select exposing review fields.
+  - Fee service test fixtures include review fields so existing create/read/status/archive behavior keeps compiling and passing.
+  - Authorization constants test covers `fee:review_department`.
+  - Foundation seed test verifies `fee:review_department` exists and is granted only to `SYSTEM_ADMIN`.
+- Verification:
+  - First `corepack pnpm prisma:validate` failed because `DATABASE_URL` was not set in the shell; no `.env` file was read.
+  - Re-ran `corepack pnpm prisma:validate` with a one-process placeholder `DATABASE_URL`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- fees`: passed, 6 files / 84 tests.
+  - `corepack pnpm test:seed:foundation`: passed, 6 tests.
+  - `corepack pnpm --filter @research-ip/api test -- authorization.constants`: passed, 1 file / 3 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: initially failed because generated Prisma client did not yet include `reviewStatus`.
+  - Ran `corepack pnpm prisma generate` with a one-process placeholder `DATABASE_URL`; no database connection, migration, seed, or tracked file change.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed after generation.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+- Next:
+  - Step 55C can implement the backend fee-specific review API on top of this contract if API implementation is authorized.
+  - Step 55C should keep review approve/reject separate from `payStatus` transitions and use `fee:review_department`.
+  - Web UI remains deferred.
+- Hard boundaries:
+  - Do not modify account passwords.
+  - Do not read or output secrets, credentials, cookies, tokens, hashes, connection strings, AccessKeys, private keys, or `.env` / `.env.production` values.
+  - Do not execute migration deploy, seed/backfill, business-data writes, production/VPS access, push, deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+
 ## Current Step 55A Archive - Finance review/approval scope and backend plan - 2026-06-30
 
 - Step identity:

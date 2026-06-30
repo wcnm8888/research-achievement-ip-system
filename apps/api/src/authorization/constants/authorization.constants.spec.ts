@@ -21,6 +21,7 @@ describe("authorization constants", () => {
     expect(PermissionCode.accountInvite).toBe("account:invite");
     expect(PermissionCode.accountResetPassword).toBe("account:reset_password");
     expect(PermissionCode.feeReadDepartment).toBe("fee:read_department");
+    expect(PermissionCode.feeReviewDepartment).toBe("fee:review_department");
     expect(PermissionCode.resourceGrantCreate).toBe("resource_grant:create");
     expect(PermissionCode.resourceGrantRevoke).toBe("resource_grant:revoke");
   });
