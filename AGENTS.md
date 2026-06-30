@@ -2,6 +2,11 @@
 
 This repository follows the workspace safety rules plus the project rules below.
 
+## Testing Entry Point
+
+- Before choosing test, browser acceptance, or local production-like acceptance commands, read `memory-bank/testing-strategy.md` first.
+- Use `corepack pnpm` for repeatable project gates, prefer `playwright-cli` for real browser acceptance, and reserve Docker production-like for local integration acceptance only.
+
 ## Account Password Safety
 
 - Do not modify any account password unless the user explicitly authorizes the exact account and scope in the current task.
