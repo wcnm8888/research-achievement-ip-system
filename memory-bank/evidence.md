@@ -1,5 +1,58 @@
 # Evidence
 
+## 2026-06-30 Step 56A - Voucher attachment integration scope/backend plan evidence
+
+- Purpose:
+  - Determine the minimum fee voucher attachment integration scope.
+  - Decide whether to reuse the current attachment data model.
+  - Define backend API contract, permission, audit, storage, schema, and acceptance boundaries.
+  - Keep this Step documentation-only.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `975c7360ded36582d9c7b167283d1e27f586b36d`.
+  - Latest commit subject: `docs: close finance review capability`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 56A memory-bank edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context evidence:
+  - Read `AGENTS.md`.
+  - Read targeted memory-bank sections for Step 55I, Step 55H, Step 55D, Step 50C, Step 21A, and Step 15D.
+  - Reviewed `prisma/schema.prisma` around `AttachmentRelationType`, `Achievement`, `FeeRecord`, `Attachment`, and `AuditLog`.
+  - Reviewed `apps/api/src/attachments` controller/service/repository/DTO/domain/storage and focused tests.
+  - Reviewed `apps/api/src/fees` controller/service/repository/domain/DTO tests relevant to read/manage/review and voucher number behavior.
+  - Reviewed `apps/api/src/audit` action/target constants and audit repository/service shape relevant to attachment upload/download.
+  - Reviewed `apps/api/src/authorization` permission constants, policy query factory, attachment access policy, and focused policy tests.
+  - Reviewed `apps/web/src/AchievementDetail.tsx`, `AchievementDetail.test.ts`, `Fees.tsx`, `Fees.test.ts`, `api-client.ts`, and `types.ts` for attachment and fee UI/client patterns.
+- Current capability evidence:
+  - `AttachmentRelationType` includes `FEE_RECORD`.
+  - `AttachmentRelationTypeCode` includes `feeRecord: "FEE_RECORD"`.
+  - Web `AttachmentRelationTypeCode` includes `"FEE_RECORD"`.
+  - `Attachment` uses `relationType` and `relationId`, with uniqueness on `(relationType, relationId, fileName, version)`.
+  - `AttachmentRepository.findManyByRelation` and version lookup are relation-generic.
+  - `buildAttachmentObjectKey` is relation-generic and supports `attachments/FEE_RECORD/<feeRecordId>/...`.
+  - `AttachmentController` exposes only achievement attachment routes.
+  - `AttachmentService.assertSupportedRelation` currently rejects non-achievement relations.
+  - Current attachment audit tests assert no object key, checksum, or file body is serialized.
+  - `PolicyQueryFactory.feeReadableWhere` supports `fee:read_department` or `fee:manage_department`; `feeDepartmentWhere` supports specific scoped fee permissions.
+  - `FeeController` uses `fee:read_department`, `fee:manage_department`, and `fee:review_department` separately.
+  - Fees Web tests assert fee flows do not call attachment endpoints today.
+- Planning outcome evidence:
+  - Reuse `Attachment` with `relationType=FEE_RECORD`.
+  - No schema change, migration, seed, backfill, new table, S3/object storage, or package change is needed for Step 56B.
+  - Minimum API contract is backend-only under `/api/fees/:feeRecordId/voucher-attachments`.
+  - Upload is scoped to `fee:manage_department`.
+  - Metadata read is scoped to `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Download should initially require scoped fee visibility plus `attachment:download`.
+  - Finance reviewers are read-only by default and cannot upload.
+  - Audit must avoid file content, storage key/object key, checksum, amount, `voucherNo`, paid/due dates, and raw fee payload.
+- Boundaries observed:
+  - No account password was modified.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, raw session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+  - No API/UI code, Prisma schema, migration, seed, backfill, dependency/package, storage-provider, Docker, business-data, real attachment upload/download, production/VPS, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact operation occurred.
+- Verification evidence:
+  - `git diff --check`: PASS; only existing Windows line-ending warnings were printed.
+  - Added-lines sensitive value scan: PASS; no credential assignment, private key marker, OpenAI-style key, or AWS access-key-like value was found in added lines.
+  - Pre-commit tracked diff scope: only `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, `memory-bank/decisions.md`, and `memory-bank/evidence.md`.
+
 ## 2026-06-30 Step 55I - Finance review capability closure evidence
 
 - Purpose:

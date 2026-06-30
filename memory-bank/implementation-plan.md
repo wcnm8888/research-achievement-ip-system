@@ -4,6 +4,91 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 56A Archive - Voucher attachment integration scope and backend plan - 2026-06-30
+
+- Step identity:
+  - This Step plans fee voucher attachment integration only.
+  - Scope is current-state review, minimum backend API contract, reuse boundary, permissions, audit/storage/schema decisions, and acceptance boundary.
+  - No backend API, Web UI, Prisma schema, migration, seed/backfill, package/lockfile, dependency, storage-provider, Docker, business-data write, real upload/download, account/password, `.env` / `.env.production` content read, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked artifact handling occurred.
+- Starting state:
+  - `HEAD`: `975c736`.
+  - Latest commit: `docs: close finance review capability`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+- Current capability findings:
+  - `prisma/schema.prisma` already has `AttachmentRelationType.FEE_RECORD`.
+  - `Attachment` is a generic relation table with `relationType`, `relationId`, metadata, local storage fields, versioning, and indexes; it has no dedicated `Achievement` foreign key.
+  - `AttachmentRelationTypeCode` and Web `AttachmentRelationTypeCode` already include `FEE_RECORD`.
+  - `buildAttachmentObjectKey` is already relation-generic and can create local paths under `attachments/FEE_RECORD/<feeRecordId>/...`.
+  - `AttachmentRepository` already supports generic `findManyByRelation`, `findLatestVersion`, and metadata create by `relationType/relationId`.
+  - Current public HTTP attachment API is achievement-bound only:
+    - `POST /achievements/:achievementId/attachments`.
+    - `GET /achievements/:achievementId/attachments`.
+    - `GET /achievements/:achievementId/attachments/:attachmentId`.
+    - `GET /achievements/:achievementId/attachments/:attachmentId/download`.
+  - Current `AttachmentService` is partly generic but still supports only achievement at the public service boundary:
+    - upload/list/detail/download methods are named and scoped for achievements.
+    - parent access loads `Achievement` and uses achievement read/update policy.
+    - `assertSupportedRelation` rejects non-achievement relations, including `FEE_RECORD`.
+    - upload/download audit summary currently emits `achievementId: record.relationId`; this must not be copied as-is for fee voucher attachments.
+  - Fee records already have department-scoped read/manage/review policy:
+    - read: `fee:read_department` or `fee:manage_department` through `feeReadableWhere`.
+    - manage: `fee:manage_department` through `feeDepartmentWhere`.
+    - review: `fee:review_department` through `feeDepartmentWhere`.
+  - Fees Web currently keeps voucher attachment as an explicit boundary; it does not call attachment routes from fee flows.
+  - AchievementDetail Web already has reusable client/UI patterns for metadata list, detail, upload, download, file validation, error mapping, and blob save, but all are achievement-path-specific.
+- Minimum product scope:
+  - Treat voucher attachments as zero or more `Attachment` rows attached to one `FeeRecord` using `relationType=FEE_RECORD` and `relationId=<feeRecord.id>`.
+  - Do not restrict to a single voucher file in the first implementation. Multi-attachment is the lower-risk reuse path because the existing unique key is `(relationType, relationId, fileName, version)` and the existing list/version behavior already supports multiple files.
+  - Do not model voucher file state on `FeeRecord` and do not add a new voucher attachment table.
+  - Keep `voucherNo` as a voucher number field only; it is not the attachment identifier and should not be copied into attachment audit metadata.
+- Minimum backend API contract for Step 56B:
+  - `POST /api/fees/:feeRecordId/voucher-attachments`
+    - multipart `file`.
+    - optional body fields follow the existing upload DTO shape: `secretLevel`, `displayName`, optional client checksum if retained by existing validation.
+    - requires `fee:manage_department` and target fee department scope.
+    - returns `AttachmentMetadataDto` with safe metadata only.
+  - `GET /api/fees/:feeRecordId/voucher-attachments?status=ACTIVE&take=50`
+    - requires `fee:read_department` or `fee:manage_department`; Step 56B should also allow `fee:review_department` read-only for scoped finance reviewers.
+    - returns `AttachmentMetadataDto[]`.
+  - `GET /api/fees/:feeRecordId/voucher-attachments/:attachmentId`
+    - same read policy as list.
+    - verifies attachment belongs to `relationType=FEE_RECORD` and the path fee id.
+    - returns safe metadata only.
+  - `GET /api/fees/:feeRecordId/voucher-attachments/:attachmentId/download`
+    - same fee parent read policy plus existing attachment download static permission behavior, unless Step 56B explicitly chooses to fold download into fee read/review for voucher-only endpoints.
+    - recommended minimum: require scoped fee read/review visibility and existing `attachment:download` to avoid broadening download semantics unexpectedly.
+    - returns file stream through current local attachment storage.
+- Permission plan:
+  - Do not add a new `fee:voucher_attachment` permission in Step 56B unless implementation reveals an unavoidable policy gap.
+  - Upload requires `fee:manage_department` with scoped department access to the target fee.
+  - Metadata list/detail requires scoped read visibility: `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Download should require the same scoped fee visibility plus `attachment:download` for the initial backend implementation.
+  - `FINANCE_REVIEWER` should be allowed to see metadata and download only if it also has the configured download permission or direct grant; it must not be allowed to upload because it lacks `fee:manage_department`.
+  - If product later wants finance reviewers to download vouchers by default, handle that as a role/permission seed decision rather than by granting upload/manage.
+- Audit plan:
+  - Reuse `UPLOAD_ATTACHMENT` and `DOWNLOAD_ATTACHMENT` actions targeting `ATTACHMENT`.
+  - Audit target department should be the parent `FeeRecord.departmentId`; target secret level can come from the attachment metadata.
+  - Audit `newValue` should include only safe metadata such as `attachmentId`, `relationType`, `relationId` or `feeRecordId`, `fileName`, `mimeType`, `sizeBytes`, `version`, `secretLevel`, `status`, uploader/download timestamp.
+  - Audit must not record file contents, `storageKey`/object key, checksum, amount, `voucherNo`, paid date, due date, or full fee payload.
+  - Add focused tests that serialize upload/download audit payloads and assert those forbidden fields are absent.
+- Storage/schema plan:
+  - No schema change is needed for Step 56B because `AttachmentRelationType.FEE_RECORD` already exists.
+  - No migration, seed, backfill, or new table is needed.
+  - Keep local storage adapter and object-key pattern; do not introduce S3/object storage.
+  - Continue returning safe metadata DTOs; never return `storageKey` or checksum from API responses.
+- Step sequencing:
+  - Step 56B should be backend-only implementation and tests.
+  - Step 56C should add Web Fees voucher attachment UI/client integration after the backend contract lands.
+  - Local Docker real upload/download acceptance can be a later explicit Step after backend and Web are both in place.
+- Step 56B acceptance boundary:
+  - Focused API/service/repository/policy tests for fee voucher upload/list/detail/download.
+  - Verify unsupported achievement behavior remains intact.
+  - Verify out-of-scope fee ids return existing not-found semantics.
+  - Verify finance reviewer can list/detail scoped voucher metadata but cannot upload.
+  - Verify download requires the chosen read/download permission combination.
+  - Verify audit redaction excludes file contents, `storageKey`, checksum, amount, `voucherNo`, paid/due dates, and raw fee payload.
+
 ## Current Step 55I Archive - Finance review capability closure - 2026-06-30
 
 - Step identity:

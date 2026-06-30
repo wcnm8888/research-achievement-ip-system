@@ -1,5 +1,41 @@
 # Decisions
 
+## D202 - Fee voucher attachments reuse Attachment for scoped FeeRecord files
+
+- Date: 2026-06-30.
+- Context: Step 56A reviewed the existing attachment, fee, audit, authorization, Prisma, and Web patterns to plan the minimum voucher attachment integration without implementation.
+- Decision:
+  - Represent fee voucher files as `Attachment` rows with `relationType=FEE_RECORD` and `relationId=<FeeRecord.id>`.
+  - Allow zero-or-more attachments per fee record in the minimum implementation instead of forcing one voucher file.
+  - Do not add a new voucher attachment table, FeeRecord file columns, migration, seed, or backfill while the existing `AttachmentRelationType.FEE_RECORD` contract is available.
+  - Keep `voucherNo` as a voucher number field only; it is not an attachment id, not file metadata, and not audit metadata for upload/download.
+  - Implement Step 56B as backend-only API/service/repository/policy work; defer Web Fees integration to Step 56C.
+- Current-state basis:
+  - Prisma `AttachmentRelationType` already includes `FEE_RECORD`.
+  - `Attachment` already stores generic relation metadata by `relationType` and `relationId`.
+  - Attachment repository and object-key generation are relation-generic.
+  - Current attachment controller and service methods expose only achievement routes and reject non-achievement relations.
+  - Fee service and policy already have department-scoped read/manage/review paths.
+- Minimum backend API contract:
+  - `POST /api/fees/:feeRecordId/voucher-attachments`.
+  - `GET /api/fees/:feeRecordId/voucher-attachments`.
+  - `GET /api/fees/:feeRecordId/voucher-attachments/:attachmentId`.
+  - `GET /api/fees/:feeRecordId/voucher-attachments/:attachmentId/download`.
+- Permission decision:
+  - Upload requires scoped `fee:manage_department`.
+  - Metadata list/detail allow scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Download initially requires scoped fee visibility plus existing `attachment:download`.
+  - Finance reviewers are read-only for voucher attachments by default and are not allowed to upload.
+  - Do not create `fee:voucher_attachment` in the first implementation.
+- Audit/storage/schema decision:
+  - Reuse `UPLOAD_ATTACHMENT` and `DOWNLOAD_ATTACHMENT` with target type `ATTACHMENT`.
+  - Audit only safe attachment metadata and parent fee identity/department.
+  - Never audit file content, storage key/object key, checksum, amount, `voucherNo`, paid date, due date, or raw fee payload.
+  - Reuse local attachment storage; do not introduce S3/object storage.
+  - No schema change is required for Step 56B.
+- Boundaries:
+  - This decision does not authorize API/UI implementation in Step 56A, real uploads/downloads, business-data writes, migrations, seeds, dependency/package changes, production/VPS access, account/password work, secret reads/output, `.env` / `.env.production` content reads, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling.
+
 ## D201 - Finance review is locally closed but production rollout remains gated
 
 - Date: 2026-06-30.

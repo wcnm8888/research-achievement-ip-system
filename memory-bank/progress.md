@@ -1,5 +1,52 @@
 # Progress
 
+## 2026-06-30 Step 56A - Voucher attachment integration scope and backend plan
+
+- Status: STEP_56A_VOUCHER_ATTACHMENT_BACKEND_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Planned the minimum fee voucher attachment integration scope.
+  - Documentation-only; no API/UI/schema implementation, migration, seed/backfill, dependency/package change, storage-provider change, Docker, real upload/download, business-data write, account/password work, production/VPS access, push/deploy, cleanup, deletion, reset, drop, prune, or untracked-artifact handling occurred.
+  - `.env` / `.env.production` contents were not read or output.
+- Starting state:
+  - `HEAD`: `975c736`.
+  - Latest commit subject: `docs: close finance review capability`.
+  - Tracked diff was empty before Step 56A memory-bank edits.
+  - Existing untracked local artifacts were present and left untouched.
+- Findings:
+  - `AttachmentRelationType.FEE_RECORD` already exists in Prisma and code-level relation constants.
+  - `Attachment` is already a generic relation metadata table and can represent fee voucher files with `relationType=FEE_RECORD`.
+  - `AttachmentRepository` and storage object-key generation are mostly relation-generic.
+  - Current public attachment API and service methods are achievement-bound and explicitly reject non-achievement relations at `assertSupportedRelation`.
+  - Current attachment audit paths redact object key, checksum, and file body; fee voucher implementation must extend this with amount and `voucherNo` redaction.
+  - Fees backend already has department-scoped read/manage/review policies.
+  - Fees Web still intentionally has voucher attachment boundary copy and no attachment calls.
+- Planned minimum scope:
+  - Fee voucher attachment is one `FeeRecord` to zero-or-more `Attachment` rows.
+  - Do not restrict to a single voucher file in the first implementation.
+  - Do not add a new table or FeeRecord attachment columns.
+  - Keep `voucherNo` as a voucher number, not as file metadata or attachment identity.
+- Planned backend contract:
+  - `POST /api/fees/:feeRecordId/voucher-attachments` for multipart upload.
+  - `GET /api/fees/:feeRecordId/voucher-attachments` for safe metadata list.
+  - `GET /api/fees/:feeRecordId/voucher-attachments/:attachmentId` for safe metadata detail.
+  - `GET /api/fees/:feeRecordId/voucher-attachments/:attachmentId/download` for file download through existing local storage.
+- Planned authorization:
+  - Upload requires scoped `fee:manage_department`.
+  - Metadata list/detail allow scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Download should initially require scoped fee visibility plus existing `attachment:download`.
+  - Finance reviewers are read-only by default; they must not upload.
+  - No new `fee:voucher_attachment` permission is needed for the first backend implementation unless a later policy review explicitly chooses one.
+- Planned audit/storage/schema boundary:
+  - Reuse `UPLOAD_ATTACHMENT` and `DOWNLOAD_ATTACHMENT`.
+  - Use parent fee department for audit target department.
+  - Do not audit file contents, `storageKey`, checksum, amount, `voucherNo`, due/paid dates, or raw fee payload.
+  - Reuse current local attachment storage; do not add S3/object storage.
+  - No Prisma schema change, migration, seed, or backfill is required.
+- Next:
+  - Step 56B should be backend-only implementation and tests.
+  - Step 56C should add Web Fees voucher attachment UI/client after the backend contract lands.
+  - Real local upload/download acceptance should wait for a separately scoped acceptance Step.
+
 ## 2026-06-30 Step 55I - Finance review capability closure
 
 - Status: STEP_55I_FINANCE_REVIEW_CAPABILITY_CLOSED_LOCALLY_DOCS_ONLY.
