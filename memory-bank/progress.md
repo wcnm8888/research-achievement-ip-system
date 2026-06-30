@@ -1,5 +1,64 @@
 # Progress
 
+## 2026-06-30 Step 53A - Local operations and backup readiness runbook
+
+- Status: STEP_53A_LOCAL_OPERATIONS_BACKUP_READINESS_DOCUMENTED.
+- Step identity:
+  - Documents local Docker production-like operations and backup readiness.
+  - This is a runbook/checklist/evidence-boundary Step only.
+  - This is not production/VPS work, not a real backup, not a restore drill, not migration/seed/backfill, not Docker restart/build, not package/source/config work, not push/deploy, and not cleanup.
+- Starting state:
+  - `HEAD`: `6e34348`.
+  - Latest commit subject: `docs: record local docker import dry-run acceptance`.
+  - Tracked diff was empty before Step 53A memory-bank changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was confirmed only; contents were not read or output.
+- Context read:
+  - Step 52D top memory-bank archive and evidence.
+  - Step 50A decision boundary for phase-one local Docker gaps.
+  - Existing deploy runbooks/checklists for local production-like env and production cutover.
+  - `docker-compose.production.yml`, root and package scripts, API health controller, route inventory, Dockerfiles/Nginx Web health, and Prisma schema model boundary.
+- Current operations capability:
+  - Local production-like compose stack has `postgres`, `api`, and `web` service healthchecks.
+  - API health is available at `GET /api/health` and returns non-sensitive service/status data.
+  - Web root is served by Nginx, and container health is exposed through `/healthz`.
+  - No project backup/restore script currently exists.
+  - Existing production runbook has backup prerequisites, but local backup readiness did not yet have a dedicated checklist.
+- Added readiness plan:
+  - Local production-like health checklist:
+    - `postgres/api/web` container healthy.
+    - `GET http://127.0.0.1:13001/api/health` HTTP 200.
+    - `GET http://127.0.0.1:18081/` HTTP 200.
+    - `GET http://127.0.0.1:18081/healthz` HTTP 200.
+    - Optional Web proxy `GET http://127.0.0.1:18081/api/health` HTTP 200.
+    - Minimal authenticated GET smoke for `auth/me`, dashboard summary, achievements, fee warnings, workflow tasks, search, and department tree.
+  - Local backup readiness checklist:
+    - Primary backup object is local Docker Postgres behind `research_achievement_production_pgdata`.
+    - Backup command is documented as a future `pg_dump -Fc` draft only.
+    - Artifact naming rule uses `research-achievement-local-production-like-postgres-YYYYMMDD-HHMMSS.dump`.
+    - Backup artifacts must stay outside git, with `deploy/artifacts/` or an explicit E-drive backup directory as candidate locations.
+    - No credentials, `.env.production` values, cookies, tokens, full connection strings, AccessKeys, or private keys may be recorded.
+  - Local restore drill plan:
+    - Future-only and separately authorized.
+    - Prefer isolated local restore target instead of the current production-like database.
+    - Stop for explicit confirmation before any restore/drop/reset/clean or destructive command.
+    - Record only redacted read-only evidence after a future drill.
+- Deferred:
+  - VPS/production backup and restore runbook.
+  - Production backup automation, retention, encryption, and offsite policy.
+  - Attachment binary backup coverage because the current compose file has no dedicated attachment storage volume.
+  - Local read-only healthcheck automation.
+  - Local backup artifact generation verification.
+- Boundaries observed:
+  - No `.env` or `.env.production` values were read or output.
+  - No backup artifact was created, overwritten, or deleted.
+  - No restore/drop/reset/prune/delete/clean command was run.
+  - No Docker, DB, migration, seed, production, VPS, push, deploy, package, lockfile, source-code, or compose/deploy config change occurred.
+  - Existing untracked local artifacts were not staged, cleaned, moved, deleted, or modified.
+- Next:
+  - Step 53B can add a local read-only healthcheck script or run manual checklist acceptance.
+  - Step 53C can consider a confirmed local backup artifact generation verification.
+
 ## 2026-06-29 Step 52D - Local Docker department import dry-run acceptance
 
 - Status: STEP_52D_LOCAL_DOCKER_DEPARTMENT_IMPORT_DRY_RUN_ACCEPTED.

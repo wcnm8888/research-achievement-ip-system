@@ -1,5 +1,70 @@
 # Evidence
 
+## 2026-06-30 Step 53A - Local operations and backup readiness runbook evidence
+
+- Purpose:
+  - Record the local Docker production-like operations / backup readiness runbook.
+  - Define health checklist, backup checklist, restore drill boundary, and deferred production/VPS scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `6e34348`.
+  - Latest commit subject: `docs: record local docker import dry-run acceptance`.
+  - Tracked diff was empty before Step 53A memory-bank changes.
+  - Existing untracked local artifacts were present and were not staged, cleaned, deleted, moved, or modified.
+- Environment boundary evidence:
+  - `.env.production` existence was confirmed.
+  - `.env.production` contents were not read or output.
+  - No `.env` values were read or output.
+- Context evidence:
+  - Read the top Step 52D memory-bank archive/evidence.
+  - Read Step 50A decision boundary for phase-one local Docker gaps.
+  - Read existing operations materials:
+    - `deploy/local-production-like-env-checklist.md`.
+    - `deploy/runbook-production.md`.
+    - `deploy/checklist-production-cutover.md` was identified as existing operations material.
+  - No project README file or `docs/` runbook directory was present in the file inventory.
+- Compose/runtime evidence:
+  - `docker-compose.production.yml` defines compose project `research-achievement-production`.
+  - `postgres` uses `postgres:16-alpine`, `.env.production`, named volume `research_achievement_production_pgdata`, and `pg_isready` healthcheck.
+  - `api` builds from `Dockerfile.api`, depends on healthy Postgres, exposes `127.0.0.1:13001:3000`, and healthchecks `http://127.0.0.1:3000/api/health`.
+  - `web` builds from `Dockerfile.web`, depends on healthy API, exposes `127.0.0.1:18081:80`, and healthchecks `http://127.0.0.1/healthz`.
+  - Web Nginx proxies `/api/` to `api:3000/api/`, serves the SPA root, and returns HTTP 200 body `ok` on `/healthz`.
+- API/code evidence:
+  - API `main.ts` sets global prefix `api`.
+  - `HealthController` exposes `GET /api/health` and returns non-sensitive `service` and `status=ok`.
+  - Root `package.json` scripts include dev, lint, typecheck, test, build, `prisma:validate`, `prisma:seed:foundation`, and `test:seed:foundation`; no backup or restore script exists.
+  - API route inventory confirms available minimal smoke surfaces:
+    - `GET /api/auth/me`.
+    - `GET /api/dashboard/summary`.
+    - `GET /api/achievements`.
+    - `GET /api/fees/warnings`.
+    - `GET /api/workflow/tasks/my`.
+    - `GET /api/search`.
+    - `GET /api/departments/tree`.
+    - `POST /api/imports/departments/dry-run` exists but should remain separately accepted because it is a POST dry-run with no-write checks.
+- Prisma boundary evidence:
+  - Schema datasource is PostgreSQL through `DATABASE_URL`, but the value was not read.
+  - Models include departments, users, credentials, sessions, lifecycle tokens, roles/permissions, grants, achievements/details/contributors, workflow instances/tasks/actions, fees, reminders, notifications, attachment metadata, audit logs, API integration metadata/call logs, and search logs.
+  - This Step did not change Prisma schema, migrations, or seed files.
+- Readiness output evidence:
+  - `memory-bank/implementation-plan.md` now records:
+    - Local production-like health checklist.
+    - Minimal GET-oriented API smoke checklist.
+    - Local backup object, command draft, artifact naming, and no-git artifact rule.
+    - Restore drill preconditions, manual confirmation points, and future-only plan.
+    - Risk boundaries and next Step suggestions.
+  - `memory-bank/progress.md` records Step 53A current status and boundaries.
+  - `memory-bank/decisions.md` records D188.
+- Not executed:
+  - No Docker command that starts, stops, rebuilds, or restarts services.
+  - No database command, `pg_dump`, `pg_restore`, restore, drop, reset, migration, seed, or backfill.
+  - No backup artifact creation, overwrite, deletion, or cleanup.
+  - No VPS/production access, production DB access, push, deploy, dependency install, package/lockfile change, source-code change, compose/deploy config change, or untracked-artifact cleanup.
+- Verification:
+  - `git diff --check`: passed.
+  - Sensitive scan over added lines: passed.
+- Boundaries observed:
+  - No password, cookie, token, secret, AccessKey, private key, full connection string, `.env`, or `.env.production` value was read, output, or recorded.
+
 ## 2026-06-29 Step 52D - Local Docker department import dry-run acceptance evidence
 
 - Purpose:

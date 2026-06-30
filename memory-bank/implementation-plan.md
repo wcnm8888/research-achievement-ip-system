@@ -4,6 +4,92 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 53A Archive - Local operations and backup readiness runbook - 2026-06-30
+
+- Step identity:
+  - This Step records local operations / backup readiness for the phase-one local Docker production-like stack.
+  - This is documentation-only readiness work.
+  - No production operation, VPS access, production DB access, Docker start/restart/build, migration, seed/backfill, backup creation, restore drill, drop/reset/prune/delete/clean, push, deploy, dependency install, package/lockfile change, source-code change, compose/deploy config change, or untracked-artifact cleanup occurred.
+- Starting state:
+  - `HEAD`: `6e34348`.
+  - Latest commit: `docs: record local docker import dry-run acceptance`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was confirmed only; contents were not read or output.
+- Current operations inventory:
+  - No project README or `docs/` runbook directory exists in the current tree.
+  - Existing operations materials are `deploy/local-production-like-env-checklist.md`, `deploy/runbook-production.md`, `deploy/checklist-production-cutover.md`, and memory-bank archives.
+  - `docker-compose.production.yml` defines the local production-like services:
+    - `postgres` with Postgres 16, named volume `research_achievement_production_pgdata`, and `pg_isready` healthcheck.
+    - `api` built from `Dockerfile.api`, exposed on `127.0.0.1:13001 -> 3000`, depending on healthy Postgres, and healthchecked through `/api/health`.
+    - `web` built from `Dockerfile.web`, exposed on `127.0.0.1:18081 -> 80`, depending on healthy API, and healthchecked through `/healthz`.
+  - API global prefix is `api`; `GET /api/health` returns non-sensitive `{ service, status }`.
+  - Root scripts are limited to dev/lint/typecheck/test/build/prisma validate/foundation seed; no backup or restore script exists.
+  - Prisma schema confirms the local database contains business, auth/session, workflow, fee/reminder, attachment metadata, audit, settings, and search-log models. This Step does not change schema or run database commands.
+- Local production-like health checklist:
+  - Confirm `.env.production` exists without reading its contents.
+  - Confirm tracked diff is clean and existing untracked local artifacts are not staged or cleaned.
+  - Confirm `docker compose -f docker-compose.production.yml ps` reports `postgres`, `api`, and `web` as healthy.
+  - Confirm API direct health: `GET http://127.0.0.1:13001/api/health` returns HTTP 200 and `status=ok`.
+  - Confirm Web root: `GET http://127.0.0.1:18081/` returns HTTP 200.
+  - Confirm Web container health: `GET http://127.0.0.1:18081/healthz` returns HTTP 200.
+  - Confirm Web proxy path, when needed: `GET http://127.0.0.1:18081/api/health` returns HTTP 200.
+  - Minimal API smoke, using only a local authorized session and without recording cookie/session values:
+    - Anonymous `GET /api/auth/me` returns HTTP 401.
+    - Authenticated `GET /api/auth/me` returns HTTP 200.
+    - Authenticated `GET /api/dashboard/summary` returns HTTP 200.
+    - Authenticated `GET /api/achievements` returns HTTP 200.
+    - Authenticated `GET /api/fees/warnings` returns HTTP 200.
+    - Authenticated `GET /api/workflow/tasks/my` returns HTTP 200.
+    - Authenticated `GET /api/search` with a non-sensitive query returns HTTP 200.
+    - Authenticated `GET /api/departments/tree` returns HTTP 200 for an authorized operator.
+  - Default smoke should stay GET-only. Any POST dry-run acceptance, including department import dry-run, remains a separately named acceptance step with no-write count checks.
+- Local backup readiness checklist:
+  - Primary backup object for this local runbook is the local Docker Postgres database behind volume `research_achievement_production_pgdata`.
+  - Attachment binary storage is not represented as a dedicated production compose volume in the current compose file; any local attachment file backup requires a separate storage inventory before it can be accepted as covered.
+  - Backup command draft only, not executed in Step 53A:
+    - `docker compose -f docker-compose.production.yml exec -T postgres sh -lc 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > deploy/artifacts/local-backups/research-achievement-local-production-like-postgres-YYYYMMDD-HHMMSS.dump`
+  - Optional manifest/check draft only:
+    - `pg_restore --list deploy/artifacts/local-backups/research-achievement-local-production-like-postgres-YYYYMMDD-HHMMSS.dump`
+  - Naming rule:
+    - `research-achievement-local-production-like-postgres-YYYYMMDD-HHMMSS.dump`.
+    - Optional sidecar names may use the same base with `.sha256` or `.restore-list.txt`.
+  - Backup artifacts must stay outside git. The preferred in-repo local artifact parent is `deploy/artifacts/`, which is ignored; an external E-drive backup directory is also acceptable when explicitly chosen.
+  - Do not record passwords, cookies, tokens, secrets, AccessKeys, private keys, full connection strings, or `.env.production` contents in backup logs, docs, screenshots, or commits.
+  - Record only non-sensitive evidence after a future backup step: timestamp, artifact basename, target summary, command category, exit status, dump/list success, file size, and optional checksum.
+- Local restore drill plan:
+  - Restore drill is not executed in Step 53A.
+  - Restore drill must be opened as a separate Step and must receive explicit confirmation before any restore/drop/reset/clean action.
+  - Preferred drill target is an isolated local restore database/volume or separate local compose project, not the current working production-like database.
+  - Before a future restore drill:
+    - Confirm the target is local-only and not VPS/production.
+    - Confirm the exact backup artifact basename.
+    - Confirm whether the drill may create isolated local restore artifacts.
+    - Confirm whether any destructive command is required; if yes, stop for explicit approval with affected resources listed.
+    - Confirm no app traffic should write to the restore target during verification.
+  - Planned drill steps for a future authorized Step:
+    - Inspect backup metadata/list without exposing credentials.
+    - Provision or identify an isolated empty local restore target.
+    - Restore the dump into the isolated target.
+    - Run read-only schema/table-count sanity checks.
+    - Point only a temporary local verification process at the restored target if needed.
+    - Run local GET health/API smoke against the restored target.
+    - Record redacted evidence and residual risks.
+  - Cleanup of restore artifacts is not automatic and needs separate approval under the repository safety rules.
+- Risk boundaries:
+  - Current scope is local Docker production-like readiness only.
+  - This does not cover VPS/production backup automation, offsite backup retention, object-storage backup, production rollback, or production restore.
+  - This does not authorize destructive restore, data cleanup, old-artifact cleanup, migration/seed/backfill, or production access.
+  - Existing untracked local artifacts must remain untouched.
+- Deferred:
+  - Production/VPS backup runbook and restore acceptance.
+  - Backup retention/encryption/offsite storage policy.
+  - Attachment binary backup coverage.
+  - Automated healthcheck or backup scripts.
+- Next:
+  - Step 53B can add a local read-only healthcheck script or run manual checklist acceptance.
+  - Step 53C can consider a confirmed local backup artifact generation verification.
+
 ## Current Step 52D Archive - Local Docker department import dry-run acceptance - 2026-06-29
 
 - Step identity:

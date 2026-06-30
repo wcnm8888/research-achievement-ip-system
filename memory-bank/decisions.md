@@ -1,5 +1,36 @@
 # Decisions
 
+## D188 - Step 53A treats backup readiness as local runbook work only
+
+- Date: 2026-06-30.
+- Context: After Step 52D accepted department import dry-run in the local Docker production-like stack, phase-one still needed a local operations / backup readiness runbook. The user explicitly limited Step 53A to current-state audit, runbook/checklist, and acceptance criteria, with no production operation and no real restore drill.
+- Decision:
+  - Document local operations readiness in memory-bank because the project has no `README` or `docs/runbooks` / `docs/operations` directory.
+  - Treat the current local production-like health gate as:
+    - `postgres`, `api`, and `web` containers healthy.
+    - Direct API `GET /api/health` returns HTTP 200.
+    - Web root returns HTTP 200.
+    - Web container `/healthz` returns HTTP 200.
+    - Minimal authenticated GET smoke covers auth identity, dashboard, achievements, fee warnings, workflow tasks, search, and department tree.
+  - Treat local backup readiness as a checklist and command-draft only, centered on a future `pg_dump -Fc` of the local Docker Postgres database.
+  - Keep backup artifacts outside git and avoid recording credentials, cookies, tokens, secrets, AccessKeys, private keys, full connection strings, or `.env.production` contents.
+  - Treat restore drill as future work that must be opened as a separate Step and explicitly confirmed before any restore/drop/reset/clean action.
+  - Prefer isolated local restore targets for future drills instead of restoring into the current production-like database.
+- Rationale:
+  - The compose file already defines service-level healthchecks, local ports, and the Postgres named volume, so a checklist can be precise without touching runtime state.
+  - A documentation-only runbook reduces future operator ambiguity while respecting the no-production/no-restore/no-cleanup boundary.
+  - Keeping restore drills separate avoids accidental destructive commands against the local production-like database or any production target.
+  - The current compose file does not expose a dedicated attachment-storage volume, so attachment binary backup must remain a separate inventory item.
+- Not complete:
+  - Manual health checklist execution.
+  - Read-only healthcheck script.
+  - Real local backup artifact generation.
+  - Restore drill.
+  - Attachment binary backup coverage.
+  - VPS/production backup, retention, encryption, offsite storage, and restore automation.
+- Boundaries:
+  - This decision does not authorize reading `.env` / `.env.production` contents, exposing sensitive values, creating/overwriting/deleting backup artifacts, Docker operations, migration, seed/backfill, restore, drop, reset, prune, cleanup, deletion, package/lockfile changes, source-code changes, compose/deploy config changes, VPS access, production DB access, push, or deploy.
+
 ## D187 - Step 52D accepts local Docker department dry-run without enabling import writes
 
 - Date: 2026-06-29.
