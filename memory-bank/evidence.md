@@ -1,5 +1,56 @@
 # Evidence
 
+## 2026-06-30 Step 55E - Local Docker fee review acceptance evidence
+
+- Purpose:
+  - Run local Docker production-like acceptance for Step 55B/55C/55D fee review schema/API/Web.
+  - Allow local Docker DB migration/seed and minimal local acceptance samples.
+  - Avoid VPS/production, password changes, secret/cookie/session recording, `.env` / `.env.production` content reads, push/deploy, cleanup, deletion, reset, drop, restore, prune, and untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `a24bb88`.
+  - Latest commit subject: `feat: add fee review UI`.
+  - `git status --short --branch` showed existing untracked local artifacts and no tracked changes before Step 55E memory-bank updates.
+  - `.env.production` existence was confirmed only; contents were not read or output.
+- Local Docker evidence:
+  - Initial `docker compose -f docker-compose.production.yml ps` failed because the local Docker daemon was unavailable.
+  - Started Docker Desktop locally and confirmed Docker became available.
+  - `docker compose -f docker-compose.production.yml up -d --build`: completed for local `api` and `web`; an existing orphan warning was left untouched.
+  - `docker compose -f docker-compose.production.yml ps`: `postgres`, `api`, and `web` healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `GET http://127.0.0.1:18081/`: HTTP 200.
+  - `GET http://127.0.0.1:18081/fees`: HTTP 200.
+- Migration/seed evidence:
+  - `docker compose -f docker-compose.production.yml exec -T api pnpm prisma migrate deploy`: passed; fee review migration applied.
+  - `docker compose -f docker-compose.production.yml exec -T api node prisma/seed-foundation.cjs`: passed; foundation seed included `fee:review_department`.
+  - Local-only acceptance seed supplement: added a department-scoped `SYSTEM_ADMIN` role assignment for the local admin user so fee department scope was non-empty.
+- API acceptance evidence:
+  - Local acceptance samples started with `reviewStatus = PENDING`.
+  - Admin approve endpoint returned HTTP 200 with `reviewStatus = APPROVED`.
+  - Payment fields and archive state were unchanged by approve.
+  - Repeat approve returned HTTP 409.
+  - Reject without reason returned HTTP 400.
+  - Admin reject endpoint returned HTTP 200 with `reviewStatus = REJECTED`.
+  - Non-reviewer approve returned HTTP 403 and left `reviewStatus = PENDING`.
+  - Audit rows existed for `FEE_RECORD` `APPROVE` and `REJECT`; serialized summaries did not contain amount, `voucherNo`, voucher text, or the local voucher value.
+- Web acceptance evidence:
+  - Used local production session cookies in headless system Chrome; raw cookie/session values were not printed, written to docs, or committed.
+  - Admin navigated to Fees, saw `PENDING` review status as "待审核", and saw approve/reject actions.
+  - Admin approve changed the row to "已通过" and removed repeat review actions.
+  - Reject drawer required a reason client-side before any reject request was sent.
+  - Admin reject changed the row to "已拒绝" and removed repeat review actions.
+  - Non-reviewer saw zero approve/reject buttons and sent zero review requests.
+  - Fees page text did not expose voucher attachment, backup/restore, or real-production operation entries.
+- Final diff checks:
+  - `git diff --check`: passed.
+  - Added-lines sensitive scan: passed.
+- Risk evidence:
+  - Before adding the local department-scoped admin role assignment, a global-only local `SYSTEM_ADMIN` session returned HTTP 404 for scoped fee review because `scopedDepartmentIds` was empty.
+  - This is a production setup/authorization semantics decision, not a Step 55E implementation change.
+- Boundaries observed:
+  - No account password was modified.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, raw session value, or `.env` / `.env.production` value was output, recorded, staged, or committed.
+  - No VPS/production DB access, push, deploy, restore, drop, reset, prune, cleanup, deletion, backup/restore run, or existing untracked artifact handling occurred.
+
 ## 2026-06-30 Step 55D - Fee review Web UI and client integration evidence
 
 - Purpose:

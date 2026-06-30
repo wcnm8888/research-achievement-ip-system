@@ -1,5 +1,50 @@
 # Progress
 
+## 2026-06-30 Step 55E - Local Docker fee review acceptance
+
+- Status: STEP_55E_LOCAL_DOCKER_FEE_REVIEW_ACCEPTED_WITH_SCOPE_NOTE.
+- Step identity:
+  - Performs local Docker production-like acceptance for fee review schema/API/Web from Steps 55B/55C/55D.
+  - Does not implement backend API/schema, Web UI, Prisma model changes, account password changes, production/VPS access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+- Starting state:
+  - `HEAD`: `a24bb88`.
+  - Latest commit subject: `feat: add fee review UI`.
+  - Tracked diff was empty before Step 55E memory-bank updates.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was checked only; contents were not read or output.
+- Local Docker work:
+  - Started local Docker Desktop after the daemon was initially unavailable.
+  - Rebuilt/restarted local compose `api` and `web` with `docker compose -f docker-compose.production.yml up -d --build`.
+  - Did not use cleanup flags and did not touch the existing compose orphan warning.
+  - Confirmed `postgres`, `api`, and `web` healthy.
+  - Confirmed API health HTTP 200 and Web `/` plus `/fees` HTTP 200.
+- Migration/seed:
+  - Ran local API-container `pnpm prisma migrate deploy`; the fee review migration applied successfully.
+  - Ran local API-container foundation seed; `fee:review_department` was present.
+  - Added a local-only department-scoped `SYSTEM_ADMIN` role assignment for acceptance because global-only admin roles do not populate `scopedDepartmentIds` for fee department scope.
+- API acceptance:
+  - Local fee samples started with `reviewStatus = PENDING`.
+  - Admin approve returned HTTP 200 and `APPROVED`.
+  - Approval preserved payment fields and archive state.
+  - Repeat review returned HTTP 409.
+  - Reject without reason returned HTTP 400.
+  - Admin reject with reason returned HTTP 200 and `REJECTED`.
+  - Non-reviewer returned HTTP 403 and did not change review status.
+  - Audit had `FEE_RECORD` `APPROVE` / `REJECT` rows and safe summaries without amount or voucher data.
+- Web acceptance:
+  - Used local production session cookies without recording cookie/session values.
+  - Admin saw pending review status and approve/reject actions.
+  - Admin approve refreshed to approved and hid repeated review actions.
+  - Reject drawer enforced required reason before request.
+  - Admin reject refreshed to rejected and hid repeated review actions.
+  - Non-reviewer saw no review actions and sent zero review requests.
+  - No voucher attachment, backup/restore, or real-production operation entry was present on the Fees page.
+- Verification:
+  - `git diff --check`: passed.
+  - Added-lines sensitive scan: passed.
+- Follow-up:
+  - Decide whether global `SYSTEM_ADMIN` should imply all department scopes for fee review, or whether production setup must use explicit department-scoped reviewer assignments.
+
 ## 2026-06-30 Step 55D - Fee review Web UI and client integration
 
 - Status: STEP_55D_FEE_REVIEW_WEB_UI_IMPLEMENTED.

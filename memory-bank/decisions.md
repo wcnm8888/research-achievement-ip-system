@@ -1,5 +1,24 @@
 # Decisions
 
+## D197 - Local fee review acceptance requires explicit department scope
+
+- Date: 2026-06-30.
+- Context: Step 55E ran local Docker production-like acceptance for fee review. The local API runs with production session auth, and fee review uses `PolicyQueryFactory.feeDepartmentWhere(context, PermissionCode.feeReviewDepartment)`.
+- Decision:
+  - Treat `fee:review_department` as necessary but not sufficient for local acceptance; the current user must also have at least one scoped department.
+  - Use a local-only department-scoped `SYSTEM_ADMIN` role assignment for the local admin acceptance session.
+  - Do not change backend authorization code, seed files, Prisma schema, or Web UI in Step 55E.
+  - Record the uncovered authorization nuance as a follow-up production setup decision.
+- Rationale:
+  - Current `buildUserContext` derives `scopedDepartmentIds` from department-scoped user-role assignments.
+  - Global-only `SYSTEM_ADMIN` receives the permission code but no department scope, so fee department review queries intentionally return no-access filters.
+  - Local acceptance needed a real reviewer context without granting review permission to unrelated non-reviewer roles or changing passwords.
+- Follow-up:
+  - Decide whether global admins should imply all department scopes for fee review.
+  - If not, production operations must assign explicit department-scoped finance reviewer roles before using fee review.
+- Boundaries:
+  - This decision does not authorize production DB access, VPS access, password changes, secret reads/output, `.env` / `.env.production` content reads, schema/API/UI implementation changes, migration beyond local Docker acceptance, seed file changes, deployment, push, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+
 ## D196 - Fee review Web UI is permission-gated and separated from payment actions
 
 - Date: 2026-06-30.

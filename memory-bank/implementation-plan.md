@@ -4,6 +4,51 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 55E Archive - Local Docker fee review acceptance - 2026-06-30
+
+- Step identity:
+  - This Step performs local Docker production-like acceptance for the Step 55B/55C/55D fee review schema, API, and Web UI.
+  - Scope is local Docker acceptance plus memory-bank documentation only.
+  - Local Docker DB migration/seed and minimal local acceptance business samples were allowed and performed.
+  - No backend API/schema/UI implementation change, account password change, `.env` / `.env.production` content read/output, secret/cookie/session recording, VPS/production DB access, push/deploy, restore, drop, reset, prune, cleanup, deletion, or existing untracked artifact handling occurred.
+- Starting state:
+  - `HEAD`: `a24bb88`.
+  - Latest commit: `feat: add fee review UI`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env.production` existence was confirmed only; contents were not read or output.
+- Local Docker runtime:
+  - Docker Desktop was started locally because the daemon was initially unavailable.
+  - `docker compose -f docker-compose.production.yml up -d --build` rebuilt/restarted local `api` and `web` from current code.
+  - Existing compose orphan warning was left untouched; no cleanup flag was used.
+  - `postgres`, `api`, and `web` were healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200.
+  - Web `/` and `/fees`: HTTP 200.
+- Migration/seed:
+  - Ran `pnpm prisma migrate deploy` inside the local API container; migration `20260630093000_add_fee_review_contract` applied successfully.
+  - Ran `node prisma/seed-foundation.cjs` inside the local API container; `fee:review_department` was present in the seeded permission set.
+  - Local acceptance added a department-scoped `SYSTEM_ADMIN` role assignment for the local admin user because the current global-only `SYSTEM_ADMIN` role has no `scopedDepartmentIds`, and fee review department scope requires at least one scoped department.
+- API acceptance:
+  - Created local acceptance achievement/fee samples in the local Docker DB.
+  - Confirmed initial `reviewStatus = PENDING`.
+  - Admin `POST /api/fees/:id/review/approve`: HTTP 200, `reviewStatus = APPROVED`.
+  - Approval did not change `payStatus`, `paidDate`, `voucherNo`, or `archivedAt`.
+  - Repeated review after approval returned HTTP 409.
+  - Reject without reason returned HTTP 400.
+  - Admin `POST /api/fees/:id/review/reject` with reason: HTTP 200, `reviewStatus = REJECTED`.
+  - Non-reviewer returned HTTP 403 and left `reviewStatus = PENDING`.
+  - Audit contained `FEE_RECORD` `APPROVE` / `REJECT` rows with safe summaries excluding amount, `voucherNo`, and voucher values.
+- Web acceptance:
+  - Used local production session cookies in a headless system Chrome browser without printing or recording cookie/session values.
+  - Admin saw pending review status and approve/reject actions in Fees after navigating to the Fees menu.
+  - Approve operation refreshed the row to approved and removed repeated review actions.
+  - Reject drawer enforced reason before sending a request.
+  - Reject operation refreshed the row to rejected and removed repeated review actions.
+  - Non-reviewer saw no approve/reject actions and sent zero review requests.
+  - Fees page did not expose voucher attachment, backup/restore, or real-production operation entries.
+- Follow-up risk:
+  - The current seed/authorization shape grants `fee:review_department` only to `SYSTEM_ADMIN`, but global-only role assignments do not produce fee department scope. Production role setup must either assign a department-scoped reviewer role or explicitly define global admin department-scope semantics before relying on this capability.
+
 ## Current Step 55D Archive - Fee review Web UI and client integration - 2026-06-30
 
 - Step identity:
