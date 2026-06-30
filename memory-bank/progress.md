@@ -1,5 +1,39 @@
 # Progress
 
+## 2026-06-30 Step 55C - Fee review approve/reject backend API
+
+- Status: STEP_55C_FEE_REVIEW_BACKEND_API_IMPLEMENTED.
+- Step identity:
+  - Implements backend fee review approve/reject actions on the Step 55B review schema contract.
+  - Does not implement Web UI, workflow task integration, voucher attachment integration, persisted review reason/history, Docker acceptance, migration deploy, seed/backfill, business-data writes, account/password changes, production/VPS access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+- Starting state:
+  - `HEAD`: `9092e3f`.
+  - Latest commit subject: `feat: add fee review schema contract`.
+  - Tracked diff was empty before Step 55C changes.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Implemented:
+  - Added review DTOs: approval reason optional, rejection reason required; both trim and enforce 1-500 characters when present.
+  - Added Fee repository review transition method guarded by id, department scope, `reviewStatus = PENDING`, and `archivedAt = null`.
+  - Added Fee service `approveFeeReview` and `rejectFeeReview`.
+  - Required `fee:review_department`; did not reuse `fee:manage_department`.
+  - Kept review updates and audit writes inside the same transaction.
+  - Added controller routes `POST /fees/:id/review/approve` and `POST /fees/:id/review/reject`.
+  - Used audit target `FEE_RECORD` with actions `APPROVE` and `REJECT`.
+  - Kept `payStatus`, `paidDate`, `voucherNo`, and `archivedAt` unchanged by review transitions.
+  - Did not create workflow tasks or require voucher attachments.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fees`: passed, 6 files / 102 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `git diff --check`: passed.
+  - Staged added-lines sensitive value scan: passed.
+- Boundaries observed:
+  - No account password was modified.
+  - No secrets, credentials, cookies, tokens, hashes, connection strings, AccessKeys, private keys, or `.env` / `.env.production` values were read or output.
+  - Existing untracked artifacts were not staged, cleaned, moved, deleted, or modified.
+  - No migration deploy, seed, backfill, business-data write, Web UI, Docker acceptance, production/VPS access, push, or deploy occurred.
+
 ## 2026-06-30 Step 55B - Fee review schema and permission contract
 
 - Status: STEP_55B_FEE_REVIEW_SCHEMA_PERMISSION_CONTRACT_IMPLEMENTED.

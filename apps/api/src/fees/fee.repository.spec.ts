@@ -5,7 +5,10 @@ import { SecretLevelCode } from "../authorization/constants/secret-level-code";
 import { AchievementStatusCode } from "../achievements/domain/achievement-domain.types";
 import { PrismaService } from "../database/prisma.service";
 import { FeeRepository, FeeTransactionClient } from "./fee.repository";
-import { FeeStatusTransitionConflictError } from "./domain/fee-repository.errors";
+import {
+  FeeReviewTransitionConflictError,
+  FeeStatusTransitionConflictError,
+} from "./domain/fee-repository.errors";
 import {
   FeeReviewStatusCode,
   FeeTypeCode,
@@ -460,6 +463,77 @@ describe("FeeRepository.transitionPayStatus", () => {
         nextStatus: PayStatusCode.paid,
       }),
     ).rejects.toBeInstanceOf(FeeStatusTransitionConflictError);
+  });
+});
+
+describe("FeeRepository.transitionReviewStatusInTransaction", () => {
+  it("transitions pending review with department scope and archived guards", async () => {
+    const { repository, tx } = createRepository();
+    tx.feeRecord.findUnique.mockResolvedValueOnce({
+      ...makeStateRow(),
+      reviewStatus: FeeReviewStatusCode.approved,
+      reviewedById: ids.reviewer,
+      reviewedAt,
+    });
+
+    const result = await repository.transitionReviewStatusInTransaction(
+      tx as unknown as FeeTransactionClient,
+      {
+        feeRecordId: ids.feeRecord,
+        where: { departmentId: { in: [ids.department] } },
+        expectedReviewStatus: FeeReviewStatusCode.pending,
+        nextReviewStatus: FeeReviewStatusCode.approved,
+        reviewedById: ids.reviewer,
+        reviewedAt,
+      },
+    );
+
+    expect(tx.feeRecord.updateMany).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          { id: ids.feeRecord },
+          { departmentId: { in: [ids.department] } },
+          { reviewStatus: FeeReviewStatusCode.pending },
+          { archivedAt: null },
+        ],
+      },
+      data: {
+        reviewStatus: FeeReviewStatusCode.approved,
+        reviewedById: ids.reviewer,
+        reviewedAt,
+      },
+    });
+    expect(tx.feeRecord.updateMany.mock.calls[0]![0].data).not.toHaveProperty("payStatus");
+    expect(tx.feeRecord.updateMany.mock.calls[0]![0].data).not.toHaveProperty("paidDate");
+    expect(tx.feeRecord.updateMany.mock.calls[0]![0].data).not.toHaveProperty("voucherNo");
+    expect(tx.feeRecord.updateMany.mock.calls[0]![0].data).not.toHaveProperty("archivedAt");
+    expect(result).toEqual(
+      expect.objectContaining({
+        payStatus: PayStatusCode.pending,
+        reviewStatus: FeeReviewStatusCode.approved,
+        reviewedById: ids.reviewer,
+        reviewedAt,
+      }),
+    );
+  });
+
+  it("maps stale review updates to a review transition conflict", async () => {
+    const { repository, tx } = createRepository();
+    tx.feeRecord.updateMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(
+      repository.transitionReviewStatusInTransaction(
+        tx as unknown as FeeTransactionClient,
+        {
+          feeRecordId: ids.feeRecord,
+          where: { departmentId: { in: [ids.department] } },
+          expectedReviewStatus: FeeReviewStatusCode.pending,
+          nextReviewStatus: FeeReviewStatusCode.rejected,
+          reviewedById: ids.reviewer,
+          reviewedAt,
+        },
+      ),
+    ).rejects.toBeInstanceOf(FeeReviewTransitionConflictError);
   });
 });
 

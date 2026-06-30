@@ -4,6 +4,58 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 55C Archive - Fee review approve/reject backend API - 2026-06-30
+
+- Step identity:
+  - This Step implements backend fee-specific review approve/reject APIs on top of the Step 55B `FeeReviewStatus` contract.
+  - Scope is API controller, DTO, service, repository transition, audit integration, and focused tests only.
+  - No Web UI, workflow task integration, voucher attachment prerequisite, persisted review reason/history table, account/password change, business-data write, migration deploy, seed/backfill execution, VPS/production access, push/deploy, cleanup, deletion, reset, drop, restore, prune, Docker acceptance, or untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `9092e3f`.
+  - Latest commit: `feat: add fee review schema contract`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Implemented backend contract:
+  - Added `POST /fees/:id/review/approve`.
+  - Added `POST /fees/:id/review/reject`.
+  - Both endpoints return HTTP 200 and require `fee:review_department`.
+  - Approval accepts an optional trimmed reason.
+  - Rejection requires a trimmed reason.
+  - Service uses the current user department scope through `PolicyQueryFactory.feeDepartmentWhere(context, PermissionCode.feeReviewDepartment)`.
+  - Repository review transition uses `updateMany` with fee id, department scope, `reviewStatus = PENDING`, and `archivedAt = null`.
+  - Approval changes `reviewStatus` to `APPROVED` and writes `reviewedById` / `reviewedAt`.
+  - Rejection changes `reviewStatus` to `REJECTED` and writes `reviewedById` / `reviewedAt`.
+  - Repeated approve/reject for `APPROVED` or `REJECTED` records returns conflict before writing audit.
+  - Missing, out-of-scope, or archived records follow existing fee not-found semantics.
+- Preserved boundaries:
+  - Review approve/reject does not change `payStatus`.
+  - Review approve/reject does not write `paidDate`, `voucherNo`, or `archivedAt`.
+  - Review approve/reject does not create workflow tasks.
+  - Voucher attachment integration remains deferred.
+  - Review reason is not persisted in a new table; it is included only in sanitized audit summaries.
+  - Audit uses target type `FEE_RECORD` and actions `APPROVE` / `REJECT`.
+  - Review audit summaries include review status, reviewer, reviewed-at, pay status, and optional reason, but exclude amount, `voucherNo`, and voucher values.
+- Tests updated:
+  - DTO tests cover optional approval reason and required rejection reason.
+  - Repository tests cover guarded review `updateMany` conditions and that only review fields are updated.
+  - Service tests cover permission denial, department scope, pending-to-approved/rejected transitions, repeated-review conflict, pay-status preservation, not-found behavior, and audit failure bubbling through the shared transaction.
+  - Controller and AppModule tests cover route wiring, HTTP 200 behavior, and `fee:review_department` static guard behavior.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fees`: passed, 6 files / 102 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+  - `git diff --check`: passed.
+  - Staged added-lines sensitive value scan: passed.
+- Next:
+  - Web UI remains deferred.
+  - Voucher attachment integration remains deferred.
+  - Role rollout for non-system finance reviewers remains a product decision before granting `fee:review_department` beyond the current seed matrix.
+- Hard boundaries:
+  - Do not modify account passwords.
+  - Do not read or output secrets, credentials, cookies, tokens, hashes, connection strings, AccessKeys, private keys, or `.env` / `.env.production` values.
+  - Do not execute migration deploy, seed/backfill, business-data writes, production/VPS access, push, deploy, cleanup, deletion, reset, drop, restore, prune, Docker acceptance, or untracked-artifact handling.
+
 ## Current Step 55B Archive - Fee review schema and permission contract - 2026-06-30
 
 - Step identity:

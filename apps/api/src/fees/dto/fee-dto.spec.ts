@@ -7,6 +7,7 @@ import { ChangeFeeStatusDto } from "./change-fee-status.dto";
 import { CreateFeeRecordDto } from "./create-fee-record.dto";
 import { FeeQueryDto } from "./fee-query.dto";
 import { MarkFeePaidDto } from "./mark-fee-paid.dto";
+import { ApproveFeeReviewDto, RejectFeeReviewDto } from "./review-fee.dto";
 import { UpdateFeeRecordDto } from "./update-fee-record.dto";
 
 const validateDto = async <T extends object>(
@@ -81,6 +82,54 @@ describe("ChangeFeeStatusDto", () => {
 
     for (const testCase of cases) {
       const errors = await validateDto(ChangeFeeStatusDto, testCase);
+      expect(errors.map((error) => error.property)).toContain("reason");
+    }
+  });
+});
+
+describe("ApproveFeeReviewDto", () => {
+  it("accepts an optional trimmed reason", async () => {
+    const dto = plainToInstance(ApproveFeeReviewDto, {
+      reason: "  finance verified  ",
+    });
+    const errors = await validate(dto);
+
+    expect(errors).toHaveLength(0);
+    expect(dto.reason).toBe("finance verified");
+  });
+
+  it("accepts an empty approval body", async () => {
+    const errors = await validateDto(ApproveFeeReviewDto, {});
+
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects blank or overlong approval reasons when provided", async () => {
+    const cases = [{ reason: "   " }, { reason: "x".repeat(501) }];
+
+    for (const testCase of cases) {
+      const errors = await validateDto(ApproveFeeReviewDto, testCase);
+      expect(errors.map((error) => error.property)).toContain("reason");
+    }
+  });
+});
+
+describe("RejectFeeReviewDto", () => {
+  it("accepts and trims a required reason", async () => {
+    const dto = plainToInstance(RejectFeeReviewDto, {
+      reason: "  missing invoice support  ",
+    });
+    const errors = await validate(dto);
+
+    expect(errors).toHaveLength(0);
+    expect(dto.reason).toBe("missing invoice support");
+  });
+
+  it("rejects missing, blank, or overlong reasons", async () => {
+    const cases = [{}, { reason: "   " }, { reason: "x".repeat(501) }];
+
+    for (const testCase of cases) {
+      const errors = await validateDto(RejectFeeReviewDto, testCase);
       expect(errors.map((error) => error.property)).toContain("reason");
     }
   });

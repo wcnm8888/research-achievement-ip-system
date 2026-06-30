@@ -13,7 +13,10 @@ import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
 import { FeeRepository, FeeTransactionClient } from "./fee.repository";
 import { InvalidFeeTransitionError } from "./domain/fee-errors";
-import { FeeStatusTransitionConflictError } from "./domain/fee-repository.errors";
+import {
+  FeeReviewTransitionConflictError,
+  FeeStatusTransitionConflictError,
+} from "./domain/fee-repository.errors";
 import {
   FeeAchievementParentRecord,
   FeeRecordRecord,
@@ -29,12 +32,17 @@ import {
   FeeAccessDeniedError,
 } from "./domain/fee-service.errors";
 import { assertFeeTransition } from "./domain/fee-state-machine";
-import { FeeWarningTypeCode, PayStatusCode } from "./domain/fee-domain.types";
+import {
+  FeeReviewStatusCode,
+  FeeWarningTypeCode,
+  PayStatusCode,
+} from "./domain/fee-domain.types";
 import { ChangeFeeStatusDto } from "./dto/change-fee-status.dto";
 import { CreateFeeRecordDto } from "./dto/create-fee-record.dto";
 import { FeeQueryDto } from "./dto/fee-query.dto";
 import { FeeWarningQueryDto } from "./dto/fee-warning-query.dto";
 import { MarkFeePaidDto } from "./dto/mark-fee-paid.dto";
+import { ApproveFeeReviewDto, RejectFeeReviewDto } from "./dto/review-fee.dto";
 
 export type FeeWarningSummary = {
   generatedAt: Date;
@@ -318,6 +326,34 @@ export class FeeService {
     }
   }
 
+  async approveFeeReview(
+    context: UserContext,
+    feeRecordId: string,
+    dto: ApproveFeeReviewDto = {},
+  ): Promise<FeeStateRecord> {
+    return this.transitionFeeReview(
+      context,
+      feeRecordId,
+      FeeReviewStatusCode.approved,
+      AuditActionCode.approve,
+      dto.reason ?? undefined,
+    );
+  }
+
+  async rejectFeeReview(
+    context: UserContext,
+    feeRecordId: string,
+    dto: RejectFeeReviewDto,
+  ): Promise<FeeStateRecord> {
+    return this.transitionFeeReview(
+      context,
+      feeRecordId,
+      FeeReviewStatusCode.rejected,
+      AuditActionCode.reject,
+      dto.reason,
+    );
+  }
+
   private async transitionFeeStatusWithReason(
     context: UserContext,
     feeRecordId: string,
@@ -374,6 +410,64 @@ export class FeeService {
     }
   }
 
+  private async transitionFeeReview(
+    context: UserContext,
+    feeRecordId: string,
+    nextReviewStatus: FeeReviewStatusCode,
+    action: AuditActionCode,
+    reason?: string,
+  ): Promise<FeeStateRecord> {
+    this.assertUserContext(context);
+    this.assertPermission(context, PermissionCode.feeReviewDepartment);
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const feeClient = tx as FeeTransactionClient;
+        const auditClient = tx as AuditTransactionClient;
+        const reviewWhere = this.policyQueryFactory.feeDepartmentWhere(
+          context,
+          PermissionCode.feeReviewDepartment,
+        );
+        const current = await this.repository.findStateByIdWhereInTransaction(
+          feeClient,
+          feeRecordId,
+          reviewWhere,
+        );
+
+        if (!current) {
+          throw new FeeNotFoundError();
+        }
+
+        if (current.reviewStatus !== FeeReviewStatusCode.pending) {
+          throw new FeeConflictError(
+            `Fee review is already ${current.reviewStatus}.`,
+          );
+        }
+
+        const next = await this.repository.transitionReviewStatusInTransaction(
+          feeClient,
+          {
+            feeRecordId,
+            where: reviewWhere,
+            expectedReviewStatus: FeeReviewStatusCode.pending,
+            nextReviewStatus,
+            reviewedById: context.userId,
+            reviewedAt: new Date(),
+          },
+        );
+
+        await this.auditService.recordEventInTransaction(
+          auditClient,
+          this.toFeeReviewAuditEvent(context, action, current, next, reason),
+        );
+
+        return next;
+      });
+    } catch (error) {
+      throw this.mapRepositoryError(error);
+    }
+  }
+
   private assertUserContext(context: UserContext | null | undefined): asserts context is UserContext {
     if (!context?.userId || !context.departmentId) {
       throw new FeeAccessDeniedError("User context with department is required.");
@@ -400,7 +494,10 @@ export class FeeService {
   }
 
   private mapRepositoryError(error: unknown): Error {
-    if (error instanceof FeeStatusTransitionConflictError) {
+    if (
+      error instanceof FeeStatusTransitionConflictError ||
+      error instanceof FeeReviewTransitionConflictError
+    ) {
       return new FeeConflictError(error.message);
     }
 
@@ -444,6 +541,29 @@ export class FeeService {
       newValue: toFeeAuditSummary(action, newRecord, oldRecord, reason),
     };
   }
+
+  private toFeeReviewAuditEvent(
+    context: UserContext,
+    action: AuditActionCode,
+    oldRecord: FeeReviewAuditRecord,
+    newRecord: FeeReviewAuditRecord,
+    reason?: string,
+  ): CreateAuditEventInput {
+    return {
+      actor: {
+        userId: context.userId,
+        departmentId: context.departmentId,
+      },
+      action,
+      target: {
+        type: AuditTargetTypeCode.feeRecord,
+        id: newRecord.id,
+        departmentId: newRecord.departmentId,
+      },
+      oldValue: toFeeReviewAuditSummary(action, oldRecord),
+      newValue: toFeeReviewAuditSummary(action, newRecord, oldRecord, reason),
+    };
+  }
 }
 
 type FeeAuditRecord = Pick<
@@ -456,6 +576,18 @@ type FeeAuditRecord = Pick<
   | "paidDate"
   | "payStatus"
   | "archivedAt"
+>;
+
+type FeeReviewAuditRecord = Pick<
+  FeeRecordRecord | FeeStateRecord,
+  | "id"
+  | "achievementId"
+  | "departmentId"
+  | "feeType"
+  | "payStatus"
+  | "reviewStatus"
+  | "reviewedById"
+  | "reviewedAt"
 >;
 
 const toFeeAuditSummary = (
@@ -480,6 +612,30 @@ const toFeeAuditSummary = (
     dueDate: toAuditDateString(record.dueDate),
     ...(record.paidDate ? { paidDate: toAuditDateString(record.paidDate) } : {}),
     ...(record.archivedAt ? { archivedAt: toAuditDateString(record.archivedAt) } : {}),
+  }) as AuditJsonValue;
+
+const toFeeReviewAuditSummary = (
+  action: AuditActionCode,
+  record: FeeReviewAuditRecord,
+  oldRecord?: FeeReviewAuditRecord | null,
+  reason?: string,
+): AuditJsonValue =>
+  ({
+    feeRecordId: record.id,
+    achievementId: record.achievementId,
+    action,
+    feeType: record.feeType,
+    payStatus: record.payStatus,
+    reviewStatus: record.reviewStatus,
+    ...(oldRecord
+      ? {
+          oldReviewStatus: oldRecord.reviewStatus,
+          newReviewStatus: record.reviewStatus,
+        }
+      : {}),
+    ...(record.reviewedById ? { reviewedById: record.reviewedById } : {}),
+    ...(record.reviewedAt ? { reviewedAt: toAuditDateString(record.reviewedAt) } : {}),
+    ...(reason ? { reason } : {}),
   }) as AuditJsonValue;
 
 const parseOptionalDate = (value: string | undefined): Date | undefined =>

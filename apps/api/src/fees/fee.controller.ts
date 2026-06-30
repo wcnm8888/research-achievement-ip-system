@@ -26,6 +26,7 @@ import { CreateFeeRecordDto } from "./dto/create-fee-record.dto";
 import { FeeQueryDto } from "./dto/fee-query.dto";
 import { FeeWarningQueryDto } from "./dto/fee-warning-query.dto";
 import { MarkFeePaidDto } from "./dto/mark-fee-paid.dto";
+import { ApproveFeeReviewDto, RejectFeeReviewDto } from "./dto/review-fee.dto";
 import { FeeService } from "./fee.service";
 import {
   FeeAccessDeniedError,
@@ -61,6 +62,14 @@ const markFeePaidValidationPipe = new ValidationPipe({
 const changeFeeStatusValidationPipe = new ValidationPipe({
   ...feeValidationOptions,
   expectedType: ChangeFeeStatusDto,
+});
+const approveFeeReviewValidationPipe = new ValidationPipe({
+  ...feeValidationOptions,
+  expectedType: ApproveFeeReviewDto,
+});
+const rejectFeeReviewValidationPipe = new ValidationPipe({
+  ...feeValidationOptions,
+  expectedType: RejectFeeReviewDto,
 });
 
 @Controller("fees")
@@ -179,6 +188,36 @@ export class FeeController {
   ) {
     try {
       return await this.feeService.archiveFee(currentUser, feeRecordId, dto);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
+
+  @Post(":id/review/approve")
+  @HttpCode(200)
+  @RequirePermissions(PermissionCode.feeReviewDepartment)
+  async approveFeeReview(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Body(approveFeeReviewValidationPipe) dto: ApproveFeeReviewDto = {},
+  ) {
+    try {
+      return await this.feeService.approveFeeReview(currentUser, feeRecordId, dto);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
+
+  @Post(":id/review/reject")
+  @HttpCode(200)
+  @RequirePermissions(PermissionCode.feeReviewDepartment)
+  async rejectFeeReview(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Body(rejectFeeReviewValidationPipe) dto: RejectFeeReviewDto,
+  ) {
+    try {
+      return await this.feeService.rejectFeeReview(currentUser, feeRecordId, dto);
     } catch (error) {
       throw mapFeeServiceError(error);
     }

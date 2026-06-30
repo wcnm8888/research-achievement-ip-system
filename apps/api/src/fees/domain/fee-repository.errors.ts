@@ -1,4 +1,4 @@
-import { PayStatusCode } from "./fee-domain.types";
+import { FeeReviewStatusCode, PayStatusCode } from "./fee-domain.types";
 
 export class CreatedFeeRecordNotFoundError extends Error {
   constructor(feeRecordId: string) {
@@ -13,6 +13,15 @@ export class FeeStatusTransitionConflictError extends Error {
       `Fee record ${feeRecordId} could not transition from expected status ${expectedStatus}.`,
     );
     this.name = "FeeStatusTransitionConflictError";
+  }
+}
+
+export class FeeReviewTransitionConflictError extends Error {
+  constructor(feeRecordId: string, expectedReviewStatus: FeeReviewStatusCode) {
+    super(
+      `Fee record ${feeRecordId} could not transition from expected review status ${expectedReviewStatus}.`,
+    );
+    this.name = "FeeReviewTransitionConflictError";
   }
 }
 

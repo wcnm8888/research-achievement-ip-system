@@ -10,6 +10,7 @@ import { IDENTITY_ADAPTER } from "../identity/identity-adapter.token";
 import { UserContext } from "../identity/user-context";
 import { PrismaService } from "../database/prisma.service";
 import {
+  FeeReviewStatusCode,
   FeeTypeCode,
   FeeWarningTypeCode,
   FundSourceCode,
@@ -42,6 +43,8 @@ type FeeServiceMock = {
   waiveFee: ReturnType<typeof vi.fn>;
   cancelFee: ReturnType<typeof vi.fn>;
   archiveFee: ReturnType<typeof vi.fn>;
+  approveFeeReview: ReturnType<typeof vi.fn>;
+  rejectFeeReview: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -80,6 +83,9 @@ const makeFeeRecord = () => ({
   paidDate: null,
   payStatus: PayStatusCode.pending,
   voucherNo: null,
+  reviewStatus: FeeReviewStatusCode.pending,
+  reviewedById: null,
+  reviewedAt: null,
   createdById: ids.user,
   updatedById: ids.user,
   createdAt: new Date("2026-06-01T00:00:00.000Z"),
@@ -96,6 +102,9 @@ const makePaidFeeState = () => ({
   paidDate: new Date("2026-06-18T00:00:00.000Z"),
   payStatus: PayStatusCode.paid,
   voucherNo: "VOUCHER-001",
+  reviewStatus: FeeReviewStatusCode.pending,
+  reviewedById: null,
+  reviewedAt: null,
   updatedById: ids.user,
   archivedAt: null,
 });
@@ -127,6 +136,25 @@ const makeTerminalFeeState = (payStatus: PayStatusCode) => ({
     : null,
   payStatus,
   voucherNo: payStatus === PayStatusCode.paid ? "VOUCHER-001" : null,
+  reviewStatus: FeeReviewStatusCode.pending,
+  reviewedById: null,
+  reviewedAt: null,
+  updatedById: ids.user,
+  archivedAt: null,
+});
+
+const makeReviewedFeeState = (reviewStatus: FeeReviewStatusCode) => ({
+  id: ids.feeRecord,
+  achievementId: ids.achievement,
+  departmentId: ids.department,
+  feeType: FeeTypeCode.patentAnnual,
+  dueDate: new Date("2026-07-01T00:00:00.000Z"),
+  paidDate: null,
+  payStatus: PayStatusCode.pending,
+  voucherNo: null,
+  reviewStatus,
+  reviewedById: ids.user,
+  reviewedAt: new Date("2026-06-19T00:00:00.000Z"),
   updatedById: ids.user,
   archivedAt: null,
 });
@@ -151,6 +179,12 @@ const createServiceMock = (): FeeServiceMock => ({
     ...makeFeeRecord(),
     archivedAt: new Date("2026-06-20T00:00:00.000Z"),
   }),
+  approveFeeReview: vi
+    .fn()
+    .mockResolvedValue(makeReviewedFeeState(FeeReviewStatusCode.approved)),
+  rejectFeeReview: vi
+    .fn()
+    .mockResolvedValue(makeReviewedFeeState(FeeReviewStatusCode.rejected)),
 });
 
 describe("FeeController HTTP", () => {
@@ -211,6 +245,25 @@ describe("FeeController HTTP", () => {
       expect(service.waiveFee).not.toHaveBeenCalled();
       expect(service.cancelFee).not.toHaveBeenCalled();
       expect(service.archiveFee).not.toHaveBeenCalled();
+    });
+  });
+
+  it("returns 403 when fee review permission is missing", async () => {
+    await withTestApp([PermissionCode.feeManageDepartment], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/review/approve`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({})
+        .expect(403);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/review/reject`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "missing support" })
+        .expect(403);
+
+      expect(service.approveFeeReview).not.toHaveBeenCalled();
+      expect(service.rejectFeeReview).not.toHaveBeenCalled();
     });
   });
 
@@ -375,6 +428,42 @@ describe("FeeController HTTP", () => {
     });
   });
 
+  it("approves and rejects fee review with fee:review_department", async () => {
+    await withTestApp([PermissionCode.feeReviewDepartment], async (app, service) => {
+      const approveResponse = await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/review/approve`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "  finance checked  " })
+        .expect(200);
+
+      expect(approveResponse.body.reviewStatus).toBe(FeeReviewStatusCode.approved);
+      expect(approveResponse.body.payStatus).toBe(PayStatusCode.pending);
+      expect(service.approveFeeReview).toHaveBeenCalledWith(
+        expect.any(Object),
+        ids.feeRecord,
+        expect.objectContaining({
+          reason: "finance checked",
+        }),
+      );
+
+      const rejectResponse = await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/review/reject`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "missing support" })
+        .expect(200);
+
+      expect(rejectResponse.body.reviewStatus).toBe(FeeReviewStatusCode.rejected);
+      expect(rejectResponse.body.payStatus).toBe(PayStatusCode.pending);
+      expect(service.rejectFeeReview).toHaveBeenCalledWith(
+        expect.any(Object),
+        ids.feeRecord,
+        expect.objectContaining({
+          reason: "missing support",
+        }),
+      );
+    });
+  });
+
   it("rejects invalid UUID params with 400", async () => {
     await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
       await request(app.getHttpServer() as Server)
@@ -430,12 +519,20 @@ describe("FeeController HTTP", () => {
         .send({ reason: "   " })
         .expect(400);
 
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/review/approve`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "   " })
+        .expect(403);
+
       expect(service.listFees).not.toHaveBeenCalled();
       expect(service.createFee).not.toHaveBeenCalled();
       expect(service.markFeePaid).not.toHaveBeenCalled();
       expect(service.waiveFee).not.toHaveBeenCalled();
       expect(service.cancelFee).not.toHaveBeenCalled();
       expect(service.archiveFee).not.toHaveBeenCalled();
+      expect(service.approveFeeReview).not.toHaveBeenCalled();
+      expect(service.rejectFeeReview).not.toHaveBeenCalled();
       },
     );
   });

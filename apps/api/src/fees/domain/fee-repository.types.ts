@@ -112,3 +112,12 @@ export type FeeArchiveInput = {
   archivedAt: Date;
   updatedById?: string | null;
 };
+
+export type FeeReviewTransitionInput = {
+  feeRecordId: string;
+  where: Prisma.FeeRecordWhereInput;
+  expectedReviewStatus: FeeReviewStatusCode;
+  nextReviewStatus: FeeReviewStatusCode;
+  reviewedById: string;
+  reviewedAt: Date;
+};

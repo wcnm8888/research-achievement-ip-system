@@ -3,6 +3,7 @@ import {
   FeeAchievementParentRecord,
   FeeRecordQueryInput,
   FeeRecordRecord,
+  FeeReviewTransitionInput,
   FeeStateRecord,
   FeeStatusTransitionInput,
   CreateFeeRecordInput,
@@ -60,6 +61,14 @@ export const toFeeStatusTransitionData = (
     : {}),
   ...(input.voucherNo !== undefined ? { voucherNo: input.voucherNo } : {}),
   ...(input.archivedAt !== undefined ? { archivedAt: input.archivedAt } : {}),
+});
+
+export const toFeeReviewTransitionData = (
+  input: FeeReviewTransitionInput,
+): Prisma.FeeRecordUncheckedUpdateInput => ({
+  reviewStatus: input.nextReviewStatus,
+  reviewedById: input.reviewedById,
+  reviewedAt: input.reviewedAt,
 });
 
 export const toFeeRecord = (row: FeePersistenceRow): FeeRecordRecord => ({

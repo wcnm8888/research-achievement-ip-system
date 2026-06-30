@@ -41,9 +41,11 @@ const ids = {
 
 const dueDate = new Date("2026-07-01T00:00:00.000Z");
 const paidDate = new Date("2026-06-18T00:00:00.000Z");
+const reviewedAt = new Date("2026-06-19T00:00:00.000Z");
 const tx = { feeRecord: {}, auditLog: {} };
 const feeReadableWhere = { departmentId: { in: [ids.department] } };
 const feeManageWhere = { departmentId: { in: [ids.department] } };
+const feeReviewWhere = { departmentId: { in: [ids.department] } };
 const achievementManageWhere = { departmentId: { in: [ids.department] } };
 
 const makeContext = (
@@ -132,6 +134,15 @@ const createService = () => {
     transitionPayStatusInTransaction: vi
       .fn()
       .mockResolvedValue(makeFeeState({ payStatus: PayStatusCode.paid, paidDate })),
+    transitionReviewStatusInTransaction: vi
+      .fn()
+      .mockResolvedValue(
+        makeFeeState({
+          reviewStatus: FeeReviewStatusCode.approved,
+          reviewedById: ids.user,
+          reviewedAt,
+        }),
+      ),
     archiveFeeInTransaction: vi
       .fn()
       .mockResolvedValue(
@@ -153,7 +164,12 @@ const createService = () => {
   };
   const policyQueryFactory = {
     feeReadableWhere: vi.fn().mockReturnValue(feeReadableWhere),
-    feeDepartmentWhere: vi.fn().mockReturnValue(feeManageWhere),
+    feeDepartmentWhere: vi.fn(
+      (_context: UserContext | null | undefined, permission?: PermissionCode) =>
+        permission === PermissionCode.feeReviewDepartment
+          ? feeReviewWhere
+          : feeManageWhere,
+    ),
     achievementDepartmentWhere: vi.fn().mockReturnValue(achievementManageWhere),
   };
   const prisma = {
@@ -724,6 +740,174 @@ describe("FeeService.cancelFee", () => {
   });
 });
 
+describe("FeeService fee review", () => {
+  it("denies review when fee:review_department is missing", async () => {
+    const { auditService, repository, service } = createService();
+
+    await expect(
+      service.approveFeeReview(
+        makeContext([PermissionCode.feeManageDepartment]),
+        ids.feeRecord,
+        {},
+      ),
+    ).rejects.toBeInstanceOf(FeePermissionDeniedError);
+    await expect(
+      service.rejectFeeReview(
+        makeContext([PermissionCode.feeManageDepartment]),
+        ids.feeRecord,
+        { reason: "missing support" },
+      ),
+    ).rejects.toBeInstanceOf(FeePermissionDeniedError);
+    expect(repository.findStateByIdWhereInTransaction).not.toHaveBeenCalled();
+    expect(repository.transitionReviewStatusInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("approves pending fee review in the shared audit transaction", async () => {
+    const { auditService, policyQueryFactory, repository, service } = createService();
+    const context = makeContext([PermissionCode.feeReviewDepartment]);
+
+    const result = await service.approveFeeReview(context, ids.feeRecord, {
+      reason: "finance checked",
+    });
+
+    expect(policyQueryFactory.feeDepartmentWhere).toHaveBeenCalledWith(
+      context,
+      PermissionCode.feeReviewDepartment,
+    );
+    expect(repository.findStateByIdWhereInTransaction).toHaveBeenCalledWith(
+      tx,
+      ids.feeRecord,
+      feeReviewWhere,
+    );
+    expect(repository.transitionReviewStatusInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        feeRecordId: ids.feeRecord,
+        where: feeReviewWhere,
+        expectedReviewStatus: FeeReviewStatusCode.pending,
+        nextReviewStatus: FeeReviewStatusCode.approved,
+        reviewedById: ids.user,
+        reviewedAt: expect.any(Date),
+      }),
+    );
+    expect(result.payStatus).toBe(PayStatusCode.pending);
+    expect(result.reviewStatus).toBe(FeeReviewStatusCode.approved);
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        action: AuditActionCode.approve,
+        target: expect.objectContaining({
+          type: AuditTargetTypeCode.feeRecord,
+          id: ids.feeRecord,
+          departmentId: ids.department,
+        }),
+        newValue: expect.objectContaining({
+          oldReviewStatus: FeeReviewStatusCode.pending,
+          newReviewStatus: FeeReviewStatusCode.approved,
+          payStatus: PayStatusCode.pending,
+          reason: "finance checked",
+        }),
+      }),
+    );
+    expectAuditPayloadHasNoSensitiveFeeFields(
+      auditService.recordEventInTransaction.mock.calls[0]![1],
+    );
+  });
+
+  it("rejects pending fee review with a required reason and does not change pay status", async () => {
+    const { auditService, repository, service } = createService();
+    repository.transitionReviewStatusInTransaction.mockResolvedValueOnce(
+      makeFeeState({
+        payStatus: PayStatusCode.pending,
+        reviewStatus: FeeReviewStatusCode.rejected,
+        reviewedById: ids.user,
+        reviewedAt,
+      }),
+    );
+
+    const result = await service.rejectFeeReview(
+      makeContext([PermissionCode.feeReviewDepartment]),
+      ids.feeRecord,
+      { reason: "missing payment evidence" },
+    );
+
+    expect(repository.transitionReviewStatusInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        expectedReviewStatus: FeeReviewStatusCode.pending,
+        nextReviewStatus: FeeReviewStatusCode.rejected,
+      }),
+    );
+    expect(result.payStatus).toBe(PayStatusCode.pending);
+    expect(result.reviewStatus).toBe(FeeReviewStatusCode.rejected);
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        action: AuditActionCode.reject,
+        newValue: expect.objectContaining({
+          oldReviewStatus: FeeReviewStatusCode.pending,
+          newReviewStatus: FeeReviewStatusCode.rejected,
+          reason: "missing payment evidence",
+        }),
+      }),
+    );
+    expectAuditPayloadHasNoSensitiveFeeFields(
+      auditService.recordEventInTransaction.mock.calls[0]![1],
+    );
+  });
+
+  it.each([FeeReviewStatusCode.approved, FeeReviewStatusCode.rejected])(
+    "rejects repeated review when current review status is %s",
+    async (reviewStatus) => {
+      const { auditService, repository, service } = createService();
+      repository.findStateByIdWhereInTransaction.mockResolvedValueOnce(
+        makeFeeState({ reviewStatus, reviewedById: ids.user, reviewedAt }),
+      );
+
+      await expect(
+        service.approveFeeReview(
+          makeContext([PermissionCode.feeReviewDepartment]),
+          ids.feeRecord,
+          {},
+        ),
+      ).rejects.toBeInstanceOf(FeeConflictError);
+      expect(repository.transitionReviewStatusInTransaction).not.toHaveBeenCalled();
+      expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it("returns not found for missing, out-of-scope, or archived fee records", async () => {
+    const { auditService, repository, service } = createService();
+    repository.findStateByIdWhereInTransaction.mockResolvedValueOnce(null);
+
+    await expect(
+      service.rejectFeeReview(
+        makeContext([PermissionCode.feeReviewDepartment]),
+        ids.feeRecord,
+        { reason: "not found path" },
+      ),
+    ).rejects.toBeInstanceOf(FeeNotFoundError);
+    expect(repository.transitionReviewStatusInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("fails the shared transaction when review audit write fails", async () => {
+    const { auditService, repository, service } = createService();
+    auditService.recordEventInTransaction.mockRejectedValueOnce(new Error("audit failed"));
+
+    await expect(
+      service.approveFeeReview(
+        makeContext([PermissionCode.feeReviewDepartment]),
+        ids.feeRecord,
+        {},
+      ),
+    ).rejects.toThrow("audit failed");
+    expect(repository.transitionReviewStatusInTransaction).toHaveBeenCalledOnce();
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledOnce();
+  });
+});
+
 describe("FeeService.archiveFee", () => {
   it("denies archive when the user only has fee read permission", async () => {
     const { auditService, repository, service } = createService();
@@ -817,6 +1001,7 @@ const expectAuditPayloadHasNoSensitiveFeeFields = (input: unknown): void => {
 
   expect(serialized).not.toContain("amount");
   expect(serialized).not.toContain("voucherNo");
+  expect(serialized).not.toContain("VOUCHER-001");
   expect(serialized).not.toContain("title");
   expect(serialized).not.toContain("abstract");
   expect(serialized).not.toContain("storageKey");

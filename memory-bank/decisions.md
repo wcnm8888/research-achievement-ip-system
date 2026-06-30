@@ -1,5 +1,32 @@
 # Decisions
 
+## D195 - Fee review API uses fee-specific state transition, not payment or workflow mutation
+
+- Date: 2026-06-30.
+- Context: Step 55C implements backend approve/reject actions on the Step 55B `FeeReviewStatus` contract. The user explicitly limited this Step to backend API/service/repository/tests and excluded Web UI, Docker acceptance, workflow task creation, voucher attachment prerequisite, and persisted reason/history schema.
+- Decision:
+  - Add fee-specific review endpoints:
+    - `POST /fees/:id/review/approve`.
+    - `POST /fees/:id/review/reject`.
+  - Gate both endpoints with `fee:review_department`.
+  - Use current user department scope for the target `FeeRecord`.
+  - Allow only `PENDING -> APPROVED` and `PENDING -> REJECTED` review transitions.
+  - Store latest reviewer and reviewed-at timestamp on the fee record.
+  - Return conflict for already `APPROVED` or `REJECTED` records.
+  - Keep `payStatus`, `paidDate`, `voucherNo`, and `archivedAt` unchanged.
+  - Do not create workflow tasks.
+  - Do not require voucher attachment integration.
+  - Keep review reasons out of a first-class persisted reason/history table.
+  - Record the optional approval reason and required rejection reason only in sanitized audit summaries.
+  - Use audit target `FEE_RECORD` and actions `APPROVE` / `REJECT`.
+- Rationale:
+  - The fee review lifecycle is separate from payment lifecycle, so approval/rejection should not mark a fee paid, waived, cancelled, or archived.
+  - A guarded `updateMany` transition gives a narrow concurrency boundary without expanding workflow infrastructure.
+  - Sanitized audit summaries satisfy the minimum reason trace while avoiding schema growth before UI/history requirements are explicit.
+  - `fee:review_department` keeps finance review authority separate from operational fee management.
+- Boundaries:
+  - This decision does not authorize Web UI, workflow task reuse, voucher attachment integration, persisted review reason/history, role expansion beyond the current permission seed matrix, account password changes, secret reads/output, `.env` / `.env.production` content reads, migration deploy, seed/backfill execution, business-data writes, production/VPS access, push/deploy, cleanup, deletion, reset, drop, restore, prune, Docker acceptance, or untracked-artifact handling.
+
 ## D194 - Fee review schema contract is persisted, but review action remains deferred
 
 - Date: 2026-06-30.

@@ -1,5 +1,47 @@
 # Evidence
 
+## 2026-06-30 Step 55C - Fee review approve/reject backend API evidence
+
+- Purpose:
+  - Implement backend fee-specific review approve/reject API on the Step 55B `FeeReviewStatus` contract.
+  - Keep this Step limited to backend API/service/repository/tests and memory-bank updates.
+  - Avoid Web UI, workflow tasks, Docker acceptance, voucher attachment prerequisite, and persisted review reason/history.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `9092e3f`.
+  - Latest commit subject: `feat: add fee review schema contract`.
+  - `git status --short --branch` showed existing untracked local artifacts and no tracked changes before Step 55C changes.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+- Context evidence:
+  - Read `AGENTS.md`.
+  - Read targeted memory-bank Step 55B / 55A sections.
+  - Read Fee controller, service, repository, DTO, domain, mapper, and focused tests.
+  - Read audit action/target/domain patterns and existing fee audit summary behavior.
+  - Read `PermissionCode.feeReviewDepartment`.
+  - Read Prisma `FeeReviewStatus` and `FeeRecord` review fields from `prisma/schema.prisma`.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - `apps/api/src/fees/dto/review-fee.dto.ts` adds approval/rejection review DTOs.
+  - `FeeRepository.transitionReviewStatusInTransaction` uses `updateMany` with id, department scope, `reviewStatus = PENDING`, and `archivedAt = null`.
+  - Review transition update data contains only `reviewStatus`, `reviewedById`, and `reviewedAt`.
+  - `FeeService.approveFeeReview` and `FeeService.rejectFeeReview` require `fee:review_department`.
+  - Service returns not found for missing/out-of-scope/archived records and conflict for already reviewed records.
+  - Service writes review state and audit in the same transaction, so audit failure prevents a successful API result.
+  - `FeeController` exposes `POST /fees/:id/review/approve` and `POST /fees/:id/review/reject`.
+  - Review audit target is `FEE_RECORD`; actions are `APPROVE` and `REJECT`.
+  - Audit summaries exclude amount, `voucherNo`, voucher values, and broader sensitive attachment/achievement fields.
+  - No Web UI, workflow task creation, voucher attachment requirement, or review history table was added.
+- Verification evidence:
+  - `corepack pnpm --filter @research-ip/api test -- fees`: passed, 6 files / 102 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/api build`: passed.
+- Final diff checks:
+  - `git diff --check`: passed.
+  - Staged added-lines sensitive value scan: passed; no sensitive values detected in staged added lines.
+- Boundaries observed:
+  - No account password was modified.
+  - No password, hash, cookie, token, secret, AccessKey, private key, connection string, session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+  - No business-data write, migration deploy, seed, backfill, Web UI implementation, Docker acceptance, production/VPS access, push, deploy, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling occurred.
+
 ## 2026-06-30 Step 55B - Fee review schema and permission contract evidence
 
 - Purpose:

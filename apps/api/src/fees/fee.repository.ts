@@ -6,11 +6,13 @@ import {
   toFeeFindManyWhere,
   toFeeRecord,
   toFeeRecordCreateData,
+  toFeeReviewTransitionData,
   toFeeStateRecord,
   toFeeStatusTransitionData,
 } from "./domain/fee-prisma.mapper";
 import {
   CreatedFeeRecordNotFoundError,
+  FeeReviewTransitionConflictError,
   FeeStatusTransitionConflictError,
 } from "./domain/fee-repository.errors";
 import {
@@ -19,6 +21,7 @@ import {
   FeeAchievementParentRecord,
   FeeRecordQueryInput,
   FeeRecordRecord,
+  FeeReviewTransitionInput,
   FeeStateRecord,
   FeeStatusTransitionInput,
   FeeWarningQueryInput,
@@ -177,6 +180,41 @@ export class FeeRepository {
       throw new FeeStatusTransitionConflictError(
         input.feeRecordId,
         input.expectedStatus,
+      );
+    }
+
+    const row = await client.feeRecord.findUnique({
+      where: { id: input.feeRecordId },
+      select: feeStateSelect,
+    });
+
+    if (!row) {
+      throw new CreatedFeeRecordNotFoundError(input.feeRecordId);
+    }
+
+    return toFeeStateRecord(row as Parameters<typeof toFeeStateRecord>[0]);
+  }
+
+  async transitionReviewStatusInTransaction(
+    client: FeeTransactionClient,
+    input: FeeReviewTransitionInput,
+  ): Promise<FeeStateRecord> {
+    const result = await client.feeRecord.updateMany({
+      where: {
+        AND: [
+          { id: input.feeRecordId },
+          input.where,
+          { reviewStatus: input.expectedReviewStatus },
+          { archivedAt: null },
+        ],
+      },
+      data: toFeeReviewTransitionData(input),
+    });
+
+    if (result.count !== 1) {
+      throw new FeeReviewTransitionConflictError(
+        input.feeRecordId,
+        input.expectedReviewStatus,
       );
     }
 
