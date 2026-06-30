@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-06-30 Step 55F - Fee review department scope policy decision evidence
+
+- Purpose:
+  - Resolve the fee review scope policy exposed by Step 55E.
+  - Decide whether global-only `SYSTEM_ADMIN` should imply all department scopes or whether fee review should require explicit department-scoped reviewer assignment.
+  - Keep this Step limited to strategy/code-path review and memory-bank documentation unless code/seed changes are proven necessary.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `669b7e7`.
+  - Latest commit subject: `docs: record local docker fee review acceptance`.
+  - `git status --short --branch` showed existing untracked local artifacts and no tracked changes before Step 55F documentation edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+- Context evidence:
+  - Read `AGENTS.md`.
+  - Read targeted memory-bank Step 55E / 55B / 55A entries.
+  - Read identity context construction in `apps/api/src/identity/dev-identity.adapter.ts`.
+  - Read `apps/api/src/authorization/policy/department-scope.service.ts`.
+  - Read `apps/api/src/authorization/policy/policy-query.factory.ts`.
+  - Read focused policy tests in `apps/api/src/authorization/policy/policy-services.spec.ts`.
+  - Read account-management department-scoped role assignment paths and DTO validation.
+  - Read seed/foundation role-permission matrices relevant to `fee:review_department`.
+  - `.env` / `.env.production` contents were not read or output.
+- Findings:
+  - `buildUserContext` only derives `scopedDepartmentIds` from role assignments with a concrete department id.
+  - `DepartmentScopeService` does not expand global role scopes into department ids.
+  - `PolicyQueryFactory.feeDepartmentWhere` requires both a permission and a non-empty scoped department set.
+  - The same department-scope service/pattern also affects fee read/manage, achievement department read/review, and department readable queries.
+  - Existing tests already assert no system-admin permission bypass and no implicit department detail scope for global system-admin style contexts.
+  - Account Management supports explicit department-scoped role assignment and validates active departments.
+  - Seeds currently grant `fee:review_department` only to `SYSTEM_ADMIN`.
+- Decision evidence:
+  - Chosen strategy: keep current least-privilege semantics and require explicit department-scoped reviewer assignment.
+  - No code or seed change is needed in Step 55F because current code already enforces the intended rule.
+  - No tests were run because no code/seed/test files changed.
+- Final diff checks:
+  - `git diff --check`: passed.
+  - Added-lines sensitive scan: passed.
+- Production setup evidence:
+  - For real fee review, the reviewer needs both `fee:review_department` and scoped department assignment.
+  - Current department-scoped `SYSTEM_ADMIN` can technically satisfy the contract but is broader than desired.
+  - A future authorized Step should add a minimal `FINANCE_REVIEWER` role and runbook/seed guidance before production finance review rollout.
+- Boundaries observed:
+  - No account password was modified.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, raw session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+  - No migration, seed, backfill, local business-data write, VPS/production DB access, push, deploy, restore, drop, reset, prune, cleanup, deletion, backup/restore run, or existing untracked artifact handling occurred.
+
 ## 2026-06-30 Step 55E - Local Docker fee review acceptance evidence
 
 - Purpose:

@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-06-30 Step 55F - Fee review department scope policy decision
+
+- Status: STEP_55F_FEE_REVIEW_SCOPE_POLICY_DECIDED_DOCS_ONLY.
+- Step identity:
+  - Resolves the Step 55E fee review scope policy question.
+  - Does not change authorization code, identity code, seed files, tests, Prisma schema, API, Web UI, account passwords, local business data, production/VPS, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked artifacts.
+- Starting state:
+  - `HEAD`: `669b7e7`.
+  - Latest commit subject: `docs: record local docker fee review acceptance`.
+  - Tracked diff was empty before Step 55F documentation edits.
+  - Existing untracked local artifacts were present and left untouched.
+  - `.env` / `.env.production` contents were not read or output.
+- Reviewed:
+  - Step 55E / 55B / 55A memory-bank context.
+  - Identity context construction and session/dev identity behavior.
+  - `DepartmentScopeService` and `PolicyQueryFactory` department-scope query behavior.
+  - Seed/foundation role-permission matrices for `fee:review_department`.
+  - Account Management department-scoped role assignment validation and tests.
+- Decision:
+  - Keep current semantics: global roles do not implicitly expand to all department scopes.
+  - Do not special-case global `SYSTEM_ADMIN` for fee review.
+  - Do not change code or seed in this Step.
+  - Production fee reviewers must be explicitly assigned a department-scoped reviewer role.
+- Production setup:
+  - Current minimum contract requires both `fee:review_department` and explicit department scope.
+  - Current seed grants `fee:review_department` only to `SYSTEM_ADMIN`; this is not the preferred production reviewer role because it is too broad.
+  - A follow-up Step should add a dedicated minimal `FINANCE_REVIEWER` role and runbook/seed guidance before real production finance review rollout.
+- Verification:
+  - No authorization/identity/seed/test code changed, so no test suite was run.
+  - `git diff --check`: passed.
+  - Added-lines sensitive scan: passed.
+
 ## 2026-06-30 Step 55E - Local Docker fee review acceptance
 
 - Status: STEP_55E_LOCAL_DOCKER_FEE_REVIEW_ACCEPTED_WITH_SCOPE_NOTE.

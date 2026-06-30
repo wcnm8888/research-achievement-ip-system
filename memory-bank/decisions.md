@@ -1,5 +1,27 @@
 # Decisions
 
+## D198 - Fee review keeps explicit department scope instead of global admin expansion
+
+- Date: 2026-06-30.
+- Context: Step 55F resolves the Step 55E issue where a global-only `SYSTEM_ADMIN` had `fee:review_department` but no `scopedDepartmentIds`, causing fee review department-scope lookups to return 404/no-access.
+- Decision:
+  - Keep permission and data-scope semantics separate.
+  - Do not let global `SYSTEM_ADMIN` implicitly own every department scope.
+  - Do not add a fee-review-specific global-admin override.
+  - Do not modify authorization/identity code, seed files, or tests in this Step.
+  - Require explicit department-scoped reviewer assignment for production fee review.
+- Production setup requirement:
+  - A fee reviewer must have `fee:review_department`.
+  - The same user must also have a department-scoped role assignment for each department they may review.
+  - Current seeds grant `fee:review_department` only to `SYSTEM_ADMIN`; a department-scoped `SYSTEM_ADMIN` assignment is technically sufficient but too broad for normal finance operation.
+  - Before real production rollout, add a dedicated minimal role such as `FINANCE_REVIEWER` and grant it `fee:review_department` plus the minimum user-context permission, then assign it department-scoped.
+- Rationale:
+  - `DepartmentScopeService` is shared by fee, achievement, and department query policies; implicit global expansion would broaden more than fee review.
+  - A fee-only exception would make department-scope rules inconsistent and harder to audit.
+  - Explicit scoped reviewer assignment is aligned with current Account Management role scope mechanics and least-privilege expectations.
+- Boundaries:
+  - This decision does not authorize code changes, seed changes, migration/seed/backfill execution, production DB/VPS access, password changes, secret reads/output, `.env` / `.env.production` content reads, business-data writes, deployment, push, cleanup, deletion, reset, drop, restore, prune, or untracked-artifact handling.
+
 ## D197 - Local fee review acceptance requires explicit department scope
 
 - Date: 2026-06-30.

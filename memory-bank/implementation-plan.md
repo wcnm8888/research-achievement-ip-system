@@ -4,6 +4,45 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 55F Archive - Fee review department scope policy decision - 2026-06-30
+
+- Step identity:
+  - This Step resolves the Step 55E fee review scope policy question.
+  - Scope is policy/code-path review and memory-bank documentation only.
+  - No authorization code, identity code, seed file, test, Prisma schema, API, or Web implementation change was made.
+  - No account password change, `.env` / `.env.production` content read/output, local business-data write, migration/seed/backfill run, VPS/production DB access, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked artifact handling occurred.
+- Starting state:
+  - `HEAD`: `669b7e7`.
+  - Latest commit: `docs: record local docker fee review acceptance`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched.
+- Findings:
+  - `buildUserContext` derives `scopedDepartmentIds` only from role assignments with a concrete `departmentId`.
+  - `DepartmentScopeService.getScopedDepartmentIds` returns current scoped department ids plus department-scoped role department ids; it does not expand global roles.
+  - `PolicyQueryFactory.feeDepartmentWhere` requires both the permission code and a non-empty scoped department set.
+  - Fee read/manage, achievement department read/review, and department readable filters reuse the same scope service or same department-scope pattern.
+  - Existing policy tests already protect the broader rule that `SYSTEM_ADMIN` does not receive an implicit permission bypass or department detail scope from global permissions.
+  - Account Management already supports explicit department-scoped role assignment and validates scoped departments are active.
+  - Step 55B granted `fee:review_department` only to `SYSTEM_ADMIN`; that grants the action permission, but a global-only assignment still provides no fee data scope.
+- Decision:
+  - Keep the existing least-privilege model: permission and data scope stay separate.
+  - Do not make global `SYSTEM_ADMIN` implicitly own all department scopes.
+  - Do not special-case fee review to expand global admins to every department.
+  - Do not modify seeds in this Step.
+  - Production setup must use explicit department-scoped reviewer assignment for any user expected to review fees.
+- Production setup requirement:
+  - A fee reviewer must have `fee:review_department` and a department-scoped role assignment for each department whose fees they may review.
+  - With the current seed matrix, only `SYSTEM_ADMIN` carries `fee:review_department`; using it as a department-scoped local acceptance role is functional but too broad for routine production finance review.
+  - Before production finance rollout, add a dedicated minimal role such as `FINANCE_REVIEWER` carrying `fee:review_department` and `user:context_read`, then assign it department-scoped through Account Management.
+  - If production must use the current seed matrix before a dedicated role exists, the operator must explicitly accept the broader permission footprint of a department-scoped `SYSTEM_ADMIN` assignment; global-only `SYSTEM_ADMIN` remains insufficient by design.
+- Rationale:
+  - Implicit global-to-all-department scope would broaden every policy path using `DepartmentScopeService`, not only fee review.
+  - A fee-specific exception would create inconsistent department-scope semantics and make future audits harder.
+  - Explicit department-scoped reviewer assignment is auditable, least-privilege aligned, and consistent with existing account-management role scope mechanics.
+- Next:
+  - Add a `FINANCE_REVIEWER` role and seed/runbook coverage in a separate authorized Step before real production rollout.
+  - Keep Docker/local acceptance notes aware that a local scoped reviewer setup is required.
+
 ## Current Step 55E Archive - Local Docker fee review acceptance - 2026-06-30
 
 - Step identity:
