@@ -4,6 +4,47 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 56B Archive - Voucher attachment backend-only API implementation - 2026-06-30
+
+- Step identity:
+  - This Step implements the backend-only fee voucher attachment API planned in Step 56A.
+  - Scope is `apps/api` attachment backend routes/service/repository/tests and memory-bank updates.
+  - No Web UI, Prisma schema, migration, seed/backfill, dependency/package/lockfile, production/VPS, real business attachment upload/download, business-data write, account/password work, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked artifact handling occurred.
+- Implemented backend contract:
+  - `POST /api/fees/:feeRecordId/voucher-attachments`.
+  - `GET /api/fees/:feeRecordId/voucher-attachments`.
+  - `GET /api/fees/:feeRecordId/voucher-attachments/:attachmentId`.
+  - `GET /api/fees/:feeRecordId/voucher-attachments/:attachmentId/download`.
+- Data/storage model:
+  - Voucher files reuse `Attachment` rows with `relationType=FEE_RECORD` and `relationId=<feeRecordId>`.
+  - A `FeeRecord` may have zero or more voucher attachments.
+  - `AttachmentRepository` now has fee parent lookup and fee/attachment resource-grant lookup.
+  - Existing local attachment storage and relation-generic object-key generation are reused.
+  - API responses continue to return safe `AttachmentMetadataDto` only and do not expose storage key or checksum.
+- Authorization:
+  - Upload route keeps static `fee:manage_department` and service verifies department-scoped fee access.
+  - List/detail routes are authenticated and service-authorized for scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Download route keeps static `attachment:download`; service also verifies scoped fee visibility using read/manage/review.
+  - `FINANCE_REVIEWER` remains metadata read-only by default. It cannot upload. It can download only if also granted `attachment:download` or an existing compatible direct attachment-download grant path.
+  - No new `fee:voucher_attachment` permission was added.
+- Audit:
+  - Reuses `UPLOAD_ATTACHMENT` and `DOWNLOAD_ATTACHMENT` targeting `ATTACHMENT`.
+  - Fee voucher audit summary records safe attachment metadata and `feeRecordId`.
+  - Tests assert upload/download audit payloads exclude file contents, storage key/object key, checksum, amount, `voucherNo`, due/paid dates, and raw fee payload.
+- Tests:
+  - Attachment service tests cover fee voucher upload, scoped list/detail, out-of-scope fee rejection, download policy denial, successful download, and audit redaction.
+  - Attachment controller tests cover fee voucher routes, finance reviewer read-only behavior, safe metadata response, static download permission, and service denial mapping.
+  - AppModule tests cover route exposure through the full module wiring.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS, 6 files / 66 tests.
+  - `corepack pnpm --filter @research-ip/api test -- attachment fee authorization audit`: PASS, 19 files / 243 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Final `git diff --check`, added-lines sensitive scan, and post-commit tracked diff check are recorded in `memory-bank/evidence.md`.
+- Deferred:
+  - Web Fees voucher attachment UI/client integration remains Step 56C.
+  - Local Docker/browser real upload/download acceptance remains a later explicit acceptance Step.
+  - Production/VPS rollout remains out of scope.
+
 ## Current Step 56A Archive - Voucher attachment integration scope and backend plan - 2026-06-30
 
 - Step identity:

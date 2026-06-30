@@ -18,6 +18,7 @@ import { AttachmentStatusCode } from "./domain/attachment-status-code";
 const ids = {
   attachment: "70000000-0000-4000-8000-000000000001",
   achievement: "30000000-0000-4000-8000-000000000001",
+  feeRecord: "80000000-0000-4000-8000-000000000001",
   department: "10000000-0000-4000-8000-000000000001",
   role: "50000000-0000-4000-8000-000000000001",
   user: "40000000-0000-4000-8000-000000000001",
@@ -48,6 +49,10 @@ type AttachmentServiceMock = {
   listAchievementMetadata: ReturnType<typeof vi.fn>;
   getAchievementAttachmentMetadata: ReturnType<typeof vi.fn>;
   downloadAchievementAttachment: ReturnType<typeof vi.fn>;
+  createFeeVoucherAttachmentForUser: ReturnType<typeof vi.fn>;
+  listFeeVoucherMetadata: ReturnType<typeof vi.fn>;
+  getFeeVoucherAttachmentMetadata: ReturnType<typeof vi.fn>;
+  downloadFeeVoucherAttachment: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -84,6 +89,32 @@ const createAttachmentServiceMock = (): AttachmentServiceMock => ({
   downloadAchievementAttachment: vi.fn().mockResolvedValue({
     id: ids.attachment,
     fileName: "paper.pdf",
+    version: 1,
+    mimeType: "application/pdf",
+    sizeBytes: 9,
+    body: Buffer.from("fake body"),
+  }),
+  createFeeVoucherAttachmentForUser: vi.fn().mockResolvedValue({
+    ...makeMetadata(),
+    relationType: AttachmentRelationTypeCode.feeRecord,
+    relationId: ids.feeRecord,
+    fileName: "voucher.pdf",
+  }),
+  listFeeVoucherMetadata: vi.fn().mockResolvedValue([
+    {
+      ...makeMetadata(),
+      relationType: AttachmentRelationTypeCode.feeRecord,
+      relationId: ids.feeRecord,
+    },
+  ]),
+  getFeeVoucherAttachmentMetadata: vi.fn().mockResolvedValue({
+    ...makeMetadata(),
+    relationType: AttachmentRelationTypeCode.feeRecord,
+    relationId: ids.feeRecord,
+  }),
+  downloadFeeVoucherAttachment: vi.fn().mockResolvedValue({
+    id: ids.attachment,
+    fileName: "voucher.pdf",
     version: 1,
     mimeType: "application/pdf",
     sizeBytes: 9,
@@ -142,6 +173,47 @@ describe("Attachment routes through AppModule", () => {
         expect(service.listAchievementMetadata).toHaveBeenCalledOnce();
         expect(service.getAchievementAttachmentMetadata).toHaveBeenCalledOnce();
         expect(service.downloadAchievementAttachment).toHaveBeenCalledOnce();
+      },
+    );
+  });
+
+  it("exposes fee voucher attachment routes through AppModule", async () => {
+    await withAppModule(
+      [
+        PermissionCode.feeManageDepartment,
+        PermissionCode.feeReviewDepartment,
+        PermissionCode.attachmentDownload,
+      ],
+      async (app, service) => {
+        await request(app.getHttpServer() as Server)
+          .post(`/fees/${ids.feeRecord}/voucher-attachments`)
+          .set("X-Demo-User-Id", ids.user)
+          .field("secretLevel", SecretLevelCode.internal)
+          .attach("file", pdfBuffer(), {
+            filename: "voucher.pdf",
+            contentType: "application/pdf",
+          })
+          .expect(201);
+
+        await request(app.getHttpServer() as Server)
+          .get(`/fees/${ids.feeRecord}/voucher-attachments`)
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        await request(app.getHttpServer() as Server)
+          .get(`/fees/${ids.feeRecord}/voucher-attachments/${ids.attachment}`)
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        await request(app.getHttpServer() as Server)
+          .get(`/fees/${ids.feeRecord}/voucher-attachments/${ids.attachment}/download`)
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(service.createFeeVoucherAttachmentForUser).toHaveBeenCalledOnce();
+        expect(service.listFeeVoucherMetadata).toHaveBeenCalledOnce();
+        expect(service.getFeeVoucherAttachmentMetadata).toHaveBeenCalledOnce();
+        expect(service.downloadFeeVoucherAttachment).toHaveBeenCalledOnce();
       },
     );
   });

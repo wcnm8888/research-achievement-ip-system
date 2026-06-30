@@ -1,5 +1,49 @@
 # Evidence
 
+## 2026-06-30 Step 56B - Voucher attachment backend-only API implementation evidence
+
+- Purpose:
+  - Implement backend-only fee voucher attachment endpoints from Step 56A.
+  - Reuse existing `AttachmentRelationType.FEE_RECORD`, attachment metadata/storage/audit infrastructure, and fee department scope rules.
+  - Keep Web UI, schema, production/VPS, real business uploads/downloads, and data migration out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `cb1e236`.
+  - Latest commit subject: `docs: plan voucher attachment integration`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 56B implementation.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - Added `FeeVoucherAttachmentController` in `apps/api/src/attachments/attachment.controller.ts`.
+  - Registered the controller in `apps/api/src/attachments/attachments.module.ts`.
+  - Added fee parent lookup and fee/attachment grant lookup in `apps/api/src/attachments/attachment.repository.ts`.
+  - Added fee parent mapping/types in attachment domain mapper/types.
+  - Added `AttachmentService` methods:
+    - `createFeeVoucherAttachmentForUser`.
+    - `listFeeVoucherMetadata`.
+    - `getFeeVoucherAttachmentMetadata`.
+    - `downloadFeeVoucherAttachment`.
+  - Reused local storage, metadata DTO, versioning, and attachment audit actions.
+- Authorization evidence:
+  - Upload route has static `fee:manage_department` and service checks scoped fee parent access.
+  - List/detail routes rely on service-level any-permission check for `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Download route has static `attachment:download` and service checks scoped fee visibility.
+  - Tests cover finance reviewer metadata read-only behavior and upload denial.
+- Audit redaction evidence:
+  - Service tests serialize fee voucher upload/download audit payloads.
+  - Assertions reject file content, storage key/object key, checksum, amount, `voucherNo`, due date, paid date, and raw fee payload markers.
+- Verification evidence:
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS, 6 files / 66 tests.
+  - `corepack pnpm --filter @research-ip/api test -- attachment fee authorization audit`: PASS, 19 files / 243 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS; only existing Windows line-ending warnings were printed.
+  - Added-lines sensitive value scan: PASS; no credential assignment, private key marker, OpenAI-style key, or AWS access-key-like value was found in added lines.
+  - Pre-commit tracked diff scope: only allowed `apps/api/src/attachments/**` source/tests and allowed memory-bank files.
+- Boundaries observed:
+  - No Web UI files were modified.
+  - No Prisma schema, migration, seed, backfill, dependency/package/lockfile, production/VPS, account/password, business-data, or real business attachment operation occurred.
+  - No password, cookie, token, secret, AccessKey, private key, connection string, raw session value, or `.env` / `.env.production` value was read, output, recorded, staged, or committed.
+  - No cleanup, deletion, reset, drop, prune, push, deploy, or existing untracked-artifact operation occurred.
+
 ## 2026-06-30 Step 56A - Voucher attachment integration scope/backend plan evidence
 
 - Purpose:

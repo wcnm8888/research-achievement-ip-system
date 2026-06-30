@@ -44,4 +44,9 @@ export type AttachmentAchievementParentRecord = {
   secretLevel: SecretLevelCode;
 };
 
+export type AttachmentFeeParentRecord = {
+  id: string;
+  departmentId: string;
+};
+
 export type AttachmentResourceGrantRecord = ResourceAccessGrantRecord;

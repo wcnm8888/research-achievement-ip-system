@@ -8,6 +8,7 @@ import { ResourceAccessGrantRecord } from "../../authorization/policy/resource-g
 import { CreateAttachmentMetadataInput } from "./attachment-event.types";
 import {
   AttachmentAchievementParentRecord,
+  AttachmentFeeParentRecord,
   AttachmentRecord,
   AttachmentRelationQueryInput,
 } from "./attachment-repository.types";
@@ -39,6 +40,11 @@ type AchievementParentPersistenceRow = {
   departmentId: string;
   ownerUserId: string;
   secretLevel: AttachmentAchievementParentRecord["secretLevel"];
+};
+
+type FeeParentPersistenceRow = {
+  id: string;
+  departmentId: string;
 };
 
 type ResourceGrantPersistenceRow = {
@@ -118,6 +124,13 @@ export const toAchievementParentRecord = (
   departmentId: row.departmentId,
   ownerUserId: row.ownerUserId,
   secretLevel: row.secretLevel,
+});
+
+export const toFeeParentRecord = (
+  row: FeeParentPersistenceRow,
+): AttachmentFeeParentRecord => ({
+  id: row.id,
+  departmentId: row.departmentId,
 });
 
 export const toResourceGrantRecord = (

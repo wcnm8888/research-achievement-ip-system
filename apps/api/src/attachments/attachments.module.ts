@@ -3,7 +3,10 @@ import { AuditModule } from "../audit/audit.module";
 import { AuthorizationModule } from "../authorization/authorization.module";
 import { DatabaseModule } from "../database/database.module";
 import { IdentityModule } from "../identity/identity.module";
-import { AttachmentController } from "./attachment.controller";
+import {
+  AttachmentController,
+  FeeVoucherAttachmentController,
+} from "./attachment.controller";
 import { AttachmentRepository } from "./attachment.repository";
 import { AttachmentService } from "./attachment.service";
 import { ATTACHMENT_STORAGE_ADAPTER } from "./storage/attachment-storage.provider";
@@ -15,7 +18,7 @@ import {
 
 @Module({
   imports: [DatabaseModule, AuthorizationModule, IdentityModule, AuditModule],
-  controllers: [AttachmentController],
+  controllers: [AttachmentController, FeeVoucherAttachmentController],
   providers: [
     AttachmentRepository,
     AttachmentService,

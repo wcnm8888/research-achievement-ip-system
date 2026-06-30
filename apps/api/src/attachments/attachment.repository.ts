@@ -8,10 +8,12 @@ import {
   toAttachmentCreateData,
   toAttachmentRecord,
   toAttachmentRelationWhere,
+  toFeeParentRecord,
   toResourceGrantRecord,
 } from "./domain/attachment-prisma.mapper";
 import {
   AttachmentAchievementParentRecord,
+  AttachmentFeeParentRecord,
   AttachmentLatestVersionInput,
   AttachmentRecord,
   AttachmentRelationQueryInput,
@@ -113,6 +115,20 @@ export class AttachmentRepository {
     return row ? toAchievementParentRecord(row) : null;
   }
 
+  async findFeeParentByIdWhere(
+    feeRecordId: string,
+    where: Prisma.FeeRecordWhereInput,
+  ): Promise<AttachmentFeeParentRecord | null> {
+    const row = await this.prisma.feeRecord.findFirst({
+      where: {
+        AND: [{ id: feeRecordId }, where, { archivedAt: null }],
+      },
+      select: feeParentSelect,
+    });
+
+    return row ? toFeeParentRecord(row) : null;
+  }
+
   async findResourceGrantsForAchievementAndAttachment(input: {
     achievementId: string;
     attachmentId?: string | null;
@@ -121,6 +137,31 @@ export class AttachmentRepository {
       {
         resourceType: ResourceTypeCode.achievement,
         resourceId: input.achievementId,
+      },
+    ];
+
+    if (input.attachmentId) {
+      resourceFilters.push({
+        resourceType: ResourceTypeCode.attachment,
+        resourceId: input.attachmentId,
+      });
+    }
+
+    const rows = await this.prisma.resourceAccessGrant.findMany({
+      where: { OR: resourceFilters },
+    });
+
+    return rows.map((row) => toResourceGrantRecord(row));
+  }
+
+  async findResourceGrantsForFeeAndAttachment(input: {
+    feeRecordId: string;
+    attachmentId?: string | null;
+  }): Promise<AttachmentResourceGrantRecord[]> {
+    const resourceFilters: Prisma.ResourceAccessGrantWhereInput[] = [
+      {
+        resourceType: ResourceTypeCode.feeRecord,
+        resourceId: input.feeRecordId,
       },
     ];
 
@@ -149,6 +190,11 @@ const achievementParentSelect = {
   ownerUserId: true,
   secretLevel: true,
 } satisfies Prisma.AchievementSelect;
+
+const feeParentSelect = {
+  id: true,
+  departmentId: true,
+} satisfies Prisma.FeeRecordSelect;
 
 const isPrismaKnownRequestError = (error: unknown): error is { code: string } => {
   if (!error || typeof error !== "object") {

@@ -23,6 +23,7 @@ import { AttachmentStatusCode } from "./domain/attachment-status-code";
 const ids = {
   attachment: "70000000-0000-4000-8000-000000000001",
   achievement: "30000000-0000-4000-8000-000000000001",
+  feeRecord: "80000000-0000-4000-8000-000000000001",
   user: "40000000-0000-4000-8000-000000000001",
   department: "10000000-0000-4000-8000-000000000001",
 };
@@ -34,6 +35,10 @@ type ServiceMock = {
   listAchievementMetadata: ReturnType<typeof vi.fn>;
   getAchievementAttachmentMetadata: ReturnType<typeof vi.fn>;
   downloadAchievementAttachment: ReturnType<typeof vi.fn>;
+  createFeeVoucherAttachmentForUser: ReturnType<typeof vi.fn>;
+  listFeeVoucherMetadata: ReturnType<typeof vi.fn>;
+  getFeeVoucherAttachmentMetadata: ReturnType<typeof vi.fn>;
+  downloadFeeVoucherAttachment: ReturnType<typeof vi.fn>;
 };
 
 const metadata = {
@@ -62,6 +67,34 @@ const createServiceMock = (): ServiceMock => ({
   downloadAchievementAttachment: vi.fn().mockResolvedValue({
     id: ids.attachment,
     fileName: "paper.pdf",
+    version: 1,
+    mimeType: "application/pdf",
+    sizeBytes: 9,
+    body: Buffer.from("fake body"),
+  }),
+  createFeeVoucherAttachmentForUser: vi.fn().mockResolvedValue({
+    ...metadata,
+    relationType: AttachmentRelationTypeCode.feeRecord,
+    relationId: ids.feeRecord,
+    fileName: "voucher.pdf",
+    originalName: "voucher.pdf",
+    storedName: "voucher.pdf",
+  }),
+  listFeeVoucherMetadata: vi.fn().mockResolvedValue([
+    {
+      ...metadata,
+      relationType: AttachmentRelationTypeCode.feeRecord,
+      relationId: ids.feeRecord,
+    },
+  ]),
+  getFeeVoucherAttachmentMetadata: vi.fn().mockResolvedValue({
+    ...metadata,
+    relationType: AttachmentRelationTypeCode.feeRecord,
+    relationId: ids.feeRecord,
+  }),
+  downloadFeeVoucherAttachment: vi.fn().mockResolvedValue({
+    id: ids.attachment,
+    fileName: "voucher.pdf",
     version: 1,
     mimeType: "application/pdf",
     sizeBytes: 9,
@@ -326,6 +359,123 @@ describe("AttachmentController", () => {
         );
       },
     );
+  });
+
+  it("uploads fee voucher attachments through the fee route", async () => {
+    await withAttachmentApp(
+      [PermissionCode.feeManageDepartment],
+      async (app, service, context) => {
+        await request(app.getHttpServer() as Server)
+          .post(`/fees/${ids.feeRecord}/voucher-attachments`)
+          .field("secretLevel", SecretLevelCode.internal)
+          .attach("file", pdfBuffer(), {
+            filename: "voucher.pdf",
+            contentType: "application/pdf",
+          })
+          .expect(201)
+          .expect((response) => {
+            expect(response.body).toMatchObject({
+              id: ids.attachment,
+              relationType: AttachmentRelationTypeCode.feeRecord,
+              relationId: ids.feeRecord,
+              fileName: "voucher.pdf",
+            });
+            expect(response.body).not.toHaveProperty("checksum");
+            expect(response.body).not.toHaveProperty("objectKey");
+          });
+
+        expect(service.createFeeVoucherAttachmentForUser).toHaveBeenCalledWith(
+          context,
+          ids.feeRecord,
+          expect.objectContaining({
+            fileName: "voucher.pdf",
+            secretLevel: SecretLevelCode.internal,
+            mimeType: "application/pdf",
+            objectBody: expect.any(Buffer),
+          }),
+        );
+      },
+    );
+  });
+
+  it("keeps finance reviewers read-only at the fee voucher upload route", async () => {
+    await withAttachmentApp([PermissionCode.feeReviewDepartment], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/voucher-attachments`)
+        .attach("file", pdfBuffer(), {
+          filename: "voucher.pdf",
+          contentType: "application/pdf",
+        })
+        .expect(403);
+
+      expect(service.createFeeVoucherAttachmentForUser).not.toHaveBeenCalled();
+    });
+  });
+
+  it("lists and gets fee voucher metadata for read-only finance reviewers", async () => {
+    await withAttachmentApp([PermissionCode.feeReviewDepartment], async (app, service, context) => {
+      await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}/voucher-attachments?take=10`)
+        .expect(200)
+        .expect((response) => {
+          expect(response.body).toHaveLength(1);
+          expect(response.body[0]).toMatchObject({
+            relationType: AttachmentRelationTypeCode.feeRecord,
+            relationId: ids.feeRecord,
+          });
+          expect(response.body[0]).not.toHaveProperty("checksum");
+          expect(response.body[0]).not.toHaveProperty("objectKey");
+        });
+
+      await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}/voucher-attachments/${ids.attachment}`)
+        .expect(200);
+
+      expect(service.listFeeVoucherMetadata).toHaveBeenCalledWith(context, ids.feeRecord, {
+        take: 10,
+      });
+      expect(service.getFeeVoucherAttachmentMetadata).toHaveBeenCalledWith(
+        context,
+        ids.feeRecord,
+        ids.attachment,
+      );
+    });
+  });
+
+  it("downloads fee voucher payload through the static download permission boundary", async () => {
+    await withAttachmentApp(
+      [PermissionCode.feeReadDepartment, PermissionCode.attachmentDownload],
+      async (app, service, context) => {
+        await request(app.getHttpServer() as Server)
+          .get(`/fees/${ids.feeRecord}/voucher-attachments/${ids.attachment}/download`)
+          .expect(200)
+          .expect((response) => {
+            expect(response.headers["content-type"]).toContain("application/pdf");
+            expect(response.headers["content-length"]).toBe("9");
+            expect(response.headers["content-disposition"]).toBe(
+              'attachment; filename="voucher.pdf"',
+            );
+          });
+
+        expect(service.downloadFeeVoucherAttachment).toHaveBeenCalledWith(
+          context,
+          ids.feeRecord,
+          ids.attachment,
+        );
+      },
+    );
+  });
+
+  it("maps fee voucher metadata service denial to 403", async () => {
+    await withAttachmentApp([PermissionCode.feeReviewDepartment], async (app, service) => {
+      service.listFeeVoucherMetadata.mockRejectedValueOnce(
+        new AttachmentAccessDeniedError("denied"),
+      );
+
+      await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}/voucher-attachments`)
+        .expect(403);
+    });
   });
 
   it("maps attachment service errors to HTTP responses", async () => {

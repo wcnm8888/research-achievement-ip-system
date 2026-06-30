@@ -14,6 +14,7 @@ import {
 import { PolicyDecision, allowDecision, denyDecision } from "../authorization/policy/policy-decision";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
 import { ResourceAccessGrantRecord } from "../authorization/policy/resource-grant-policy.service";
+import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import {
   SecretAccessPolicyService,
   SecretResourceDescriptor,
@@ -35,6 +36,7 @@ import { CreateAchievementAttachmentInput } from "./domain/attachment-event.type
 import { toAttachmentDescriptor } from "./domain/attachment-prisma.mapper";
 import {
   AttachmentAchievementParentRecord,
+  AttachmentFeeParentRecord,
   AttachmentRecord,
 } from "./domain/attachment-repository.types";
 import { AttachmentRelationTypeCode } from "./domain/attachment-relation-type-code";
@@ -85,6 +87,8 @@ export type AchievementAttachmentUploadInput = {
   traceId?: string | null;
 };
 
+export type FeeVoucherAttachmentUploadInput = AchievementAttachmentUploadInput;
+
 export type AttachmentDownloadDto = {
   id: string;
   fileName: string;
@@ -105,6 +109,8 @@ export class AttachmentService {
     private readonly policyQueryFactory: PolicyQueryFactory,
     @Inject(SecretAccessPolicyService)
     private readonly secretAccessPolicy: SecretAccessPolicyService,
+    @Inject(RbacPolicyService)
+    private readonly rbacPolicy: RbacPolicyService,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(AuditService)
@@ -119,58 +125,28 @@ export class AttachmentService {
     input: AchievementAttachmentUploadInput,
   ): Promise<AttachmentMetadataDto> {
     const parent = await this.loadWritableAchievementParent(context, achievementId);
-    const relationType = AttachmentRelationTypeCode.achievement;
-    const version = await this.calculateNextVersion({
-      relationType,
+
+    return this.createAttachmentForParent(context, {
+      relationType: AttachmentRelationTypeCode.achievement,
       relationId: achievementId,
-      fileName: input.fileName,
+      input,
+      auditParent: this.toAchievementAuditParent(parent),
     });
-    const objectKey = buildAttachmentObjectKey({
-      relationType,
-      relationId: achievementId,
-      fileName: input.fileName,
-      version,
+  }
+
+  async createFeeVoucherAttachmentForUser(
+    context: UserContext,
+    feeRecordId: string,
+    input: FeeVoucherAttachmentUploadInput,
+  ): Promise<AttachmentMetadataDto> {
+    const parent = await this.loadWritableFeeParent(context, feeRecordId);
+
+    return this.createAttachmentForParent(context, {
+      relationType: AttachmentRelationTypeCode.feeRecord,
+      relationId: feeRecordId,
+      input,
+      auditParent: this.toFeeAuditParent(parent),
     });
-    const stored = await this.putObject({
-      objectKey,
-      body: input.objectBody,
-      checksum: input.checksum,
-      mimeType: input.mimeType,
-      originalName: input.originalName,
-      storedName: input.storedName,
-    });
-
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        const record = await this.attachmentRepository.createInTransaction(
-          tx as AttachmentTransactionClient,
-          {
-            relationType,
-            relationId: achievementId,
-            fileName: input.fileName,
-            objectKey: stored.objectKey,
-            mimeType: input.mimeType ?? null,
-            sizeBytes: input.sizeBytes ?? stored.sizeBytes ?? null,
-            storageProvider: "LOCAL_DISK",
-            originalName: input.originalName ?? input.fileName,
-            storedName: stored.storedName ?? input.storedName ?? toSafeFileName(input.fileName),
-            version,
-            uploaderId: context.userId,
-            secretLevel: input.secretLevel ?? SecretLevelCode.internal,
-            checksum: stored.checksum ?? input.checksum ?? null,
-          },
-        );
-
-        await this.auditService.recordEventInTransaction(
-          tx as AuditTransactionClient,
-          this.toAttachmentUploadAuditEvent(context, parent, record, input.traceId),
-        );
-
-        return toAttachmentMetadataDto(record);
-      });
-    } catch (error) {
-      throw this.mapCreateError(error, relationType, achievementId, input.fileName, version);
-    }
   }
 
   async listAchievementMetadata(
@@ -189,6 +165,22 @@ export class AttachmentService {
     });
   }
 
+  async listFeeVoucherMetadata(
+    context: UserContext,
+    feeRecordId: string,
+    query: AchievementAttachmentListQuery = {},
+  ): Promise<AttachmentMetadataDto[]> {
+    const parentAccess = await this.loadReadableFeeParentAccess(context, feeRecordId);
+
+    return this.listMetadataForRelation({
+      ...parentAccess,
+      relationType: AttachmentRelationTypeCode.feeRecord,
+      relationId: feeRecordId,
+      status: query.status,
+      take: query.take,
+    });
+  }
+
   async getAchievementAttachmentMetadata(
     context: UserContext,
     achievementId: string,
@@ -196,6 +188,22 @@ export class AttachmentService {
   ): Promise<AttachmentMetadataDto> {
     const record = await this.loadAchievementAttachmentRecord(achievementId, attachmentId);
     const parentAccess = await this.loadReadableParentAccess(context, achievementId, record.id);
+
+    const decision = this.canReadMetadata(parentAccess, toAttachmentDescriptor(record));
+    if (decision.effect !== "ALLOW") {
+      throw new AttachmentAccessDeniedError(decision.reason);
+    }
+
+    return toAttachmentMetadataDto(record);
+  }
+
+  async getFeeVoucherAttachmentMetadata(
+    context: UserContext,
+    feeRecordId: string,
+    attachmentId: string,
+  ): Promise<AttachmentMetadataDto> {
+    const record = await this.loadFeeVoucherAttachmentRecord(feeRecordId, attachmentId);
+    const parentAccess = await this.loadReadableFeeParentAccess(context, feeRecordId, record.id);
 
     const decision = this.canReadMetadata(parentAccess, toAttachmentDescriptor(record));
     if (decision.effect !== "ALLOW") {
@@ -239,7 +247,45 @@ export class AttachmentService {
 
     const stored = await this.getObject(record.objectKey);
     await this.auditService.recordEvent(
-      this.toAttachmentDownloadAuditEvent(context, parent, record),
+      this.toAttachmentDownloadAuditEvent(
+        context,
+        this.toAchievementAuditParent(parent),
+        record,
+      ),
+    );
+
+    return {
+      id: record.id,
+      fileName: record.fileName,
+      version: record.version,
+      mimeType: record.mimeType,
+      sizeBytes: record.sizeBytes ?? stored.sizeBytes ?? null,
+      body: stored.body,
+    };
+  }
+
+  async downloadFeeVoucherAttachment(
+    context: UserContext,
+    feeRecordId: string,
+    attachmentId: string,
+  ): Promise<AttachmentDownloadDto> {
+    const record = await this.loadFeeVoucherAttachmentRecord(feeRecordId, attachmentId);
+    const parentAccess = await this.loadReadableFeeParentAccess(context, feeRecordId, record.id);
+    const decision = this.attachmentAccessPolicy.canDownload(
+      context,
+      toAttachmentDescriptor(record),
+      parentAccess.parentResource,
+      parentAccess.parentAccessDecision,
+      parentAccess.grants,
+    );
+
+    if (decision.effect !== "ALLOW") {
+      throw new AttachmentAccessDeniedError(decision.reason);
+    }
+
+    const stored = await this.getObject(record.objectKey);
+    await this.auditService.recordEvent(
+      this.toAttachmentDownloadAuditEvent(context, parentAccess.auditParent, record),
     );
 
     return {
@@ -422,6 +468,84 @@ export class AttachmentService {
     );
   }
 
+  private async createAttachmentForParent(
+    context: UserContext,
+    input: {
+      relationType: AttachmentRelationTypeCode;
+      relationId: string;
+      input: AchievementAttachmentUploadInput;
+      auditParent: AttachmentAuditParent;
+    },
+  ): Promise<AttachmentMetadataDto> {
+    this.assertSupportedRelation(input.relationType);
+
+    const version = await this.calculateNextVersion({
+      relationType: input.relationType,
+      relationId: input.relationId,
+      fileName: input.input.fileName,
+    });
+    const objectKey = buildAttachmentObjectKey({
+      relationType: input.relationType,
+      relationId: input.relationId,
+      fileName: input.input.fileName,
+      version,
+    });
+    const stored = await this.putObject({
+      objectKey,
+      body: input.input.objectBody,
+      checksum: input.input.checksum,
+      mimeType: input.input.mimeType,
+      originalName: input.input.originalName,
+      storedName: input.input.storedName,
+    });
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const record = await this.attachmentRepository.createInTransaction(
+          tx as AttachmentTransactionClient,
+          {
+            relationType: input.relationType,
+            relationId: input.relationId,
+            fileName: input.input.fileName,
+            objectKey: stored.objectKey,
+            mimeType: input.input.mimeType ?? null,
+            sizeBytes: input.input.sizeBytes ?? stored.sizeBytes ?? null,
+            storageProvider: "LOCAL_DISK",
+            originalName: input.input.originalName ?? input.input.fileName,
+            storedName:
+              stored.storedName ??
+              input.input.storedName ??
+              toSafeFileName(input.input.fileName),
+            version,
+            uploaderId: context.userId,
+            secretLevel: input.input.secretLevel ?? SecretLevelCode.internal,
+            checksum: stored.checksum ?? input.input.checksum ?? null,
+          },
+        );
+
+        await this.auditService.recordEventInTransaction(
+          tx as AuditTransactionClient,
+          this.toAttachmentUploadAuditEvent(
+            context,
+            input.auditParent,
+            record,
+            input.input.traceId,
+          ),
+        );
+
+        return toAttachmentMetadataDto(record);
+      });
+    } catch (error) {
+      throw this.mapCreateError(
+        error,
+        input.relationType,
+        input.relationId,
+        input.input.fileName,
+        version,
+      );
+    }
+  }
+
   private async loadWritableAchievementParent(
     context: UserContext,
     achievementId: string,
@@ -452,6 +576,26 @@ export class AttachmentService {
 
     if (decision.effect !== "ALLOW") {
       throw new AttachmentAccessDeniedError(decision.reason);
+    }
+
+    return parent;
+  }
+
+  private async loadWritableFeeParent(
+    context: UserContext,
+    feeRecordId: string,
+  ): Promise<AttachmentFeeParentRecord> {
+    const where = this.policyQueryFactory.feeDepartmentWhere(
+      context,
+      PermissionCode.feeManageDepartment,
+    );
+    const parent = await this.attachmentRepository.findFeeParentByIdWhere(
+      feeRecordId,
+      where,
+    );
+
+    if (!parent) {
+      throw new AttachmentNotFoundError(feeRecordId);
     }
 
     return parent;
@@ -497,6 +641,45 @@ export class AttachmentService {
     };
   }
 
+  private async loadReadableFeeParentAccess(
+    context: UserContext,
+    feeRecordId: string,
+    attachmentId?: string,
+  ): Promise<AttachmentParentAccessInput & { auditParent: AttachmentAuditParent }> {
+    const permissionDecision = this.rbacPolicy.hasAnyPermission(context, [
+      PermissionCode.feeReadDepartment,
+      PermissionCode.feeManageDepartment,
+      PermissionCode.feeReviewDepartment,
+    ]);
+
+    if (permissionDecision.effect !== "ALLOW") {
+      throw new AttachmentAccessDeniedError(permissionDecision.reason);
+    }
+
+    const parent = await this.attachmentRepository.findFeeParentByIdWhere(
+      feeRecordId,
+      this.feeVoucherReadableWhere(context),
+    );
+
+    if (!parent) {
+      throw new AttachmentNotFoundError(feeRecordId);
+    }
+
+    const grants = await this.attachmentRepository.findResourceGrantsForFeeAndAttachment({
+      feeRecordId,
+      attachmentId,
+    });
+    const auditParent = this.toFeeAuditParent(parent);
+
+    return {
+      context,
+      parentResource: this.toFeeParentResource(parent),
+      parentAccessDecision: allowDecision("Base fee voucher visibility is granted."),
+      grants,
+      auditParent,
+    };
+  }
+
   private async getBaseParentAccessDecision(
     context: UserContext,
     achievementId: string,
@@ -530,6 +713,25 @@ export class AttachmentService {
     return record;
   }
 
+  private async loadFeeVoucherAttachmentRecord(
+    feeRecordId: string,
+    attachmentId: string,
+  ): Promise<AttachmentRecord> {
+    const record = await this.attachmentRepository.findById(attachmentId);
+    if (!record) {
+      throw new AttachmentNotFoundError(attachmentId);
+    }
+
+    if (
+      record.relationType !== AttachmentRelationTypeCode.feeRecord ||
+      record.relationId !== feeRecordId
+    ) {
+      throw new AttachmentNotFoundError(attachmentId);
+    }
+
+    return record;
+  }
+
   private toParentResource(
     parent: AttachmentAchievementParentRecord,
   ): SecretResourceDescriptor {
@@ -541,9 +743,58 @@ export class AttachmentService {
     };
   }
 
+  private toFeeParentResource(parent: AttachmentFeeParentRecord): SecretResourceDescriptor {
+    return {
+      resourceType: ResourceTypeCode.feeRecord,
+      resourceId: parent.id,
+      secretLevel: SecretLevelCode.internal,
+    };
+  }
+
+  private feeVoucherReadableWhere(context: UserContext): Parameters<
+    AttachmentRepository["findFeeParentByIdWhere"]
+  >[1] {
+    return {
+      OR: [
+        this.policyQueryFactory.feeDepartmentWhere(
+          context,
+          PermissionCode.feeReadDepartment,
+        ),
+        this.policyQueryFactory.feeDepartmentWhere(
+          context,
+          PermissionCode.feeManageDepartment,
+        ),
+        this.policyQueryFactory.feeDepartmentWhere(
+          context,
+          PermissionCode.feeReviewDepartment,
+        ),
+      ],
+    };
+  }
+
+  private toAchievementAuditParent(
+    parent: AttachmentAchievementParentRecord,
+  ): AttachmentAuditParent {
+    return {
+      relationKey: "achievementId",
+      resourceId: parent.id,
+      departmentId: parent.departmentId,
+      secretLevel: parent.secretLevel,
+    };
+  }
+
+  private toFeeAuditParent(parent: AttachmentFeeParentRecord): AttachmentAuditParent {
+    return {
+      relationKey: "feeRecordId",
+      resourceId: parent.id,
+      departmentId: parent.departmentId,
+      secretLevel: SecretLevelCode.internal,
+    };
+  }
+
   private toAttachmentUploadAuditEvent(
     context: UserContext,
-    parent: AttachmentAchievementParentRecord,
+    parent: AttachmentAuditParent,
     record: AttachmentRecord,
     traceId?: string | null,
   ): CreateAuditEventInput {
@@ -563,6 +814,7 @@ export class AttachmentService {
       newValue: this.toAttachmentAuditSummary(
         record,
         AuditActionCode.uploadAttachment,
+        parent,
         {
           createdAt: record.createdAt.toISOString(),
           uploaderId: record.uploaderId,
@@ -574,7 +826,7 @@ export class AttachmentService {
 
   private toAttachmentDownloadAuditEvent(
     context: UserContext,
-    parent: AttachmentAchievementParentRecord,
+    parent: AttachmentAuditParent,
     record: AttachmentRecord,
   ): CreateAuditEventInput {
     return {
@@ -593,6 +845,7 @@ export class AttachmentService {
       newValue: this.toAttachmentAuditSummary(
         record,
         AuditActionCode.downloadAttachment,
+        parent,
         {
           downloadedAt: new Date().toISOString(),
         },
@@ -603,12 +856,13 @@ export class AttachmentService {
   private toAttachmentAuditSummary(
     record: AttachmentRecord,
     action: AuditActionCode,
+    parent: AttachmentAuditParent,
     extra: Record<string, string>,
   ): Record<string, string | number> {
     return {
       action,
       attachmentId: record.id,
-      achievementId: record.relationId,
+      [parent.relationKey]: parent.resourceId,
       relationId: record.relationId,
       relationType: record.relationType,
       fileName: record.fileName,
@@ -651,7 +905,10 @@ export class AttachmentService {
   }
 
   private assertSupportedRelation(relationType: AttachmentRelationTypeCode): void {
-    if (relationType !== AttachmentRelationTypeCode.achievement) {
+    if (
+      relationType !== AttachmentRelationTypeCode.achievement &&
+      relationType !== AttachmentRelationTypeCode.feeRecord
+    ) {
       throw new AttachmentUnsupportedRelationError(relationType);
     }
   }
@@ -694,3 +951,10 @@ const toAttachmentMetadataDto = (record: AttachmentRecord): AttachmentMetadataDt
   updatedAt: record.updatedAt,
   archivedAt: record.archivedAt,
 });
+
+type AttachmentAuditParent = {
+  relationKey: "achievementId" | "feeRecordId";
+  resourceId: string;
+  departmentId: string;
+  secretLevel: SecretLevelCode;
+};

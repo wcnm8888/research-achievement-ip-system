@@ -1,5 +1,28 @@
 # Decisions
 
+## D203 - Fee voucher backend uses Attachment download permission plus fee visibility
+
+- Date: 2026-06-30.
+- Context: Step 56B implements the Step 56A backend-only voucher attachment API. Step 56A recommended preserving the existing attachment download permission semantics unless a policy gap required a new permission.
+- Decision:
+  - Implement fee voucher attachments on the existing `Attachment` model with `relationType=FEE_RECORD`.
+  - Add no new Prisma table, relation, migration, seed, or `fee:voucher_attachment` permission.
+  - Upload requires scoped `fee:manage_department`.
+  - Metadata list/detail allow scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Download requires scoped fee visibility and the existing static `attachment:download` permission.
+  - Keep `FINANCE_REVIEWER` read-only for metadata by default; it cannot upload. Voucher file download for finance reviewers requires explicit `attachment:download` or existing direct-grant semantics rather than silently widening the role.
+- Rationale:
+  - The current system already separates attachment metadata read and file download.
+  - Keeping `attachment:download` avoids broadening file-content access through fee review alone.
+  - The existing role/permission seed contract is not changed in this backend-only Step.
+  - The implementation still permits product rollout to grant finance reviewers download capability later through role/seed policy without changing the API shape.
+- Audit decision:
+  - Reuse `UPLOAD_ATTACHMENT` and `DOWNLOAD_ATTACHMENT` targeting `ATTACHMENT`.
+  - Record only safe attachment metadata and `feeRecordId`.
+  - Do not record file contents, storage key/object key, checksum, amount, `voucherNo`, due/paid dates, or raw fee payload.
+- Boundaries:
+  - This decision does not authorize Web UI, schema changes, migration/seed/backfill, production/VPS access, package changes, account/password work, secret reads/output, `.env` / `.env.production` content reads, real business attachment upload/download, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling.
+
 ## D202 - Fee voucher attachments reuse Attachment for scoped FeeRecord files
 
 - Date: 2026-06-30.

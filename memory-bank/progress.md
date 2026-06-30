@@ -1,5 +1,40 @@
 # Progress
 
+## 2026-06-30 Step 56B - Voucher attachment backend-only API implementation
+
+- Status: STEP_56B_VOUCHER_ATTACHMENT_BACKEND_API_IMPLEMENTED.
+- Step identity:
+  - Implemented backend-only fee voucher attachment endpoints.
+  - No Web UI, Prisma schema, migration, seed/backfill, dependency/package/lockfile, production/VPS, business-data write, real business attachment upload/download, account/password work, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked artifact handling occurred.
+- Starting state:
+  - `HEAD`: `cb1e236`.
+  - Latest commit subject: `docs: plan voucher attachment integration`.
+  - Tracked diff was empty before Step 56B implementation.
+  - Existing untracked local artifacts were present and left untouched.
+- Implemented:
+  - Added fee voucher attachment routes under `/api/fees/:feeRecordId/voucher-attachments`.
+  - Reused `AttachmentRelationTypeCode.feeRecord`, attachment metadata repository, storage adapter, versioning, and audit event infrastructure.
+  - Added FeeRecord parent lookup to attachment repository without schema changes.
+  - Added fee voucher service methods for upload/list/detail/download.
+  - Added `FeeVoucherAttachmentController` and registered it in `AttachmentsModule`.
+- Authorization behavior:
+  - Upload requires scoped `fee:manage_department`.
+  - List/detail allow scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Download requires static `attachment:download` plus scoped fee visibility.
+  - Finance reviewers are read-only by default and cannot upload.
+  - No `fee:voucher_attachment` permission was added.
+- Audit/storage/schema boundary:
+  - Reused local attachment storage and `UPLOAD_ATTACHMENT` / `DOWNLOAD_ATTACHMENT`.
+  - No `storageKey`, checksum, file body, amount, `voucherNo`, due/paid dates, or raw fee payload is recorded in fee voucher upload/download audit summaries.
+  - No Prisma schema, migration, seed, or backfill change was made.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- attachment`: PASS, 6 files / 66 tests.
+  - `corepack pnpm --filter @research-ip/api test -- attachment fee authorization audit`: PASS, 19 files / 243 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Next:
+  - Step 56C can add Web Fees client/UI integration against the backend contract.
+  - A later explicit local acceptance Step can run real local upload/list/detail/download in Docker or equivalent controlled test runtime.
+
 ## 2026-06-30 Step 56A - Voucher attachment integration scope and backend plan
 
 - Status: STEP_56A_VOUCHER_ATTACHMENT_BACKEND_PLAN_READY_DOCS_ONLY.

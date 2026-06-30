@@ -5,12 +5,14 @@ import { AuditTargetTypeCode } from "../audit/domain/audit-target-type-code";
 import { GrantStatusCode } from "../authorization/constants/grant-status-code";
 import { GrantTypeCode } from "../authorization/constants/grant-type-code";
 import { GranteeTypeCode } from "../authorization/constants/grantee-type-code";
+import { PermissionCode } from "../authorization/constants/permission-code";
 import { ResourceTypeCode } from "../authorization/constants/resource-type-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { SecretLevelCode } from "../authorization/constants/secret-level-code";
 import { AttachmentAccessPolicyService } from "../authorization/policy/attachment-access-policy.service";
 import { allowDecision, denyDecision } from "../authorization/policy/policy-decision";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
+import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { SecretAccessPolicyService } from "../authorization/policy/secret-access-policy.service";
 import { UserContext } from "../identity/user-context";
 import {
@@ -32,6 +34,7 @@ import { PrismaService } from "../database/prisma.service";
 const ids = {
   attachment: "70000000-0000-4000-8000-000000000001",
   achievement: "30000000-0000-4000-8000-000000000001",
+  feeRecord: "80000000-0000-4000-8000-000000000001",
   uploader: "40000000-0000-4000-8000-000000000001",
   department: "10000000-0000-4000-8000-000000000001",
 };
@@ -91,7 +94,12 @@ const createService = () => {
       ownerUserId: ids.uploader,
       secretLevel: SecretLevelCode.internal,
     }),
+    findFeeParentByIdWhere: vi.fn().mockResolvedValue({
+      id: ids.feeRecord,
+      departmentId: ids.department,
+    }),
     findResourceGrantsForAchievementAndAttachment: vi.fn().mockResolvedValue([]),
+    findResourceGrantsForFeeAndAttachment: vi.fn().mockResolvedValue([]),
     isPrismaUniqueConflict: vi.fn((error: unknown) => Boolean((error as { code?: string })?.code === "P2002")),
   } as unknown as AttachmentRepository;
 
@@ -103,11 +111,19 @@ const createService = () => {
   const policyQueryFactory = {
     achievementReadableWhere: vi.fn().mockReturnValue({ id: ids.achievement }),
     achievementOwnedWhere: vi.fn().mockReturnValue({ ownerUserId: ids.uploader }),
+    feeDepartmentWhere: vi.fn((_context, permission) => ({
+      departmentId: { in: [ids.department] },
+      permission,
+    })),
   } as unknown as PolicyQueryFactory;
 
   const secretAccessPolicy = {
     canReadResource: vi.fn().mockReturnValue(allowDecision("secret allowed")),
   } as unknown as SecretAccessPolicyService;
+
+  const rbacPolicy = {
+    hasAnyPermission: vi.fn().mockReturnValue(allowDecision("fee visible")),
+  } as unknown as RbacPolicyService;
 
   const storage = {
     putObject: vi.fn(async (input: {
@@ -153,6 +169,7 @@ const createService = () => {
     accessPolicy,
     policyQueryFactory,
     secretAccessPolicy,
+    rbacPolicy,
     prisma,
     auditService,
     storage,
@@ -164,6 +181,7 @@ const createService = () => {
     accessPolicy,
     policyQueryFactory,
     secretAccessPolicy,
+    rbacPolicy,
     storage,
     prisma,
     auditService,
@@ -384,16 +402,173 @@ describe("AttachmentService metadata access preparation", () => {
     ).rejects.toBeInstanceOf(AttachmentAccessDeniedError);
   });
 
-  it("keeps non-achievement relations as domain constants only in Step 7B", async () => {
+  it("keeps unsupported relations rejected", async () => {
     const { service } = createService();
 
     await expect(
       service.listMetadataForRelation({
         ...parentAccess,
-        relationType: AttachmentRelationTypeCode.feeRecord,
+        relationType: AttachmentRelationTypeCode.workflowAction,
         relationId: ids.achievement,
       }),
     ).rejects.toBeInstanceOf(AttachmentUnsupportedRelationError);
+  });
+});
+
+describe("AttachmentService fee voucher boundary", () => {
+  const feeRecord = () =>
+    makeRecord({
+      relationType: AttachmentRelationTypeCode.feeRecord,
+      relationId: ids.feeRecord,
+      objectKey:
+        "attachments/FEE_RECORD/80000000-0000-4000-8000-000000000001/object/v4/voucher.pdf",
+      fileName: "voucher.pdf",
+      originalName: "voucher.pdf",
+      storedName: "voucher.pdf",
+    });
+
+  it("uploads voucher metadata for a scoped fee record without leaking fee or storage internals to audit", async () => {
+    const {
+      service,
+      repository,
+      policyQueryFactory,
+      storage,
+      auditService,
+      prisma,
+      tx,
+    } = createService();
+    vi.mocked(repository.createInTransaction).mockResolvedValueOnce(feeRecord());
+
+    await service.createFeeVoucherAttachmentForUser(context, ids.feeRecord, {
+      fileName: "voucher.pdf",
+      secretLevel: SecretLevelCode.internal,
+      objectBody: "voucher body",
+      checksum: "hidden-checksum",
+      traceId: "trace-fee-voucher-upload",
+    });
+
+    expect(policyQueryFactory.feeDepartmentWhere).toHaveBeenCalledWith(
+      context,
+      PermissionCode.feeManageDepartment,
+    );
+    expect(repository.findFeeParentByIdWhere).toHaveBeenCalledWith(
+      ids.feeRecord,
+      expect.objectContaining({ permission: PermissionCode.feeManageDepartment }),
+    );
+    expect(vi.mocked(storage.putObject).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(prisma.$transaction).mock.invocationCallOrder[0]!,
+    );
+    expect(repository.createInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        relationType: AttachmentRelationTypeCode.feeRecord,
+        relationId: ids.feeRecord,
+        fileName: "voucher.pdf",
+        storageProvider: "LOCAL_DISK",
+        uploaderId: ids.uploader,
+      }),
+    );
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        action: AuditActionCode.uploadAttachment,
+        target: {
+          type: AuditTargetTypeCode.attachment,
+          id: ids.attachment,
+          departmentId: ids.department,
+          secretLevel: SecretLevelCode.internal,
+        },
+        traceId: "trace-fee-voucher-upload",
+      }),
+    );
+
+    const serializedAudit = JSON.stringify(
+      vi.mocked(auditService.recordEventInTransaction).mock.calls[0]![1],
+    );
+    expect(serializedAudit).toContain(ids.feeRecord);
+    expect(serializedAudit).not.toMatch(
+      /objectKey|storageKey|checksum|voucher body|hidden-checksum|amount|voucherNo|dueDate|paidDate|raw fee/i,
+    );
+  });
+
+  it("lists and gets scoped fee voucher metadata for a read-only finance reviewer", async () => {
+    const { service, repository, rbacPolicy, accessPolicy } = createService();
+    vi.mocked(repository.findManyByRelation).mockResolvedValueOnce([feeRecord()]);
+    vi.mocked(repository.findById).mockResolvedValueOnce(feeRecord());
+
+    await expect(
+      service.listFeeVoucherMetadata(context, ids.feeRecord, { take: 10 }),
+    ).resolves.toHaveLength(1);
+    await expect(
+      service.getFeeVoucherAttachmentMetadata(context, ids.feeRecord, ids.attachment),
+    ).resolves.toEqual(expect.objectContaining({
+      relationType: AttachmentRelationTypeCode.feeRecord,
+      relationId: ids.feeRecord,
+    }));
+
+    expect(rbacPolicy.hasAnyPermission).toHaveBeenCalledWith(context, [
+      PermissionCode.feeReadDepartment,
+      PermissionCode.feeManageDepartment,
+      PermissionCode.feeReviewDepartment,
+    ]);
+    expect(repository.findManyByRelation).toHaveBeenCalledWith({
+      relationType: AttachmentRelationTypeCode.feeRecord,
+      relationId: ids.feeRecord,
+      status: AttachmentStatusCode.active,
+      take: 10,
+    });
+    expect(accessPolicy.canReadMetadata).toHaveBeenCalled();
+  });
+
+  it("rejects fee voucher metadata when the fee record is outside department scope", async () => {
+    const { service, repository } = createService();
+    vi.mocked(repository.findFeeParentByIdWhere).mockResolvedValueOnce(null);
+
+    await expect(
+      service.listFeeVoucherMetadata(context, ids.feeRecord),
+    ).rejects.toBeInstanceOf(AttachmentNotFoundError);
+  });
+
+  it("keeps fee voucher download behind the attachment download policy", async () => {
+    const { service, repository, accessPolicy, storage, auditService } = createService();
+    vi.mocked(repository.findById).mockResolvedValueOnce(feeRecord());
+    vi.mocked(accessPolicy.canDownload).mockReturnValueOnce(denyDecision("no download"));
+
+    await expect(
+      service.downloadFeeVoucherAttachment(context, ids.feeRecord, ids.attachment),
+    ).rejects.toBeInstanceOf(AttachmentAccessDeniedError);
+    expect(storage.getObject).not.toHaveBeenCalled();
+    expect(auditService.recordEvent).not.toHaveBeenCalled();
+  });
+
+  it("downloads fee voucher content and audits only safe metadata", async () => {
+    const { service, repository, storage, auditService } = createService();
+    vi.mocked(repository.findById).mockResolvedValueOnce(feeRecord());
+    vi.mocked(storage.getObject).mockResolvedValueOnce({
+      objectKey: "internal-fee-voucher-object",
+      body: Buffer.from("download body"),
+      checksum: "hidden",
+      sizeBytes: 13,
+    });
+
+    await expect(
+      service.downloadFeeVoucherAttachment(context, ids.feeRecord, ids.attachment),
+    ).resolves.toEqual({
+      id: ids.attachment,
+      fileName: "voucher.pdf",
+      version: 4,
+      mimeType: "application/pdf",
+      sizeBytes: 128,
+      body: Buffer.from("download body"),
+    });
+
+    const serializedAudit = JSON.stringify(
+      vi.mocked(auditService.recordEvent).mock.calls[0]![0],
+    );
+    expect(serializedAudit).toContain(ids.feeRecord);
+    expect(serializedAudit).not.toMatch(
+      /objectKey|storageKey|checksum|download body|internal-fee-voucher-object|hidden|amount|voucherNo|dueDate|paidDate|raw fee/i,
+    );
   });
 });
 

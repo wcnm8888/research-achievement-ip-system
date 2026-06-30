@@ -171,6 +171,103 @@ export class AttachmentController {
   }
 }
 
+@Controller("fees/:feeRecordId/voucher-attachments")
+@UseGuards(UserContextGuard, PermissionGuard)
+@UsePipes(attachmentValidationPipe)
+export class FeeVoucherAttachmentController {
+  constructor(
+    @Inject(AttachmentService)
+    private readonly attachmentService: AttachmentService,
+  ) {}
+
+  @Post()
+  @RequirePermissions(PermissionCode.feeManageDepartment)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: { fileSize: attachmentMaxBytes },
+    }),
+  )
+  async uploadFeeVoucherAttachment(
+    @CurrentUser() currentUser: UserContext,
+    @Param("feeRecordId", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Body(uploadAttachmentValidationPipe) dto: UploadAchievementAttachmentDto,
+    @UploadedFile() file?: UploadedAttachmentFile,
+  ) {
+    try {
+      return await this.attachmentService.createFeeVoucherAttachmentForUser(
+        currentUser,
+        feeRecordId,
+        toAchievementAttachmentUploadInput(dto, file),
+      );
+    } catch (error) {
+      throw mapAttachmentServiceError(error);
+    }
+  }
+
+  @Get()
+  async listFeeVoucherAttachments(
+    @CurrentUser() currentUser: UserContext,
+    @Param("feeRecordId", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Query(attachmentListQueryValidationPipe) query: AttachmentListQueryDto,
+  ) {
+    try {
+      return await this.attachmentService.listFeeVoucherMetadata(
+        currentUser,
+        feeRecordId,
+        query ?? {},
+      );
+    } catch (error) {
+      throw mapAttachmentServiceError(error);
+    }
+  }
+
+  @Get(":attachmentId")
+  async getFeeVoucherAttachment(
+    @CurrentUser() currentUser: UserContext,
+    @Param("feeRecordId", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Param("attachmentId", new ParseUUIDPipe({ version: "4" })) attachmentId: string,
+  ) {
+    try {
+      return await this.attachmentService.getFeeVoucherAttachmentMetadata(
+        currentUser,
+        feeRecordId,
+        attachmentId,
+      );
+    } catch (error) {
+      throw mapAttachmentServiceError(error);
+    }
+  }
+
+  @Get(":attachmentId/download")
+  @RequirePermissions(PermissionCode.attachmentDownload)
+  async downloadFeeVoucherAttachment(
+    @CurrentUser() currentUser: UserContext,
+    @Param("feeRecordId", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Param("attachmentId", new ParseUUIDPipe({ version: "4" })) attachmentId: string,
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ): Promise<StreamableFile> {
+    try {
+      const download = await this.attachmentService.downloadFeeVoucherAttachment(
+        currentUser,
+        feeRecordId,
+        attachmentId,
+      );
+      const body = Buffer.from(download.body ?? []);
+
+      response.setHeader("Content-Type", download.mimeType ?? "application/octet-stream");
+      response.setHeader("Content-Length", body.byteLength);
+      response.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${toContentDispositionFileName(download.fileName)}"`,
+      );
+
+      return new StreamableFile(body);
+    } catch (error) {
+      throw mapAttachmentServiceError(error);
+    }
+  }
+}
+
 const toAchievementAttachmentUploadInput = (
   dto: UploadAchievementAttachmentDto,
   file?: UploadedAttachmentFile,
