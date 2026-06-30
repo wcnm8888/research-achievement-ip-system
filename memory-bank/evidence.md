@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-06-30 Step 57A - Fee review history persistence scope and backend plan evidence
+
+- Purpose:
+  - Determine the minimum persisted reason/history scope, data model, backend contract, permission, audit, sensitive-field, migration, and acceptance boundary for fee review history.
+  - Keep API/UI implementation, Prisma schema edits, migration generation/execution, seed/backfill, account/password work, business-data writes, production/VPS access, push/deploy, cleanup, deletion, reset, drop, prune, and existing untracked artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `152bd9212a8525f4df87bb0b5e10cdfdc082c8b8`.
+  - Latest commit subject: `docs: add testing strategy guide`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 57A memory-bank edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal encoding displayed garbled Chinese text, but the visible command snippets and AGENTS rules confirmed project gate preferences and no `.env` content reads.
+  - Read targeted Step 55A-55I fee review archive snippets in `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, `memory-bank/decisions.md`, and `memory-bank/evidence.md`.
+  - Reviewed fee review approve/reject service/controller/repository/DTO/tests under `apps/api/src/fees`.
+  - Reviewed audit service/redactor/read-policy boundaries under `apps/api/src/audit` and `apps/api/src/authorization/policy`.
+  - Reviewed scoped fee authorization query behavior and `PermissionGuard` all-permissions semantics under `apps/api/src/authorization`.
+  - Reviewed Fees Web client/UI/types/tests under `apps/web/src`.
+  - Reviewed `prisma/schema.prisma` models for `FeeRecord`, `AuditLog`, `User`, `Department`, `Role`, `Permission`, and `UserRole`.
+- Current-state findings:
+  - `prisma/schema.prisma` has `FeeRecord.reviewStatus`, `FeeRecord.reviewedById`, and `FeeRecord.reviewedAt`, but no review reason column and no review history relation.
+  - `FeeRecord.reviewedBy` relates to `User`, but `FeeRecord` is still latest-state only.
+  - `fee.service.ts` transitions approve/reject through `transitionFeeReviewStatus`, requiring `fee:review_department`, scoped department visibility, current `PENDING` review status, and a shared transaction.
+  - `fee.repository.ts` `transitionReviewStatusInTransaction` updates only `reviewStatus`, `reviewedById`, and `reviewedAt`.
+  - `fee.service.ts` writes approve/reject audit events with `toFeeReviewAuditEvent`; `newValue` includes review status transition facts and `reason` when provided.
+  - `review-fee.dto.ts` trims reason; approval reason is optional and capped at 500 chars, rejection reason is required and capped at 500 chars.
+  - `fee.service.spec.ts` covers approve/reject audit writes in the shared transaction, no repeated/out-of-scope writes, pay status unchanged, and no sensitive fee fields in review audit payloads.
+  - No `FeeReviewHistory`, `FeeReviewEvent`, `review-history`, or `reviewHistory` implementation exists under `apps` or `prisma`.
+  - Web Fees code sends approve/reject reason payloads and displays latest `reviewStatus`, `reviewedById`, and `reviewedAt`; it has no review-history client or UI.
+- Planned contract evidence:
+  - Minimum persisted history should be an independent append-only `FeeReviewHistory` table.
+  - Minimum history fields are `feeRecordId`, `action`, `fromStatus`, `toStatus`, nullable trimmed 500-char `reason`, `reviewerId`, `departmentId`, and `createdAt`.
+  - `GET /api/fees/:feeRecordId/review-history` should return one fee record's chronological business timeline.
+  - Approve/reject should append history internally in the same transaction and should not expose a separate create/update/delete history endpoint.
+  - Read permission should allow scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`; append remains internal to the existing scoped `fee:review_department` review transition.
+  - Audit remains action evidence; history becomes business-readable timeline.
+  - Step 57B should be backend-only schema/API implementation. Step 57C should add Web client/UI display after the backend contract exists.
+  - A migration is required for durable history; it should be additive and should not backfill legacy reviewed records without separate authorization.
+- Sensitive-field boundary evidence:
+  - History must not include amount, due/paid date, `voucherNo`, attachment storage key/object key, checksum, file content, raw DTO/body payload, raw fee payload, credentials, session values, cookies, tokens, secrets, connection strings, AccessKey-like values, private-key material, IP, or user agent.
+  - Original reason text is allowed only as the submitted reason field after trim and max-length validation; backend must not derive or enrich it from fee/attachment fields.
+- Verification:
+  - `git diff --check`: PASS; only existing Windows line-ending warnings were printed.
+  - Added-lines sensitive scan: PASS; no secret-like added lines were detected.
+
 ## 2026-06-30 Step 56D - Voucher attachment local Docker production-like acceptance evidence
 
 - Purpose:

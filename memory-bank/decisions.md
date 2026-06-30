@@ -1,5 +1,45 @@
 # Decisions
 
+## D206 - Fee review history needs an append-only business timeline
+
+- Date: 2026-06-30.
+- Context: Step 57A reviews the current fee review reason/history capability after Step 55 delivered fee review state, approve/reject backend API, Web actions, scoped reviewer policy, and local acceptance. The user explicitly limited Step 57A to planning and prohibited API/UI implementation, Prisma schema edits, migrations, seeds/backfill, production/VPS access, and business-data writes.
+- Decision:
+  - Add persisted fee review history as a separate append-only `FeeReviewHistory` table in the next backend Step.
+  - Do not add review reason columns to `FeeRecord`; keep `FeeRecord` as latest-state storage only.
+  - Keep history separate from `AuditLog`: audit remains the evidence trail, history provides a business-readable review timeline.
+  - Store one history row for each approve/reject transition, written internally by the approve/reject service in the same transaction.
+  - Do not expose standalone create, update, or delete history endpoints.
+- Minimum history fields:
+  - `feeRecordId`.
+  - `action`: approve or reject.
+  - `fromStatus`.
+  - `toStatus`.
+  - `reason`: nullable, trimmed, max 500 chars.
+  - `reviewerId`.
+  - `departmentId`.
+  - `createdAt`.
+- Sensitive-field boundary:
+  - Persist only the submitted `reason` field, not raw request payloads or derived fee/attachment details.
+  - Do not store amount, due date, paid date, `voucherNo`, attachment storage key/object key, checksum, file content, raw fee payload, raw DTO/body payload, IP, user agent, credential/session values, cookies, tokens, secrets, connection strings, AccessKey-like values, or private-key material in history.
+  - Allow original submitted reason text only within the trimmed 500-char boundary. A human can still type business details into free text, so Step 57C should add UI guidance and Step 57B should ensure the backend never auto-populates forbidden fields.
+- API and permission contract:
+  - Add `GET /api/fees/:feeRecordId/review-history`.
+  - Read access should allow scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Because the current permission guard enforces all statically declared permissions, the history route should use authenticated access plus service-level any-permission and department-scope checks instead of requiring only `fee:read_department`.
+  - History append remains private to approve/reject and inherits the existing scoped `fee:review_department` write gate.
+- Migration and sequencing:
+  - Step 57B should be backend-only schema/API implementation and should include the additive migration file plus focused tests.
+  - Step 57B should not include Web UI. Step 57C should add Web client/UI history display after the backend contract exists.
+  - No default backfill is planned; legacy reviewed records return empty history until a separately authorized backfill Step exists.
+  - Production migration deploy, seed/backfill, production data verification, and production/VPS acceptance remain high-risk separately authorized work.
+- Rationale:
+  - Querying audit metadata for business history would couple UI timelines to audit internals and masked audit output.
+  - Adding a latest reason column to `FeeRecord` would still lose prior transitions and would not satisfy a history/timeline requirement.
+  - An append-only table gives a narrow durable contract while keeping audit responsibilities intact.
+- Boundaries:
+  - This decision does not authorize API/UI implementation in Step 57A, Prisma schema edits, migration generation/execution, seed/backfill, production/VPS access, package changes, account/password work, secret reads/output, `.env` / `.env.production` content reads, business-data writes, push/deploy, cleanup, deletion, reset, restore, drop, prune, or existing untracked-artifact handling.
+
 ## D205 - Voucher attachment accepted locally, production rollout remains separate
 
 - Date: 2026-06-30.

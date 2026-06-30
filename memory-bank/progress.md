@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-06-30 Step 57A - Fee review history persistence scope and backend plan
+
+- Status: STEP_57A_FEE_REVIEW_HISTORY_BACKEND_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Planned the minimum persisted fee review reason/history scope.
+  - Documentation-only; no API/UI implementation, Prisma schema change, migration, seed/backfill, dependency/package change, local or production migration run, business-data write, account/password work, `.env` / `.env.production` content read, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `152bd92`.
+  - Latest commit subject: `docs: add testing strategy guide`.
+  - Tracked diff was empty before Step 57A memory-bank edits.
+  - Existing untracked local artifacts were present and left untouched.
+- Current-state findings:
+  - `FeeRecord` persists only the latest fee review state: `reviewStatus`, `reviewedById`, and `reviewedAt`.
+  - There is no persisted review reason column and no `FeeReviewHistory` / `FeeReviewEvent` table.
+  - There is no `GET /api/fees/:feeRecordId/review-history` API or Web client/UI for review history.
+  - Approve/reject reason is currently captured only in sanitized audit metadata as `newValue.reason`.
+  - Current approve/reject DTOs trim reason and enforce max 500 chars; approve reason is optional and reject reason is required.
+  - Current approve/reject service keeps `payStatus`, paid date, voucher number, and archive state unchanged.
+- Planned minimum data model:
+  - Add an append-only `FeeReviewHistory` table in Step 57B.
+  - Store `feeRecordId`, `action`, `fromStatus`, `toStatus`, nullable `reason`, `reviewerId`, `departmentId`, and `createdAt`.
+  - Store only the submitted review reason field, trimmed and capped at 500 chars.
+  - Do not store amount, due/paid date, `voucherNo`, attachment storage key, checksum, file content, raw DTO/body payloads, credentials, sessions, cookies, tokens, secrets, connection strings, IP, or user agent in history.
+- Planned backend contract:
+  - `GET /api/fees/:feeRecordId/review-history`.
+  - Approve/reject service appends history internally in the same transaction.
+  - No standalone history create/update/delete endpoint.
+  - Legacy approved/rejected fee records should return an empty history list unless a future backfill is explicitly authorized.
+- Permission/audit decision:
+  - History read should allow scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - History writes are internal to approve/reject and inherit the existing scoped `fee:review_department` transition gate.
+  - `AuditLog` remains the evidence stream; history becomes the business-readable timeline.
+- Next:
+  - Step 57B should be backend-only schema/API implementation with migration file and focused tests.
+  - Step 57C should add Web client/UI history display after the backend contract exists.
+  - Production migration deploy, seed/backfill, and production acceptance remain separately authorized work.
+- Verification completed for this docs-only Step:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive scan: PASS.
+  - Commit as `docs: plan fee review history persistence`.
+
 ## 2026-06-30 Step 56D - Voucher attachment local Docker production-like acceptance
 
 - Status: STEP_56D_VOUCHER_ATTACHMENT_LOCAL_DOCKER_ACCEPTED.
