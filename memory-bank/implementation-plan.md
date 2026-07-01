@@ -8580,3 +8580,20 @@ Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Pr
   - No production/VPS/production DB access.
   - No real email/SMS.
   - No push/deploy.
+
+## Step 58B implementation update - fee review workflow tasks
+
+- Status: DONE.
+- Backend-only contract implemented:
+  - Prisma enum and additive migration add `WorkflowTargetType.FEE_RECORD`.
+  - Fee record creation ensures a fee-review workflow instance and concrete reviewer tasks.
+  - Existing fee approve/reject APIs synchronously complete the current reviewer's pending fee workflow task in the same transaction.
+  - Fee task query contract supports `targetType=FEE_RECORD` and `feeRecordId`.
+  - Audit, fee review history, and workflow task state remain separate records with separate responsibilities.
+- Permission and state boundaries:
+  - Processing requires scoped `fee:review_department`; fee read/manage permissions do not process workflow tasks.
+  - Non-pending fee review status, missing pending task, completed task, non-assignee, cross-department scope miss, and missing permission reject before business review commit.
+  - Completing one reviewer task cancels sibling pending reviewer tasks and completes the workflow instance.
+- Deferred:
+  - Step 58C: Web UI wiring for fee workflow tasks.
+  - Step 58D: production-like Docker acceptance and local migration application in non-production only.

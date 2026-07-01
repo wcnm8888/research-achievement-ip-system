@@ -1,5 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DepartmentStatus, Prisma, RoleStatus, UserStatus } from "@prisma/client";
+import {
+  DepartmentStatus,
+  PermissionStatus,
+  Prisma,
+  RoleStatus,
+  UserStatus,
+} from "@prisma/client";
+import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
 import { PrismaService } from "../database/prisma.service";
@@ -15,6 +22,8 @@ import {
 } from "./domain/workflow-errors";
 import {
   toAchievementWorkflowInstanceCreateData,
+  toFeeWorkflowInstanceCreateData,
+  toFeeWorkflowSubmitActionCreateData,
   toWorkflowActionCreateData,
   toWorkflowInstanceTransitionData,
   toWorkflowSubmitActionCreateData,
@@ -24,6 +33,7 @@ import {
 } from "./domain/workflow-prisma.mapper";
 import {
   CreateAchievementReviewWorkflowInput,
+  CreateFeeReviewWorkflowInput,
   CreateWorkflowActionInput,
   FindWorkflowTasksForAssigneeInput,
   WorkflowInstanceAggregate,
@@ -96,6 +106,41 @@ export class WorkflowRepository {
     return aggregate;
   }
 
+  async createFeeReviewWorkflowInTransaction(
+    client: WorkflowTransactionClient,
+    input: CreateFeeReviewWorkflowInput,
+  ): Promise<WorkflowInstanceAggregate> {
+    const instance = await client.workflowInstance.create({
+      data: toFeeWorkflowInstanceCreateData(input),
+      select: { id: true },
+    });
+
+    for (const reviewerId of input.reviewerIds) {
+      await client.workflowTask.create({
+        data: toWorkflowTaskCreateData({
+          instanceId: instance.id,
+          assigneeId: reviewerId,
+          stepCode: WorkflowStepCode.feeReview,
+        }),
+      });
+    }
+
+    await client.workflowAction.create({
+      data: toFeeWorkflowSubmitActionCreateData(instance.id, input),
+    });
+
+    const aggregate = await client.workflowInstance.findUnique({
+      where: { id: instance.id },
+      include: workflowInstanceInclude,
+    });
+
+    if (!aggregate) {
+      throw new Error(`Created workflow instance was not found: ${instance.id}.`);
+    }
+
+    return aggregate;
+  }
+
   findActiveInstanceForAchievement(
     achievementId: string,
   ): Promise<WorkflowInstanceAggregate | null> {
@@ -110,6 +155,20 @@ export class WorkflowRepository {
       where: {
         targetType: WorkflowTargetTypeCode.achievement,
         targetId: achievementId,
+        status: WorkflowInstanceStatusCode.active,
+      },
+      include: workflowInstanceInclude,
+    });
+  }
+
+  findActiveInstanceForFeeRecordInTransaction(
+    client: WorkflowTransactionClient,
+    feeRecordId: string,
+  ): Promise<WorkflowInstanceAggregate | null> {
+    return client.workflowInstance.findFirst({
+      where: {
+        targetType: WorkflowTargetTypeCode.feeRecord,
+        targetId: feeRecordId,
         status: WorkflowInstanceStatusCode.active,
       },
       include: workflowInstanceInclude,
@@ -151,6 +210,27 @@ export class WorkflowRepository {
     });
   }
 
+  findPendingFeeReviewTaskForAssigneeInTransaction(
+    client: WorkflowTransactionClient,
+    feeRecordId: string,
+    assigneeId: string,
+  ): Promise<WorkflowTaskWithInstance | null> {
+    return client.workflowTask.findFirst({
+      where: {
+        assigneeId,
+        status: WorkflowTaskStatusCode.pending,
+        stepCode: WorkflowStepCode.feeReview,
+        instance: {
+          targetType: WorkflowTargetTypeCode.feeRecord,
+          targetId: feeRecordId,
+          status: WorkflowInstanceStatusCode.active,
+          currentStep: WorkflowStepCode.feeReview,
+        },
+      },
+      include: workflowTaskWithInstanceInclude,
+    });
+  }
+
   findPendingTasksForAssignee(assigneeId: string): Promise<WorkflowTaskWithInstance[]> {
     return this.findPendingTasksForAssigneeInTransaction(this.prisma, assigneeId);
   }
@@ -175,18 +255,29 @@ export class WorkflowRepository {
     client: WorkflowTransactionClient,
     input: FindWorkflowTasksForAssigneeInput,
   ): Promise<WorkflowTaskWithInstance[]> {
+    const instanceWhere: Prisma.WorkflowInstanceWhereInput = {};
+
+    if (input.targetType) {
+      instanceWhere.targetType = input.targetType;
+    } else if (input.targetTypes?.length) {
+      instanceWhere.targetType = { in: [...input.targetTypes] };
+    }
+
+    if (input.achievementId) {
+      instanceWhere.targetType = WorkflowTargetTypeCode.achievement;
+      instanceWhere.targetId = input.achievementId;
+    }
+
+    if (input.feeRecordId) {
+      instanceWhere.targetType = WorkflowTargetTypeCode.feeRecord;
+      instanceWhere.targetId = input.feeRecordId;
+    }
+
     return client.workflowTask.findMany({
       where: {
         assigneeId: input.assigneeId,
         ...(input.status ? { status: input.status } : {}),
-        ...(input.achievementId
-          ? {
-              instance: {
-                targetType: WorkflowTargetTypeCode.achievement,
-                targetId: input.achievementId,
-              },
-            }
-          : {}),
+        ...(Object.keys(instanceWhere).length ? { instance: instanceWhere } : {}),
       },
       include: workflowTaskWithInstanceInclude,
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -231,6 +322,44 @@ export class WorkflowRepository {
             role: {
               code: RoleCode.researchSecretary,
               status: RoleStatus.ACTIVE,
+            },
+          },
+        },
+      },
+      select: { id: true },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    });
+
+    return users.map((user) => user.id);
+  }
+
+  async findFeeReviewerUserIdsInTransaction(
+    client: WorkflowTransactionClient,
+    departmentId: string,
+  ): Promise<string[]> {
+    const users = await client.user.findMany({
+      where: {
+        status: UserStatus.ACTIVE,
+        department: {
+          status: DepartmentStatus.ACTIVE,
+          archivedAt: null,
+        },
+        userRoles: {
+          some: {
+            revokedAt: null,
+            scopeType: ScopeType.department,
+            departmentId,
+            role: {
+              code: RoleCode.financeReviewer,
+              status: RoleStatus.ACTIVE,
+              rolePermissions: {
+                some: {
+                  permission: {
+                    code: PermissionCode.feeReviewDepartment,
+                    status: PermissionStatus.ACTIVE,
+                  },
+                },
+              },
             },
           },
         },
@@ -302,6 +431,31 @@ export class WorkflowRepository {
     await client.workflowAction.create({
       data: toWorkflowActionCreateData(input),
     });
+  }
+
+  async cancelPendingTasksForInstanceExceptInTransaction(
+    client: WorkflowTransactionClient,
+    input: {
+      instanceId: string;
+      exceptTaskId: string;
+      stepCode: WorkflowStepCode;
+      completedAt: Date;
+    },
+  ): Promise<number> {
+    const result = await client.workflowTask.updateMany({
+      where: {
+        instanceId: input.instanceId,
+        id: { not: input.exceptTaskId },
+        stepCode: input.stepCode,
+        status: WorkflowTaskStatusCode.pending,
+      },
+      data: {
+        status: WorkflowTaskStatusCode.cancelled,
+        completedAt: input.completedAt,
+      },
+    });
+
+    return result.count;
   }
 
   async transitionInstance(

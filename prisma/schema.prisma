@@ -155,6 +155,7 @@ enum SoftwareType {
 
 enum WorkflowTargetType {
   ACHIEVEMENT
+  FEE_RECORD
 }
 
 enum WorkflowInstanceStatus {

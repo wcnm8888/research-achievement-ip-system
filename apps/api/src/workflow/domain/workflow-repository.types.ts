@@ -56,6 +56,14 @@ export type CreateAchievementReviewWorkflowInput = {
   submitComment?: string | null;
 };
 
+export type CreateFeeReviewWorkflowInput = {
+  feeRecordId: string;
+  requestedById: string;
+  reviewerIds: readonly string[];
+  requestedAt?: Date;
+  submitComment?: string | null;
+};
+
 export type WorkflowTaskTransitionInput = {
   taskId: string;
   instanceId: string;
@@ -98,5 +106,8 @@ export type WorkflowTargetRef = {
 export type FindWorkflowTasksForAssigneeInput = {
   assigneeId: string;
   status?: WorkflowTaskStatusCode;
+  targetType?: WorkflowTargetTypeCode;
+  targetTypes?: readonly WorkflowTargetTypeCode[];
   achievementId?: string;
+  feeRecordId?: string;
 };

@@ -1,6 +1,7 @@
 import { SELF_DECLARED_DEPS_METADATA } from "@nestjs/common/constants";
-import { DepartmentStatus, RoleStatus, UserStatus } from "@prisma/client";
+import { DepartmentStatus, PermissionStatus, RoleStatus, UserStatus } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
+import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
 import { PrismaService } from "../database/prisma.service";
@@ -31,6 +32,7 @@ const getExplicitDependencyTokens = (target: object): unknown[] =>
 
 const ids = {
   achievement: "30000000-0000-4000-8000-000000000001",
+  feeRecord: "80000000-0000-4000-8000-000000000001",
   instance: "50000000-0000-4000-8000-000000000001",
   task: "60000000-0000-4000-8000-000000000001",
   department: "10000000-0000-4000-8000-000000000001",
@@ -207,6 +209,52 @@ describe("WorkflowRepository.createAchievementReviewWorkflow", () => {
       }),
     });
   });
+
+  it("creates a fee review workflow with one task per finance reviewer", async () => {
+    const { repository, prisma, tx } = createRepository();
+    const transactionClient = tx as unknown as WorkflowTransactionClient;
+    const requestedAt = new Date("2026-07-01T09:00:00.000Z");
+
+    await repository.createFeeReviewWorkflowInTransaction(transactionClient, {
+      feeRecordId: ids.feeRecord,
+      requestedById: ids.submitter,
+      reviewerIds: [ids.reviewer, ids.submitter],
+      requestedAt,
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.workflowInstance.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        targetType: WorkflowTargetTypeCode.feeRecord,
+        targetId: ids.feeRecord,
+        status: WorkflowInstanceStatusCode.active,
+        currentStep: WorkflowStepCode.feeReview,
+      }),
+      select: { id: true },
+    });
+    expect(tx.workflowTask.create).toHaveBeenNthCalledWith(1, {
+      data: expect.objectContaining({
+        instanceId: ids.instance,
+        assigneeId: ids.reviewer,
+        stepCode: WorkflowStepCode.feeReview,
+      }),
+    });
+    expect(tx.workflowTask.create).toHaveBeenNthCalledWith(2, {
+      data: expect.objectContaining({
+        instanceId: ids.instance,
+        assigneeId: ids.submitter,
+        stepCode: WorkflowStepCode.feeReview,
+      }),
+    });
+    expect(tx.workflowAction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        instanceId: ids.instance,
+        actorId: ids.submitter,
+        action: WorkflowActionTypeCode.submit,
+        createdAt: requestedAt,
+      }),
+    });
+  });
 });
 
 describe("WorkflowRepository read helpers", () => {
@@ -220,6 +268,44 @@ describe("WorkflowRepository read helpers", () => {
         targetType: "ACHIEVEMENT",
         targetId: ids.achievement,
         status: "ACTIVE",
+      },
+      include: expect.any(Object),
+    });
+  });
+
+  it("finds active fee workflow instances and pending fee review tasks", async () => {
+    const { repository, tx } = createRepository();
+    const transactionClient = tx as unknown as WorkflowTransactionClient;
+
+    await repository.findActiveInstanceForFeeRecordInTransaction(
+      transactionClient,
+      ids.feeRecord,
+    );
+    await repository.findPendingFeeReviewTaskForAssigneeInTransaction(
+      transactionClient,
+      ids.feeRecord,
+      ids.reviewer,
+    );
+
+    expect(tx.workflowInstance.findFirst).toHaveBeenCalledWith({
+      where: {
+        targetType: WorkflowTargetTypeCode.feeRecord,
+        targetId: ids.feeRecord,
+        status: WorkflowInstanceStatusCode.active,
+      },
+      include: expect.any(Object),
+    });
+    expect(tx.workflowTask.findFirst).toHaveBeenCalledWith({
+      where: {
+        assigneeId: ids.reviewer,
+        status: WorkflowTaskStatusCode.pending,
+        stepCode: WorkflowStepCode.feeReview,
+        instance: {
+          targetType: WorkflowTargetTypeCode.feeRecord,
+          targetId: ids.feeRecord,
+          status: WorkflowInstanceStatusCode.active,
+          currentStep: WorkflowStepCode.feeReview,
+        },
       },
       include: expect.any(Object),
     });
@@ -276,6 +362,30 @@ describe("WorkflowRepository read helpers", () => {
     });
   });
 
+  it("finds assignee tasks with fee target filters", async () => {
+    const { repository, prisma } = createRepository();
+
+    await repository.findTasksForAssignee({
+      assigneeId: ids.reviewer,
+      status: WorkflowTaskStatusCode.pending,
+      targetType: WorkflowTargetTypeCode.feeRecord,
+      feeRecordId: ids.feeRecord,
+    });
+
+    expect(prisma.workflowTask.findMany).toHaveBeenCalledWith({
+      where: {
+        assigneeId: ids.reviewer,
+        status: WorkflowTaskStatusCode.pending,
+        instance: {
+          targetType: WorkflowTargetTypeCode.feeRecord,
+          targetId: ids.feeRecord,
+        },
+      },
+      include: expect.any(Object),
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    });
+  });
+
   it("finds active department research secretary users for concrete task assignment", async () => {
     const { repository, prisma } = createRepository();
     prisma.user.findMany.mockResolvedValue([{ id: ids.reviewer }]);
@@ -299,6 +409,49 @@ describe("WorkflowRepository read helpers", () => {
             role: {
               code: RoleCode.researchSecretary,
               status: RoleStatus.ACTIVE,
+            },
+          },
+        },
+      },
+      select: { id: true },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    });
+  });
+
+  it("finds active department-scoped finance reviewers with fee review permission", async () => {
+    const { repository, prisma } = createRepository();
+    prisma.user.findMany.mockResolvedValue([{ id: ids.reviewer }]);
+
+    await expect(
+      repository.findFeeReviewerUserIdsInTransaction(
+        prisma as unknown as WorkflowTransactionClient,
+        ids.department,
+      ),
+    ).resolves.toEqual([ids.reviewer]);
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        status: UserStatus.ACTIVE,
+        department: {
+          status: DepartmentStatus.ACTIVE,
+          archivedAt: null,
+        },
+        userRoles: {
+          some: {
+            revokedAt: null,
+            scopeType: ScopeType.department,
+            departmentId: ids.department,
+            role: {
+              code: RoleCode.financeReviewer,
+              status: RoleStatus.ACTIVE,
+              rolePermissions: {
+                some: {
+                  permission: {
+                    code: PermissionCode.feeReviewDepartment,
+                    status: PermissionStatus.ACTIVE,
+                  },
+                },
+              },
             },
           },
         },
@@ -523,6 +676,38 @@ describe("WorkflowRepository.createAction", () => {
         action: WorkflowActionTypeCode.archive,
         comment: null,
       }),
+    });
+  });
+});
+
+describe("WorkflowRepository.cancelPendingTasksForInstanceExceptInTransaction", () => {
+  it("cancels sibling pending tasks for the same workflow step", async () => {
+    const { repository, tx } = createRepository();
+    const completedAt = new Date("2026-07-01T09:30:00.000Z");
+
+    await expect(
+      repository.cancelPendingTasksForInstanceExceptInTransaction(
+        tx as unknown as WorkflowTransactionClient,
+        {
+          instanceId: ids.instance,
+          exceptTaskId: ids.task,
+          stepCode: WorkflowStepCode.feeReview,
+          completedAt,
+        },
+      ),
+    ).resolves.toBe(1);
+
+    expect(tx.workflowTask.updateMany).toHaveBeenCalledWith({
+      where: {
+        instanceId: ids.instance,
+        id: { not: ids.task },
+        stepCode: WorkflowStepCode.feeReview,
+        status: WorkflowTaskStatusCode.pending,
+      },
+      data: {
+        status: WorkflowTaskStatusCode.cancelled,
+        completedAt,
+      },
     });
   });
 });

@@ -33,6 +33,7 @@ import {
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
   DepartmentReviewerNotFoundError,
+  FeeReviewerNotFoundError,
   WorkflowDepartmentUnavailableError,
   WorkflowAccessDeniedError,
   WorkflowInvalidPayloadError,
@@ -59,6 +60,26 @@ export type CreateAchievementReviewWorkflowOnSubmitInput = {
   submittedById: string;
   departmentReviewerId: string;
   submittedAt: Date;
+};
+
+export type EnsureFeeReviewWorkflowInput = {
+  feeRecordId: string;
+  departmentId: string;
+  requestedById: string;
+  requestedAt?: Date;
+};
+
+export type CompleteFeeReviewWorkflowTaskInput = {
+  context: UserContext;
+  feeRecordId: string;
+  action:
+    | typeof WorkflowActionTypeCode.approve
+    | typeof WorkflowActionTypeCode.reject;
+  nextTaskStatus:
+    | typeof WorkflowTaskStatusCode.approved
+    | typeof WorkflowTaskStatusCode.rejected;
+  reviewedAt: Date;
+  comment?: string | null;
 };
 
 export type PrepareAchievementArchiveWorkflowInput = {
@@ -138,6 +159,46 @@ export class WorkflowService {
     }
 
     return { departmentReviewerId };
+  }
+
+  async ensureFeeReviewWorkflowInTransaction(
+    client: WorkflowTransactionClient,
+    input: EnsureFeeReviewWorkflowInput,
+  ): Promise<WorkflowInstanceAggregate> {
+    const activeInstance = await this.repository.findActiveInstanceForFeeRecordInTransaction(
+      client,
+      input.feeRecordId,
+    );
+
+    if (activeInstance) {
+      return activeInstance;
+    }
+
+    const activeDepartment =
+      await this.repository.findActiveDepartmentByIdInTransaction(
+        client,
+        input.departmentId,
+      );
+
+    if (!activeDepartment) {
+      throw new WorkflowDepartmentUnavailableError(input.departmentId);
+    }
+
+    const reviewerIds = await this.repository.findFeeReviewerUserIdsInTransaction(
+      client,
+      input.departmentId,
+    );
+
+    if (reviewerIds.length === 0) {
+      throw new FeeReviewerNotFoundError(input.departmentId);
+    }
+
+    return this.repository.createFeeReviewWorkflowInTransaction(client, {
+      feeRecordId: input.feeRecordId,
+      requestedById: input.requestedById,
+      reviewerIds,
+      requestedAt: input.requestedAt,
+    });
   }
 
   createAchievementReviewOnSubmitInTransaction(
@@ -252,12 +313,15 @@ export class WorkflowService {
     context: UserContext,
     query: WorkflowTaskQueryDto = {},
   ): Promise<WorkflowTaskListResult> {
-    this.assertReviewContext(context);
+    const targetTypes = this.getAllowedTaskTargetTypes(context, query.targetType);
+    this.assertWorkflowTaskQuery(query);
 
     const items = await this.repository.findTasksForAssignee({
       assigneeId: context.userId,
       status: query.status ?? WorkflowTaskStatusCode.pending,
+      ...(query.targetType ? { targetType: query.targetType } : { targetTypes }),
       achievementId: query.achievementId,
+      feeRecordId: query.feeRecordId,
     });
 
     return { items };
@@ -267,7 +331,7 @@ export class WorkflowService {
     context: UserContext,
     taskId: string,
   ): Promise<WorkflowTaskWithInstance> {
-    this.assertReviewContext(context);
+    this.assertUserContext(context);
 
     const task = await this.repository.findTaskByIdForAssignee(
       taskId,
@@ -278,7 +342,66 @@ export class WorkflowService {
       throw new WorkflowAccessDeniedError("Workflow task access is denied.");
     }
 
+    this.assertWorkflowTaskTargetAccess(context, task.instance.targetType);
+
     return task;
+  }
+
+  async completeFeeReviewTaskInTransaction(
+    client: WorkflowTransactionClient,
+    input: CompleteFeeReviewWorkflowTaskInput,
+  ): Promise<WorkflowTaskRecord> {
+    this.assertFeeReviewContext(input.context);
+
+    const task = await this.repository.findPendingFeeReviewTaskForAssigneeInTransaction(
+      client,
+      input.feeRecordId,
+      input.context.userId,
+    );
+
+    if (!task) {
+      throw new WorkflowInvalidStateError(
+        "Active pending fee review workflow task is required.",
+      );
+    }
+
+    this.assertFeeReviewTaskReady(task, input.feeRecordId);
+    assertWorkflowTaskTransition(task.status, input.nextTaskStatus);
+    assertWorkflowInstanceTransition(
+      task.instance.status,
+      WorkflowInstanceStatusCode.completed,
+    );
+
+    const updatedTask = await this.repository.transitionTaskWithActionInTransaction(
+      client,
+      {
+        taskId: task.id,
+        instanceId: task.instanceId,
+        actorId: input.context.userId,
+        action: input.action,
+        expectedTaskStatus: WorkflowTaskStatusCode.pending,
+        nextTaskStatus: input.nextTaskStatus,
+        comment: input.comment ?? null,
+        completedAt: input.reviewedAt,
+      },
+    );
+
+    await this.repository.cancelPendingTasksForInstanceExceptInTransaction(client, {
+      instanceId: task.instanceId,
+      exceptTaskId: task.id,
+      stepCode: WorkflowStepCode.feeReview,
+      completedAt: input.reviewedAt,
+    });
+
+    await this.repository.transitionInstanceInTransaction(client, {
+      instanceId: task.instanceId,
+      expectedStatus: WorkflowInstanceStatusCode.active,
+      nextStatus: WorkflowInstanceStatusCode.completed,
+      currentStep: null,
+      completedAt: input.reviewedAt,
+    });
+
+    return updatedTask;
   }
 
   private async reviewDepartmentTask(
@@ -375,9 +498,7 @@ export class WorkflowService {
   private assertReviewContext(
     context: UserContext | null | undefined,
   ): asserts context is UserContext {
-    if (!context?.userId || !context.departmentId) {
-      throw new WorkflowAccessDeniedError("User context with department is required.");
-    }
+    this.assertUserContext(context);
 
     const decision = this.rbacPolicy.hasPermission(
       context,
@@ -386,6 +507,117 @@ export class WorkflowService {
 
     if (decision.effect === "DENY") {
       throw new WorkflowAccessDeniedError("Department review permission is required.");
+    }
+  }
+
+  private assertFeeReviewContext(
+    context: UserContext | null | undefined,
+  ): asserts context is UserContext {
+    this.assertUserContext(context);
+
+    const decision = this.rbacPolicy.hasPermission(
+      context,
+      PermissionCode.feeReviewDepartment,
+    );
+
+    if (decision.effect === "DENY") {
+      throw new WorkflowAccessDeniedError("Fee review permission is required.");
+    }
+  }
+
+  private assertUserContext(
+    context: UserContext | null | undefined,
+  ): asserts context is UserContext {
+    if (!context?.userId || !context.departmentId) {
+      throw new WorkflowAccessDeniedError("User context with department is required.");
+    }
+  }
+
+  private getAllowedTaskTargetTypes(
+    context: UserContext | null | undefined,
+    requestedTargetType?: WorkflowTargetTypeCode,
+  ): readonly WorkflowTargetTypeCode[] {
+    this.assertUserContext(context);
+
+    if (requestedTargetType) {
+      this.assertWorkflowTaskTargetAccess(context, requestedTargetType);
+      return [requestedTargetType];
+    }
+
+    const allowedTargetTypes: WorkflowTargetTypeCode[] = [];
+
+    if (
+      this.rbacPolicy.hasPermission(
+        context,
+        PermissionCode.achievementReviewDepartment,
+      ).effect === "ALLOW"
+    ) {
+      allowedTargetTypes.push(WorkflowTargetTypeCode.achievement);
+    }
+
+    if (
+      this.rbacPolicy.hasPermission(
+        context,
+        PermissionCode.feeReviewDepartment,
+      ).effect === "ALLOW"
+    ) {
+      allowedTargetTypes.push(WorkflowTargetTypeCode.feeRecord);
+    }
+
+    if (allowedTargetTypes.length === 0) {
+      throw new WorkflowAccessDeniedError("Workflow task access is denied.");
+    }
+
+    return allowedTargetTypes;
+  }
+
+  private assertWorkflowTaskTargetAccess(
+    context: UserContext,
+    targetType: string,
+  ): void {
+    const permission =
+      targetType === WorkflowTargetTypeCode.achievement
+        ? PermissionCode.achievementReviewDepartment
+        : targetType === WorkflowTargetTypeCode.feeRecord
+          ? PermissionCode.feeReviewDepartment
+          : null;
+
+    if (!permission) {
+      throw new WorkflowAccessDeniedError("Workflow task target access is denied.");
+    }
+
+    const decision = this.rbacPolicy.hasPermission(context, permission);
+
+    if (decision.effect === "DENY") {
+      throw new WorkflowAccessDeniedError("Workflow task target access is denied.");
+    }
+  }
+
+  private assertWorkflowTaskQuery(query: WorkflowTaskQueryDto): void {
+    if (query.achievementId && query.feeRecordId) {
+      throw new WorkflowInvalidPayloadError(
+        "Only one workflow target id filter can be provided.",
+      );
+    }
+
+    if (
+      query.achievementId &&
+      query.targetType &&
+      query.targetType !== WorkflowTargetTypeCode.achievement
+    ) {
+      throw new WorkflowInvalidPayloadError(
+        "achievementId requires targetType ACHIEVEMENT.",
+      );
+    }
+
+    if (
+      query.feeRecordId &&
+      query.targetType &&
+      query.targetType !== WorkflowTargetTypeCode.feeRecord
+    ) {
+      throw new WorkflowInvalidPayloadError(
+        "feeRecordId requires targetType FEE_RECORD.",
+      );
     }
   }
 
@@ -416,6 +648,45 @@ export class WorkflowService {
 
     if (task.instance.targetType !== WorkflowTargetTypeCode.achievement) {
       throw new WorkflowInvalidStateError("Workflow task target must be an achievement.");
+    }
+  }
+
+  private assertFeeReviewTaskReady(
+    task: WorkflowTaskWithInstance,
+    feeRecordId: string,
+  ): void {
+    if (task.status !== WorkflowTaskStatusCode.pending) {
+      throw new WorkflowInvalidStateError(
+        `Workflow task must be ${WorkflowTaskStatusCode.pending}, but current status is ${task.status}.`,
+      );
+    }
+
+    if (task.stepCode !== WorkflowStepCode.feeReview) {
+      throw new WorkflowInvalidStateError(
+        `Workflow task step must be ${WorkflowStepCode.feeReview}, but current step is ${task.stepCode}.`,
+      );
+    }
+
+    if (task.instance.status !== WorkflowInstanceStatusCode.active) {
+      throw new WorkflowInvalidStateError(
+        `Workflow instance must be ${WorkflowInstanceStatusCode.active}, but current status is ${task.instance.status}.`,
+      );
+    }
+
+    if (task.instance.currentStep !== WorkflowStepCode.feeReview) {
+      throw new WorkflowInvalidStateError(
+        `Workflow instance step must be ${WorkflowStepCode.feeReview}, but current step is ${task.instance.currentStep}.`,
+      );
+    }
+
+    if (task.instance.targetType !== WorkflowTargetTypeCode.feeRecord) {
+      throw new WorkflowInvalidStateError("Workflow task target must be a fee record.");
+    }
+
+    if (task.instance.targetId !== feeRecordId) {
+      throw new WorkflowInvalidStateError(
+        "Workflow instance target fee record does not match the review request.",
+      );
     }
   }
 

@@ -7,6 +7,7 @@ import {
 } from "./workflow-domain.types";
 import {
   CreateAchievementReviewWorkflowInput,
+  CreateFeeReviewWorkflowInput,
   CreateWorkflowActionInput,
   CreateWorkflowTaskInput,
   WorkflowInstanceTransitionInput,
@@ -20,6 +21,15 @@ export const toAchievementWorkflowInstanceCreateData = (
   targetId: input.achievementId,
   status: WorkflowInstanceStatusCode.active,
   currentStep: WorkflowStepCode.departmentReview,
+});
+
+export const toFeeWorkflowInstanceCreateData = (
+  input: CreateFeeReviewWorkflowInput,
+): Prisma.WorkflowInstanceUncheckedCreateInput => ({
+  targetType: WorkflowTargetTypeCode.feeRecord,
+  targetId: input.feeRecordId,
+  status: WorkflowInstanceStatusCode.active,
+  currentStep: WorkflowStepCode.feeReview,
 });
 
 export const toWorkflowTaskCreateData = (
@@ -40,6 +50,18 @@ export const toWorkflowSubmitActionCreateData = (
   action: WorkflowActionTypeCode.submit,
   comment: input.submitComment ?? null,
   createdAt: input.submittedAt,
+});
+
+export const toFeeWorkflowSubmitActionCreateData = (
+  instanceId: string,
+  input: CreateFeeReviewWorkflowInput,
+): Prisma.WorkflowActionUncheckedCreateInput => ({
+  instanceId,
+  taskId: null,
+  actorId: input.requestedById,
+  action: WorkflowActionTypeCode.submit,
+  comment: input.submitComment ?? null,
+  createdAt: input.requestedAt,
 });
 
 export const toWorkflowActionCreateData = (

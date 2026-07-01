@@ -1,5 +1,6 @@
 export const WorkflowTargetTypeCode = {
   achievement: "ACHIEVEMENT",
+  feeRecord: "FEE_RECORD",
 } as const;
 
 export type WorkflowTargetTypeCode =
@@ -39,6 +40,7 @@ export type WorkflowActionTypeCode =
 
 export const WorkflowStepCode = {
   departmentReview: "DEPARTMENT_REVIEW",
+  feeReview: "FEE_REVIEW",
   archive: "ARCHIVE",
 } as const;
 

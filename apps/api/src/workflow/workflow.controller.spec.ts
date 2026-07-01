@@ -12,6 +12,7 @@ import { AchievementStatusCode } from "../achievements/domain/achievement-domain
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
   DepartmentReviewerNotFoundError,
+  FeeReviewerNotFoundError,
   InvalidWorkflowInstanceTransitionError,
   InvalidWorkflowTaskTransitionError,
   WorkflowAccessDeniedError,
@@ -352,11 +353,17 @@ describe("WorkflowController HTTP", () => {
 
   it("rejects researcher access to department review workflow operations", async () => {
     await withTestApp(researcherPermissionProfile, async (app, service) => {
+      service.listMyWorkflowTasks.mockRejectedValueOnce(
+        new WorkflowAccessDeniedError("Workflow task access is denied."),
+      );
       await request(app.getHttpServer() as Server)
         .get("/workflow/tasks/my")
         .set("X-Demo-User-Id", ids.user)
         .expect(403);
 
+      service.getMyWorkflowTask.mockRejectedValueOnce(
+        new WorkflowAccessDeniedError("Workflow task access is denied."),
+      );
       await request(app.getHttpServer() as Server)
         .get(`/workflow/tasks/${ids.task}`)
         .set("X-Demo-User-Id", ids.user)
@@ -374,8 +381,8 @@ describe("WorkflowController HTTP", () => {
         .send({ comment: "Should be forbidden." })
         .expect(403);
 
-      expect(service.listMyWorkflowTasks).not.toHaveBeenCalled();
-      expect(service.getMyWorkflowTask).not.toHaveBeenCalled();
+      expect(service.listMyWorkflowTasks).toHaveBeenCalledOnce();
+      expect(service.getMyWorkflowTask).toHaveBeenCalledOnce();
       expect(service.approveDepartmentReviewTask).not.toHaveBeenCalled();
       expect(service.rejectDepartmentReviewTask).not.toHaveBeenCalled();
     });
@@ -447,6 +454,10 @@ describe("WorkflowController HTTP", () => {
           },
           {
             error: new DepartmentReviewerNotFoundError(ids.department),
+            expectedStatus: 422,
+          },
+          {
+            error: new FeeReviewerNotFoundError(ids.department),
             expectedStatus: 422,
           },
         ];

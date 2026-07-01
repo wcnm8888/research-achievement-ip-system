@@ -24,6 +24,7 @@ import { UserContext } from "../identity/user-context";
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
   DepartmentReviewerNotFoundError,
+  FeeReviewerNotFoundError,
   InvalidWorkflowInstanceTransitionError,
   InvalidWorkflowTaskTransitionError,
   WorkflowAccessDeniedError,
@@ -66,7 +67,6 @@ export class WorkflowController {
   ) {}
 
   @Get("tasks/my")
-  @RequirePermissions(PermissionCode.achievementReviewDepartment)
   async listMyWorkflowTasks(
     @CurrentUser() currentUser: UserContext,
     @Query(workflowTaskQueryValidationPipe) query: WorkflowTaskQueryDto,
@@ -82,7 +82,6 @@ export class WorkflowController {
   }
 
   @Get("tasks/:taskId")
-  @RequirePermissions(PermissionCode.achievementReviewDepartment)
   async getMyWorkflowTask(
     @CurrentUser() currentUser: UserContext,
     @Param("taskId", new ParseUUIDPipe({ version: "4" })) taskId: string,
@@ -151,7 +150,8 @@ const mapWorkflowServiceError = (error: unknown): Error => {
 
   if (
     error instanceof WorkflowInvalidPayloadError ||
-    error instanceof DepartmentReviewerNotFoundError
+    error instanceof DepartmentReviewerNotFoundError ||
+    error instanceof FeeReviewerNotFoundError
   ) {
     return new UnprocessableEntityException(error.message);
   }

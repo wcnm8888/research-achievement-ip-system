@@ -4217,3 +4217,19 @@
 - Consequence:
   - The local commit remains focused on account lifecycle implementation and review records.
   - Untracked local artifacts remain visible after the commit for manual inspection or later cleanup under a separately authorized Step.
+
+## D126 - Step 58B fee review workflow task backend contract
+
+- Date: 2026-07-01
+- Context: Fee review already has canonical approve/reject business APIs, audit evidence, and `FeeReviewHistory`, but it needs workflow-task backed todo state without introducing a new workflow subsystem.
+- Decision:
+  - Extend `WorkflowTargetType` with additive enum value `FEE_RECORD`; do not add new workflow tables.
+  - Use one active `WorkflowInstance` per pending fee record and one pending `WorkflowTask` per eligible finance reviewer candidate.
+  - Eligible fee reviewers are active users with a department-scoped active `FINANCE_REVIEWER` role for the fee department and an active `fee:review_department` role permission.
+  - Keep `/fees/:id/review/approve` and `/fees/:id/review/reject` as the canonical external APIs; they now synchronously complete the actor's pending fee review task inside the same transaction.
+  - Do not expose a standalone "create fee workflow task" API in Step 58B.
+  - Preserve boundaries: `AuditLog` is action evidence, `FeeReviewHistory` is business-readable review history, and `WorkflowTask` is todo/processing state.
+- Consequence:
+  - A reviewer without scoped `fee:review_department`, a non-assignee, a cross-department actor, a completed task, or a non-pending fee review state is rejected before business approval/rejection commits.
+  - Completing one fee review task cancels sibling pending candidate tasks and completes the workflow instance.
+  - `fee:manage_department` and `fee:read_department` do not grant workflow task processing rights.

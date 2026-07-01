@@ -1,5 +1,8 @@
 import { IsEnum, IsOptional, IsUUID } from "class-validator";
-import { WorkflowTaskStatusCode } from "../domain/workflow-domain.types";
+import {
+  WorkflowTargetTypeCode,
+  WorkflowTaskStatusCode,
+} from "../domain/workflow-domain.types";
 
 export class WorkflowTaskQueryDto {
   @IsOptional()
@@ -7,6 +10,14 @@ export class WorkflowTaskQueryDto {
   status?: WorkflowTaskStatusCode;
 
   @IsOptional()
+  @IsEnum(WorkflowTargetTypeCode)
+  targetType?: WorkflowTargetTypeCode;
+
+  @IsOptional()
   @IsUUID("4")
   achievementId?: string;
+
+  @IsOptional()
+  @IsUUID("4")
+  feeRecordId?: string;
 }

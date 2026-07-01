@@ -10,6 +10,15 @@ import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory
 import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
+import {
+  WorkflowActionTypeCode,
+  WorkflowTaskStatusCode,
+} from "../workflow/domain/workflow-domain.types";
+import {
+  FeeReviewerNotFoundError,
+  WorkflowInvalidStateError,
+} from "../workflow/domain/workflow-errors";
+import { WorkflowService } from "../workflow/workflow.service";
 import { FeeRepository } from "./fee.repository";
 import { FeeService } from "./fee.service";
 import {
@@ -32,6 +41,7 @@ import {
   FeeInvalidTransitionError,
   FeeNotFoundError,
   FeePermissionDeniedError,
+  FeeWorkflowUnavailableError,
 } from "./domain/fee-service.errors";
 
 const ids = {
@@ -198,6 +208,10 @@ const createService = () => {
   const auditService = {
     recordEventInTransaction: vi.fn().mockResolvedValue({ id: "audit-log" }),
   };
+  const workflowService = {
+    ensureFeeReviewWorkflowInTransaction: vi.fn().mockResolvedValue({ id: "workflow-instance" }),
+    completeFeeReviewTaskInTransaction: vi.fn().mockResolvedValue({ id: "workflow-task" }),
+  };
 
   const service = new FeeService(
     repository as unknown as FeeRepository,
@@ -205,6 +219,7 @@ const createService = () => {
     policyQueryFactory as unknown as PolicyQueryFactory,
     prisma as unknown as PrismaService,
     auditService as unknown as AuditService,
+    workflowService as unknown as WorkflowService,
   );
 
   return {
@@ -214,6 +229,7 @@ const createService = () => {
     repository,
     rbacPolicy,
     service,
+    workflowService,
   };
 };
 
@@ -382,7 +398,7 @@ describe("FeeService.getFeeWarnings", () => {
 
 describe("FeeService.createFee", () => {
   it("denies create when the user only has fee read permission", async () => {
-    const { auditService, repository, service } = createService();
+    const { auditService, repository, service, workflowService } = createService();
 
     await expect(
       service.createFee(makeContext([PermissionCode.feeReadDepartment]), {
@@ -398,7 +414,14 @@ describe("FeeService.createFee", () => {
   });
 
   it("uses achievement parent facts, parent department, and shared audit transaction", async () => {
-    const { auditService, policyQueryFactory, prisma, repository, service } = createService();
+    const {
+      auditService,
+      policyQueryFactory,
+      prisma,
+      repository,
+      service,
+      workflowService,
+    } = createService();
     const context = makeContext([PermissionCode.feeManageDepartment]);
 
     await service.createFee(context, {
@@ -441,9 +464,35 @@ describe("FeeService.createFee", () => {
         }),
       }),
     );
+    expect(workflowService.ensureFeeReviewWorkflowInTransaction).toHaveBeenCalledWith(
+      tx,
+      {
+        feeRecordId: ids.feeRecord,
+        departmentId: ids.department,
+        requestedById: ids.user,
+        requestedAt: makeFeeRecord().createdAt,
+      },
+    );
     expectAuditPayloadHasNoSensitiveFeeFields(
       auditService.recordEventInTransaction.mock.calls[0]![1],
     );
+  });
+
+  it("maps missing fee reviewers to a workflow unavailable error", async () => {
+    const { repository, service, workflowService } = createService();
+    workflowService.ensureFeeReviewWorkflowInTransaction.mockRejectedValueOnce(
+      new FeeReviewerNotFoundError(ids.department),
+    );
+
+    await expect(
+      service.createFee(makeContext([PermissionCode.feeManageDepartment]), {
+        achievementId: ids.achievement,
+        feeType: FeeTypeCode.patentAnnual,
+        amount: 1200.5,
+        dueDate: "2026-07-01",
+      }),
+    ).rejects.toBeInstanceOf(FeeWorkflowUnavailableError);
+    expect(repository.createInTransaction).toHaveBeenCalledOnce();
   });
 
   it("does not create fees when the related achievement is missing or out of scope", async () => {
@@ -500,7 +549,7 @@ describe("FeeService.createFee", () => {
   });
 
   it("fails the shared transaction when audit write fails", async () => {
-    const { auditService, repository, service } = createService();
+    const { auditService, repository, service, workflowService } = createService();
     auditService.recordEventInTransaction.mockRejectedValueOnce(new Error("audit failed"));
 
     await expect(
@@ -513,6 +562,7 @@ describe("FeeService.createFee", () => {
     ).rejects.toThrow("audit failed");
     expect(repository.createInTransaction).toHaveBeenCalledOnce();
     expect(auditService.recordEventInTransaction).toHaveBeenCalledOnce();
+    expect(workflowService.ensureFeeReviewWorkflowInTransaction).not.toHaveBeenCalled();
   });
 });
 
@@ -529,7 +579,13 @@ describe("FeeService.markFeePaid", () => {
   });
 
   it("marks pending fees as paid in the shared audit transaction", async () => {
-    const { auditService, policyQueryFactory, repository, service } = createService();
+    const {
+      auditService,
+      policyQueryFactory,
+      repository,
+      service,
+      workflowService,
+    } = createService();
     const context = makeContext([PermissionCode.feeManageDepartment]);
 
     await service.markFeePaid(context, ids.feeRecord, {
@@ -850,7 +906,13 @@ describe("FeeService fee review", () => {
   });
 
   it("approves pending fee review in the shared audit transaction", async () => {
-    const { auditService, policyQueryFactory, repository, service } = createService();
+    const {
+      auditService,
+      policyQueryFactory,
+      repository,
+      service,
+      workflowService,
+    } = createService();
     const context = makeContext([PermissionCode.feeReviewDepartment]);
 
     const result = await service.approveFeeReview(context, ids.feeRecord, {
@@ -865,6 +927,17 @@ describe("FeeService fee review", () => {
       tx,
       ids.feeRecord,
       feeReviewWhere,
+    );
+    expect(workflowService.completeFeeReviewTaskInTransaction).toHaveBeenCalledWith(
+      tx,
+      {
+        context,
+        feeRecordId: ids.feeRecord,
+        action: WorkflowActionTypeCode.approve,
+        nextTaskStatus: WorkflowTaskStatusCode.approved,
+        reviewedAt: expect.any(Date),
+        comment: "finance checked",
+      },
     );
     expect(repository.transitionReviewStatusInTransaction).toHaveBeenCalledWith(
       tx,
@@ -918,7 +991,7 @@ describe("FeeService fee review", () => {
   });
 
   it("rejects pending fee review with a required reason and does not change pay status", async () => {
-    const { auditService, repository, service } = createService();
+    const { auditService, repository, service, workflowService } = createService();
     repository.transitionReviewStatusInTransaction.mockResolvedValueOnce(
       makeFeeState({
         payStatus: PayStatusCode.pending,
@@ -939,6 +1012,15 @@ describe("FeeService fee review", () => {
       expect.objectContaining({
         expectedReviewStatus: FeeReviewStatusCode.pending,
         nextReviewStatus: FeeReviewStatusCode.rejected,
+      }),
+    );
+    expect(workflowService.completeFeeReviewTaskInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        feeRecordId: ids.feeRecord,
+        action: WorkflowActionTypeCode.reject,
+        nextTaskStatus: WorkflowTaskStatusCode.rejected,
+        comment: "missing payment evidence",
       }),
     );
     expect(repository.appendReviewHistoryInTransaction).toHaveBeenCalledWith(
@@ -975,7 +1057,7 @@ describe("FeeService fee review", () => {
   it.each([FeeReviewStatusCode.approved, FeeReviewStatusCode.rejected])(
     "rejects repeated review when current review status is %s",
     async (reviewStatus) => {
-      const { auditService, repository, service } = createService();
+      const { auditService, repository, service, workflowService } = createService();
       repository.findStateByIdWhereInTransaction.mockResolvedValueOnce(
         makeFeeState({ reviewStatus, reviewedById: ids.user, reviewedAt }),
       );
@@ -990,8 +1072,27 @@ describe("FeeService fee review", () => {
       expect(repository.transitionReviewStatusInTransaction).not.toHaveBeenCalled();
       expect(repository.appendReviewHistoryInTransaction).not.toHaveBeenCalled();
       expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+      expect(workflowService.completeFeeReviewTaskInTransaction).not.toHaveBeenCalled();
     },
   );
+
+  it("rejects review when the pending fee workflow task is missing or completed", async () => {
+    const { auditService, repository, service, workflowService } = createService();
+    workflowService.completeFeeReviewTaskInTransaction.mockRejectedValueOnce(
+      new WorkflowInvalidStateError("Active pending fee review workflow task is required."),
+    );
+
+    await expect(
+      service.approveFeeReview(
+        makeContext([PermissionCode.feeReviewDepartment]),
+        ids.feeRecord,
+        {},
+      ),
+    ).rejects.toBeInstanceOf(FeeConflictError);
+    expect(repository.transitionReviewStatusInTransaction).not.toHaveBeenCalled();
+    expect(repository.appendReviewHistoryInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
 
   it("returns not found for missing, out-of-scope, or archived fee records", async () => {
     const { auditService, repository, service } = createService();

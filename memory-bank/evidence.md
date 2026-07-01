@@ -12402,3 +12402,24 @@
   - Real token/password/full reset or invite link not output.
   - Sensitive configuration not read or recorded.
   - Stale workspace not accessed.
+
+## 2026-07-01 Step 58B - Fee review workflow task backend evidence
+
+- Canonical state checked before implementation:
+  - `git rev-parse --short HEAD` -> `d287e9f`.
+  - `git log -1 --pretty=format:"%s"` -> `docs: plan fee review workflow tasks`.
+  - Tracked diff was empty at start; existing untracked local artifacts were left untouched.
+- Local validation:
+  - `corepack pnpm test -- src/fees/fee.service.spec.ts src/workflow/workflow.service.spec.ts src/workflow/workflow.repository.spec.ts src/fees/fee.repository.spec.ts src/workflow/workflow.controller.spec.ts src/fees/fee.controller.spec.ts src/workflow/workflow.app-module.spec.ts src/fees/fee.app-module.spec.ts src/fees/dto/fee-dto.spec.ts src/workflow/dto/workflow-dto.spec.ts src/fees/domain/fee-state-machine.spec.ts src/workflow/domain/workflow-state-machine.spec.ts` -> passed; 12 test files, 201 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+  - Placeholder `DATABASE_URL` + `corepack pnpm prisma validate` -> passed. The placeholder value is intentionally not recorded; no `.env` file was read.
+  - `corepack pnpm prisma generate` -> passed after the enum addition so local Prisma Client types include `FEE_RECORD`.
+- Migration review:
+  - New migration path: `prisma/migrations/20260701090000_add_fee_record_workflow_target/migration.sql`.
+  - SQL is additive only: `ALTER TYPE "WorkflowTargetType" ADD VALUE 'FEE_RECORD';`.
+  - No destructive SQL, no seed/backfill, and no migration execution.
+- Boundaries observed:
+  - No Web UI changes.
+  - No package or lockfile changes.
+  - No production/VPS/production DB access.
+  - No secrets, tokens, cookies, passwords, or connection strings read or recorded.

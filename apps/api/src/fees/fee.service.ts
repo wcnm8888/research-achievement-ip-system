@@ -11,6 +11,21 @@ import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory
 import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
+import { WorkflowService } from "../workflow/workflow.service";
+import { WorkflowTransactionClient } from "../workflow/workflow.repository";
+import {
+  ActiveWorkflowInstanceAlreadyExistsError,
+  FeeReviewerNotFoundError,
+  WorkflowAccessDeniedError,
+  WorkflowDepartmentUnavailableError,
+  WorkflowInstanceTransitionConflictError,
+  WorkflowInvalidStateError,
+  WorkflowTaskTransitionConflictError,
+} from "../workflow/domain/workflow-errors";
+import {
+  WorkflowActionTypeCode,
+  WorkflowTaskStatusCode,
+} from "../workflow/domain/workflow-domain.types";
 import { FeeRepository, FeeTransactionClient } from "./fee.repository";
 import { InvalidFeeTransitionError } from "./domain/fee-errors";
 import {
@@ -31,6 +46,7 @@ import {
   FeeNotFoundError,
   FeePermissionDeniedError,
   FeeAccessDeniedError,
+  FeeWorkflowUnavailableError,
 } from "./domain/fee-service.errors";
 import { assertFeeTransition } from "./domain/fee-state-machine";
 import {
@@ -69,6 +85,8 @@ export class FeeService {
     private readonly prisma: PrismaService,
     @Inject(AuditService)
     private readonly auditService: AuditService,
+    @Inject(WorkflowService)
+    private readonly workflowService: WorkflowService,
   ) {}
 
   async listFees(
@@ -191,6 +209,7 @@ export class FeeService {
       return await this.prisma.$transaction(async (tx) => {
         const feeClient = tx as FeeTransactionClient;
         const auditClient = tx as AuditTransactionClient;
+        const workflowClient = tx as WorkflowTransactionClient;
         const record = await this.repository.createInTransaction(feeClient, {
           achievementId: dto.achievementId,
           departmentId: parent.departmentId,
@@ -206,6 +225,16 @@ export class FeeService {
         await this.auditService.recordEventInTransaction(
           auditClient,
           this.toFeeAuditEvent(context, AuditActionCode.create, null, record, parent),
+        );
+
+        await this.workflowService.ensureFeeReviewWorkflowInTransaction(
+          workflowClient,
+          {
+            feeRecordId: record.id,
+            departmentId: record.departmentId,
+            requestedById: context.userId,
+            requestedAt: record.createdAt,
+          },
         );
 
         return record;
@@ -452,6 +481,7 @@ export class FeeService {
       return await this.prisma.$transaction(async (tx) => {
         const feeClient = tx as FeeTransactionClient;
         const auditClient = tx as AuditTransactionClient;
+        const workflowClient = tx as WorkflowTransactionClient;
         const reviewWhere = this.policyQueryFactory.feeDepartmentWhere(
           context,
           PermissionCode.feeReviewDepartment,
@@ -473,6 +503,24 @@ export class FeeService {
         }
 
         const reviewedAt = new Date();
+        await this.workflowService.completeFeeReviewTaskInTransaction(
+          workflowClient,
+          {
+            context,
+            feeRecordId,
+            action:
+              action === AuditActionCode.approve
+                ? WorkflowActionTypeCode.approve
+                : WorkflowActionTypeCode.reject,
+            nextTaskStatus:
+              action === AuditActionCode.approve
+                ? WorkflowTaskStatusCode.approved
+                : WorkflowTaskStatusCode.rejected,
+            reviewedAt,
+            comment: reason ?? null,
+          },
+        );
+
         const next = await this.repository.transitionReviewStatusInTransaction(
           feeClient,
           {
@@ -534,6 +582,27 @@ export class FeeService {
   }
 
   private mapRepositoryError(error: unknown): Error {
+    if (error instanceof FeeReviewerNotFoundError) {
+      return new FeeWorkflowUnavailableError(error.message);
+    }
+
+    if (error instanceof WorkflowDepartmentUnavailableError) {
+      return new FeeDepartmentUnavailableError(error.message);
+    }
+
+    if (error instanceof WorkflowAccessDeniedError) {
+      return new FeeAccessDeniedError(error.message);
+    }
+
+    if (
+      error instanceof ActiveWorkflowInstanceAlreadyExistsError ||
+      error instanceof WorkflowInvalidStateError ||
+      error instanceof WorkflowTaskTransitionConflictError ||
+      error instanceof WorkflowInstanceTransitionConflictError
+    ) {
+      return new FeeConflictError(error.message);
+    }
+
     if (
       error instanceof FeeStatusTransitionConflictError ||
       error instanceof FeeReviewTransitionConflictError

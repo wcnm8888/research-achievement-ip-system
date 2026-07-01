@@ -16,6 +16,7 @@ import { AchievementStateRecord } from "../achievements/domain/achievement-repos
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
   DepartmentReviewerNotFoundError,
+  FeeReviewerNotFoundError,
   WorkflowDepartmentUnavailableError,
   WorkflowAccessDeniedError,
   WorkflowInvalidPayloadError,
@@ -47,6 +48,7 @@ const getExplicitDependencyTokens = (target: object): unknown[] =>
 
 const ids = {
   achievement: "30000000-0000-4000-8000-000000000001",
+  feeRecord: "80000000-0000-4000-8000-000000000001",
   department: "10000000-0000-4000-8000-000000000001",
   instance: "50000000-0000-4000-8000-000000000001",
   submitter: "40000000-0000-4000-8000-000000000001",
@@ -98,6 +100,25 @@ const makeTask = (
     },
     ...overrides,
   }) as WorkflowTaskWithInstance;
+
+const makeFeeTask = (
+  overrides: Partial<WorkflowTaskWithInstance> = {},
+): WorkflowTaskWithInstance =>
+  makeTask({
+    stepCode: WorkflowStepCode.feeReview,
+    instance: {
+      id: ids.instance,
+      targetType: WorkflowTargetTypeCode.feeRecord,
+      targetId: ids.feeRecord,
+      status: WorkflowInstanceStatusCode.active,
+      currentStep: WorkflowStepCode.feeReview,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null,
+      cancelledAt: null,
+    },
+    ...overrides,
+  });
 
 const makeTaskRecord = (
   status: WorkflowTaskStatusCode = WorkflowTaskStatusCode.approved,
@@ -154,20 +175,31 @@ const createService = () => {
   const tx = {} as WorkflowTransactionClient & AuditTransactionClient;
   const repository = {
     findActiveInstanceForAchievementInTransaction: vi.fn().mockResolvedValue(null),
+    findActiveInstanceForFeeRecordInTransaction: vi.fn().mockResolvedValue(null),
     findActiveDepartmentByIdInTransaction: vi.fn().mockResolvedValue({ id: ids.department }),
     findDepartmentReviewerUserIdsInTransaction: vi
+      .fn()
+      .mockResolvedValue([ids.reviewerA, ids.reviewerB]),
+    findFeeReviewerUserIdsInTransaction: vi
       .fn()
       .mockResolvedValue([ids.reviewerA, ids.reviewerB]),
     createAchievementReviewWorkflowInTransaction: vi.fn().mockResolvedValue({
       id: "50000000-0000-4000-8000-000000000001",
     }),
+    createFeeReviewWorkflowInTransaction: vi.fn().mockResolvedValue({
+      id: "50000000-0000-4000-8000-000000000001",
+    }),
     findTaskByIdForAssigneeInTransaction: vi.fn().mockResolvedValue(makeTask()),
+    findPendingFeeReviewTaskForAssigneeInTransaction: vi
+      .fn()
+      .mockResolvedValue(makeFeeTask()),
     findTaskByIdForAssignee: vi.fn().mockResolvedValue(makeTask()),
     findTasksForAssignee: vi.fn().mockResolvedValue([makeTask()]),
     transitionTaskWithActionInTransaction: vi
       .fn()
       .mockResolvedValue(makeTaskRecord()),
     createActionInTransaction: vi.fn(),
+    cancelPendingTasksForInstanceExceptInTransaction: vi.fn(),
     transitionInstanceInTransaction: vi.fn().mockResolvedValue(
       makeArchiveInstance({
         status: WorkflowInstanceStatusCode.completed,
@@ -325,6 +357,72 @@ describe("WorkflowService.createAchievementReviewOnSubmitInTransaction", () => {
       departmentReviewerId: ids.reviewerA,
       submittedAt,
     });
+  });
+});
+
+describe("WorkflowService.ensureFeeReviewWorkflowInTransaction", () => {
+  it("creates fee review tasks for all eligible finance reviewers", async () => {
+    const { service, repository, tx } = createService();
+
+    await service.ensureFeeReviewWorkflowInTransaction(tx, {
+      feeRecordId: ids.feeRecord,
+      departmentId: ids.department,
+      requestedById: ids.submitter,
+      requestedAt: now,
+    });
+
+    expect(repository.findActiveInstanceForFeeRecordInTransaction).toHaveBeenCalledWith(
+      tx,
+      ids.feeRecord,
+    );
+    expect(repository.findActiveDepartmentByIdInTransaction).toHaveBeenCalledWith(
+      tx,
+      ids.department,
+    );
+    expect(repository.findFeeReviewerUserIdsInTransaction).toHaveBeenCalledWith(
+      tx,
+      ids.department,
+    );
+    expect(repository.createFeeReviewWorkflowInTransaction).toHaveBeenCalledWith(tx, {
+      feeRecordId: ids.feeRecord,
+      requestedById: ids.submitter,
+      reviewerIds: [ids.reviewerA, ids.reviewerB],
+      requestedAt: now,
+    });
+  });
+
+  it("reuses an active fee workflow instance instead of creating duplicates", async () => {
+    const { service, repository, tx } = createService();
+    repository.findActiveInstanceForFeeRecordInTransaction.mockResolvedValueOnce(
+      makeArchiveInstance({
+        targetType: WorkflowTargetTypeCode.feeRecord,
+        targetId: ids.feeRecord,
+        currentStep: WorkflowStepCode.feeReview,
+      }),
+    );
+
+    await service.ensureFeeReviewWorkflowInTransaction(tx, {
+      feeRecordId: ids.feeRecord,
+      departmentId: ids.department,
+      requestedById: ids.submitter,
+    });
+
+    expect(repository.findActiveDepartmentByIdInTransaction).not.toHaveBeenCalled();
+    expect(repository.createFeeReviewWorkflowInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects fee workflow creation when no finance reviewer is eligible", async () => {
+    const { service, repository, tx } = createService();
+    repository.findFeeReviewerUserIdsInTransaction.mockResolvedValueOnce([]);
+
+    await expect(
+      service.ensureFeeReviewWorkflowInTransaction(tx, {
+        feeRecordId: ids.feeRecord,
+        departmentId: ids.department,
+        requestedById: ids.submitter,
+      }),
+    ).rejects.toBeInstanceOf(FeeReviewerNotFoundError);
+    expect(repository.createFeeReviewWorkflowInTransaction).not.toHaveBeenCalled();
   });
 });
 
@@ -643,7 +741,9 @@ describe("WorkflowService list/detail read methods", () => {
     expect(repository.findTasksForAssignee).toHaveBeenCalledWith({
       assigneeId: ids.reviewerA,
       status: WorkflowTaskStatusCode.pending,
+      targetTypes: [WorkflowTargetTypeCode.achievement],
       achievementId: undefined,
+      feeRecordId: undefined,
     });
   });
 
@@ -658,8 +758,42 @@ describe("WorkflowService list/detail read methods", () => {
     expect(repository.findTasksForAssignee).toHaveBeenCalledWith({
       assigneeId: ids.reviewerA,
       status: WorkflowTaskStatusCode.approved,
+      targetTypes: [WorkflowTargetTypeCode.achievement],
       achievementId: ids.achievement,
+      feeRecordId: undefined,
     });
+  });
+
+  it("lists fee review tasks when scoped fee review permission is present", async () => {
+    const { service, repository } = createService();
+    repository.findTasksForAssignee.mockResolvedValue([makeFeeTask()]);
+    const context = makeContext([PermissionCode.feeReviewDepartment]);
+
+    await expect(
+      service.listMyWorkflowTasks(context, {
+        targetType: WorkflowTargetTypeCode.feeRecord,
+        feeRecordId: ids.feeRecord,
+      }),
+    ).resolves.toEqual({ items: [makeFeeTask()] });
+
+    expect(repository.findTasksForAssignee).toHaveBeenCalledWith({
+      assigneeId: ids.reviewerA,
+      status: WorkflowTaskStatusCode.pending,
+      targetType: WorkflowTargetTypeCode.feeRecord,
+      achievementId: undefined,
+      feeRecordId: ids.feeRecord,
+    });
+  });
+
+  it("denies achievement task listing to fee-only reviewers", async () => {
+    const { service, repository } = createService();
+
+    await expect(
+      service.listMyWorkflowTasks(makeContext([PermissionCode.feeReviewDepartment]), {
+        targetType: WorkflowTargetTypeCode.achievement,
+      }),
+    ).rejects.toBeInstanceOf(WorkflowAccessDeniedError);
+    expect(repository.findTasksForAssignee).not.toHaveBeenCalled();
   });
 
   it("denies workflow task listing without review permission", async () => {
@@ -690,6 +824,91 @@ describe("WorkflowService list/detail read methods", () => {
     await expect(
       service.getMyWorkflowTask(makeContext(), ids.task),
     ).rejects.toBeInstanceOf(WorkflowAccessDeniedError);
+  });
+});
+
+describe("WorkflowService.completeFeeReviewTaskInTransaction", () => {
+  it("completes the actor's pending fee review task and cancels sibling candidates", async () => {
+    const { service, repository, tx } = createService();
+    const context = makeContext([PermissionCode.feeReviewDepartment]);
+    repository.transitionTaskWithActionInTransaction.mockResolvedValue(
+      makeTaskRecord(WorkflowTaskStatusCode.approved),
+    );
+
+    await expect(
+      service.completeFeeReviewTaskInTransaction(tx, {
+        context,
+        feeRecordId: ids.feeRecord,
+        action: WorkflowActionTypeCode.approve,
+        nextTaskStatus: WorkflowTaskStatusCode.approved,
+        reviewedAt: now,
+        comment: "finance checked",
+      }),
+    ).resolves.toEqual(makeTaskRecord(WorkflowTaskStatusCode.approved));
+
+    expect(repository.findPendingFeeReviewTaskForAssigneeInTransaction).toHaveBeenCalledWith(
+      tx,
+      ids.feeRecord,
+      ids.reviewerA,
+    );
+    expect(repository.transitionTaskWithActionInTransaction).toHaveBeenCalledWith(tx, {
+      taskId: ids.task,
+      instanceId: ids.instance,
+      actorId: ids.reviewerA,
+      action: WorkflowActionTypeCode.approve,
+      expectedTaskStatus: WorkflowTaskStatusCode.pending,
+      nextTaskStatus: WorkflowTaskStatusCode.approved,
+      comment: "finance checked",
+      completedAt: now,
+    });
+    expect(repository.cancelPendingTasksForInstanceExceptInTransaction).toHaveBeenCalledWith(
+      tx,
+      {
+        instanceId: ids.instance,
+        exceptTaskId: ids.task,
+        stepCode: WorkflowStepCode.feeReview,
+        completedAt: now,
+      },
+    );
+    expect(repository.transitionInstanceInTransaction).toHaveBeenCalledWith(tx, {
+      instanceId: ids.instance,
+      expectedStatus: WorkflowInstanceStatusCode.active,
+      nextStatus: WorkflowInstanceStatusCode.completed,
+      currentStep: null,
+      completedAt: now,
+    });
+  });
+
+  it("denies fee task completion without fee review permission", async () => {
+    const { service, repository, tx } = createService();
+
+    await expect(
+      service.completeFeeReviewTaskInTransaction(tx, {
+        context: makeContext([PermissionCode.feeManageDepartment]),
+        feeRecordId: ids.feeRecord,
+        action: WorkflowActionTypeCode.approve,
+        nextTaskStatus: WorkflowTaskStatusCode.approved,
+        reviewedAt: now,
+      }),
+    ).rejects.toBeInstanceOf(WorkflowAccessDeniedError);
+    expect(repository.findPendingFeeReviewTaskForAssigneeInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects completion when no pending fee task is assigned to the actor", async () => {
+    const { service, repository, tx } = createService();
+    repository.findPendingFeeReviewTaskForAssigneeInTransaction.mockResolvedValueOnce(null);
+
+    await expect(
+      service.completeFeeReviewTaskInTransaction(tx, {
+        context: makeContext([PermissionCode.feeReviewDepartment]),
+        feeRecordId: ids.feeRecord,
+        action: WorkflowActionTypeCode.reject,
+        nextTaskStatus: WorkflowTaskStatusCode.rejected,
+        reviewedAt: now,
+        comment: "missing support",
+      }),
+    ).rejects.toBeInstanceOf(WorkflowInvalidStateError);
+    expect(repository.transitionTaskWithActionInTransaction).not.toHaveBeenCalled();
   });
 });
 

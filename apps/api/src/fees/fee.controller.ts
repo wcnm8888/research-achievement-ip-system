@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  UnprocessableEntityException,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -34,6 +35,7 @@ import {
   FeeInvalidTransitionError,
   FeeNotFoundError,
   FeePermissionDeniedError,
+  FeeWorkflowUnavailableError,
 } from "./domain/fee-service.errors";
 
 const feeValidationOptions = {
@@ -253,6 +255,10 @@ const mapFeeServiceError = (error: unknown): Error => {
     error instanceof FeeInvalidTransitionError
   ) {
     return new ConflictException(error.message);
+  }
+
+  if (error instanceof FeeWorkflowUnavailableError) {
+    return new UnprocessableEntityException(error.message);
   }
 
   return error instanceof Error ? error : new Error("Unknown fee service error.");

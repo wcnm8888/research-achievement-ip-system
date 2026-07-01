@@ -2,7 +2,10 @@ import "reflect-metadata";
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import { describe, expect, it } from "vitest";
-import { WorkflowTaskStatusCode } from "../domain/workflow-domain.types";
+import {
+  WorkflowTargetTypeCode,
+  WorkflowTaskStatusCode,
+} from "../domain/workflow-domain.types";
 import { ApproveWorkflowTaskDto, RejectWorkflowTaskDto } from "./workflow-action.dto";
 import { WorkflowTaskQueryDto } from "./workflow-task-query.dto";
 
@@ -46,6 +49,15 @@ describe("WorkflowTaskQueryDto", () => {
       validateDto(WorkflowTaskQueryDto, {
         status: WorkflowTaskStatusCode.pending,
         achievementId: "30000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toHaveLength(0);
+  });
+
+  it("accepts fee record target filters", async () => {
+    await expect(
+      validateDto(WorkflowTaskQueryDto, {
+        targetType: WorkflowTargetTypeCode.feeRecord,
+        feeRecordId: "80000000-0000-4000-8000-000000000001",
       }),
     ).resolves.toHaveLength(0);
   });

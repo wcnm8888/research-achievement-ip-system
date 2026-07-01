@@ -64,6 +64,13 @@ export class DepartmentReviewerNotFoundError extends WorkflowDomainError {
   }
 }
 
+export class FeeReviewerNotFoundError extends WorkflowDomainError {
+  constructor(readonly departmentId: string) {
+    super(`No active finance reviewer was found for department: ${departmentId}.`);
+    this.name = "FeeReviewerNotFoundError";
+  }
+}
+
 export class WorkflowDepartmentUnavailableError extends WorkflowDomainError {
   constructor(readonly departmentId: string) {
     super(`Workflow target department is archived or unavailable: ${departmentId}.`);

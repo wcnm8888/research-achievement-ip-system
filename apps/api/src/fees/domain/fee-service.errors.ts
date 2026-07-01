@@ -37,6 +37,13 @@ export class FeeDepartmentUnavailableError extends FeeConflictError {
   }
 }
 
+export class FeeWorkflowUnavailableError extends Error {
+  constructor(message = "Fee review workflow is unavailable.") {
+    super(message);
+    this.name = "FeeWorkflowUnavailableError";
+  }
+}
+
 export class FeeInvalidTransitionError extends FeeConflictError {
   constructor(from: PayStatusCode, to: PayStatusCode) {
     super(`Invalid fee status transition from ${from} to ${to}.`);

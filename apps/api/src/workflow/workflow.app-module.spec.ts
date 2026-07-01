@@ -16,6 +16,7 @@ import {
   WorkflowTaskStatusCode,
   WorkflowTargetTypeCode,
 } from "./domain/workflow-domain.types";
+import { WorkflowAccessDeniedError } from "./domain/workflow-errors";
 import { WorkflowService } from "./workflow.service";
 
 const ids = {
@@ -188,15 +189,19 @@ describe("Workflow routes through AppModule", () => {
     );
   });
 
-  it("returns 403 through AppModule when static permission is missing", async () => {
+  it("returns 403 through AppModule when workflow task permission is missing", async () => {
     await withAppModule([], async (app, service, getFindFirstCallCount) => {
+      service.listMyWorkflowTasks.mockRejectedValueOnce(
+        new WorkflowAccessDeniedError("Workflow task access is denied."),
+      );
+
       const response = await request(app.getHttpServer() as Server)
         .get("/workflow/tasks/my")
         .set("X-Demo-User-Id", ids.user)
         .expect(403);
 
-      expect(response.body.message).toBe("Required permissions are missing.");
-      expect(service.listMyWorkflowTasks).not.toHaveBeenCalled();
+      expect(response.body.message).toBe("Workflow task access is denied.");
+      expect(service.listMyWorkflowTasks).toHaveBeenCalledOnce();
       expect(getFindFirstCallCount()).toBe(1);
     });
   });

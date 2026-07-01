@@ -9835,3 +9835,22 @@
   - Sensitive configuration not read or recorded.
   - Phase 2 remains incomplete.
   - Step 38 production acceptance remains deferred.
+
+## 2026-07-01 Step 58B - Fee review workflow task backend-only integration
+
+- Status: DONE.
+- Scope completed:
+  - Added `FEE_RECORD` to `WorkflowTargetType` with an additive local migration only.
+  - Reused `WorkflowInstance`, `WorkflowTask`, and `WorkflowAction`; no new workflow table was added.
+  - Fee creation now ensures a fee review workflow instance and reviewer tasks in the same Prisma transaction after the fee record and audit evidence are written.
+  - Existing fee approve/reject APIs remain the canonical business endpoints and now complete the actor's pending fee review workflow task before updating `FeeRecord`, appending `FeeReviewHistory`, and writing `AuditLog`.
+  - Workflow task list/detail now support target-aware access for `FEE_RECORD` while preserving achievement review routes/actions.
+  - Finance reviewer candidates are concrete department-scoped `FINANCE_REVIEWER` users whose role includes active `fee:review_department`; completing one task cancels sibling pending fee review tasks.
+- Explicitly not done:
+  - No Web UI changes.
+  - No production/VPS/production DB access.
+  - No migration execution, seed, or backfill.
+  - No package or lockfile changes.
+- Next step:
+  - Step 58C can wire fee review task visibility/handling into Web UI.
+  - Step 58D can run the deferred production-like Docker acceptance after local migration application in a non-production environment.
