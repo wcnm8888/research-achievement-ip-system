@@ -9872,3 +9872,23 @@
   - No VPS/production access, seed, backfill, deploy, push, package, or lockfile changes.
 - Next step:
   - Step 58D can run local Docker production-like acceptance after explicit authorization.
+
+## 2026-07-01 Step 58D - Fee review workflow task local Docker production-like acceptance
+
+- Status: PARTIAL_WITH_FIX.
+- Scope completed:
+  - Rebuilt local production-like API/Web images and restarted the local compose stack.
+  - Applied the Step 58B additive `FEE_RECORD` enum migration to the local Docker Postgres database with `prisma migrate deploy`.
+  - API local acceptance passed for fee creation creating pending `FEE_RECORD` / `FEE_REVIEW` tasks, reviewer approve/reject completion, sibling cancellation, history rows, audit rows, repeat action rejection, no-permission rejection, manager-only rejection, read-only rejection, and cross-department rejection.
+  - Found and fixed a production-like Web bug: fee workflow task loading incorrectly required `demoUserId`, so session-auth reviewers could not see task-backed review controls.
+  - Added `memory-bank/step58d-browser-acceptance.js` for named-session `playwright-cli` browser acceptance.
+  - Reviewer browser flow reached real Web/API approve, detail refresh, review history refresh, and task-state refresh after the fix; sibling cancelled-task readonly mode passed once.
+- Not fully completed:
+  - A clean four-role `playwright-cli` gate did not stabilize in this PowerShell/tool session due transient session injection/login command handling. The partial browser evidence must not be described as full browser acceptance.
+  - Existing orphan compose run containers were reported by Docker; not cleaned because cleanup is forbidden in this Step.
+  - Existing `step57d-review` browser session remains open and was not touched.
+- Safety notes:
+  - `.env` / `.env.production` contents were not read.
+  - One transient local session value was accidentally echoed during diagnostics and was immediately revoked in the local Docker DB; the value is not recorded in memory-bank or committed files.
+- Next step:
+  - Re-run the browser-only acceptance with a stable credential/session harness, or add a small local-only test harness that can inject transient sessions without exposing values.

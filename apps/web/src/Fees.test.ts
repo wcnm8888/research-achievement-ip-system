@@ -529,17 +529,14 @@ describe("fee review workflow task client and display helpers", () => {
     expect(client.get).toHaveBeenCalledTimes(5);
   });
 
-  it("does not request workflow tasks without a fee id", async () => {
+  it("does not load workflow tasks without a fee id, review permission, or management mode", async () => {
     const client = createClient({ items: [baseFeeReviewWorkflowTask] });
 
     await expect(fetchFeeReviewWorkflowTasks(client, "   ")).resolves.toEqual([]);
-    expect(shouldLoadFeeReviewWorkflowTasks(null, "fee-id", "management", true)).toBe(false);
-    expect(shouldLoadFeeReviewWorkflowTasks("demo-user-id", "fee-id", "management", false))
-      .toBe(false);
-    expect(shouldLoadFeeReviewWorkflowTasks("demo-user-id", "fee-id", "search-readonly", true))
-      .toBe(false);
-    expect(shouldLoadFeeReviewWorkflowTasks("demo-user-id", "fee-id", "management", true))
-      .toBe(true);
+    expect(shouldLoadFeeReviewWorkflowTasks("   ", "management", true)).toBe(false);
+    expect(shouldLoadFeeReviewWorkflowTasks("fee-id", "management", false)).toBe(false);
+    expect(shouldLoadFeeReviewWorkflowTasks("fee-id", "search-readonly", true)).toBe(false);
+    expect(shouldLoadFeeReviewWorkflowTasks("fee-id", "management", true)).toBe(true);
     expect(client.get).not.toHaveBeenCalled();
   });
 

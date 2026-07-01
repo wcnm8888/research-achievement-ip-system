@@ -4248,3 +4248,15 @@
   - Manager-only and read-only users can keep their existing fee visibility but do not receive task processing controls.
   - A pending fee without a current pending task is treated as readonly in Web until backend/task state is corrected.
   - Workflow task display remains limited to task/instance metadata and does not duplicate fee business fields or attachment internals.
+
+## D212 - Step 58D fee workflow task Web loading must support session auth
+
+- Date: 2026-07-01
+- Context: Local Docker production-like browser acceptance uses production session-cookie auth, not `X-Demo-User-Id`. Step 58C's fee workflow task section still required `demoUserId`, so a scoped reviewer with a pending fee task could not see the Web approve/reject controls in production-like mode even though the API task query returned 200.
+- Decision:
+  - Remove the `demoUserId` requirement from fee workflow task loading.
+  - Keep the existing `apiClient` request path, which already sends same-origin credentials and still only sends demo headers outside production when explicitly available.
+  - Continue gating executable controls by management mode, scoped fee review permission, pending fee review status, and a pending `FEE_REVIEW` task.
+- Consequence:
+  - Session-auth production-like Web can load `FEE_RECORD` workflow task state.
+  - Demo-header local development remains supported through the same client.

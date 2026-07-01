@@ -12444,3 +12444,50 @@
   - No Prisma schema or migration change.
   - No migration, seed, backfill, Docker production-like acceptance, production/VPS/production DB access, deploy, push, package, or lockfile changes.
   - No `.env` file was read and no secrets, tokens, cookies, passwords, connection strings, storage keys, checksums, voucher numbers, or fee amounts were recorded as task metadata.
+
+## 2026-07-01 Step 58D - Fee review workflow task local Docker production-like acceptance evidence
+
+- Canonical state checked before acceptance:
+  - `git rev-parse --short HEAD` -> `518f48a`.
+  - `git log -1 --pretty=format:"%s"` -> `feat(web): show fee review workflow tasks`.
+  - Tracked diff was empty at start; existing untracked local artifacts were left untouched.
+- Local Docker production-like stack:
+  - `.env.production` existence was checked only with `Test-Path`; contents were not read.
+  - `docker compose -f docker-compose.production.yml ps` showed local `postgres`, `api`, and `web` running healthy.
+  - `docker compose -f docker-compose.production.yml build api web` passed; Web build emitted the existing chunk-size warning.
+  - `docker compose -f docker-compose.production.yml up -d api web` passed.
+  - `docker compose -f docker-compose.production.yml run --rm api corepack pnpm exec prisma migrate status --schema prisma/schema.prisma` initially reported pending local migration `20260701090000_add_fee_record_workflow_target`.
+  - Local-only `docker compose -f docker-compose.production.yml run --rm api corepack pnpm exec prisma migrate deploy --schema prisma/schema.prisma` applied the additive `FEE_RECORD` enum migration.
+  - Re-checking migration status reported the local Docker DB schema up to date.
+- API acceptance:
+  - Synthetic local users, roles, sessions, achievements, and fee records were created in the local Docker DB only.
+  - API matrix passed with redacted transient sessions:
+    - approve result `APPROVED`.
+    - reject result `REJECTED`.
+    - reviewer pending task before approve: `1`.
+    - sibling pending task before approve: `1`.
+    - reviewer completed task after approve: `1`.
+    - sibling cancelled task after approve: `1`.
+    - rejected task after reject: `1`.
+    - approve history rows: `1`.
+    - reject history rows: `1`.
+    - negative HTTP statuses: manager task query `403`, reader approve `403`, manager approve `403`, cross-department approve `404`, repeat approve `409`.
+  - Audit count check for the accepted API run found three synthetic fees: pending fee audit count `1`, approved fee audit count `2`, rejected fee audit count `2`.
+- Web/browser acceptance:
+  - `memory-bank/step58d-browser-acceptance.js` was added for `playwright-cli` named-session browser acceptance.
+  - The first production-like reviewer run exposed a real Web bug: fee workflow task loading required `demoUserId`, so session-auth reviewers did not see pending task controls.
+  - After the fix, reviewer browser traffic showed real `POST /api/fees/58000000-0000-4000-8000-000000000501/review/approve` 200 followed by fee detail, review history, workflow task, and voucher metadata refresh requests.
+  - The reviewer DOM after approval showed the approved fee detail, review history rows, and readonly task card for `58000000-0000-4000-8000-000000000701`.
+  - Sibling cancelled-task readonly mode returned `{ "mode": "sibling", "status": "passed" }` in one named-session run.
+  - A clean four-role browser gate did not stabilize in this PowerShell/tool session because transient session injection/login command handling was unreliable; do not treat this Step as full browser acceptance.
+- Local validation after the fix:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts workflow-tasks.test.ts WorkflowTasks.test.ts api-client.test.ts` -> passed; 4 test files, 134 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck` -> passed.
+  - Placeholder `DATABASE_URL` + `corepack pnpm prisma:validate` -> passed. The placeholder value is not recorded as an environment file and no `.env` content was read.
+- Safety notes:
+  - No VPS / production DB access.
+  - No push/deploy.
+  - No production migration/seed/backfill.
+  - No package or lockfile changes.
+  - No account password changes to existing accounts.
+  - One transient local session value was accidentally echoed during diagnostics; it was immediately revoked in the local Docker DB and is not recorded in memory-bank or committed files.

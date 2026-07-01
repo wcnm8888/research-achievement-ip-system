@@ -1111,7 +1111,6 @@ function FeeDetailContent({
       <FeeReviewWorkflowTaskSection
         apiClient={apiClient}
         canReviewFees={canReviewFees}
-        demoUserId={demoUserId}
         feeRecord={record}
         mode={mode}
         refreshVersion={reviewTaskRefreshVersion}
@@ -1274,7 +1273,6 @@ function FeeReviewHistorySection({
 function FeeReviewWorkflowTaskSection({
   apiClient,
   canReviewFees,
-  demoUserId,
   feeRecord,
   mode,
   refreshVersion,
@@ -1282,7 +1280,6 @@ function FeeReviewWorkflowTaskSection({
 }: {
   apiClient: ApiClient;
   canReviewFees: boolean;
-  demoUserId: string | null;
   feeRecord: FeeRecord;
   mode: FeeDetailContentMode;
   refreshVersion: number;
@@ -1290,7 +1287,6 @@ function FeeReviewWorkflowTaskSection({
 }) {
   const [tasks, setTasks] = useState<Loadable<WorkflowTask[]>>(emptyLoadable);
   const canLoadTasks = shouldLoadFeeReviewWorkflowTasks(
-    demoUserId,
     feeRecord.id,
     mode,
     canReviewFees,
@@ -3121,14 +3117,13 @@ export const shouldLoadFeeReviewHistory = (
 ): boolean => Boolean(demoUserId?.trim() && feeRecordId?.trim());
 
 export const shouldLoadFeeReviewWorkflowTasks = (
-  demoUserId: string | null,
   feeRecordId: string | null | undefined,
   mode: FeeDetailContentMode = "management",
   canReviewFees = false,
 ): boolean =>
   mode === "management" &&
   canReviewFees &&
-  Boolean(demoUserId?.trim() && feeRecordId?.trim());
+  Boolean(feeRecordId?.trim());
 
 export const shouldLoadFeeVoucherAttachmentDetail = (
   demoUserId: string | null,

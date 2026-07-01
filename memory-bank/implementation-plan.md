@@ -8609,3 +8609,15 @@ Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Pr
   - Successful approve/reject refreshes fee detail/list, review history, and task state.
 - Deferred:
   - Step 58D: local Docker production-like acceptance and non-production migration application only after explicit authorization.
+
+## Step 58D implementation update - local production-like acceptance
+
+- Status: PARTIAL_WITH_FIX.
+- Completed:
+  - Local Docker production-like API/Web/Postgres stack was rebuilt and healthy.
+  - Local Docker DB applied the Step 58B additive enum migration.
+  - API acceptance passed for fee workflow task creation, approve/reject completion, sibling cancellation, history, audit, and negative permission/state paths.
+  - Web was fixed so fee workflow task loading works with production session-cookie auth instead of requiring `demoUserId`.
+  - Targeted Web tests and Web typecheck passed after the fix.
+- Remaining:
+  - Repeat browser-only four-role `playwright-cli` acceptance with a stable transient session harness before calling Step 58D fully closed.
