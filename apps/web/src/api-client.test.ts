@@ -342,6 +342,62 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
   });
 
+  it("sends achievement import dry-run as multipart form data", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        importType: "ACHIEVEMENT",
+        dryRun: true,
+        file: {
+          name: "achievements.csv",
+          size: 128,
+          mimeType: "text/csv",
+          encoding: "utf-8",
+        },
+        columns: {
+          required: ["type", "title", "departmentCode", "contributors"],
+          optional: ["ownerEmail", "ownerEmployeeNo", "status", "DOI"],
+          received: ["type", "title", "ownerEmail", "departmentCode", "contributors"],
+        },
+        summary: {
+          totalRows: 1,
+          validRows: 1,
+          errorRows: 0,
+          warningRows: 0,
+          createDraftCandidates: 1,
+          duplicateIdentifierRows: 0,
+          dbConflictRows: 0,
+          ownerEmployeeNoLookup: "NOT_AVAILABLE",
+        },
+        rows: [],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const file = new File(
+      ["type,title,ownerEmail,departmentCode,contributors\nPAPER,Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab"],
+      "achievements.csv",
+      { type: "text/csv" },
+    );
+    const client = createApiClient("admin-user-id");
+    await expect(client.dryRunAchievementImport({ file })).resolves.toMatchObject({
+      importType: "ACHIEVEMENT",
+      dryRun: true,
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+    const body = init.body as FormData;
+
+    expect(url).toBe("http://localhost/api/achievements/import/dry-run");
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("file")).toBe(file);
+    expect(headers.get("Content-Type")).toBeNull();
+    expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
   it("downloads attachment blobs with credentials and demo user context", async () => {
     const blob = new Blob(["download body"], { type: "application/pdf" });
     const fetchMock = vi.fn(async () => new Response(blob, { status: 200 }));

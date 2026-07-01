@@ -6,6 +6,8 @@ import type {
   ApiIntegrationReasonInput,
   AssignAccountUserRoleInput,
   AssignAccountUserRoleResponse,
+  AchievementImportDryRunInput,
+  AchievementImportDryRunResult,
   ChangeAccountUserDepartmentInput,
   CreateInviteInput,
   CreateDepartmentInput,
@@ -98,6 +100,9 @@ export type AccountManagementApiClient = ApiClient & {
   dryRunUserAccountImport(
     input: UserAccountImportDryRunInput,
   ): Promise<UserAccountImportDryRunResult>;
+  dryRunAchievementImport(
+    input: AchievementImportDryRunInput,
+  ): Promise<AchievementImportDryRunResult>;
   listAccountUsers(query?: ListAccountUsersQuery): Promise<AccountUserListResponse>;
   getAccountUser(userId: string): Promise<AccountUserDetail>;
   createAccountUser(payload: CreateAccountUserInput): Promise<AccountUserDetail>;
@@ -350,6 +355,17 @@ export const createApiClient = (
     body.append("file", input.file);
     const response = await requestForm("/users/import/dry-run", demoUserId, body, options);
     return response as UserAccountImportDryRunResult;
+  },
+  async dryRunAchievementImport(input: AchievementImportDryRunInput) {
+    const body = new FormData();
+    body.append("file", input.file);
+    const response = await requestForm(
+      "/achievements/import/dry-run",
+      demoUserId,
+      body,
+      options,
+    );
+    return response as AchievementImportDryRunResult;
   },
   async listAccountUsers(query?: ListAccountUsersQuery) {
     const response = await request(

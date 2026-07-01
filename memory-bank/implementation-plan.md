@@ -4,6 +4,32 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 60C Archive - Achievement import dry-run Web UI integration - 2026-07-01
+
+- Step identity:
+  - Web/client integration of the Step 60B backend-only achievement CSV import dry-run API.
+  - Scope stayed limited to `apps/web` types/client/page/tests and memory-bank updates.
+  - No backend behavior change, Prisma schema change, migration, seed/backfill, real achievement import, achievement/detail/contributor write, attachment upload/download, fee record, workflow write, audit write, Docker production-like acceptance, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented Web contract:
+  - Added `AchievementImportDryRunResult` and related row/issue/contributor/identifier/input types.
+  - Added `createApiClient(...).dryRunAchievementImport({ file })` using multipart `FormData` and endpoint `/achievements/import/dry-run`.
+  - Added `AchievementImportDryRunPanel` and result table to the achievements page.
+  - The UI is rendered only for explicit `system:config` auth users and still relies on the backend guard as the final authorization boundary.
+- UI behavior:
+  - Accepts one CSV file and validates `.csv` extension plus 1 MB size before submission.
+  - Shows loading, empty, local file error, backend API error, success-with-warnings, duplicate conflict, DB conflict, and unknown reference states.
+  - Renders total/valid/error/warning row counts, draft candidates, file duplicate conflict rows, DB conflict rows, owner employee-number lookup boundary, columns, safe row previews, contributor summaries, normalized identifiers, row errors, and row warnings.
+  - Supports the Step 60B contract for `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT` dry-run previews.
+- No-write/security boundary:
+  - No confirm import, execute import, run import, create achievement, attachment, fee, workflow, audit, or write control is exposed.
+  - The panel explicitly marks attachments, fees, workflow, audit logging, and real import execution as outside dry-run.
+  - The UI does not display raw payloads, credential material, connection material, attachment storage metadata, or internal write-only values.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts Achievements.test.ts`: PASS, 2 files / 50 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Deferred:
+  - Real write import, idempotency, audit writes, submitted-status workflow import, attachment import, fee import, employee-number lookup, department-scoped `achievement:manage_department` permission, Docker production-like acceptance, and production/VPS rollout remain separate explicit steps.
+
 ## Current Step 60B Archive - Achievement import dry-run backend-only implementation - 2026-07-01
 
 - Step identity:

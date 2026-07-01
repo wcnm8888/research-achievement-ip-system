@@ -1,5 +1,41 @@
 # Evidence
 
+## 2026-07-01 Step 60C - Achievement import dry-run Web UI integration evidence
+
+- Purpose:
+  - Integrate the Step 60B backend-only achievement CSV import dry-run API into Web.
+  - Keep backend behavior changes, Prisma schema edits, migrations, seed/backfill, real achievement import, attachment upload/download, fee/workflow/audit writes, Docker production-like acceptance, production/VPS access, package/lockfile changes, push/deploy, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `39facb2`.
+  - Latest commit subject: `feat(api): add achievement import dry run`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 60C edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - Added Web result/input types for achievement import dry-run in `apps/web/src/types.ts`.
+  - Added `dryRunAchievementImport({ file })` to the Web API client in `apps/web/src/api-client.ts`.
+  - Added an achievement CSV dry-run panel and result view in `apps/web/src/Achievements.tsx`.
+  - The panel calls `POST /achievements/import/dry-run`, which resolves to `/api/achievements/import/dry-run` through the existing API base.
+  - The panel is visible only for explicit `system:config` auth users.
+  - The UI covers local `.csv` and 1 MB file validation, loading, empty, API error, success/warning/error report states, row safe previews, contributor summaries, normalized identifiers, duplicate-in-file markers, DB conflict markers, and unknown reference errors.
+- No-write/UI boundary evidence:
+  - The UI only exposes a `Run dry-run` action.
+  - There is no confirm import, execute import, run import, create achievement, attachment upload/download, fee, workflow, audit, or write action.
+  - The result view states that no achievement, detail, contributor, attachment, fee, workflow, or audit writes were requested.
+  - The panel states that attachments, fees, workflow, audit logging, and real import execution are outside dry-run.
+- Security evidence:
+  - Web rendering uses only the safe backend response shape and does not render raw payloads.
+  - Tests assert the report does not contain attachment storage metadata field names when they are not returned by the API.
+  - No credential material, connection material, attachment storage metadata, or raw payload was recorded.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts Achievements.test.ts`: PASS, 2 files / 50 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+- Deferred:
+  - Real write import, audit writes, workflow/submitted import, attachment import, fee import, employee-number lookup, department-scoped permission, Docker production-like acceptance, and production/VPS rollout.
+
 ## 2026-07-01 Step 60B - Achievement import dry-run backend-only implementation evidence
 
 - Purpose:

@@ -1,6 +1,8 @@
 import {
+  Alert,
   Button,
   Card,
+  Descriptions,
   Input,
   Select,
   Space,
@@ -10,18 +12,22 @@ import {
   Typography,
 } from "antd";
 import type { TableProps } from "antd";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { AchievementDetail } from "./AchievementDetail";
 import { AchievementForm, isEditableAchievementStatus } from "./AchievementForm";
 import {
   createApiClient,
   isApiError,
+  type AccountManagementApiClient,
   type ApiClient,
   type ApiError,
   type AuthUser,
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import type {
+  AchievementImportDryRunIssue,
+  AchievementImportDryRunResult,
+  AchievementImportDryRunRow,
   AchievementListItem,
   AchievementListQuery,
   AchievementListResult,
@@ -104,6 +110,12 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
     useState<Loadable<AchievementListResult>>(emptyLoadable);
   const [formRequest, setFormRequest] = useState<FormRequest | null>(null);
   const [detailItem, setDetailItem] = useState<AchievementListItem | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState<ApiError | null>(null);
+  const [importResult, setImportResult] = useState<AchievementImportDryRunResult | null>(
+    null,
+  );
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
 
   const query = useMemo(
@@ -143,6 +155,42 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
 
   const hasFilters = hasActiveFilters(appliedFilters);
   const items = achievements.data?.items ?? [];
+  const canUseImportDryRun = hasAchievementImportDryRunPermission(authUser);
+
+  const handleImportFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.target.files?.[0] ?? null;
+
+    setImportFile(nextFile);
+    setImportResult(null);
+    setImportError(nextFile ? toValidationError(validateAchievementImportCsvFile(nextFile)) : null);
+  };
+
+  const runImportDryRun = () => {
+    if (!importFile || importLoading) {
+      return;
+    }
+
+    const validationMessage = validateAchievementImportCsvFile(importFile);
+
+    if (validationMessage) {
+      setImportError(toValidationError(validationMessage));
+      setImportResult(null);
+      return;
+    }
+
+    setImportLoading(true);
+    setImportError(null);
+    void dryRunAchievementImport(apiClient, importFile)
+      .then((result) => {
+        setImportResult(result);
+        setImportError(null);
+      })
+      .catch((error: unknown) => {
+        setImportResult(null);
+        setImportError(normalizeError(error));
+      })
+      .finally(() => setImportLoading(false));
+  };
 
   if (!demoUserId) {
     return (
@@ -175,6 +223,17 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
         }
       />
       <PermissionHint description="最终读取权限以后端策略为准。前端只负责传递 X-Demo-User-Id、展示后端返回的列表和脱敏状态，不在浏览器端承担最终鉴权。" />
+
+      {canUseImportDryRun ? (
+        <AchievementImportDryRunPanel
+          file={importFile}
+          loading={importLoading}
+          error={importError}
+          result={importResult}
+          onFileChange={handleImportFileChange}
+          onRunDryRun={runImportDryRun}
+        />
+      ) : null}
 
       <Card className="shell-card">
         <Space className="achievement-filter-bar" size={12} wrap>
@@ -298,6 +357,302 @@ export const buildAchievementListQuery = (
   };
 };
 
+export const validateAchievementImportCsvFile = (
+  file: Pick<File, "name" | "size" | "type">,
+): string | null => {
+  const fileName = file.name.trim().toLowerCase();
+
+  if (!fileName.endsWith(".csv")) {
+    return "Only .csv files are supported for this dry-run.";
+  }
+
+  if (file.size > maxAchievementImportCsvFileSizeBytes) {
+    return "CSV file must be 1 MB or smaller.";
+  }
+
+  return null;
+};
+
+export const dryRunAchievementImport = async (
+  client: Pick<AccountManagementApiClient, "dryRunAchievementImport">,
+  file: File,
+): Promise<AchievementImportDryRunResult> => client.dryRunAchievementImport({ file });
+
+export function AchievementImportDryRunPanel({
+  file,
+  loading,
+  error,
+  result,
+  onFileChange,
+  onRunDryRun,
+}: {
+  file: File | null;
+  loading: boolean;
+  error: ApiError | null;
+  result: AchievementImportDryRunResult | null;
+  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRunDryRun: () => void;
+}) {
+  return (
+    <Card
+      className="shell-card achievement-import-dry-run-card"
+      title="Achievement CSV dry-run"
+      extra={<Tag>POST /achievements/import/dry-run</Tag>}
+    >
+      <Space direction="vertical" size={12} className="full-width">
+        <Alert
+          type="info"
+          showIcon
+          message="dryRun=true; CSV-only; validates PAPER, PATENT, and SOFTWARE_COPYRIGHT rows without writing achievements."
+          description="Attachments, fees, workflow, audit logging, and real import execution are outside this dry-run. The preview only shows sanitized fields returned by the API."
+        />
+        <Space size={10} wrap>
+          <input
+            aria-label="Achievement CSV file"
+            type="file"
+            accept=".csv,text/csv,application/vnd.ms-excel"
+            onChange={onFileChange}
+          />
+          <Button type="primary" loading={loading} disabled={!file || loading} onClick={onRunDryRun}>
+            Run dry-run
+          </Button>
+          <Tag color={file ? "processing" : "default"}>
+            {file ? `${file.name} (${formatBytes(file.size)})` : "No CSV selected"}
+          </Tag>
+        </Space>
+        {!file && !result && !error ? (
+          <Typography.Text type="secondary">
+            Select one .csv file to preview achievement validation results.
+          </Typography.Text>
+        ) : null}
+        {error ? (
+          <Alert type="error" showIcon message={error.message} description={error.detail} />
+        ) : null}
+        {result ? <AchievementImportDryRunResultView result={result} /> : null}
+      </Space>
+    </Card>
+  );
+}
+
+export function AchievementImportDryRunResultView({
+  result,
+}: {
+  result: AchievementImportDryRunResult;
+}) {
+  return (
+    <Space direction="vertical" size={12} className="full-width">
+      <Alert
+        type={result.summary.errorRows > 0 ? "warning" : "success"}
+        showIcon
+        message="Dry-run report ready"
+        description={`importType=${result.importType}; dryRun=${String(result.dryRun)}; no achievement, detail, contributor, attachment, fee, workflow, or audit writes were requested.`}
+      />
+      <Alert
+        type="info"
+        showIcon
+        message="ownerEmployeeNo lookup: NOT_AVAILABLE"
+        description="Use ownerEmail for owner resolution in this dry-run. ownerEmployeeNo is recognized only as an unsupported lookup boundary."
+      />
+      <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
+        <Descriptions.Item label="File">{result.file.name}</Descriptions.Item>
+        <Descriptions.Item label="Size">{formatBytes(result.file.size)}</Descriptions.Item>
+        <Descriptions.Item label="Encoding">{result.file.encoding}</Descriptions.Item>
+        <Descriptions.Item label="Total rows">{result.summary.totalRows}</Descriptions.Item>
+        <Descriptions.Item label="Valid rows">{result.summary.validRows}</Descriptions.Item>
+        <Descriptions.Item label="Error rows">{result.summary.errorRows}</Descriptions.Item>
+        <Descriptions.Item label="Warning rows">{result.summary.warningRows}</Descriptions.Item>
+        <Descriptions.Item label="Draft candidates">
+          {result.summary.createDraftCandidates}
+        </Descriptions.Item>
+        <Descriptions.Item label="File duplicate conflicts">
+          {result.summary.duplicateIdentifierRows}
+        </Descriptions.Item>
+        <Descriptions.Item label="DB conflicts">{result.summary.dbConflictRows}</Descriptions.Item>
+        <Descriptions.Item label="ownerEmployeeNo lookup">
+          {result.summary.ownerEmployeeNoLookup}
+        </Descriptions.Item>
+      </Descriptions>
+      <Space size={[6, 6]} wrap>
+        <Typography.Text strong>Required</Typography.Text>
+        {result.columns.required.map((column) => (
+          <Tag key={`required-${column}`} color="blue">
+            {column}
+          </Tag>
+        ))}
+        <Typography.Text strong>Optional</Typography.Text>
+        {result.columns.optional.map((column) => (
+          <Tag key={`optional-${column}`}>{column}</Tag>
+        ))}
+        <Typography.Text strong>Received</Typography.Text>
+        {result.columns.received.map((column) => (
+          <Tag key={`received-${column}`} color={column === "(sensitive)" ? "red" : "geekblue"}>
+            {column}
+          </Tag>
+        ))}
+      </Space>
+      <Table<AchievementImportDryRunRow>
+        size="small"
+        rowKey={(row) => String(row.rowNumber)}
+        pagination={false}
+        dataSource={result.rows}
+        columns={achievementImportDryRunColumns}
+        scroll={{ x: 1520 }}
+      />
+    </Space>
+  );
+}
+
+const maxAchievementImportCsvFileSizeBytes = 1024 * 1024;
+
+const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["columns"] = [
+  {
+    title: "Row",
+    dataIndex: "rowNumber",
+    key: "rowNumber",
+    width: 72,
+  },
+  {
+    title: "Safe preview",
+    key: "parsed",
+    width: 390,
+    render: (_, row) => (
+      <Space direction="vertical" size={2}>
+        <Typography.Text>type: {row.parsed.type ?? "-"}</Typography.Text>
+        <Typography.Text>title: {row.parsed.title ?? "-"}</Typography.Text>
+        <Typography.Text>departmentCode: {row.parsed.departmentCode ?? "-"}</Typography.Text>
+        <Typography.Text>
+          owner: {row.parsed.ownerEmail ?? row.parsed.ownerEmployeeNo ?? "-"}
+        </Typography.Text>
+        <Typography.Text>status: {row.parsed.status ?? "-"}</Typography.Text>
+        <Typography.Text>secretLevel: {row.parsed.secretLevel ?? "-"}</Typography.Text>
+      </Space>
+    ),
+  },
+  {
+    title: "Contributors",
+    key: "contributors",
+    width: 330,
+    render: (_, row) => renderContributorPreview(row),
+  },
+  {
+    title: "Normalized identifiers",
+    key: "normalizedIdentifiers",
+    width: 330,
+    render: (_, row) => renderIdentifierList(row),
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    key: "status",
+    width: 120,
+    render: (status: AchievementImportDryRunRow["status"]) => (
+      <Tag color={getAchievementImportDryRunStatusColor(status)}>{status}</Tag>
+    ),
+  },
+  {
+    title: "Candidate",
+    dataIndex: "candidateAction",
+    key: "candidateAction",
+    width: 152,
+  },
+  {
+    title: "Errors",
+    dataIndex: "errors",
+    key: "errors",
+    width: 310,
+    render: (issues: AchievementImportDryRunIssue[]) =>
+      renderAchievementImportIssueList(issues, "error"),
+  },
+  {
+    title: "Warnings",
+    dataIndex: "warnings",
+    key: "warnings",
+    width: 310,
+    render: (issues: AchievementImportDryRunIssue[]) =>
+      renderAchievementImportIssueList(issues, "warning"),
+  },
+];
+
+const renderContributorPreview = (row: AchievementImportDryRunRow) => {
+  if (row.parsed.contributors.length === 0) {
+    return <Typography.Text type="secondary">None</Typography.Text>;
+  }
+
+  return (
+    <Space direction="vertical" size={4}>
+      {row.parsed.contributors.map((contributor, index) => (
+        <Typography.Text key={`${row.rowNumber}-contributor-${index}`}>
+          {`${contributor.sortOrder}. ${contributor.name ?? "-"} / ${contributor.contributorType ?? "-"} / ${contributor.contributorRole ?? "-"} / ${contributor.userEmail ?? contributor.organization ?? "-"}`}
+        </Typography.Text>
+      ))}
+    </Space>
+  );
+};
+
+const renderIdentifierList = (row: AchievementImportDryRunRow) => {
+  const entries = Object.entries(row.parsed.normalizedIdentifiers).filter(
+    ([, value]) => value,
+  );
+
+  if (entries.length === 0) {
+    return <Typography.Text type="secondary">None</Typography.Text>;
+  }
+
+  return (
+    <Space direction="vertical" size={4}>
+      {entries.map(([field, value]) => {
+        const hasFileDuplicate = row.errors.some(
+          (issue) => issue.field === field && issue.code === "DUPLICATE_IN_FILE",
+        );
+        const hasDbConflict = row.warnings.some(
+          (issue) => issue.field === field && issue.code === "DB_CONFLICT",
+        );
+
+        return (
+          <span key={`${row.rowNumber}-${field}`}>
+            <Tag color={hasFileDuplicate ? "red" : hasDbConflict ? "gold" : "blue"}>
+              {field}
+            </Tag>
+            <Typography.Text>{value}</Typography.Text>
+          </span>
+        );
+      })}
+    </Space>
+  );
+};
+
+const renderAchievementImportIssueList = (
+  issues: readonly AchievementImportDryRunIssue[],
+  tone: "error" | "warning",
+) => {
+  if (issues.length === 0) {
+    return <Typography.Text type="secondary">None</Typography.Text>;
+  }
+
+  return (
+    <Space direction="vertical" size={4}>
+      {issues.map((issue, index) => (
+        <span key={`${issue.field}-${issue.code}-${index}`}>
+          <Tag color={tone === "error" ? "red" : "gold"}>{issue.code}</Tag>
+          <Typography.Text>{`${issue.field}: ${issue.message}`}</Typography.Text>
+        </span>
+      ))}
+    </Space>
+  );
+};
+
+const getAchievementImportDryRunStatusColor = (
+  status: AchievementImportDryRunRow["status"],
+) => {
+  if (status === "ERROR") {
+    return "red";
+  }
+  if (status === "WARNING") {
+    return "gold";
+  }
+  return "green";
+};
+
 export const getAchievementDisplayTitle = (item: Pick<AchievementListItem, "title" | "isRedacted">) => {
   if (item.title) {
     return item.title;
@@ -314,6 +669,10 @@ const hasAchievementPermission = (
   authUser: AchievementPermissionContext,
   permissionCode: string,
 ): boolean => !authUser || authUser.permissionCodes.includes(permissionCode);
+
+export const hasAchievementImportDryRunPermission = (
+  authUser: AchievementPermissionContext,
+): boolean => Boolean(authUser?.permissionCodes.includes("system:config"));
 
 export const canCreateAchievementDraft = (
   authUser: AchievementPermissionContext,
@@ -485,6 +844,26 @@ const normalizeError = (error: unknown): ApiError => {
     message: "请求失败",
     detail: error instanceof Error ? error.message : undefined,
   };
+};
+
+const toValidationError = (message: string | null): ApiError | null =>
+  message
+    ? {
+        kind: "bad-request",
+        message,
+      }
+    : null;
+
+const formatBytes = (value: number): string => {
+  if (!Number.isFinite(value) || value < 0) {
+    return "0 B";
+  }
+
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  return `${(value / 1024).toFixed(1)} KB`;
 };
 
 const formatDateTime = (value: string | null | undefined): string => {

@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-07-01 Step 60C - Achievement import dry-run Web UI integration
+
+- Status: STEP_60C_ACHIEVEMENT_IMPORT_DRY_RUN_WEB_IMPLEMENTED.
+- Step identity:
+  - Added Web/client integration for the Step 60B backend-only achievement CSV import dry-run API.
+  - Scope stayed limited to `apps/web` client/UI/types/tests and memory-bank updates.
+  - No API behavior change, Prisma schema change, migration, seed/backfill, Docker production-like acceptance, real achievement import, achievement/detail/contributor write, attachment upload/download, fee record, workflow write, audit write, `.env` / `.env.production` content read, VPS/production access, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added Web types for `AchievementImportDryRunResult`, rows, issues, contributors, identifiers, and input.
+  - Added `createApiClient(...).dryRunAchievementImport({ file })` targeting `/achievements/import/dry-run`, i.e. `/api/achievements/import/dry-run` behind the Web API base.
+  - Added an `Achievement CSV dry-run` panel to the achievements page, visible only when the current auth user has `system:config`.
+  - The UI accepts one CSV file, applies local `.csv` and 1 MB checks, calls the backend dry-run, and renders summary, columns, safe row previews, contributors, normalized DOI/patent/software identifiers, row errors, row warnings, file duplicate conflicts, DB conflicts, and unknown reference errors.
+- Boundary:
+  - The UI has no confirm import, execute import, run import, create achievement, write, attachment, fee, workflow, or audit action.
+  - The panel explicitly states that attachments, fees, workflow, audit logging, and real import execution are outside dry-run.
+  - Preview uses only the backend safe result shape and does not display raw payloads, credential material, connection material, or attachment storage metadata.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts Achievements.test.ts`: PASS, 2 files / 50 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+- Next:
+  - Real write import, audit writes, workflow/submitted import, attachment import, fee import, employee-number lookup, department-scoped permission, Docker production-like acceptance, and production/VPS rollout remain separate explicit steps.
+
 ## 2026-07-01 Step 60B - Achievement import dry-run backend-only implementation
 
 - Status: STEP_60B_ACHIEVEMENT_IMPORT_DRY_RUN_BACKEND_IMPLEMENTED.

@@ -1,5 +1,24 @@
 # Decisions
 
+## D217 - Achievement import dry-run Web UI stays read-only under system-config
+
+- Date: 2026-07-01.
+- Context: Step 60C integrates the Step 60B backend-only achievement CSV import dry-run API into Web. The user allowed Web/client source, related tests, shared Web types, and memory-bank updates, but prohibited backend behavior changes unless unavoidable, real import/write/create controls, Prisma schema/migration work, seed/backfill, attachment/fee/workflow/audit writes, production/VPS access, credential reads, package/lockfile changes, cleanup/deletion/reset/drop/prune, push/deploy, and existing untracked-artifact handling.
+- Decision:
+  - Expose achievement CSV dry-run from the existing achievements management page because it is the closest current achievement administration surface.
+  - Keep the Web feature dry-run only: upload CSV, call `POST /api/achievements/import/dry-run`, and render the backend safe report.
+  - Do not add any confirm import, execute import, run import, create achievement, write, attachment, fee, workflow, or audit control.
+  - Use the same client pattern as existing department/user dry-runs: `FormData`, local `.csv` and 1 MB validation, loading/empty/error states, summary, columns, row previews, errors, and warnings.
+- Permission:
+  - Render the entry only when the current Web auth user has `system:config`.
+  - Do not reuse the existing achievement helper that allows missing auth context; the import dry-run entry requires an explicit authenticated permission context.
+  - Keep the Step 60B backend `system:config` guard as the final authorization boundary and show backend 403 as a normal API error if reached.
+- Security:
+  - Display only the backend safe preview fields: type, title, department code, owner email/employee lookup marker, contributor summaries, status, classification, identifiers, normalized identifiers, issue codes, and issue messages.
+  - Do not display raw CSV rows, raw payloads, credential material, connection material, attachment storage metadata, or internal write controls.
+- Deferred:
+  - Real write import, audit logging, workflow/submitted import, attachment import, fee import, employee-number lookup, department-scoped permission, Docker production-like acceptance, and production/VPS rollout remain later explicit steps.
+
 ## D216 - Achievement import dry-run API is no-write and system-config only
 
 - Date: 2026-07-01.

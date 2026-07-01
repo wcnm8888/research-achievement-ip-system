@@ -694,6 +694,102 @@ export type UserAccountImportDryRunInput = {
   file: File;
 };
 
+export type AchievementImportDryRunIssueCode =
+  | "REQUIRED"
+  | "INVALID_FORMAT"
+  | "INVALID_ENUM"
+  | "UNSUPPORTED_STATUS"
+  | "UNKNOWN_COLUMN"
+  | "FORBIDDEN_SENSITIVE_COLUMN"
+  | "FORMULA_LIKE_VALUE"
+  | "DETAIL_TYPE_MISMATCH"
+  | "DUPLICATE_IN_FILE"
+  | "DB_CONFLICT"
+  | "UNKNOWN_DEPARTMENT"
+  | "OWNER_NOT_FOUND"
+  | "OWNER_DEPARTMENT_MISMATCH"
+  | "CONTRIBUTOR_FORMAT_INVALID"
+  | "CONTRIBUTOR_USER_NOT_FOUND"
+  | "CONTRIBUTOR_TYPE_MISMATCH"
+  | "OWNER_EMPLOYEE_NO_LOOKUP_NOT_AVAILABLE";
+
+export type AchievementImportDryRunIssue = {
+  field: string;
+  code: AchievementImportDryRunIssueCode;
+  message: string;
+};
+
+export type AchievementImportDryRunRowStatus = "VALID" | "WARNING" | "ERROR";
+
+export type AchievementImportDryRunCandidateAction = "CREATE_DRAFT" | "SKIP";
+
+export type AchievementImportContributorPreview = {
+  name: string | null;
+  contributorType: string | null;
+  contributorRole: string | null;
+  userEmail: string | null;
+  organization: string | null;
+  sortOrder: number;
+};
+
+export type AchievementImportDryRunIdentifiers = {
+  doi: string | null;
+  applicationNo: string | null;
+  patentNo: string | null;
+  registrationNo: string | null;
+};
+
+export type AchievementImportDryRunRow = {
+  rowNumber: number;
+  parsed: {
+    type: string | null;
+    title: string | null;
+    ownerEmail: string | null;
+    ownerEmployeeNo: string | null;
+    departmentCode: string | null;
+    secretLevel: string | null;
+    status: string | null;
+    contributors: AchievementImportContributorPreview[];
+    identifiers: AchievementImportDryRunIdentifiers;
+    normalizedIdentifiers: AchievementImportDryRunIdentifiers;
+  };
+  status: AchievementImportDryRunRowStatus;
+  candidateAction: AchievementImportDryRunCandidateAction;
+  errors: AchievementImportDryRunIssue[];
+  warnings: AchievementImportDryRunIssue[];
+};
+
+export type AchievementImportDryRunResult = {
+  importType: "ACHIEVEMENT";
+  dryRun: true;
+  file: {
+    name: string;
+    size: number;
+    mimeType: string;
+    encoding: "utf-8";
+  };
+  columns: {
+    required: string[];
+    optional: string[];
+    received: string[];
+  };
+  summary: {
+    totalRows: number;
+    validRows: number;
+    errorRows: number;
+    warningRows: number;
+    createDraftCandidates: number;
+    duplicateIdentifierRows: number;
+    dbConflictRows: number;
+    ownerEmployeeNoLookup: "NOT_AVAILABLE";
+  };
+  rows: AchievementImportDryRunRow[];
+};
+
+export type AchievementImportDryRunInput = {
+  file: File;
+};
+
 export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED" | "PENDING_ACTIVATION";
 
 export type AccountCredentialStatus = "ACTIVE" | "DISABLED";
