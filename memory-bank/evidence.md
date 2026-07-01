@@ -1,5 +1,70 @@
 # Evidence
 
+## 2026-07-01 Step 59A - User/account import dry-run scope and backend plan evidence
+
+- Purpose:
+  - Determine the minimum user/account import dry-run scope, CSV/field contract, validation and conflict rules, permission boundary, account-security constraints, backend API contract, schema/migration need, and Step 59B/59C sequencing.
+  - Keep API/UI implementation, Prisma schema edits, migration generation/execution, seed/backfill, real account import, account password changes/resets, lifecycle token issuance, Docker, business-data writes, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile changes, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse HEAD`: `878eb277478a8b50644ee52056d8dee0449e70c9`.
+  - Latest commit subject: `docs: stabilize fee review workflow browser acceptance`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 59A edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal encoding displayed garbled Chinese text, but visible command snippets and safety rules confirmed gate preferences and no `.env` content reads.
+  - Read targeted top archive snippets in `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, `memory-bank/decisions.md`, `memory-bank/evidence.md`, and relevant Step 4/security architecture snippets.
+  - Reviewed `apps/api/src/imports` department dry-run controller/service/repository/module/specs.
+  - Reviewed account-management controller/service/repository/DTO/errors under `apps/api/src/account-management`.
+  - Reviewed account-lifecycle service/repository/DTO/module under `apps/api/src/account-lifecycle`.
+  - Reviewed auth service and identity adapters under `apps/api/src/auth` and `apps/api/src/identity`.
+  - Reviewed authorization permission/role/scope constants, RBAC service, and permission guard.
+  - Reviewed Web department import dry-run client/types/UI/tests under `apps/web/src`.
+  - Reviewed `prisma/schema.prisma` models/enums for `User`, `UserCredential`, `UserRole`, `Role`, `Permission`, and `Department`.
+- Current identity/auth/import capability evidence:
+  - `ImportsModule` is imported by root `AppModule`.
+  - Existing department import route is `POST /imports/departments/dry-run` at controller level, exposed as `/api/imports/departments/dry-run` behind the Web API base.
+  - Department import dry-run uses explicit `UserContextGuard`, `PermissionGuard`, and `PermissionCode.systemConfig`.
+  - Department import dry-run accepts multipart field `file`, enforces CSV-only, rejects workbook-like bodies, enforces 1 MB size, parses UTF-8 CSV, validates strict known columns, rejects formula-like values, checks duplicates/references/existing DB codes, and returns a no-write report.
+  - Existing Web DepartmentManagement dry-run uses `dryRunDepartmentImport`, `FormData`, local `.csv` and 1 MB validation, read-only report rendering, and no real import execution entry.
+  - Account-management routes are under `/account-management`; list/detail/create/disable/enable/role/department operations require `system:config`.
+  - Account lifecycle routes reachable through account-management use separate `account:invite` and `account:reset_password` permissions.
+  - Existing `CreateAccountUserDto` includes `initialPassword`; `AccountManagementService.createUser` hashes it and creates `UserCredential` when supplied.
+  - Account lifecycle invite creates `PENDING_ACTIVATION` users and uses invite acceptance to create/update credentials. Admin/self reset use reset tokens and credential upsert.
+  - Production session identity requires a valid session plus active user and active credential; users without active credentials do not authenticate.
+- Prisma model evidence:
+  - `User.email` is unique and `User.name` is the current display-name field.
+  - `UserCredential.passwordHash` is stored separately from `users` and is required when a credential row exists.
+  - `UserRole` is unique on `(userId, roleId, scopeType, scopeKey)`.
+  - `Role.code` and `Department.code` are unique.
+  - `Department`, `Role`, `User`, and `UserCredential` have status fields relevant to dry-run validation.
+  - No `employeeNo`, `employee_no`, or employee-number field exists in Prisma, API, Web, or memory-bank search results.
+- Planned dry-run contract evidence:
+  - Step 59B should add backend-only `POST /api/users/import/dry-run`.
+  - Required CSV columns: `email`, `displayName`, `departmentCode`, `roleCode`.
+  - Optional CSV columns: `employeeNo`, `scopeType`, `scopeDepartmentCode`, `status`.
+  - Defaults: `scopeType=DEPARTMENT`, `scopeDepartmentCode=departmentCode`, `status=PENDING_ACTIVATION`.
+  - Forbidden columns include password, initial password, password hash, credential status, token, invite/reset link, cookie/session, secret, AccessKey, and private-key-like columns.
+  - Dry-run response should use `importType="USER_ACCOUNT"`, `dryRun=true`, sanitized file metadata, columns, summary, rows, candidate action, errors, and warnings.
+  - Candidate actions should distinguish create-pending user candidates, existing-user review, skipped/error rows, and optional revoked-role reactivation review.
+- Validation/security evidence:
+  - Dry-run should report duplicate normalized email and duplicate nonblank employee number inside the CSV.
+  - Existing user email conflicts can be checked against current schema; existing employee-number conflicts cannot be checked until a durable schema field exists.
+  - Active department, role, and scope department lookup is required.
+  - Step 59B should hard-reject `GLOBAL` scope and `SYSTEM_ADMIN` assignment through CSV.
+  - Step 59B should reject new-account `ACTIVE` status because activation should be handled by invite/reset lifecycle flow rather than imported credentials.
+  - Dry-run must not write users, credentials, roles, tokens, sessions, audit rows, or delivery jobs.
+  - Dry-run must not import, hash, store, log, or reset passwords.
+  - Evidence and row errors should avoid raw sensitive values; user-identifying values such as email and employee number should be masked or omitted when recorded.
+- Deferred:
+  - Step 59B backend-only implementation and focused tests.
+  - Step 59C Web/client UI.
+  - Real write import, invite/reset issuance, employee-number persistence, schema/migration decisions, Docker production-like acceptance, and production/VPS rollout.
+- Verification:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+
 ## 2026-07-01 Step 58A - Fee review workflow task integration scope and backend plan evidence
 
 - Purpose:

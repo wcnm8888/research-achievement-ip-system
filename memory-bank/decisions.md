@@ -1,5 +1,50 @@
 # Decisions
 
+## D211 - User account CSV import starts as no-write no-password dry-run
+
+- Date: 2026-07-01.
+- Context: Step 59A reviews current identity/auth/account-management/import capability and plans the minimum user/account CSV import dry-run. The user limited this Step to current-state review and planning, with no API/UI implementation, Prisma schema edits, migrations, seed/backfill, real account import, account password changes/resets, token issuance, production/VPS access, secret reads, package changes, cleanup/deletion/reset/drop/prune, push/deploy, or untracked-artifact handling.
+- Decision:
+  - Implement the first user/account import capability as dry-run only.
+  - Dry-run must parse, validate, detect conflicts, and preview candidate actions only.
+  - Dry-run must not create or update `User`, `UserCredential`, `UserRole`, `AccountLifecycleToken`, `UserSession`, `AuditLog`, delivery jobs, or any other persisted account state.
+  - Reuse the department import dry-run architecture where practical: root-wired import module, multipart `file`, CSV-only guard, strict parser, service-owned validation, repository read-only lookups, result summary, row errors/warnings, and app-module/controller/service/repository tests.
+- Minimum object scope:
+  - User base facts: `email`, `displayName` mapped to `User.name`, optional source-only `employeeNo`, `departmentCode`, and `status`.
+  - Credential preview: always `NO_CREDENTIAL` for new candidates in the dry-run plan; no password or hash column support.
+  - Department binding: resolve `departmentCode` to an active Department.
+  - Role assignment: one role assignment per CSV row in the minimum Step 59B contract.
+  - Role scope: department scope only; `scopeDepartmentCode` defaults to the row `departmentCode`.
+- CSV contract:
+  - Required columns are `email`, `displayName`, `departmentCode`, and `roleCode`.
+  - Optional columns are `employeeNo`, `scopeType`, `scopeDepartmentCode`, and `status`.
+  - `scopeType` defaults to `DEPARTMENT`; `status` defaults to `PENDING_ACTIVATION`.
+  - Password, initial password, password hash, credential status, token, invite/reset link, session/cookie, secret, AccessKey, and private-key-like columns are forbidden.
+- Validation and conflicts:
+  - Reject invalid email/display name/department code/role code/status/scope syntax, unknown columns, formula-like values, missing required fields, and over-limit text.
+  - Reject duplicate normalized `email` in the file.
+  - Reject duplicate nonblank `employeeNo` in the file, but record that DB employee-number conflict checks are not possible until a future schema decision adds durable employee-number storage.
+  - Active, non-archived departments and roles must exist for `departmentCode`, `roleCode`, and `scopeDepartmentCode`.
+  - Existing `User.email` should produce a review/conflict preview rather than a write.
+  - Existing active user-role assignment should produce `EXISTING_ROLE_ASSIGNMENT`; revoked matching assignment can be a future reactivation candidate but remains no-write in dry-run.
+  - `GLOBAL` scope and `SYSTEM_ADMIN` role assignment through CSV are hard errors in Step 59B. System administrator provisioning should remain a separate explicit account-management action.
+  - New-row `ACTIVE` status is rejected in Step 59B because activation should happen through invite/reset flow rather than direct imported credentials.
+- Security boundary:
+  - The import dry-run must not import, hash, log, store, generate, reset, or reveal cleartext passwords.
+  - Initial account enablement is deferred to invite/reset lifecycle flow.
+  - Errors and evidence should use row number, field, and stable issue codes without echoing raw secrets, passwords, hashes, tokens, cookies, invite/reset links, or connection strings. User-identifying values such as email and employee number should be masked or omitted when recorded.
+- API and permission:
+  - Step 59B backend API should be `POST /api/users/import/dry-run`.
+  - Guard with explicit `UserContextGuard` and `PermissionGuard`.
+  - Require `system:config`; do not open user/account import dry-run to department administrators by default.
+- Schema and sequencing:
+  - No Prisma schema change or migration is needed for Step 59B dry-run.
+  - Persisting `employeeNo`, executing real write imports, issuing invites/reset links, and Web UI are deferred.
+  - Step 59B should be backend-only.
+  - Step 59C should add Web/client UI after the backend contract exists.
+- Boundary:
+  - This decision does not authorize API/UI implementation in Step 59A, Prisma schema edits, migration generation/execution, seed/backfill, real account import, account password work, invite/reset token creation, lifecycle delivery, Docker production-like acceptance, VPS/production access, `.env` / `.env.production` content reads, package changes, push/deploy, cleanup, deletion, reset, restore, drop, prune, or existing untracked-artifact handling.
+
 ## D210 - Fee review workflow tasks reuse workflow tables with FEE_RECORD target
 
 - Date: 2026-07-01.

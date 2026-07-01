@@ -1,5 +1,47 @@
 # Progress
 
+## 2026-07-01 Step 59A - User/account import dry-run scope and backend plan
+
+- Status: STEP_59A_USER_ACCOUNT_IMPORT_DRY_RUN_BACKEND_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Planned the minimum user/account CSV import dry-run scope, CSV field contract, validation/conflict rules, account-security boundary, backend API contract, and Step 59B/59C sequencing.
+  - Documentation-only; no API/UI implementation, Prisma schema change, migration, seed/backfill, Docker, business-data write, real account import, account password work, invite/reset token issuance, `.env` / `.env.production` content read, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `878eb27`.
+  - Latest commit subject: `docs: stabilize fee review workflow browser acceptance`.
+  - Tracked diff was empty before Step 59A memory-bank edits.
+  - Existing untracked local artifacts were present and left untouched.
+- Current-state findings:
+  - Department CSV dry-run exists and is root reachable through `POST /api/imports/departments/dry-run`; it requires `system:config`, accepts multipart CSV only, enforces a 1 MB limit, returns `dryRun=true`, and only performs read/validation/conflict checks.
+  - Web already has a DepartmentManagement dry-run client/UI pattern using `FormData`, `.csv`/1 MB precheck, and a read-only result table with no execute-import action.
+  - Account management currently supports direct `initialPassword` create, but account lifecycle already has safer invite and reset token flows.
+  - Production identity requires active user, active credential, and active session; imported users without credentials should not be marked as directly login-ready.
+  - `User.email` is unique and `UserRole` has a role/scope uniqueness boundary; no current schema field exists for `employeeNo`.
+- Planned CSV contract:
+  - Required: `email`, `displayName`, `departmentCode`, `roleCode`.
+  - Optional: `employeeNo`, `scopeType`, `scopeDepartmentCode`, `status`.
+  - Defaults: `scopeType=DEPARTMENT`, `scopeDepartmentCode=departmentCode`, `status=PENDING_ACTIVATION`.
+  - Forbidden: password, initial password, password hash, credential status, token, invite/reset link, session/cookie, secret, AccessKey, private-key-like columns.
+- Planned validation/conflict boundary:
+  - Dry-run only parses, validates, detects conflicts, and previews candidate actions; it writes no users, credentials, roles, lifecycle tokens, sessions, audit rows, or delivery jobs.
+  - File-level duplicate `email` and nonblank `employeeNo` are errors.
+  - Existing `User.email` is reported as review/conflict preview; existing employee-number conflict is not DB-checkable until a later schema decision.
+  - Department, role, and scope department codes must resolve to active, non-archived records.
+  - Step 59B supports department-scoped role assignment only; `GLOBAL` scope and `SYSTEM_ADMIN` CSV assignment are hard errors.
+  - `ACTIVE` new-account status is rejected in the minimum dry-run because initial enablement should go through invite/reset flow.
+- Planned backend contract:
+  - Step 59B should add backend-only `POST /api/users/import/dry-run`.
+  - Route should use multipart `file`, explicit `UserContextGuard` and `PermissionGuard`, and `system:config`.
+  - Do not grant this to department administrators by default.
+  - Response should mirror department dry-run with `importType="USER_ACCOUNT"`, `dryRun=true`, sanitized file metadata, columns, summary, and rows with safe parsed facts, candidate action, errors, and warnings.
+- Next:
+  - Step 59B should be backend-only dry-run implementation with focused controller/service/repository/app-module tests, no schema/migration, no real account writes, no credential writes, no lifecycle token issuance, and no Web UI.
+  - Step 59C should add Web/client UI after the backend contract exists, reusing the department dry-run pattern.
+  - Real write import, invite/reset issuance, `employeeNo` persistence, and production rollout remain later explicit steps.
+- Verification completed for this docs-only Step:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+
 ## 2026-07-01 Step 58A - Fee review workflow task integration scope and backend plan
 
 - Status: STEP_58A_FEE_REVIEW_WORKFLOW_TASK_BACKEND_PLAN_READY_DOCS_ONLY.
