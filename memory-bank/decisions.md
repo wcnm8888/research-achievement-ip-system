@@ -1,5 +1,30 @@
 # Decisions
 
+## D219 - Import dry-run consolidation starts with shared contract and small helpers
+
+- Date: 2026-07-01.
+- Context: Step 61A reviews the completed department, user/account, and achievement import dry-run tracks after Step 52B-52D, Step 59A-59D, and Step 60A-60D. The task is documentation-only and prohibits API/Web behavior changes, Prisma schema work, migrations, seed/backfill, real import writes, account password work, invite/reset flow, attachment/fee/workflow imports, audit writes, production/VPS access, package changes, push/deploy, cleanup/deletion/reset/drop/prune, and existing untracked-artifact handling.
+- Decision:
+  - Record the current shared import dry-run contract in `memory-bank/import-dry-run-contract.md`.
+  - Treat the current stable response base as `importType`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - Treat `rows[].parsed` as the safe preview contract. Do not add or require top-level `preview`.
+  - Treat conflict information as row issue codes plus import-specific summary counters. Do not add or require top-level `conflicts`.
+  - Keep row issues as `field`, `code`, and `message`; do not add response `severity` in the next small refactor.
+- Backend consolidation:
+  - Step 61B should begin with shared backend contract/types and pure helpers for uploaded CSV file validation, narrow CSV parsing, header validation, safe received-column output, issue construction, and base summary counting.
+  - Keep controller routes, permission decorators, service method names, response JSON field names, issue messages, existing issue codes, row ordering, and validation behavior unchanged.
+  - Keep domain validation local: department hierarchy, user/account security and role scope, achievement type-specific details, contributors, and normalized identifiers.
+  - Shared no-write checks may be test helpers only; do not add runtime writes or audit behavior for dry-run.
+- Web consolidation:
+  - A later Web Step can extract common CSV upload panel, dry-run-only banner, summary renderer, issue list renderer, status tag, and row table shell.
+  - Import-specific parsed preview columns and domain copy must remain local.
+- Permission and acceptance:
+  - Keep all three current dry-runs under `system:config`.
+  - A shared permission hint may be documented or rendered later, but this decision does not authorize a permission-policy change.
+  - Standardize future browser acceptance around named sessions, step-scoped fixtures, local transient proxy/session boundaries when needed, and no-write table count comparisons.
+- Scope:
+  - This decision does not authorize large backend refactor, generic Web rewrite, real write import, account credential changes, invite/reset issuance, submitted/workflow import, attachment import, fee import, audit writes, schema/migration work, production/VPS work, package changes, deployment, push, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D218 - Achievement import dry-run local acceptance uses transient proxy sessions
 
 - Date: 2026-07-01.

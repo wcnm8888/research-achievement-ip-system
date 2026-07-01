@@ -1,5 +1,52 @@
 # Evidence
 
+## 2026-07-01 Step 61A - Import dry-run consolidation scope and shared contract plan evidence
+
+- Purpose:
+  - Review department, user/account, and achievement import dry-run implementations and acceptance records.
+  - Define whether shared backend contract/helpers, shared Web components, shared issue-code conventions, permission hints, and browser acceptance naming should be introduced.
+  - Keep implementation, refactor, API/Web behavior changes, Prisma schema edits, migrations, seed/backfill, real imports, account password work, invite/reset flow, attachment/fee/workflow imports, audit writes, production/VPS access, package/lockfile changes, push/deploy, cleanup/deletion/reset/drop/prune, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `cc87bd8`.
+  - Latest commit subject: `docs: verify achievement import dry run local acceptance`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 61A edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but the relevant gate and sensitive-boundary rules remained identifiable.
+  - Read current top archives for Step 59A-59D and Step 60A-60D in `memory-bank/progress.md`, `memory-bank/decisions.md`, `memory-bank/evidence.md`, and `memory-bank/implementation-plan.md`.
+  - Read department import Step 52-related top/archive references where needed through targeted search.
+  - Inspected `apps/api/src/imports` department, user/account, and achievement dry-run controllers, services, repositories, and test index/search output.
+  - Inspected Web dry-run client/types/UI/test locations for department, user/account, and achievement dry-runs.
+- Backend evidence:
+  - Controllers duplicate multipart `file` handling, `FileInterceptor`, 1 MB limit, CSV extension/MIME validation, workbook-like `PK` rejection, missing-file errors, size errors, and `system:config` permission guard pattern.
+  - Services duplicate narrow UTF-8 CSV parsing, header row handling, working row construction, unknown/missing-column validation, formula-like value validation, issue arrays, row status/candidate action derivation, base summary counts, and sanitized file metadata.
+  - User/account and achievement services both reject sensitive or forbidden headers through safe `(sensitive)` output.
+  - Repositories are read-only lookup layers: department code lookup; user/account department/role/user lookup; achievement department/user/normalized identifier lookup.
+  - Current no-write assertions live in repository/service/controller tests and acceptance records; no runtime no-write helper exists.
+- Response contract evidence:
+  - Department response: `importType="DEPARTMENT_METADATA"`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - User/account response: `importType="USER_ACCOUNT"`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - Achievement response: `importType="ACHIEVEMENT"`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - Common base summary fields are `totalRows`, `validRows`, `errorRows`, and `warningRows`.
+  - There is no top-level `preview`, `conflicts`, `errors`, or `warnings` in the current dry-run result types.
+  - Safe preview is `rows[].parsed`; conflicts are row issue codes plus domain counters such as `existingCodeRows`, `existingUserRows`, `dbConflictRows`, and `duplicateIdentifierRows`.
+- Web evidence:
+  - `apps/web/src/api-client.ts` has three multipart dry-run client methods for department, user/account, and achievement endpoints.
+  - `DepartmentManagement.tsx`, `AccountManagement.tsx`, and `Achievements.tsx` duplicate CSV selection, `.csv`/1 MB local validation, loading/error/result states, dry-run-only banners, summary descriptions, row tables, issue list rendering, status tag colors, and size formatting.
+  - Domain-specific row preview columns differ and should remain local.
+- Plan artifact:
+  - Added `memory-bank/import-dry-run-contract.md`.
+  - Updated `memory-bank/progress.md`, `memory-bank/decisions.md`, `memory-bank/evidence.md`, and `memory-bank/implementation-plan.md`.
+- Verification:
+  - `git diff --cached --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Deferred:
+  - Step 61B shared backend contract/types and small no-behavior helper refactor.
+  - Later Web common component extraction.
+  - Real write import, invite/reset lifecycle execution, account password changes, attachment/fee/workflow import, audit writes, schema/migration work, production/VPS rollout, and existing untracked-artifact handling.
+
 ## 2026-07-01 Step 60D - Achievement import dry-run local Docker production-like acceptance evidence
 
 - Purpose:

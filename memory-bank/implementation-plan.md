@@ -4,6 +4,47 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 61A Archive - Import dry-run consolidation scope and shared contract plan - 2026-07-01
+
+- Step identity:
+  - Documentation-only consolidation review for department, user/account, and achievement import dry-run.
+  - Scope stayed limited to current-state inspection, shared contract planning, helper/component/error-code/acceptance recommendations, and memory-bank updates.
+  - No API behavior change, Web behavior change, Prisma schema change, migration, seed/backfill, real import, account password work, invite/reset flow, attachment/fee/workflow import, audit write, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `cc87bd8`.
+  - Latest commit subject: `docs: verify achievement import dry run local acceptance`.
+  - Tracked diff was empty before Step 61A memory-bank edits.
+  - Existing untracked local artifacts were observed and left untouched.
+- Current shared backend pattern:
+  - All three endpoints are multipart CSV dry-run APIs under explicit `UserContextGuard`, `PermissionGuard`, and `PermissionCode.systemConfig`.
+  - Controllers duplicate 1 MB upload limit, CSV extension/MIME checks, workbook-like `PK` rejection, missing-file errors, upload-size errors, and service-specific invalid-CSV error mapping.
+  - Services duplicate the narrow UTF-8 CSV parser, one-header-row model, comma/double-quote handling, working-row construction, required/unknown-column validation, formula-like value errors, issue arrays, row status/candidate action construction, base row summary counts, and sanitized file metadata.
+  - User/account and achievement share sensitive/forbidden header rejection and safe `(sensitive)` received-column output.
+  - Repositories are read-only: department code lookup; user/account department/role/user lookup; achievement department/user/normalized identifier lookup.
+- Current shared response contract:
+  - Stable base: `importType`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - Stable row base: `rowNumber`, `parsed`, `status`, `candidateAction`, `errors`, and `warnings`.
+  - Stable issue base: `field`, `code`, and `message`.
+  - Safe preview is `rows[].parsed`.
+  - There is no top-level `preview`, `conflicts`, `errors`, or `warnings` field. Conflicts are represented through row issue codes and import-specific summary counters.
+  - Shared base summary fields are `totalRows`, `validRows`, `errorRows`, and `warningRows`.
+- Domain differences to preserve:
+  - Department: `code`/`name`/`parentCode`, parent hierarchy validation, parent-cycle detection, and existing-code review.
+  - User/account: credential/token/session/link/secret rejection, `NO_CREDENTIAL` preview, active department/role resolution, department-scoped role boundary, `GLOBAL`/`SYSTEM_ADMIN` denial, `ACTIVE` status denial, and source-only `employeeNo`.
+  - Achievement: `PAPER`/`PATENT`/`SOFTWARE_COPYRIGHT` details, contributor parsing/type fit, owner email lookup, owner employee-number not-available marker, normalized identifiers, type/detail mismatch, and attachment/fee/workflow/audit/raw-payload/direct-id column rejection.
+- Step 61B recommended scope:
+  - Add shared backend contract/types plus pure helpers for uploaded CSV file validation, CSV parsing, header validation, safe received columns, issue construction, and base summary counts.
+  - Keep service business validation local.
+  - Keep endpoint routes, permission policy, response JSON shape, issue-code names, issue messages, row ordering, and Web behavior unchanged.
+  - Consider shared no-write assertion helpers in tests only.
+- Later Web consolidation:
+  - Extract common CSV upload panel, dry-run-only banner, summary renderer, row table shell, issue list renderer, status tag, and size formatter only after backend contract extraction is stable.
+  - Keep import-specific row preview columns and domain warning copy local.
+- Deferred:
+  - Real write import, invite/reset execution, account password changes, attachment import, fee import, workflow/submitted import, audit writes, employee-number persistence, department-scoped import permissions, production/VPS rollout, and existing untracked-artifact handling remain separate explicit steps.
+- Plan artifact:
+  - See `memory-bank/import-dry-run-contract.md` for the shared contract and Step 61B plan.
+
 ## Current Step 60D Archive - Achievement import dry-run local Docker production-like acceptance - 2026-07-01
 
 - Step identity:

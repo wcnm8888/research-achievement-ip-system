@@ -1,5 +1,39 @@
 # Progress
 
+## 2026-07-01 Step 61A - Import dry-run consolidation scope and shared contract plan
+
+- Status: STEP_61A_IMPORT_DRY_RUN_CONSOLIDATION_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Reviewed the department, user/account, and achievement import dry-run implementations to define shared contract, helper, Web component, error-code, and acceptance consolidation scope.
+  - Documentation-only; no API behavior change, Web behavior change, Prisma schema change, migration, seed/backfill, real import, account password work, invite/reset flow, attachment/fee/workflow import, audit write, production/VPS access, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `cc87bd8`.
+  - Latest commit subject: `docs: verify achievement import dry run local acceptance`.
+  - Tracked diff was empty before Step 61A memory-bank edits.
+  - Existing untracked local artifacts were present and left untouched.
+- Current-state findings:
+  - All three backend controllers duplicate multipart `file`, CSV-only validation, 1 MB limit, workbook-like `PK` body rejection, `system:config` guard, and upload-size error mapping.
+  - All three services duplicate the narrow UTF-8 CSV parser, header/row working-row construction, required/unknown-column validation, formula-like value checks, issue arrays, status/candidate action derivation, base summary counts, and file-name sanitization.
+  - User/account and achievement dry-runs additionally duplicate forbidden sensitive header detection and safe `(sensitive)` header output.
+  - All three repository layers are read-only lookup surfaces and tests assert no write/transaction behavior for the relevant business tables.
+  - Web dry-run panels duplicate CSV file selection, `.csv`/1 MB checks, loading/empty/error states, dry-run-only banners, summary rendering, row tables, issue lists, status tags, and size formatting.
+- Contract finding:
+  - The current shared response shape is `importType`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - `rows[].parsed` is the safe preview surface.
+  - There is no top-level `preview`, `conflicts`, `errors`, or `warnings` field today; conflicts are represented by row issue codes plus import-specific summary counters.
+  - Shared base summary fields are `totalRows`, `validRows`, `errorRows`, and `warningRows`; department/user/achievement append their own counters.
+- Decision:
+  - Add `memory-bank/import-dry-run-contract.md` as the Step 61A shared contract and consolidation plan.
+  - Step 61B should start with shared backend contract/types and small pure helpers, not a large refactor.
+  - Service-level business validation and domain-specific preview columns should remain local.
+- Next:
+  - Step 61B minimum: add shared backend types/helpers for file validation, CSV parsing, header validation, base issue/row/summary types, and focused no-behavior refactor if tests prove output stability.
+  - Later Step: Web shared upload/result components after backend contract extraction is stable.
+  - Real write import, invite/reset flow, account password work, attachment/fee/workflow import, audit writes, employee-number persistence, department-scoped import permissions, and production/VPS rollout remain separate explicit steps.
+- Verification completed for this docs-only Step:
+  - `git diff --cached --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+
 ## 2026-07-01 Step 60D - Achievement import dry-run local Docker production-like acceptance
 
 - Status: STEP_60D_ACHIEVEMENT_IMPORT_DRY_RUN_LOCAL_ACCEPTED.
