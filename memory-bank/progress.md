@@ -1,5 +1,49 @@
 # Progress
 
+## 2026-07-01 Step 62A - Attachment binary backup coverage scope and local plan
+
+- Status: STEP_62A_ATTACHMENT_BINARY_BACKUP_COVERAGE_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Reviewed current DB backup artifact/list coverage, attachment binary storage, Docker local storage boundary, supported attachment relation types, and operations/health surfaces.
+  - Documentation-only; no code implementation, backup execution, restore drill, archive creation, file copy, attachment file read, Prisma schema change, migration, seed/backfill, package/lockfile change, production/VPS access, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `6a26a5d`.
+  - Tracked diff was empty before Step 62A memory-bank edits.
+  - Existing untracked local artifacts were observed and left untouched.
+  - `.env` did not exist; `.env.production` existed. Contents were not read or output.
+- Current-state findings:
+  - Step 53D backup evidence is DB-only: one local Postgres custom-format dump artifact plus restore-list validation.
+  - No current DB backup artifact/list covers attachment binaries.
+  - API currently exposes health only through `GET /api/health`; no backup/operations endpoint or package backup/restore script exists.
+  - Attachment storage is `LocalAttachmentStorageAdapter`, defaulting to `deploy/artifacts/local-attachments` under the resolved workspace root.
+  - In the Docker API image the default storage root resolves under `/app/deploy/artifacts/local-attachments`.
+  - `docker-compose.production.yml` has the Postgres named volume `research_achievement_production_pgdata` but no dedicated attachment-storage volume for API binaries.
+  - Attachment object paths are generated relation-generically and guarded against path traversal.
+- Coverage decision:
+  - Minimum binary coverage must include both `ACHIEVEMENT` attachments and `FEE_RECORD` voucher attachments.
+  - `FEE_RECORD` is required because voucher attachment implementation now stores voucher files as `Attachment` rows with `relationType=FEE_RECORD`.
+  - `WORKFLOW_ACTION` remains outside the minimum claim until a real writer/use case is introduced or separately authorized.
+- Planned artifact contract:
+  - DB dump artifact.
+  - Attachment binary archive artifact.
+  - Manifest file.
+  - Artifact-list metadata.
+  - Manifest/log/evidence fields must stay aggregate and non-sensitive: artifact type, createdAt, file count, total bytes, relation-type counts, whole-archive digest, manifest digest, consistency status, missing-binary count, and unsupported-relation count.
+  - Do not record file contents, raw storage paths/keys, per-file checksum values, voucher numbers, amounts, raw fee payloads, cookies, tokens, secrets, connection strings, AccessKeys, or private keys.
+- Consistency validation:
+  - Step 62B should add a read-only preflight comparing supported `Attachment` DB metadata with binary file existence under the configured local storage root.
+  - The preflight should record only aggregate relation-type/status counts and fail closed or mark manifest failure if DB metadata references missing binaries.
+  - Orphan-file handling may be counted in aggregate only if implemented; detailed listings remain out of normal logs and commits.
+- Next:
+  - Step 62B should be backend/ops-only and local-only, not Web UI.
+  - Because no backup endpoint/CLI exists, add a new local operations command/script or narrowly scoped backend ops entry rather than extending an existing surface.
+  - Keep Prisma schema/migration unchanged.
+  - Keep restore drill, retention, encryption, offsite policy, production/VPS rollout, and durable attachment volume redesign deferred.
+- Verification completed for this docs-only Step:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-01 Step 61C - Import dry-run Web shared component refactor
 
 - Status: STEP_61C_IMPORT_DRY_RUN_WEB_SHARED_UI_IMPLEMENTED.

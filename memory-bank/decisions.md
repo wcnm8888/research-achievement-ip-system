@@ -1,5 +1,35 @@
 # Decisions
 
+## D222 - Attachment binary backup coverage starts as backend ops only
+
+- Date: 2026-07-01.
+- Context: Step 62A reviews attachment binary backup coverage after Step 53D proved a local Postgres dump/list artifact and Step 56A-56D made fee voucher attachments use the shared `Attachment` model with `relationType=FEE_RECORD`. The task is documentation-only and prohibits code implementation, backup/restore/archive/copy execution, attachment file reads, Prisma schema changes, migrations, seeds/backfills, production/VPS access, package changes, push/deploy, cleanup/deletion/reset/drop/prune, and `.env` / `.env.production` content reads.
+- Decision:
+  - Treat the existing local Postgres backup artifact/list as DB-only coverage. It does not cover attachment binary files.
+  - Minimum backup coverage must include four artifact categories: DB dump artifact, attachment binary archive artifact, manifest file, and artifact-list metadata.
+  - Attachment binary archive scope must include supported `Attachment` relation types currently written/read by the app: `ACHIEVEMENT` and `FEE_RECORD`.
+  - Because fee vouchers now use `Attachment` with `relationType=FEE_RECORD`, fee voucher binaries are in scope together with achievement attachment binaries.
+  - Do not include `WORKFLOW_ACTION` binaries in the minimum coverage claim until a real writer/use case exists or a later step explicitly expands scope.
+- Local storage boundary:
+  - Current local storage root is `deploy/artifacts/local-attachments` under the resolved workspace root; in the Docker API image the equivalent default path is `/app/deploy/artifacts/local-attachments`.
+  - Current production-like compose defines a Postgres named volume only and no dedicated API attachment-storage volume.
+  - This means attachment binary durability is weaker than DB durability in the local Docker production-like stack and must be called out as a risk.
+- Manifest and metadata contract:
+  - Manifest may record only aggregate non-sensitive fields: artifact type, createdAt, file count, total bytes, relation-type counts, whole-archive digest, manifest digest, consistency status, missing-binary count, and unsupported-relation count.
+  - Artifact-list metadata may record artifact category, basename, size, createdAt, and whole-artifact digest.
+  - Manifests, logs, evidence, and committed docs must not record file content, raw storage paths/keys, per-file checksum values, voucher numbers, amounts, raw fee payloads, cookies, tokens, secrets, connection strings, AccessKeys, or private keys.
+- Consistency decision:
+  - Step 62B should include a read-only consistency preflight comparing supported `Attachment` DB metadata with binary file existence under the configured local storage root.
+  - The preflight should report only aggregate relation-type/status counts and fail closed or mark the manifest failed when DB metadata references missing binaries.
+  - Detailed missing/orphan object names or paths must not be committed or printed in normal logs.
+- Implementation direction:
+  - Step 62B should be backend/ops-only and local-only. Do not add a Web UI.
+  - No existing backup endpoint or CLI exists, so Step 62B should add a new local operations command/script or narrowly scoped backend ops entry instead of extending a nonexistent surface or exposing backup through Web.
+  - No Prisma schema or migration change is needed.
+  - Restore drill, retention, encryption, offsite policy, production/VPS rollout, and durable attachment volume redesign remain deferred.
+- Scope:
+  - This decision does not authorize code implementation in Step 62A, backup creation, restore execution, archive/copy operations, attachment file reads, schema/migration/seed/backfill, production/VPS access, package/lockfile changes, Web UI work, push/deploy, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D221 - Web import dry-run shared UI remains shell-only
 
 - Date: 2026-07-01.

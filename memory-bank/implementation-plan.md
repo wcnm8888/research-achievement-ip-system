@@ -4,6 +4,47 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 62A Archive - Attachment binary backup coverage scope and local plan - 2026-07-01
+
+- Step identity:
+  - Documentation-only current-state review and local plan for attachment binary backup coverage.
+  - Scope stayed limited to `memory-bank` planning/evidence updates after targeted reads of backup readiness history, attachment storage code, Prisma attachment/fee/achievement models, health/operations surfaces, and production-like compose storage boundaries.
+  - No code implementation, backup execution, restore drill, archive creation, file copy, attachment file read, Prisma schema change, migration, seed/backfill, package/lockfile change, production/VPS access, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Current backup coverage finding:
+  - Step 53D verified one local Postgres custom-format dump artifact plus `pg_restore --list` only.
+  - The current backup artifact/list evidence covers DB metadata and business tables, not attachment binary files.
+  - There is no existing API backup endpoint, operations backup controller, or package script for backup/restore. Current health implementation is only `GET /api/health`.
+- Attachment storage finding:
+  - Runtime attachment storage uses `LocalAttachmentStorageAdapter` through `ATTACHMENT_STORAGE_ADAPTER`.
+  - Default local root is `deploy/artifacts/local-attachments` resolved under the workspace root; this parent is ignored by `.gitignore` through `deploy/artifacts/`.
+  - In the production-like Docker API image the same resolver targets `/app/deploy/artifacts/local-attachments` unless an explicit root token is overridden.
+  - `docker-compose.production.yml` defines only the Postgres named volume `research_achievement_production_pgdata`; it does not mount a dedicated attachment-storage volume for the API service.
+  - Attachment object paths are generated under `attachments/<relationType>/<relationId>/<uniqueId>/v<version>/<safeFileName>` and are guarded against path traversal by the local adapter.
+- Data model finding:
+  - `AttachmentRelationType` includes `ACHIEVEMENT`, `FEE_RECORD`, and `WORKFLOW_ACTION`.
+  - Current application write/read/download support is implemented for `ACHIEVEMENT` attachments and `FEE_RECORD` voucher attachments.
+  - Fee voucher files reuse `Attachment` rows with `relationType=FEE_RECORD`; therefore binary backup coverage must include both achievement attachments and fee voucher attachments.
+  - `WORKFLOW_ACTION` binary coverage remains deferred until a real workflow-action attachment writer exists or a separate step brings it into scope.
+- Minimum local backup coverage contract:
+  - Produce a DB dump artifact, an attachment binary archive artifact, a manifest file, and artifact-list metadata as one local backup set.
+  - Manifest fields should be non-sensitive aggregate fields only: artifact type, createdAt, file count, total bytes, relation-type counts, archive digest, manifest digest, consistency status, missing-binary count, and unsupported-relation count.
+  - Artifact-list metadata should identify artifact categories, filenames or basenames, sizes, createdAt, and whole-artifact digest values only.
+  - Manifest, logs, evidence, and artifact-list output must not record file contents, raw storage paths/keys, per-file checksums, voucher numbers, amounts, raw fee payloads, cookies, tokens, secrets, connection strings, AccessKeys, or private keys.
+- Consistency validation boundary:
+  - Step 62B should add a read-only preflight that compares `Attachment` DB metadata for supported relation types with binary file existence under the configured storage root.
+  - It may record only aggregate counts by relation type and status; it must not print attachment IDs, relation IDs, raw object paths, filenames from business uploads, file contents, or per-file digests.
+  - Backup should fail closed or produce an explicit failed manifest status if DB metadata references missing binaries.
+  - Orphan-file scanning may be counted only in aggregate if implemented; detailed orphan listings should remain local-only diagnostics and not be committed.
+- Step 62B recommendation:
+  - Implement backend/ops-only local backup coverage first. Do not add Web UI.
+  - Because no backup endpoint or CLI exists today, prefer a new local-only operations command/script or narrowly scoped backend ops module over exposing backup creation through authenticated Web UI.
+  - Reuse the Step 53 Postgres dump convention for the DB artifact and add attachment archive/manifest creation beside it under ignored local artifacts.
+  - Do not add Prisma schema or migration changes.
+  - Do not implement restore in Step 62B; restore drill remains a separately authorized local isolated step.
+  - Retention, encryption, offsite policy, production/VPS rollout, and durable attachment volume redesign remain deferred.
+- Key risk:
+  - Current Docker production-like attachment storage is not backed by a dedicated compose volume, so API container recreation can lose local attachment binaries even when Postgres metadata is preserved. Step 62B can cover current local files, but durable storage design should be handled as a later ops/config step.
+
 ## Current Step 61C Archive - Import dry-run Web shared component refactor - 2026-07-01
 
 - Step identity:

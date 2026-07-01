@@ -1,5 +1,63 @@
 # Evidence
 
+## 2026-07-01 Step 62A - Attachment binary backup coverage scope and local plan evidence
+
+- Purpose:
+  - Determine the minimum implementable scope for attachment binary backup coverage.
+  - Define local storage coverage, backup artifact contract, manifest boundary, consistency validation, restore-drill boundary, and Step 62B implementation direction.
+  - Keep implementation, backup execution, restore, archive/copy operations, attachment file reads, schema changes, migrations, seeds/backfills, package changes, production/VPS access, push/deploy, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `6a26a5d`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 62A edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` existence check: absent.
+  - `.env.production` existence check: present.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but relevant gate and sensitive-boundary rules remained identifiable.
+  - Read targeted Step 53A-53D, Step 54A, and Step 56A-56D top/archive decision, progress, implementation-plan, and evidence snippets.
+  - Inspected `apps/api/src/attachments` repository, service, controller, DTO, mapper, local storage adapter, storage key builder, and local storage adapter tests.
+  - Inspected `apps/api/src/health.controller.ts` and health test file index.
+  - Searched `apps/api/src` for backup/operations surfaces and found no backup/operations source files.
+  - Inspected `prisma/schema.prisma` around `AttachmentRelationType`, `Achievement`, `FeeRecord`, and `Attachment`.
+  - Inspected `docker-compose.production.yml`, `Dockerfile.api`, root/API package script listings, and `.gitignore`.
+  - No attachment binary file content was opened or read.
+- Current DB backup coverage evidence:
+  - Step 53D recorded a local Docker production-like Postgres custom-format dump artifact and `pg_restore --list` validation.
+  - Step 53D evidence explicitly kept generated dump/list/digest sidecars ignored and out of commits.
+  - No existing evidence claims attachment binary backup coverage.
+  - Step 54A explicitly deferred attachment binary backup coverage, restore drill, retention/encryption/offsite policy, and production/VPS work.
+- Current attachment storage evidence:
+  - `AttachmentsModule` binds `ATTACHMENT_STORAGE_ADAPTER` to `LocalAttachmentStorageAdapter`.
+  - Default local attachment storage root is `deploy/artifacts/local-attachments` under the resolved workspace root.
+  - `.gitignore` ignores `deploy/artifacts/`.
+  - Docker API runtime uses `WORKDIR /app`; with the same resolver the default container storage root is `/app/deploy/artifacts/local-attachments`.
+  - `docker-compose.production.yml` defines a Postgres named volume only and no API attachment-storage volume.
+  - Local adapter tests cover put/read/stat behavior, explicit root injection, root-contained path resolution, and traversal rejection.
+- Data model and access evidence:
+  - `AttachmentRelationType` includes `ACHIEVEMENT`, `FEE_RECORD`, and `WORKFLOW_ACTION`.
+  - Current service/controller paths support achievement attachment upload/list/detail/download and fee voucher attachment upload/list/detail/download.
+  - Fee voucher attachments are stored as `Attachment` rows with `relationType=FEE_RECORD`.
+  - Metadata DTOs return safe metadata and do not expose the raw storage path/key or per-file checksum.
+  - Download remains separately permissioned and reads binary only after access checks.
+- Plan evidence:
+  - Minimum backup coverage should produce one local backup set containing a DB dump artifact, attachment binary archive artifact, manifest file, and artifact-list metadata.
+  - Manifest should record only non-sensitive aggregate metadata: artifact type, createdAt, file count, total bytes, relation-type counts, whole-archive digest, manifest digest, consistency status, missing-binary count, and unsupported-relation count.
+  - Logs/evidence/manifest output must not include file contents, raw storage paths/keys, per-file checksum values, voucher numbers, amounts, raw fee payloads, cookies, tokens, secrets, connection strings, AccessKeys, or private keys.
+  - Step 62B should add read-only consistency validation between supported `Attachment` DB metadata and binary file existence, reporting only aggregate counts.
+  - Step 62B should be backend/ops-only and local-only. No Web UI is needed.
+  - No Prisma schema or migration change is needed for the minimum local coverage.
+  - Restore drill is deferred and requires a separate explicit authorization step.
+  - Retention, encryption, offsite policy, production/VPS rollout, and durable attachment volume redesign are deferred.
+- Risk:
+  - Current Docker production-like attachment binaries live in the API container filesystem unless explicitly overridden, while Postgres has a named volume. Container replacement can therefore lose binaries even when DB metadata survives.
+- Boundaries observed:
+  - No backup command, restore command, archive command, compression command, file copy, Docker operation, database command, migration, seed, backfill, attachment upload/download, production/VPS access, push, deploy, cleanup, deletion, reset, drop, prune, package/lockfile change, or untracked-artifact handling occurred.
+- Verification:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+
 ## 2026-07-01 Step 61C - Import dry-run Web shared component refactor evidence
 
 - Purpose:
