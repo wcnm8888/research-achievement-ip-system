@@ -58,6 +58,13 @@ playwright-cli -s=<step-name> snapshot
 playwright-cli -s=<step-name> run-code --filename=memory-bank/<step>-browser-acceptance.js
 ```
 
+## Local Acceptance Credential Boundary
+
+- Local production-like acceptance may use an explicitly authorized previously logged-in account password or an existing browser login session when the user grants that boundary for the current Step.
+- Do not change, reset, print, store, or commit any account password, cookie, token, secret, connection string, private key, or AccessKey.
+- Prefer transient local test sessions or synthetic local users for multi-role API matrices when that avoids handling a real password.
+- Record only the credential handling boundary and redacted pass/fail evidence in `memory-bank/evidence.md`; never record the credential value or session value.
+
 ## 浏览器验收规则
 
 - 优先使用 `playwright-cli`。

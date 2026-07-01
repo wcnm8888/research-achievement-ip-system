@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-07-01 Step 57D - Fee review history local Docker production-like acceptance
+
+- Status: STEP_57D_FEE_REVIEW_HISTORY_LOCAL_ACCEPTED.
+- Step identity:
+  - Verified the Step 57B backend API plus Step 57C Web UI in local Docker production-like API/Web/Postgres.
+  - Scope stayed local-only: no VPS/production access, production migration/seed/backfill, deploy, push, cleanup, deletion, reset, drop, prune, package/lockfile change, account/password change, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Local acceptance completed:
+  - Rebuilt and started local Docker production-like API/Web.
+  - Applied the existing Step 57B migration to the local Docker DB only with the project migration flow.
+  - Created local synthetic Step 57D users, roles, sessions, achievements, and fee records for acceptance. These were local Docker DB test records only.
+  - Verified approve and reject append persisted history through real HTTP API.
+  - Verified `GET /api/fees/:feeRecordId/review-history` for reviewer/read/manage scoped visibility.
+  - Verified cross-department and no-role/no-permission access are refused through hidden 404 behavior.
+  - Verified no standalone history create route through `POST /review-history` returning 404.
+  - Verified Web Fees detail drawer shows empty history, refreshes to a history row after approve, keeps history read-only, displays error state, and does not expose forbidden fields in the history table.
+- Credential boundary:
+  - User explicitly authorized using a previously logged-in account/password boundary for local acceptance, with no password changes.
+  - Actual multi-role API/Web acceptance used transient local synthetic sessions instead of recording or changing any account password.
+  - One early `playwright-cli cookie-set` invocation echoed a transient local session value; a new transient session immediately replaced it and no such value was recorded in memory-bank or committed files.
+- Verification completed:
+  - Local Docker API/Web/Postgres healthy; API health and Web root returned 200.
+  - `playwright-cli -s=step57d-review run-code --filename=memory-bank/step57d-browser-acceptance.js`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- src/fees/fee.controller.spec.ts src/fees/fee.service.spec.ts src/fees/fee.repository.spec.ts`: PASS, 86 tests.
+  - `corepack pnpm --filter @research-ip/web test -- src/api-client.test.ts src/Fees.test.ts`: PASS, 90 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm prisma validate`: PASS with a temporary dummy local `DATABASE_URL`.
+- Next:
+  - Production migration/deploy/backfill and production/VPS smoke remain separately authorized work.
+  - Local Docker acceptance is not production acceptance.
+
 ## 2026-07-01 Step 57C - Fee review history Web UI integration
 
 - Status: STEP_57C_FEE_REVIEW_HISTORY_WEB_IMPLEMENTED.

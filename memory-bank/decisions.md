@@ -1,5 +1,25 @@
 # Decisions
 
+## D209 - Step 57D local acceptance uses transient sessions and documents credential boundaries
+
+- Date: 2026-07-01.
+- Context: Step 57D verifies fee review history in local Docker production-like API/Web/Postgres. The user explicitly authorized using previously logged-in account/password credentials for this local acceptance boundary, while also requiring no account/password changes and asking that this boundary be documented.
+- Decision:
+  - Document the local acceptance credential boundary in `memory-bank/testing-strategy.md`.
+  - Allow an explicitly authorized existing login/password or browser session for local acceptance only when the current Step grants that boundary.
+  - Prefer transient local synthetic sessions for multi-role API matrices to avoid handling real passwords.
+  - Do not change, reset, print, store, commit, or record account passwords, cookies, tokens, secrets, private keys, AccessKey-like values, or connection strings.
+- Step 57D execution:
+  - API and Web acceptance used local Docker DB synthetic users/data and transient sessions.
+  - No account password was changed.
+  - No `.env` / `.env.production` content, VPS, production DB, production migration, deploy, push, cleanup, deletion, reset, drop, or prune was used.
+  - One early browser cookie setup attempt echoed a transient local session value through `playwright-cli` generated-code output; that local-only session was immediately superseded by a new transient session and no value was written to files or evidence.
+- Rationale:
+  - Local synthetic sessions let the acceptance matrix cover reviewer/read/manage/cross-department/no-role behavior without depending on production-like credentials or modifying account state.
+  - Recording the boundary prevents future local acceptance work from treating password access as open-ended authorization.
+- Boundary:
+  - This decision does not authorize production/VPS login, production data access, production migration/backfill, account/password modification, credential disclosure, or persistent storage of any credential/session value.
+
 ## D208 - Fee review history Web display is read-only and backend-scoped
 
 - Date: 2026-07-01.

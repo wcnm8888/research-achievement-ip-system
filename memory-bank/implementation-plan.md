@@ -4,6 +4,36 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 57D Archive - Fee review history local Docker production-like acceptance - 2026-07-01
+
+- Step identity:
+  - Local Docker production-like acceptance for Step 57B backend API plus Step 57C Web UI.
+  - Scope: local Docker API/Web/Postgres startup, local Docker DB migration deploy, local synthetic data/session acceptance, `playwright-cli` browser acceptance, focused tests/typechecks, and memory-bank updates.
+  - No VPS/production access, production migration/seed/backfill, deployment, push, cleanup, deletion, reset, drop, prune, package/lockfile change, account/password change, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Acceptance coverage:
+  - API approve appends history.
+  - API reject appends history.
+  - `GET /api/fees/:feeRecordId/review-history` returns safe business timeline fields.
+  - Scoped read/manage/review users can read visible department history.
+  - Cross-department and no-role/no-permission access are refused with hidden 404 behavior.
+  - No standalone history create route exists.
+  - Web Fees detail shows empty history, refreshes to a history row after approve, keeps history read-only, and shows a non-sensitive error state.
+- Credential boundary:
+  - User authorized a previous-login credential boundary for local acceptance and required no account/password changes.
+  - The actual acceptance path used local synthetic sessions for multi-role coverage and did not record or change any account password.
+  - `memory-bank/testing-strategy.md` now documents the local acceptance credential boundary.
+- Verification:
+  - Docker build/up passed; API/Web/Postgres healthy; API health and Web root returned 200.
+  - Local Docker DB migration deploy applied `20260630104000_add_fee_review_history` locally only.
+  - Real HTTP API acceptance passed with no forbidden fields in history responses.
+  - `playwright-cli -s=step57d-review run-code --filename=memory-bank/step57d-browser-acceptance.js`: PASS.
+  - Focused API fee tests passed, 86 tests.
+  - Focused Web fee/client tests passed, 90 tests.
+  - API typecheck, Web typecheck, and Prisma validate passed.
+- Deferred:
+  - Production migration deployment, production backfill, production/VPS smoke, and deployment remain separate explicit authorization items.
+  - Local Docker production-like acceptance must not be described as production acceptance.
+
 ## Current Step 57C Archive - Fee review history Web UI integration - 2026-07-01
 
 - Step identity:

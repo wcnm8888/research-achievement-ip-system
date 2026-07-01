@@ -1,5 +1,63 @@
 # Evidence
 
+## 2026-07-01 Step 57D - Fee review history local Docker production-like acceptance evidence
+
+- Purpose:
+  - Verify fee review history backend API + Web UI in local Docker production-like API/Web/Postgres.
+  - Keep VPS/production access, production migration/seed/backfill, deploy, push, cleanup, deletion, reset, drop, prune, account/password changes, `.env` / `.env.production` content reads, package/lockfile changes, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `e4b1fc6`.
+  - Latest commit subject: `feat(web): show fee review history`.
+  - Tracked diff was empty before Step 57D edits.
+  - Existing untracked local artifacts were observed and left untouched.
+  - `.env.production` existence was checked only by filename; contents were not read or output.
+- Local Docker evidence:
+  - `docker compose -f docker-compose.production.yml build api web`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d api web`: PASS.
+  - `docker compose -f docker-compose.production.yml ps`: API, Web, and Postgres healthy.
+  - `Invoke-WebRequest http://127.0.0.1:13001/api/health`: 200.
+  - `Invoke-WebRequest http://127.0.0.1:18081/`: 200.
+  - `docker compose -f docker-compose.production.yml exec -T api pnpm prisma migrate deploy`: PASS, applied local migration `20260630104000_add_fee_review_history` to the local Docker DB only.
+  - An orphan-container warning was observed from Docker Compose and intentionally not cleaned.
+- API acceptance evidence:
+  - Real HTTP API calls with local synthetic data produced:
+    - approve: 200, `reviewStatus=APPROVED`.
+    - reject: 200, `reviewStatus=REJECTED`.
+    - approve history read: 200, one row with action/from/to/reason/reviewer/department/createdAt present.
+    - reject history read by scoped read user: 200, one row.
+    - approve history read by scoped manage user: 200.
+    - empty pending fee history: 200, zero rows.
+    - cross-department history read: 404 hidden refusal.
+    - no-role/no-permission history read: 404 hidden refusal.
+    - missing fee history read: 404.
+    - standalone `POST /review-history`: 404.
+    - sensitive-field leak scan over history responses: empty list.
+- Browser acceptance evidence:
+  - Added `memory-bank/step57d-browser-acceptance.js`.
+  - Used `playwright-cli -s=step57d-review run-code --filename=memory-bank/step57d-browser-acceptance.js`: PASS.
+  - Browser result:
+    - `emptyHistoryRows: 0`.
+    - `readyHistoryRows: 1`.
+    - `historyButtons: 0`.
+    - `errorAlertCount: 1`.
+    - `forbiddenFieldLeak: []`.
+  - Browser requests showed production-auth `/api/auth/me` 200, Fees list/detail/history calls, approve POST 200, and history refresh GET 200.
+  - Error state was verified by a local browser route mock returning 500 for one synthetic fee history request; UI showed the non-sensitive retryable history error.
+- Credential/session boundary evidence:
+  - User explicitly authorized using the previous-login credential boundary for local acceptance with no account/password changes.
+  - Actual acceptance used local synthetic sessions for multi-role coverage; no real password value was read, changed, written to files, or committed.
+  - One early non-raw `playwright-cli cookie-set` attempt echoed a transient local session value in tool output. A new transient session immediately replaced it, and no such value was recorded in memory-bank or repository files.
+  - `memory-bank/testing-strategy.md` now records the local acceptance credential boundary for future Steps.
+- Automated verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/fees/fee.controller.spec.ts src/fees/fee.service.spec.ts src/fees/fee.repository.spec.ts`: PASS, 3 files / 86 tests.
+  - `corepack pnpm --filter @research-ip/web test -- src/api-client.test.ts src/Fees.test.ts`: PASS, 2 files / 90 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm prisma validate`: PASS with a temporary dummy local `DATABASE_URL`; `.env` contents were not read.
+- Remaining boundaries:
+  - This is local Docker production-like acceptance only, not production/VPS acceptance.
+  - Production migration deploy, production backfill, production smoke, and deployment remain separately authorized work.
+
 ## 2026-07-01 Step 57C - Fee review history Web UI integration evidence
 
 - Purpose:
