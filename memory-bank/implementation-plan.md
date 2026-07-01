@@ -4,6 +4,79 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 60A Archive - Achievement import dry-run scope and backend plan - 2026-07-01
+
+- Step identity:
+  - Documentation-only current-state review and backend planning for achievement CSV import dry-run.
+  - Scope stayed limited to current capability inspection, CSV/field contract, validation/conflict rules, permission boundary, backend API contract, and Step 60B/60C sequencing.
+  - No API, UI, Prisma schema, migration, seed/backfill, real achievement import, attachment upload/download, fee record, workflow write, Docker, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `9689a0c`.
+  - Latest commit subject: `docs: verify user account import dry run local acceptance`.
+  - Tracked diff was empty before Step 60A memory-bank edits.
+  - Existing untracked local artifacts were observed and left untouched.
+- Current capability findings:
+  - Department and user/account CSV dry-run already provide the reusable import shape: `ImportsModule`, multipart `file`, CSV-only and 1 MB guards, strict UTF-8 CSV parser, service-owned validation, read-only repository lookups, `dryRun=true`, sanitized file metadata, columns, summary, row errors/warnings, app-module/controller/service/repository tests, and no write transaction.
+  - Department dry-run is reachable as `POST /api/imports/departments/dry-run`; user/account dry-run is reachable as `POST /api/users/import/dry-run`.
+  - Existing Web dry-run UI uses `FormData`, local `.csv` / 1 MB validation, read-only summaries/tables, and no execute-import control. Achievement import UI should reuse this later, but not in Step 60B.
+  - Achievement create currently supports only draft creation through `POST /api/achievements`; backend derives `ownerUserId`, `departmentId`, `createdById`, and `updatedById` from the current user context, defaults `secretLevel=INTERNAL`, writes `status=DRAFT`, requires a type-matching detail payload, requires at least one contributor, checks normalized DOI / patent application number / patent grant number / software registration number conflicts, and writes audit for real create/update/submit/void/archive actions.
+  - Achievement update only supports DRAFT records and currently rejects contributor updates. Submit is a separate workflow-producing action and moves DRAFT to `PENDING_DEPARTMENT_REVIEW`.
+  - Current Prisma schema already has the required achievement, paper, patent, software copyright, contributor, department, user, attachment, and fee models for dry-run lookups. No schema change is needed for dry-run.
+  - `User.email` exists and is unique. There is no persisted employee number field, so `ownerEmployeeNo` and contributor employee-number lookup cannot be supported without a later user schema decision.
+  - Current permission constants do not include `achievement:manage_department`. The minimum implementable permission boundary should therefore be `system:config` only in Step 60B. A future department-scoped importer can add `achievement:manage_department` plus role grants and must enforce exact target department scope.
+- Minimum dry-run object range:
+  - Cover all three existing create DTO types in Step 60B: `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`.
+  - Main fields: `type`, `title`, optional `secretLevel`, `departmentCode`, `ownerEmail`, and optional `status`.
+  - Owner binding: resolve `ownerEmail` to an active, non-archived user and require that user's `departmentId` to match the resolved active `departmentCode`.
+  - Department binding: resolve `departmentCode` to an active, non-archived Department. No department creation or update.
+  - Contributors: parse a single `contributors` CSV cell into one or more contributor candidates, preserve order as `sortOrder`, resolve optional contributor user email to active users, and allow external contributors only when the contributor record has no user email and has safe name/type data.
+  - Status: Step 60B should support only `DRAFT` or omitted status. `SUBMITTED` / `PENDING_DEPARTMENT_REVIEW` should be rejected as `UNSUPPORTED_STATUS` because submit creates workflow state and audit, which are explicitly deferred.
+  - Candidate actions: `CREATE_DRAFT` for valid rows, `SKIP` for rows with blocking errors, and review/conflict warnings for existing normalized identifiers. No real create/submit action is performed.
+- CSV contract for Step 60B:
+  - Required common columns: `type`, `title`, `ownerEmail`, `departmentCode`, and `contributors`.
+  - Optional common columns: `secretLevel`, `status`.
+  - Paper columns: optional `doi`, `journal`, `issnCn`, `publishYear`, `includedType`, `impactFactor`, `partition`, and `abstract`.
+  - Patent columns: optional `applicationNo`, `grantNo`, `patentType`, `filingDate`, `grantDate`, `nextFeeDate`, `feeAmount`, and `legalStatus`.
+  - Software copyright columns: optional `registrationNo`, `softwareVersion`, `softwareType`, `publishDate`, `registerDate`, and `runEnv`.
+  - `ownerEmployeeNo` is deferred because the current schema has no persisted employee-number lookup. If the column is present in Step 60B, return a safe `OWNER_EMPLOYEE_NO_LOOKUP_NOT_AVAILABLE` error instead of guessing identity.
+  - `patentNo` is too ambiguous for the current model; use `applicationNo` and/or `grantNo` as canonical fields.
+  - Explicitly forbidden columns: `id`, `achievementId`, `ownerUserId`, `departmentId`, `createdById`, `updatedById`, `submittedById`, `workflowId`, `attachmentId`, `storageKey`, `checksum`, `feeRecordId`, password/token/cookie/secret/connection-string/private-key-like columns, and any raw JSON payload column.
+- Contributors contract:
+  - Recommended minimum cell format: semicolon-separated entries, each entry pipe-separated as `name|contributorType|contributorRole|userEmail|organization`.
+  - Empty optional segments are allowed, for example `Alice|AUTHOR|FIRST_AUTHOR|alice@example.test|Lab A;Bob|AUTHOR|PARTICIPANT||External Lab`.
+  - `contributorType` must be one of `AUTHOR`, `INVENTOR`, or `COPYRIGHT_OWNER`; `contributorRole` must be one of the existing contributor role codes when provided.
+  - Sort order is derived from entry order starting at 1. The importer should reject empty contributor lists, malformed entries, duplicate sort-order effects caused by parsing errors, invalid email syntax, and user-email references that do not resolve to active users.
+  - Type-fit warnings/errors should be conservative: papers should use `AUTHOR`, patents should use `INVENTOR`, and software copyrights should use `COPYRIGHT_OWNER` unless a later business rule explicitly allows mixed contributor types.
+- Validation and conflict rules:
+  - Parse/transport: multipart `file`, `.csv` only, 1 MB limit, UTF-8, one header row, comma delimiter, no workbook parsing, no formula-like values, strict unknown-column handling, and a conservative row cap such as 500.
+  - Common fields: required title 1-500 chars; `type`, `secretLevel`, and `status` must match existing enum values; `departmentCode` must match current department code format; `ownerEmail` must normalize to a valid lower-case email.
+  - Type/detail fit: a row may include only detail fields applicable to its `type`; detail fields for other types are errors. At least one supported type-specific identifier is recommended, but not required by the existing create DTO.
+  - Numeric/date fields should follow existing DTO constraints: year 1900-2100, decimal precision for impact factor and fee amount, nonnegative numeric fields, and ISO date strings for date fields.
+  - File duplicate conflicts are errors for normalized `doi`, `applicationNo`, `grantNo`, and `registrationNo` within the uploaded file.
+  - DB conflicts are read-only checks against existing normalized detail columns and should produce row warnings or blocking conflict previews with stable issue codes, not raw payloads.
+  - Department not found, inactive, or archived is an error. Owner not found, inactive, archived, or not in the row department is an error. Contributor user email not found, inactive, or archived is an error.
+  - `status` omitted defaults to `DRAFT`; `DRAFT` is accepted; any submitted/workflow/archive/voided status is rejected in Step 60B.
+- Backend API contract for Step 60B:
+  - Add backend-only dry-run endpoint: `POST /api/achievements/import/dry-run`.
+  - Transport: multipart form with `file`.
+  - Guard: explicit `UserContextGuard` + `PermissionGuard`.
+  - Static permission: `system:config` for Step 60B because current code has no `achievement:manage_department` permission. Do not expose this to department administrators until that permission and scope model are added.
+  - Response shape should mirror existing dry-runs: `importType="ACHIEVEMENT"`, `dryRun=true`, sanitized file metadata, columns, summary, and rows with safe parsed facts, normalized identifiers, candidate action, errors, and warnings.
+  - Repository work should be read-only lookups for active departments by code, active users by email, existing normalized identifiers in paper/patent/software detail tables, and optional contributor users by email. It must not call create/update/upsert/delete, `$transaction`, workflow, fee, attachment, or audit writes.
+- Security, audit, and sensitive boundary:
+  - Dry-run is parse/DTO-level validate/conflict-detect/preview only. It must not create achievements, details, contributors, attachments, fee records, workflow instances/tasks/actions, audit logs, or search index state.
+  - Dry-run must not return raw payloads, request headers, cookies, tokens, connection strings, attachment `storageKey`, checksums, object keys, private keys, or environment values.
+  - Row errors should use row number, field, and stable issue codes. Avoid echoing unnecessary user detail; evidence should mask or omit emails where possible.
+  - Dry-run should not write `AuditLog`. Audit belongs to a later real import step where real achievement/detail/contributor/workflow writes occur in a defined transaction.
+- Deferred:
+  - Step 60C Web/client UI.
+  - Real write import and idempotency.
+  - Submitted-status import and workflow creation.
+  - Attachment upload/download/import, storage metadata, checksums, and file transfer.
+  - Fee record import or fee reminder/review integration.
+  - Department-scoped `achievement:manage_department` permission and role grants.
+  - Employee-number owner/contributor lookup until a user schema decision exists.
+
 ## Current Step 59D Archive - User/account import dry-run local Docker production-like acceptance - 2026-07-01
 
 - Step identity:

@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-07-01 Step 60A - Achievement import dry-run scope and backend plan
+
+- Status: STEP_60A_ACHIEVEMENT_IMPORT_DRY_RUN_BACKEND_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Planned the minimum achievement CSV import dry-run scope, CSV field contract, DTO-level validation, normalized conflict checks, permission boundary, sensitive boundary, backend API contract, and Step 60B/60C sequencing.
+  - Documentation-only; no API/UI implementation, Prisma schema change, migration, seed/backfill, Docker, business-data write, real achievement import, attachment upload/download, fee record, workflow write, `.env` / `.env.production` content read, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile change, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `9689a0c`.
+  - Latest commit subject: `docs: verify user account import dry run local acceptance`.
+  - Tracked diff was empty before Step 60A memory-bank edits.
+  - Existing untracked local artifacts were present and left untouched.
+- Current-state findings:
+  - Department and user/account dry-runs provide the reusable backend pattern: `ImportsModule`, multipart `file`, CSV-only and 1 MB guards, strict parser, service-owned validation, read-only repository, safe previews, rows with errors/warnings, and no writes.
+  - Web already has dry-run UI/client patterns using `FormData`, local `.csv` / 1 MB validation, read-only result views, and no execute-import controls.
+  - Achievement create currently creates only `DRAFT` records from the current user context, requires type-matching detail and contributors, checks normalized identifier conflicts, and writes audit only for real mutations.
+  - Current permission constants do not include `achievement:manage_department`; Step 60B should use `system:config` only unless a later step adds a department-scoped permission and grants.
+  - Current `User` schema has `email` but no employee-number field, so `ownerEmail` is the minimum resolvable owner key; `ownerEmployeeNo` lookup is deferred.
+- Planned minimum scope:
+  - Step 60B should support all three existing achievement types: `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`.
+  - Required common columns: `type`, `title`, `ownerEmail`, `departmentCode`, `contributors`.
+  - Optional common columns: `secretLevel`, `status`; status defaults to `DRAFT` and only `DRAFT` is accepted.
+  - Type-specific columns mirror the existing create DTO/detail models: paper DOI/journal/etc., patent application/grant/legal/fee fields, and software copyright registration/version/type/date/run-env fields.
+  - Contributors should be parsed from a semicolon/pipe format and resolved by optional contributor user email without exposing raw payloads.
+- Planned validation/conflict boundary:
+  - Dry-run only parses, validates, detects conflicts, resolves references, and previews `CREATE_DRAFT`/`SKIP` candidates.
+  - It writes no `Achievement`, detail, contributor, attachment, fee, workflow, audit, or search state.
+  - File-level duplicate normalized DOI/application number/grant number/registration number are errors.
+  - Existing DB normalized identifier conflicts are read-only warnings or blocking conflict previews.
+  - Department must exist and be active; owner must exist, be active, and belong to the target department; contributor user emails must resolve to active users.
+  - Type/detail mismatch, unsupported status, forbidden sensitive columns, malformed contributors, formula-like values, and unknown columns are errors.
+- Planned backend contract:
+  - Step 60B should add backend-only `POST /api/achievements/import/dry-run`.
+  - Route should use multipart `file`, explicit `UserContextGuard`, explicit `PermissionGuard`, and `system:config`.
+  - Response should mirror existing dry-runs with `importType="ACHIEVEMENT"`, `dryRun=true`, sanitized file metadata, columns, summary, safe parsed row facts, normalized identifiers, candidate action, errors, and warnings.
+- Deferred:
+  - Web/client UI is Step 60C.
+  - Real write import, submitted-status workflow import, attachment import, fee import, audit writes, employee-number lookup, and `achievement:manage_department` department-scoped permission remain later explicit steps.
+- Verification completed for this docs-only Step:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+
 ## 2026-07-01 Step 59D - User/account import dry-run local Docker production-like acceptance
 
 - Status: STEP_59D_USER_ACCOUNT_IMPORT_DRY_RUN_LOCAL_ACCEPTED.

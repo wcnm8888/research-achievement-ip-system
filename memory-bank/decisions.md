@@ -1,5 +1,47 @@
 # Decisions
 
+## D215 - Achievement import dry-run starts backend-only with system-config no-write validation
+
+- Date: 2026-07-01.
+- Context: Step 60A reviews current achievement/import capability and plans the minimum achievement CSV import dry-run. The user limited this Step to current-state review and planning, with no API/UI implementation, Prisma schema edits, migrations, seed/backfill, real achievement import, attachment upload/download, fee/workflow writes, production/VPS access, secret reads, package changes, cleanup/deletion/reset/drop/prune, push/deploy, or existing untracked-artifact handling.
+- Decision:
+  - Implement the first achievement import capability as dry-run only.
+  - Dry-run must parse, DTO-level validate, detect normalized identifier conflicts, resolve references, and preview candidate actions only.
+  - Dry-run must not create or update `Achievement`, typed detail rows, contributors, attachments, fee records, workflow state, audit rows, search state, or any other persisted business data.
+  - Reuse the existing import dry-run architecture where practical: `ImportsModule`, multipart `file`, CSV-only and 1 MB guard, strict parser, service-owned validation, read-only repository lookups, safe result summary, row errors/warnings, and focused controller/service/repository/app-module tests.
+- Minimum object scope:
+  - Support the three existing create DTO types in Step 60B: `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`.
+  - Main fields are `type`, `title`, optional `secretLevel`, `departmentCode`, `ownerEmail`, optional `status`, type-specific detail fields, and `contributors`.
+  - Resolve `departmentCode` to an active non-archived department.
+  - Resolve `ownerEmail` to an active non-archived user and require that owner to belong to the target department.
+  - Parse contributors from one CSV cell, resolve optional contributor user emails, and derive `sortOrder` from entry order.
+  - Support only omitted status or `DRAFT` in Step 60B. Reject submitted/workflow/archive/voided statuses because workflow and audit writes are deferred.
+- CSV contract:
+  - Required common columns: `type`, `title`, `ownerEmail`, `departmentCode`, and `contributors`.
+  - Optional common columns: `secretLevel`, `status`.
+  - Paper columns: `doi`, `journal`, `issnCn`, `publishYear`, `includedType`, `impactFactor`, `partition`, `abstract`.
+  - Patent columns: `applicationNo`, `grantNo`, `patentType`, `filingDate`, `grantDate`, `nextFeeDate`, `feeAmount`, `legalStatus`.
+  - Software copyright columns: `registrationNo`, `softwareVersion`, `softwareType`, `publishDate`, `registerDate`, `runEnv`.
+  - `ownerEmployeeNo` is deferred because current `User` schema has no employee-number field. If present in Step 60B, return a safe not-available error.
+  - Use `applicationNo` and `grantNo` instead of ambiguous `patentNo`.
+- Validation and conflicts:
+  - Reject missing required fields, invalid enum/code/email/date/number/length values, formula-like values, unknown columns, forbidden sensitive columns, malformed contributor entries, wrong type/detail field combinations, and unsupported status.
+  - Detect file duplicates for normalized `doi`, `applicationNo`, `grantNo`, and `registrationNo`.
+  - Check DB conflicts through read-only lookups against normalized paper/patent/software detail columns.
+  - Department not found/inactive/archived, owner not found/inactive/archived, owner outside target department, contributor user not found/inactive/archived, and contributor type mismatch are row errors or conservative warnings as specified by Step 60B tests.
+- Permission:
+  - Step 60B should expose backend-only `POST /api/achievements/import/dry-run`.
+  - Require explicit `UserContextGuard` and `PermissionGuard`.
+  - Require `system:config` in Step 60B because current permission constants do not include `achievement:manage_department`.
+  - A future department-scoped importer may introduce `achievement:manage_department`; if it does, it must enforce exact target department scope before parsing/writing beyond safe file validation.
+- Security and audit:
+  - Dry-run must not write `AuditLog`; audit belongs to a later real import step.
+  - Responses and evidence must not include raw payloads, cookies, tokens, secrets, connection strings, private keys, attachment storage keys, checksums, or unnecessary user detail.
+- Sequencing:
+  - Step 60B should be backend-only dry-run implementation with no schema/migration and no Web UI.
+  - Step 60C should add Web/client UI after the backend contract exists.
+  - Real write import, submitted workflow import, attachment import, fee import, employee-number lookup, and department-scoped import permission remain later explicit steps.
+
 ## D214 - User account import dry-run local acceptance uses transient proxy sessions
 
 - Date: 2026-07-01.

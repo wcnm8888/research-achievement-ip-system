@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-07-01 Step 60A - Achievement import dry-run scope and backend plan evidence
+
+- Purpose:
+  - Determine the minimum achievement import dry-run scope, CSV/field contract, validation and conflict rules, permission boundary, backend API contract, schema/migration need, sensitive boundary, and Step 60B/60C sequencing.
+  - Keep API/UI implementation, Prisma schema edits, migration generation/execution, seed/backfill, real achievement import, attachment upload/download, fee/workflow writes, Docker, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile changes, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `9689a0c`.
+  - Latest commit subject: `docs: verify user account import dry run local acceptance`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 60A edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but the known gate and sensitive-boundary rules were still identifiable.
+  - Read the top Step 59A-59D memory-bank archives in `implementation-plan.md`, `progress.md`, `decisions.md`, and `evidence.md`.
+  - Inspected `apps/api/src/imports` department and user/account dry-run controller/service/repository patterns.
+  - Inspected achievement create/update DTOs, normalizers, service/repository conflict handling, controller guards, department management boundaries, authorization permission constants/scope service, audit redaction/write patterns, Web dry-run/client patterns, achievement form fields, and relevant Prisma models.
+- Current capability evidence:
+  - Existing dry-run imports are backend-only no-write validators under `ImportsModule`, with multipart `file`, CSV-only and 1 MB checks, strict parser, read-only repository lookups, safe result summaries, row errors/warnings, and tests.
+  - Achievement create is currently `POST /api/achievements`; it creates only DRAFT records, derives owner and department from current context, requires type-matching detail and contributors, checks normalized identifier conflicts, and writes audit only for real mutation actions.
+  - `AchievementRepository.findNormalizedConflict(...)` already checks normalized DOI, patent application number, patent grant number, and software registration number.
+  - Prisma has unique normalized fields on `PaperDetail.doiNormalized`, `PatentDetail.applicationNoNormalized`, `PatentDetail.grantNoNormalized`, and `SoftwareCopyrightDetail.registrationNoNormalized`.
+  - `PermissionCode` has `system:config`, `achievement:read_department`, and `achievement:review_department`, but no `achievement:manage_department`.
+  - `User` has unique `email` and no employee-number field; `Department` has unique `code`, `status`, and `archivedAt`.
+  - Attachment and Fee models exist but are separate post-import concerns; attachment responses must not expose storage keys/checksums.
+- Planned contract evidence:
+  - Step 60B should be backend-only `POST /api/achievements/import/dry-run`.
+  - Minimum CSV requires `type`, `title`, `ownerEmail`, `departmentCode`, and `contributors`; optional common fields are `secretLevel` and `status`.
+  - Step 60B should cover `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`, mirroring current create DTO detail fields.
+  - Status is omitted or `DRAFT` only; submitted/workflow states are deferred.
+  - `ownerEmployeeNo` is not supported until a later user schema decision because current schema cannot resolve it.
+  - Web UI, real write import, attachments, fees, workflow, audit writes, and department-scoped `achievement:manage_department` remain deferred.
+- Verification:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Safety notes:
+  - No API, UI, Prisma, migration, seed, backfill, real achievement, attachment, fee, workflow, audit write, package, lockfile, production/VPS, push, deploy, cleanup, deletion, reset, drop, or prune work was performed.
+  - No `.env` / `.env.production` content was read.
+  - No password, cookie, token, secret, connection string, AccessKey, private key, attachment storage key, checksum, or raw payload was recorded.
+
 ## 2026-07-01 Step 59D - User/account import dry-run local Docker production-like acceptance evidence
 
 - Purpose:
