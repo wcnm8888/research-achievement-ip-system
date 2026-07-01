@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-07-01 Step 59C - User/account import dry-run Web UI integration
+
+- Status: STEP_59C_USER_ACCOUNT_IMPORT_DRY_RUN_WEB_IMPLEMENTED.
+- Step identity:
+  - Added Web/client integration for the Step 59B backend-only user/account CSV import dry-run API.
+  - Scope stayed limited to Web types, API client, AccountManagement UI/tests, and memory-bank updates.
+  - No API backend behavior change, Prisma schema change, migration, seed/backfill, real account import, account create/update, credential write, account password work, invite/reset token issuance, lifecycle delivery, Docker production-like acceptance, VPS/production access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added Web result/input types for `USER_ACCOUNT` dry-run responses.
+  - Added `AccountManagementApiClient.dryRunUserAccountImport({ file })`, posting multipart `file` to `/users/import/dry-run`.
+  - Added a `User account CSV dry-run` panel under the existing AccountManagement `system:config` boundary.
+  - The UI supports CSV selection, client-side `.csv` and 1 MB validation, loading/error/empty states, safe summary, columns, row previews, errors, warnings, and `employeeNoDbConflictCheck=NOT_AVAILABLE` explanation.
+  - The UI intentionally has no confirm/import/write/create-accounts control.
+- Security and permission boundary:
+  - Non-`system:config` users hit the existing AccountManagement permission branch before the dry-run panel is mounted.
+  - UI copy states that password, password hash, token, cookie, secret, invite link, and reset link columns are unsupported.
+  - Result rendering uses backend-safe fields and `(sensitive)` markers; it does not display or store credential material, tokens, cookies, secrets, connection strings, or full invite/reset links.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts AccountManagement.test.tsx`: PASS, 2 files / 64 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Next:
+  - Real write import, invite/reset lifecycle issuance, `employeeNo` persistence and DB conflict checks, production-like acceptance, and rollout remain separate explicit steps.
+
 ## 2026-07-01 Step 59B - User/account import dry-run backend-only implementation
 
 - Status: STEP_59B_USER_ACCOUNT_IMPORT_DRY_RUN_BACKEND_IMPLEMENTED.

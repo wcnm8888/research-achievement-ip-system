@@ -610,6 +610,90 @@ export type DepartmentImportDryRunInput = {
   file: File;
 };
 
+export type UserAccountImportDryRunIssueCode =
+  | "REQUIRED"
+  | "INVALID_FORMAT"
+  | "DUPLICATE_IN_FILE"
+  | "UNKNOWN_COLUMN"
+  | "FORBIDDEN_SENSITIVE_COLUMN"
+  | "FORMULA_LIKE_VALUE"
+  | "UNKNOWN_DEPARTMENT"
+  | "UNKNOWN_ROLE"
+  | "UNKNOWN_SCOPE_DEPARTMENT"
+  | "INVALID_SCOPE"
+  | "GLOBAL_SCOPE_NOT_ALLOWED"
+  | "ROLE_NOT_IMPORTABLE"
+  | "INVALID_STATUS"
+  | "UNSUPPORTED_STATUS"
+  | "EXISTING_USER"
+  | "EXISTING_ROLE_ASSIGNMENT"
+  | "REVOKED_ROLE_ASSIGNMENT";
+
+export type UserAccountImportDryRunIssue = {
+  field: string;
+  code: UserAccountImportDryRunIssueCode;
+  message: string;
+};
+
+export type UserAccountImportDryRunRowStatus = "VALID" | "WARNING" | "ERROR";
+
+export type UserAccountImportDryRunCandidateAction =
+  | "CREATE_PENDING_USER"
+  | "REVIEW_EXISTING_USER"
+  | "REACTIVATE_ROLE_REVIEW"
+  | "SKIP";
+
+export type UserAccountImportDryRunRow = {
+  rowNumber: number;
+  parsed: {
+    email: string | null;
+    displayName: string | null;
+    employeeNo: string | null;
+    departmentCode: string | null;
+    roleCode: string | null;
+    scopeType: string | null;
+    scopeDepartmentCode: string | null;
+    status: string | null;
+    credentialAction: "NO_CREDENTIAL";
+  };
+  status: UserAccountImportDryRunRowStatus;
+  candidateAction: UserAccountImportDryRunCandidateAction;
+  errors: UserAccountImportDryRunIssue[];
+  warnings: UserAccountImportDryRunIssue[];
+};
+
+export type UserAccountImportDryRunResult = {
+  importType: "USER_ACCOUNT";
+  dryRun: true;
+  file: {
+    name: string;
+    size: number;
+    mimeType: string;
+    encoding: "utf-8";
+  };
+  columns: {
+    required: string[];
+    optional: string[];
+    received: string[];
+  };
+  summary: {
+    totalRows: number;
+    validRows: number;
+    errorRows: number;
+    warningRows: number;
+    createCandidates: number;
+    existingUserRows: number;
+    existingRoleAssignmentRows: number;
+    reactivationCandidateRows: number;
+    employeeNoDbConflictCheck: "NOT_AVAILABLE";
+  };
+  rows: UserAccountImportDryRunRow[];
+};
+
+export type UserAccountImportDryRunInput = {
+  file: File;
+};
+
 export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED" | "PENDING_ACTIVATION";
 
 export type AccountCredentialStatus = "ACTIVE" | "DISABLED";

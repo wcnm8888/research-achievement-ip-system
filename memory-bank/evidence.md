@@ -1,5 +1,38 @@
 # Evidence
 
+## 2026-07-01 Step 59C - User/account import dry-run Web UI integration evidence
+
+- Purpose:
+  - Integrate the Step 59B `POST /api/users/import/dry-run` backend with a Web-only dry-run UI.
+  - Keep backend behavior changes, Prisma schema edits, migrations, seed/backfill, real account import, account creation/update, credential writes, account password changes/resets, invite/reset token issuance, lifecycle delivery, Docker production-like acceptance, VPS/production access, package/lockfile changes, push/deploy, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `6b6b28c`.
+  - Latest commit subject: `feat(api): add user account import dry run`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 59C edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - Added Web types for `UserAccountImportDryRunInput`, `UserAccountImportDryRunResult`, row status, candidate action, and issue codes.
+  - Added `dryRunUserAccountImport({ file })` to `AccountManagementApiClient`; it posts multipart `file` to `/users/import/dry-run` without setting a manual multipart content type.
+  - Added `UserAccountImportDryRunPanel` and `UserAccountImportDryRunResultView` under `AccountManagement`.
+  - The panel is mounted only inside the existing `system:config` AccountManagement success branch.
+  - The panel handles empty selection, loading, local file type/size validation, API errors, successful summaries, warning/error rows, safe previews, and sensitive-column rejection display.
+  - The result explains `employeeNoDbConflictCheck=NOT_AVAILABLE` because the current schema does not persist employee numbers.
+- No-write and sensitive-boundary evidence:
+  - The Web UI contains only a `Run dry-run` control and no confirm/import/write/create-accounts button.
+  - The UI copy states that password, password hash, token, cookie, secret, invite link, and reset link columns are unsupported.
+  - Tests assert the dry-run panel does not render common real import execution entries.
+  - Tests assert sensitive-column rejection renders `(sensitive)` and `FORBIDDEN_SENSITIVE_COLUMN` without exposing a sample sensitive value or full reset link.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts AccountManagement.test.tsx`: PASS, 2 files / 64 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - API typecheck was not required because this Step changed Web-only source/types and did not modify API/shared backend code.
+  - Prisma schema was not modified; no migration, seed, or backfill was run.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Deferred:
+  - Real write import, account lifecycle invite/reset issuance, `employeeNo` persistence and DB conflict checks, backend behavior changes, Docker production-like acceptance, and production/VPS rollout.
+
 ## 2026-07-01 Step 59B - User/account import dry-run backend-only implementation evidence
 
 - Purpose:

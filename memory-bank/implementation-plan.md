@@ -4,6 +4,32 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 59C Archive - User/account import dry-run Web UI integration - 2026-07-01
+
+- Step identity:
+  - Web/client integration for the Step 59B user/account CSV import dry-run backend.
+  - Scope stayed limited to `apps/web/src` client/types/UI/tests and memory-bank updates.
+  - No API backend behavior change, Prisma schema change, migration, seed/backfill, real account import, real account create/update, credential write, password change/reset, invite/reset token issuance, lifecycle delivery, Docker production-like acceptance, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented Web contract:
+  - Added Web types for `USER_ACCOUNT` dry-run result rows, issues, summary, and input.
+  - Added `AccountManagementApiClient.dryRunUserAccountImport({ file })`, posting multipart `file` to `/users/import/dry-run`.
+  - Added `User account CSV dry-run` to `AccountManagement` under the existing `system:config` permission branch.
+  - UI supports CSV selection, `.csv` and 1 MB local validation, loading/empty/API-error states, summary, columns, row safe previews, errors, warnings, and `employeeNoDbConflictCheck=NOT_AVAILABLE` explanation.
+- Security and no-write boundary:
+  - The UI has only `Run dry-run`; no confirm import, execute import, create accounts, credential setup, invite issuance, reset issuance, or write action is exposed.
+  - Copy states password, password hash, token, cookie, secret, invite link, and reset link columns are unsupported.
+  - Rendering relies on backend-safe fields and `(sensitive)` markers; no credential material, tokens, cookies, secrets, connection strings, AccessKeys, private keys, or full invite/reset links are displayed or recorded.
+  - Non-`system:config` users hit the existing AccountManagement permission branch before the dry-run panel mounts; backend `system:config` remains the final guard.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts AccountManagement.test.tsx`: PASS, 2 files / 64 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - API typecheck was not required because no API/shared backend files changed.
+  - Prisma schema was not modified; no migration/seed/backfill was run.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Deferred:
+  - Real write import, account lifecycle invite/reset issuance, `employeeNo` persistence and DB conflict checks, Docker production-like acceptance, production/VPS rollout, and any backend behavior changes remain separate explicit steps.
+
 ## Current Step 59B Archive - User/account import dry-run backend-only implementation - 2026-07-01
 
 - Step identity:

@@ -16,7 +16,7 @@ import {
   type FormInstance,
 } from "antd";
 import type { SelectProps, TableProps } from "antd";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import {
   createApiClient,
   isApiError,
@@ -43,6 +43,9 @@ import type {
   InviteIssueResponse,
   ListAccountUsersQuery,
   RevokeAccountUserRoleInput,
+  UserAccountImportDryRunIssue,
+  UserAccountImportDryRunResult,
+  UserAccountImportDryRunRow,
 } from "./types";
 
 type Loadable<T> = {
@@ -170,6 +173,10 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [users, setUsers] = useState<Loadable<AccountUserListResponse>>(emptyLoadable);
   const [departments, setDepartments] = useState<Loadable<DepartmentSummary[]>>(emptyLoadable);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState<ApiError | null>(null);
+  const [importResult, setImportResult] = useState<UserAccountImportDryRunResult | null>(null);
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Loadable<AccountUserDetail>>(emptyLoadable);
   const [createOpen, setCreateOpen] = useState(false);
@@ -336,6 +343,40 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
     }
   };
 
+  const handleImportFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.currentTarget.files?.[0] ?? null;
+    setImportResult(null);
+    setImportFile(nextFile);
+    setImportError(nextFile ? toValidationError(validateUserAccountImportCsvFile(nextFile)) : null);
+  };
+
+  const handleUserImportDryRun = async () => {
+    if (!importFile) {
+      setImportError(toValidationError("Select one .csv file before running dry-run."));
+      return;
+    }
+
+    const validationError = validateUserAccountImportCsvFile(importFile);
+    if (validationError) {
+      setImportError(toValidationError(validationError));
+      return;
+    }
+
+    setImportLoading(true);
+    setImportError(null);
+    setImportResult(null);
+
+    try {
+      const result = await dryRunUserAccountImport(apiClient, importFile);
+      setImportResult(result);
+      message.success("User account CSV dry-run completed.");
+    } catch (error) {
+      setImportError(normalizeError(error));
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   const openOperation = (request: OperationRequest) => {
     setOperation(request);
     setOperationError(null);
@@ -453,6 +494,15 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
           description={getDepartmentSelectorErrorDescription(departments.error)}
         />
       ) : null}
+
+      <UserAccountImportDryRunPanel
+        file={importFile}
+        loading={importLoading}
+        error={importError}
+        result={importResult}
+        onFileChange={handleImportFileChange}
+        onRunDryRun={handleUserImportDryRun}
+      />
 
       <Card className="shell-card" title="Account lifecycle">
         <Space size={12} wrap>
@@ -671,6 +721,270 @@ export const fetchActiveDepartments = async (
   return (Array.isArray(response.items) ? response.items : []).filter(
     (department) => department.status === "ACTIVE",
   );
+};
+
+export const validateUserAccountImportCsvFile = (
+  file: Pick<File, "name" | "size" | "type">,
+): string | null => {
+  const fileName = file.name.trim().toLowerCase();
+
+  if (!fileName.endsWith(".csv")) {
+    return "Only .csv files are supported for this dry-run.";
+  }
+
+  if (file.size > maxUserAccountImportCsvFileSizeBytes) {
+    return "CSV file must be 1 MB or smaller.";
+  }
+
+  return null;
+};
+
+export const dryRunUserAccountImport = async (
+  client: Pick<AccountManagementApiClient, "dryRunUserAccountImport">,
+  file: File,
+): Promise<UserAccountImportDryRunResult> => client.dryRunUserAccountImport({ file });
+
+export function UserAccountImportDryRunPanel({
+  file,
+  loading,
+  error,
+  result,
+  onFileChange,
+  onRunDryRun,
+}: {
+  file: File | null;
+  loading: boolean;
+  error: ApiError | null;
+  result: UserAccountImportDryRunResult | null;
+  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRunDryRun: () => void;
+}) {
+  return (
+    <Card
+      className="shell-card user-account-import-dry-run-card"
+      title="User account CSV dry-run"
+      extra={<Tag>POST /users/import/dry-run</Tag>}
+    >
+      <Space direction="vertical" size={12} className="full-width">
+        <Alert
+          type="info"
+          showIcon
+          message="dryRun=true; CSV-only; validates users, departments, roles, scopes, and conflicts without writing accounts."
+          description="Required headers are email, displayName, departmentCode, and roleCode; optional headers are employeeNo, scopeType, scopeDepartmentCode, and status. Password, passwordHash, token, cookie, secret, invite link, and reset link columns are rejected."
+        />
+        <Space size={10} wrap>
+          <input
+            aria-label="User account CSV file"
+            type="file"
+            accept=".csv,text/csv,application/vnd.ms-excel"
+            onChange={onFileChange}
+          />
+          <Button type="primary" loading={loading} disabled={!file || loading} onClick={onRunDryRun}>
+            Run dry-run
+          </Button>
+          <Tag color={file ? "processing" : "default"}>
+            {file ? `${file.name} (${formatBytes(file.size)})` : "No CSV selected"}
+          </Tag>
+        </Space>
+        {!file && !result && !error ? (
+          <Typography.Text type="secondary">
+            Select one .csv file to preview account validation results.
+          </Typography.Text>
+        ) : null}
+        {error ? (
+          <Alert type="error" showIcon message={error.message} description={error.detail} />
+        ) : null}
+        {result ? <UserAccountImportDryRunResultView result={result} /> : null}
+      </Space>
+    </Card>
+  );
+}
+
+export function UserAccountImportDryRunResultView({
+  result,
+}: {
+  result: UserAccountImportDryRunResult;
+}) {
+  return (
+    <Space direction="vertical" size={12} className="full-width">
+      <Alert
+        type={result.summary.errorRows > 0 ? "warning" : "success"}
+        showIcon
+        message="Dry-run report ready"
+        description={`importType=${result.importType}; dryRun=${String(result.dryRun)}; no account writes, credential changes, or role assignments were requested.`}
+      />
+      <Alert
+        type="info"
+        showIcon
+        message="employeeNo DB conflict check: NOT_AVAILABLE"
+        description="Current schema does not persist employeeNo for account users, so the dry-run only checks employeeNo duplicates within the uploaded file."
+      />
+      <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
+        <Descriptions.Item label="File">{result.file.name}</Descriptions.Item>
+        <Descriptions.Item label="Size">{formatBytes(result.file.size)}</Descriptions.Item>
+        <Descriptions.Item label="Encoding">{result.file.encoding}</Descriptions.Item>
+        <Descriptions.Item label="Total rows">{result.summary.totalRows}</Descriptions.Item>
+        <Descriptions.Item label="Valid rows">{result.summary.validRows}</Descriptions.Item>
+        <Descriptions.Item label="Error rows">{result.summary.errorRows}</Descriptions.Item>
+        <Descriptions.Item label="Warning rows">{result.summary.warningRows}</Descriptions.Item>
+        <Descriptions.Item label="Create candidates">
+          {result.summary.createCandidates}
+        </Descriptions.Item>
+        <Descriptions.Item label="Existing users">
+          {result.summary.existingUserRows}
+        </Descriptions.Item>
+        <Descriptions.Item label="Existing role assignments">
+          {result.summary.existingRoleAssignmentRows}
+        </Descriptions.Item>
+        <Descriptions.Item label="Reactivation candidates">
+          {result.summary.reactivationCandidateRows}
+        </Descriptions.Item>
+        <Descriptions.Item label="employeeNo DB check">
+          {result.summary.employeeNoDbConflictCheck}
+        </Descriptions.Item>
+      </Descriptions>
+      <Space size={[6, 6]} wrap>
+        <Typography.Text strong>Required</Typography.Text>
+        {result.columns.required.map((column) => (
+          <Tag key={`required-${column}`} color="blue">
+            {column}
+          </Tag>
+        ))}
+        <Typography.Text strong>Optional</Typography.Text>
+        {result.columns.optional.map((column) => (
+          <Tag key={`optional-${column}`}>{column}</Tag>
+        ))}
+        <Typography.Text strong>Received</Typography.Text>
+        {result.columns.received.map((column) => (
+          <Tag key={`received-${column}`} color={column === "(sensitive)" ? "red" : "geekblue"}>
+            {column}
+          </Tag>
+        ))}
+      </Space>
+      <Table<UserAccountImportDryRunRow>
+        size="small"
+        rowKey={(row) => String(row.rowNumber)}
+        pagination={false}
+        dataSource={result.rows}
+        columns={userAccountImportDryRunColumns}
+        scroll={{ x: 1320 }}
+      />
+    </Space>
+  );
+}
+
+const maxUserAccountImportCsvFileSizeBytes = 1024 * 1024;
+
+const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["columns"] = [
+  {
+    title: "Row",
+    dataIndex: "rowNumber",
+    key: "rowNumber",
+    width: 72,
+  },
+  {
+    title: "Safe preview",
+    key: "parsed",
+    width: 360,
+    render: (_, row) => (
+      <Space direction="vertical" size={2}>
+        <Typography.Text>email: {row.parsed.email ?? "-"}</Typography.Text>
+        <Typography.Text>displayName: {row.parsed.displayName ?? "-"}</Typography.Text>
+        <Typography.Text>employeeNo: {row.parsed.employeeNo ?? "-"}</Typography.Text>
+        <Typography.Text>departmentCode: {row.parsed.departmentCode ?? "-"}</Typography.Text>
+        <Typography.Text>roleCode: {row.parsed.roleCode ?? "-"}</Typography.Text>
+        <Typography.Text>
+          scope: {row.parsed.scopeType ?? "-"} / {row.parsed.scopeDepartmentCode ?? "-"}
+        </Typography.Text>
+        <Typography.Text>status: {row.parsed.status ?? "-"}</Typography.Text>
+        <Typography.Text>credentialAction: {row.parsed.credentialAction}</Typography.Text>
+      </Space>
+    ),
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    key: "status",
+    width: 120,
+    render: (status: UserAccountImportDryRunRow["status"]) => (
+      <Tag color={getImportDryRunStatusColor(status)}>{status}</Tag>
+    ),
+  },
+  {
+    title: "Candidate",
+    dataIndex: "candidateAction",
+    key: "candidateAction",
+    width: 190,
+  },
+  {
+    title: "Errors",
+    dataIndex: "errors",
+    key: "errors",
+    width: 300,
+    render: (issues: UserAccountImportDryRunIssue[]) => renderImportIssueList(issues, "error"),
+  },
+  {
+    title: "Warnings",
+    dataIndex: "warnings",
+    key: "warnings",
+    width: 300,
+    render: (issues: UserAccountImportDryRunIssue[]) => renderImportIssueList(issues, "warning"),
+  },
+];
+
+const renderImportIssueList = (
+  issues: readonly UserAccountImportDryRunIssue[],
+  tone: "error" | "warning",
+) => {
+  if (issues.length === 0) {
+    return <Typography.Text type="secondary">None</Typography.Text>;
+  }
+
+  return (
+    <Space direction="vertical" size={4}>
+      {issues.map((issue, index) => (
+        <span key={`${issue.field}-${issue.code}-${index}`}>
+          <Tag color={tone === "error" ? "red" : "gold"}>{issue.code}</Tag>
+          <Typography.Text>{`${issue.field}: ${issue.message}`}</Typography.Text>
+        </span>
+      ))}
+    </Space>
+  );
+};
+
+const getImportDryRunStatusColor = (status: UserAccountImportDryRunRow["status"]) => {
+  if (status === "ERROR") {
+    return "red";
+  }
+  if (status === "WARNING") {
+    return "gold";
+  }
+  return "green";
+};
+
+const toValidationError = (message: string | null): ApiError | null =>
+  message
+    ? {
+        kind: "bad-request",
+        message,
+      }
+    : null;
+
+const formatBytes = (value: number): string => {
+  if (!Number.isFinite(value) || value < 0) {
+    return "0 B";
+  }
+
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  const kilobytes = value / 1024;
+  if (kilobytes < 1024) {
+    return `${kilobytes.toFixed(1)} KB`;
+  }
+
+  return `${(kilobytes / 1024).toFixed(1)} MB`;
 };
 
 export const buildActiveDepartmentOptions = (

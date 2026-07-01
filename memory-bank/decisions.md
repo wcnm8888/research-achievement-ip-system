@@ -1,5 +1,24 @@
 # Decisions
 
+## D213 - User account import dry-run UI stays read-only under account management
+
+- Date: 2026-07-01.
+- Context: Step 59C integrates the Step 59B user/account CSV import dry-run backend into Web. The user allowed Web/client source and tests plus memory-bank updates, but prohibited backend behavior changes unless strictly necessary, Web write-import controls, Prisma schema/migration work, seed/backfill, real account import, account password work, invite/reset token issuance, production/VPS access, secret reads, package changes, cleanup/deletion/reset/drop/prune, push/deploy, and existing untracked-artifact handling.
+- Decision:
+  - Expose the Web entry inside `AccountManagement` because that page already represents the `system:config` account administration boundary.
+  - Reuse the existing department dry-run pattern: `FormData`, local `.csv` and 1 MB validation, read-only card, summary, columns, row table, errors, and warnings.
+  - Add `AccountManagementApiClient.dryRunUserAccountImport({ file })` targeting `/users/import/dry-run`, which resolves to `/api/users/import/dry-run` behind the configured Web API base.
+  - Keep the UI strictly dry-run only. It can upload CSV and render backend previews, but it must not provide any confirm import, execute import, create accounts, credential setup, role assignment write, invite issuance, or reset issuance control.
+- Permission:
+  - Mount the UI only after the existing AccountManagement `system:config` frontend branch succeeds.
+  - Rely on the Step 59B backend `system:config` guard as the final authorization boundary.
+- Security:
+  - Display only backend-safe preview fields and issue messages.
+  - State that password, password hash, token, cookie, secret, invite link, and reset link columns are unsupported.
+  - Do not display, log, or store sensitive credential material, tokens, cookies, secrets, connection strings, AccessKeys, private keys, or full invite/reset links.
+- Scope:
+  - No backend behavior, Prisma schema, migration, seed/backfill, package/lockfile, production/VPS, Docker production-like acceptance, real account import, credential write, account password, invite/reset, or untracked-artifact work is authorized by this decision.
+
 ## D212 - User account import dry-run is backend-only and read-only
 
 - Date: 2026-07-01.

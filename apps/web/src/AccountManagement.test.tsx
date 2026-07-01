@@ -12,6 +12,7 @@ import {
   buildReasonPayload,
   createAccountUserFromForm,
   createInviteFromForm,
+  dryRunUserAccountImport,
   executeAccountOperation,
   fetchActiveDepartments,
   fetchAccountUserDetail,
@@ -21,6 +22,9 @@ import {
   hasAccountResetPasswordPermission,
   hasSystemConfigPermission,
   shouldLoadAccountDepartmentOptions,
+  UserAccountImportDryRunPanel,
+  UserAccountImportDryRunResultView,
+  validateUserAccountImportCsvFile,
 } from "./AccountManagement";
 import type {
   AccountUserDetail,
@@ -28,6 +32,7 @@ import type {
   AssignAccountUserRoleResponse,
   DepartmentSummary,
   DisableAccountUserResponse,
+  UserAccountImportDryRunResult,
 } from "./types";
 
 const adminUser: Pick<AuthUser, "permissionCodes"> = {
@@ -94,6 +99,122 @@ const archivedDepartment: DepartmentSummary = {
   archivedAt: "2026-06-02T00:00:00.000Z",
 };
 
+const userAccountImportDryRunResult: UserAccountImportDryRunResult = {
+  importType: "USER_ACCOUNT",
+  dryRun: true,
+  file: {
+    name: "users.csv",
+    size: 160,
+    mimeType: "text/csv",
+    encoding: "utf-8",
+  },
+  columns: {
+    required: ["email", "displayName", "departmentCode", "roleCode"],
+    optional: ["employeeNo", "scopeType", "scopeDepartmentCode", "status"],
+    received: [
+      "email",
+      "displayName",
+      "employeeNo",
+      "departmentCode",
+      "roleCode",
+      "scopeType",
+      "scopeDepartmentCode",
+      "status",
+      "(sensitive)",
+    ],
+  },
+  summary: {
+    totalRows: 3,
+    validRows: 1,
+    errorRows: 1,
+    warningRows: 1,
+    createCandidates: 1,
+    existingUserRows: 1,
+    existingRoleAssignmentRows: 0,
+    reactivationCandidateRows: 1,
+    employeeNoDbConflictCheck: "NOT_AVAILABLE",
+  },
+  rows: [
+    {
+      rowNumber: 2,
+      parsed: {
+        email: "new.user@example.com",
+        displayName: "New User",
+        employeeNo: "E001",
+        departmentCode: "D001",
+        roleCode: "RESEARCHER",
+        scopeType: "DEPARTMENT",
+        scopeDepartmentCode: "D001",
+        status: "PENDING_ACTIVATION",
+        credentialAction: "NO_CREDENTIAL",
+      },
+      status: "VALID",
+      candidateAction: "CREATE_PENDING_USER",
+      errors: [],
+      warnings: [],
+    },
+    {
+      rowNumber: 3,
+      parsed: {
+        email: "existing.user@example.com",
+        displayName: "Existing User",
+        employeeNo: "E002",
+        departmentCode: "D001",
+        roleCode: "RESEARCHER",
+        scopeType: "DEPARTMENT",
+        scopeDepartmentCode: "D001",
+        status: "DISABLED",
+        credentialAction: "NO_CREDENTIAL",
+      },
+      status: "WARNING",
+      candidateAction: "REVIEW_EXISTING_USER",
+      errors: [],
+      warnings: [
+        {
+          field: "email",
+          code: "EXISTING_USER",
+          message: "User email already exists.",
+        },
+      ],
+    },
+    {
+      rowNumber: 4,
+      parsed: {
+        email: "blocked.user@example.com",
+        displayName: "Blocked User",
+        employeeNo: "E001",
+        departmentCode: "UNKNOWN",
+        roleCode: "SYSTEM_ADMIN",
+        scopeType: "GLOBAL",
+        scopeDepartmentCode: null,
+        status: "ACTIVE",
+        credentialAction: "NO_CREDENTIAL",
+      },
+      status: "ERROR",
+      candidateAction: "SKIP",
+      errors: [
+        {
+          field: "(sensitive)",
+          code: "FORBIDDEN_SENSITIVE_COLUMN",
+          message: "Credential, token, session, secret, and link columns are not supported.",
+        },
+        {
+          field: "departmentCode",
+          code: "UNKNOWN_DEPARTMENT",
+          message: "Department code does not exist.",
+        },
+      ],
+      warnings: [
+        {
+          field: "employeeNo",
+          code: "DUPLICATE_IN_FILE",
+          message: "employeeNo is duplicated in the uploaded file.",
+        },
+      ],
+    },
+  ],
+};
+
 describe("account management permission helpers", () => {
   it("allows only users with system:config to enter account management", () => {
     expect(hasSystemConfigPermission(adminUser)).toBe(true);
@@ -140,6 +261,24 @@ describe("account management permission helpers", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
+
+  it("shows the account import dry-run entry only inside the system config account boundary", () => {
+    const adminHtml = renderToStaticMarkup(
+      <AccountManagement demoUserId="admin-user-id" authUser={adminUser} />,
+    );
+    const auditorHtml = renderToStaticMarkup(
+      <AccountManagement
+        demoUserId="auditor-user-id"
+        authUser={{ permissionCodes: ["audit:read"] }}
+      />,
+    );
+
+    expect(adminHtml).toContain("User account CSV dry-run");
+    expect(adminHtml).toContain("POST /users/import/dry-run");
+    expect(adminHtml).toContain("Password, passwordHash, token, cookie, secret");
+    expect(auditorHtml).not.toContain("User account CSV dry-run");
+    expect(auditorHtml).not.toContain("/users/import/dry-run");
+  });
 });
 
 describe("account management active department selector helpers", () => {
@@ -185,6 +324,115 @@ describe("account management active department selector helpers", () => {
         message: "服务不可用",
       }),
     ).toBe("服务不可用");
+  });
+});
+
+describe("user account import dry-run UI", () => {
+  it("validates CSV-only file selection before dry-run submission", () => {
+    expect(
+      validateUserAccountImportCsvFile({
+        name: "users.csv",
+        size: 1024,
+        type: "text/csv",
+      }),
+    ).toBeNull();
+    expect(
+      validateUserAccountImportCsvFile({
+        name: "users.xlsx",
+        size: 1024,
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+    ).toContain("Only .csv");
+    expect(
+      validateUserAccountImportCsvFile({
+        name: "users.csv",
+        size: 1024 * 1024 + 1,
+        type: "text/csv",
+      }),
+    ).toContain("1 MB");
+  });
+
+  it("runs user account import dry-run through the client without write helpers", async () => {
+    const file = new File(
+      ["email,displayName,departmentCode,roleCode\nnew.user@example.com,New User,D001,RESEARCHER"],
+      "users.csv",
+      { type: "text/csv" },
+    );
+    const client = {
+      dryRunUserAccountImport: vi.fn(async () => userAccountImportDryRunResult),
+    } as unknown as Pick<AccountManagementApiClient, "dryRunUserAccountImport">;
+
+    await expect(dryRunUserAccountImport(client, file)).resolves.toEqual(
+      userAccountImportDryRunResult,
+    );
+    expect(client.dryRunUserAccountImport).toHaveBeenCalledWith({ file });
+  });
+
+  it("renders summary, safe previews, warnings, and employeeNo DB check status", () => {
+    const html = renderToStaticMarkup(
+      <UserAccountImportDryRunResultView result={userAccountImportDryRunResult} />,
+    );
+
+    expect(html).toContain("Dry-run report ready");
+    expect(html).toContain("USER_ACCOUNT");
+    expect(html).toContain("Total rows");
+    expect(html).toContain("Existing users");
+    expect(html).toContain("NOT_AVAILABLE");
+    expect(html).toContain("NO_CREDENTIAL");
+    expect(html).toContain("EXISTING_USER");
+    expect(html).toContain("DUPLICATE_IN_FILE");
+  });
+
+  it("renders sensitive column rejection without exposing a sensitive original value", () => {
+    const html = renderToStaticMarkup(
+      <UserAccountImportDryRunResultView result={userAccountImportDryRunResult} />,
+    );
+
+    expect(html).toContain("FORBIDDEN_SENSITIVE_COLUMN");
+    expect(html).toContain("(sensitive)");
+    expect(html).toContain("Credential, token, session, secret, and link columns are not supported.");
+    expect(html).not.toContain("temporary-secret-value");
+    expect(html).not.toContain("https://example.com/reset/");
+  });
+
+  it("renders backend dry-run errors as a front-end error state", () => {
+    const html = renderToStaticMarkup(
+      <UserAccountImportDryRunPanel
+        file={new File(["email,displayName"], "users.csv", { type: "text/csv" })}
+        loading={false}
+        error={{
+          kind: "bad-request",
+          status: 400,
+          message: "CSV validation failed.",
+          detail: "Credential and link columns are not supported.",
+        }}
+        result={null}
+        onFileChange={vi.fn()}
+        onRunDryRun={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("CSV validation failed.");
+    expect(html).toContain("Credential and link columns are not supported.");
+  });
+
+  it("does not render any real account import execution entry", () => {
+    const html = renderToStaticMarkup(
+      <UserAccountImportDryRunPanel
+        file={null}
+        loading={false}
+        error={null}
+        result={null}
+        onFileChange={vi.fn()}
+        onRunDryRun={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("Run dry-run");
+    expect(html).not.toContain("Execute import");
+    expect(html).not.toContain("Confirm import");
+    expect(html).not.toContain("Run import");
+    expect(html).not.toContain("Create accounts");
   });
 });
 

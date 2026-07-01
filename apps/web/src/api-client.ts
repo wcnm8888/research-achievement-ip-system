@@ -40,6 +40,8 @@ import type {
   RejectFeeReviewInput,
   UpdateApiIntegrationInput,
   UpdateDepartmentInput,
+  UserAccountImportDryRunInput,
+  UserAccountImportDryRunResult,
 } from "./types";
 
 export type ApiErrorKind =
@@ -93,6 +95,9 @@ export type AccountManagementApiClient = ApiClient & {
   dryRunDepartmentImport(
     input: DepartmentImportDryRunInput,
   ): Promise<DepartmentImportDryRunResult>;
+  dryRunUserAccountImport(
+    input: UserAccountImportDryRunInput,
+  ): Promise<UserAccountImportDryRunResult>;
   listAccountUsers(query?: ListAccountUsersQuery): Promise<AccountUserListResponse>;
   getAccountUser(userId: string): Promise<AccountUserDetail>;
   createAccountUser(payload: CreateAccountUserInput): Promise<AccountUserDetail>;
@@ -339,6 +344,12 @@ export const createApiClient = (
       options,
     );
     return response as DepartmentImportDryRunResult;
+  },
+  async dryRunUserAccountImport(input: UserAccountImportDryRunInput) {
+    const body = new FormData();
+    body.append("file", input.file);
+    const response = await requestForm("/users/import/dry-run", demoUserId, body, options);
+    return response as UserAccountImportDryRunResult;
   },
   async listAccountUsers(query?: ListAccountUsersQuery) {
     const response = await request(
