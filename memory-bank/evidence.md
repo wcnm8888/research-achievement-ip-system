@@ -1,5 +1,58 @@
 # Evidence
 
+## 2026-07-01 Step 59D - User/account import dry-run local Docker production-like acceptance evidence
+
+- Purpose:
+  - Verify the Step 59B backend dry-run API and Step 59C Web UI together in the local Docker production-like stack.
+  - Keep real account import, backend feature changes, Web write/import controls, Prisma schema edits, migrations, seed/backfill, account password changes/resets, invite/reset token issuance, production/VPS access, package/lockfile changes, push/deploy, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `f0eda54`.
+  - Latest commit subject: `feat(web): add user account import dry run`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 59D edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env.production` existed; only metadata/existence was checked. Contents were not read or output.
+- Local Docker production-like stack:
+  - `docker compose -f docker-compose.production.yml ps` initially showed local `postgres`, `api`, and `web` running healthy.
+  - `docker compose -f docker-compose.production.yml build api web`: PASS. Web build emitted the existing chunk-size warning.
+  - `docker compose -f docker-compose.production.yml up -d api web`: PASS. Compose reported an existing orphan-container warning; no cleanup command was run.
+  - Final `docker compose -f docker-compose.production.yml ps`: local `postgres`, `api`, and `web` healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `GET http://127.0.0.1:18081/`: HTTP 200.
+- API acceptance:
+  - Prepared Step 59D local synthetic department/users/roles/sessions. Transient session values stayed in process memory and were not output.
+  - A preliminary .NET `HttpClient` cookie-header attempt returned 401 while DB-side booleans showed the synthetic session was valid. The accepted API path used `curl.exe` with a cookie header and no cookie output.
+  - Synthetic `system:config` admin dry-run: HTTP 201.
+  - Synthetic limited user dry-run: HTTP 403.
+  - Sensitive-column dry-run: HTTP 201 with `FORBIDDEN_SENSITIVE_COLUMN` and `(sensitive)` markers.
+  - API result markers verified: `USER_ACCOUNT`, `NO_CREDENTIAL`, `EXISTING_USER`, `EXISTING_ROLE_ASSIGNMENT`, `DUPLICATE_IN_FILE`, `UNKNOWN_DEPARTMENT`, `GLOBAL_SCOPE_NOT_ALLOWED`, `ROLE_NOT_IMPORTABLE`, `UNSUPPORTED_STATUS`, and `NOT_AVAILABLE`.
+  - Sensitive-column response did not echo the tested sensitive header/value content.
+  - Dry-run before/after counts remained stable for `User`, `UserCredential`, `UserRole`, `UserSession`, `AccountLifecycleToken`, and `AuditLog`.
+- Browser acceptance:
+  - Added `memory-bank/step59d-browser-acceptance.js`.
+  - Used `playwright-cli -s=step59d-admin open http://127.0.0.1:19091/` and `playwright-cli -s=step59d-admin run-code --filename=memory-bank/step59d-browser-acceptance.js`: PASS.
+  - Used `playwright-cli -s=step59d-limited open http://127.0.0.1:19092/` and `playwright-cli -s=step59d-limited run-code --filename=memory-bank/step59d-browser-acceptance.js`: PASS.
+  - The local proxy ports returned HTTP 200 for `/api/auth/me` before browser runs.
+  - Admin browser run covered visible user/account dry-run UI, CSV upload, summary, safe preview, row warnings/errors, sensitive-column rejection through same-origin API, `employeeNo DB conflict check: NOT_AVAILABLE`, and absence of write/import entrypoints.
+  - Limited browser run covered hidden dry-run UI and HTTP 403 from the dry-run API.
+  - The browser script was adjusted to avoid `Buffer` because this `playwright-cli run-code` environment did not expose it; the final script uses browser `DataTransfer`/`File` instead.
+- Local validation:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 7 files / 27 tests.
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts AccountManagement.test.tsx`: PASS, 2 files / 64 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - Placeholder `DATABASE_URL` + `corepack pnpm prisma:validate`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Safety notes:
+  - No VPS / production DB access.
+  - No production migration, seed, or backfill.
+  - No real account import, password change/reset, credential setup, invite/reset issuance, push, deploy, package/lockfile change, cleanup, deletion, reset, drop, or prune.
+  - No `.env` / `.env.production` content was read.
+  - No password, cookie, session value, token, secret, connection string, AccessKey, private key, or full invite/reset link was recorded.
+  - Local synthetic acceptance data was left in place because cleanup/deletion was explicitly out of scope.
+- Deferred:
+  - Real write import, account lifecycle invite/reset issuance, `employeeNo` persistence and DB conflict checks, local synthetic data cleanup under explicit authorization, production/VPS rollout, and broader production acceptance.
+
 ## 2026-07-01 Step 59C - User/account import dry-run Web UI integration evidence
 
 - Purpose:

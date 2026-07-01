@@ -1,5 +1,44 @@
 # Progress
 
+## 2026-07-01 Step 59D - User/account import dry-run local Docker production-like acceptance
+
+- Status: STEP_59D_USER_ACCOUNT_IMPORT_DRY_RUN_LOCAL_ACCEPTED.
+- Step identity:
+  - Verified the Step 59B/59C user/account CSV import dry-run API + Web UI loop in the local Docker production-like stack.
+  - Scope stayed limited to local acceptance, `memory-bank/step59d-browser-acceptance.js`, and memory-bank updates.
+  - No backend behavior change, Web feature change, Prisma schema change, migration, seed/backfill, real account import, account password change/reset, invite/reset token issuance, production/VPS access, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Local Docker production-like stack:
+  - `.env.production` existence was confirmed by file metadata only; contents were not read or output.
+  - `docker compose -f docker-compose.production.yml build api web`: PASS; Web build emitted the existing chunk-size warning.
+  - `docker compose -f docker-compose.production.yml up -d api web`: PASS; an existing orphan-container warning was observed and intentionally not cleaned.
+  - `docker compose -f docker-compose.production.yml ps`: local `postgres`, `api`, and `web` healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `GET http://127.0.0.1:18081/`: HTTP 200.
+- API acceptance:
+  - Prepared local synthetic department/users/roles/sessions for Step 59D only; session values stayed in process memory and were not printed or written.
+  - `system:config` synthetic admin `POST /api/users/import/dry-run`: HTTP 201 with `USER_ACCOUNT`, summary, safe preview, `NO_CREDENTIAL`, warnings, and validation errors.
+  - Synthetic non-`system:config` user `POST /api/users/import/dry-run`: HTTP 403.
+  - Sensitive columns returned `FORBIDDEN_SENSITIVE_COLUMN` and `(sensitive)` without echoing the tested sensitive header/value content.
+  - `departmentCode`, `roleCode`, `scopeType`, and `status` validation returned expected markers including unknown department, `SYSTEM_ADMIN` not importable, global scope denial, and unsupported active status.
+  - Dry-run before/after counts for `User`, `UserCredential`, `UserRole`, `UserSession`, `AccountLifecycleToken`, and `AuditLog` remained unchanged.
+- Web/browser acceptance:
+  - Added `memory-bank/step59d-browser-acceptance.js`.
+  - Used `playwright-cli` named sessions `step59d-admin` and `step59d-limited`.
+  - Used a short-lived local proxy on `127.0.0.1:19091` and `127.0.0.1:19092` to inject transient production session cookies for `/api` requests without recording cookie/session values.
+  - Admin browser run saw `User account CSV dry-run`, uploaded synthetic CSV, rendered summary, safe preview, warnings/errors, and `employeeNo DB conflict check: NOT_AVAILABLE`.
+  - Admin browser run verified sensitive-column rejection via same-origin API and checked that no import write entry is exposed.
+  - Limited browser run did not see the dry-run UI and received HTTP 403 from the dry-run API.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 7 files / 27 tests.
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts AccountManagement.test.tsx`: PASS, 2 files / 64 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - Placeholder `DATABASE_URL` + `corepack pnpm prisma:validate`: PASS; schema unchanged.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Next:
+  - Real write import, account lifecycle invite/reset issuance, `employeeNo` persistence and DB conflict checks, production/VPS rollout, and cleanup of local synthetic acceptance data remain separate explicit steps.
+
 ## 2026-07-01 Step 59C - User/account import dry-run Web UI integration
 
 - Status: STEP_59C_USER_ACCOUNT_IMPORT_DRY_RUN_WEB_IMPLEMENTED.

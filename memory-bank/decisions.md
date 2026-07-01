@@ -1,5 +1,21 @@
 # Decisions
 
+## D214 - User account import dry-run local acceptance uses transient proxy sessions
+
+- Date: 2026-07-01.
+- Context: Step 59D verifies the Step 59B/59C user/account import dry-run API + Web UI in the local Docker production-like stack. The task allows local synthetic users/sessions but forbids real account import, password changes/resets, production/VPS access, deployment, secret reads/output, deletion/cleanup/reset/drop/prune, and existing untracked-artifact handling.
+- Decision:
+  - Treat Step 59D as local Docker production-like acceptance only, not production/VPS acceptance.
+  - Use local synthetic department/users/roles/sessions solely to exercise `system:config` and non-`system:config` auth paths.
+  - Keep transient session cookie values in process memory only; do not write them to files, docs, commits, or chat.
+  - Use a short-lived local proxy for browser acceptance so production-like secure-cookie behavior can be exercised through normal `/api` calls without exposing cookie values through `playwright-cli`.
+  - Do not clean local synthetic acceptance rows in this Step because deletion/cleanup is explicitly out of scope.
+- Acceptance boundary:
+  - API acceptance must compare key table counts after synthetic setup and after dry-run calls to prove the dry-run endpoint itself writes no `User`, `UserCredential`, `UserRole`, `UserSession`, lifecycle token, or audit rows.
+  - Web acceptance must verify the admin UI loop, sensitive-column rejection, `employeeNoDbConflictCheck=NOT_AVAILABLE`, lack of write/import entrypoints, and non-authorized 403 or hidden-entry behavior.
+- Scope:
+  - This decision does not authorize real write import, account activation, credential setup, password reset/change, invite/reset token issuance, schema/migration work, production/VPS work, package changes, deployment, push, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D213 - User account import dry-run UI stays read-only under account management
 
 - Date: 2026-07-01.
