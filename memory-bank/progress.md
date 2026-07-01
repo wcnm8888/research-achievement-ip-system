@@ -1,5 +1,40 @@
 # Progress
 
+## 2026-07-01 Step 62B - Attachment binary backup backend/ops-only implementation
+
+- Status: STEP_62B_ATTACHMENT_BINARY_BACKUP_OPS_IMPLEMENTED.
+- Step identity:
+  - Implemented local backend/ops-only attachment binary backup coverage from Step 62A.
+  - Scope stayed limited to API ops command/core code, unit tests, a package script, and memory-bank updates.
+  - No Web UI, Docker production-like acceptance, restore drill, production/VPS access, Prisma schema change, migration, seed/backfill, real attachment upload/download/change, account/password change, package install, lockfile change, push/deploy, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `apps/api/src/operations/attachment-binary-backup.ts`.
+  - Added `apps/api/src/operations/attachment-binary-backup.spec.ts`.
+  - Added API package script `ops:backup:attachments`.
+  - DB dump creation remains the existing Step 53 external `pg_dump -Fc` behavior; the new command supports listing an existing DB dump artifact through `--db-dump`.
+  - Attachment archive covers supported `Attachment` relation types `ACHIEVEMENT` and `FEE_RECORD`.
+  - `WORKFLOW_ACTION` remains unsupported/deferred and is counted only as aggregate unsupported relation metadata.
+- Manifest/artifact-list contract:
+  - Attachment archive artifact contains binary backup bytes and safe per-entry headers without storage keys or uploaded file names.
+  - Manifest records only aggregate non-sensitive fields: artifact type, createdAt, supported relation types, file count, total bytes, relation-type counts, missing binary count, extra binary count, unsupported relation count, consistency status, and whole-archive digest.
+  - Artifact-list records artifact type, basename, byte count, and whole-artifact digest for DB dump if provided, attachment archive, and attachment manifest.
+  - Tests prove manifest/artifact-list do not contain raw storage key snippets, file contents, `checksum`, `voucherNo`, or `amount`.
+- Consistency validation:
+  - DB metadata with missing binary increments an aggregate missing count and marks manifest status `FAILED`.
+  - Storage files not referenced by any Attachment metadata increment aggregate extra count and mark manifest status `WARNING` when no missing binary exists.
+  - Normal CLI summary output uses only aggregate counts and artifact basenames.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/api test -- src/operations/attachment-binary-backup.spec.ts`: PASS, 1 file / 2 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Initial `corepack pnpm prisma:validate` failed because no `DATABASE_URL` existed in the shell; `.env` files were not read.
+  - `corepack pnpm prisma:validate` with one-off dummy `DATABASE_URL`: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan over tracked diff and new ops files: PASS.
+- Next:
+  - Commit and run post-commit tracked diff check.
+  - Real local backup execution, Docker production-like acceptance, restore drill, production/VPS rollout, retention/encryption/offsite policy, and durable attachment volume design remain separate explicit steps.
+
 ## 2026-07-01 Step 62A - Attachment binary backup coverage scope and local plan
 
 - Status: STEP_62A_ATTACHMENT_BINARY_BACKUP_COVERAGE_PLAN_READY_DOCS_ONLY.

@@ -1,5 +1,54 @@
 # Evidence
 
+## 2026-07-01 Step 62B - Attachment binary backup backend/ops-only implementation evidence
+
+- Purpose:
+  - Implement backend/ops-only local attachment binary backup coverage from Step 62A.
+  - Add local command/core logic, manifest/artifact-list contract, consistency checks, and unit tests.
+  - Keep Web UI, Docker production-like acceptance, restore drill, production/VPS access, schema changes, migrations, seed/backfill, real attachment operations, package installs, lockfile changes, push/deploy, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `5deb155`.
+  - Latest commit subject: `docs: plan attachment binary backup coverage`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 62B edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but relevant gate and sensitive-boundary rules remained identifiable.
+  - Read Step 62A top records in implementation-plan, decisions, progress, and evidence.
+  - Read targeted Step 53A-53D and Step 56A-56D backup/attachment records through top/archive snippets and search results.
+  - Inspected `apps/api/src/attachments` storage/repository/service/controller/DTO/mapper/key-builder files and local storage tests.
+  - Searched for existing backup/restore/operations scripts and found no existing backup endpoint, package script, or source operations module.
+  - Inspected `docker-compose.production.yml`, `apps/api/package.json`, root `package.json`, API tsconfig files, and Prisma schema presence by targeted checks.
+  - No real attachment binary file content was opened or read.
+- Implementation evidence:
+  - Added `apps/api/src/operations/attachment-binary-backup.ts`.
+  - Added `apps/api/src/operations/attachment-binary-backup.spec.ts`.
+  - Added API package script `ops:backup:attachments`.
+  - The ops command reads Attachment DB metadata at runtime, reads local binary streams through the local storage adapter, writes attachment archive/manifest/artifact-list artifacts when explicitly executed, and prints only a safe aggregate summary.
+  - DB dump creation remains external. The command can include an existing DB dump in artifact-list metadata with `--db-dump`; it does not run `pg_dump`.
+  - The unit tests use in-memory fake storage and synthetic byte strings only; no real local attachment files or backup artifacts are read or created by tests.
+- Contract evidence:
+  - Supported binary archive relation types are `ACHIEVEMENT` and `FEE_RECORD`.
+  - `WORKFLOW_ACTION` is counted as unsupported/deferred and not claimed as backed up.
+  - Manifest fields are aggregate only: artifact type, createdAt, supported relation types, file count, total bytes, relation-type counts, missing binary count, extra binary count, unsupported relation count, consistency status, and archive digest.
+  - Artifact-list fields are artifact type, basename, byte count, and whole-artifact digest.
+  - Tests assert manifest/artifact-list output does not contain raw storage key snippets, synthetic file content, `checksum`, `voucherNo`, or `amount`.
+- Consistency evidence:
+  - Missing DB-referenced binary increments `missingBinaryCount` and produces `FAILED`.
+  - Extra storage binary increments `extraBinaryCount` and produces `WARNING` when no referenced binary is missing.
+  - Concrete storage keys and file paths are used only internally for read/stat/list operations and are not included in manifest/artifact-list or safe CLI summary output.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/operations/attachment-binary-backup.spec.ts`: PASS, 1 file / 2 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - First `corepack pnpm prisma:validate`: failed because `DATABASE_URL` was absent from the shell; `.env` files were not read.
+  - `corepack pnpm prisma:validate` with one-off dummy `DATABASE_URL`: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan over tracked diff and new ops files: PASS.
+- Boundaries observed:
+  - No real backup command, Docker production-like acceptance, restore command, migration, seed, backfill, production/VPS access, attachment upload/download/change, account/password operation, package install, lockfile change, push, deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+
 ## 2026-07-01 Step 62A - Attachment binary backup coverage scope and local plan evidence
 
 - Purpose:

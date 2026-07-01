@@ -1,5 +1,29 @@
 # Decisions
 
+## D223 - Attachment binary backup is a local ops command, not a Web surface
+
+- Date: 2026-07-01.
+- Context: Step 62B implements the Step 62A backend/ops-only plan. The task allows backup/attachment binary coverage source and tests, a necessary package script, and memory-bank updates, while prohibiting Web UI, Docker production-like acceptance, restore drill, production/VPS access, Prisma schema changes, migrations, seed/backfill, real attachment operations, `.env` / `.env.production` content reads, package installs, lockfile changes, push/deploy, cleanup/deletion/reset/drop/prune, and existing untracked-artifact handling.
+- Decision:
+  - Add a local API ops command at `apps/api/src/operations/attachment-binary-backup.ts` and expose it through `ops:backup:attachments`.
+  - Keep DB dump creation outside this command. The Step 53 `pg_dump -Fc` flow remains the DB backup behavior; this command can include an existing DB dump path in artifact-list metadata when provided.
+  - Keep the backup surface out of Web UI and HTTP controllers.
+  - Keep relation coverage to `ACHIEVEMENT` and `FEE_RECORD`; count but do not claim `WORKFLOW_ACTION`.
+- Artifact contract:
+  - Produce an attachment binary archive artifact, attachment backup manifest, and artifact-list metadata.
+  - Artifact-list metadata can identify an existing DB dump, the attachment archive, and the attachment manifest by artifact type, basename, byte count, and whole-artifact digest.
+  - Manifest records aggregate fields only: artifact type, createdAt, supported relation types, file count, total bytes, relation-type counts, missing binary count, extra binary count, unsupported relation count, consistency status, and whole-archive digest.
+  - Manifest and artifact-list must not contain raw storage keys, raw file checksums, file contents, voucher numbers, amounts, raw fee payloads, cookies, tokens, secrets, connection strings, AccessKeys, or private keys.
+- Consistency:
+  - Missing DB-referenced binaries fail the manifest consistency status.
+  - Unreferenced binaries in storage produce an aggregate extra count and warning status when no referenced binary is missing.
+  - Normal command output is a safe summary only and must not print concrete storage keys or file contents.
+- Testing:
+  - Unit tests should use in-memory fake storage and synthetic bytes, not real local attachment files.
+  - Tests must prove manifest/artifact-list redaction boundaries by string inspection.
+- Scope:
+  - This decision does not authorize Web UI, HTTP backup endpoints, Docker acceptance, real backup execution, restore execution, production/VPS access, schema/migration/seed/backfill, real attachment upload/download/change, account/password work, package installs, lockfile changes, deployment, push, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D222 - Attachment binary backup coverage starts as backend ops only
 
 - Date: 2026-07-01.
