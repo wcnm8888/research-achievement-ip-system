@@ -4,6 +4,32 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 61C Archive - Import dry-run Web shared component refactor - 2026-07-01
+
+- Step identity:
+  - Web-only shared component/helper refactor for department, user/account, and achievement import dry-run screens.
+  - Scope stayed limited to `apps/web` shared dry-run UI helpers/components, existing page integrations, focused Web tests/typecheck, and memory-bank updates.
+  - No backend/API behavior change, API call path change, permission-policy change, page-entry semantic change, Prisma schema change, migration, seed/backfill, real import, account password work, invite/reset flow, attachment/fee/workflow import, audit write, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented Web shared layer:
+  - Added `apps/web/src/importDryRunUi.tsx`.
+  - Shared utilities/components: `.csv` and 1 MB local validation, file-size formatting, upload panel shell, dry-run notice/error/empty state rendering, result shell, file metadata, columns metadata, base summary, status tag, and issue list rendering.
+  - Department, user/account, and achievement pages now call the shared shell while preserving their public exported panel/result/validator names.
+- Preserved domain boundaries:
+  - Department keeps parsed `code`, `name`, `parentCode` preview and hierarchy semantics local.
+  - User/account keeps account security copy, sensitive received-column coloring, safe account preview, and `employeeNo` NOT_AVAILABLE notice local.
+  - Achievement keeps type-specific preview, contributors, normalized identifiers, sensitive received-column coloring, and owner employee-number NOT_AVAILABLE notice local.
+- Preserved contract:
+  - Response-shape assumption remains `importType`, `dryRun`, `file`, `columns`, `summary`, and `rows`.
+  - Existing API client methods and route strings remain unchanged.
+  - Existing Web permission branches remain unchanged.
+  - No top-level real import/write/confirm/create control was added.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts DepartmentManagement.test.tsx AccountManagement.test.tsx Achievements.test.ts`: PASS, 4 files / 95 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Deferred:
+  - Browser acceptance naming/fixtures consolidation.
+  - Real write import, invite/reset execution, account password changes, attachment import, fee import, workflow/submitted import, audit writes, employee-number persistence, department-scoped import permissions, production/VPS rollout, and existing untracked-artifact handling remain separate explicit steps.
+
 ## Current Step 61B Archive - Import dry-run backend shared contract and helper refactor - 2026-07-01
 
 - Step identity:

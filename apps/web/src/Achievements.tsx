@@ -2,7 +2,6 @@ import {
   Alert,
   Button,
   Card,
-  Descriptions,
   Input,
   Select,
   Space,
@@ -24,6 +23,13 @@ import {
   type AuthUser,
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import {
+  ImportDryRunPanelShell,
+  ImportDryRunResultShell,
+  ImportDryRunStatusTag,
+  renderImportDryRunIssueList,
+  validateImportDryRunCsvFile,
+} from "./importDryRunUi";
 import type {
   AchievementImportDryRunIssue,
   AchievementImportDryRunResult,
@@ -359,19 +365,7 @@ export const buildAchievementListQuery = (
 
 export const validateAchievementImportCsvFile = (
   file: Pick<File, "name" | "size" | "type">,
-): string | null => {
-  const fileName = file.name.trim().toLowerCase();
-
-  if (!fileName.endsWith(".csv")) {
-    return "Only .csv files are supported for this dry-run.";
-  }
-
-  if (file.size > maxAchievementImportCsvFileSizeBytes) {
-    return "CSV file must be 1 MB or smaller.";
-  }
-
-  return null;
-};
+): string | null => validateImportDryRunCsvFile(file);
 
 export const dryRunAchievementImport = async (
   client: Pick<AccountManagementApiClient, "dryRunAchievementImport">,
@@ -394,43 +388,24 @@ export function AchievementImportDryRunPanel({
   onRunDryRun: () => void;
 }) {
   return (
-    <Card
+    <ImportDryRunPanelShell
       className="shell-card achievement-import-dry-run-card"
       title="Achievement CSV dry-run"
-      extra={<Tag>POST /achievements/import/dry-run</Tag>}
-    >
-      <Space direction="vertical" size={12} className="full-width">
-        <Alert
-          type="info"
-          showIcon
-          message="dryRun=true; CSV-only; validates PAPER, PATENT, and SOFTWARE_COPYRIGHT rows without writing achievements."
-          description="Attachments, fees, workflow, audit logging, and real import execution are outside this dry-run. The preview only shows sanitized fields returned by the API."
-        />
-        <Space size={10} wrap>
-          <input
-            aria-label="Achievement CSV file"
-            type="file"
-            accept=".csv,text/csv,application/vnd.ms-excel"
-            onChange={onFileChange}
-          />
-          <Button type="primary" loading={loading} disabled={!file || loading} onClick={onRunDryRun}>
-            Run dry-run
-          </Button>
-          <Tag color={file ? "processing" : "default"}>
-            {file ? `${file.name} (${formatBytes(file.size)})` : "No CSV selected"}
-          </Tag>
-        </Space>
-        {!file && !result && !error ? (
-          <Typography.Text type="secondary">
-            Select one .csv file to preview achievement validation results.
-          </Typography.Text>
-        ) : null}
-        {error ? (
-          <Alert type="error" showIcon message={error.message} description={error.detail} />
-        ) : null}
-        {result ? <AchievementImportDryRunResultView result={result} /> : null}
-      </Space>
-    </Card>
+      endpoint="POST /achievements/import/dry-run"
+      noticeMessage="dryRun=true; CSV-only; validates PAPER, PATENT, and SOFTWARE_COPYRIGHT rows without writing achievements."
+      noticeDescription="Attachments, fees, workflow, audit logging, and real import execution are outside this dry-run. The preview only shows sanitized fields returned by the API."
+      fileAriaLabel="Achievement CSV file"
+      file={file}
+      loading={loading}
+      error={error}
+      result={result}
+      emptyHint="Select one .csv file to preview achievement validation results."
+      onFileChange={onFileChange}
+      onRunDryRun={onRunDryRun}
+      renderResult={(dryRunResult) => (
+        <AchievementImportDryRunResultView result={dryRunResult} />
+      )}
+    />
   );
 }
 
@@ -440,69 +415,41 @@ export function AchievementImportDryRunResultView({
   result: AchievementImportDryRunResult;
 }) {
   return (
-    <Space direction="vertical" size={12} className="full-width">
-      <Alert
-        type={result.summary.errorRows > 0 ? "warning" : "success"}
-        showIcon
-        message="Dry-run report ready"
-        description={`importType=${result.importType}; dryRun=${String(result.dryRun)}; no achievement, detail, contributor, attachment, fee, workflow, or audit writes were requested.`}
-      />
-      <Alert
-        type="info"
-        showIcon
-        message="ownerEmployeeNo lookup: NOT_AVAILABLE"
-        description="Use ownerEmail for owner resolution in this dry-run. ownerEmployeeNo is recognized only as an unsupported lookup boundary."
-      />
-      <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
-        <Descriptions.Item label="File">{result.file.name}</Descriptions.Item>
-        <Descriptions.Item label="Size">{formatBytes(result.file.size)}</Descriptions.Item>
-        <Descriptions.Item label="Encoding">{result.file.encoding}</Descriptions.Item>
-        <Descriptions.Item label="Total rows">{result.summary.totalRows}</Descriptions.Item>
-        <Descriptions.Item label="Valid rows">{result.summary.validRows}</Descriptions.Item>
-        <Descriptions.Item label="Error rows">{result.summary.errorRows}</Descriptions.Item>
-        <Descriptions.Item label="Warning rows">{result.summary.warningRows}</Descriptions.Item>
-        <Descriptions.Item label="Draft candidates">
-          {result.summary.createDraftCandidates}
-        </Descriptions.Item>
-        <Descriptions.Item label="File duplicate conflicts">
-          {result.summary.duplicateIdentifierRows}
-        </Descriptions.Item>
-        <Descriptions.Item label="DB conflicts">{result.summary.dbConflictRows}</Descriptions.Item>
-        <Descriptions.Item label="ownerEmployeeNo lookup">
-          {result.summary.ownerEmployeeNoLookup}
-        </Descriptions.Item>
-      </Descriptions>
-      <Space size={[6, 6]} wrap>
-        <Typography.Text strong>Required</Typography.Text>
-        {result.columns.required.map((column) => (
-          <Tag key={`required-${column}`} color="blue">
-            {column}
-          </Tag>
-        ))}
-        <Typography.Text strong>Optional</Typography.Text>
-        {result.columns.optional.map((column) => (
-          <Tag key={`optional-${column}`}>{column}</Tag>
-        ))}
-        <Typography.Text strong>Received</Typography.Text>
-        {result.columns.received.map((column) => (
-          <Tag key={`received-${column}`} color={column === "(sensitive)" ? "red" : "geekblue"}>
-            {column}
-          </Tag>
-        ))}
-      </Space>
-      <Table<AchievementImportDryRunRow>
-        size="small"
-        rowKey={(row) => String(row.rowNumber)}
-        pagination={false}
-        dataSource={result.rows}
-        columns={achievementImportDryRunColumns}
-        scroll={{ x: 1520 }}
-      />
-    </Space>
+    <ImportDryRunResultShell
+      result={result}
+      writeSafetyDescription="no achievement, detail, contributor, attachment, fee, workflow, or audit writes were requested."
+      extraAlerts={
+        <Alert
+          type="info"
+          showIcon
+          message="ownerEmployeeNo lookup: NOT_AVAILABLE"
+          description="Use ownerEmail for owner resolution in this dry-run. ownerEmployeeNo is recognized only as an unsupported lookup boundary."
+        />
+      }
+      summaryItems={[
+        {
+          label: "Draft candidates",
+          value: result.summary.createDraftCandidates,
+        },
+        {
+          label: "File duplicate conflicts",
+          value: result.summary.duplicateIdentifierRows,
+        },
+        {
+          label: "DB conflicts",
+          value: result.summary.dbConflictRows,
+        },
+        {
+          label: "ownerEmployeeNo lookup",
+          value: result.summary.ownerEmployeeNoLookup,
+        },
+      ]}
+      tableColumns={achievementImportDryRunColumns}
+      tableScrollX={1520}
+      receivedColumnColor={(column) => (column === "(sensitive)" ? "red" : "geekblue")}
+    />
   );
 }
-
-const maxAchievementImportCsvFileSizeBytes = 1024 * 1024;
 
 const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["columns"] = [
   {
@@ -546,7 +493,7 @@ const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["co
     key: "status",
     width: 120,
     render: (status: AchievementImportDryRunRow["status"]) => (
-      <Tag color={getAchievementImportDryRunStatusColor(status)}>{status}</Tag>
+      <ImportDryRunStatusTag status={status} />
     ),
   },
   {
@@ -561,7 +508,7 @@ const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["co
     key: "errors",
     width: 310,
     render: (issues: AchievementImportDryRunIssue[]) =>
-      renderAchievementImportIssueList(issues, "error"),
+      renderImportDryRunIssueList(issues, "error"),
   },
   {
     title: "Warnings",
@@ -569,7 +516,7 @@ const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["co
     key: "warnings",
     width: 310,
     render: (issues: AchievementImportDryRunIssue[]) =>
-      renderAchievementImportIssueList(issues, "warning"),
+      renderImportDryRunIssueList(issues, "warning"),
   },
 ];
 
@@ -619,38 +566,6 @@ const renderIdentifierList = (row: AchievementImportDryRunRow) => {
       })}
     </Space>
   );
-};
-
-const renderAchievementImportIssueList = (
-  issues: readonly AchievementImportDryRunIssue[],
-  tone: "error" | "warning",
-) => {
-  if (issues.length === 0) {
-    return <Typography.Text type="secondary">None</Typography.Text>;
-  }
-
-  return (
-    <Space direction="vertical" size={4}>
-      {issues.map((issue, index) => (
-        <span key={`${issue.field}-${issue.code}-${index}`}>
-          <Tag color={tone === "error" ? "red" : "gold"}>{issue.code}</Tag>
-          <Typography.Text>{`${issue.field}: ${issue.message}`}</Typography.Text>
-        </span>
-      ))}
-    </Space>
-  );
-};
-
-const getAchievementImportDryRunStatusColor = (
-  status: AchievementImportDryRunRow["status"],
-) => {
-  if (status === "ERROR") {
-    return "red";
-  }
-  if (status === "WARNING") {
-    return "gold";
-  }
-  return "green";
 };
 
 export const getAchievementDisplayTitle = (item: Pick<AchievementListItem, "title" | "isRedacted">) => {
@@ -853,18 +768,6 @@ const toValidationError = (message: string | null): ApiError | null =>
         message,
       }
     : null;
-
-const formatBytes = (value: number): string => {
-  if (!Number.isFinite(value) || value < 0) {
-    return "0 B";
-  }
-
-  if (value < 1024) {
-    return `${value} B`;
-  }
-
-  return `${(value / 1024).toFixed(1)} KB`;
-};
 
 const formatDateTime = (value: string | null | undefined): string => {
   if (!value) {

@@ -25,6 +25,13 @@ import {
   type AuthUser,
 } from "./api-client";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import {
+  ImportDryRunPanelShell,
+  ImportDryRunResultShell,
+  ImportDryRunStatusTag,
+  renderImportDryRunIssueList,
+  validateImportDryRunCsvFile,
+} from "./importDryRunUi";
 import type {
   AccountRoleCode,
   AccountRoleScopeType,
@@ -725,19 +732,7 @@ export const fetchActiveDepartments = async (
 
 export const validateUserAccountImportCsvFile = (
   file: Pick<File, "name" | "size" | "type">,
-): string | null => {
-  const fileName = file.name.trim().toLowerCase();
-
-  if (!fileName.endsWith(".csv")) {
-    return "Only .csv files are supported for this dry-run.";
-  }
-
-  if (file.size > maxUserAccountImportCsvFileSizeBytes) {
-    return "CSV file must be 1 MB or smaller.";
-  }
-
-  return null;
-};
+): string | null => validateImportDryRunCsvFile(file);
 
 export const dryRunUserAccountImport = async (
   client: Pick<AccountManagementApiClient, "dryRunUserAccountImport">,
@@ -760,43 +755,24 @@ export function UserAccountImportDryRunPanel({
   onRunDryRun: () => void;
 }) {
   return (
-    <Card
+    <ImportDryRunPanelShell
       className="shell-card user-account-import-dry-run-card"
       title="User account CSV dry-run"
-      extra={<Tag>POST /users/import/dry-run</Tag>}
-    >
-      <Space direction="vertical" size={12} className="full-width">
-        <Alert
-          type="info"
-          showIcon
-          message="dryRun=true; CSV-only; validates users, departments, roles, scopes, and conflicts without writing accounts."
-          description="Required headers are email, displayName, departmentCode, and roleCode; optional headers are employeeNo, scopeType, scopeDepartmentCode, and status. Password, passwordHash, token, cookie, secret, invite link, and reset link columns are rejected."
-        />
-        <Space size={10} wrap>
-          <input
-            aria-label="User account CSV file"
-            type="file"
-            accept=".csv,text/csv,application/vnd.ms-excel"
-            onChange={onFileChange}
-          />
-          <Button type="primary" loading={loading} disabled={!file || loading} onClick={onRunDryRun}>
-            Run dry-run
-          </Button>
-          <Tag color={file ? "processing" : "default"}>
-            {file ? `${file.name} (${formatBytes(file.size)})` : "No CSV selected"}
-          </Tag>
-        </Space>
-        {!file && !result && !error ? (
-          <Typography.Text type="secondary">
-            Select one .csv file to preview account validation results.
-          </Typography.Text>
-        ) : null}
-        {error ? (
-          <Alert type="error" showIcon message={error.message} description={error.detail} />
-        ) : null}
-        {result ? <UserAccountImportDryRunResultView result={result} /> : null}
-      </Space>
-    </Card>
+      endpoint="POST /users/import/dry-run"
+      noticeMessage="dryRun=true; CSV-only; validates users, departments, roles, scopes, and conflicts without writing accounts."
+      noticeDescription="Required headers are email, displayName, departmentCode, and roleCode; optional headers are employeeNo, scopeType, scopeDepartmentCode, and status. Password, passwordHash, token, cookie, secret, invite link, and reset link columns are rejected."
+      fileAriaLabel="User account CSV file"
+      file={file}
+      loading={loading}
+      error={error}
+      result={result}
+      emptyHint="Select one .csv file to preview account validation results."
+      onFileChange={onFileChange}
+      onRunDryRun={onRunDryRun}
+      renderResult={(dryRunResult) => (
+        <UserAccountImportDryRunResultView result={dryRunResult} />
+      )}
+    />
   );
 }
 
@@ -806,74 +782,45 @@ export function UserAccountImportDryRunResultView({
   result: UserAccountImportDryRunResult;
 }) {
   return (
-    <Space direction="vertical" size={12} className="full-width">
-      <Alert
-        type={result.summary.errorRows > 0 ? "warning" : "success"}
-        showIcon
-        message="Dry-run report ready"
-        description={`importType=${result.importType}; dryRun=${String(result.dryRun)}; no account writes, credential changes, or role assignments were requested.`}
-      />
-      <Alert
-        type="info"
-        showIcon
-        message="employeeNo DB conflict check: NOT_AVAILABLE"
-        description="Current schema does not persist employeeNo for account users, so the dry-run only checks employeeNo duplicates within the uploaded file."
-      />
-      <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
-        <Descriptions.Item label="File">{result.file.name}</Descriptions.Item>
-        <Descriptions.Item label="Size">{formatBytes(result.file.size)}</Descriptions.Item>
-        <Descriptions.Item label="Encoding">{result.file.encoding}</Descriptions.Item>
-        <Descriptions.Item label="Total rows">{result.summary.totalRows}</Descriptions.Item>
-        <Descriptions.Item label="Valid rows">{result.summary.validRows}</Descriptions.Item>
-        <Descriptions.Item label="Error rows">{result.summary.errorRows}</Descriptions.Item>
-        <Descriptions.Item label="Warning rows">{result.summary.warningRows}</Descriptions.Item>
-        <Descriptions.Item label="Create candidates">
-          {result.summary.createCandidates}
-        </Descriptions.Item>
-        <Descriptions.Item label="Existing users">
-          {result.summary.existingUserRows}
-        </Descriptions.Item>
-        <Descriptions.Item label="Existing role assignments">
-          {result.summary.existingRoleAssignmentRows}
-        </Descriptions.Item>
-        <Descriptions.Item label="Reactivation candidates">
-          {result.summary.reactivationCandidateRows}
-        </Descriptions.Item>
-        <Descriptions.Item label="employeeNo DB check">
-          {result.summary.employeeNoDbConflictCheck}
-        </Descriptions.Item>
-      </Descriptions>
-      <Space size={[6, 6]} wrap>
-        <Typography.Text strong>Required</Typography.Text>
-        {result.columns.required.map((column) => (
-          <Tag key={`required-${column}`} color="blue">
-            {column}
-          </Tag>
-        ))}
-        <Typography.Text strong>Optional</Typography.Text>
-        {result.columns.optional.map((column) => (
-          <Tag key={`optional-${column}`}>{column}</Tag>
-        ))}
-        <Typography.Text strong>Received</Typography.Text>
-        {result.columns.received.map((column) => (
-          <Tag key={`received-${column}`} color={column === "(sensitive)" ? "red" : "geekblue"}>
-            {column}
-          </Tag>
-        ))}
-      </Space>
-      <Table<UserAccountImportDryRunRow>
-        size="small"
-        rowKey={(row) => String(row.rowNumber)}
-        pagination={false}
-        dataSource={result.rows}
-        columns={userAccountImportDryRunColumns}
-        scroll={{ x: 1320 }}
-      />
-    </Space>
+    <ImportDryRunResultShell
+      result={result}
+      writeSafetyDescription="no account writes, credential changes, or role assignments were requested."
+      extraAlerts={
+        <Alert
+          type="info"
+          showIcon
+          message="employeeNo DB conflict check: NOT_AVAILABLE"
+          description="Current schema does not persist employeeNo for account users, so the dry-run only checks employeeNo duplicates within the uploaded file."
+        />
+      }
+      summaryItems={[
+        {
+          label: "Create candidates",
+          value: result.summary.createCandidates,
+        },
+        {
+          label: "Existing users",
+          value: result.summary.existingUserRows,
+        },
+        {
+          label: "Existing role assignments",
+          value: result.summary.existingRoleAssignmentRows,
+        },
+        {
+          label: "Reactivation candidates",
+          value: result.summary.reactivationCandidateRows,
+        },
+        {
+          label: "employeeNo DB check",
+          value: result.summary.employeeNoDbConflictCheck,
+        },
+      ]}
+      tableColumns={userAccountImportDryRunColumns}
+      tableScrollX={1320}
+      receivedColumnColor={(column) => (column === "(sensitive)" ? "red" : "geekblue")}
+    />
   );
 }
-
-const maxUserAccountImportCsvFileSizeBytes = 1024 * 1024;
 
 const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["columns"] = [
   {
@@ -907,7 +854,7 @@ const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["co
     key: "status",
     width: 120,
     render: (status: UserAccountImportDryRunRow["status"]) => (
-      <Tag color={getImportDryRunStatusColor(status)}>{status}</Tag>
+      <ImportDryRunStatusTag status={status} />
     ),
   },
   {
@@ -921,46 +868,18 @@ const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["co
     dataIndex: "errors",
     key: "errors",
     width: 300,
-    render: (issues: UserAccountImportDryRunIssue[]) => renderImportIssueList(issues, "error"),
+    render: (issues: UserAccountImportDryRunIssue[]) =>
+      renderImportDryRunIssueList(issues, "error"),
   },
   {
     title: "Warnings",
     dataIndex: "warnings",
     key: "warnings",
     width: 300,
-    render: (issues: UserAccountImportDryRunIssue[]) => renderImportIssueList(issues, "warning"),
+    render: (issues: UserAccountImportDryRunIssue[]) =>
+      renderImportDryRunIssueList(issues, "warning"),
   },
 ];
-
-const renderImportIssueList = (
-  issues: readonly UserAccountImportDryRunIssue[],
-  tone: "error" | "warning",
-) => {
-  if (issues.length === 0) {
-    return <Typography.Text type="secondary">None</Typography.Text>;
-  }
-
-  return (
-    <Space direction="vertical" size={4}>
-      {issues.map((issue, index) => (
-        <span key={`${issue.field}-${issue.code}-${index}`}>
-          <Tag color={tone === "error" ? "red" : "gold"}>{issue.code}</Tag>
-          <Typography.Text>{`${issue.field}: ${issue.message}`}</Typography.Text>
-        </span>
-      ))}
-    </Space>
-  );
-};
-
-const getImportDryRunStatusColor = (status: UserAccountImportDryRunRow["status"]) => {
-  if (status === "ERROR") {
-    return "red";
-  }
-  if (status === "WARNING") {
-    return "gold";
-  }
-  return "green";
-};
 
 const toValidationError = (message: string | null): ApiError | null =>
   message
@@ -969,23 +888,6 @@ const toValidationError = (message: string | null): ApiError | null =>
         message,
       }
     : null;
-
-const formatBytes = (value: number): string => {
-  if (!Number.isFinite(value) || value < 0) {
-    return "0 B";
-  }
-
-  if (value < 1024) {
-    return `${value} B`;
-  }
-
-  const kilobytes = value / 1024;
-  if (kilobytes < 1024) {
-    return `${kilobytes.toFixed(1)} KB`;
-  }
-
-  return `${(kilobytes / 1024).toFixed(1)} MB`;
-};
 
 export const buildActiveDepartmentOptions = (
   departments: DepartmentSummary[],

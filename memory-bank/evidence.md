@@ -1,5 +1,41 @@
 # Evidence
 
+## 2026-07-01 Step 61C - Import dry-run Web shared component refactor evidence
+
+- Purpose:
+  - Implement a small Web-only no-behavior refactor for shared import dry-run UI helpers/components.
+  - Reduce duplication across department, user/account, and achievement dry-run screens without changing API client paths, permissions, response-shape assumptions, page entries, no-write boundaries, backend behavior, schema, data, or packages.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `b317044`.
+  - Latest commit subject: `refactor(api): share import dry run helpers`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 61C edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but relevant gate and sensitive-boundary rules remained identifiable.
+  - Read `memory-bank/import-dry-run-contract.md`.
+  - Read current Step 61A, Step 61B, Step 59C, Step 60C, and department import Web related top/archive records through targeted top sections/search results.
+  - Inspected `apps/web/src/DepartmentManagement.tsx`, `apps/web/src/AccountManagement.tsx`, `apps/web/src/Achievements.tsx`, `apps/web/src/api-client.ts`, `apps/web/src/types.ts`, and related tests.
+- Implementation evidence:
+  - Added `apps/web/src/importDryRunUi.tsx`.
+  - Shared Web module includes CSV file validation, file-size formatting, upload panel shell, result shell, common summary/file/columns metadata display, status tag, and issue list renderer.
+  - Updated department, user/account, and achievement dry-run panels/result views to use the shared shell.
+  - Kept the existing exported feature-specific validator, dry-run client wrapper, panel, and result view names.
+  - Kept feature-specific table columns and previews local: department hierarchy fields, user/account safe account fields and `employeeNo` boundary, achievement contributors and normalized identifiers.
+- Behavior boundary evidence:
+  - API client paths were not changed.
+  - Permission branches were not changed.
+  - No backend files, Prisma schema, package files, lockfiles, migration, seed, or data-write code were modified.
+  - No real import, confirm import, execute import, run import, create data, credential change, attachment, fee, workflow, or audit write entry was added.
+  - UI still renders the existing dry-run-only messages and backend error state.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts DepartmentManagement.test.tsx AccountManagement.test.tsx Achievements.test.ts`: PASS, 4 files / 95 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Deferred:
+  - Browser acceptance consolidation and fixture naming follow-up.
+  - Real write import, account invite/reset execution, account password work, attachment import, fee import, workflow/submitted import, audit writes, employee-number persistence, department-scoped import permissions, production/VPS rollout, and existing untracked-artifact handling.
+
 ## 2026-07-01 Step 61B - Import dry-run backend shared contract and helper refactor evidence
 
 - Purpose:

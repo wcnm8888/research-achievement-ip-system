@@ -29,6 +29,13 @@ import {
 } from "./api-client";
 import { hasSystemConfigPermission } from "./AccountManagement";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import {
+  ImportDryRunPanelShell,
+  ImportDryRunResultShell,
+  ImportDryRunStatusTag,
+  renderImportDryRunIssueList,
+  validateImportDryRunCsvFile,
+} from "./importDryRunUi";
 import type {
   CreateDepartmentInput,
   DepartmentDetail,
@@ -602,19 +609,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
 
 export const validateDepartmentImportCsvFile = (
   file: Pick<File, "name" | "size" | "type">,
-): string | null => {
-  const fileName = file.name.trim().toLowerCase();
-
-  if (!fileName.endsWith(".csv")) {
-    return "Only .csv files are supported for this dry-run.";
-  }
-
-  if (file.size > maxDepartmentImportCsvFileSizeBytes) {
-    return "CSV file must be 1 MB or smaller.";
-  }
-
-  return null;
-};
+): string | null => validateImportDryRunCsvFile(file);
 
 export const dryRunDepartmentImport = async (
   client: Pick<AccountManagementApiClient, "dryRunDepartmentImport">,
@@ -637,43 +632,24 @@ export function DepartmentImportDryRunPanel({
   onRunDryRun: () => void;
 }) {
   return (
-    <Card
+    <ImportDryRunPanelShell
       className="shell-card department-import-dry-run-card"
       title="Department CSV dry-run"
-      extra={<Tag>POST /imports/departments/dry-run</Tag>}
-    >
-      <Space direction="vertical" size={12} className="full-width">
-        <Alert
-          type="info"
-          showIcon
-          message="dryRun=true; CSV-only; validates structure and data without writing the database."
-          description="Accepted headers are code and name, with optional parentCode. This screen has no real import execution control."
-        />
-        <Space size={10} wrap>
-          <input
-            aria-label="Department CSV file"
-            type="file"
-            accept=".csv,text/csv,application/vnd.ms-excel"
-            onChange={onFileChange}
-          />
-          <Button type="primary" loading={loading} disabled={!file || loading} onClick={onRunDryRun}>
-            Run dry-run
-          </Button>
-          <Tag color={file ? "processing" : "default"}>
-            {file ? `${file.name} (${formatBytes(file.size)})` : "No CSV selected"}
-          </Tag>
-        </Space>
-        {!file && !result && !error ? (
-          <Typography.Text type="secondary">
-            Select one .csv file to preview validation results.
-          </Typography.Text>
-        ) : null}
-        {error ? (
-          <Alert type="error" showIcon message={error.message} description={error.detail} />
-        ) : null}
-        {result ? <DepartmentImportDryRunResultView result={result} /> : null}
-      </Space>
-    </Card>
+      endpoint="POST /imports/departments/dry-run"
+      noticeMessage="dryRun=true; CSV-only; validates structure and data without writing the database."
+      noticeDescription="Accepted headers are code and name, with optional parentCode. This screen has no real import execution control."
+      fileAriaLabel="Department CSV file"
+      file={file}
+      loading={loading}
+      error={error}
+      result={result}
+      emptyHint="Select one .csv file to preview validation results."
+      onFileChange={onFileChange}
+      onRunDryRun={onRunDryRun}
+      renderResult={(dryRunResult) => (
+        <DepartmentImportDryRunResultView result={dryRunResult} />
+      )}
+    />
   );
 }
 
@@ -683,59 +659,24 @@ export function DepartmentImportDryRunResultView({
   result: DepartmentImportDryRunResult;
 }) {
   return (
-    <Space direction="vertical" size={12} className="full-width">
-      <Alert
-        type={result.summary.errorRows > 0 ? "warning" : "success"}
-        showIcon
-        message="Dry-run report ready"
-        description={`importType=${result.importType}; dryRun=${String(result.dryRun)}; no database writes were requested.`}
-      />
-      <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
-        <Descriptions.Item label="File">{result.file.name}</Descriptions.Item>
-        <Descriptions.Item label="Size">{formatBytes(result.file.size)}</Descriptions.Item>
-        <Descriptions.Item label="Encoding">{result.file.encoding}</Descriptions.Item>
-        <Descriptions.Item label="Total rows">{result.summary.totalRows}</Descriptions.Item>
-        <Descriptions.Item label="Valid rows">{result.summary.validRows}</Descriptions.Item>
-        <Descriptions.Item label="Error rows">{result.summary.errorRows}</Descriptions.Item>
-        <Descriptions.Item label="Warning rows">{result.summary.warningRows}</Descriptions.Item>
-        <Descriptions.Item label="Create candidates">
-          {result.summary.createCandidates}
-        </Descriptions.Item>
-        <Descriptions.Item label="Existing code rows">
-          {result.summary.existingCodeRows}
-        </Descriptions.Item>
-      </Descriptions>
-      <Space size={[6, 6]} wrap>
-        <Typography.Text strong>Required</Typography.Text>
-        {result.columns.required.map((column) => (
-          <Tag key={`required-${column}`} color="blue">
-            {column}
-          </Tag>
-        ))}
-        <Typography.Text strong>Optional</Typography.Text>
-        {result.columns.optional.map((column) => (
-          <Tag key={`optional-${column}`}>{column}</Tag>
-        ))}
-        <Typography.Text strong>Received</Typography.Text>
-        {result.columns.received.map((column) => (
-          <Tag key={`received-${column}`} color="geekblue">
-            {column}
-          </Tag>
-        ))}
-      </Space>
-      <Table<DepartmentImportDryRunRow>
-        size="small"
-        rowKey={(row) => String(row.rowNumber)}
-        pagination={false}
-        dataSource={result.rows}
-        columns={departmentImportDryRunColumns}
-        scroll={{ x: 1040 }}
-      />
-    </Space>
+    <ImportDryRunResultShell
+      result={result}
+      writeSafetyDescription="no database writes were requested."
+      summaryItems={[
+        {
+          label: "Create candidates",
+          value: result.summary.createCandidates,
+        },
+        {
+          label: "Existing code rows",
+          value: result.summary.existingCodeRows,
+        },
+      ]}
+      tableColumns={departmentImportDryRunColumns}
+      tableScrollX={1040}
+    />
   );
 }
-
-const maxDepartmentImportCsvFileSizeBytes = 1024 * 1024;
 
 const departmentImportDryRunColumns: TableProps<DepartmentImportDryRunRow>["columns"] = [
   {
@@ -762,7 +703,7 @@ const departmentImportDryRunColumns: TableProps<DepartmentImportDryRunRow>["colu
     key: "status",
     width: 120,
     render: (status: DepartmentImportDryRunRow["status"]) => (
-      <Tag color={getDryRunStatusColor(status)}>{status}</Tag>
+      <ImportDryRunStatusTag status={status} />
     ),
   },
   {
@@ -776,46 +717,18 @@ const departmentImportDryRunColumns: TableProps<DepartmentImportDryRunRow>["colu
     dataIndex: "errors",
     key: "errors",
     width: 260,
-    render: (issues: DepartmentImportDryRunIssue[]) => renderIssueList(issues, "error"),
+    render: (issues: DepartmentImportDryRunIssue[]) =>
+      renderImportDryRunIssueList(issues, "error"),
   },
   {
     title: "Warnings",
     dataIndex: "warnings",
     key: "warnings",
     width: 260,
-    render: (issues: DepartmentImportDryRunIssue[]) => renderIssueList(issues, "warning"),
+    render: (issues: DepartmentImportDryRunIssue[]) =>
+      renderImportDryRunIssueList(issues, "warning"),
   },
 ];
-
-const renderIssueList = (
-  issues: readonly DepartmentImportDryRunIssue[],
-  tone: "error" | "warning",
-) => {
-  if (issues.length === 0) {
-    return <Typography.Text type="secondary">None</Typography.Text>;
-  }
-
-  return (
-    <Space direction="vertical" size={4}>
-      {issues.map((issue, index) => (
-        <span key={`${issue.field}-${issue.code}-${index}`}>
-          <Tag color={tone === "error" ? "red" : "gold"}>{issue.code}</Tag>
-          <Typography.Text>{`${issue.field}: ${issue.message}`}</Typography.Text>
-        </span>
-      ))}
-    </Space>
-  );
-};
-
-const getDryRunStatusColor = (status: DepartmentImportDryRunRow["status"]) => {
-  if (status === "ERROR") {
-    return "red";
-  }
-  if (status === "WARNING") {
-    return "gold";
-  }
-  return "green";
-};
 
 const toValidationError = (message: string | null): ApiError | null =>
   message
@@ -824,23 +737,6 @@ const toValidationError = (message: string | null): ApiError | null =>
         message,
       }
     : null;
-
-const formatBytes = (value: number): string => {
-  if (!Number.isFinite(value) || value < 0) {
-    return "0 B";
-  }
-
-  if (value < 1024) {
-    return `${value} B`;
-  }
-
-  const kilobytes = value / 1024;
-  if (kilobytes < 1024) {
-    return `${kilobytes.toFixed(1)} KB`;
-  }
-
-  return `${(kilobytes / 1024).toFixed(1)} MB`;
-};
 
 export const buildDepartmentListQuery = (
   filters: DepartmentFilters,

@@ -223,3 +223,26 @@ Do not include:
   - `rows[].parsed` remains the safe preview;
   - conflicts remain row issue codes plus summary counters;
   - routes, permissions, status codes, issue codes, issue messages, candidate actions, and validation semantics remain unchanged.
+
+## Step 61C Implementation Record
+
+- Date: 2026-07-01.
+- Implemented `apps/web/src/importDryRunUi.tsx` as the Web-only shared import dry-run UI/helper module.
+- Shared pieces now implemented:
+  - CSV `.csv` extension validation.
+  - 1 MB local file-size validation.
+  - file-size formatting.
+  - dry-run upload panel shell with route tag, notice, file input, run button, selected-file tag, empty hint, backend error, and result slot.
+  - dry-run result shell with report alert, file metadata, base summary, import-specific summary items, columns metadata, row table shell, and optional extra notices.
+  - row status tag.
+  - row issue list renderer.
+- Department, user/account, and achievement Web pages now reuse the shared shell while keeping feature-specific exports and table columns local.
+- Web behavior contract remains unchanged:
+  - API client methods and endpoint strings remain unchanged.
+  - Permission branches remain unchanged.
+  - response-shape assumption remains `importType`, `dryRun`, `file`, `columns`, `summary`, and `rows`.
+  - department hierarchy preview, account security and `employeeNo` NOT_AVAILABLE notice, and achievement contributors/normalized identifiers remain local.
+  - no real import, confirm import, execute import, run import, create data, credential, attachment, fee, workflow, or audit write entry was added.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts DepartmentManagement.test.tsx AccountManagement.test.tsx Achievements.test.ts`: PASS, 4 files / 95 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.

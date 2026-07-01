@@ -1,5 +1,22 @@
 # Decisions
 
+## D221 - Web import dry-run shared UI remains shell-only
+
+- Date: 2026-07-01.
+- Context: Step 61C implements the Web-side consolidation from Step 61A after the Step 61B backend shared helper refactor. The task allows `apps/web` shared import dry-run component/helper extraction, three existing dry-run UI/test updates, and memory-bank updates, while prohibiting backend/API behavior changes, API call path changes, permission changes, real import/write entries, Prisma schema work, migrations, seed/backfill, production/VPS access, package changes, push/deploy, cleanup/deletion/reset/drop/prune, and existing untracked-artifact handling.
+- Decision:
+  - Add `apps/web/src/importDryRunUi.tsx` as a Web-local shared UI/helper module instead of moving UI code into a cross-package contract.
+  - Share only stable presentation primitives: CSV `.csv` and 1 MB local validation, file-size formatting, upload panel shell, dry-run notice/error/empty state handling, result shell, file/columns metadata rendering, base summary rendering, status tag, and issue list rendering.
+  - Keep department, user/account, and achievement result wrappers and table columns local so domain-specific safe previews remain explicit.
+  - Preserve existing exported validator/panel/result-view names in the three pages.
+- Contract:
+  - Web continues to assume the existing backend result shape: `importType`, `dryRun`, `file`, `columns`, `summary`, and `rows`.
+  - API client methods and endpoint paths remain unchanged.
+  - Permission branches remain unchanged and still rely on backend authorization as the final boundary.
+  - No real import/confirm/write/create/credential/attachment/fee/workflow/audit entry is added.
+- Scope:
+  - This decision does not authorize backend changes, API response-shape changes, generic row preview rewriting, real write import, account credential changes, invite/reset issuance, submitted/workflow import, attachment import, fee import, audit writes, schema/migration work, production/VPS work, package changes, deployment, push, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D220 - Shared import dry-run helpers preserve API behavior
 
 - Date: 2026-07-01.

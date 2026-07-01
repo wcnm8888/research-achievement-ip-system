@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-01 Step 61C - Import dry-run Web shared component refactor
+
+- Status: STEP_61C_IMPORT_DRY_RUN_WEB_SHARED_UI_IMPLEMENTED.
+- Step identity:
+  - Implemented the Step 61A/61B Web-side shared import dry-run UI helper/component refactor for department, user/account, and achievement dry-runs.
+  - Scope stayed limited to `apps/web` shared dry-run UI helper/component extraction, three existing dry-run page integrations, and memory-bank updates.
+  - No backend/API behavior change, API call path change, permission-policy change, page-entry semantic change, Prisma schema change, migration, seed/backfill, real import, account password work, invite/reset flow, attachment/fee/workflow import, audit write, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `apps/web/src/importDryRunUi.tsx`.
+  - Shared Web utilities/components now cover CSV extension and 1 MB validation, file-size formatting, dry-run upload panel shell, dry-run result shell, file/columns metadata display, common summary fields, status tag, row issue list, backend error display, and no-file empty hint state.
+  - Updated `DepartmentManagement.tsx`, `AccountManagement.tsx`, and `Achievements.tsx` to reuse the shared shell while keeping their existing exported validator/panel/result-view names.
+  - Kept domain-specific row preview columns and extra notices local: department `code/name/parentCode`, user/account credential boundary and `employeeNo` NOT_AVAILABLE notice, achievement contributors/normalized identifiers and owner employee-number NOT_AVAILABLE notice.
+- Behavior boundary:
+  - Existing API client methods and endpoint strings remain unchanged: `/imports/departments/dry-run`, `/users/import/dry-run`, and `/achievements/import/dry-run`.
+  - Existing Web permission branches remain unchanged.
+  - Existing response-shape assumption remains `importType`, `dryRun`, `file`, `columns`, `summary`, and `rows`.
+  - No real import, confirm import, execute import, run import, create data, credential change, attachment, fee, workflow, or audit write entry was added.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts DepartmentManagement.test.tsx AccountManagement.test.tsx Achievements.test.ts`: PASS, 4 files / 95 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Next:
+  - Run final `git diff --check`, added-lines sensitive scan, commit, and post-commit tracked diff check.
+  - Real write import, invite/reset execution, account password changes, attachment import, fee import, workflow/submitted import, audit writes, employee-number persistence, department-scoped import permissions, production/VPS rollout, and existing untracked-artifact handling remain separate explicit steps.
+
 ## 2026-07-01 Step 61B - Import dry-run backend shared contract and helper refactor
 
 - Status: STEP_61B_IMPORT_DRY_RUN_BACKEND_SHARED_HELPERS_IMPLEMENTED.
