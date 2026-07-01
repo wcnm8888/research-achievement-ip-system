@@ -65,6 +65,17 @@ playwright-cli -s=<step-name> run-code --filename=memory-bank/<step>-browser-acc
 - Prefer transient local test sessions or synthetic local users for multi-role API matrices when that avoids handling a real password.
 - Record only the credential handling boundary and redacted pass/fail evidence in `memory-bank/evidence.md`; never record the credential value or session value.
 
+## Local Session / 401 Diagnostics
+
+- In Docker production-like mode, `NODE_ENV=production` means API auth should be diagnosed through the production session-cookie path, not dev headers.
+- When a local API request unexpectedly returns 401, first separate DB session validity from HTTP client cookie delivery.
+- DB-side diagnostics must output only booleans or counts, such as session found, user status, credential status, role count, expiry valid, and revoked flag.
+- HTTP diagnostics should use `curl.exe` on Windows when checking cookie behavior, and should output only status codes or redacted JSON summaries.
+- Do not print the transient session value, cookie value, session hash, password, or `SESSION_SECRET`.
+- If a tool command echoes a transient cookie/session value during experimentation, rotate or overwrite that transient local session before continuing, do not write the value to files, and do not include it in evidence or commits.
+- For browser acceptance, prefer `playwright-cli` named sessions. If local HTTP plus production cookie attributes cause session issues, use an explicitly scoped transient local session or the existing local proxy pattern without recording cookie values.
+- For future Step evidence, summarize the root cause class, such as "session valid, client cookie delivery issue", rather than preserving raw diagnostic output.
+
 ## 浏览器验收规则
 
 - 优先使用 `playwright-cli`。
