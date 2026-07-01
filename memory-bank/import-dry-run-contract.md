@@ -200,3 +200,26 @@ Do not include:
 - Prisma schema or migration changes.
 - Production/VPS access.
 - Web UI redesign or generic component rewrite.
+
+## Step 61B Implementation Record
+
+- Date: 2026-07-01.
+- Implemented `apps/api/src/imports/import-dry-run.shared.ts` as the backend-only shared import dry-run helper module.
+- Shared pieces now implemented:
+  - dry-run file, file metadata, columns metadata, issue, row status, row shape, base summary, result, parsed CSV record, and CSV parse result types.
+  - UTF-8 encoding and 1 MB upload-size constants.
+  - narrow UTF-8 CSV parser with the existing comma/double-quote/header-row/no-workbook boundary.
+  - values-by-header mapping.
+  - header validation issue construction.
+  - forbidden-header token normalization.
+  - formula-like value detection.
+  - sanitized file metadata.
+  - base summary counting.
+- Department, user/account, and achievement services now reuse the shared parser/types/helpers.
+- The three controllers use the shared 1 MB upload-size constant.
+- Full shared controller file adapter and Web shared components remain deferred.
+- API behavior contract remains unchanged:
+  - no top-level `preview`, `conflicts`, `errors`, or `warnings`;
+  - `rows[].parsed` remains the safe preview;
+  - conflicts remain row issue codes plus summary counters;
+  - routes, permissions, status codes, issue codes, issue messages, candidate actions, and validation semantics remain unchanged.

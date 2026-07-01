@@ -21,8 +21,9 @@ import {
   DepartmentImportDryRunService,
   InvalidImportCsvError,
 } from "./department-import-dry-run.service";
+import { importDryRunMaxFileBytes } from "./import-dry-run.shared";
 
-const importFileMaxBytes = 1024 * 1024;
+const importFileMaxBytes = importDryRunMaxFileBytes;
 const allowedMimeTypes = new Set(["text/csv", "application/vnd.ms-excel"]);
 
 type UploadedImportFile = {

@@ -1,5 +1,25 @@
 # Decisions
 
+## D220 - Shared import dry-run helpers preserve API behavior
+
+- Date: 2026-07-01.
+- Context: Step 61B implements the Step 61A consolidation plan as a backend-only no-behavior refactor. The task allows `apps/api/src/imports` shared helper/types and dry-run service/test updates plus memory-bank updates, but prohibits Web changes, API response/route/permission/semantic changes, Prisma schema work, migrations, seed/backfill, real data import, account password work, invite/reset flow, attachment/fee/workflow imports, audit writes, production/VPS access, package changes, push/deploy, cleanup/deletion/reset/drop/prune, and existing untracked-artifact handling.
+- Decision:
+  - Add `import-dry-run.shared.ts` inside `apps/api/src/imports` instead of creating a cross-package shared module.
+  - Share stable backend primitives only: dry-run file/result/row/issue/columns/summary types, row status, UTF-8 encoding, 1 MB upload-size constant, narrow CSV parsing, values-by-header mapping, header issue construction, header-token normalization, formula-like detection, sanitized file metadata, and base summary counting.
+  - Keep department, user/account, and achievement domain validation local.
+  - Keep controller route paths, guards, MIME checks, workbook-like body rejection, exception mapping, status codes, service method names, response field names, issue code names, issue messages, and row ordering unchanged.
+  - Use the shared 1 MB constant in controllers, but defer a full shared controller file adapter until a later step to avoid unnecessary status-code or exception-mapping risk.
+- Contract:
+  - The current response shape remains `importType`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - `rows[].parsed` remains the safe preview contract.
+  - Conflict information remains row issue codes plus import-specific summary counters.
+  - No top-level `preview`, `conflicts`, `errors`, `warnings`, or issue `severity` field is introduced.
+- Testing:
+  - Add focused shared helper tests and keep the existing department/user/account/achievement controller/service/repository/app-module tests as the behavior contract.
+- Scope:
+  - This decision does not authorize Web shared components, real write import, account credential changes, invite/reset issuance, submitted/workflow import, attachment import, fee import, audit writes, schema/migration work, production/VPS work, package changes, deployment, push, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D219 - Import dry-run consolidation starts with shared contract and small helpers
 
 - Date: 2026-07-01.

@@ -1,5 +1,47 @@
 # Evidence
 
+## 2026-07-01 Step 61B - Import dry-run backend shared contract and helper refactor evidence
+
+- Purpose:
+  - Implement a small backend-only no-behavior refactor for shared import dry-run contract/types/helpers.
+  - Reduce duplication across department, user/account, and achievement dry-runs without changing API response shape, permission, route, status code, validation semantics, Web behavior, schema, data, or no-write boundaries.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `b332ef0`.
+  - Latest commit subject: `docs: plan import dry run consolidation`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 61B edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but the relevant gate and sensitive-boundary rules remained identifiable.
+  - Read `memory-bank/import-dry-run-contract.md`.
+  - Read current Step 61A, Step 59B, Step 60B, and department import related top/archive records in memory-bank through targeted top sections/search results.
+  - Inspected `apps/api/src/imports` department, user/account, and achievement dry-run controllers, services, repositories, and tests.
+- Implementation evidence:
+  - Added `apps/api/src/imports/import-dry-run.shared.ts`.
+  - Added shared backend contract/types for `ImportDryRunFile`, file metadata, columns metadata, issue, row status, row shape, base summary, result shape, and CSV parse result.
+  - Added shared pure helpers for narrow CSV parsing, values-by-header mapping, header validation issue appending, normalized forbidden-header token comparison, formula-like value detection, sanitized file metadata, and base summary counts.
+  - Updated department, user/account, and achievement dry-run services to use shared parser/types/helpers.
+  - Updated the three dry-run controllers to use the shared 1 MB upload-size constant.
+  - Added `apps/api/src/imports/import-dry-run.shared.spec.ts`.
+- Behavior boundary evidence:
+  - Existing imports tests passed after refactor.
+  - Response shape remains `importType`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - No top-level `preview`, `conflicts`, `errors`, or `warnings` was added.
+  - Safe preview remains `rows[].parsed`.
+  - Conflict reporting remains row issue codes plus existing summary counters.
+  - Existing issue codes, messages, candidate actions, permission decorators, route paths, status codes, repository lookup methods, and no-write boundaries remain unchanged.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 11 files / 44 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Deferred:
+  - Full shared controller upload adapter.
+  - Web shared CSV upload/result components.
+  - Real write import, account invite/reset execution, account password work, attachment import, fee import, workflow/submitted import, audit writes, employee-number persistence, department-scoped import permissions, production/VPS rollout, and existing untracked-artifact handling.
+
 ## 2026-07-01 Step 61A - Import dry-run consolidation scope and shared contract plan evidence
 
 - Purpose:

@@ -23,6 +23,21 @@ import {
   AchievementImportNormalizedConflict,
   AchievementImportUserLookup,
 } from "./achievement-import-dry-run.repository";
+import {
+  appendColumnValidationIssues,
+  buildImportDryRunFileMetadata,
+  buildValuesByHeader,
+  ImportCsvParseResult,
+  ImportDryRunFile,
+  ImportDryRunIssue,
+  ImportDryRunResult,
+  ImportDryRunRow,
+  ImportDryRunStatus,
+  isFormulaLikeCell,
+  normalizeImportHeaderToken,
+  parseImportCsv,
+  summarizeImportDryRunRows,
+} from "./import-dry-run.shared";
 
 export const achievementImportType = "ACHIEVEMENT" as const;
 
@@ -126,7 +141,6 @@ const departmentCodePattern = /^[A-Z0-9_]+$/;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const maxRows = 500;
-const formulaLikePattern = /^[=+\-@]/;
 const defaultStatus = AchievementStatusCode.draft;
 const defaultSecretLevel = SecretLevelCode.internal;
 const allowedAchievementTypes = new Set<string>(Object.values(AchievementTypeCode));
@@ -138,12 +152,7 @@ const allowedPatentTypes = new Set<string>(Object.values(PatentTypeCode));
 const allowedPatentLegalStatuses = new Set<string>(Object.values(PatentLegalStatusCode));
 const allowedSoftwareTypes = new Set<string>(Object.values(SoftwareTypeCode));
 
-export type AchievementImportDryRunFile = {
-  originalName: string;
-  mimeType: string;
-  size: number;
-  buffer: Buffer;
-};
+export type AchievementImportDryRunFile = ImportDryRunFile;
 
 export type AchievementImportDryRunIssueCode =
   | "REQUIRED"
@@ -164,13 +173,9 @@ export type AchievementImportDryRunIssueCode =
   | "CONTRIBUTOR_TYPE_MISMATCH"
   | "OWNER_EMPLOYEE_NO_LOOKUP_NOT_AVAILABLE";
 
-export type AchievementImportDryRunIssue = {
-  field: string;
-  code: AchievementImportDryRunIssueCode;
-  message: string;
-};
+export type AchievementImportDryRunIssue = ImportDryRunIssue<AchievementImportDryRunIssueCode>;
 
-export type AchievementImportDryRunRowStatus = "VALID" | "WARNING" | "ERROR";
+export type AchievementImportDryRunRowStatus = ImportDryRunStatus;
 export type AchievementImportDryRunCandidateAction = "CREATE_DRAFT" | "SKIP";
 
 export type AchievementImportContributorPreview = {
@@ -182,77 +187,53 @@ export type AchievementImportContributorPreview = {
   sortOrder: number;
 };
 
-export type AchievementImportDryRunRow = {
-  rowNumber: number;
-  parsed: {
-    type: string | null;
-    title: string | null;
-    ownerEmail: string | null;
-    ownerEmployeeNo: string | null;
-    departmentCode: string | null;
-    secretLevel: string | null;
-    status: string | null;
-    contributors: AchievementImportContributorPreview[];
-    identifiers: {
-      doi: string | null;
-      applicationNo: string | null;
-      patentNo: string | null;
-      registrationNo: string | null;
-    };
-    normalizedIdentifiers: {
-      doi: string | null;
-      applicationNo: string | null;
-      patentNo: string | null;
-      registrationNo: string | null;
-    };
-  };
-  status: AchievementImportDryRunRowStatus;
-  candidateAction: AchievementImportDryRunCandidateAction;
-  errors: AchievementImportDryRunIssue[];
-  warnings: AchievementImportDryRunIssue[];
+export type AchievementImportDryRunIdentifiers = {
+  doi: string | null;
+  applicationNo: string | null;
+  patentNo: string | null;
+  registrationNo: string | null;
 };
 
-export type AchievementImportDryRunResult = {
-  importType: typeof achievementImportType;
-  dryRun: true;
-  file: {
-    name: string;
-    size: number;
-    mimeType: string;
-    encoding: "utf-8";
-  };
-  columns: {
-    required: string[];
-    optional: string[];
-    received: string[];
-  };
-  summary: {
-    totalRows: number;
-    validRows: number;
-    errorRows: number;
-    warningRows: number;
-    createDraftCandidates: number;
-    duplicateIdentifierRows: number;
-    dbConflictRows: number;
-    ownerEmployeeNoLookup: "NOT_AVAILABLE";
-  };
-  rows: AchievementImportDryRunRow[];
+export type AchievementImportDryRunParsedRow = {
+  type: string | null;
+  title: string | null;
+  ownerEmail: string | null;
+  ownerEmployeeNo: string | null;
+  departmentCode: string | null;
+  secretLevel: string | null;
+  status: string | null;
+  contributors: AchievementImportContributorPreview[];
+  identifiers: AchievementImportDryRunIdentifiers;
+  normalizedIdentifiers: AchievementImportDryRunIdentifiers;
 };
 
-type ParsedCsvRecord = {
-  rowNumber: number;
-  values: string[];
+export type AchievementImportDryRunRow = ImportDryRunRow<
+  AchievementImportDryRunParsedRow,
+  AchievementImportDryRunCandidateAction,
+  AchievementImportDryRunIssue
+>;
+
+export type AchievementImportDryRunSummary = {
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  warningRows: number;
+  createDraftCandidates: number;
+  duplicateIdentifierRows: number;
+  dbConflictRows: number;
+  ownerEmployeeNoLookup: "NOT_AVAILABLE";
 };
 
-type CsvParseResult = {
-  headers: string[];
-  records: ParsedCsvRecord[];
-};
+export type AchievementImportDryRunResult = ImportDryRunResult<
+  typeof achievementImportType,
+  AchievementImportDryRunSummary,
+  AchievementImportDryRunRow
+>;
 
 type WorkingRow = {
   rowNumber: number;
   valuesByHeader: Map<string, string>;
-  parsed: AchievementImportDryRunRow["parsed"];
+  parsed: AchievementImportDryRunParsedRow;
   resolved: {
     departmentId: string | null;
     ownerUserId: string | null;
@@ -279,7 +260,10 @@ export class AchievementImportDryRunService {
     _context: UserContext,
     file: AchievementImportDryRunFile,
   ): Promise<AchievementImportDryRunResult> {
-    const csv = parseCsv(file.buffer);
+    const csv = parseImportCsv(file.buffer, {
+      maxRows,
+      createError: (message) => new InvalidAchievementImportCsvError(message),
+    });
     const rows = toWorkingRows(csv);
     applyColumnValidation(rows, csv.headers);
     applyRowValidation(rows);
@@ -303,12 +287,7 @@ export class AchievementImportDryRunService {
     return {
       importType: achievementImportType,
       dryRun: true,
-      file: {
-        name: sanitizeFileName(file.originalName),
-        size: file.size,
-        mimeType: file.mimeType,
-        encoding: "utf-8",
-      },
+      file: buildImportDryRunFileMetadata(file, "achievements.csv"),
       columns: {
         required: [...requiredColumns],
         optional: [...optionalColumns],
@@ -320,106 +299,9 @@ export class AchievementImportDryRunService {
   }
 }
 
-const parseCsv = (buffer: Buffer): CsvParseResult => {
-  const text = buffer.toString("utf8").replace(/^\uFEFF/, "");
-  if (text.includes("\uFFFD")) {
-    throw new InvalidAchievementImportCsvError("CSV must be valid UTF-8.");
-  }
-
-  const records = parseCsvRecords(text);
-  const nonEmptyRecords = records.filter((record) =>
-    record.values.some((value) => value.trim() !== ""),
-  );
-  const headerRecord = nonEmptyRecords[0];
-  if (!headerRecord) {
-    throw new InvalidAchievementImportCsvError("CSV header row is required.");
-  }
-
-  const dataRecords = nonEmptyRecords.slice(1);
-  if (dataRecords.length > maxRows) {
-    throw new InvalidAchievementImportCsvError(`CSV data row limit exceeded: ${maxRows}.`);
-  }
-
-  return {
-    headers: headerRecord.values.map((header) => header.trim()),
-    records: dataRecords,
-  };
-};
-
-// Same narrow CSV boundary as existing import dry-runs: UTF-8, comma delimiter,
-// double-quote escaping, one header row, and no workbook parsing.
-const parseCsvRecords = (text: string): ParsedCsvRecord[] => {
-  const records: ParsedCsvRecord[] = [];
-  let values: string[] = [];
-  let value = "";
-  let inQuotes = false;
-  let rowNumber = 1;
-
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index];
-
-    if (inQuotes) {
-      if (character === "\"") {
-        if (text[index + 1] === "\"") {
-          value += "\"";
-          index += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        value += character;
-      }
-      continue;
-    }
-
-    if (character === "\"") {
-      if (value.length === 0) {
-        inQuotes = true;
-      } else {
-        value += character;
-      }
-      continue;
-    }
-
-    if (character === ",") {
-      values.push(value);
-      value = "";
-      continue;
-    }
-
-    if (character === "\n" || character === "\r") {
-      values.push(value);
-      records.push({ rowNumber, values });
-      values = [];
-      value = "";
-      if (character === "\r" && text[index + 1] === "\n") {
-        index += 1;
-      }
-      rowNumber += 1;
-      continue;
-    }
-
-    value += character;
-  }
-
-  if (inQuotes) {
-    throw new InvalidAchievementImportCsvError("CSV contains an unclosed quoted field.");
-  }
-
-  if (value.length > 0 || values.length > 0) {
-    values.push(value);
-    records.push({ rowNumber, values });
-  }
-
-  return records;
-};
-
-const toWorkingRows = (csv: CsvParseResult): WorkingRow[] =>
+const toWorkingRows = (csv: ImportCsvParseResult): WorkingRow[] =>
   csv.records.map((record) => {
-    const valuesByHeader = new Map<string, string>();
-    csv.headers.forEach((header, index) => {
-      valuesByHeader.set(header, record.values[index] ?? "");
-    });
+    const valuesByHeader = buildValuesByHeader(csv.headers, record.values);
 
     const doi = normalizeCell(getCell(valuesByHeader, "doi") ?? getCell(valuesByHeader, "DOI"));
     const patentNo = normalizeCell(
@@ -467,42 +349,17 @@ const toWorkingRows = (csv: CsvParseResult): WorkingRow[] =>
 const applyColumnValidation = (
   rows: WorkingRow[],
   headers: readonly string[],
-): void => {
-  const unknownHeaders = headers.filter(
-    (header) => !allowedColumns.has(header) && !isForbiddenColumn(header),
-  );
-  const forbiddenHeaders = headers.filter(isForbiddenColumn);
-  const missingRequiredHeaders = requiredColumns.filter(
-    (column) => !headers.includes(column),
-  );
-
-  for (const row of rows) {
-    for (const header of unknownHeaders) {
-      row.errors.push({
-        field: header || "(empty)",
-        code: "UNKNOWN_COLUMN",
-        message: `Column is not supported: ${header || "(empty)"}.`,
-      });
-    }
-
-    for (const header of forbiddenHeaders) {
-      void header;
-      row.errors.push({
-        field: "(sensitive)",
-        code: "FORBIDDEN_SENSITIVE_COLUMN",
-        message: "Sensitive, raw payload, storage, workflow, fee, and direct id columns are not supported.",
-      });
-    }
-
-    for (const column of missingRequiredHeaders) {
-      row.errors.push({
-        field: column,
-        code: "REQUIRED",
-        message: `Required column is missing: ${column}.`,
-      });
-    }
-  }
-};
+): void =>
+  appendColumnValidationIssues(rows, headers, {
+    allowedColumns,
+    requiredColumns,
+    isForbiddenColumn,
+    unknownCode: "UNKNOWN_COLUMN",
+    forbiddenCode: "FORBIDDEN_SENSITIVE_COLUMN",
+    requiredCode: "REQUIRED",
+    forbiddenMessage:
+      "Sensitive, raw payload, storage, workflow, fee, and direct id columns are not supported.",
+  });
 
 const applyRowValidation = (rows: WorkingRow[]): void => {
   for (const row of rows) {
@@ -516,7 +373,7 @@ const applyRowValidation = (rows: WorkingRow[]): void => {
 const validateFormulaLikeValues = (row: WorkingRow): void => {
   for (const field of allowedColumns) {
     const value = normalizeCell(row.valuesByHeader.get(field));
-    if (value && formulaLikePattern.test(value)) {
+    if (isFormulaLikeCell(value)) {
       row.errors.push({
         field,
         code: "FORMULA_LIKE_VALUE",
@@ -990,10 +847,7 @@ const toResultRow = (row: WorkingRow): AchievementImportDryRunRow => {
 };
 
 const summarizeRows = (rows: readonly AchievementImportDryRunRow[]) => ({
-  totalRows: rows.length,
-  validRows: rows.filter((row) => row.errors.length === 0).length,
-  errorRows: rows.filter((row) => row.errors.length > 0).length,
-  warningRows: rows.filter((row) => row.warnings.length > 0).length,
+  ...summarizeImportDryRunRows(rows),
   createDraftCandidates: rows.filter((row) => row.candidateAction === "CREATE_DRAFT").length,
   duplicateIdentifierRows: rows.filter((row) =>
     row.errors.some((error) => error.code === "DUPLICATE_IN_FILE"),
@@ -1057,7 +911,7 @@ const collectNormalizedIdentifierInput = (rows: readonly WorkingRow[]) => ({
 
 const collectNormalizedValues = (
   rows: readonly WorkingRow[],
-  field: keyof AchievementImportDryRunRow["parsed"]["normalizedIdentifiers"],
+  field: keyof AchievementImportDryRunParsedRow["normalizedIdentifiers"],
 ): string[] =>
   [
     ...new Set(
@@ -1131,12 +985,9 @@ const normalizeEnumValue = (value: string | undefined): string | null => {
 };
 
 const isForbiddenColumn = (header: string): boolean => {
-  const normalized = header.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+  const normalized = normalizeImportHeaderToken(header);
   return sensitiveColumns.has(normalized) || forbiddenColumns.has(normalized);
 };
 
 const sanitizeHeaderForOutput = (header: string): string =>
   isForbiddenColumn(header) ? "(sensitive)" : header;
-
-const sanitizeFileName = (name: string): string =>
-  name.replace(/[\\/]/g, "-").slice(0, 255) || "achievements.csv";

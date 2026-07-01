@@ -1,5 +1,35 @@
 # Progress
 
+## 2026-07-01 Step 61B - Import dry-run backend shared contract and helper refactor
+
+- Status: STEP_61B_IMPORT_DRY_RUN_BACKEND_SHARED_HELPERS_IMPLEMENTED.
+- Step identity:
+  - Implemented the Step 61A backend-only shared contract/types/helper refactor for department, user/account, and achievement import dry-run.
+  - Scope stayed limited to `apps/api/src/imports` shared helper/types, three dry-run controllers/services, helper tests, and memory-bank updates.
+  - No Web UI/client change, API route/permission/status-code/response-shape change, Prisma schema change, migration, seed/backfill, real import, account password work, invite/reset flow, attachment/fee/workflow import, audit write, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `apps/api/src/imports/import-dry-run.shared.ts`.
+  - Added shared backend types for import dry-run file metadata, columns metadata, issue shape, row shape, base summary, result shape, CSV parse result, row status, UTF-8 encoding, and 1 MB upload-size constant.
+  - Added shared pure helpers for narrow UTF-8 CSV parsing, values-by-header mapping, header validation issue construction, header-token normalization, formula-like cell checks, sanitized file metadata, and base summary counts.
+  - Added `apps/api/src/imports/import-dry-run.shared.spec.ts` covering shared parser, row numbers, configurable parse errors, header issue construction, sanitized file metadata, base summary, and formula-like detection.
+  - Updated department, user/account, and achievement dry-run services to reuse the shared parser/types/helpers while keeping domain validation local.
+  - Updated the three controllers to use the shared 1 MB constant only; route paths, guards, MIME/body checks, status codes, and error mapping remain unchanged.
+- Behavior boundary:
+  - Response shape remains `importType`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - No top-level `preview`, `conflicts`, `errors`, or `warnings` was added.
+  - `rows[].parsed` remains the safe preview surface.
+  - Conflicts remain expressed through row issue codes and import-specific summary counters.
+  - Existing issue codes, issue messages, candidate actions, permission policy, and no-write repository boundaries are unchanged.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 11 files / 44 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Next:
+  - Later Step can consider extracting controller upload-file adapter or Web shared CSV panel/result components, but only with explicit no-behavior tests.
+  - Real write import, invite/reset execution, account password changes, attachment import, fee import, workflow/submitted import, audit writes, employee-number persistence, department-scoped import permissions, production/VPS rollout, and existing untracked-artifact handling remain separate explicit steps.
+
 ## 2026-07-01 Step 61A - Import dry-run consolidation scope and shared contract plan
 
 - Status: STEP_61A_IMPORT_DRY_RUN_CONSOLIDATION_PLAN_READY_DOCS_ONLY.

@@ -4,6 +4,36 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 61B Archive - Import dry-run backend shared contract and helper refactor - 2026-07-01
+
+- Step identity:
+  - Backend-only shared contract/types/helper refactor for department, user/account, and achievement import dry-run.
+  - Scope stayed limited to `apps/api/src/imports` shared helper/types, three dry-run controllers/services, helper tests, and memory-bank updates.
+  - No Web UI/client change, API route/permission/status-code/response-shape change, Prisma schema change, migration, seed/backfill, real import, account password work, invite/reset flow, attachment/fee/workflow import, audit write, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented backend shared layer:
+  - Added `apps/api/src/imports/import-dry-run.shared.ts`.
+  - Shared types: dry-run file, file metadata, columns metadata, issue, row status, row shape, base summary, result shape, parsed CSV record, and CSV parse result.
+  - Shared constants/helpers: UTF-8 encoding, 1 MB upload-size constant, narrow CSV parser, values-by-header mapping, header validation issue construction, forbidden-header token normalization, formula-like value detection, sanitized file metadata, and base summary counting.
+  - Added `apps/api/src/imports/import-dry-run.shared.spec.ts` for helper-level coverage.
+- Service/controller integration:
+  - Department, user/account, and achievement services reuse shared parser/types/helpers while keeping business validation local.
+  - Controllers reuse the shared 1 MB constant.
+  - Full controller upload-file adapter extraction was deferred to avoid changing exception/status mapping.
+- Preserved contract:
+  - Response shape remains `importType`, `dryRun=true`, sanitized `file`, `columns`, `summary`, and `rows`.
+  - `rows[].parsed` remains the safe preview surface.
+  - No top-level `preview`, `conflicts`, `errors`, `warnings`, or issue `severity` field was added.
+  - Existing conflict reporting remains row issue codes plus import-specific summary counters.
+  - Existing issue codes, issue messages, candidate actions, route paths, permission guards, status codes, repository lookup/no-write boundaries, and Web behavior remain unchanged.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 11 files / 44 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+- Deferred:
+  - Web shared upload/result components.
+  - Full shared controller upload-file adapter.
+  - Real write import, invite/reset execution, account password changes, attachment import, fee import, workflow/submitted import, audit writes, employee-number persistence, department-scoped import permissions, production/VPS rollout, and existing untracked-artifact handling remain separate explicit steps.
+
 ## Current Step 61A Archive - Import dry-run consolidation scope and shared contract plan - 2026-07-01
 
 - Step identity:

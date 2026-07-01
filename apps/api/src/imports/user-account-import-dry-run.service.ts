@@ -9,6 +9,21 @@ import {
   UserAccountImportRoleLookup,
   UserAccountImportUserLookup,
 } from "./user-account-import-dry-run.repository";
+import {
+  appendColumnValidationIssues,
+  buildImportDryRunFileMetadata,
+  buildValuesByHeader,
+  ImportCsvParseResult,
+  ImportDryRunFile,
+  ImportDryRunIssue,
+  ImportDryRunResult,
+  ImportDryRunRow,
+  ImportDryRunStatus,
+  isFormulaLikeCell,
+  normalizeImportHeaderToken,
+  parseImportCsv,
+  summarizeImportDryRunRows,
+} from "./import-dry-run.shared";
 
 export const userAccountImportType = "USER_ACCOUNT" as const;
 
@@ -34,19 +49,13 @@ const roleCodePattern = /^[A-Z0-9_]+$/;
 const employeeNoPattern = /^[A-Za-z0-9_-]+$/;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const maxRows = 500;
-const formulaLikePattern = /^[=+\-@]/;
 const importableStatuses = new Set<string>([
   UserStatus.PENDING_ACTIVATION,
   UserStatus.DISABLED,
 ]);
 const knownUserStatuses = new Set<string>(Object.values(UserStatus));
 
-export type UserAccountImportDryRunFile = {
-  originalName: string;
-  mimeType: string;
-  size: number;
-  buffer: Buffer;
-};
+export type UserAccountImportDryRunFile = ImportDryRunFile;
 
 export type UserAccountImportDryRunIssueCode =
   | "REQUIRED"
@@ -67,80 +76,55 @@ export type UserAccountImportDryRunIssueCode =
   | "EXISTING_ROLE_ASSIGNMENT"
   | "REVOKED_ROLE_ASSIGNMENT";
 
-export type UserAccountImportDryRunIssue = {
-  field: string;
-  code: UserAccountImportDryRunIssueCode;
-  message: string;
-};
+export type UserAccountImportDryRunIssue = ImportDryRunIssue<UserAccountImportDryRunIssueCode>;
 
-export type UserAccountImportDryRunRowStatus = "VALID" | "WARNING" | "ERROR";
+export type UserAccountImportDryRunRowStatus = ImportDryRunStatus;
 export type UserAccountImportDryRunCandidateAction =
   | "CREATE_PENDING_USER"
   | "REVIEW_EXISTING_USER"
   | "REACTIVATE_ROLE_REVIEW"
   | "SKIP";
 
-export type UserAccountImportDryRunRow = {
-  rowNumber: number;
-  parsed: {
-    email: string | null;
-    displayName: string | null;
-    employeeNo: string | null;
-    departmentCode: string | null;
-    roleCode: string | null;
-    scopeType: string | null;
-    scopeDepartmentCode: string | null;
-    status: string | null;
-    credentialAction: "NO_CREDENTIAL";
-  };
-  status: UserAccountImportDryRunRowStatus;
-  candidateAction: UserAccountImportDryRunCandidateAction;
-  errors: UserAccountImportDryRunIssue[];
-  warnings: UserAccountImportDryRunIssue[];
+export type UserAccountImportDryRunParsedRow = {
+  email: string | null;
+  displayName: string | null;
+  employeeNo: string | null;
+  departmentCode: string | null;
+  roleCode: string | null;
+  scopeType: string | null;
+  scopeDepartmentCode: string | null;
+  status: string | null;
+  credentialAction: "NO_CREDENTIAL";
 };
 
-export type UserAccountImportDryRunResult = {
-  importType: typeof userAccountImportType;
-  dryRun: true;
-  file: {
-    name: string;
-    size: number;
-    mimeType: string;
-    encoding: "utf-8";
-  };
-  columns: {
-    required: string[];
-    optional: string[];
-    received: string[];
-  };
-  summary: {
-    totalRows: number;
-    validRows: number;
-    errorRows: number;
-    warningRows: number;
-    createCandidates: number;
-    existingUserRows: number;
-    existingRoleAssignmentRows: number;
-    reactivationCandidateRows: number;
-    employeeNoDbConflictCheck: "NOT_AVAILABLE";
-  };
-  rows: UserAccountImportDryRunRow[];
+export type UserAccountImportDryRunRow = ImportDryRunRow<
+  UserAccountImportDryRunParsedRow,
+  UserAccountImportDryRunCandidateAction,
+  UserAccountImportDryRunIssue
+>;
+
+export type UserAccountImportDryRunSummary = {
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  warningRows: number;
+  createCandidates: number;
+  existingUserRows: number;
+  existingRoleAssignmentRows: number;
+  reactivationCandidateRows: number;
+  employeeNoDbConflictCheck: "NOT_AVAILABLE";
 };
 
-type ParsedCsvRecord = {
-  rowNumber: number;
-  values: string[];
-};
-
-type CsvParseResult = {
-  headers: string[];
-  records: ParsedCsvRecord[];
-};
+export type UserAccountImportDryRunResult = ImportDryRunResult<
+  typeof userAccountImportType,
+  UserAccountImportDryRunSummary,
+  UserAccountImportDryRunRow
+>;
 
 type WorkingRow = {
   rowNumber: number;
   valuesByHeader: Map<string, string>;
-  parsed: UserAccountImportDryRunRow["parsed"];
+  parsed: UserAccountImportDryRunParsedRow;
   resolved: {
     departmentId: string | null;
     roleId: string | null;
@@ -168,7 +152,10 @@ export class UserAccountImportDryRunService {
     _context: UserContext,
     file: UserAccountImportDryRunFile,
   ): Promise<UserAccountImportDryRunResult> {
-    const csv = parseCsv(file.buffer);
+    const csv = parseImportCsv(file.buffer, {
+      maxRows,
+      createError: (message) => new InvalidUserAccountImportCsvError(message),
+    });
     const rows = toWorkingRows(csv);
     applyColumnValidation(rows, csv.headers);
     applyRowValidation(rows);
@@ -193,12 +180,7 @@ export class UserAccountImportDryRunService {
     return {
       importType: userAccountImportType,
       dryRun: true,
-      file: {
-        name: sanitizeFileName(file.originalName),
-        size: file.size,
-        mimeType: file.mimeType,
-        encoding: "utf-8",
-      },
+      file: buildImportDryRunFileMetadata(file, "user-accounts.csv"),
       columns: {
         required: [...requiredColumns],
         optional: [...optionalColumns],
@@ -210,106 +192,9 @@ export class UserAccountImportDryRunService {
   }
 }
 
-const parseCsv = (buffer: Buffer): CsvParseResult => {
-  const text = buffer.toString("utf8").replace(/^\uFEFF/, "");
-  if (text.includes("\uFFFD")) {
-    throw new InvalidUserAccountImportCsvError("CSV must be valid UTF-8.");
-  }
-
-  const records = parseCsvRecords(text);
-  const nonEmptyRecords = records.filter((record) =>
-    record.values.some((value) => value.trim() !== ""),
-  );
-  const headerRecord = nonEmptyRecords[0];
-  if (!headerRecord) {
-    throw new InvalidUserAccountImportCsvError("CSV header row is required.");
-  }
-
-  const dataRecords = nonEmptyRecords.slice(1);
-  if (dataRecords.length > maxRows) {
-    throw new InvalidUserAccountImportCsvError(`CSV data row limit exceeded: ${maxRows}.`);
-  }
-
-  return {
-    headers: headerRecord.values.map((header) => header.trim()),
-    records: dataRecords,
-  };
-};
-
-// Intentionally narrow CSV support to match the department dry-run boundary:
-// UTF-8, comma delimiter, double-quote escaping, one header row, no workbook parsing.
-const parseCsvRecords = (text: string): ParsedCsvRecord[] => {
-  const records: ParsedCsvRecord[] = [];
-  let values: string[] = [];
-  let value = "";
-  let inQuotes = false;
-  let rowNumber = 1;
-
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index];
-
-    if (inQuotes) {
-      if (character === "\"") {
-        if (text[index + 1] === "\"") {
-          value += "\"";
-          index += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        value += character;
-      }
-      continue;
-    }
-
-    if (character === "\"") {
-      if (value.length === 0) {
-        inQuotes = true;
-      } else {
-        value += character;
-      }
-      continue;
-    }
-
-    if (character === ",") {
-      values.push(value);
-      value = "";
-      continue;
-    }
-
-    if (character === "\n" || character === "\r") {
-      values.push(value);
-      records.push({ rowNumber, values });
-      values = [];
-      value = "";
-      if (character === "\r" && text[index + 1] === "\n") {
-        index += 1;
-      }
-      rowNumber += 1;
-      continue;
-    }
-
-    value += character;
-  }
-
-  if (inQuotes) {
-    throw new InvalidUserAccountImportCsvError("CSV contains an unclosed quoted field.");
-  }
-
-  if (value.length > 0 || values.length > 0) {
-    values.push(value);
-    records.push({ rowNumber, values });
-  }
-
-  return records;
-};
-
-const toWorkingRows = (csv: CsvParseResult): WorkingRow[] =>
+const toWorkingRows = (csv: ImportCsvParseResult): WorkingRow[] =>
   csv.records.map((record) => {
-    const valuesByHeader = new Map<string, string>();
-    csv.headers.forEach((header, index) => {
-      valuesByHeader.set(header, record.values[index] ?? "");
-    });
+    const valuesByHeader = buildValuesByHeader(csv.headers, record.values);
 
     const departmentCode = normalizeCell(valuesByHeader.get("departmentCode"));
     const scopeDepartmentCode =
@@ -342,42 +227,16 @@ const toWorkingRows = (csv: CsvParseResult): WorkingRow[] =>
 const applyColumnValidation = (
   rows: WorkingRow[],
   headers: readonly string[],
-): void => {
-  const unknownHeaders = headers.filter(
-    (header) => !allowedColumns.has(header) && !isSensitiveColumn(header),
-  );
-  const forbiddenHeaders = headers.filter(isSensitiveColumn);
-  const missingRequiredHeaders = requiredColumns.filter(
-    (column) => !headers.includes(column),
-  );
-
-  for (const row of rows) {
-    for (const header of unknownHeaders) {
-      row.errors.push({
-        field: header || "(empty)",
-        code: "UNKNOWN_COLUMN",
-        message: `Column is not supported: ${header || "(empty)"}.`,
-      });
-    }
-
-    for (const header of forbiddenHeaders) {
-      void header;
-      row.errors.push({
-        field: "(sensitive)",
-        code: "FORBIDDEN_SENSITIVE_COLUMN",
-        message: "Credential, token, session, secret, and link columns are not supported.",
-      });
-    }
-
-    for (const column of missingRequiredHeaders) {
-      row.errors.push({
-        field: column,
-        code: "REQUIRED",
-        message: `Required column is missing: ${column}.`,
-      });
-    }
-  }
-};
+): void =>
+  appendColumnValidationIssues(rows, headers, {
+    allowedColumns,
+    requiredColumns,
+    isForbiddenColumn: isSensitiveColumn,
+    unknownCode: "UNKNOWN_COLUMN",
+    forbiddenCode: "FORBIDDEN_SENSITIVE_COLUMN",
+    requiredCode: "REQUIRED",
+    forbiddenMessage: "Credential, token, session, secret, and link columns are not supported.",
+  });
 
 const applyRowValidation = (rows: WorkingRow[]): void => {
   for (const row of rows) {
@@ -397,7 +256,7 @@ const applyRowValidation = (rows: WorkingRow[]): void => {
 const validateFormulaLikeValues = (row: WorkingRow): void => {
   for (const field of allowedColumns) {
     const value = normalizeCell(row.valuesByHeader.get(field));
-    if (value && formulaLikePattern.test(value)) {
+    if (isFormulaLikeCell(value)) {
       row.errors.push({
         field,
         code: "FORMULA_LIKE_VALUE",
@@ -730,10 +589,7 @@ const toResultRow = (row: WorkingRow): UserAccountImportDryRunRow => {
 };
 
 const summarizeRows = (rows: readonly UserAccountImportDryRunRow[]) => ({
-  totalRows: rows.length,
-  validRows: rows.filter((row) => row.errors.length === 0).length,
-  errorRows: rows.filter((row) => row.errors.length > 0).length,
-  warningRows: rows.filter((row) => row.warnings.length > 0).length,
+  ...summarizeImportDryRunRows(rows),
   createCandidates: rows.filter((row) => row.candidateAction === "CREATE_PENDING_USER").length,
   existingUserRows: rows.filter((row) =>
     row.warnings.some((warning) => warning.code === "EXISTING_USER"),
@@ -788,10 +644,7 @@ const isValidRoleCode = (code: string): boolean =>
   code.length <= 64 && roleCodePattern.test(code);
 
 const isSensitiveColumn = (header: string): boolean =>
-  sensitiveColumns.has(header.replace(/[^A-Za-z0-9]/g, "").toLowerCase());
+  sensitiveColumns.has(normalizeImportHeaderToken(header));
 
 const sanitizeHeaderForOutput = (header: string): string =>
   isSensitiveColumn(header) ? "(sensitive)" : header;
-
-const sanitizeFileName = (name: string): string =>
-  name.replace(/[\\/]/g, "-").slice(0, 255) || "user-accounts.csv";
