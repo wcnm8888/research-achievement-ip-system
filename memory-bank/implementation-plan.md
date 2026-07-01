@@ -8597,3 +8597,15 @@ Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Pr
 - Deferred:
   - Step 58C: Web UI wiring for fee workflow tasks.
   - Step 58D: production-like Docker acceptance and local migration application in non-production only.
+
+## Step 58C implementation update - fee review workflow task Web UI
+
+- Status: DONE.
+- Web/client integration implemented:
+  - Workflow task query types and client helpers support fee review filtering through `targetType=FEE_RECORD` and `feeRecordId`.
+  - Fee detail shows current-user fee review workflow task state using safe task/instance metadata.
+  - Fee approve/reject controls remain wired to the existing fee review APIs and are gated by a pending `FEE_REVIEW` workflow task plus scoped fee review permission.
+  - Fee list table does not show executable review actions because it lacks per-row workflow task state.
+  - Successful approve/reject refreshes fee detail/list, review history, and task state.
+- Deferred:
+  - Step 58D: local Docker production-like acceptance and non-production migration application only after explicit authorization.

@@ -4233,3 +4233,18 @@
   - A reviewer without scoped `fee:review_department`, a non-assignee, a cross-department actor, a completed task, or a non-pending fee review state is rejected before business approval/rejection commits.
   - Completing one fee review task cancels sibling pending candidate tasks and completes the workflow instance.
   - `fee:manage_department` and `fee:read_department` do not grant workflow task processing rights.
+
+## D211 - Step 58C fee review actions are gated by workflow task visibility
+
+- Date: 2026-07-01
+- Context: Step 58B kept existing fee approve/reject APIs and added fee workflow tasks. Step 58C needs Web integration without adding a separate workflow task completion UI or changing backend behavior.
+- Decision:
+  - Fees detail is the canonical place to show fee review workflow task state for a selected fee.
+  - The Web fetches fee review task metadata via existing workflow task list API with `targetType=FEE_RECORD` and `feeRecordId`.
+  - The fee list table no longer exposes executable fee review buttons because it does not have per-row workflow task state.
+  - The fee detail review action buttons are shown only when the current user has `fee:review_department`, the fee review status is `PENDING`, and a current pending `FEE_REVIEW` task exists for that fee record.
+  - Completed/cancelled workflow tasks remain readonly metadata; approve/reject still call the existing fee review APIs, not workflow task action APIs.
+- Consequence:
+  - Manager-only and read-only users can keep their existing fee visibility but do not receive task processing controls.
+  - A pending fee without a current pending task is treated as readonly in Web until backend/task state is corrected.
+  - Workflow task display remains limited to task/instance metadata and does not duplicate fee business fields or attachment internals.

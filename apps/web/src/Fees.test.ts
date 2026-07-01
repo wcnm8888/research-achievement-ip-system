@@ -9,9 +9,12 @@ import {
   buildFeeReviewActionPayload,
   buildFeeReviewHistoryColumns,
   buildFeeReviewHistoryRefreshKey,
+  buildFeeReviewWorkflowTaskRefreshKey,
   buildFeeStatusActionPayload,
   buildFeeVoucherAttachmentFormData,
   buildMarkFeePaidPayload,
+  fetchFeeReviewWorkflowTasks,
+  findPendingFeeReviewWorkflowTask,
   canManageDepartmentFees,
   canMarkFeePaid,
   canReadFeeReviewHistory,
@@ -54,6 +57,7 @@ import {
   rejectFeeReviewForDemoUser,
   shouldShowFeeDetailMarkPaidAction,
   shouldShowFeeDetailReviewActions,
+  shouldLoadFeeReviewWorkflowTasks,
   shouldLoadFeeReviewHistory,
   shouldShowFeeDetailStatusActions,
   shouldLoadFeeVoucherAttachmentDetail,
@@ -66,7 +70,7 @@ import {
   waiveFee,
   waiveFeeForDemoUser,
 } from "./Fees";
-import type { AttachmentMetadata, FeeRecord, FeeReviewHistoryEntry } from "./types";
+import type { AttachmentMetadata, FeeRecord, FeeReviewHistoryEntry, WorkflowTask } from "./types";
 
 const baseFee: FeeRecord = {
   id: "fee-id",
@@ -118,6 +122,24 @@ const baseFeeReviewHistory: FeeReviewHistoryEntry = {
   toStatus: "APPROVED",
   reason: "finance checked",
   createdAt: "2026-07-01T08:00:00.000Z",
+};
+
+const baseFeeReviewWorkflowTask: WorkflowTask = {
+  id: "task-id",
+  instanceId: "instance-id",
+  assigneeId: "12345678-0000-4000-8000-00000000abcd",
+  stepCode: "FEE_REVIEW",
+  status: "PENDING",
+  createdAt: "2026-07-01T08:00:00.000Z",
+  updatedAt: "2026-07-01T08:05:00.000Z",
+  claimedAt: null,
+  completedAt: null,
+  instance: {
+    targetType: "FEE_RECORD",
+    targetId: "fee-id",
+    status: "ACTIVE",
+    currentStep: "FEE_REVIEW",
+  },
 };
 
 const createClient = (result: unknown, postResult?: unknown): ApiClient => {
@@ -456,6 +478,141 @@ describe("fee review history client and display helpers", () => {
 
     expect(approvedKey).not.toBe(pendingKey);
     expect(rejectedKey).not.toBe(approvedKey);
+  });
+
+  it("changes the workflow task refresh key after approve or reject updates", () => {
+    const pendingKey = buildFeeReviewWorkflowTaskRefreshKey(baseFee, 0);
+    const approvedKey = buildFeeReviewWorkflowTaskRefreshKey(
+      {
+        ...baseFee,
+        reviewStatus: "APPROVED",
+        reviewedAt: "2026-07-01T08:00:00.000Z",
+      },
+      1,
+    );
+    const rejectedKey = buildFeeReviewWorkflowTaskRefreshKey(
+      {
+        ...baseFee,
+        reviewStatus: "REJECTED",
+        reviewedAt: "2026-07-01T09:00:00.000Z",
+      },
+      2,
+    );
+
+    expect(approvedKey).not.toBe(pendingKey);
+    expect(rejectedKey).not.toBe(approvedKey);
+  });
+});
+
+describe("fee review workflow task client and display helpers", () => {
+  it("requests fee review workflow tasks through target-aware workflow task filters", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({ items: [baseFeeReviewWorkflowTask] })
+      .mockResolvedValue({ items: [] }) as unknown as ApiClient["get"];
+    const client: ApiClient = {
+      get,
+      post: vi.fn(),
+      patch: vi.fn(),
+    };
+
+    await expect(fetchFeeReviewWorkflowTasks(client, " fee-id ")).resolves.toEqual([
+      baseFeeReviewWorkflowTask,
+    ]);
+
+    expect(client.get).toHaveBeenCalledWith("/workflow/tasks/my", {
+      status: "PENDING",
+      targetType: "FEE_RECORD",
+      achievementId: undefined,
+      feeRecordId: "fee-id",
+    });
+    expect(client.get).toHaveBeenCalledTimes(5);
+  });
+
+  it("does not request workflow tasks without a fee id", async () => {
+    const client = createClient({ items: [baseFeeReviewWorkflowTask] });
+
+    await expect(fetchFeeReviewWorkflowTasks(client, "   ")).resolves.toEqual([]);
+    expect(shouldLoadFeeReviewWorkflowTasks(null, "fee-id", "management", true)).toBe(false);
+    expect(shouldLoadFeeReviewWorkflowTasks("demo-user-id", "fee-id", "management", false))
+      .toBe(false);
+    expect(shouldLoadFeeReviewWorkflowTasks("demo-user-id", "fee-id", "search-readonly", true))
+      .toBe(false);
+    expect(shouldLoadFeeReviewWorkflowTasks("demo-user-id", "fee-id", "management", true))
+      .toBe(true);
+    expect(client.get).not.toHaveBeenCalled();
+  });
+
+  it("shows review actions only with a current pending FEE_REVIEW task", () => {
+    expect(findPendingFeeReviewWorkflowTask([baseFeeReviewWorkflowTask], "fee-id")).toEqual(
+      baseFeeReviewWorkflowTask,
+    );
+    expect(
+      shouldShowFeeDetailReviewActions(
+        baseFee,
+        "management",
+        true,
+        baseFeeReviewWorkflowTask,
+      ),
+    ).toBe(true);
+    expect(shouldShowFeeDetailReviewActions(baseFee, "management", true, null)).toBe(false);
+    expect(
+      shouldShowFeeDetailReviewActions(
+        baseFee,
+        "management",
+        false,
+        baseFeeReviewWorkflowTask,
+      ),
+    ).toBe(false);
+    expect(
+      shouldShowFeeDetailReviewActions(
+        baseFee,
+        "search-readonly",
+        true,
+        baseFeeReviewWorkflowTask,
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps completed and cancelled fee workflow tasks readonly", () => {
+    const completedTask = {
+      ...baseFeeReviewWorkflowTask,
+      status: "APPROVED" as const,
+      completedAt: "2026-07-01T09:00:00.000Z",
+      instance: {
+        ...baseFeeReviewWorkflowTask.instance!,
+        status: "COMPLETED",
+        currentStep: null,
+      },
+    };
+    const cancelledTask = {
+      ...baseFeeReviewWorkflowTask,
+      id: "task-cancelled",
+      status: "CANCELLED" as const,
+      completedAt: "2026-07-01T09:00:00.000Z",
+    };
+
+    expect(findPendingFeeReviewWorkflowTask([completedTask], "fee-id")).toBeNull();
+    expect(findPendingFeeReviewWorkflowTask([cancelledTask], "fee-id")).toBeNull();
+    expect(shouldShowFeeDetailReviewActions(baseFee, "management", true, completedTask))
+      .toBe(false);
+    expect(shouldShowFeeDetailReviewActions(baseFee, "management", true, cancelledTask))
+      .toBe(false);
+  });
+
+  it("does not expose fee business fields in workflow task metadata fixtures", () => {
+    const serialized = JSON.stringify(baseFeeReviewWorkflowTask);
+
+    expect(serialized).toContain("status");
+    expect(serialized).toContain("stepCode");
+    expect(serialized).toContain("assigneeId");
+    expect(serialized).toContain("createdAt");
+    expect(serialized).toContain("updatedAt");
+    expect(serialized).not.toContain("amount");
+    expect(serialized).not.toContain("voucherNo");
+    expect(serialized).not.toContain("storageKey");
+    expect(serialized).not.toContain("checksum");
+    expect(serialized).not.toContain("rawPayload");
   });
 });
 
@@ -896,7 +1053,7 @@ describe("fee write visibility", () => {
     ).toBe(false);
   });
 
-  it("uses fee:review_department and pending review status for review action visibility", () => {
+  it("uses fee:review_department, pending review status, and pending task for review action visibility", () => {
     expect(
       canReviewDepartmentFees({
         permissionCodes: ["fee:review_department"],
@@ -911,14 +1068,37 @@ describe("fee write visibility", () => {
     expect(canReviewFee(baseFee)).toBe(true);
     expect(canReviewFee({ ...baseFee, reviewStatus: "APPROVED" })).toBe(false);
     expect(canReviewFee({ ...baseFee, reviewStatus: "REJECTED" })).toBe(false);
-    expect(shouldShowFeeDetailReviewActions(baseFee, "management", true)).toBe(true);
-    expect(shouldShowFeeDetailReviewActions(baseFee, "management", false)).toBe(false);
-    expect(shouldShowFeeDetailReviewActions(baseFee, "search-readonly", true)).toBe(false);
+    expect(
+      shouldShowFeeDetailReviewActions(
+        baseFee,
+        "management",
+        true,
+        baseFeeReviewWorkflowTask,
+      ),
+    ).toBe(true);
+    expect(shouldShowFeeDetailReviewActions(baseFee, "management", true, null)).toBe(false);
+    expect(
+      shouldShowFeeDetailReviewActions(
+        baseFee,
+        "management",
+        false,
+        baseFeeReviewWorkflowTask,
+      ),
+    ).toBe(false);
+    expect(
+      shouldShowFeeDetailReviewActions(
+        baseFee,
+        "search-readonly",
+        true,
+        baseFeeReviewWorkflowTask,
+      ),
+    ).toBe(false);
     expect(
       shouldShowFeeDetailReviewActions(
         { ...baseFee, reviewStatus: "APPROVED" },
         "management",
         true,
+        baseFeeReviewWorkflowTask,
       ),
     ).toBe(false);
   });

@@ -9854,3 +9854,21 @@
 - Next step:
   - Step 58C can wire fee review task visibility/handling into Web UI.
   - Step 58D can run the deferred production-like Docker acceptance after local migration application in a non-production environment.
+
+## 2026-07-01 Step 58C - Fee review workflow task Web UI integration
+
+- Status: DONE.
+- Scope completed:
+  - Extended Web workflow task types/query helpers to support `targetType=FEE_RECORD`, `feeRecordId`, and `FEE_REVIEW`.
+  - Added a fee detail workflow-task section that reads current-user fee review tasks through `/workflow/tasks/my`.
+  - Kept approve/reject on the existing fee review APIs; no standalone workflow-task completion UI was added.
+  - Review actions now require scoped fee review permission, pending fee review status, and a current pending `FEE_REVIEW` task for the fee record.
+  - Manager-only, read-only, search-readonly, missing-task, completed-task, and cancelled-task cases do not show executable review actions.
+  - Approve/reject success refreshes fee detail/list, review history, and workflow task state.
+- Explicitly not done:
+  - No backend behavior change.
+  - No Prisma schema or migration change.
+  - No Docker production-like acceptance.
+  - No VPS/production access, seed, backfill, deploy, push, package, or lockfile changes.
+- Next step:
+  - Step 58D can run local Docker production-like acceptance after explicit authorization.

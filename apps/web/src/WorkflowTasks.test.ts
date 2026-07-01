@@ -38,7 +38,9 @@ describe("buildWorkflowTaskListQuery", () => {
   it("keeps the default pending status", () => {
     expect(buildWorkflowTaskListQuery({ status: "PENDING" })).toEqual({
       status: "PENDING",
+      targetType: undefined,
       achievementId: undefined,
+      feeRecordId: undefined,
     });
   });
 
@@ -50,7 +52,9 @@ describe("buildWorkflowTaskListQuery", () => {
 
     expect(query).toEqual({
       status: "APPROVED",
+      targetType: undefined,
       achievementId: "achievement-id",
+      feeRecordId: undefined,
     });
     expect(query).not.toHaveProperty("page");
     expect(query).not.toHaveProperty("pageSize");
@@ -64,7 +68,9 @@ describe("buildWorkflowTaskListQuery", () => {
       }),
     ).toEqual({
       status: "REJECTED",
+      targetType: undefined,
       achievementId: undefined,
+      feeRecordId: undefined,
     });
   });
 });

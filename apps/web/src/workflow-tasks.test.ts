@@ -51,7 +51,9 @@ describe("buildWorkflowTaskQuery", () => {
 
     expect(query).toEqual({
       status: "PENDING",
+      targetType: undefined,
       achievementId: "achievement-id",
+      feeRecordId: undefined,
     });
     expect(query).not.toHaveProperty("page");
     expect(query).not.toHaveProperty("pageSize");
@@ -65,7 +67,24 @@ describe("buildWorkflowTaskQuery", () => {
       }),
     ).toEqual({
       status: "APPROVED",
+      targetType: undefined,
       achievementId: undefined,
+      feeRecordId: undefined,
+    });
+  });
+
+  it("keeps fee record target filters", () => {
+    expect(
+      buildWorkflowTaskQuery({
+        status: "PENDING",
+        targetType: "FEE_RECORD",
+        feeRecordId: " fee-id ",
+      }),
+    ).toEqual({
+      status: "PENDING",
+      targetType: "FEE_RECORD",
+      achievementId: undefined,
+      feeRecordId: "fee-id",
     });
   });
 });
@@ -151,6 +170,11 @@ describe("workflow labels and display model", () => {
     expect(getWorkflowStepLabel("CUSTOM")).toBe("CUSTOM");
   });
 
+  it("maps fee review task labels", () => {
+    expect(getWorkflowStepLabel("FEE_REVIEW")).toBe("Fee review");
+    expect(getWorkflowTargetTypeLabel("FEE_RECORD")).toBe("Fee record");
+  });
+
   it("builds a task/instance-only detail display model", () => {
     const model = buildWorkflowTaskDetailDisplayModel(pendingDepartmentReviewTask);
 
@@ -200,7 +224,9 @@ describe("workflow API wrappers", () => {
 
     expect(client.get).toHaveBeenCalledWith("/workflow/tasks/my", {
       status: "PENDING",
+      targetType: undefined,
       achievementId: "achievement-id",
+      feeRecordId: undefined,
     });
   });
 

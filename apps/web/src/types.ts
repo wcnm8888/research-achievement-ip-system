@@ -48,9 +48,9 @@ export type WorkflowTaskStatusCode =
 
 export type WorkflowInstanceStatusCode = "ACTIVE" | "COMPLETED" | "CANCELLED";
 
-export type WorkflowTargetTypeCode = "ACHIEVEMENT";
+export type WorkflowTargetTypeCode = "ACHIEVEMENT" | "FEE_RECORD";
 
-export type WorkflowStepCode = "DEPARTMENT_REVIEW" | "ARCHIVE";
+export type WorkflowStepCode = "DEPARTMENT_REVIEW" | "FEE_REVIEW" | "ARCHIVE";
 
 export type WorkflowActionKind = "approve" | "reject";
 
@@ -81,7 +81,9 @@ export type WorkflowTaskListResult = {
 
 export type WorkflowTaskQuery = {
   status?: WorkflowTaskStatusCode;
+  targetType?: WorkflowTargetTypeCode;
   achievementId?: string;
+  feeRecordId?: string;
 };
 
 export type ApproveWorkflowTaskPayload = {

@@ -57,7 +57,16 @@ import type {
   RejectFeeReviewInput,
   SecretLevelCode,
   UploadFeeVoucherAttachmentInput,
+  WorkflowTask,
+  WorkflowTaskStatusCode,
 } from "./types";
+import {
+  fetchMyWorkflowTasks,
+  getWorkflowInstanceStatusLabel,
+  getWorkflowStepLabel,
+  getWorkflowTargetTypeLabel,
+  getWorkflowTaskStatusLabel,
+} from "./workflow-tasks";
 
 type Loadable<T> = {
   loading: boolean;
@@ -274,6 +283,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
   const [reviewActionErrors, setReviewActionErrors] = useState<FeeReviewActionFormErrors>({});
   const [reviewActionStatus, setReviewActionStatus] = useState<MutationState>(emptyMutationState);
   const [reviewHistoryRefreshVersion, setReviewHistoryRefreshVersion] = useState(0);
+  const [reviewTaskRefreshVersion, setReviewTaskRefreshVersion] = useState(0);
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
   const query = useMemo(() => buildFeeQuery(appliedFilters), [appliedFilters]);
   const canManageFees = canManageDepartmentFees(authUser);
@@ -593,6 +603,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
               : "费用审核已拒绝。列表和当前详情会刷新。",
         });
         setReviewHistoryRefreshVersion((current) => current + 1);
+        setReviewTaskRefreshVersion((current) => current + 1);
         loadFees();
         loadFeeDetail(reviewAction.record.id);
       })
@@ -613,11 +624,10 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         openStatusActionDrawer,
         openReviewActionDrawer,
         canManageFees,
-        canReviewFees,
+        false,
       ),
     [
       canManageFees,
-      canReviewFees,
       openFeeDetail,
       openMarkPaidDrawer,
       openReviewActionDrawer,
@@ -813,6 +823,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         canManageFees={canManageFees}
         canReviewFees={canReviewFees}
         reviewHistoryRefreshVersion={reviewHistoryRefreshVersion}
+        reviewTaskRefreshVersion={reviewTaskRefreshVersion}
         onOpenMarkPaid={openMarkPaidDrawer}
         onOpenStatusAction={openStatusActionDrawer}
         onOpenReviewAction={openReviewActionDrawer}
@@ -871,6 +882,7 @@ function FeeDetailDrawer({
   canManageFees,
   canReviewFees,
   reviewHistoryRefreshVersion,
+  reviewTaskRefreshVersion,
   onOpenMarkPaid,
   onOpenStatusAction,
   onOpenReviewAction,
@@ -885,6 +897,7 @@ function FeeDetailDrawer({
   canManageFees: boolean;
   canReviewFees: boolean;
   reviewHistoryRefreshVersion: number;
+  reviewTaskRefreshVersion: number;
   onOpenMarkPaid: (record: FeeRecord) => void;
   onOpenStatusAction: (kind: FeeStatusActionKind, record: FeeRecord) => void;
   onOpenReviewAction: (kind: FeeReviewActionKind, record: FeeRecord) => void;
@@ -925,6 +938,7 @@ function FeeDetailDrawer({
             canManageFees={canManageFees}
             canReviewFees={canReviewFees}
             reviewHistoryRefreshVersion={reviewHistoryRefreshVersion}
+            reviewTaskRefreshVersion={reviewTaskRefreshVersion}
             onOpenMarkPaid={onOpenMarkPaid}
             onOpenStatusAction={onOpenStatusAction}
             onOpenReviewAction={onOpenReviewAction}
@@ -1021,6 +1035,7 @@ function FeeDetailContent({
   canManageFees = true,
   canReviewFees = false,
   reviewHistoryRefreshVersion = 0,
+  reviewTaskRefreshVersion = 0,
   onOpenMarkPaid,
   onOpenStatusAction,
   onOpenReviewAction,
@@ -1033,13 +1048,13 @@ function FeeDetailContent({
   canManageFees?: boolean;
   canReviewFees?: boolean;
   reviewHistoryRefreshVersion?: number;
+  reviewTaskRefreshVersion?: number;
   onOpenMarkPaid?: (record: FeeRecord) => void;
   onOpenStatusAction?: (kind: FeeStatusActionKind, record: FeeRecord) => void;
   onOpenReviewAction?: (kind: FeeReviewActionKind, record: FeeRecord) => void;
 }) {
   const showMarkPaidAction = shouldShowFeeDetailMarkPaidAction(record, mode, canManageFees);
   const showStatusActions = shouldShowFeeDetailStatusActions(record, mode, canManageFees);
-  const showReviewActions = shouldShowFeeDetailReviewActions(record, mode, canReviewFees);
 
   return (
     <Space direction="vertical" size={16} className="full-width">
@@ -1093,6 +1108,16 @@ function FeeDetailContent({
         refreshKey={buildFeeReviewHistoryRefreshKey(record, reviewHistoryRefreshVersion)}
       />
 
+      <FeeReviewWorkflowTaskSection
+        apiClient={apiClient}
+        canReviewFees={canReviewFees}
+        demoUserId={demoUserId}
+        feeRecord={record}
+        mode={mode}
+        refreshVersion={reviewTaskRefreshVersion}
+        onOpenReviewAction={onOpenReviewAction}
+      />
+
       <FeeVoucherAttachmentSection
         apiClient={apiClient}
         authUser={authUser}
@@ -1100,25 +1125,6 @@ function FeeDetailContent({
         feeRecordId={record.id}
         mode={mode}
       />
-
-      {showReviewActions ? (
-        <Alert
-          showIcon
-          type="info"
-          message="可执行费用审核"
-          description="审核通过或拒绝只更新 reviewStatus、reviewedById 和 reviewedAt；不会改变缴费状态、缴费日期、凭证编号或归档状态。"
-          action={
-            <Space>
-              <Button size="small" onClick={() => onOpenReviewAction?.("approve", record)}>
-                审核通过
-              </Button>
-              <Button size="small" danger onClick={() => onOpenReviewAction?.("reject", record)}>
-                审核拒绝
-              </Button>
-            </Space>
-          }
-        />
-      ) : null}
 
       {showMarkPaidAction ? (
         <Alert
@@ -1262,6 +1268,165 @@ function FeeReviewHistorySection({
         </DataState>
       </Space>
     </>
+  );
+}
+
+function FeeReviewWorkflowTaskSection({
+  apiClient,
+  canReviewFees,
+  demoUserId,
+  feeRecord,
+  mode,
+  refreshVersion,
+  onOpenReviewAction,
+}: {
+  apiClient: ApiClient;
+  canReviewFees: boolean;
+  demoUserId: string | null;
+  feeRecord: FeeRecord;
+  mode: FeeDetailContentMode;
+  refreshVersion: number;
+  onOpenReviewAction?: (kind: FeeReviewActionKind, record: FeeRecord) => void;
+}) {
+  const [tasks, setTasks] = useState<Loadable<WorkflowTask[]>>(emptyLoadable);
+  const canLoadTasks = shouldLoadFeeReviewWorkflowTasks(
+    demoUserId,
+    feeRecord.id,
+    mode,
+    canReviewFees,
+  );
+  const refreshKey = buildFeeReviewWorkflowTaskRefreshKey(feeRecord, refreshVersion);
+
+  const loadTasks = useCallback(async () => {
+    if (!canLoadTasks) {
+      setTasks(emptyLoadable);
+      return;
+    }
+
+    setTasks({ loading: true, data: null, error: null });
+
+    try {
+      const data = await fetchFeeReviewWorkflowTasks(apiClient, feeRecord.id);
+      setTasks({ loading: false, data, error: null });
+    } catch (error) {
+      setTasks({
+        loading: false,
+        data: null,
+        error: mapFeeWorkflowTaskErrorToDisplay(normalizeError(error)),
+      });
+    }
+  }, [apiClient, canLoadTasks, feeRecord.id]);
+
+  useEffect(() => {
+    void loadTasks();
+  }, [loadTasks, refreshKey]);
+
+  if (!canLoadTasks) {
+    return null;
+  }
+
+  const items = tasks.data ?? [];
+  const pendingTask = findPendingFeeReviewWorkflowTask(items, feeRecord.id);
+  const showReviewActions = shouldShowFeeDetailReviewActions(
+    feeRecord,
+    mode,
+    canReviewFees,
+    pendingTask,
+  );
+  const empty = !tasks.loading && !tasks.error && items.length === 0;
+
+  return (
+    <>
+      <Divider orientation="left">Fee review workflow task</Divider>
+      <Space direction="vertical" size={12} className="full-width">
+        <Alert
+          showIcon
+          type={showReviewActions ? "info" : "warning"}
+          message={
+            showReviewActions
+              ? "Pending fee review task is assigned to current user"
+              : "No executable fee review task"
+          }
+          description={
+            showReviewActions
+              ? "Approve and reject still call the existing fee review APIs; the backend completes the workflow task in the same transaction."
+              : "Review actions stay hidden unless the current user has a pending FEE_REVIEW task for this fee record."
+          }
+          action={
+            showReviewActions ? (
+              <Space>
+                <Button size="small" onClick={() => onOpenReviewAction?.("approve", feeRecord)}>
+                  Approve fee review
+                </Button>
+                <Button
+                  size="small"
+                  danger
+                  onClick={() => onOpenReviewAction?.("reject", feeRecord)}
+                >
+                  Reject fee review
+                </Button>
+              </Space>
+            ) : undefined
+          }
+        />
+        <DataState
+          loading={tasks.loading}
+          error={tasks.error}
+          empty={empty}
+          emptyText="No fee review workflow task is assigned to the current user."
+          onRetry={loadTasks}
+        >
+          <div className="fee-review-workflow-task-list">
+            {items.map((task) => (
+              <FeeReviewWorkflowTaskCard key={task.id} task={task} />
+            ))}
+          </div>
+        </DataState>
+      </Space>
+    </>
+  );
+}
+
+function FeeReviewWorkflowTaskCard({ task }: { task: WorkflowTask }) {
+  const instance = task.instance;
+
+  return (
+    <div className="attachment-metadata-card">
+      <div className="attachment-metadata-main">
+        <Space size={8} wrap>
+          <Typography.Text strong>{getWorkflowStepLabel(task.stepCode)}</Typography.Text>
+          <Tag color={getFeeWorkflowTaskStatusColor(task.status)}>
+            {getWorkflowTaskStatusLabel(task.status)}
+          </Tag>
+          {instance ? <Tag>{getWorkflowInstanceStatusLabel(instance.status)}</Tag> : null}
+        </Space>
+        <Typography.Text type="secondary" className="attachment-metadata-id">
+          Task ID: {task.id}
+        </Typography.Text>
+      </div>
+      <div className="attachment-metadata-grid">
+        <FeeVoucherMetadataLine label="Step" value={getWorkflowStepLabel(task.stepCode)} />
+        <FeeVoucherMetadataLine
+          label="Status"
+          value={getWorkflowTaskStatusLabel(task.status)}
+        />
+        <FeeVoucherMetadataLine
+          label="Assignee"
+          value={formatReviewerDisplay(task.assigneeId)}
+        />
+        <FeeVoucherMetadataLine label="Created" value={formatDateTime(task.createdAt)} />
+        <FeeVoucherMetadataLine label="Updated" value={formatDateTime(task.updatedAt)} />
+        <FeeVoucherMetadataLine label="Completed" value={formatDateTime(task.completedAt)} />
+        <FeeVoucherMetadataLine
+          label="Target"
+          value={instance ? getWorkflowTargetTypeLabel(instance.targetType) : "Not returned"}
+        />
+        <FeeVoucherMetadataLine
+          label="Current step"
+          value={getWorkflowStepLabel(instance?.currentStep)}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -2180,6 +2345,44 @@ export const fetchFeeReviewHistory = async (
   return client.get<FeeReviewHistoryEntry[]>(`/fees/${trimmedId}/review-history`);
 };
 
+const feeReviewWorkflowTaskStatuses: WorkflowTaskStatusCode[] = [
+  "PENDING",
+  "CLAIMED",
+  "APPROVED",
+  "REJECTED",
+  "CANCELLED",
+];
+
+export const fetchFeeReviewWorkflowTasks = async (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+): Promise<WorkflowTask[]> => {
+  const trimmedId = feeRecordId?.trim();
+
+  if (!trimmedId) {
+    return [];
+  }
+
+  const results = await Promise.all(
+    feeReviewWorkflowTaskStatuses.map((status) =>
+      fetchMyWorkflowTasks(client, {
+        status,
+        targetType: "FEE_RECORD",
+        feeRecordId: trimmedId,
+      }),
+    ),
+  );
+  const unique = new Map<string, WorkflowTask>();
+
+  results.forEach((result) => {
+    result.items.forEach((task) => {
+      unique.set(task.id, task);
+    });
+  });
+
+  return Array.from(unique.values());
+};
+
 export const fetchFeeVoucherAttachments = async (
   client: ApiClient,
   feeRecordId: string | null | undefined,
@@ -2530,6 +2733,11 @@ export const getFeeReviewHistoryState = (
 };
 
 export const buildFeeReviewHistoryRefreshKey = (
+  record: Pick<FeeRecord, "reviewStatus" | "reviewedAt">,
+  version = 0,
+): string => `${record.reviewStatus}:${record.reviewedAt ?? ""}:${version}`;
+
+export const buildFeeReviewWorkflowTaskRefreshKey = (
   record: Pick<FeeRecord, "reviewStatus" | "reviewedAt">,
   version = 0,
 ): string => `${record.reviewStatus}:${record.reviewedAt ?? ""}:${version}`;
@@ -2912,6 +3120,16 @@ export const shouldLoadFeeReviewHistory = (
   feeRecordId: string | null | undefined,
 ): boolean => Boolean(demoUserId?.trim() && feeRecordId?.trim());
 
+export const shouldLoadFeeReviewWorkflowTasks = (
+  demoUserId: string | null,
+  feeRecordId: string | null | undefined,
+  mode: FeeDetailContentMode = "management",
+  canReviewFees = false,
+): boolean =>
+  mode === "management" &&
+  canReviewFees &&
+  Boolean(demoUserId?.trim() && feeRecordId?.trim());
+
 export const shouldLoadFeeVoucherAttachmentDetail = (
   demoUserId: string | null,
   feeRecordId: string | null | undefined,
@@ -2935,7 +3153,31 @@ export const shouldShowFeeDetailReviewActions = (
   record: Pick<FeeRecord, "reviewStatus">,
   mode: FeeDetailContentMode = "management",
   canReviewFees = true,
-): boolean => mode === "management" && canReviewFees && canReviewFee(record);
+  pendingTask: WorkflowTask | null = null,
+): boolean =>
+  mode === "management" &&
+  canReviewFees &&
+  canReviewFee(record) &&
+  isPendingFeeReviewWorkflowTask(pendingTask);
+
+export const findPendingFeeReviewWorkflowTask = (
+  tasks: readonly WorkflowTask[],
+  feeRecordId: string,
+): WorkflowTask | null =>
+  tasks.find(
+    (task) =>
+      isPendingFeeReviewWorkflowTask(task) &&
+      task.instance?.targetId === feeRecordId,
+  ) ?? null;
+
+export const isPendingFeeReviewWorkflowTask = (
+  task: WorkflowTask | null | undefined,
+): task is WorkflowTask =>
+  task?.status === "PENDING" &&
+  task.stepCode === "FEE_REVIEW" &&
+  task.instance?.targetType === "FEE_RECORD" &&
+  task.instance.status === "ACTIVE" &&
+  task.instance.currentStep === "FEE_REVIEW";
 
 export const mapFeeDetailErrorToDisplay = (error: ApiError): ApiError => {
   if (error.kind === "forbidden" || error.kind === "unauthorized") {
@@ -2996,6 +3238,37 @@ export const mapFeeReviewHistoryErrorToDisplay = (error: ApiError): ApiError => 
   return {
     ...error,
     message: error.message || "审核历史读取失败",
+  };
+};
+
+export const mapFeeWorkflowTaskErrorToDisplay = (error: ApiError): ApiError => {
+  if (error.kind === "forbidden" || error.kind === "unauthorized") {
+    return {
+      ...error,
+      message: "Current user cannot read fee review workflow tasks.",
+      detail: error.detail ?? "Switch to a scoped fee reviewer context and retry.",
+    };
+  }
+
+  if (error.status === 404) {
+    return {
+      ...error,
+      message: "Fee review workflow task was not found.",
+      detail: error.detail ?? "The task may be completed, cancelled, or outside scope.",
+    };
+  }
+
+  if (error.kind === "network" || error.kind === "server" || (error.status ?? 0) >= 500) {
+    return {
+      ...error,
+      message: "Fee review workflow task service is unavailable.",
+      detail: error.detail ?? "Retry after the workflow task endpoint is available.",
+    };
+  }
+
+  return {
+    ...error,
+    message: error.message || "Fee review workflow task request failed.",
   };
 };
 
@@ -3343,6 +3616,26 @@ const getFeeVoucherAttachmentStatusTagColor = (value: string): string => {
   }
 
   if (value === "ARCHIVED") {
+    return "default";
+  }
+
+  return "blue";
+};
+
+const getFeeWorkflowTaskStatusColor = (value: string): string => {
+  if (value === "PENDING" || value === "CLAIMED") {
+    return "processing";
+  }
+
+  if (value === "APPROVED") {
+    return "success";
+  }
+
+  if (value === "REJECTED") {
+    return "error";
+  }
+
+  if (value === "CANCELLED") {
     return "default";
   }
 

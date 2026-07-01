@@ -51,6 +51,7 @@ const workflowTaskStatusLabels: Record<WorkflowTaskStatusCode, string> = {
 };
 
 const workflowStepLabels: Record<WorkflowStepCode, string> = {
+  FEE_REVIEW: "Fee review",
   DEPARTMENT_REVIEW: "院系审核",
   ARCHIVE: "归档",
 };
@@ -62,6 +63,7 @@ const workflowInstanceStatusLabels: Record<WorkflowInstanceStatusCode, string> =
 };
 
 const workflowTargetTypeLabels: Record<WorkflowTargetTypeCode, string> = {
+  FEE_RECORD: "Fee record",
   ACHIEVEMENT: "科研成果",
 };
 
@@ -69,10 +71,13 @@ export const buildWorkflowTaskQuery = (
   input: Partial<WorkflowTaskQuery> = {},
 ): WorkflowTaskQuery => {
   const achievementId = input.achievementId?.trim();
+  const feeRecordId = input.feeRecordId?.trim();
 
   return {
     status: input.status,
+    targetType: input.targetType,
     achievementId: achievementId || undefined,
+    feeRecordId: feeRecordId || undefined,
   };
 };
 

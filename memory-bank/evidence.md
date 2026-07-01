@@ -12423,3 +12423,24 @@
   - No package or lockfile changes.
   - No production/VPS/production DB access.
   - No secrets, tokens, cookies, passwords, or connection strings read or recorded.
+
+## 2026-07-01 Step 58C - Fee review workflow task Web UI evidence
+
+- Canonical state checked before implementation:
+  - `git rev-parse --short HEAD` -> `5d78da5`.
+  - `git log -1 --pretty=format:"%s"` -> `feat(api): link fee review workflow tasks`.
+  - Tracked diff was empty at start; existing untracked local artifacts were left untouched.
+- Local validation:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts workflow-tasks.test.ts WorkflowTasks.test.ts api-client.test.ts` -> passed; 4 test files, 134 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck` -> passed.
+  - `git diff --check` -> passed.
+  - Added-lines sensitive scan -> passed. Matches were reviewed as safe negative assertions and boundary documentation only; no real secret, credential, connection string, storage key, checksum, voucher number, or fee amount value was added.
+- Coverage notes:
+  - Web workflow task query helpers now cover `targetType=FEE_RECORD`, `feeRecordId`, and `FEE_REVIEW` labels.
+  - Fee detail workflow task helpers cover pending-task action visibility, no-task readonly behavior, manager/read-only exclusion, completed/cancelled readonly task display, safe metadata boundaries, and refresh key changes after review.
+  - Approve/reject remains routed through existing fee review APIs; Web does not call workflow task action APIs for fee review completion.
+- Boundaries observed:
+  - No backend behavior change.
+  - No Prisma schema or migration change.
+  - No migration, seed, backfill, Docker production-like acceptance, production/VPS/production DB access, deploy, push, package, or lockfile changes.
+  - No `.env` file was read and no secrets, tokens, cookies, passwords, connection strings, storage keys, checksums, voucher numbers, or fee amounts were recorded as task metadata.
