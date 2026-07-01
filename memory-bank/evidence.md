@@ -1,5 +1,55 @@
 # Evidence
 
+## 2026-07-01 Step 58A - Fee review workflow task integration scope and backend plan evidence
+
+- Purpose:
+  - Determine the minimum fee review workflow task integration scope, data model reuse path, backend contract, permission boundary, state flow, audit/history/task separation, schema/migration need, and Step 58B/58C/58D sequencing.
+  - Keep API/UI implementation, Prisma schema edits, migration generation/execution, seed/backfill, Docker, business-data writes, account/password work, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile changes, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `71e52b6`.
+  - Latest commit subject: `docs: record local session diagnostic guidance`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 58A edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal encoding displayed garbled Chinese text, but visible command snippets and project rules confirmed gate preferences and no `.env` content reads.
+  - Read targeted Step 55A-55I, Step 57A-57D, and Step 6 final archive snippets in `memory-bank/implementation-plan.md`, `memory-bank/progress.md`, `memory-bank/decisions.md`, and `memory-bank/evidence.md`.
+  - Reviewed fee review controller/service/repository/DTO/tests under `apps/api/src/fees`.
+  - Reviewed workflow controller/service/repository/domain/DTO/tests under `apps/api/src/workflow`.
+  - Reviewed audit action/target/redaction boundaries under `apps/api/src/audit` and `apps/api/src/authorization/policy`.
+  - Reviewed authorization permission guard, policy query, role/permission constants, and `FINANCE_REVIEWER` seed/test references.
+  - Reviewed Web Fees review UI/client/types and WorkflowTasks task UI/helper/types patterns under `apps/web/src`.
+  - Reviewed `prisma/schema.prisma` sections for `FeeRecord`, `FeeReviewHistory`, `WorkflowInstance`, `WorkflowTask`, `WorkflowAction`, `AuditLog`, `User`, `Role`, and `Permission`.
+- Current-state evidence:
+  - Fee review approve/reject routes are `POST /fees/:id/review/approve` and `POST /fees/:id/review/reject`, statically gated by `fee:review_department`.
+  - `FeeService.transitionFeeReview` updates only fee review fields, appends `FeeReviewHistory`, and records a fee-targeted audit event in one transaction.
+  - `FeeRepository.transitionReviewStatusInTransaction` guards by id, department-scope where, `reviewStatus=PENDING`, and `archivedAt=null`.
+  - There is no fee workflow instance/task/action creation in fee create or review transition paths.
+  - Workflow domain target type is currently only `ACHIEVEMENT`.
+  - Workflow controller list/detail/approve/reject routes are statically gated by `achievement:review_department`.
+  - Workflow service approve/reject verifies `WorkflowTargetTypeCode.achievement` and mutates Achievement state, so it cannot be reused directly for fee review task actions.
+  - Web workflow task types and helpers label only `ACHIEVEMENT`, filter only `achievementId`, and make non-`ACHIEVEMENT` tasks action-unavailable.
+- Planned contract evidence:
+  - Add `FEE_RECORD` to `WorkflowTargetType` before writing fee workflow instances.
+  - Reuse existing workflow tables; do not add a new task/candidate table in the minimum backend Step.
+  - Keep existing fee approve/reject APIs and complete workflow task state internally from those APIs.
+  - Create workflow tasks when a fee enters pending review, starting with fee creation as the current pending-entry path.
+  - Select task assignees from department-scoped `FINANCE_REVIEWER` users with `fee:review_department`; fail fast with a 422-class error if no eligible reviewer exists rather than creating an invisible pending review.
+  - Add workflow task query support for `targetType=FEE_RECORD` and fee target filtering after moving authorization to target-aware service checks or adding a fee-specific read path.
+  - Keep `AuditLog`, `FeeReviewHistory`, and `WorkflowTask` responsibilities separate.
+- Sensitive-field boundary evidence:
+  - Planned workflow task responses should expose task/instance metadata only and not duplicate fee amount, `voucherNo`, attachment storage keys, checksum, raw payloads, credentials, cookies, tokens, connection strings, AccessKey-like values, private keys, or `.env` values.
+  - Step 58A added documentation only and no sensitive values were read or recorded.
+- Verification:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Deferred:
+  - Step 58B backend-only implementation.
+  - Step 58C Web/client integration.
+  - Step 58D local Docker production-like acceptance.
+  - Production/VPS rollout remains separately authorized high-risk work.
+
 ## 2026-07-01 Step 57D - Fee review history local Docker production-like acceptance evidence
 
 - Purpose:

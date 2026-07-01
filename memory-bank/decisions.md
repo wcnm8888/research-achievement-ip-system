@@ -1,5 +1,38 @@
 # Decisions
 
+## D210 - Fee review workflow tasks reuse workflow tables with FEE_RECORD target
+
+- Date: 2026-07-01.
+- Context: Step 58A reviews how to connect fee review to workflow tasks after Step 55 delivered fee review state/actions and Step 57 delivered business-readable review history. The user limited this Step to current-state review and planning, with no API/UI implementation, Prisma schema edits, migrations, seed/backfill, business-data writes, Docker, production/VPS access, account/password work, secret reads, package changes, cleanup/deletion/reset/drop/prune, push/deploy, or untracked-artifact handling.
+- Decision:
+  - Treat current fee review as workflow-bypassing until Step 58B implements synchronization.
+  - Keep the existing fee approve/reject APIs as the canonical fee review action surface.
+  - In Step 58B, complete fee workflow task/instance state internally from those fee APIs in the same transaction as `FeeRecord`, `FeeReviewHistory`, and `AuditLog`.
+  - Reuse `WorkflowInstance`, `WorkflowTask`, and `WorkflowAction` for fee todos and processing state.
+  - Add `FEE_RECORD` to `WorkflowTargetType` when implementation is authorized; do not add new workflow tables for the minimum integration.
+  - Add a code/domain workflow step such as `FEE_REVIEW` for fee task semantics; no DB column change is needed for the step because current step fields are strings.
+- Assignment:
+  - Use department-scoped `FINANCE_REVIEWER` users with effective `fee:review_department` as eligible fee task assignees.
+  - Do not use `fee:manage_department` as review authority.
+  - Do not let global roles imply fee review department scope.
+  - Do not implement candidate-group, nullable-assignee, or generic role-pool claim semantics in Step 58B.
+  - If Step 58B chooses multiple concrete reviewer tasks, the first successful decision should complete the acting task and cancel sibling pending fee-review tasks. If Step 58B is narrowed to one reviewer, choose a stable eligible assignee and document the tradeoff in tests/evidence.
+- State and permission:
+  - Fee review remains `PENDING -> APPROVED` or `PENDING -> REJECTED`.
+  - Missing/out-of-scope/archived fees keep hidden 404 behavior.
+  - Already reviewed fees and completed/cancelled task reuse remain conflict-class failures and must not write fee state, workflow actions, audit, or history.
+  - Workflow task list/detail should support `targetType=FEE_RECORD` through target-aware service authorization because the current static `PermissionGuard` is all-permissions.
+- Audit/history/task boundary:
+  - `AuditLog` remains the action evidence stream.
+  - `FeeReviewHistory` remains the business-readable fee review timeline.
+  - `WorkflowTask` and `WorkflowAction` represent todo and processing state only.
+- Sequencing:
+  - Step 58B should be backend-only: enum migration, fee/workflow service integration, target-aware workflow task query support, focused tests, typecheck, `git diff --check`, and added-lines sensitive scan.
+  - Step 58C should handle Web UI/client integration for fee workflow tasks.
+  - Step 58D should handle local Docker production-like acceptance after backend and Web integration exist.
+- Boundaries:
+  - This decision does not authorize implementation in Step 58A, Prisma schema edits, migration generation/execution, seed/backfill, business-data writes, Docker, VPS/production access, account/password work, `.env` / `.env.production` content reads, package changes, push/deploy, cleanup, deletion, reset, restore, drop, prune, or existing untracked-artifact handling.
+
 ## D209 - Step 57D local acceptance uses transient sessions and documents credential boundaries
 
 - Date: 2026-07-01.

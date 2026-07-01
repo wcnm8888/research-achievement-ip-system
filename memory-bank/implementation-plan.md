@@ -4,6 +4,68 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 58A Archive - Fee review workflow task integration scope and backend plan - 2026-07-01
+
+- Step identity:
+  - Documentation-only current-state review and backend planning for connecting fee review to workflow tasks.
+  - Scope stayed limited to memory-bank planning after reading the requested fee, workflow, audit, authorization, Web, Prisma, and Step 55/57/Step 6 context.
+  - No API, UI, Prisma schema, migration, seed/backfill, business-data write, Docker, VPS/production access, account/password work, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `71e52b6`.
+  - Latest commit subject: `docs: record local session diagnostic guidance`.
+  - Tracked diff was empty before Step 58A memory-bank edits.
+  - Existing untracked local artifacts were observed and left untouched.
+- Current capability findings:
+  - Current fee review is fee-specific and bypasses workflow tasks.
+  - `POST /api/fees/:id/review/approve` and `POST /api/fees/:id/review/reject` directly transition `FeeRecord.reviewStatus`, write latest reviewer fields, append `FeeReviewHistory`, and write a sanitized `AuditLog`.
+  - No `WorkflowInstance`, `WorkflowTask`, or `WorkflowAction` is created when a fee is created with `reviewStatus=PENDING`.
+  - No workflow task is completed when fee review approve/reject succeeds.
+  - Existing workflow service/controller are achievement-oriented: static route permission is `achievement:review_department`, domain target type is only `ACHIEVEMENT`, task list filtering supports `achievementId`, and approve/reject mutates Achievement status.
+  - Existing Web workflow task helpers/types are also achievement-oriented and reject non-`ACHIEVEMENT` targets for action availability.
+- Minimum backend integration contract:
+  - Keep existing fee review endpoints as the canonical fee review API for compatibility with Fees UI and clients.
+  - Internally synchronize successful fee approve/reject with workflow task completion in the same transaction as fee state, `FeeReviewHistory`, and `AuditLog`.
+  - Add fee workflow creation when a fee record is created or otherwise enters `reviewStatus=PENDING`; current code only has create as the real pending-entry path.
+  - Create an active `WorkflowInstance` with `targetType=FEE_RECORD`, `targetId=<feeRecordId>`, and a fee-review step such as `FEE_REVIEW`.
+  - Create concrete `WorkflowTask` rows for eligible department-scoped finance reviewers, or explicitly choose a single stable assignee if Step 58B is narrowed further. True role-pool/claim tasks are not represented by the current schema because `WorkflowTask.assigneeId` is required.
+  - Use `WorkflowActionType.SUBMIT` for the initial review-request action and `APPROVE` / `REJECT` for task completion actions.
+  - On the first successful approve/reject, complete the acting task, complete the workflow instance, and cancel any remaining pending sibling fee-review tasks if Step 58B chooses multi-reviewer concrete tasks.
+- Task assignment recommendation:
+  - Preferred Step 58B backend contract: derive eligible reviewers from active, non-revoked, department-scoped `FINANCE_REVIEWER` assignments for the fee department, with effective `fee:review_department`.
+  - If no eligible reviewer exists, fail fee creation or pending-entry orchestration with a 422-class business error rather than creating an invisible pending review with no todo.
+  - Do not grant `fee:manage_department` review authority and do not use global roles to imply department scope.
+  - Do not add candidate-group tables, nullable assignees, or generic claim-pool semantics in Step 58B.
+- State and error boundary:
+  - Fee review remains `PENDING -> APPROVED` or `PENDING -> REJECTED` only.
+  - Missing, archived, or out-of-scope fee records keep existing hidden 404 behavior.
+  - Already reviewed fee records keep conflict semantics and must not create history, audit, or workflow actions.
+  - Missing active fee workflow task for a pending fee should be treated as a consistency conflict in Step 58B, not silently bypassed.
+  - Completed/cancelled task reuse and status mismatches should be rejected before writing fee state, history, audit, or workflow action.
+- Workflow query and permission contract:
+  - Add backend workflow task query support for `targetType=FEE_RECORD` and optionally `feeRecordId` in Step 58B.
+  - Because current `PermissionGuard` is all-permissions and workflow routes currently require `achievement:review_department`, Step 58B should move workflow task list/detail authorization to service-level target-aware checks or add a fee-specific workflow read path.
+  - Achievement tasks should continue to require `achievement:review_department`.
+  - Fee tasks should require `fee:review_department` plus department scope for the target fee.
+  - `fee:read_department` and `fee:manage_department` may still read fee details/history through existing fee APIs, but they should not process fee workflow tasks unless they also have `fee:review_department`.
+- Audit, history, and task boundary:
+  - `AuditLog` remains action evidence for fee review approve/reject and should keep target `FEE_RECORD`.
+  - `FeeReviewHistory` remains the business-readable review timeline and is appended only by successful approve/reject.
+  - `WorkflowTask` / `WorkflowAction` become todo and processing-state records; they should not replace audit or fee review history.
+  - Workflow task responses should expose only task/instance target metadata; fee business detail remains behind scoped Fees APIs.
+- Schema and migration decision:
+  - A minimal schema/migration is required before writing fee workflow instances because `WorkflowTargetType` currently contains only `ACHIEVEMENT`.
+  - Add `FEE_RECORD` to the existing `WorkflowTargetType` enum and matching domain/Web types when implementation is authorized.
+  - Do not add new workflow tables for Step 58B. Existing workflow indexes on `(targetType, targetId)` and `(targetType, targetId, status)` are the intended reuse path.
+  - Adding `FEE_REVIEW` as a workflow step can be code/domain-only because `currentStep` and `stepCode` are string columns.
+- Step sequencing:
+  - Step 58B should be backend-only: Prisma enum migration, workflow/fee service and repository integration, target-aware workflow task query support, and focused API tests.
+  - Step 58B should not include Web UI changes, Docker production-like acceptance, seed/backfill, production/VPS access, or account/password work.
+  - Step 58C should adapt Web workflow/tasks and/or Fees UI for `FEE_RECORD` tasks after the backend contract exists.
+  - Step 58D should run local Docker production-like acceptance only after backend and Web integration exist and with an explicit local acceptance boundary.
+- Acceptance boundary for Step 58B:
+  - Focused API tests should prove fee creation creates fee workflow todos, approve/reject completes the relevant task/instance atomically, repeated/status-mismatch paths write nothing, permission/scope checks hold, and workflow task list/detail can filter `targetType=FEE_RECORD`.
+  - Sensitive scans should prove no password, cookie, token, secret, connection string, AccessKey, private key, `.env` value, amount, voucher number, attachment storage key, checksum, or raw payload is added to workflow task responses.
+
 ## Current Step 57D Archive - Fee review history local Docker production-like acceptance - 2026-07-01
 
 - Step identity:

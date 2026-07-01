@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-07-01 Step 58A - Fee review workflow task integration scope and backend plan
+
+- Status: STEP_58A_FEE_REVIEW_WORKFLOW_TASK_BACKEND_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Planned the minimum fee review workflow task integration scope and backend contract.
+  - Documentation-only; no API/UI implementation, Prisma schema change, migration, seed/backfill, Docker, business-data write, account/password work, `.env` / `.env.production` content read, VPS/production access, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Starting state:
+  - `HEAD`: `71e52b6`.
+  - Latest commit subject: `docs: record local session diagnostic guidance`.
+  - Tracked diff was empty before Step 58A memory-bank edits.
+  - Existing untracked local artifacts were present and left untouched.
+- Current-state findings:
+  - Current fee review fully bypasses workflow tasks: fee approve/reject directly updates `FeeRecord`, appends `FeeReviewHistory`, and writes `AuditLog`.
+  - Current workflow task APIs and Web task UI are achievement-oriented and require `achievement:review_department`.
+  - Current `WorkflowTargetType` supports only `ACHIEVEMENT`; writing workflow instances for fees requires adding `FEE_RECORD`.
+- Planned backend contract:
+  - Keep `POST /api/fees/:id/review/approve` and `POST /api/fees/:id/review/reject`.
+  - In Step 58B, make those fee APIs synchronously complete the related fee workflow task/instance inside the same transaction as fee state, history, and audit.
+  - Create fee workflow tasks when a fee is created or otherwise enters pending review; current real path is fee creation because `FeeRecord.reviewStatus` defaults to `PENDING`.
+  - Reuse existing `WorkflowInstance`, `WorkflowTask`, and `WorkflowAction`; add only the minimum `WorkflowTargetType.FEE_RECORD` enum migration when implementation is authorized.
+  - Prefer department-scoped `FINANCE_REVIEWER` users with `fee:review_department` as task assignees. Do not add role-pool/candidate tables in Step 58B.
+- Permission and boundary:
+  - Fee task processing remains gated by scoped `fee:review_department`.
+  - Keep `fee:manage_department` and `fee:read_department` out of task processing authority.
+  - `AuditLog` remains action evidence, `FeeReviewHistory` remains business-readable history, and `WorkflowTask` becomes todo/processing state only.
+- Next:
+  - Step 58B should be backend-only with schema enum migration, focused service/repository/controller tests, typecheck, `git diff --check`, and added-lines sensitive scan.
+  - Step 58C should handle Web workflow/task UI integration for `FEE_RECORD`.
+  - Step 58D should handle local Docker production-like acceptance after backend and Web integration exist.
+- Verification completed for this docs-only Step:
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+
 ## 2026-07-01 Step 57D - Fee review history local Docker production-like acceptance
 
 - Status: STEP_57D_FEE_REVIEW_HISTORY_LOCAL_ACCEPTED.
