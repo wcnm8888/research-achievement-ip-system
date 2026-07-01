@@ -1,5 +1,28 @@
 # Decisions
 
+## D208 - Fee review history Web display is read-only and backend-scoped
+
+- Date: 2026-07-01.
+- Context: Step 57C integrates the Step 57B backend-only review history contract into Web Fees. The user explicitly limited this Step to Web/client integration and tests, with no backend behavior changes, Prisma schema edits, migrations, seed/backfill, Docker production-like acceptance, production/VPS access, secret reads, package/lockfile changes, cleanup/deletion/reset/drop/prune, push/deploy, or existing untracked-artifact handling.
+- Decision:
+  - Add a Web client method for `GET /fees/:feeRecordId/review-history`.
+  - Render review history in the Fees detail drawer as a read-only table/list.
+  - Display only action, from/to review status, reason, masked reviewer id, and created time.
+  - Do not add create, edit, or delete UI for history.
+  - Refresh history after approve/reject by coupling the section to review state/time and an explicit refresh version.
+- Authorization:
+  - In the management Fees view, show/load history only when the current user has `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - In search readonly detail mode, allow the request and rely on the backend scoped visibility contract, matching existing readonly fee-detail behavior.
+- Sensitive-field boundary:
+  - History UI does not introduce amount, `voucherNo`, attachment storage key, checksum, raw fee payload, raw request payload, credential, cookie, token, AccessKey-like, private-key, or connection-string fields.
+  - Reviewer display uses masked id because Step 57B returns `reviewerId` but not reviewer display name.
+- Rationale:
+  - Keeping the UI read-only preserves Step 57B's backend-owned append-only history invariant.
+  - Masked reviewer id provides traceability without presenting a full identifier as the primary display.
+  - Reusing the existing Fees detail drawer keeps review history next to review status and actions without expanding unrelated pages.
+- Boundaries:
+  - This decision does not authorize backend behavior changes, Prisma schema edits, migrations, seed/backfill, Docker production-like acceptance, production/VPS access, account/password work, `.env` / `.env.production` content reads, package changes, push/deploy, cleanup, deletion, reset, restore, drop, prune, or existing untracked-artifact handling.
+
 ## D207 - Fee review history is backend-owned and append-only
 
 - Date: 2026-07-01.

@@ -355,6 +355,52 @@ describe("createApiClient writes JSON requests", () => {
     expect(serializedPayloads).not.toContain("voucherNo");
     expect(serializedPayloads).not.toContain("VOUCHER");
   });
+
+  it("gets fee review history through the backend timeline route", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      Response.json([
+        {
+          id: "history-id",
+          feeRecordId: "fee-id",
+          departmentId: "department-id",
+          reviewerId: "reviewer-id",
+          action: "APPROVE",
+          fromStatus: "PENDING",
+          toStatus: "APPROVED",
+          reason: "finance checked",
+          createdAt: "2026-07-01T08:00:00.000Z",
+        },
+      ]),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("reviewer-user-id");
+    const result = await client.listFeeReviewHistory("fee-id");
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        feeRecordId: "fee-id",
+        action: "APPROVE",
+        fromStatus: "PENDING",
+        toStatus: "APPROVED",
+        reason: "finance checked",
+      }),
+    ]);
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe("http://localhost/api/fees/fee-id/review-history");
+    expect(init.method).toBe("GET");
+    expect(headers.get("X-Demo-User-Id")).toBe("reviewer-user-id");
+
+    const serializedResponse = JSON.stringify(result);
+    expect(serializedResponse).not.toContain("amount");
+    expect(serializedResponse).not.toContain("voucherNo");
+    expect(serializedResponse).not.toContain("storageKey");
+    expect(serializedResponse).not.toContain("checksum");
+  });
 });
 
 describe("account management API client", () => {

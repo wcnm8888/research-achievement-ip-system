@@ -7,11 +7,14 @@ import {
   buildFeeDetailOpenRequest,
   buildFeeQuery,
   buildFeeReviewActionPayload,
+  buildFeeReviewHistoryColumns,
+  buildFeeReviewHistoryRefreshKey,
   buildFeeStatusActionPayload,
   buildFeeVoucherAttachmentFormData,
   buildMarkFeePaidPayload,
   canManageDepartmentFees,
   canMarkFeePaid,
+  canReadFeeReviewHistory,
   canReadFeeVoucherAttachments,
   canReviewDepartmentFees,
   canReviewFee,
@@ -27,25 +30,31 @@ import {
   feeVoucherAttachmentBoundary,
   fetchFeeDetail,
   fetchFeeRecords,
+  fetchFeeReviewHistory,
   fetchFeeVoucherAttachmentDetail,
   fetchFeeVoucherAttachments,
   getFeeDetailState,
   getFeeListState,
+  getFeeReviewHistoryActionLabel,
+  getFeeReviewHistoryState,
   getFeeReviewStatusLabel,
   getFeeTypeLabel,
   getPayStatusLabel,
   groupFeeWarnings,
   loadFeeRecordsForDemoUser,
   loadFeeDetailForDemoUser,
+  loadFeeReviewHistoryForDemoUser,
   markFeePaid,
   markFeePaidForDemoUser,
   mapFeeDetailErrorToDisplay,
+  mapFeeReviewHistoryErrorToDisplay,
   mapFeeMutationErrorToDisplay,
   refreshFeesAfterMutation,
   rejectFeeReview,
   rejectFeeReviewForDemoUser,
   shouldShowFeeDetailMarkPaidAction,
   shouldShowFeeDetailReviewActions,
+  shouldLoadFeeReviewHistory,
   shouldShowFeeDetailStatusActions,
   shouldLoadFeeVoucherAttachmentDetail,
   shouldLoadFeeVoucherAttachments,
@@ -57,7 +66,7 @@ import {
   waiveFee,
   waiveFeeForDemoUser,
 } from "./Fees";
-import type { AttachmentMetadata, FeeRecord } from "./types";
+import type { AttachmentMetadata, FeeRecord, FeeReviewHistoryEntry } from "./types";
 
 const baseFee: FeeRecord = {
   id: "fee-id",
@@ -97,6 +106,18 @@ const baseFeeAttachment: AttachmentMetadata = {
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-01T00:00:00.000Z",
   archivedAt: null,
+};
+
+const baseFeeReviewHistory: FeeReviewHistoryEntry = {
+  id: "history-id",
+  feeRecordId: "fee-id",
+  departmentId: "department-id",
+  reviewerId: "12345678-0000-4000-8000-00000000abcd",
+  action: "APPROVE",
+  fromStatus: "PENDING",
+  toStatus: "APPROVED",
+  reason: "finance checked",
+  createdAt: "2026-07-01T08:00:00.000Z",
 };
 
 const createClient = (result: unknown, postResult?: unknown): ApiClient => {
@@ -304,6 +325,137 @@ describe("fee voucher attachment client", () => {
       shouldLoadFeeVoucherAttachmentDetail("demo-user-id", "fee-id", "   "),
     ).toBe(false);
     expect(client.get).not.toHaveBeenCalled();
+  });
+});
+
+describe("fee review history client and display helpers", () => {
+  it("requests GET /fees/:id/review-history and keeps the response as safe timeline metadata", async () => {
+    const client = createClient([baseFeeReviewHistory]);
+
+    await expect(fetchFeeReviewHistory(client, " fee-id ")).resolves.toEqual([
+      baseFeeReviewHistory,
+    ]);
+
+    expect(client.get).toHaveBeenCalledWith("/fees/fee-id/review-history");
+    expect(client.post).not.toHaveBeenCalled();
+    expect(client.patch).not.toHaveBeenCalled();
+
+    const serialized = JSON.stringify(baseFeeReviewHistory);
+    expect(serialized).toContain("action");
+    expect(serialized).toContain("fromStatus");
+    expect(serialized).toContain("toStatus");
+    expect(serialized).toContain("reason");
+    expect(serialized).toContain("reviewerId");
+    expect(serialized).toContain("createdAt");
+    expect(serialized).not.toContain("amount");
+    expect(serialized).not.toContain("voucherNo");
+    expect(serialized).not.toContain("storageKey");
+    expect(serialized).not.toContain("checksum");
+    expect(serialized).not.toContain("rawPayload");
+  });
+
+  it("does not request review history without a demo user or fee id", async () => {
+    const client = createClient([baseFeeReviewHistory]);
+
+    await expect(fetchFeeReviewHistory(client, "   ")).resolves.toEqual([]);
+    await expect(loadFeeReviewHistoryForDemoUser(client, null, "fee-id")).resolves.toEqual([]);
+    await expect(loadFeeReviewHistoryForDemoUser(client, "   ", "fee-id")).resolves.toEqual([]);
+    await expect(loadFeeReviewHistoryForDemoUser(client, "demo-user-id", "   ")).resolves.toEqual(
+      [],
+    );
+    expect(shouldLoadFeeReviewHistory(null, "fee-id")).toBe(false);
+    expect(shouldLoadFeeReviewHistory("demo-user-id", "fee-id")).toBe(true);
+    expect(client.get).not.toHaveBeenCalled();
+  });
+
+  it("reports review history loading, empty, error, and ready states", () => {
+    expect(getFeeReviewHistoryState({ loading: true, data: null, error: null })).toEqual({
+      kind: "loading",
+    });
+    expect(
+      getFeeReviewHistoryState({
+        loading: false,
+        data: null,
+        error: { kind: "server", message: "Server" },
+      }),
+    ).toEqual({ kind: "error" });
+    expect(getFeeReviewHistoryState({ loading: false, data: [], error: null })).toEqual({
+      kind: "empty",
+      emptyText: "暂无审核历史",
+    });
+    expect(
+      getFeeReviewHistoryState({
+        loading: false,
+        data: [baseFeeReviewHistory],
+        error: null,
+      }),
+    ).toEqual({ kind: "ready" });
+  });
+
+  it("allows scoped read, manage, review, and readonly-search users to load history", () => {
+    expect(
+      canReadFeeReviewHistory({
+        permissionCodes: ["fee:read_department"],
+      }),
+    ).toBe(true);
+    expect(
+      canReadFeeReviewHistory({
+        permissionCodes: ["fee:manage_department"],
+      }),
+    ).toBe(true);
+    expect(
+      canReadFeeReviewHistory({
+        permissionCodes: ["fee:review_department"],
+      }),
+    ).toBe(true);
+    expect(canReadFeeReviewHistory({ permissionCodes: [] })).toBe(false);
+    expect(canReadFeeReviewHistory(undefined, "search-readonly")).toBe(true);
+  });
+
+  it("builds readonly display columns without write entry points or sensitive fee fields", () => {
+    const columns = buildFeeReviewHistoryColumns();
+    const serializedColumns = JSON.stringify(
+      columns?.map((column) => ({
+        title: column.title,
+        key: column.key,
+        dataIndex: "dataIndex" in column ? column.dataIndex : undefined,
+      })),
+    );
+
+    expect(serializedColumns).toContain("动作");
+    expect(serializedColumns).toContain("状态变化");
+    expect(serializedColumns).toContain("审核原因");
+    expect(serializedColumns).toContain("审核人");
+    expect(serializedColumns).toContain("时间");
+    expect(serializedColumns).not.toContain("amount");
+    expect(serializedColumns).not.toContain("voucherNo");
+    expect(serializedColumns).not.toContain("storageKey");
+    expect(serializedColumns).not.toContain("checksum");
+    expect(serializedColumns).not.toContain("actions");
+    expect(serializedColumns).not.toContain("onClick");
+  });
+
+  it("changes the review history refresh key after approve or reject updates", () => {
+    const pendingKey = buildFeeReviewHistoryRefreshKey(baseFee, 0);
+    const approvedKey = buildFeeReviewHistoryRefreshKey(
+      {
+        ...baseFee,
+        reviewStatus: "APPROVED",
+        reviewedAt: "2026-07-01T08:00:00.000Z",
+      },
+      1,
+    );
+    const rejectedKey = buildFeeReviewHistoryRefreshKey(
+      {
+        ...baseFee,
+        reviewStatus: "REJECTED",
+        reviewedAt: "2026-07-01T09:00:00.000Z",
+      },
+      2,
+    );
+
+    expect(approvedKey).not.toBe(pendingKey);
+    expect(rejectedKey).not.toBe(approvedKey);
   });
 });
 
@@ -1066,6 +1218,35 @@ describe("mapFeeDetailErrorToDisplay", () => {
   });
 });
 
+describe("mapFeeReviewHistoryErrorToDisplay", () => {
+  it("maps review history permission, not-found, server, and network errors", () => {
+    expect(
+      mapFeeReviewHistoryErrorToDisplay({
+        kind: "forbidden",
+        message: "Forbidden",
+        status: 403,
+      }).message,
+    ).toBe("当前用户无权查看审核历史");
+    expect(
+      mapFeeReviewHistoryErrorToDisplay({
+        kind: "unknown",
+        message: "Not found",
+        status: 404,
+      }).message,
+    ).toBe("审核历史不可见");
+    expect(
+      mapFeeReviewHistoryErrorToDisplay({
+        kind: "server",
+        message: "Server",
+        status: 500,
+      }).message,
+    ).toBe("审核历史暂时不可用，可重试");
+    expect(
+      mapFeeReviewHistoryErrorToDisplay({ kind: "network", message: "Network" }).message,
+    ).toBe("审核历史暂时不可用，可重试");
+  });
+});
+
 describe("mapFeeMutationErrorToDisplay", () => {
   it("maps write validation, permission, not-found, conflict, server, and network errors", () => {
     expect(
@@ -1100,7 +1281,10 @@ describe("fee labels", () => {
     expect(getFeeReviewStatusLabel("PENDING")).toBe("待审核");
     expect(getFeeReviewStatusLabel("APPROVED")).toBe("已通过");
     expect(getFeeReviewStatusLabel("REJECTED")).toBe("已拒绝");
+    expect(getFeeReviewHistoryActionLabel("APPROVE")).toBe("审核通过");
+    expect(getFeeReviewHistoryActionLabel("REJECT")).toBe("审核拒绝");
     expect(getPayStatusLabel("UNKNOWN")).toBe("UNKNOWN");
     expect(getFeeReviewStatusLabel("UNKNOWN")).toBe("UNKNOWN");
+    expect(getFeeReviewHistoryActionLabel("UNKNOWN")).toBe("UNKNOWN");
   });
 });

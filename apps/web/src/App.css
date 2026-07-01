@@ -757,6 +757,10 @@ body {
   overflow-x: auto;
 }
 
+.fee-review-history-table .ant-typography {
+  margin-bottom: 0;
+}
+
 .fee-form-drawer .ant-drawer-body {
   overflow-x: hidden;
 }

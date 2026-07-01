@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-07-01 Step 57C - Fee review history Web UI integration
+
+- Status: STEP_57C_FEE_REVIEW_HISTORY_WEB_IMPLEMENTED.
+- Step identity:
+  - Integrated Step 57B backend review history into Web Fees detail as a read-only timeline/list.
+  - Scope stayed limited to `apps/web` fee/client/types/tests and memory-bank.
+  - No backend behavior, Prisma schema, migration, seed/backfill, Docker production-like acceptance, VPS/production access, account/password work, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile change, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added Web client method `listFeeReviewHistory` for `GET /fees/:feeRecordId/review-history`.
+  - Added `fetchFeeReviewHistory`, demo-user guarded load helper, state helper, permission helper, and error mapper.
+  - Added a read-only Fees detail history table showing action, from/to status, reason, masked reviewer id, and created time.
+  - Added loading, empty, retryable error, and scoped-permission behavior.
+  - Added approve/reject refresh coupling through a review-history refresh version plus existing detail refresh.
+- Tests:
+  - Covered API client request path.
+  - Covered history normal display metadata boundaries through display-column helpers.
+  - Covered empty/error states and permission visibility.
+  - Covered approve/reject refresh key changes.
+  - Covered no write-entry columns for history.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts api-client.test.ts`: PASS, 2 files / 90 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive scan: PASS.
+- Next:
+  - If needed, a separate local browser acceptance Step can visually verify the Fees detail drawer history section.
+  - Docker production-like acceptance and production/VPS rollout remain separately authorized work.
+
 ## 2026-07-01 Step 57B - Fee review history backend-only implementation
 
 - Status: STEP_57B_FEE_REVIEW_HISTORY_BACKEND_IMPLEMENTED.

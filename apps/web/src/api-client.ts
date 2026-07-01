@@ -22,6 +22,7 @@ import type {
   DisableDepartmentResponse,
   EnableAccountUserInput,
   ApproveFeeReviewInput,
+  FeeReviewHistoryEntry,
   FeeStateRecord,
   InviteAcceptInput,
   InviteAcceptResponse,
@@ -149,6 +150,7 @@ export type AccountManagementApiClient = ApiClient & {
     feeRecordId: string,
     payload: RejectFeeReviewInput,
   ): Promise<FeeStateRecord>;
+  listFeeReviewHistory(feeRecordId: string): Promise<FeeReviewHistoryEntry[]>;
 };
 
 export type ApiClientOptions = {
@@ -524,6 +526,15 @@ export const createApiClient = (
       options,
     );
     return response as FeeStateRecord;
+  },
+  async listFeeReviewHistory(feeRecordId: string) {
+    const response = await request(
+      `/fees/${feeRecordId}/review-history`,
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as FeeReviewHistoryEntry[];
   },
 });
 

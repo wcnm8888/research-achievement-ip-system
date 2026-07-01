@@ -46,6 +46,8 @@ import type {
   CreateFeeRecordInput,
   FeeQuery,
   FeeRecord,
+  FeeReviewHistoryActionCode,
+  FeeReviewHistoryEntry,
   FeeReviewStatusCode,
   FeeStateRecord,
   FeeTypeCode,
@@ -127,6 +129,8 @@ export type FeeWarningSummary = {
 export type FeeListStateKind = "loading" | "error" | "empty" | "ready";
 
 export type FeeDetailStateKind = "loading" | "error" | "empty" | "ready";
+
+export type FeeReviewHistoryStateKind = "loading" | "error" | "empty" | "ready";
 
 export type FeeWarningGroupKey = "overdue" | "dueSoon" | "pendingLater" | "terminal";
 
@@ -225,6 +229,16 @@ const reviewStatusColors: Record<FeeReviewStatusCode, string> = {
   REJECTED: "error",
 };
 
+const reviewHistoryActionLabels: Record<FeeReviewHistoryActionCode, string> = {
+  APPROVE: "审核通过",
+  REJECT: "审核拒绝",
+};
+
+const reviewHistoryActionColors: Record<FeeReviewHistoryActionCode, string> = {
+  APPROVE: "success",
+  REJECT: "error",
+};
+
 export function Fees({ demoUserId, authUser }: FeesProps) {
   const [draftFilters, setDraftFilters] = useState<FeeFilters>({});
   const [appliedFilters, setAppliedFilters] = useState<FeeFilters>({});
@@ -259,6 +273,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
   );
   const [reviewActionErrors, setReviewActionErrors] = useState<FeeReviewActionFormErrors>({});
   const [reviewActionStatus, setReviewActionStatus] = useState<MutationState>(emptyMutationState);
+  const [reviewHistoryRefreshVersion, setReviewHistoryRefreshVersion] = useState(0);
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
   const query = useMemo(() => buildFeeQuery(appliedFilters), [appliedFilters]);
   const canManageFees = canManageDepartmentFees(authUser);
@@ -577,6 +592,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
               ? "费用审核已通过。列表和当前详情会刷新。"
               : "费用审核已拒绝。列表和当前详情会刷新。",
         });
+        setReviewHistoryRefreshVersion((current) => current + 1);
         loadFees();
         loadFeeDetail(reviewAction.record.id);
       })
@@ -796,6 +812,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         feeRecordId={selectedFeeId}
         canManageFees={canManageFees}
         canReviewFees={canReviewFees}
+        reviewHistoryRefreshVersion={reviewHistoryRefreshVersion}
         onOpenMarkPaid={openMarkPaidDrawer}
         onOpenStatusAction={openStatusActionDrawer}
         onOpenReviewAction={openReviewActionDrawer}
@@ -853,6 +870,7 @@ function FeeDetailDrawer({
   feeRecordId,
   canManageFees,
   canReviewFees,
+  reviewHistoryRefreshVersion,
   onOpenMarkPaid,
   onOpenStatusAction,
   onOpenReviewAction,
@@ -866,6 +884,7 @@ function FeeDetailDrawer({
   feeRecordId: string | null;
   canManageFees: boolean;
   canReviewFees: boolean;
+  reviewHistoryRefreshVersion: number;
   onOpenMarkPaid: (record: FeeRecord) => void;
   onOpenStatusAction: (kind: FeeStatusActionKind, record: FeeRecord) => void;
   onOpenReviewAction: (kind: FeeReviewActionKind, record: FeeRecord) => void;
@@ -905,6 +924,7 @@ function FeeDetailDrawer({
             record={detail.data}
             canManageFees={canManageFees}
             canReviewFees={canReviewFees}
+            reviewHistoryRefreshVersion={reviewHistoryRefreshVersion}
             onOpenMarkPaid={onOpenMarkPaid}
             onOpenStatusAction={onOpenStatusAction}
             onOpenReviewAction={onOpenReviewAction}
@@ -1000,6 +1020,7 @@ function FeeDetailContent({
   record,
   canManageFees = true,
   canReviewFees = false,
+  reviewHistoryRefreshVersion = 0,
   onOpenMarkPaid,
   onOpenStatusAction,
   onOpenReviewAction,
@@ -1011,6 +1032,7 @@ function FeeDetailContent({
   record: FeeRecord;
   canManageFees?: boolean;
   canReviewFees?: boolean;
+  reviewHistoryRefreshVersion?: number;
   onOpenMarkPaid?: (record: FeeRecord) => void;
   onOpenStatusAction?: (kind: FeeStatusActionKind, record: FeeRecord) => void;
   onOpenReviewAction?: (kind: FeeReviewActionKind, record: FeeRecord) => void;
@@ -1061,6 +1083,15 @@ function FeeDetailContent({
         <Descriptions.Item label="审核时间">{formatDateTime(record.reviewedAt)}</Descriptions.Item>
         <Descriptions.Item label="凭证编号">{record.voucherNo ?? "未登记"}</Descriptions.Item>
       </Descriptions>
+
+      <FeeReviewHistorySection
+        apiClient={apiClient}
+        authUser={authUser}
+        demoUserId={demoUserId}
+        feeRecordId={record.id}
+        mode={mode}
+        refreshKey={buildFeeReviewHistoryRefreshKey(record, reviewHistoryRefreshVersion)}
+      />
 
       <FeeVoucherAttachmentSection
         apiClient={apiClient}
@@ -1147,6 +1178,90 @@ function FeeDetailContent({
         </Descriptions.Item>
       </Descriptions>
     </Space>
+  );
+}
+
+function FeeReviewHistorySection({
+  apiClient,
+  authUser,
+  demoUserId,
+  feeRecordId,
+  mode,
+  refreshKey,
+}: {
+  apiClient: ApiClient;
+  authUser?: FeePermissionContext;
+  demoUserId: string | null;
+  feeRecordId: string;
+  mode: FeeDetailContentMode;
+  refreshKey: string;
+}) {
+  const [history, setHistory] =
+    useState<Loadable<FeeReviewHistoryEntry[]>>(emptyLoadable);
+  const canLoadHistory =
+    shouldLoadFeeReviewHistory(demoUserId, feeRecordId) &&
+    canReadFeeReviewHistory(authUser, mode);
+
+  const loadHistory = useCallback(async () => {
+    if (!canLoadHistory) {
+      setHistory(emptyLoadable);
+      return;
+    }
+
+    setHistory({ loading: true, data: null, error: null });
+
+    try {
+      const data = await fetchFeeReviewHistory(apiClient, feeRecordId);
+      setHistory({ loading: false, data, error: null });
+    } catch (error) {
+      setHistory({
+        loading: false,
+        data: null,
+        error: mapFeeReviewHistoryErrorToDisplay(normalizeError(error)),
+      });
+    }
+  }, [apiClient, canLoadHistory, feeRecordId]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory, refreshKey]);
+
+  if (!canLoadHistory) {
+    return null;
+  }
+
+  const state = getFeeReviewHistoryState(history);
+  const items = history.data ?? [];
+
+  return (
+    <>
+      <Divider orientation="left">审核历史</Divider>
+      <Space direction="vertical" size={12} className="full-width">
+        <Alert
+          showIcon
+          type="info"
+          message="只读审核历史"
+          description="展示审核动作、状态变化、原因、审核人和时间；历史由后端审核流程自动写入。"
+        />
+        <DataState
+          loading={history.loading}
+          error={history.error}
+          empty={state.kind === "empty"}
+          emptyText={state.emptyText}
+          onRetry={loadHistory}
+        >
+          <Table<FeeReviewHistoryEntry>
+            className="fee-review-history-table"
+            rowKey="id"
+            columns={buildFeeReviewHistoryColumns()}
+            dataSource={items}
+            pagination={false}
+            size="small"
+            scroll={{ x: 760 }}
+          />
+        </DataState>
+      </Space>
+    </>
   );
 }
 
@@ -2052,6 +2167,19 @@ export const fetchFeeDetail = async (
   return client.get<FeeRecord>(`/fees/${trimmedId}`);
 };
 
+export const fetchFeeReviewHistory = async (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+): Promise<FeeReviewHistoryEntry[]> => {
+  const trimmedId = feeRecordId?.trim();
+
+  if (!trimmedId) {
+    return [];
+  }
+
+  return client.get<FeeReviewHistoryEntry[]>(`/fees/${trimmedId}/review-history`);
+};
+
 export const fetchFeeVoucherAttachments = async (
   client: ApiClient,
   feeRecordId: string | null | undefined,
@@ -2331,6 +2459,18 @@ export const loadFeeDetailForDemoUser = async (
   return fetchFeeDetail(client, feeRecordId);
 };
 
+export const loadFeeReviewHistoryForDemoUser = async (
+  client: ApiClient,
+  demoUserId: string | null,
+  feeRecordId: string | null | undefined,
+): Promise<FeeReviewHistoryEntry[]> => {
+  if (!demoUserId?.trim()) {
+    return [];
+  }
+
+  return fetchFeeReviewHistory(client, feeRecordId);
+};
+
 export const getFeeListState = (
   state: Loadable<FeeRecord[]>,
   hasFilters: boolean,
@@ -2370,6 +2510,29 @@ export const getFeeDetailState = (
 
   return { kind: "ready" };
 };
+
+export const getFeeReviewHistoryState = (
+  state: Loadable<FeeReviewHistoryEntry[]>,
+): { kind: FeeReviewHistoryStateKind; emptyText?: string } => {
+  if (state.loading) {
+    return { kind: "loading" };
+  }
+
+  if (state.error) {
+    return { kind: "error" };
+  }
+
+  if ((state.data ?? []).length === 0) {
+    return { kind: "empty", emptyText: "暂无审核历史" };
+  }
+
+  return { kind: "ready" };
+};
+
+export const buildFeeReviewHistoryRefreshKey = (
+  record: Pick<FeeRecord, "reviewStatus" | "reviewedAt">,
+  version = 0,
+): string => `${record.reviewStatus}:${record.reviewedAt ?? ""}:${version}`;
 
 export const createDefaultFeeForm = (): CreateFeeFormValues => ({
   achievementId: "",
@@ -2708,6 +2871,19 @@ export const canReviewDepartmentFees = (
   authUser: FeePermissionContext,
 ): boolean => Boolean(authUser?.permissionCodes.includes("fee:review_department"));
 
+export const canReadFeeReviewHistory = (
+  authUser: FeePermissionContext,
+  mode: FeeDetailContentMode = "management",
+): boolean =>
+  mode === "search-readonly" ||
+  Boolean(
+    authUser?.permissionCodes.some((permission) =>
+      ["fee:read_department", "fee:manage_department", "fee:review_department"].includes(
+        permission,
+      ),
+    ),
+  );
+
 export const canReadFeeVoucherAttachments = (
   authUser: FeePermissionContext,
   mode: FeeDetailContentMode = "management",
@@ -2727,6 +2903,11 @@ export const canUploadFeeVoucherAttachments = (
 ): boolean => mode === "management" && canManageDepartmentFees(authUser);
 
 export const shouldLoadFeeVoucherAttachments = (
+  demoUserId: string | null,
+  feeRecordId: string | null | undefined,
+): boolean => Boolean(demoUserId?.trim() && feeRecordId?.trim());
+
+export const shouldLoadFeeReviewHistory = (
   demoUserId: string | null,
   feeRecordId: string | null | undefined,
 ): boolean => Boolean(demoUserId?.trim() && feeRecordId?.trim());
@@ -2787,6 +2968,37 @@ export const mapFeeDetailErrorToDisplay = (error: ApiError): ApiError => {
   };
 };
 
+export const mapFeeReviewHistoryErrorToDisplay = (error: ApiError): ApiError => {
+  if (error.kind === "forbidden" || error.kind === "unauthorized") {
+    return {
+      ...error,
+      message: "当前用户无权查看审核历史",
+      detail: error.detail ?? "请切换到具备费用读取、管理或审核权限的演示用户后重试。",
+    };
+  }
+
+  if (error.status === 404) {
+    return {
+      ...error,
+      message: "审核历史不可见",
+      detail: error.detail ?? "该费用可能不存在、已归档，或不在当前用户可见范围内。",
+    };
+  }
+
+  if (error.kind === "network" || error.kind === "server" || (error.status ?? 0) >= 500) {
+    return {
+      ...error,
+      message: "审核历史暂时不可用，可重试",
+      detail: error.detail ?? "审核历史接口暂时无法访问，请稍后重试。",
+    };
+  }
+
+  return {
+    ...error,
+    message: error.message || "审核历史读取失败",
+  };
+};
+
 export const mapFeeMutationErrorToDisplay = (error: ApiError): ApiError => {
   if (error.kind === "bad-request" || error.status === 400) {
     return {
@@ -2842,6 +3054,79 @@ export const getPayStatusLabel = (value: PayStatusCode | string): string =>
 
 export const getFeeReviewStatusLabel = (value: FeeReviewStatusCode | string): string =>
   reviewStatusLabels[value as FeeReviewStatusCode] ?? value;
+
+export const getFeeReviewHistoryActionLabel = (
+  value: FeeReviewHistoryActionCode | string,
+): string => reviewHistoryActionLabels[value as FeeReviewHistoryActionCode] ?? value;
+
+export const formatReviewerDisplay = (reviewerId: string | null | undefined): string => {
+  const trimmed = reviewerId?.trim();
+
+  if (!trimmed) {
+    return "未返回";
+  }
+
+  if (trimmed.length <= 12) {
+    return trimmed;
+  }
+
+  return `${trimmed.slice(0, 8)}...${trimmed.slice(-4)}`;
+};
+
+export const buildFeeReviewHistoryColumns = (): TableProps<FeeReviewHistoryEntry>["columns"] => [
+  {
+    title: "动作",
+    dataIndex: "action",
+    key: "action",
+    width: 112,
+    render: (value: FeeReviewHistoryActionCode) => (
+      <Tag color={reviewHistoryActionColors[value] ?? "default"}>
+        {getFeeReviewHistoryActionLabel(value)}
+      </Tag>
+    ),
+  },
+  {
+    title: "状态变化",
+    key: "status",
+    width: 180,
+    render: (_, item) => (
+      <Space size={6} wrap>
+        <Tag color={reviewStatusColors[item.fromStatus] ?? "default"}>
+          {getFeeReviewStatusLabel(item.fromStatus)}
+        </Tag>
+        <Typography.Text type="secondary">→</Typography.Text>
+        <Tag color={reviewStatusColors[item.toStatus] ?? "default"}>
+          {getFeeReviewStatusLabel(item.toStatus)}
+        </Tag>
+      </Space>
+    ),
+  },
+  {
+    title: "审核原因",
+    dataIndex: "reason",
+    key: "reason",
+    width: 260,
+    render: (value: string | null) => (
+      <Typography.Paragraph className="table-note" ellipsis={{ rows: 2 }} title={value ?? ""}>
+        {value?.trim() || "未填写"}
+      </Typography.Paragraph>
+    ),
+  },
+  {
+    title: "审核人",
+    dataIndex: "reviewerId",
+    key: "reviewerId",
+    width: 148,
+    render: (value: string) => formatReviewerDisplay(value),
+  },
+  {
+    title: "时间",
+    dataIndex: "createdAt",
+    key: "createdAt",
+    width: 168,
+    render: (value: string) => formatDateTime(value),
+  },
+];
 
 const buildFeeColumns = (
   onOpenDetail: (record: FeeRecord) => void,

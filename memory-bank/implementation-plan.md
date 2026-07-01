@@ -4,6 +4,32 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 57C Archive - Fee review history Web UI integration - 2026-07-01
+
+- Step identity:
+  - Web/client integration for the Step 57B fee review history backend contract.
+  - Scope: Web fee types, API client method, Fees detail review-history section, helper tests, API client tests, and memory-bank updates.
+  - No backend behavior, Prisma schema, migration, seed/backfill, Docker production-like acceptance, VPS/production access, account/password work, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile change, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added Web `FeeReviewHistoryEntry` and `FeeReviewHistoryActionCode` types.
+  - Added `createApiClient().listFeeReviewHistory(feeRecordId)` for `GET /fees/:feeRecordId/review-history`.
+  - Added Fees detail read-only review history section after the base fee fields and before voucher attachments.
+  - History display is limited to action, from/to review status, reason, masked reviewer id, and created time.
+  - Empty, loading, and non-sensitive error states use existing `DataState` patterns.
+  - Approve/reject success increments a review-history refresh signal and also refreshes list/detail as before.
+- Permission and safety:
+  - Management detail mode shows history only for users with `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Search readonly detail mode may request history and relies on the backend scope check, matching the existing readonly detail pattern.
+  - No create/edit/delete history UI was added.
+  - History display does not add amount, `voucherNo`, attachment storage key, checksum, raw payload, credential, cookie, token, private-key, or connection-string fields.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts api-client.test.ts`: PASS, 2 files / 90 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive scan passed before commit.
+- Deferred:
+  - Docker production-like acceptance and production/VPS rollout remain out of scope.
+  - Production migration deployment/backfill remains separately authorized work from Step 57B.
+
 ## Current Step 57B Archive - Fee review history backend-only implementation - 2026-07-01
 
 - Step identity:

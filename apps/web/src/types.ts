@@ -278,6 +278,8 @@ export type PayStatusCode = "PENDING" | "PAID" | "OVERDUE" | "WAIVED" | "CANCELL
 
 export type FeeReviewStatusCode = "PENDING" | "APPROVED" | "REJECTED";
 
+export type FeeReviewHistoryActionCode = "APPROVE" | "REJECT";
+
 export type FeeRecord = {
   id: string;
   achievementId: string;
@@ -330,6 +332,18 @@ export type ApproveFeeReviewInput = {
 
 export type RejectFeeReviewInput = {
   reason: string;
+};
+
+export type FeeReviewHistoryEntry = {
+  id: string;
+  feeRecordId: string;
+  departmentId: string;
+  reviewerId: string;
+  action: FeeReviewHistoryActionCode;
+  fromStatus: FeeReviewStatusCode;
+  toStatus: FeeReviewStatusCode;
+  reason: string | null;
+  createdAt: string;
 };
 
 export type FeeStateRecord = Pick<

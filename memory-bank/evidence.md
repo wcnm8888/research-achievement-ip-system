@@ -1,5 +1,37 @@
 # Evidence
 
+## 2026-07-01 Step 57C - Fee review history Web UI integration evidence
+
+- Purpose:
+  - Integrate the Step 57B backend review-history endpoint into Web Fees as a read-only display.
+  - Keep backend behavior, Prisma schema, migrations, seed/backfill, Docker production-like acceptance, VPS/production access, account/password work, `.env` / `.env.production` content reads, business-data writes, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile changes, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `36757ef`.
+  - Latest commit subject: `feat(api): persist fee review history`.
+  - `git status --short` showed only existing untracked local artifacts and no tracked changes before Step 57C edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - Added Web history types in `apps/web/src/types.ts`.
+  - Added `createApiClient().listFeeReviewHistory(feeRecordId)` in `apps/web/src/api-client.ts`.
+  - Added Fees helpers for fetching, demo-user guard, scoped visibility, state mapping, error mapping, action labels, reviewer masking, display columns, and refresh key.
+  - Added `FeeReviewHistorySection` to the Fees detail drawer.
+  - Approve/reject success increments a review-history refresh version and continues refreshing list/detail.
+  - No Web history create/edit/delete entry point was added.
+- Sensitive-field evidence:
+  - History display columns are limited to action, from/to status, reason, masked reviewer id, and created time.
+  - Tests assert history helpers/columns omit amount, `voucherNo`, attachment storage key, checksum, raw payload fields, and write-entry columns.
+  - The existing fee base detail still displays its pre-existing fee fields; the new history section does not add those fields.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts api-client.test.ts`: PASS, 2 files / 90 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive scan: PASS.
+- Deferred:
+  - No Docker production-like acceptance was run in this Step.
+  - No VPS/production access or deployment was performed.
+  - Any production migration/deploy/backfill remains separately authorized work.
+
 ## 2026-07-01 Step 57B - Fee review history backend-only implementation evidence
 
 - Purpose:
