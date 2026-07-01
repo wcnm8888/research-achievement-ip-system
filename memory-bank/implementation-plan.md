@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 59B Archive - User/account import dry-run backend-only implementation - 2026-07-01
+
+- Step identity:
+  - Backend-only implementation of the Step 59A user/account CSV import dry-run plan.
+  - Scope stayed limited to `apps/api/src/imports` user-account dry-run controller/service/repository/tests, `ImportsModule` registration, AppModule reachability tests, focused validation tests, API typecheck, and memory-bank updates.
+  - No Web UI, Prisma schema change, migration, seed/backfill, real account import, real account create/update, credential write, password change/reset, invite/reset token issuance, lifecycle delivery, Docker, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented API:
+  - Added `POST /api/users/import/dry-run` through `UserAccountImportDryRunController` registered in `ImportsModule`.
+  - Route uses multipart field `file`, CSV-only file validation, 1 MB limit, explicit `UserContextGuard`, `PermissionGuard`, and `PermissionCode.systemConfig`.
+  - Department administrators or users without `system:config` receive 403 before file parsing or service execution.
+- Dry-run service contract:
+  - `UserAccountImportDryRunService.dryRunUserAccountCsv(...)` parses UTF-8 CSV with the same intentionally narrow comma/double-quote/header-row boundary as department dry-run.
+  - Required columns: `email`, `displayName`, `departmentCode`, `roleCode`.
+  - Optional columns: `employeeNo`, `scopeType`, `scopeDepartmentCode`, `status`.
+  - Defaults: `scopeType=DEPARTMENT`, `scopeDepartmentCode=departmentCode`, `status=PENDING_ACTIVATION`, `credentialAction=NO_CREDENTIAL`.
+  - Forbidden sensitive columns are detected and reported as `(sensitive)` without echoing the original sensitive header or cell value.
+  - Response returns `importType="USER_ACCOUNT"`, `dryRun=true`, sanitized file metadata, columns, summary, and safe row previews with errors/warnings.
+- Validation and conflict behavior:
+  - Covers required fields, email normalization/format, display-name length, code formats, formula-like values, row limit, unknown columns, sensitive columns, file duplicate email, and file duplicate employee number.
+  - Active department, role, and scope department lookups are read-only.
+  - Existing users by email produce review warnings.
+  - Existing active matching role assignments produce `EXISTING_ROLE_ASSIGNMENT`; revoked matching assignments produce `REVOKED_ROLE_ASSIGNMENT` and `REACTIVATE_ROLE_REVIEW`.
+  - `GLOBAL` scope, `SYSTEM_ADMIN` CSV assignment, `ACTIVE` status for new candidates, and unknown status values are errors.
+  - `employeeNo` remains source-only and file-unique; DB employee-number conflict check reports `NOT_AVAILABLE` because schema persistence is deferred.
+- Repository/no-write boundary:
+  - `UserAccountImportDryRunRepository` has only `findActiveDepartmentsByCodes`, `findActiveRolesByCodes`, and `findUsersByEmails`.
+  - Repository tests assert no user, credential, user-role, lifecycle-token, session, audit, department, role write method or transaction is called.
+- Deferred:
+  - Web/client UI remains Step 59C.
+  - Real write import, account creation, role assignment writes, audit writes, invite/reset issuance, lifecycle delivery, `employeeNo` persistence, schema/migration work, Docker production-like acceptance, and production/VPS rollout remain separate explicit steps.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 7 files / 27 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Prisma schema was not modified; no migration/seed/backfill was run.
+  - Final `git diff --check` and added-lines sensitive value scan passed before commit.
+
 ## Current Step 59A Archive - User/account import dry-run scope and backend plan - 2026-07-01
 
 - Step identity:

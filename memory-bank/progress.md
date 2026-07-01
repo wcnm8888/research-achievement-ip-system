@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-07-01 Step 59B - User/account import dry-run backend-only implementation
+
+- Status: STEP_59B_USER_ACCOUNT_IMPORT_DRY_RUN_BACKEND_IMPLEMENTED.
+- Step identity:
+  - Implemented backend-only user/account CSV import dry-run from the Step 59A plan.
+  - Scope stayed limited to `apps/api/src/imports` source/tests, `ImportsModule` registration, AppModule route reachability tests, and memory-bank updates.
+  - No Web UI, Prisma schema change, migration, seed/backfill, Docker, real account import, account create/update, credential write, password work, invite/reset token issuance, lifecycle delivery, `.env` / `.env.production` content read, VPS/production access, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `UserAccountImportDryRunController` exposing `POST /users/import/dry-run` under the API app, i.e. `/api/users/import/dry-run` behind the Web API base.
+  - Added `UserAccountImportDryRunService` for narrow UTF-8 CSV parsing, validation, conflict detection, and no-write preview.
+  - Added `UserAccountImportDryRunRepository` with read-only user/department/role lookup methods.
+  - Registered the controller, service, and repository in `ImportsModule`.
+- CSV/dry-run behavior:
+  - Required: `email`, `displayName`, `departmentCode`, `roleCode`.
+  - Optional: `employeeNo`, `scopeType`, `scopeDepartmentCode`, `status`.
+  - Defaults: department scope, scope department defaults to user department code, status `PENDING_ACTIVATION`, credential action `NO_CREDENTIAL`.
+  - Sensitive credential/token/session/link/secret columns are rejected with a safe `(sensitive)` field and no raw cell value echo.
+  - File duplicate email and employee number are errors; existing email and role assignments are warnings/review candidates.
+  - `GLOBAL` scope, `SYSTEM_ADMIN`, unsupported `ACTIVE` status, invalid status, unknown department, unknown role, and unknown scope department are errors.
+- No-write boundary:
+  - Dry-run writes no `User`, `UserCredential`, `UserRole`, `AccountLifecycleToken`, `UserSession`, `AuditLog`, department, role, or transaction state.
+  - Repository tests explicitly assert write methods and `$transaction` are not called.
+  - Prisma schema was not modified; no schema validation was required beyond confirming no schema diff.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 7 files / 27 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Next:
+  - Step 59C can add Web/client UI using the existing department dry-run pattern.
+  - Real write import, account lifecycle invite/reset issuance, `employeeNo` persistence, and production rollout remain separate explicit steps.
+
 ## 2026-07-01 Step 59A - User/account import dry-run scope and backend plan
 
 - Status: STEP_59A_USER_ACCOUNT_IMPORT_DRY_RUN_BACKEND_PLAN_READY_DOCS_ONLY.

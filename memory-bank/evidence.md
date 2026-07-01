@@ -1,5 +1,54 @@
 # Evidence
 
+## 2026-07-01 Step 59B - User/account import dry-run backend-only implementation evidence
+
+- Purpose:
+  - Implement backend-only `POST /api/users/import/dry-run` for user/account CSV import dry-run.
+  - Keep Web UI, Prisma schema edits, migrations, seed/backfill, real account import, account creation/update, credential writes, account password changes/resets, invite/reset token issuance, lifecycle delivery, Docker, VPS/production access, package/lockfile changes, push/deploy, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `6324330`.
+  - Latest commit subject: `docs: plan user account import dry run`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 59B edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - Added `apps/api/src/imports/user-account-import-dry-run.controller.ts`.
+  - Added `apps/api/src/imports/user-account-import-dry-run.service.ts`.
+  - Added `apps/api/src/imports/user-account-import-dry-run.repository.ts`.
+  - Added controller/service/repository tests and extended `imports.app-module.spec.ts`.
+  - Updated `ImportsModule` to register and export the user account import dry-run service alongside the existing department dry-run service.
+  - Root API route is reachable as `POST /users/import/dry-run` in Nest tests and `/api/users/import/dry-run` behind the Web API base convention.
+- Permission and file-boundary evidence:
+  - Controller uses explicit `UserContextGuard` and `PermissionGuard`.
+  - Route requires `PermissionCode.systemConfig`.
+  - Controller tests cover 401 with no user context and 403 without `system:config`; the 403 case uses workbook-like content and proves service execution does not happen before permission denial.
+  - Controller enforces multipart `file`, CSV extension/MIME check, workbook-like body rejection, and 1 MB file limit.
+- Dry-run validation evidence:
+  - Service tests cover valid no-credential preview, required fields, invalid email, duplicate email, duplicate employee number, sensitive column rejection, unknown department, unknown role, unknown scope department, global scope denial, `SYSTEM_ADMIN` denial, unsupported `ACTIVE` status, invalid status, existing user warning, existing role assignment warning, revoked role assignment warning, and row-limit rejection.
+  - Response includes `importType="USER_ACCOUNT"`, `dryRun=true`, file metadata, required/optional/received columns, summary, row candidate action, row errors/warnings, and `credentialAction="NO_CREDENTIAL"`.
+  - `employeeNoDbConflictCheck` is `NOT_AVAILABLE` because no persisted employee-number field exists.
+- No-write evidence:
+  - Repository has only read lookup methods:
+    - `findActiveDepartmentsByCodes`.
+    - `findActiveRolesByCodes`.
+    - `findUsersByEmails`.
+  - Repository tests assert no create/update/upsert calls for department, role, user, user credential, user role, lifecycle token, or session.
+  - Repository tests assert no audit log write and no `$transaction`.
+  - No account-management create/update service, account lifecycle service, auth password hashing, or token delivery path is called by the dry-run implementation.
+- Sensitive-field evidence:
+  - Sensitive CSV headers such as password-like columns are returned as `(sensitive)`, not the original header.
+  - Sensitive cell values are not included in the dry-run response.
+  - Added source/tests/memory-bank contain no real password, password hash, token, cookie, secret, connection string, AccessKey, private key, or full invite/reset link.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 7 files / 27 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Prisma schema was not modified; no migration, seed, or backfill was run.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Deferred:
+  - Step 59C Web/client UI.
+  - Real write import, account lifecycle invite/reset issuance, `employeeNo` persistence, schema/migration decisions, Docker production-like acceptance, and production/VPS rollout.
+
 ## 2026-07-01 Step 59A - User/account import dry-run scope and backend plan evidence
 
 - Purpose:

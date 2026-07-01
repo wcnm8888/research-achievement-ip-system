@@ -1,5 +1,39 @@
 # Decisions
 
+## D212 - User account import dry-run is backend-only and read-only
+
+- Date: 2026-07-01.
+- Context: Step 59B implements the Step 59A user/account CSV import dry-run plan. The user allowed directly related `apps/api` source/tests and memory-bank updates, but prohibited Web UI, Prisma schema/migration work, seed/backfill, real account import, account password work, invite/reset token issuance, production/VPS access, secret reads, package changes, cleanup/deletion/reset/drop/prune, push/deploy, and existing untracked-artifact handling.
+- Decision:
+  - Add the first user/account import API as `POST /api/users/import/dry-run`.
+  - Keep it backend-only in Step 59B.
+  - Keep it dry-run only: parse, validate, conflict-check, and preview. It must not write account, credential, role assignment, session, lifecycle-token, audit, department, role, or delivery state.
+  - Register it in the existing `ImportsModule` beside department dry-run instead of creating a separate account-management mutation path.
+- Permission:
+  - Require `system:config` through explicit `UserContextGuard` and `PermissionGuard`.
+  - Do not expose this endpoint to department administrators by default.
+  - Permission failure must occur before file parsing or service execution.
+- CSV and preview:
+  - Support required columns `email`, `displayName`, `departmentCode`, and `roleCode`.
+  - Support optional columns `employeeNo`, `scopeType`, `scopeDepartmentCode`, and `status`.
+  - Default to `scopeType=DEPARTMENT`, `scopeDepartmentCode=departmentCode`, `status=PENDING_ACTIVATION`, and `credentialAction=NO_CREDENTIAL`.
+  - Return `importType="USER_ACCOUNT"`, `dryRun=true`, sanitized file metadata, columns, summary, and row-level safe parsed facts with errors/warnings.
+- Security:
+  - Reject credential/token/session/link/secret/private-key-like columns as `FORBIDDEN_SENSITIVE_COLUMN`.
+  - Do not echo sensitive cell values or original sensitive header names in the dry-run response.
+  - Do not support password, password hash, credential status, invite link, reset link, token, cookie, secret, connection string, AccessKey, or private-key import.
+- Validation:
+  - Reject missing required fields, invalid email/code/status/scope formats, formula-like values, unknown columns, file duplicate email, and file duplicate employee number.
+  - Check active departments, active roles, and active scope departments through read-only repository lookups.
+  - Treat existing users and existing/revoked role assignments as warnings/review candidates.
+  - Reject `GLOBAL` scope and `SYSTEM_ADMIN` role assignment through CSV.
+  - Reject `ACTIVE` status in the minimum dry-run because account activation must remain behind invite/reset lifecycle flow.
+- Schema:
+  - No Prisma schema or migration change is needed for dry-run.
+  - `employeeNo` remains source-only in Step 59B; durable persistence and DB conflict checks require a later schema decision.
+- Boundary:
+  - This decision does not authorize Web UI, real write import, account creation/update, credential writes, password changes/resets, invite/reset token creation, lifecycle delivery, audit writes, schema/migration work, seed/backfill, Docker production-like acceptance, VPS/production access, `.env` / `.env.production` content reads, package changes, push/deploy, cleanup, deletion, reset, restore, drop, prune, or existing untracked-artifact handling.
+
 ## D211 - User account CSV import starts as no-write no-password dry-run
 
 - Date: 2026-07-01.

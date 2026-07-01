@@ -11,6 +11,7 @@ import { PrismaService } from "../database/prisma.service";
 import { IDENTITY_ADAPTER } from "../identity/identity-adapter.token";
 import { UserContext } from "../identity/user-context";
 import { DepartmentImportDryRunService } from "./department-import-dry-run.service";
+import { UserAccountImportDryRunService } from "./user-account-import-dry-run.service";
 
 const ids = {
   user: "40000000-0000-4000-8000-000000000001",
@@ -20,6 +21,10 @@ const ids = {
 
 type DepartmentImportDryRunServiceMock = {
   dryRunDepartmentCsv: ReturnType<typeof vi.fn>;
+};
+
+type UserAccountImportDryRunServiceMock = {
+  dryRunUserAccountCsv: ReturnType<typeof vi.fn>;
 };
 
 const makeUserContext = (): UserContext => ({
@@ -66,9 +71,39 @@ const createServiceMock = (): DepartmentImportDryRunServiceMock => ({
   }),
 });
 
+const createUserAccountServiceMock = (): UserAccountImportDryRunServiceMock => ({
+  dryRunUserAccountCsv: vi.fn().mockResolvedValue({
+    importType: "USER_ACCOUNT",
+    dryRun: true,
+    file: {
+      name: "user-accounts.csv",
+      size: 75,
+      mimeType: "text/csv",
+      encoding: "utf-8",
+    },
+    columns: {
+      required: ["email", "displayName", "departmentCode", "roleCode"],
+      optional: ["employeeNo", "scopeType", "scopeDepartmentCode", "status"],
+      received: ["email", "displayName", "departmentCode", "roleCode"],
+    },
+    summary: {
+      totalRows: 1,
+      validRows: 1,
+      errorRows: 0,
+      warningRows: 0,
+      createCandidates: 1,
+      existingUserRows: 0,
+      existingRoleAssignmentRows: 0,
+      reactivationCandidateRows: 0,
+      employeeNoDbConflictCheck: "NOT_AVAILABLE",
+    },
+    rows: [],
+  }),
+});
+
 describe("Import routes through AppModule", () => {
   it("exposes department import dry-run through AppModule", async () => {
-    await withAppModule(async (app, service) => {
+    await withAppModule(async (app, services) => {
       await request(app.getHttpServer() as Server)
         .post("/imports/departments/dry-run")
         .set("X-Demo-User-Id", ids.user)
@@ -78,7 +113,26 @@ describe("Import routes through AppModule", () => {
         })
         .expect(201);
 
-      expect(service.dryRunDepartmentCsv).toHaveBeenCalledOnce();
+      expect(services.department.dryRunDepartmentCsv).toHaveBeenCalledOnce();
+    });
+  });
+
+  it("exposes user account import dry-run through AppModule", async () => {
+    await withAppModule(async (app, services) => {
+      await request(app.getHttpServer() as Server)
+        .post("/users/import/dry-run")
+        .set("X-Demo-User-Id", ids.user)
+        .attach(
+          "file",
+          Buffer.from("email,displayName,departmentCode,roleCode\nalice@example.org,Alice,RD,RESEARCHER\n"),
+          {
+            filename: "user-accounts.csv",
+            contentType: "text/csv",
+          },
+        )
+        .expect(201);
+
+      expect(services.userAccount.dryRunUserAccountCsv).toHaveBeenCalledOnce();
     });
   });
 });
@@ -86,11 +140,15 @@ describe("Import routes through AppModule", () => {
 const withAppModule = async (
   callback: (
     app: INestApplication,
-    service: DepartmentImportDryRunServiceMock,
+    services: {
+      department: DepartmentImportDryRunServiceMock;
+      userAccount: UserAccountImportDryRunServiceMock;
+    },
   ) => Promise<void>,
 ): Promise<void> => {
   let app: INestApplication | null = null;
   const service = createServiceMock();
+  const userAccountService = createUserAccountServiceMock();
   const identityAdapter = {
     loadUserContext: vi.fn().mockResolvedValue(makeUserContext()),
   };
@@ -101,6 +159,8 @@ const withAppModule = async (
     })
       .overrideProvider(DepartmentImportDryRunService)
       .useValue(service)
+      .overrideProvider(UserAccountImportDryRunService)
+      .useValue(userAccountService)
       .overrideProvider(PrismaService)
       .useValue({})
       .overrideProvider(IDENTITY_ADAPTER)
@@ -110,7 +170,10 @@ const withAppModule = async (
     app = moduleRef.createNestApplication();
     await app.init();
 
-    await callback(app, service);
+    await callback(app, {
+      department: service,
+      userAccount: userAccountService,
+    });
   } finally {
     if (app) {
       await app.close();
