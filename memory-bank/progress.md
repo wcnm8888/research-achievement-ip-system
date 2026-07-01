@@ -9892,3 +9892,22 @@
   - One transient local session value was accidentally echoed during diagnostics and was immediately revoked in the local Docker DB; the value is not recorded in memory-bank or committed files.
 - Next step:
   - Re-run the browser-only acceptance with a stable credential/session harness, or add a small local-only test harness that can inject transient sessions without exposing values.
+
+## 2026-07-01 Step 58E - Stabilize fee review workflow browser acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step58e-browser-acceptance.js` for the four-role production-like browser gate.
+  - Prepared local synthetic Step 58E users, department, roles, achievements, fee records, and fee workflow tasks in the local Docker DB only.
+  - Stabilized auth by using transient local login sessions plus a short-lived local proxy that injects session cookies into `/api` requests per role-specific proxy port; cookie/session values remained in process memory only.
+  - Verified reviewer flow: pending `FEE_REVIEW` task shows approve/reject controls, approve and reject call existing fee review APIs, task status/history refresh, and a pending fee with no current task stays readonly.
+  - Verified sibling readonly flow: cancelled sibling task is visible as readonly and exposes no task mutation entrypoint.
+  - Verified manager-only and read-only flows: both can view fee detail through fee read/manage permissions but do not see fee review execution controls or workflow task cards.
+  - Fixed acceptance-script instability from pre-navigation localStorage access, missing `URL` global in `playwright-cli run-code`, response-event races, and Ant Drawer overlay interception.
+- Safety notes:
+  - `.env` / `.env.production` contents were not read.
+  - No VPS/production DB access, production migration, seed, backfill, push, deploy, package, or lockfile changes.
+  - No account password was changed for existing accounts; synthetic local passwords and sessions were transient and not recorded.
+  - Existing untracked local artifacts were left untouched.
+- Next step:
+  - Step 58 browser acceptance gap is closed; any future related work can reuse the local proxy pattern documented in `testing-strategy.md`.

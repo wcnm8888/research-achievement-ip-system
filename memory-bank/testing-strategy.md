@@ -76,6 +76,15 @@ playwright-cli -s=<step-name> run-code --filename=memory-bank/<step>-browser-acc
 - For browser acceptance, prefer `playwright-cli` named sessions. If local HTTP plus production cookie attributes cause session issues, use an explicitly scoped transient local session or the existing local proxy pattern without recording cookie values.
 - For future Step evidence, summarize the root cause class, such as "session valid, client cookie delivery issue", rather than preserving raw diagnostic output.
 
+### Local proxy pattern for secure-cookie browser acceptance
+
+- When production-like Web is served over local plain HTTP but auth cookies are `Secure`, do not force raw cookie values through `playwright-cli` command output.
+- Prefer synthetic local users plus transient local login sessions held only in process memory.
+- Use a short-lived local proxy with role-specific ports: forward Web asset requests to local Web and inject the matching session cookie only for `/api` requests to local API.
+- Browser acceptance scripts should derive role from the proxy port or non-sensitive localStorage, and must not contain cookie/session/password values.
+- In `playwright-cli run-code`, avoid relying on Node/browser globals that may be absent, such as global `URL`; use simple string parsing when needed.
+- Prefer DOM-state waits and same-origin API polling over response-event waits when the app may already have completed the request before the script starts waiting.
+
 ## 浏览器验收规则
 
 - 优先使用 `playwright-cli`。

@@ -12491,3 +12491,46 @@
   - No package or lockfile changes.
   - No account password changes to existing accounts.
   - One transient local session value was accidentally echoed during diagnostics; it was immediately revoked in the local Docker DB and is not recorded in memory-bank or committed files.
+
+## 2026-07-01 Step 58E - Stabilized fee review workflow browser acceptance evidence
+
+- Canonical state checked before acceptance:
+  - `git rev-parse --short HEAD` -> `7496820`.
+  - `git log -1 --pretty=format:"%s"` -> `docs: verify fee review workflow local acceptance`.
+  - Tracked diff was empty at start; existing untracked local artifacts were left untouched.
+- Local Docker production-like stack:
+  - `.env.production` existence was checked only with `Test-Path`; contents were not read.
+  - `docker compose -f docker-compose.production.yml ps` showed local `postgres`, `api`, and `web` running healthy.
+  - `GET http://127.0.0.1:13001/api/health` returned HTTP 200.
+  - `GET http://127.0.0.1:18081/` returned HTTP 200.
+- Root cause and stabilization:
+  - Step 58D's four-role browser gate was unstable because production auth sets a secure session cookie while local Web is plain HTTP, and direct command-line cookie injection was fragile and had a prior echo risk.
+  - `playwright-cli run-code` also lacks a global `URL`, and response-event waits can race with already-completed app requests.
+  - Step 58E used local synthetic users plus transient local login sessions held only in PowerShell variables, then a short-lived local proxy on role-specific ports to inject the matching session cookie for `/api` requests.
+  - Browser assertions were stabilized by deriving role from proxy port, avoiding response-event waits, polling same-origin API state after UI actions, and waiting for Ant Drawer closure before the next fee filter.
+- Four-role `playwright-cli` browser gate:
+  - Synthetic data prepare summary: `{ "prepared": true, "syntheticUsers": 4, "syntheticFees": 5, "syntheticTasks": 7 }`.
+  - `step58e-reviewer` against `http://127.0.0.1:19081/` -> passed.
+  - `step58e-sibling` against `http://127.0.0.1:19082/` -> passed.
+  - `step58e-manager` against `http://127.0.0.1:19083/` -> passed.
+  - `step58e-reader` against `http://127.0.0.1:19084/` -> passed.
+  - Final sanitized result: `[{"mode":"reviewer","session":"step58e-reviewer","passed":true},{"mode":"sibling","session":"step58e-sibling","passed":true},{"mode":"manager","session":"step58e-manager","passed":true},{"mode":"reader","session":"step58e-reader","passed":true}]`.
+- Coverage:
+  - Reviewer pending task showed executable approve/reject controls.
+  - Approve and reject used existing fee review APIs; task status and review history were verified after the UI action.
+  - Reviewer no-pending-task fee stayed readonly.
+  - Sibling cancelled task displayed readonly and had no task mutation controls.
+  - Manager-only and read-only users did not receive review execution controls or fee workflow task cards.
+  - Workflow task section did not expose raw payload, cookie/token terms, voucher number, storage key, checksum, create/edit/delete/complete task controls, or separate workflow-task completion UI.
+- Local validation:
+  - `corepack pnpm --filter @research-ip/web test -- Fees.test.ts workflow-tasks.test.ts WorkflowTasks.test.ts api-client.test.ts` -> passed; 4 test files, 134 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck` -> passed.
+  - Placeholder `DATABASE_URL` + `corepack pnpm prisma:validate` -> passed. No `.env` content was read.
+  - `git diff --check` -> passed.
+- Safety notes:
+  - No VPS / production DB access.
+  - No push/deploy.
+  - No production migration/seed/backfill.
+  - No package or lockfile changes.
+  - No `.env` / `.env.production` contents were read.
+  - No cookie, token, session value, password, secret, connection string, AccessKey, private key, voucher number, storage key, checksum, or real business value was recorded.

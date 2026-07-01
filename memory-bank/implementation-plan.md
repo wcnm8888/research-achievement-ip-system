@@ -8621,3 +8621,15 @@ Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Pr
   - Targeted Web tests and Web typecheck passed after the fix.
 - Remaining:
   - Repeat browser-only four-role `playwright-cli` acceptance with a stable transient session harness before calling Step 58D fully closed.
+
+## Step 58E implementation update - stabilized browser acceptance
+
+- Status: DONE.
+- Completed:
+  - Added a dedicated Step 58E browser acceptance script.
+  - Reused local Docker production-like API/Web/Postgres and local synthetic data only.
+  - Stabilized production session-cookie acceptance with a short-lived role-specific local proxy instead of browser cookie persistence over plain HTTP.
+  - Four `playwright-cli` named sessions passed: reviewer, sibling, manager-only, and read-only.
+  - No product feature expansion was needed and no Web/API source behavior changed.
+- Closed gap:
+  - Step 58D's partial browser evidence is now supplemented by a clean four-role browser gate.

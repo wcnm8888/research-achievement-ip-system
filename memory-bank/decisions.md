@@ -4260,3 +4260,16 @@
 - Consequence:
   - Session-auth production-like Web can load `FEE_RECORD` workflow task state.
   - Demo-header local development remains supported through the same client.
+
+## D213 - Step 58E browser acceptance uses a transient local proxy for production cookies
+
+- Date: 2026-07-01
+- Context: Docker production-like Web is served over local plain HTTP, while production auth sets a secure session cookie. Direct `playwright-cli cookie-set` or command-line injection can be brittle on Windows and risks echoing a transient session value.
+- Decision:
+  - Use synthetic local users and transient local login sessions for multi-role browser acceptance.
+  - Keep session values in process memory only.
+  - Run a short-lived local proxy per role/port that forwards Web assets to the local Web container and `/api` requests to the local API container with the matching session cookie injected server-side.
+  - Keep browser scripts free of cookie/session/password values and derive the role from the proxy port.
+- Consequence:
+  - Four isolated `playwright-cli` named sessions can exercise production session-auth Web flows over local HTTP without storing or printing session values.
+  - This pattern is local acceptance only and must not be described as production/VPS validation.
