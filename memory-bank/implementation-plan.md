@@ -4,6 +4,45 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 60B Archive - Achievement import dry-run backend-only implementation - 2026-07-01
+
+- Step identity:
+  - Backend-only implementation of the Step 60A achievement CSV import dry-run plan.
+  - Scope stayed limited to `apps/api/src/imports` achievement dry-run controller/service/repository/tests, `ImportsModule` registration, AppModule route reachability tests, focused validation tests, API typecheck, and memory-bank updates.
+  - No Web UI, Prisma schema change, migration, seed/backfill, real achievement import, achievement/detail/contributor write, attachment upload/download, fee record, workflow write, audit write, Docker, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Implemented API:
+  - Added `POST /api/achievements/import/dry-run` through `AchievementImportDryRunController` registered in `ImportsModule`.
+  - Route uses multipart field `file`, CSV-only file validation, 1 MB limit, explicit `UserContextGuard`, `PermissionGuard`, and `PermissionCode.systemConfig`.
+  - Users without `system:config` receive 403 before file parsing or service execution.
+- Dry-run service contract:
+  - `AchievementImportDryRunService.dryRunAchievementCsv(...)` parses UTF-8 CSV with the same intentionally narrow comma/double-quote/header-row boundary as existing dry-runs.
+  - Required common columns: `type`, `title`, `departmentCode`, and `contributors`.
+  - Owner identity is accepted through `ownerEmail`; `ownerEmployeeNo` is recognized but returns `OWNER_EMPLOYEE_NO_LOOKUP_NOT_AVAILABLE` because the current schema has no employee-number field.
+  - Optional/common and detail columns include `secretLevel`, `status`, paper DOI fields, patent application/grant/patentNo fields, and software copyright registration fields.
+  - `DOI`, `patentNo`, and `softwareRegistrationNo` aliases are supported for the user-facing CSV contract.
+  - Response returns `importType="ACHIEVEMENT"`, `dryRun=true`, sanitized file metadata, columns, summary, row safe parsed facts, normalized identifiers, candidate action, errors, and warnings.
+- Validation and conflict behavior:
+  - Covers required fields, type/status/secret/detail enum validation, title/code/email/date/number validation, formula-like values, row limit, unknown columns, forbidden sensitive/direct-id/storage/workflow/fee/raw-payload columns, type/detail mismatch, malformed contributors, contributor type mismatch, owner lookup, owner department mismatch, contributor user lookup, file duplicate normalized identifiers, and DB normalized identifier conflicts.
+  - Supports `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT` rows.
+  - Only omitted status or `DRAFT` is accepted. Submitted/workflow/archive/voided states are rejected.
+  - Existing DB normalized identifier conflicts are read-only warnings requiring review before any future real import.
+- Repository/no-write boundary:
+  - `AchievementImportDryRunRepository` has only read lookup methods:
+    - `findActiveDepartmentsByCodes`.
+    - `findUsersByEmails`.
+    - `findNormalizedConflicts`.
+  - Repository tests assert no create/update/upsert calls for Achievement, typed details, contributors, attachments, fees, workflow state, audit logs, users, or departments.
+  - Repository tests assert no `$transaction`.
+- Deferred:
+  - Step 60C Web/client UI.
+  - Real write import, idempotency, audit writes, submitted-status workflow import, attachment import, fee import, employee-number lookup, and department-scoped `achievement:manage_department` permission remain separate explicit steps.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 10 files / 40 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Prisma schema was not modified; no migration/seed/backfill was run.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+
 ## Current Step 60A Archive - Achievement import dry-run scope and backend plan - 2026-07-01
 
 - Step identity:

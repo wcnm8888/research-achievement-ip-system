@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-07-01 Step 60B - Achievement import dry-run backend-only implementation evidence
+
+- Purpose:
+  - Implement backend-only `POST /api/achievements/import/dry-run` for achievement CSV import dry-run.
+  - Keep Web UI, Prisma schema edits, migrations, seed/backfill, real achievement import, attachment upload/download, fee/workflow/audit writes, production/VPS access, package/lockfile changes, push/deploy, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `6630eb2`.
+  - Latest commit subject: `docs: plan achievement import dry run`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 60B edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - Added `apps/api/src/imports/achievement-import-dry-run.controller.ts`.
+  - Added `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - Added `apps/api/src/imports/achievement-import-dry-run.repository.ts`.
+  - Added controller/service/repository tests and extended `imports.app-module.spec.ts`.
+  - Updated `ImportsModule` to register and export the achievement import dry-run service alongside existing import dry-runs.
+  - Root API route is reachable as `POST /achievements/import/dry-run` in Nest tests and `/api/achievements/import/dry-run` behind the API prefix convention.
+- Permission and file-boundary evidence:
+  - Controller uses explicit `UserContextGuard` and `PermissionGuard`.
+  - Route requires `PermissionCode.systemConfig`.
+  - Controller tests cover 401 with no user context and 403 without `system:config`; the 403 case uses workbook-like content and proves service execution does not happen before permission denial.
+  - Controller enforces multipart `file`, CSV extension/MIME check, workbook-like body rejection, and 1 MB file limit.
+- Dry-run validation evidence:
+  - Service tests cover valid paper/patent/software previews, required fields, invalid enum/status/secret values, `ownerEmployeeNo` not-available boundary, type/detail mismatch, malformed contributor boundary, unknown contributor user, contributor type mismatch, duplicate normalized identifiers in file, DB normalized identifier conflicts, unknown department, owner not found, owner department mismatch, sensitive column rejection, and row-limit rejection.
+  - Response includes `importType="ACHIEVEMENT"`, `dryRun=true`, file metadata, required/optional/received columns, summary, row candidate action, safe parsed preview facts, normalized identifiers, errors, and warnings.
+  - Sensitive/direct-id/storage/workflow/fee/raw-payload headers are returned as `(sensitive)`, not the original header; sensitive cell values are not returned.
+- No-write evidence:
+  - Repository has only read lookup methods:
+    - `findActiveDepartmentsByCodes`.
+    - `findUsersByEmails`.
+    - `findNormalizedConflicts`.
+  - Repository tests assert no create/update/upsert calls for Achievement, paper/patent/software detail, contributors, attachments, fees, workflow instance/task/action, audit log, users, or departments.
+  - Repository tests assert no `$transaction`.
+  - No `AchievementService`, `AuditService`, attachment, fee, workflow, migration, seed, or backfill path is called by the dry-run implementation.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 10 files / 40 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Deferred:
+  - Step 60C Web/client UI.
+  - Real write import, audit writes, workflow/submitted import, attachment import, fee import, employee-number lookup, department-scoped permission, Docker production-like acceptance, and production/VPS rollout.
+
 ## 2026-07-01 Step 60A - Achievement import dry-run scope and backend plan evidence
 
 - Purpose:

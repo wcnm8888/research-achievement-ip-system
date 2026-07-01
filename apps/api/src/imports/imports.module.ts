@@ -2,6 +2,9 @@ import { Module } from "@nestjs/common";
 import { AuthorizationModule } from "../authorization/authorization.module";
 import { DatabaseModule } from "../database/database.module";
 import { IdentityModule } from "../identity/identity.module";
+import { AchievementImportDryRunController } from "./achievement-import-dry-run.controller";
+import { AchievementImportDryRunRepository } from "./achievement-import-dry-run.repository";
+import { AchievementImportDryRunService } from "./achievement-import-dry-run.service";
 import { DepartmentImportDryRunController } from "./department-import-dry-run.controller";
 import { DepartmentImportDryRunRepository } from "./department-import-dry-run.repository";
 import { DepartmentImportDryRunService } from "./department-import-dry-run.service";
@@ -12,15 +15,22 @@ import { UserAccountImportDryRunService } from "./user-account-import-dry-run.se
 @Module({
   imports: [DatabaseModule, IdentityModule, AuthorizationModule],
   controllers: [
+    AchievementImportDryRunController,
     DepartmentImportDryRunController,
     UserAccountImportDryRunController,
   ],
   providers: [
+    AchievementImportDryRunRepository,
+    AchievementImportDryRunService,
     DepartmentImportDryRunRepository,
     DepartmentImportDryRunService,
     UserAccountImportDryRunRepository,
     UserAccountImportDryRunService,
   ],
-  exports: [DepartmentImportDryRunService, UserAccountImportDryRunService],
+  exports: [
+    AchievementImportDryRunService,
+    DepartmentImportDryRunService,
+    UserAccountImportDryRunService,
+  ],
 })
 export class ImportsModule {}

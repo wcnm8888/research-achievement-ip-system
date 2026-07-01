@@ -1,5 +1,39 @@
 # Progress
 
+## 2026-07-01 Step 60B - Achievement import dry-run backend-only implementation
+
+- Status: STEP_60B_ACHIEVEMENT_IMPORT_DRY_RUN_BACKEND_IMPLEMENTED.
+- Step identity:
+  - Implemented backend-only achievement CSV import dry-run from the Step 60A plan.
+  - Scope stayed limited to `apps/api/src/imports` source/tests, `ImportsModule` registration, AppModule route reachability tests, and memory-bank updates.
+  - No Web UI, Prisma schema change, migration, seed/backfill, Docker, real achievement import, attachment upload/download, fee record, workflow write, audit write, `.env` / `.env.production` content read, VPS/production access, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `AchievementImportDryRunController` exposing `POST /achievements/import/dry-run` under the API app, i.e. `/api/achievements/import/dry-run` behind the API prefix.
+  - Added `AchievementImportDryRunService` for narrow UTF-8 CSV parsing, DTO-level validation, reference resolution, normalized conflict detection, and no-write preview.
+  - Added `AchievementImportDryRunRepository` with read-only department, user, and normalized identifier lookup methods.
+  - Registered the controller, service, and repository in `ImportsModule`.
+- CSV/dry-run behavior:
+  - Supports `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`.
+  - Required common columns: `type`, `title`, `departmentCode`, `contributors`.
+  - Owner lookup uses `ownerEmail`; `ownerEmployeeNo` is recognized but reports `NOT_AVAILABLE` because the schema has no employee-number field.
+  - Supports `DOI`, `patentNo`, and `softwareRegistrationNo` aliases plus existing DTO detail field names.
+  - Sensitive/direct-id/storage/workflow/fee/raw-payload columns are rejected with safe `(sensitive)` field output.
+  - File duplicate normalized identifiers are errors; DB normalized identifier matches are warning/review candidates.
+  - Only `DRAFT` status is accepted.
+- No-write boundary:
+  - Dry-run writes no `Achievement`, typed detail, contributor, attachment, fee, workflow, audit, user, department, or transaction state.
+  - Repository tests explicitly assert write methods and `$transaction` are not called.
+  - Prisma schema was not modified.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 10 files / 40 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Prisma schema diff check: no tracked change to `prisma/schema.prisma`.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Next:
+  - Step 60C can add Web/client UI after this backend contract.
+  - Real write import, audit writes, workflow/submitted import, attachment import, fee import, employee-number lookup, department-scoped permission, and production rollout remain separate explicit steps.
+
 ## 2026-07-01 Step 60A - Achievement import dry-run scope and backend plan
 
 - Status: STEP_60A_ACHIEVEMENT_IMPORT_DRY_RUN_BACKEND_PLAN_READY_DOCS_ONLY.

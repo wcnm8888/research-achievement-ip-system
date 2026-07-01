@@ -10,6 +10,7 @@ import { ScopeType } from "../authorization/constants/scope-type";
 import { PrismaService } from "../database/prisma.service";
 import { IDENTITY_ADAPTER } from "../identity/identity-adapter.token";
 import { UserContext } from "../identity/user-context";
+import { AchievementImportDryRunService } from "./achievement-import-dry-run.service";
 import { DepartmentImportDryRunService } from "./department-import-dry-run.service";
 import { UserAccountImportDryRunService } from "./user-account-import-dry-run.service";
 
@@ -25,6 +26,10 @@ type DepartmentImportDryRunServiceMock = {
 
 type UserAccountImportDryRunServiceMock = {
   dryRunUserAccountCsv: ReturnType<typeof vi.fn>;
+};
+
+type AchievementImportDryRunServiceMock = {
+  dryRunAchievementCsv: ReturnType<typeof vi.fn>;
 };
 
 const makeUserContext = (): UserContext => ({
@@ -101,6 +106,35 @@ const createUserAccountServiceMock = (): UserAccountImportDryRunServiceMock => (
   }),
 });
 
+const createAchievementServiceMock = (): AchievementImportDryRunServiceMock => ({
+  dryRunAchievementCsv: vi.fn().mockResolvedValue({
+    importType: "ACHIEVEMENT",
+    dryRun: true,
+    file: {
+      name: "achievements.csv",
+      size: 95,
+      mimeType: "text/csv",
+      encoding: "utf-8",
+    },
+    columns: {
+      required: ["type", "title", "departmentCode", "contributors"],
+      optional: ["ownerEmail", "ownerEmployeeNo"],
+      received: ["type", "title", "ownerEmail", "departmentCode", "contributors"],
+    },
+    summary: {
+      totalRows: 1,
+      validRows: 1,
+      errorRows: 0,
+      warningRows: 0,
+      createDraftCandidates: 1,
+      duplicateIdentifierRows: 0,
+      dbConflictRows: 0,
+      ownerEmployeeNoLookup: "NOT_AVAILABLE",
+    },
+    rows: [],
+  }),
+});
+
 describe("Import routes through AppModule", () => {
   it("exposes department import dry-run through AppModule", async () => {
     await withAppModule(async (app, services) => {
@@ -135,12 +169,34 @@ describe("Import routes through AppModule", () => {
       expect(services.userAccount.dryRunUserAccountCsv).toHaveBeenCalledOnce();
     });
   });
+
+  it("exposes achievement import dry-run through AppModule", async () => {
+    await withAppModule(async (app, services) => {
+      await request(app.getHttpServer() as Server)
+        .post("/achievements/import/dry-run")
+        .set("X-Demo-User-Id", ids.user)
+        .attach(
+          "file",
+          Buffer.from(
+            "type,title,ownerEmail,departmentCode,contributors\nPAPER,Paper,owner@example.org,RD,A|AUTHOR|||Lab\n",
+          ),
+          {
+            filename: "achievements.csv",
+            contentType: "text/csv",
+          },
+        )
+        .expect(201);
+
+      expect(services.achievement.dryRunAchievementCsv).toHaveBeenCalledOnce();
+    });
+  });
 });
 
 const withAppModule = async (
   callback: (
     app: INestApplication,
     services: {
+      achievement: AchievementImportDryRunServiceMock;
       department: DepartmentImportDryRunServiceMock;
       userAccount: UserAccountImportDryRunServiceMock;
     },
@@ -149,6 +205,7 @@ const withAppModule = async (
   let app: INestApplication | null = null;
   const service = createServiceMock();
   const userAccountService = createUserAccountServiceMock();
+  const achievementService = createAchievementServiceMock();
   const identityAdapter = {
     loadUserContext: vi.fn().mockResolvedValue(makeUserContext()),
   };
@@ -157,6 +214,8 @@ const withAppModule = async (
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })
+      .overrideProvider(AchievementImportDryRunService)
+      .useValue(achievementService)
       .overrideProvider(DepartmentImportDryRunService)
       .useValue(service)
       .overrideProvider(UserAccountImportDryRunService)
@@ -171,6 +230,7 @@ const withAppModule = async (
     await app.init();
 
     await callback(app, {
+      achievement: achievementService,
       department: service,
       userAccount: userAccountService,
     });

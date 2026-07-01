@@ -1,5 +1,32 @@
 # Decisions
 
+## D216 - Achievement import dry-run API is no-write and system-config only
+
+- Date: 2026-07-01.
+- Context: Step 60B implements the Step 60A achievement CSV import dry-run backend plan. The user allowed directly related `apps/api` source/tests and memory-bank updates, but prohibited Web UI, Prisma schema/migration work, seed/backfill, real achievement import, attachment upload/download, fee/workflow/audit writes, production/VPS access, secret reads, package changes, cleanup/deletion/reset/drop/prune, push/deploy, and existing untracked-artifact handling.
+- Decision:
+  - Add backend-only `POST /api/achievements/import/dry-run`.
+  - Keep it dry-run only: parse, validate, resolve references, detect normalized conflicts, and preview candidate actions. It must not write achievements, typed details, contributors, attachments, fees, workflow state, audit logs, or search state.
+  - Register the endpoint in the existing `ImportsModule` beside department and user/account dry-runs.
+- Permission:
+  - Require explicit `UserContextGuard`, `PermissionGuard`, and `system:config`.
+  - Do not add `achievement:manage_department` in Step 60B.
+  - Permission failure must occur before file parsing or service execution.
+- CSV and preview:
+  - Support `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`.
+  - Required common columns are `type`, `title`, `departmentCode`, and `contributors`.
+  - `ownerEmail` is the supported owner lookup key. `ownerEmployeeNo` is recognized as a column but returns `OWNER_EMPLOYEE_NO_LOOKUP_NOT_AVAILABLE` because there is no current user employee-number field.
+  - Support aliases `DOI`, `patentNo`, and `softwareRegistrationNo` in addition to the existing DTO field names.
+  - Return `importType="ACHIEVEMENT"`, `dryRun=true`, sanitized file metadata, columns, summary, safe parsed facts, normalized identifiers, candidate action, errors, and warnings.
+- Validation:
+  - Reject missing required fields, invalid type/status/secret/detail enums, unsupported non-DRAFT status, invalid title/code/email/date/number formats, formula-like values, unknown columns, forbidden sensitive/direct-id/storage/workflow/fee/raw-payload columns, type/detail mismatch, malformed contributors, contributor type mismatch, missing/inactive references, owner department mismatch, and file duplicate normalized identifiers.
+  - Check DB normalized DOI, patent application number, patentNo/grant number, and software registration number through read-only queries. Existing matches are review warnings, not writes.
+- Security:
+  - Do not return raw CSV rows, raw payload columns, cookies, tokens, secrets, connection strings, private keys, attachment storage keys, checksums, or direct internal ids from the dry-run result.
+  - Do not write `AuditLog` for dry-run.
+- Boundary:
+  - This decision does not authorize Web UI, real write import, submitted-status workflow import, attachment import, fee import, audit writes, employee-number lookup persistence, schema/migration work, seed/backfill, Docker production-like acceptance, VPS/production work, package changes, push/deploy, cleanup, deletion, reset, restore, drop, prune, or existing untracked-artifact handling.
+
 ## D215 - Achievement import dry-run starts backend-only with system-config no-write validation
 
 - Date: 2026-07-01.
