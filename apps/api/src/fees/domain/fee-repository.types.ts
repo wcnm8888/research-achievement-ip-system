@@ -2,6 +2,7 @@ import { DepartmentStatus, Prisma } from "@prisma/client";
 import { SecretLevelCode } from "../../authorization/constants/secret-level-code";
 import { AchievementStatusCode } from "../../achievements/domain/achievement-domain.types";
 import {
+  FeeReviewHistoryActionCode,
   FeeReviewStatusCode,
   FeeTypeCode,
   FeeWarningTypeCode,
@@ -89,6 +90,18 @@ export type FeeWarningRecord = FeeRecordRecord & {
   daysUntilDue: number;
 };
 
+export type FeeReviewHistoryRecord = {
+  id: string;
+  feeRecordId: string;
+  departmentId: string;
+  reviewerId: string;
+  action: FeeReviewHistoryActionCode;
+  fromStatus: FeeReviewStatusCode;
+  toStatus: FeeReviewStatusCode;
+  reason: string | null;
+  createdAt: Date;
+};
+
 export type FeeWarningQueryInput = {
   where: Prisma.FeeRecordWhereInput;
   today: Date;
@@ -120,4 +133,15 @@ export type FeeReviewTransitionInput = {
   nextReviewStatus: FeeReviewStatusCode;
   reviewedById: string;
   reviewedAt: Date;
+};
+
+export type CreateFeeReviewHistoryInput = {
+  feeRecordId: string;
+  departmentId: string;
+  reviewerId: string;
+  action: FeeReviewHistoryActionCode;
+  fromStatus: FeeReviewStatusCode;
+  toStatus: FeeReviewStatusCode;
+  reason?: string | null;
+  createdAt: Date;
 };

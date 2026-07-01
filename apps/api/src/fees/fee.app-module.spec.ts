@@ -30,6 +30,7 @@ const ids = {
 type FeeServiceMock = {
   listFees: ReturnType<typeof vi.fn>;
   getFeeWarnings: ReturnType<typeof vi.fn>;
+  listFeeReviewHistory: ReturnType<typeof vi.fn>;
   getFee: ReturnType<typeof vi.fn>;
   createFee: ReturnType<typeof vi.fn>;
   markFeePaid: ReturnType<typeof vi.fn>;
@@ -152,6 +153,20 @@ const makeReviewedFeeState = (reviewStatus: FeeReviewStatusCode) => ({
   archivedAt: null,
 });
 
+const makeFeeReviewHistory = () => [
+  {
+    id: "81000000-0000-4000-8000-000000000001",
+    feeRecordId: ids.feeRecord,
+    departmentId: ids.department,
+    reviewerId: ids.user,
+    action: "REJECT",
+    fromStatus: FeeReviewStatusCode.pending,
+    toStatus: FeeReviewStatusCode.rejected,
+    reason: "missing support",
+    createdAt: new Date("2026-06-19T00:00:00.000Z"),
+  },
+];
+
 const makeCreatePayload = () => ({
   achievementId: ids.achievement,
   feeType: FeeTypeCode.patentAnnual,
@@ -163,6 +178,7 @@ const makeCreatePayload = () => ({
 const createServiceMock = (): FeeServiceMock => ({
   listFees: vi.fn().mockResolvedValue([makeFeeRecord()]),
   getFeeWarnings: vi.fn().mockResolvedValue(makeFeeWarningSummary()),
+  listFeeReviewHistory: vi.fn().mockResolvedValue(makeFeeReviewHistory()),
   getFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   createFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   markFeePaid: vi.fn().mockResolvedValue(makePaidFeeState()),
@@ -284,6 +300,32 @@ describe("Fee routes through AppModule", () => {
 
       expect(service.approveFeeReview).toHaveBeenCalledOnce();
       expect(service.rejectFeeReview).toHaveBeenCalledOnce();
+    });
+  });
+
+  it("exposes fee review history read through AppModule without a create route", async () => {
+    await withAppModule([PermissionCode.feeReviewDepartment], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}/review-history`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/review-history`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "manual insert" })
+        .expect(404);
+
+      expect(response.body[0]).toEqual(
+        expect.objectContaining({
+          feeRecordId: ids.feeRecord,
+          action: "REJECT",
+          reason: "missing support",
+        }),
+      );
+      expect(service.listFeeReviewHistory).toHaveBeenCalledOnce();
+      expect(service.approveFeeReview).not.toHaveBeenCalled();
+      expect(service.rejectFeeReview).not.toHaveBeenCalled();
     });
   });
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DepartmentStatus } from "@prisma/client";
+import { DepartmentStatus, Prisma } from "@prisma/client";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -20,6 +20,7 @@ import {
 import {
   FeeAchievementParentRecord,
   FeeRecordRecord,
+  FeeReviewHistoryRecord,
   FeeStateRecord,
   FeeWarningRecord,
 } from "./domain/fee-repository.types";
@@ -33,6 +34,7 @@ import {
 } from "./domain/fee-service.errors";
 import { assertFeeTransition } from "./domain/fee-state-machine";
 import {
+  FeeReviewHistoryActionCode,
   FeeReviewStatusCode,
   FeeWarningTypeCode,
   PayStatusCode,
@@ -139,6 +141,29 @@ export class FeeService {
       dueSoonCount: items.filter((item) => item.warningType === FeeWarningTypeCode.dueSoon).length,
       items,
     };
+  }
+
+  async listFeeReviewHistory(
+    context: UserContext,
+    feeRecordId: string,
+  ): Promise<FeeReviewHistoryRecord[]> {
+    this.assertUserContext(context);
+    this.assertAnyPermission(context, [
+      PermissionCode.feeReadDepartment,
+      PermissionCode.feeManageDepartment,
+      PermissionCode.feeReviewDepartment,
+    ]);
+
+    const record = await this.repository.findStateByIdWhere(
+      feeRecordId,
+      this.feeReviewHistoryReadableWhere(context),
+    );
+
+    if (!record) {
+      throw new FeeNotFoundError();
+    }
+
+    return this.repository.findReviewHistoryByFeeRecordId(feeRecordId);
   }
 
   async createFee(
@@ -336,6 +361,7 @@ export class FeeService {
       feeRecordId,
       FeeReviewStatusCode.approved,
       AuditActionCode.approve,
+      FeeReviewHistoryActionCode.approve,
       dto.reason ?? undefined,
     );
   }
@@ -350,6 +376,7 @@ export class FeeService {
       feeRecordId,
       FeeReviewStatusCode.rejected,
       AuditActionCode.reject,
+      FeeReviewHistoryActionCode.reject,
       dto.reason,
     );
   }
@@ -415,6 +442,7 @@ export class FeeService {
     feeRecordId: string,
     nextReviewStatus: FeeReviewStatusCode,
     action: AuditActionCode,
+    historyAction: FeeReviewHistoryActionCode,
     reason?: string,
   ): Promise<FeeStateRecord> {
     this.assertUserContext(context);
@@ -444,6 +472,7 @@ export class FeeService {
           );
         }
 
+        const reviewedAt = new Date();
         const next = await this.repository.transitionReviewStatusInTransaction(
           feeClient,
           {
@@ -452,9 +481,20 @@ export class FeeService {
             expectedReviewStatus: FeeReviewStatusCode.pending,
             nextReviewStatus,
             reviewedById: context.userId,
-            reviewedAt: new Date(),
+            reviewedAt,
           },
         );
+
+        await this.repository.appendReviewHistoryInTransaction(feeClient, {
+          feeRecordId,
+          departmentId: next.departmentId,
+          reviewerId: context.userId,
+          action: historyAction,
+          fromStatus: current.reviewStatus,
+          toStatus: next.reviewStatus,
+          reason: reason ?? null,
+          createdAt: reviewedAt,
+        });
 
         await this.auditService.recordEventInTransaction(
           auditClient,
@@ -540,6 +580,22 @@ export class FeeService {
       oldValue: oldRecord ? toFeeAuditSummary(action, oldRecord) : null,
       newValue: toFeeAuditSummary(action, newRecord, oldRecord, reason),
     };
+  }
+
+  private feeReviewHistoryReadableWhere(context: UserContext): Prisma.FeeRecordWhereInput {
+    const readDecision = this.rbacPolicy.hasAnyPermission(context, [
+      PermissionCode.feeReadDepartment,
+      PermissionCode.feeManageDepartment,
+    ]);
+
+    if (readDecision.effect === "ALLOW") {
+      return this.policyQueryFactory.feeReadableWhere(context);
+    }
+
+    return this.policyQueryFactory.feeDepartmentWhere(
+      context,
+      PermissionCode.feeReviewDepartment,
+    );
   }
 
   private toFeeReviewAuditEvent(

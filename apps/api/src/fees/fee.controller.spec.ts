@@ -37,6 +37,7 @@ const ids = {
 type FeeServiceMock = {
   listFees: ReturnType<typeof vi.fn>;
   getFeeWarnings: ReturnType<typeof vi.fn>;
+  listFeeReviewHistory: ReturnType<typeof vi.fn>;
   getFee: ReturnType<typeof vi.fn>;
   createFee: ReturnType<typeof vi.fn>;
   markFeePaid: ReturnType<typeof vi.fn>;
@@ -159,6 +160,20 @@ const makeReviewedFeeState = (reviewStatus: FeeReviewStatusCode) => ({
   archivedAt: null,
 });
 
+const makeFeeReviewHistory = () => [
+  {
+    id: "81000000-0000-4000-8000-000000000001",
+    feeRecordId: ids.feeRecord,
+    departmentId: ids.department,
+    reviewerId: ids.user,
+    action: "APPROVE",
+    fromStatus: FeeReviewStatusCode.pending,
+    toStatus: FeeReviewStatusCode.approved,
+    reason: "finance checked",
+    createdAt: new Date("2026-06-19T00:00:00.000Z"),
+  },
+];
+
 const makeCreatePayload = () => ({
   achievementId: ids.achievement,
   feeType: FeeTypeCode.patentAnnual,
@@ -170,6 +185,7 @@ const makeCreatePayload = () => ({
 const createServiceMock = (): FeeServiceMock => ({
   listFees: vi.fn().mockResolvedValue([makeFeeRecord()]),
   getFeeWarnings: vi.fn().mockResolvedValue(makeFeeWarningSummary()),
+  listFeeReviewHistory: vi.fn().mockResolvedValue(makeFeeReviewHistory()),
   getFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   createFee: vi.fn().mockResolvedValue(makeFeeRecord()),
   markFeePaid: vi.fn().mockResolvedValue(makePaidFeeState()),
@@ -304,6 +320,69 @@ describe("FeeController HTTP", () => {
         .expect(200);
 
       expect(service.getFee).toHaveBeenCalledWith(expect.any(Object), ids.feeRecord);
+    });
+  });
+
+  it("reads fee review history through the service permission boundary", async () => {
+    await withTestApp([PermissionCode.feeReviewDepartment], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}/review-history`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      expect(service.listFeeReviewHistory).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          departmentId: ids.department,
+        }),
+        ids.feeRecord,
+      );
+      expect(response.body).toEqual([
+        expect.objectContaining({
+          feeRecordId: ids.feeRecord,
+          departmentId: ids.department,
+          reviewerId: ids.user,
+          action: "APPROVE",
+          fromStatus: FeeReviewStatusCode.pending,
+          toStatus: FeeReviewStatusCode.approved,
+          reason: "finance checked",
+        }),
+      ]);
+      expectHistoryHasNoSensitiveFeeFields(response.body);
+    });
+  });
+
+  it("maps fee review history service denials to 403 and 404", async () => {
+    await withTestApp([], async (app, service) => {
+      service.listFeeReviewHistory.mockRejectedValueOnce(
+        new FeePermissionDeniedError(PermissionCode.feeReviewDepartment),
+      );
+
+      await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}/review-history`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(403);
+
+      service.listFeeReviewHistory.mockRejectedValueOnce(new FeeNotFoundError());
+
+      await request(app.getHttpServer() as Server)
+        .get(`/fees/${ids.feeRecord}/review-history`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(404);
+    });
+  });
+
+  it("does not expose a standalone review history creation route", async () => {
+    await withTestApp([PermissionCode.feeReviewDepartment], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .post(`/fees/${ids.feeRecord}/review-history`)
+        .set("X-Demo-User-Id", ids.user)
+        .send({ reason: "manual insert" })
+        .expect(404);
+
+      expect(service.listFeeReviewHistory).not.toHaveBeenCalled();
+      expect(service.approveFeeReview).not.toHaveBeenCalled();
+      expect(service.rejectFeeReview).not.toHaveBeenCalled();
     });
   });
 
@@ -632,4 +711,17 @@ const withTestApp = async (
       process.env.NODE_ENV = previousNodeEnv;
     }
   }
+};
+
+const expectHistoryHasNoSensitiveFeeFields = (input: unknown): void => {
+  const serialized = JSON.stringify(input);
+
+  expect(serialized).not.toContain("amount");
+  expect(serialized).not.toContain("voucherNo");
+  expect(serialized).not.toContain("storageKey");
+  expect(serialized).not.toContain("checksum");
+  expect(serialized).not.toContain("raw");
+  expect(serialized).not.toContain("cookie");
+  expect(serialized).not.toContain("token");
+  expect(serialized).not.toContain("databaseUrl");
 };

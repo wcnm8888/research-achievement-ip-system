@@ -209,6 +209,11 @@ enum FeeReviewStatus {
   REJECTED
 }
 
+enum FeeReviewHistoryAction {
+  APPROVE
+  REJECT
+}
+
 enum ReminderTargetType {
   FEE_RECORD
 }
@@ -319,6 +324,7 @@ model Department {
   userRoleScopes UserRole[]
   achievements   Achievement[]
   feeRecords     FeeRecord[]
+  feeReviewHistory FeeReviewHistory[] @relation("FeeReviewHistoryDepartment")
   auditLogs      AuditLog[]    @relation("AuditDepartment")
 
   @@index([parentId])
@@ -348,6 +354,7 @@ model User {
   notifications         Notification[]           @relation("NotificationReceiver")
   uploadedAttachments   Attachment[]             @relation("AttachmentUploader")
   reviewedFeeRecords    FeeRecord[]              @relation("FeeReviewer")
+  feeReviewHistory      FeeReviewHistory[]        @relation("FeeReviewHistoryReviewer")
   auditLogs             AuditLog[]               @relation("AuditActor")
   searchLogs            SearchLog[]
   sessions              UserSession[]
@@ -742,6 +749,7 @@ model FeeRecord {
   achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Restrict)
   department  Department  @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   reviewedBy  User?       @relation("FeeReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+  reviewHistory FeeReviewHistory[]
 
   @@unique([achievementId, feeType, dueDate])
   @@index([dueDate, payStatus])
@@ -750,6 +758,27 @@ model FeeRecord {
   @@index([achievementId])
   @@index([departmentId])
   @@map("fee_records")
+}
+
+model FeeReviewHistory {
+  id           String                 @id @default(uuid()) @db.Uuid
+  feeRecordId  String                 @map("fee_record_id") @db.Uuid
+  departmentId String                 @map("department_id") @db.Uuid
+  reviewerId   String                 @map("reviewer_id") @db.Uuid
+  action       FeeReviewHistoryAction
+  fromStatus   FeeReviewStatus        @map("from_status")
+  toStatus     FeeReviewStatus        @map("to_status")
+  reason       String?                @db.VarChar(500)
+  createdAt    DateTime               @default(now()) @map("created_at")
+
+  feeRecord  FeeRecord  @relation(fields: [feeRecordId], references: [id], onDelete: Restrict)
+  department Department @relation("FeeReviewHistoryDepartment", fields: [departmentId], references: [id], onDelete: Restrict)
+  reviewer   User       @relation("FeeReviewHistoryReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+
+  @@index([feeRecordId, createdAt])
+  @@index([departmentId, createdAt])
+  @@index([reviewerId, createdAt])
+  @@map("fee_review_history")
 }
 
 model ReminderTask {

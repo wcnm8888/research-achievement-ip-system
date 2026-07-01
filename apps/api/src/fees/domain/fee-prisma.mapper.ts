@@ -1,8 +1,10 @@
 import { Prisma } from "@prisma/client";
 import {
+  CreateFeeReviewHistoryInput,
   FeeAchievementParentRecord,
   FeeRecordQueryInput,
   FeeRecordRecord,
+  FeeReviewHistoryRecord,
   FeeReviewTransitionInput,
   FeeStateRecord,
   FeeStatusTransitionInput,
@@ -12,6 +14,7 @@ import {
 type FeePersistenceRow = FeeRecordRecord;
 type FeeStatePersistenceRow = FeeStateRecord;
 type FeeAchievementParentPersistenceRow = FeeAchievementParentRecord;
+type FeeReviewHistoryPersistenceRow = FeeReviewHistoryRecord;
 
 export const toFeeRecordCreateData = (
   input: CreateFeeRecordInput,
@@ -71,6 +74,19 @@ export const toFeeReviewTransitionData = (
   reviewedAt: input.reviewedAt,
 });
 
+export const toFeeReviewHistoryCreateData = (
+  input: CreateFeeReviewHistoryInput,
+): Prisma.FeeReviewHistoryUncheckedCreateInput => ({
+  feeRecordId: input.feeRecordId,
+  departmentId: input.departmentId,
+  reviewerId: input.reviewerId,
+  action: input.action,
+  fromStatus: input.fromStatus,
+  toStatus: input.toStatus,
+  reason: input.reason ?? null,
+  createdAt: input.createdAt,
+});
+
 export const toFeeRecord = (row: FeePersistenceRow): FeeRecordRecord => ({
   id: row.id,
   achievementId: row.achievementId,
@@ -117,6 +133,20 @@ export const toFeeAchievementParentRecord = (
   department: row.department,
   ownerUserId: row.ownerUserId,
   secretLevel: row.secretLevel,
+});
+
+export const toFeeReviewHistoryRecord = (
+  row: FeeReviewHistoryPersistenceRow,
+): FeeReviewHistoryRecord => ({
+  id: row.id,
+  feeRecordId: row.feeRecordId,
+  departmentId: row.departmentId,
+  reviewerId: row.reviewerId,
+  action: row.action,
+  fromStatus: row.fromStatus,
+  toStatus: row.toStatus,
+  reason: row.reason,
+  createdAt: row.createdAt,
 });
 
 const toPrismaDate = (value: Date | string): Date =>

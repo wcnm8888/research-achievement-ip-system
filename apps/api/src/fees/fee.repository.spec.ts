@@ -10,6 +10,7 @@ import {
   FeeStatusTransitionConflictError,
 } from "./domain/fee-repository.errors";
 import {
+  FeeReviewHistoryActionCode,
   FeeReviewStatusCode,
   FeeTypeCode,
   FeeWarningTypeCode,
@@ -88,6 +89,18 @@ const makeAchievementParentRow = () => ({
   secretLevel: SecretLevelCode.internal,
 });
 
+const makeReviewHistoryRow = () => ({
+  id: "81000000-0000-4000-8000-000000000001",
+  feeRecordId: ids.feeRecord,
+  departmentId: ids.department,
+  reviewerId: ids.reviewer,
+  action: FeeReviewHistoryActionCode.approve,
+  fromStatus: FeeReviewStatusCode.pending,
+  toStatus: FeeReviewStatusCode.approved,
+  reason: "finance checked",
+  createdAt: reviewedAt,
+});
+
 const createFakePrisma = () => {
   const tx = {
     feeRecord: {
@@ -96,6 +109,9 @@ const createFakePrisma = () => {
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       findUnique: vi.fn().mockResolvedValue(makeStateRow()),
     },
+    feeReviewHistory: {
+      create: vi.fn().mockResolvedValue(makeReviewHistoryRow()),
+    },
   };
 
   const prisma = {
@@ -103,6 +119,9 @@ const createFakePrisma = () => {
     feeRecord: {
       findMany: vi.fn().mockResolvedValue([makeRow()]),
       findFirst: vi.fn().mockResolvedValue(makeRow()),
+    },
+    feeReviewHistory: {
+      findMany: vi.fn().mockResolvedValue([makeReviewHistoryRow()]),
     },
     achievement: {
       findFirst: vi.fn().mockResolvedValue(makeAchievementParentRow()),
@@ -537,6 +556,70 @@ describe("FeeRepository.transitionReviewStatusInTransaction", () => {
   });
 });
 
+describe("FeeRepository fee review history", () => {
+  it("appends review history with only safe timeline fields", async () => {
+    const { repository, tx } = createRepository();
+
+    const result = await repository.appendReviewHistoryInTransaction(
+      tx as unknown as FeeTransactionClient,
+      {
+        feeRecordId: ids.feeRecord,
+        departmentId: ids.department,
+        reviewerId: ids.reviewer,
+        action: FeeReviewHistoryActionCode.approve,
+        fromStatus: FeeReviewStatusCode.pending,
+        toStatus: FeeReviewStatusCode.approved,
+        reason: "finance checked",
+        createdAt: reviewedAt,
+      },
+    );
+
+    expect(tx.feeReviewHistory.create).toHaveBeenCalledWith({
+      data: {
+        feeRecordId: ids.feeRecord,
+        departmentId: ids.department,
+        reviewerId: ids.reviewer,
+        action: FeeReviewHistoryActionCode.approve,
+        fromStatus: FeeReviewStatusCode.pending,
+        toStatus: FeeReviewStatusCode.approved,
+        reason: "finance checked",
+        createdAt: reviewedAt,
+      },
+      select: expect.objectContaining({
+        feeRecordId: true,
+        departmentId: true,
+        reviewerId: true,
+        reason: true,
+      }),
+    });
+    expect(result).toEqual(makeReviewHistoryRow());
+    expectHistoryHasNoSensitiveFeeFields(result);
+  });
+
+  it("lists review history chronologically for one fee record", async () => {
+    const { repository, prisma } = createRepository();
+
+    const result = await repository.findReviewHistoryByFeeRecordId(ids.feeRecord);
+
+    expect(prisma.feeReviewHistory.findMany).toHaveBeenCalledWith({
+      where: { feeRecordId: ids.feeRecord },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: expect.objectContaining({
+        feeRecordId: true,
+        departmentId: true,
+        reviewerId: true,
+        action: true,
+        fromStatus: true,
+        toStatus: true,
+        reason: true,
+        createdAt: true,
+      }),
+    });
+    expect(result).toEqual([makeReviewHistoryRow()]);
+    expectHistoryHasNoSensitiveFeeFields(result);
+  });
+});
+
 describe("FeeRepository.archiveFee", () => {
   it("soft archives active fee records with an optimistic status guard", async () => {
     const { repository, tx } = createRepository();
@@ -583,3 +666,18 @@ describe("FeeRepository.archiveFee", () => {
     ).rejects.toBeInstanceOf(FeeStatusTransitionConflictError);
   });
 });
+
+const expectHistoryHasNoSensitiveFeeFields = (input: unknown): void => {
+  const serialized = JSON.stringify(input);
+
+  expect(serialized).not.toContain("amount");
+  expect(serialized).not.toContain("voucherNo");
+  expect(serialized).not.toContain("VOUCHER");
+  expect(serialized).not.toContain("paidDate");
+  expect(serialized).not.toContain("dueDate");
+  expect(serialized).not.toContain("storageKey");
+  expect(serialized).not.toContain("checksum");
+  expect(serialized).not.toContain("raw");
+  expect(serialized).not.toContain("cookie");
+  expect(serialized).not.toContain("token");
+};

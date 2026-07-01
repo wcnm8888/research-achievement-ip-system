@@ -13,6 +13,7 @@ import { UserContext } from "../identity/user-context";
 import { FeeRepository } from "./fee.repository";
 import { FeeService } from "./fee.service";
 import {
+  FeeReviewHistoryActionCode,
   FeeReviewStatusCode,
   FeeTypeCode,
   FeeWarningTypeCode,
@@ -22,6 +23,7 @@ import {
 import {
   FeeAchievementParentRecord,
   FeeRecordRecord,
+  FeeReviewHistoryRecord,
   FeeStateRecord,
 } from "./domain/fee-repository.types";
 import {
@@ -42,7 +44,7 @@ const ids = {
 const dueDate = new Date("2026-07-01T00:00:00.000Z");
 const paidDate = new Date("2026-06-18T00:00:00.000Z");
 const reviewedAt = new Date("2026-06-19T00:00:00.000Z");
-const tx = { feeRecord: {}, auditLog: {} };
+const tx = { feeRecord: {}, feeReviewHistory: {}, auditLog: {} };
 const feeReadableWhere = { departmentId: { in: [ids.department] } };
 const feeManageWhere = { departmentId: { in: [ids.department] } };
 const feeReviewWhere = { departmentId: { in: [ids.department] } };
@@ -102,6 +104,21 @@ const makeFeeState = (overrides: Partial<FeeStateRecord> = {}): FeeStateRecord =
   ...overrides,
 });
 
+const makeReviewHistory = (
+  overrides: Partial<FeeReviewHistoryRecord> = {},
+): FeeReviewHistoryRecord => ({
+  id: "81000000-0000-4000-8000-000000000001",
+  feeRecordId: ids.feeRecord,
+  departmentId: ids.department,
+  reviewerId: ids.user,
+  action: FeeReviewHistoryActionCode.approve,
+  fromStatus: FeeReviewStatusCode.pending,
+  toStatus: FeeReviewStatusCode.approved,
+  reason: "finance checked",
+  createdAt: reviewedAt,
+  ...overrides,
+});
+
 const makeParent = (
   overrides: Partial<FeeAchievementParentRecord> = {},
 ): FeeAchievementParentRecord => ({
@@ -128,6 +145,8 @@ const createService = () => {
       },
     ]),
     findByIdWhere: vi.fn().mockResolvedValue(makeFeeRecord()),
+    findStateByIdWhere: vi.fn().mockResolvedValue(makeFeeState()),
+    findReviewHistoryByFeeRecordId: vi.fn().mockResolvedValue([makeReviewHistory()]),
     findAchievementParentByIdWhere: vi.fn().mockResolvedValue(makeParent()),
     createInTransaction: vi.fn().mockResolvedValue(makeFeeRecord()),
     findStateByIdWhereInTransaction: vi.fn().mockResolvedValue(makeFeeState()),
@@ -143,6 +162,7 @@ const createService = () => {
           reviewedAt,
         }),
       ),
+    appendReviewHistoryInTransaction: vi.fn().mockResolvedValue(makeReviewHistory()),
     archiveFeeInTransaction: vi
       .fn()
       .mockResolvedValue(
@@ -253,6 +273,71 @@ describe("FeeService.getFee", () => {
     await expect(service.getFee(makeContext(), ids.feeRecord)).rejects.toBeInstanceOf(
       FeeNotFoundError,
     );
+  });
+});
+
+describe("FeeService.listFeeReviewHistory", () => {
+  it.each([
+    [PermissionCode.feeReadDepartment],
+    [PermissionCode.feeManageDepartment],
+  ])("lists history for scoped fee readers with %s", async (permission) => {
+    const { policyQueryFactory, repository, service } = createService();
+    const context = makeContext([permission]);
+
+    const result = await service.listFeeReviewHistory(context, ids.feeRecord);
+
+    expect(policyQueryFactory.feeReadableWhere).toHaveBeenCalledWith(context);
+    expect(repository.findStateByIdWhere).toHaveBeenCalledWith(
+      ids.feeRecord,
+      feeReadableWhere,
+    );
+    expect(repository.findReviewHistoryByFeeRecordId).toHaveBeenCalledWith(
+      ids.feeRecord,
+    );
+    expect(result).toEqual([makeReviewHistory()]);
+    expectHistoryHasNoSensitiveFeeFields(result);
+  });
+
+  it("lists history for scoped fee reviewers without requiring fee read", async () => {
+    const { policyQueryFactory, repository, service } = createService();
+    const context = makeContext([PermissionCode.feeReviewDepartment]);
+
+    await service.listFeeReviewHistory(context, ids.feeRecord);
+
+    expect(policyQueryFactory.feeDepartmentWhere).toHaveBeenCalledWith(
+      context,
+      PermissionCode.feeReviewDepartment,
+    );
+    expect(repository.findStateByIdWhere).toHaveBeenCalledWith(
+      ids.feeRecord,
+      feeReviewWhere,
+    );
+    expect(repository.findReviewHistoryByFeeRecordId).toHaveBeenCalledWith(
+      ids.feeRecord,
+    );
+  });
+
+  it("denies history reads without fee read, manage, or review permission", async () => {
+    const { repository, service } = createService();
+
+    await expect(
+      service.listFeeReviewHistory(makeContext([]), ids.feeRecord),
+    ).rejects.toBeInstanceOf(FeePermissionDeniedError);
+    expect(repository.findStateByIdWhere).not.toHaveBeenCalled();
+    expect(repository.findReviewHistoryByFeeRecordId).not.toHaveBeenCalled();
+  });
+
+  it("returns not found for missing, archived, or out-of-scope history parent fee", async () => {
+    const { repository, service } = createService();
+    repository.findStateByIdWhere.mockResolvedValueOnce(null);
+
+    await expect(
+      service.listFeeReviewHistory(
+        makeContext([PermissionCode.feeReviewDepartment]),
+        ids.feeRecord,
+      ),
+    ).rejects.toBeInstanceOf(FeeNotFoundError);
+    expect(repository.findReviewHistoryByFeeRecordId).not.toHaveBeenCalled();
   });
 });
 
@@ -760,6 +845,7 @@ describe("FeeService fee review", () => {
     ).rejects.toBeInstanceOf(FeePermissionDeniedError);
     expect(repository.findStateByIdWhereInTransaction).not.toHaveBeenCalled();
     expect(repository.transitionReviewStatusInTransaction).not.toHaveBeenCalled();
+    expect(repository.appendReviewHistoryInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
   });
 
@@ -791,6 +877,19 @@ describe("FeeService fee review", () => {
         reviewedAt: expect.any(Date),
       }),
     );
+    expect(repository.appendReviewHistoryInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        feeRecordId: ids.feeRecord,
+        departmentId: ids.department,
+        reviewerId: ids.user,
+        action: FeeReviewHistoryActionCode.approve,
+        fromStatus: FeeReviewStatusCode.pending,
+        toStatus: FeeReviewStatusCode.approved,
+        reason: "finance checked",
+        createdAt: expect.any(Date),
+      }),
+    );
     expect(result.payStatus).toBe(PayStatusCode.pending);
     expect(result.reviewStatus).toBe(FeeReviewStatusCode.approved);
     expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
@@ -812,6 +911,9 @@ describe("FeeService fee review", () => {
     );
     expectAuditPayloadHasNoSensitiveFeeFields(
       auditService.recordEventInTransaction.mock.calls[0]![1],
+    );
+    expectHistoryHasNoSensitiveFeeFields(
+      repository.appendReviewHistoryInTransaction.mock.calls[0]![1],
     );
   });
 
@@ -839,6 +941,16 @@ describe("FeeService fee review", () => {
         nextReviewStatus: FeeReviewStatusCode.rejected,
       }),
     );
+    expect(repository.appendReviewHistoryInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        feeRecordId: ids.feeRecord,
+        action: FeeReviewHistoryActionCode.reject,
+        fromStatus: FeeReviewStatusCode.pending,
+        toStatus: FeeReviewStatusCode.rejected,
+        reason: "missing payment evidence",
+      }),
+    );
     expect(result.payStatus).toBe(PayStatusCode.pending);
     expect(result.reviewStatus).toBe(FeeReviewStatusCode.rejected);
     expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
@@ -854,6 +966,9 @@ describe("FeeService fee review", () => {
     );
     expectAuditPayloadHasNoSensitiveFeeFields(
       auditService.recordEventInTransaction.mock.calls[0]![1],
+    );
+    expectHistoryHasNoSensitiveFeeFields(
+      repository.appendReviewHistoryInTransaction.mock.calls[0]![1],
     );
   });
 
@@ -873,6 +988,7 @@ describe("FeeService fee review", () => {
         ),
       ).rejects.toBeInstanceOf(FeeConflictError);
       expect(repository.transitionReviewStatusInTransaction).not.toHaveBeenCalled();
+      expect(repository.appendReviewHistoryInTransaction).not.toHaveBeenCalled();
       expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
     },
   );
@@ -889,6 +1005,7 @@ describe("FeeService fee review", () => {
       ),
     ).rejects.toBeInstanceOf(FeeNotFoundError);
     expect(repository.transitionReviewStatusInTransaction).not.toHaveBeenCalled();
+    expect(repository.appendReviewHistoryInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
   });
 
@@ -904,6 +1021,7 @@ describe("FeeService fee review", () => {
       ),
     ).rejects.toThrow("audit failed");
     expect(repository.transitionReviewStatusInTransaction).toHaveBeenCalledOnce();
+    expect(repository.appendReviewHistoryInTransaction).toHaveBeenCalledOnce();
     expect(auditService.recordEventInTransaction).toHaveBeenCalledOnce();
   });
 });
@@ -1007,4 +1125,20 @@ const expectAuditPayloadHasNoSensitiveFeeFields = (input: unknown): void => {
   expect(serialized).not.toContain("storageKey");
   expect(serialized).not.toContain("checksum");
   expect(serialized).not.toContain("contributors");
+};
+
+const expectHistoryHasNoSensitiveFeeFields = (input: unknown): void => {
+  const serialized = JSON.stringify(input);
+
+  expect(serialized).not.toContain("amount");
+  expect(serialized).not.toContain("voucherNo");
+  expect(serialized).not.toContain("VOUCHER-001");
+  expect(serialized).not.toContain("paidDate");
+  expect(serialized).not.toContain("dueDate");
+  expect(serialized).not.toContain("storageKey");
+  expect(serialized).not.toContain("checksum");
+  expect(serialized).not.toContain("raw");
+  expect(serialized).not.toContain("cookie");
+  expect(serialized).not.toContain("token");
+  expect(serialized).not.toContain("databaseUrl");
 };

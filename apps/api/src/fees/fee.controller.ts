@@ -107,6 +107,18 @@ export class FeeController {
     }
   }
 
+  @Get(":id/review-history")
+  async listFeeReviewHistory(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+  ) {
+    try {
+      return await this.feeService.listFeeReviewHistory(currentUser, feeRecordId);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
+
   @Get(":id")
   @RequirePermissions(PermissionCode.feeReadDepartment)
   async getFee(

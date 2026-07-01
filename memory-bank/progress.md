@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-07-01 Step 57B - Fee review history backend-only implementation
+
+- Status: STEP_57B_FEE_REVIEW_HISTORY_BACKEND_IMPLEMENTED.
+- Step identity:
+  - Implemented backend-only persisted fee review history from the Step 57A plan.
+  - Scope stayed limited to Prisma schema, additive local migration, fees backend source/tests, and memory-bank.
+  - No Web UI, production migration/seed/backfill, VPS/production access, account/password work, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile change, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added append-only `FeeReviewHistory` with `FeeReviewHistoryAction`.
+  - Added migration `20260630104000_add_fee_review_history` to create the enum, table, indexes, and foreign keys.
+  - Appended history rows from successful approve/reject transitions in the same transaction as fee state update and audit write.
+  - Added read-only `GET /api/fees/:feeRecordId/review-history`.
+  - Kept history creation private to approve/reject service logic; no standalone create/update/delete endpoint exists.
+- Permission and safety:
+  - History read uses service-level any-permission authorization for scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - History append inherits existing scoped `fee:review_department` approve/reject authorization.
+  - Returned history fields exclude amount, `voucherNo`, attachment storage key, checksum, raw payloads, cookies, tokens, private keys, and connection strings.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/api test -- src/fees/fee.service.spec.ts`: PASS, 46 tests.
+  - `corepack pnpm --filter @research-ip/api test -- src/fees/fee.repository.spec.ts src/fees/fee.controller.spec.ts src/fees/fee.app-module.spec.ts`: PASS, 50 tests.
+  - `corepack pnpm --filter @research-ip/api test -- src/fees/fee.service.spec.ts src/fees/fee.repository.spec.ts src/fees/fee.controller.spec.ts src/fees/fee.app-module.spec.ts`: PASS, 96 tests.
+  - `corepack pnpm --filter @research-ip/api test -- fee authorization audit`: PASS, 13 files / 188 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm prisma validate`: PASS with a temporary dummy local `DATABASE_URL`.
+  - `corepack pnpm prisma generate`: PASS with a temporary dummy local `DATABASE_URL`.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive scan: PASS.
+- Next:
+  - Step 57C can add Web client/UI display for review history.
+  - Production migration deploy, backfill, and production acceptance remain separately authorized work.
+
 ## 2026-06-30 Step 57A - Fee review history persistence scope and backend plan
 
 - Status: STEP_57A_FEE_REVIEW_HISTORY_BACKEND_PLAN_READY_DOCS_ONLY.

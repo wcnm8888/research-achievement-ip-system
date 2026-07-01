@@ -5,6 +5,8 @@ import {
   toFeeAchievementParentRecord,
   toFeeFindManyWhere,
   toFeeRecord,
+  toFeeReviewHistoryCreateData,
+  toFeeReviewHistoryRecord,
   toFeeRecordCreateData,
   toFeeReviewTransitionData,
   toFeeStateRecord,
@@ -16,11 +18,13 @@ import {
   FeeStatusTransitionConflictError,
 } from "./domain/fee-repository.errors";
 import {
+  CreateFeeReviewHistoryInput,
   CreateFeeRecordInput,
   FeeArchiveInput,
   FeeAchievementParentRecord,
   FeeRecordQueryInput,
   FeeRecordRecord,
+  FeeReviewHistoryRecord,
   FeeReviewTransitionInput,
   FeeStateRecord,
   FeeStatusTransitionInput,
@@ -31,7 +35,10 @@ import { FeeWarningTypeCode, PayStatusCode } from "./domain/fee-domain.types";
 
 const defaultFeeTake = 50;
 
-export type FeeTransactionClient = Pick<Prisma.TransactionClient, "feeRecord">;
+export type FeeTransactionClient = Pick<
+  Prisma.TransactionClient,
+  "feeRecord" | "feeReviewHistory"
+>;
 
 @Injectable()
 export class FeeRepository {
@@ -230,6 +237,36 @@ export class FeeRepository {
     return toFeeStateRecord(row as Parameters<typeof toFeeStateRecord>[0]);
   }
 
+  async appendReviewHistoryInTransaction(
+    client: FeeTransactionClient,
+    input: CreateFeeReviewHistoryInput,
+  ): Promise<FeeReviewHistoryRecord> {
+    const row = await client.feeReviewHistory.create({
+      data: toFeeReviewHistoryCreateData(input),
+      select: feeReviewHistorySelect,
+    });
+
+    return toFeeReviewHistoryRecord(
+      row as Parameters<typeof toFeeReviewHistoryRecord>[0],
+    );
+  }
+
+  async findReviewHistoryByFeeRecordId(
+    feeRecordId: string,
+  ): Promise<FeeReviewHistoryRecord[]> {
+    const rows = await this.prisma.feeReviewHistory.findMany({
+      where: { feeRecordId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: feeReviewHistorySelect,
+    });
+
+    return rows.map((row) =>
+      toFeeReviewHistoryRecord(
+        row as Parameters<typeof toFeeReviewHistoryRecord>[0],
+      ),
+    );
+  }
+
   async findAchievementParentByIdWhere(
     achievementId: string,
     where: Prisma.AchievementWhereInput,
@@ -268,6 +305,18 @@ const feeStateSelect = {
   updatedById: true,
   archivedAt: true,
 } satisfies Prisma.FeeRecordSelect;
+
+const feeReviewHistorySelect = {
+  id: true,
+  feeRecordId: true,
+  departmentId: true,
+  reviewerId: true,
+  action: true,
+  fromStatus: true,
+  toStatus: true,
+  reason: true,
+  createdAt: true,
+} satisfies Prisma.FeeReviewHistorySelect;
 
 const feeAchievementParentSelect = {
   id: true,

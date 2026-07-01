@@ -36,6 +36,14 @@ export const FeeReviewStatusCode = {
 export type FeeReviewStatusCode =
   (typeof FeeReviewStatusCode)[keyof typeof FeeReviewStatusCode];
 
+export const FeeReviewHistoryActionCode = {
+  approve: "APPROVE",
+  reject: "REJECT",
+} as const;
+
+export type FeeReviewHistoryActionCode =
+  (typeof FeeReviewHistoryActionCode)[keyof typeof FeeReviewHistoryActionCode];
+
 export const FeeWarningTypeCode = {
   overdue: "OVERDUE",
   dueSoon: "DUE_SOON",

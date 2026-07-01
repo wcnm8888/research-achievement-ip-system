@@ -1,5 +1,34 @@
 # Decisions
 
+## D207 - Fee review history is backend-owned and append-only
+
+- Date: 2026-07-01.
+- Context: Step 57B implements the Step 57A plan for persisted fee review reason/history while staying backend-only. The user allowed Prisma schema and local migration file changes, API/service/repository/controller changes, focused tests, and memory-bank updates, but prohibited Web UI work, production migration/seed/backfill, production/VPS access, secret reads, package/lockfile changes, cleanup/deletion/reset/drop/prune, push/deploy, and existing untracked-artifact handling.
+- Decision:
+  - Add `FeeReviewHistoryAction` and append-only `FeeReviewHistory`.
+  - Store `id`, `feeRecordId`, `departmentId`, `reviewerId`, `action`, `fromStatus`, `toStatus`, nullable 500-character `reason`, and `createdAt`.
+  - Append history only from approve/reject service transitions in the same transaction as fee state update and audit logging.
+  - Do not expose standalone create/update/delete history endpoints.
+  - Expose only `GET /api/fees/:feeRecordId/review-history` for business-readable timeline reads.
+  - Keep `AuditLog` as the action evidence stream and `FeeReviewHistory` as the business-readable timeline.
+- Authorization:
+  - Read uses authenticated service-level any-permission checks for scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - This service-level authorization is required because the current static permission guard treats declared permissions as all-required rather than any-of.
+  - Append inherits the existing scoped `fee:review_department` approve/reject gate.
+- Sensitive-field boundary:
+  - Persist only the submitted `reason` field within the existing DTO length boundary.
+  - Do not persist or return amount, due/paid date, `voucherNo`, attachment storage key, checksum, file content, raw request/fee payloads, IP, user agent, cookies, tokens, secrets, AccessKey-like values, private-key material, or connection strings through history.
+- Migration boundary:
+  - The local migration is additive: create enum, table, indexes, and foreign keys.
+  - No backfill is included; legacy reviewed fee records return empty history until a separately authorized backfill exists.
+  - Production migration deploy and production data verification are separate high-risk tasks.
+- Rationale:
+  - A separate append-only table preserves prior transitions without overloading latest-state `FeeRecord` fields.
+  - Writing history in the existing approve/reject transaction keeps state, timeline, and audit consistent.
+  - A narrow read DTO prevents the timeline endpoint from becoming a second fee detail or attachment metadata endpoint.
+- Boundaries:
+  - This decision does not authorize Web UI work, production migration/seed/backfill, VPS/production access, business-data writes, account/password work, `.env` / `.env.production` content reads, package changes, push/deploy, cleanup, deletion, reset, restore, drop, prune, or existing untracked-artifact handling.
+
 ## D206 - Fee review history needs an append-only business timeline
 
 - Date: 2026-06-30.

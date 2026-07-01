@@ -4,6 +4,41 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 57B Archive - Fee review history backend-only implementation - 2026-07-01
+
+- Step identity:
+  - Backend-only implementation of the Step 57A persisted fee review history plan.
+  - Scope: Prisma schema, additive local migration file, fees repository/service/controller, focused API tests, and memory-bank updates.
+  - No Web UI, production migration/seed/backfill, VPS/production access, account/password work, `.env` / `.env.production` content read, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile change, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `FeeReviewHistoryAction` and append-only `FeeReviewHistory`.
+  - Added local migration `20260630104000_add_fee_review_history`.
+  - History stores `id`, `feeRecordId`, `departmentId`, `reviewerId`, `action`, `fromStatus`, `toStatus`, nullable 500-character `reason`, and `createdAt`.
+  - Approve/reject appends history in the same transaction as review state transition and audit logging.
+  - Added read-only `GET /api/fees/:feeRecordId/review-history`.
+  - No standalone history create/update/delete API was added.
+- Authorization:
+  - History read allows scoped fee visibility through any of `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - History write remains internal to approve/reject and inherits the existing scoped `fee:review_department` transition gate.
+- Sensitive boundary:
+  - History repository/controller responses return only business timeline fields.
+  - History does not include amount, `voucherNo`, attachment storage key, checksum, raw fee payload, cookies, tokens, private keys, or connection strings.
+  - Reason persistence uses the existing submitted reason contract and 500-character DTO boundary; the backend does not synthesize reason text from fee or attachment fields.
+- Migration boundary:
+  - Migration is additive only: create enum, table, indexes, and foreign keys.
+  - No production migration was run.
+  - No seed, backfill, or production data verification was performed.
+- Verification:
+  - Focused fee service/repository/controller/app-module tests passed.
+  - Broader fee authorization/audit-related API tests passed.
+  - API typecheck passed.
+  - Prisma schema validation passed with a temporary dummy local `DATABASE_URL`; `.env` contents were not read.
+  - Prisma client generation passed locally for type availability.
+  - `git diff --check` and added-lines sensitive scan passed before commit.
+- Deferred:
+  - Web client/UI display remains Step 57C.
+  - Production migration deployment, backfill, and production acceptance require separate explicit authorization.
+
 ## Current Step 57A Archive - Fee review history persistence scope and backend plan - 2026-06-30
 
 - Step identity:

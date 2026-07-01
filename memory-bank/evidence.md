@@ -1,5 +1,46 @@
 # Evidence
 
+## 2026-07-01 Step 57B - Fee review history backend-only implementation evidence
+
+- Purpose:
+  - Implement backend-only persisted fee review history from the Step 57A plan.
+  - Keep Web UI, production migration/seed/backfill, VPS/production access, account/password work, `.env` / `.env.production` content reads, business-data writes, push/deploy, cleanup, deletion, reset, drop, prune, package/lockfile changes, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `48b71cc`.
+  - Latest commit subject: `docs: plan fee review history persistence`.
+  - `git status --short` showed no tracked changes before Step 57B edits and existing untracked local artifacts.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Implementation evidence:
+  - Added `FeeReviewHistoryAction` enum and `FeeReviewHistory` model to `prisma/schema.prisma`.
+  - Added local migration `prisma/migrations/20260630104000_add_fee_review_history/migration.sql`.
+  - Added repository append/list methods for safe history fields only.
+  - Added service-level history list authorization for scoped `fee:read_department`, `fee:manage_department`, or `fee:review_department`.
+  - Added approve/reject history append inside the existing review transaction.
+  - Added read-only controller route `GET /api/fees/:feeRecordId/review-history`.
+  - No standalone history create/update/delete route was added.
+- Migration evidence:
+  - Migration creates `FeeReviewHistoryAction`, `fee_review_history`, three indexes, and three foreign keys.
+  - Migration contains no backfill and no destructive SQL.
+  - No production migration, seed, or backfill was run.
+- Sensitive-field evidence:
+  - History select/DTO fields are limited to `id`, `feeRecordId`, `departmentId`, `reviewerId`, `action`, `fromStatus`, `toStatus`, `reason`, and `createdAt`.
+  - Tests assert history inputs/responses exclude amount, `voucherNo`, storage key, checksum, raw payloads, cookies, tokens, private keys, and connection-string fields.
+  - Reason persistence uses the submitted review reason and existing 500-character DTO boundary.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/fees/fee.service.spec.ts`: PASS, 46 tests.
+  - `corepack pnpm --filter @research-ip/api test -- src/fees/fee.repository.spec.ts src/fees/fee.controller.spec.ts src/fees/fee.app-module.spec.ts`: PASS, 50 tests.
+  - `corepack pnpm --filter @research-ip/api test -- src/fees/fee.service.spec.ts src/fees/fee.repository.spec.ts src/fees/fee.controller.spec.ts src/fees/fee.app-module.spec.ts`: PASS, 96 tests.
+  - `corepack pnpm --filter @research-ip/api test -- fee authorization audit`: PASS, 13 files / 188 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm prisma validate`: PASS with a temporary dummy local `DATABASE_URL`; `.env` contents were not read.
+  - `corepack pnpm prisma generate`: PASS with a temporary dummy local `DATABASE_URL`; `.env` contents were not read.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive scan: PASS.
+- Deferred:
+  - Step 57C should add Web client/UI display.
+  - Production migration deployment, production backfill, and production acceptance remain separately authorized work.
+
 ## 2026-06-30 Step 57A - Fee review history persistence scope and backend plan evidence
 
 - Purpose:
