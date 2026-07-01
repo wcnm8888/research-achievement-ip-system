@@ -1,5 +1,20 @@
 # Decisions
 
+## D218 - Achievement import dry-run local acceptance uses transient proxy sessions
+
+- Date: 2026-07-01.
+- Context: Step 60D verifies the Step 60B/60C achievement import dry-run API + Web UI in the local Docker production-like stack. The task allows local synthetic departments, users, conflict samples, and transient local sessions, while prohibiting real achievement import, attachment/fee/workflow/audit writes, production/VPS access, deployment, production migration/seed/backfill, package changes, cleanup/deletion/reset/drop/prune, and existing untracked-artifact handling.
+- Decision:
+  - Treat Step 60D as local Docker production-like acceptance only, not production/VPS acceptance.
+  - Use local synthetic Step 60D data solely to exercise `system:config`, non-`system:config`, DB conflict, file duplicate, unknown reference, invalid enum, and type/detail mismatch paths.
+  - Use short-lived local proxy ports for browser acceptance so the Web can make normal same-origin `/api` calls while auth material remains outside the browser script and evidence.
+  - Keep all transient auth values in process memory only; do not write them to files, docs, commits, or chat.
+- Acceptance boundary:
+  - API acceptance must compare key business table counts after synthetic setup and after dry-run calls to prove the endpoint itself writes no `Achievement`, typed detail, contributor, attachment, fee, workflow, or audit rows.
+  - Web acceptance must verify the admin UI loop, safe previews, normalized identifiers, DB conflict, file duplicate, unknown reference, invalid enum, type/detail mismatch, absence of write/import entries, and limited-user 403 or hidden-entry behavior.
+- Scope:
+  - This decision does not authorize real write import, account credential changes, submitted workflow import, attachment import, fee import, audit writes, schema/migration work, production/VPS work, package changes, deployment, push, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D217 - Achievement import dry-run Web UI stays read-only under system-config
 
 - Date: 2026-07-01.

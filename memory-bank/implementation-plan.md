@@ -4,6 +4,41 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 60D Archive - Achievement import dry-run local Docker production-like acceptance - 2026-07-01
+
+- Step identity:
+  - Local Docker production-like acceptance for Step 60B backend dry-run and Step 60C Web UI.
+  - Scope stayed limited to local acceptance, `memory-bank/step60d-browser-acceptance.js`, and memory-bank updates.
+  - No backend behavior change, Web feature change, Prisma schema change, migration, seed/backfill, real achievement import, attachment upload/download, fee record, workflow write, audit write, VPS/production DB access, `.env` / `.env.production` content read, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Local stack:
+  - `.env.production` existence was checked only by metadata; contents were not read or output.
+  - `docker compose -f docker-compose.production.yml build api web`: PASS; Web build kept the existing chunk-size warning.
+  - `docker compose -f docker-compose.production.yml up -d api web`: PASS; existing orphan-container warning was not cleaned.
+  - Local `postgres`, `api`, and `web` were healthy; API health and Web root returned HTTP 200.
+- API acceptance:
+  - Prepared local synthetic Step 60D department/users/roles/sessions and DB conflict samples.
+  - `system:config` synthetic admin dry-run returned HTTP 201.
+  - Synthetic limited user dry-run returned HTTP 403.
+  - CSV covered `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`.
+  - Summary returned `totalRows=6`, `errorRows=3`, `warningRows=3`, `duplicateIdentifierRows=2`, and `dbConflictRows=3`.
+  - Expected markers included `DB_CONFLICT`, `DUPLICATE_IN_FILE`, `UNKNOWN_DEPARTMENT`, `OWNER_NOT_FOUND`, `CONTRIBUTOR_USER_NOT_FOUND`, `INVALID_ENUM`, and `DETAIL_TYPE_MISMATCH`.
+  - Counts for `Achievement`, typed details, contributors, attachments, fees, workflow rows, and audit rows stayed unchanged across dry-run calls after setup.
+- Browser acceptance:
+  - Added `memory-bank/step60d-browser-acceptance.js`.
+  - Used `playwright-cli` named sessions `step60d-admin` and `step60d-limited`.
+  - Used short-lived local proxy ports `19101` and `19102` for same-origin `/api` calls without recording raw auth material.
+  - Admin UI showed the achievement dry-run panel, accepted synthetic CSV upload, rendered summary, safe previews, contributors, normalized identifiers, warnings/errors, DB conflict, file duplicate, unknown reference, invalid status enum, and type/detail mismatch.
+  - Limited UI hid the dry-run entry and received HTTP 403 from the dry-run API.
+  - Browser checks confirmed no real import/write/create achievement, attachment, fee, workflow, or audit entry.
+  - Browser dry-run before/after business counts stayed unchanged.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 10 files / 40 tests.
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts Achievements.test.ts`: PASS, 2 files / 50 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Deferred:
+  - Real write import, audit writes, workflow/submitted import, attachment import, fee import, employee-number lookup, department-scoped permission, local synthetic data cleanup under explicit authorization, Docker orphan handling, and production/VPS rollout remain separate explicit steps.
+
 ## Current Step 60C Archive - Achievement import dry-run Web UI integration - 2026-07-01
 
 - Step identity:

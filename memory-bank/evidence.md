@@ -1,5 +1,61 @@
 # Evidence
 
+## 2026-07-01 Step 60D - Achievement import dry-run local Docker production-like acceptance evidence
+
+- Purpose:
+  - Verify the Step 60B backend dry-run API and Step 60C Web UI together in the local Docker production-like stack.
+  - Keep backend behavior changes, Web feature changes, Prisma schema edits, migrations, seed/backfill, real achievement import, attachment upload/download, fee/workflow/audit writes, production/VPS access, package/lockfile changes, push/deploy, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `42e7c8a`.
+  - Latest commit subject: `feat(web): add achievement import dry run`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 60D edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env.production` existed; only metadata/existence was checked. Contents were not read or output.
+- Local Docker production-like stack:
+  - `docker compose -f docker-compose.production.yml build api web`: PASS. Web build emitted the existing chunk-size warning.
+  - `docker compose -f docker-compose.production.yml up -d api web`: PASS. Compose reported an existing orphan-container warning; no cleanup command was run.
+  - `docker compose -f docker-compose.production.yml ps`: local `postgres`, `api`, and `web` healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `GET http://127.0.0.1:18081/`: HTTP 200.
+- Local synthetic setup:
+  - Prepared local-only Step 60D department, admin user, limited user, owner user, contributor user, outsider user, roles, permissions, DB conflict samples, and transient sessions.
+  - Created or reused synthetic DB conflict samples for normalized paper DOI, patent grant number through `patentNo`, and software registration number.
+  - Synthetic data was created only for local acceptance and was not cleaned up because cleanup/deletion was out of scope.
+  - Raw auth material stayed in process memory only and was not written to files, docs, commits, or chat.
+- API acceptance:
+  - Synthetic admin with `system:config` posted CSV to `POST /api/achievements/import/dry-run`: HTTP 201.
+  - Synthetic limited user without `system:config` posted the same CSV: HTTP 403.
+  - CSV covered `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`.
+  - Admin dry-run summary: `totalRows=6`, `errorRows=3`, `warningRows=3`, `duplicateIdentifierRows=2`, `dbConflictRows=3`.
+  - Issue code evidence included `DB_CONFLICT`, `DUPLICATE_IN_FILE`, `UNKNOWN_DEPARTMENT`, `OWNER_NOT_FOUND`, `CONTRIBUTOR_USER_NOT_FOUND`, `INVALID_ENUM`, and `DETAIL_TYPE_MISMATCH`.
+  - No-write count comparison passed after API calls for `Achievement`, `PaperDetail`, `PatentDetail`, `SoftwareCopyrightDetail`, `AchievementContributor`, `Attachment`, `FeeRecord`, `WorkflowInstance`, `WorkflowTask`, `WorkflowAction`, and `AuditLog`.
+- Browser acceptance:
+  - Added `memory-bank/step60d-browser-acceptance.js`.
+  - Used `playwright-cli -s=step60d-admin open http://127.0.0.1:19101/`.
+  - Used `playwright-cli -s=step60d-admin run-code --filename=memory-bank/step60d-browser-acceptance.js`: PASS.
+  - Used `playwright-cli -s=step60d-limited open http://127.0.0.1:19102/`.
+  - Used `playwright-cli -s=step60d-limited run-code --filename=memory-bank/step60d-browser-acceptance.js`: PASS.
+  - The local proxy ports returned HTTP 200 for `/api/auth/me` before browser runs.
+  - Admin browser run covered visible `Achievement CSV dry-run`, CSV upload, summary, safe preview, contributors, normalized identifiers, `DB_CONFLICT`, `DUPLICATE_IN_FILE`, `UNKNOWN_DEPARTMENT`, `OWNER_NOT_FOUND`, `CONTRIBUTOR_USER_NOT_FOUND`, `INVALID_ENUM`, and `DETAIL_TYPE_MISMATCH`.
+  - Admin browser run also verified same-origin dry-run API returned HTTP 201.
+  - Limited browser run covered hidden dry-run UI and HTTP 403 from the dry-run API.
+  - Browser run checked there was no confirm/import/write/create achievement, attachment, fee, workflow, or audit entry.
+  - No-write count comparison passed after browser calls for the same business table set.
+- Diagnostics:
+  - Direct `/achievements` navigation initially showed the dashboard because the SPA uses menu state on initial load. The browser script now opens `/` and clicks the side menu `成果管理` entry.
+  - A first PowerShell `HttpClient` API attempt returned 401 until automatic client auth-state handling was disabled. `curl.exe` and the final manual-header `HttpClient` path confirmed the transient local session path.
+  - The actual invalid submitted-status issue code in the dry-run response is `INVALID_ENUM`, so Step 60D acceptance records invalid status through that code.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 10 files / 40 tests.
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts Achievements.test.ts`: PASS, 2 files / 50 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - Prisma schema diff check: PASS, no diff in `prisma/schema.prisma`.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Deferred:
+  - Real write import, audit writes, workflow/submitted import, attachment import, fee import, employee-number lookup, department-scoped permission, local synthetic data cleanup under explicit authorization, Docker orphan handling, production/VPS rollout, and production acceptance.
+
 ## 2026-07-01 Step 60C - Achievement import dry-run Web UI integration evidence
 
 - Purpose:

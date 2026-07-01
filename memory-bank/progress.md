@@ -1,5 +1,51 @@
 # Progress
 
+## 2026-07-01 Step 60D - Achievement import dry-run local Docker production-like acceptance
+
+- Status: STEP_60D_ACHIEVEMENT_IMPORT_DRY_RUN_LOCAL_ACCEPTED.
+- Step identity:
+  - Verified the Step 60B backend dry-run API and Step 60C Web UI together in the local Docker production-like stack.
+  - Scope stayed limited to local acceptance, `memory-bank/step60d-browser-acceptance.js`, and memory-bank updates.
+  - No backend behavior change, Web feature change, Prisma schema change, migration, seed/backfill, real achievement import, attachment upload/download, fee record, workflow write, audit write, VPS/production DB access, package/lockfile change, push/deploy, cleanup, deletion, reset, drop, restore, prune, or existing untracked-artifact handling occurred.
+- Local Docker production-like stack:
+  - `.env.production` existence was confirmed by file metadata only; contents were not read or output.
+  - `docker compose -f docker-compose.production.yml build api web`: PASS; Web build kept the existing chunk-size warning.
+  - `docker compose -f docker-compose.production.yml up -d api web`: PASS; existing orphan-container warning was observed and intentionally not cleaned.
+  - Final `docker compose -f docker-compose.production.yml ps`: local `postgres`, `api`, and `web` healthy.
+  - `GET http://127.0.0.1:13001/api/health`: HTTP 200.
+  - `GET http://127.0.0.1:18081/`: HTTP 200.
+- Local synthetic acceptance data:
+  - Prepared Step 60D local synthetic department, users, roles, DB conflict samples, and transient local sessions.
+  - Synthetic DB conflict samples covered normalized paper DOI, patent grant number via `patentNo`, and software registration number.
+  - Transient auth values stayed in process memory and were not written to files, docs, commits, or chat.
+- API acceptance:
+  - `system:config` synthetic admin `POST /api/achievements/import/dry-run`: HTTP 201.
+  - Synthetic non-`system:config` user `POST /api/achievements/import/dry-run`: HTTP 403.
+  - CSV covered `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`.
+  - API response summary: `totalRows=6`, `errorRows=3`, `warningRows=3`, `duplicateIdentifierRows=2`, `dbConflictRows=3`.
+  - Expected issue markers observed: `DB_CONFLICT`, `DUPLICATE_IN_FILE`, `UNKNOWN_DEPARTMENT`, `OWNER_NOT_FOUND`, `CONTRIBUTOR_USER_NOT_FOUND`, `INVALID_ENUM`, and `DETAIL_TYPE_MISMATCH`.
+  - Dry-run before/after counts remained unchanged for `Achievement`, paper/patent/software detail, `AchievementContributor`, `Attachment`, `FeeRecord`, `WorkflowInstance`, `WorkflowTask`, `WorkflowAction`, and `AuditLog`.
+- Web/browser acceptance:
+  - Added `memory-bank/step60d-browser-acceptance.js`.
+  - Used `playwright-cli` named sessions `step60d-admin` and `step60d-limited`.
+  - Used short-lived local proxy ports `19101` and `19102` for production-like auth injection without recording raw auth material.
+  - Admin browser run saw `Achievement CSV dry-run`, uploaded synthetic CSV, rendered summary, safe preview, contributors, normalized identifiers, DB conflict, file duplicate, unknown reference, invalid status enum, and type/detail mismatch states.
+  - Admin browser run verified the same-origin dry-run API returns HTTP 201 from the UI context.
+  - Limited browser run did not see the dry-run UI and received HTTP 403 from the dry-run API.
+  - Browser acceptance verified no confirm/import/write/create achievement, attachment, fee, workflow, or audit entry is exposed.
+  - Browser dry-run before/after business counts remained unchanged for the same no-write table set.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/api test -- src/imports`: PASS, 10 files / 40 tests.
+  - `corepack pnpm --filter @research-ip/web test -- api-client.test.ts Achievements.test.ts`: PASS, 2 files / 50 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Notes:
+  - The first direct PowerShell `HttpClient` attempt returned 401 until automatic client auth-state handling was disabled; `curl.exe` and the final manual-header `HttpClient` path both confirmed the transient session path.
+  - Direct `/achievements` URL loading showed the SPA starts on the dashboard; the browser script now clicks the side menu `成果管理` entry before checking the dry-run panel.
+- Next:
+  - Run final `git diff --check`, added-lines sensitive scan, and schema-diff check before commit.
+  - Real write import, audit writes, workflow/submitted import, attachment import, fee import, employee-number lookup, department-scoped permission, local synthetic data cleanup under explicit authorization, and production/VPS rollout remain separate explicit steps.
+
 ## 2026-07-01 Step 60C - Achievement import dry-run Web UI integration
 
 - Status: STEP_60C_ACHIEVEMENT_IMPORT_DRY_RUN_WEB_IMPLEMENTED.
