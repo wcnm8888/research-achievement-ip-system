@@ -231,3 +231,14 @@ Because Step 66A is documentation-only, full typecheck/test is not required. Req
   - Mail delivery evidence count is zero.
   - Audit operation is `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`.
   - Duplicate repeat apply is rejected with safe `EXISTING_USER` evidence and no net user increase.
+
+## Step 67A Identity / Employee Number Addendum
+
+- Design document: `memory-bank/user-account-identity-employee-no-persistence-plan.md`.
+- Current state remains unchanged: `employeeNo` is not persisted, so Step 66B-66F can only claim same-file employee-number duplicate rejection.
+- Step 67A recommends a later implementation Step that persists optional `employeeNo` plus uppercase normalized nullable `employeeNoNormalized` on `User`.
+- Email remains the only login identifier.
+- Employee number should be treated as a business identity for import matching and admin review, not as an auth credential or account lifecycle identifier.
+- For the current schema, non-null normalized employee numbers should be globally unique; inactive and archived users should still reserve identifiers.
+- Future dry-run/apply behavior should add safe `EXISTING_EMPLOYEE_NO` reporting, keep Web apply blocked on that issue, and recheck employee-number uniqueness inside the apply transaction before writes.
+- Step 67A does not authorize schema changes, migrations, runtime implementation, production/VPS access, production database access, real-data backfill, credential/session/lifecycle token creation, email, achievement apply, cleanup, deletion, reset, drop, or prune.

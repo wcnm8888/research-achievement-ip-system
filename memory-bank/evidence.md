@@ -1,5 +1,34 @@
 # Evidence
 
+## 2026-07-02 Step 67A - User/account identity uniqueness and employeeNo persistence plan evidence
+
+- Goal:
+  - Plan user/account import identity uniqueness and durable employee-number support without changing schema, migrations, runtime code, or database state.
+- Initial state:
+  - `git rev-parse HEAD`: `a34b0545f6d3ef560e32ab347200b70cfcdbf936`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/user-account-import-real-write-safety-plan.md`.
+  - Step 66B-66F latest records in progress, implementation plan, evidence, decisions, and rollout plan.
+  - Targeted snippets only from Prisma user/account models, user/account import dry-run/apply service and repository, account management create flow, auth email login flow, related tests, Web employee-number notice, and migration directory names.
+- Findings:
+  - Current persisted user-facing identity is normalized unique email.
+  - No persisted username/login name/account identifier, external user id, import source id, or employee-number field exists.
+  - Current employee-number handling is optional CSV input, file-local duplicate rejection, and `employeeNoDbConflictCheck=NOT_AVAILABLE`.
+- Documentation changes:
+  - Added `memory-bank/user-account-identity-employee-no-persistence-plan.md`.
+  - Updated progress, decisions, implementation plan, evidence, and user/account real-write safety plan.
+- Validation:
+  - Full typecheck/test not run because this Step changed documentation and memory-bank only.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Added-lines sensitive keyword scan covered the required terms; 271 added lines scanned, 7 total keyword matches, all safety-boundary terminology, no sensitive values printed.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No Prisma schema change, migration, runtime code change, database write, Docker, production/VPS access, production DB access, account creation, credential/session/lifecycle token creation, mail, achievement apply, cleanup, deletion, reset, drop, prune, staging, or commit of known untracked local artifacts.
+
 ## 2026-07-02 Step 66F - User/account pending import Web local production-like acceptance evidence
 
 - Goal:

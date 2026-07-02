@@ -1,5 +1,20 @@
 # Decisions
 
+## D239 - Persist employeeNo as optional normalized user business identity
+
+- Date: 2026-07-02.
+- Context: Step 67A reviews user/account import identity uniqueness and employee-number persistence after Step 66B-66F left `employeeNo` file-local only. The current schema has `User.email` as the only persisted user-facing unique identifier; auth login and account management use normalized email; no username/login name/account identifier, external user id, import source id, or persisted employee-number field exists.
+- Decision:
+  - Keep email as the only login identifier for now.
+  - Treat `employeeNo` as an optional business identity attribute for matching and import conflict detection, not as a login principal.
+  - In a later implementation Step, persist `employeeNo` and uppercase `employeeNoNormalized` on `User`.
+  - Make only non-null `employeeNoNormalized` globally unique in the current schema.
+  - Keep employee number nullable in the first migration; do not require backfill or `NOT NULL` in the first slice.
+  - Existing active, pending, disabled, and archived users should continue reserving email and non-null employee number values.
+  - Future user/account dry-run/apply should report database employee-number conflicts as `EXISTING_EMPLOYEE_NO` and block create-only apply.
+- Scope:
+  - This decision does not authorize Prisma schema changes, migrations, runtime code changes, database writes, production/VPS access, production DB access, production rollout, real-data backfill, login by employee number, account lifecycle changes, credential/session/lifecycle token creation, DirectMail/real email, achievement apply, cleanup, deletion, reset, drop, prune, or handling known untracked local artifacts.
+
 ## D238 - Step 66F Web acceptance uses no-session harness because credentials are forbidden
 
 - Date: 2026-07-02.

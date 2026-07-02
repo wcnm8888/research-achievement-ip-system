@@ -4,6 +4,29 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 67A Archive - User/account identity uniqueness and employeeNo persistence plan - 2026-07-02
+
+- Status: DONE.
+- Scope:
+  - Documentation-only design and risk review for user/account import identity uniqueness and durable `employeeNo`.
+  - No Prisma schema, migration, runtime code, database write, Docker, production/VPS access, production DB access, account lifecycle side effect, or achievement apply.
+- Current findings:
+  - `User.email` is globally unique and normalized before login/create.
+  - No username/login name/account identifier, external user id, import source id, or persisted employee-number field exists.
+  - `employeeNo` is currently optional CSV input only, with same-file duplicate rejection and `employeeNoDbConflictCheck=NOT_AVAILABLE`.
+  - Apply rechecks email, department, role, department scope, and pending status inside the transaction, but cannot recheck employee number until schema support exists.
+- Design decision:
+  - Keep email as the only login identifier.
+  - Persist employee number on `User` in a later Step as nullable `employeeNo` plus uppercase unique nullable `employeeNoNormalized`.
+  - Use global non-null employee-number uniqueness in the current single-organization schema.
+  - Do not release email or employee-number uniqueness for inactive or archived users through import.
+- Recommended Step 67B:
+  - Add nullable employee-number fields and migration.
+  - Update dry-run/apply to normalize, query, persist, and transaction-recheck employee number.
+  - Add `EXISTING_EMPLOYEE_NO` safe issue reporting.
+  - Keep employee number optional and keep email as login identity.
+  - Cover with focused API tests and no production/VPS or real-data backfill.
+
 ## Current Step 66F Archive - User/account pending import Web local production-like acceptance - 2026-07-02
 
 - Status: DONE.

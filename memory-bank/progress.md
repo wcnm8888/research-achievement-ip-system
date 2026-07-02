@@ -1,5 +1,21 @@
 # Progress
 
+## 2026-07-02 Step 67A - User/account import identity uniqueness and employeeNo persistence plan
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/user-account-identity-employee-no-persistence-plan.md`.
+  - Reviewed current user/account identity fields, Prisma uniqueness boundaries, user/account dry-run/apply behavior, account management create behavior, auth login identity, migration directory shape, and Step 66B-66F memory-bank records.
+  - Confirmed current schema has no username/login name/account identifier, external user id, import source id, or persisted `employeeNo` field.
+  - Recommended keeping email as the only login identifier and adding nullable `employeeNo` plus normalized unique `employeeNoNormalized` on `User` in a later implementation Step.
+  - Recommended global non-null employee-number uniqueness for the current single-organization schema, with inactive and archived users still reserving identifiers.
+  - Defined future dry-run/apply behavior for `EXISTING_EMPLOYEE_NO` and transaction-time rechecks.
+- Explicitly not done:
+  - No Prisma schema change, migration, runtime code change, database write, Docker, production/VPS access, production DB access, credential/session/lifecycle token creation, email, achievement apply, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+- Verification:
+  - Documentation-only Step; full typecheck/test not run.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 66F - User/account pending import Web local production-like acceptance
 
 - Status: DONE.
