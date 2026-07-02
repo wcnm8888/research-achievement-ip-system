@@ -14,6 +14,8 @@ import type {
   CreateAccountUserInput,
   CreateApiIntegrationInput,
   DepartmentDetail,
+  DepartmentImportApplyInput,
+  DepartmentImportApplyResult,
   DepartmentImportDryRunInput,
   DepartmentImportDryRunResult,
   DepartmentListResponse,
@@ -59,6 +61,7 @@ export type ApiError = {
   status?: number;
   message: string;
   detail?: string;
+  body?: unknown;
 };
 
 export type ApiQueryPrimitive = string | number | boolean;
@@ -97,6 +100,9 @@ export type AccountManagementApiClient = ApiClient & {
   dryRunDepartmentImport(
     input: DepartmentImportDryRunInput,
   ): Promise<DepartmentImportDryRunResult>;
+  applyDepartmentImport(
+    input: DepartmentImportApplyInput,
+  ): Promise<DepartmentImportApplyResult>;
   dryRunUserAccountImport(
     input: UserAccountImportDryRunInput,
   ): Promise<UserAccountImportDryRunResult>;
@@ -349,6 +355,18 @@ export const createApiClient = (
       options,
     );
     return response as DepartmentImportDryRunResult;
+  },
+  async applyDepartmentImport(input: DepartmentImportApplyInput) {
+    const body = new FormData();
+    body.append("mode", input.mode);
+    body.append("file", input.file);
+    const response = await requestForm(
+      "/imports/departments/apply",
+      demoUserId,
+      body,
+      options,
+    );
+    return response as DepartmentImportApplyResult;
   },
   async dryRunUserAccountImport(input: UserAccountImportDryRunInput) {
     const body = new FormData();
@@ -804,27 +822,31 @@ const buildUrl = (path: string, query?: ApiQuery): string => {
 
 const buildApiError = async (response: Response): Promise<ApiError> => {
   const mapped = mapApiErrorMessage(response.status);
+  const body = await readErrorBody(response);
 
   return {
     ...mapped,
     status: response.status,
-    detail: await readErrorDetail(response),
+    detail: readErrorDetail(body),
+    body,
   };
 };
 
-const readErrorDetail = async (response: Response): Promise<string | undefined> => {
+const readErrorBody = async (response: Response): Promise<unknown> => {
   try {
-    const body = (await response.json()) as unknown;
-
-    if (typeof body === "object" && body !== null && "message" in body) {
-      const message = (body as { message: unknown }).message;
-      return Array.isArray(message) ? message.join("; ") : String(message);
-    }
-
-    return undefined;
+    return (await response.json()) as unknown;
   } catch {
     return undefined;
   }
+};
+
+const readErrorDetail = (body: unknown): string | undefined => {
+  if (typeof body === "object" && body !== null && "message" in body) {
+    const message = (body as { message: unknown }).message;
+    return Array.isArray(message) ? message.join("; ") : String(message);
+  }
+
+  return undefined;
 };
 
 export const isApiError = (error: unknown): error is ApiError =>

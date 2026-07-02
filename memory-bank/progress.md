@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-07-02 Step 65E - Department import apply Web minimal slice
+
+- Status: STEP_65E_DEPARTMENT_IMPORT_APPLY_WEB_ENTRY_IMPLEMENTED.
+- Step identity:
+  - Implemented the minimal Web entry for department metadata `CREATE_ONLY` apply in the department maintenance page only.
+  - No user/account apply, achievement apply, production/VPS access, production DB access, production rollout, Docker operation, account password change/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added typed Web `DepartmentImportApply*` types.
+  - Added `AccountManagementApiClient.applyDepartmentImport(...)` for multipart `POST /imports/departments/apply` with `mode=CREATE_ONLY`.
+  - Added department apply eligibility checks requiring same-file latest dry-run, `CREATE_ONLY`, `DEPARTMENT_METADATA`, `dryRun=true`, zero errors, zero warnings, all rows `VALID`, all actions `CREATE`, and no in-flight apply.
+  - Added department import apply button, confirmation modal, apply loading/duplicate-submit guard, stale-file reset, safe 400/401/403/network error mapping, sanitized created/error/audit-operation result panel, and list/tree refresh after success.
+  - Kept backend permission semantics unchanged; backend `system:config` remains authoritative.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement api-client`: PASS, 2 files / 59 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 1055 added lines; matches were boundary/test/count-label terms only, with no values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 65D - Department apply Web entry permission and interaction design
 
 - Status: STEP_65D_DEPARTMENT_APPLY_WEB_ENTRY_DESIGNED_DOCS_ONLY.

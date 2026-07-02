@@ -1,5 +1,19 @@
 # Decisions
 
+## D234 - Department apply Web entry mirrors backend create-only constraints
+
+- Date: 2026-07-02.
+- Context: Step 65E implements the minimal Web entry for the Step 65B department `CREATE_ONLY` apply endpoint. The task allows Web API client, department page/component, tests, and memory-bank updates, while prohibiting production/VPS operations, production DB access, account password changes/resets, real email, user/account apply, achievement apply, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling.
+- Decision:
+  - Add only a department maintenance Web entry for `POST /imports/departments/apply`; do not add user/account or achievement apply entries.
+  - Keep frontend visibility under the existing department maintenance `system:config` gate, with backend permission checks remaining authoritative.
+  - Enable apply only for a same-file latest dry-run result with `mode=CREATE_ONLY`, `DEPARTMENT_METADATA`, `dryRun=true`, zero errors, zero warnings, all rows `VALID`, all candidate actions `CREATE`, and no in-flight apply.
+  - Use a confirmation modal before apply and disable file/dry-run/apply controls while apply is in flight.
+  - Display only sanitized result evidence: created/skipped/failed counts, safe error codes, and audit operation `DEPARTMENT_IMPORT_CREATE`.
+  - Preserve rejected apply summary from safe backend error bodies for 400 responses without displaying uploaded file content or sensitive values.
+- Scope:
+  - This decision does not authorize production/VPS writes, batch real-data import, user/account apply, achievement apply, department update/upsert/delete/merge/reactivation, password work, invite/reset flow, DirectMail/real email, persisted import jobs, durable idempotency keys, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D233 - Department apply Web entry stays system:config and dry-run-gated
 
 - Date: 2026-07-02.

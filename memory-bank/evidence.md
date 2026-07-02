@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-07-02 Step 65E - Department import apply Web minimal slice evidence
+
+- Purpose:
+  - Implement the minimal Web slice for department metadata create-only apply.
+  - Limit scope to department maintenance UI, Web API client, types, tests, and memory-bank updates.
+  - Do not add user/account apply, achievement apply, production/VPS operations, production DB access, production rollout, account password changes/resets, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `5c69a14`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`.
+  - Read `memory-bank/department-import-apply-web-entry-design.md`.
+  - Read targeted Web files/snippets for department import, API client, tests, permission/error display, and types.
+  - Read only Step 65B backend apply response structure snippets from department import service/controller.
+- Implementation evidence:
+  - Added typed `DepartmentImportApplyInput`, `DepartmentImportApplyResult`, row, summary, mode, and error-summary types.
+  - Added typed Web client method for multipart `POST /imports/departments/apply`.
+  - Added optional shared dry-run shell slots for disabled controls, extra actions, and after-result content.
+  - Added department apply eligibility, same-file fingerprint guard, confirmation modal, apply submit state, duplicate-submit protection, stale-file reset, safe error mapping, and sanitized result display.
+  - Added tests for apply client form data, eligibility success/blocked cases, non-`CREATE_ONLY` rejection, warning/error/non-create disabled states, confirmation content, success summary display, 400/401/403/network error mapping, and existing permission boundary.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement api-client`: PASS, 2 files / 59 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 1055 added lines:
+    - `secret`: 1.
+    - `token`: 1.
+    - `password`: 7.
+    - `cookie`: 2.
+    - `private_key`: 1.
+    - `connection_string`: 1.
+    - `access_key`: 1.
+  - Sensitive scan result: matches are boundary/test/count-label terms only; no values were recorded.
+  - Pending commit and post-commit tracked diff check.
+- Boundary:
+  - This Step did not call the apply API or write database rows.
+  - This Step did not perform local production-like, Docker, production/VPS, or real-data acceptance.
+
 ## 2026-07-02 Step 65D - Department apply Web entry permission and interaction design evidence
 
 - Purpose:

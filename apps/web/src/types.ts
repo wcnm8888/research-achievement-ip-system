@@ -610,6 +610,44 @@ export type DepartmentImportDryRunInput = {
   file: File;
 };
 
+export type DepartmentImportApplyMode = "CREATE_ONLY";
+
+export type DepartmentImportApplyInput = {
+  file: File;
+  mode: DepartmentImportApplyMode;
+};
+
+export type DepartmentImportApplyErrorSummary = {
+  rowNumber: number | null;
+  field: string;
+  code: string;
+  message: string;
+};
+
+export type DepartmentImportApplyRow = {
+  rowNumber: number;
+  code: string;
+  status: "CREATED";
+  createdDepartmentId: string;
+};
+
+export type DepartmentImportApplyResult = {
+  importType: "DEPARTMENT_METADATA";
+  dryRun: false;
+  mode: DepartmentImportApplyMode;
+  file: DepartmentImportDryRunResult["file"];
+  summary: {
+    totalRows: number;
+    createdRows: number;
+    skippedRows: number;
+    failedRows: number;
+    errorCount: number;
+    warningCount: number;
+  };
+  errors: DepartmentImportApplyErrorSummary[];
+  rows: DepartmentImportApplyRow[];
+};
+
 export type UserAccountImportDryRunIssueCode =
   | "REQUIRED"
   | "INVALID_FORMAT"

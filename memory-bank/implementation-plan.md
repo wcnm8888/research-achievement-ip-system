@@ -4,6 +4,39 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 65E Archive - Department import apply Web minimal slice - 2026-07-02
+
+- Step identity:
+  - Minimal Web implementation for department metadata `CREATE_ONLY` apply.
+  - Limited to the department maintenance/import page and typed Web client/tests.
+  - No user/account apply, achievement apply, production/VPS access, production DB access, production rollout, Docker operation, account password change/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented files:
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/importDryRunUi.tsx`.
+  - `apps/web/src/DepartmentManagement.tsx`.
+  - `apps/web/src/api-client.test.ts`.
+  - `apps/web/src/DepartmentManagement.test.tsx`.
+  - Step 65E memory-bank updates.
+- Runtime contract:
+  - Web client method: `applyDepartmentImport({ file, mode: "CREATE_ONLY" })`.
+  - Endpoint: `POST /imports/departments/apply` behind the existing API prefix.
+  - Multipart fields: `mode=CREATE_ONLY`, `file`.
+  - Apply entry appears only in department maintenance after the existing `system:config` frontend gate.
+  - Apply button is enabled only after eligible same-file dry-run: no errors, no warnings, all rows `VALID`, all actions `CREATE`, and no in-flight apply.
+  - Confirmation modal states create-only department metadata behavior and excludes update/upsert/delete/merge/reactivation.
+  - Result panel shows created/skipped/failed counts, safe rejected codes, and audit operation `DEPARTMENT_IMPORT_CREATE`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement api-client`: PASS, 2 files / 59 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 1055 added lines; matches were boundary/test/count-label terms only, with no values recorded.
+  - Pending commit and post-commit tracked diff check.
+- Next:
+  - Step 65F should be local production-like Web acceptance for the department apply UI if explicitly requested.
+  - Keep production/VPS writes and real-data batch imports behind a separate authorization/runbook gate.
+
 ## Current Step 65D Archive - Department apply Web entry permission and interaction design - 2026-07-02
 
 - Step identity:

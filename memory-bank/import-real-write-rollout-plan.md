@@ -240,3 +240,42 @@ After a department create-only apply slice is implemented and accepted, the next
 - Step 65E recommendation:
   - Implement the smallest Web slice: typed apply result/input, API client helper, panel/page state, confirmation modal, safe result view, and focused Web Vitest coverage.
   - Keep user/account apply, achievement apply, production/VPS writes, browser/Docker acceptance, and production rollout deferred unless separately authorized.
+
+## Step 65E Web Minimal Slice Record
+
+- Date: 2026-07-02.
+- Scope:
+  - Implemented the smallest Web entry for department metadata `CREATE_ONLY` apply.
+  - Department maintenance page only; no user/account or achievement apply.
+  - No apply API execution during this Step, no database writes, no Docker, and no production/VPS access.
+- Implemented:
+  - Typed Web apply input/result/summary/error/row types.
+  - `AccountManagementApiClient.applyDepartmentImport({ file, mode: "CREATE_ONLY" })`.
+  - Multipart `POST /imports/departments/apply` with `mode` and `file`.
+  - Department apply eligibility and same-file dry-run fingerprint.
+  - Confirmation modal content for create-only department metadata.
+  - Apply loading state and duplicate-submit guard.
+  - Safe 400/401/403/network display mapping.
+  - Sanitized result panel with created/skipped/failed counts, safe rejected codes, and audit operation `DEPARTMENT_IMPORT_CREATE`.
+- Eligibility:
+  - `CREATE_ONLY`.
+  - `DEPARTMENT_METADATA`.
+  - `dryRun=true`.
+  - Same selected file as the latest dry-run.
+  - Total rows greater than zero.
+  - Zero dry-run errors.
+  - Zero dry-run warnings.
+  - Every row status is `VALID`.
+  - Every candidate action is `CREATE`.
+  - No apply request is in flight.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement api-client`: PASS, 2 files / 59 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+- Still deferred:
+  - Local production-like Web acceptance.
+  - Production/VPS write execution.
+  - Batch real-data import.
+  - User/account real-write import.
+  - Achievement real-write import.
+  - Password changes/resets, invite/reset flow, and DirectMail/real email.

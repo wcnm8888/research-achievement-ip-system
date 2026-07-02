@@ -128,6 +128,9 @@ export function ImportDryRunPanelShell<TResult>({
   onFileChange,
   onRunDryRun,
   renderResult,
+  controlsDisabled = false,
+  extraActions,
+  afterResult,
 }: {
   className: string;
   title: string;
@@ -143,6 +146,9 @@ export function ImportDryRunPanelShell<TResult>({
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onRunDryRun: () => void;
   renderResult: (result: TResult) => ReactNode;
+  controlsDisabled?: boolean;
+  extraActions?: ReactNode;
+  afterResult?: ReactNode;
 }) {
   return (
     <Card className={className} title={title} extra={<Tag>{endpoint}</Tag>}>
@@ -153,11 +159,18 @@ export function ImportDryRunPanelShell<TResult>({
             aria-label={fileAriaLabel}
             type="file"
             accept=".csv,text/csv,application/vnd.ms-excel"
+            disabled={controlsDisabled}
             onChange={onFileChange}
           />
-          <Button type="primary" loading={loading} disabled={!file || loading} onClick={onRunDryRun}>
+          <Button
+            type="primary"
+            loading={loading}
+            disabled={!file || loading || controlsDisabled}
+            onClick={onRunDryRun}
+          >
             Run dry-run
           </Button>
+          {extraActions}
           <Tag color={file ? "processing" : "default"}>
             {file ? `${file.name} (${formatImportDryRunFileSize(file.size)})` : "No CSV selected"}
           </Tag>
@@ -169,6 +182,7 @@ export function ImportDryRunPanelShell<TResult>({
           <Alert type="error" showIcon message={error.message} description={error.detail} />
         ) : null}
         {result ? renderResult(result) : null}
+        {afterResult}
       </Space>
     </Card>
   );

@@ -40,6 +40,8 @@ import type {
   CreateDepartmentInput,
   DepartmentDetail,
   DepartmentImpactSummary,
+  DepartmentImportApplyMode,
+  DepartmentImportApplyResult,
   DepartmentImportDryRunIssue,
   DepartmentImportDryRunResult,
   DepartmentImportDryRunRow,
@@ -87,6 +89,19 @@ type DepartmentOperationResult =
   | { kind: "disable"; impactSummary: DepartmentImpactSummary }
   | { kind: "enable" };
 
+type DepartmentImportApplyEligibility = {
+  canApply: boolean;
+  reason: string;
+};
+
+type DepartmentImportFileFingerprint = {
+  name: string;
+  size: number;
+  lastModified: number;
+  resultName: string;
+  resultSize: number;
+};
+
 type DepartmentTreeDataNode = {
   key: string;
   title: React.ReactNode;
@@ -99,6 +114,8 @@ type DepartmentManagementProps = {
 };
 
 const defaultPageSize = 20;
+const departmentImportApplyMode: DepartmentImportApplyMode = "CREATE_ONLY";
+const departmentImportApplyAuditOperation = "DEPARTMENT_IMPORT_CREATE";
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
   loading: false,
@@ -151,6 +168,13 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
   const [importResult, setImportResult] = useState<DepartmentImportDryRunResult | null>(null);
   const [importError, setImportError] = useState<ApiError | null>(null);
   const [importSubmitting, setImportSubmitting] = useState(false);
+  const [importApplySubmitting, setImportApplySubmitting] = useState(false);
+  const [importApplyConfirmOpen, setImportApplyConfirmOpen] = useState(false);
+  const [importApplyResult, setImportApplyResult] =
+    useState<DepartmentImportApplyResult | null>(null);
+  const [importApplyError, setImportApplyError] = useState<ApiError | null>(null);
+  const [importFileFingerprint, setImportFileFingerprint] =
+    useState<DepartmentImportFileFingerprint | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [departmentForm] = Form.useForm<DepartmentFormValues>();
   const [reasonForm] = Form.useForm<ReasonFormValues>();
@@ -164,6 +188,17 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
   const treeQuery = useMemo(
     () => buildDepartmentTreeQuery(appliedFilters),
     [appliedFilters],
+  );
+  const importApplyEligibility = useMemo(
+    () =>
+      getDepartmentImportApplyEligibility({
+        file: importFile,
+        result: importResult,
+        mode: departmentImportApplyMode,
+        submitting: importApplySubmitting,
+        fingerprint: importFileFingerprint,
+      }),
+    [importApplySubmitting, importFile, importFileFingerprint, importResult],
   );
 
   const loadDepartments = useCallback(() => {
@@ -312,6 +347,10 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
     setImportFile(file);
     setImportResult(null);
     setImportError(file ? toValidationError(validateDepartmentImportCsvFile(file)) : null);
+    setImportFileFingerprint(null);
+    setImportApplyConfirmOpen(false);
+    setImportApplyResult(null);
+    setImportApplyError(null);
   };
 
   const handleImportDryRun = async () => {
@@ -332,15 +371,71 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
     setImportSubmitting(true);
     setImportResult(null);
     setImportError(null);
+    setImportFileFingerprint(null);
+    setImportApplyConfirmOpen(false);
+    setImportApplyResult(null);
+    setImportApplyError(null);
 
     try {
       const result = await dryRunDepartmentImport(apiClient, importFile);
       setImportResult(result);
+      setImportFileFingerprint(buildDepartmentImportFileFingerprint(importFile, result));
       message.success("Department CSV dry-run completed.");
     } catch (error) {
       setImportError(normalizeError(error));
     } finally {
       setImportSubmitting(false);
+    }
+  };
+
+  const openImportApplyConfirm = () => {
+    if (!importApplyEligibility.canApply) {
+      setImportApplyError(toValidationError(importApplyEligibility.reason));
+      return;
+    }
+
+    setImportApplyError(null);
+    setImportApplyConfirmOpen(true);
+  };
+
+  const closeImportApplyConfirm = () => {
+    if (!importApplySubmitting) {
+      setImportApplyConfirmOpen(false);
+    }
+  };
+
+  const handleImportApply = async () => {
+    if (importApplySubmitting) {
+      return;
+    }
+
+    const eligibility = getDepartmentImportApplyEligibility({
+      file: importFile,
+      result: importResult,
+      mode: departmentImportApplyMode,
+      submitting: false,
+      fingerprint: importFileFingerprint,
+    });
+
+    if (!eligibility.canApply || !importFile) {
+      setImportApplyError(toValidationError(eligibility.reason));
+      return;
+    }
+
+    setImportApplySubmitting(true);
+    setImportApplyError(null);
+    setImportApplyResult(null);
+
+    try {
+      const result = await applyDepartmentImport(apiClient, importFile, departmentImportApplyMode);
+      setImportApplyResult(result);
+      setImportApplyConfirmOpen(false);
+      message.success("Department CSV apply completed.");
+      refreshAll();
+    } catch (error) {
+      setImportApplyError(mapDepartmentImportApplyErrorToDisplay(normalizeError(error)));
+    } finally {
+      setImportApplySubmitting(false);
     }
   };
 
@@ -446,10 +541,18 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
       <DepartmentImportDryRunPanel
         file={importFile}
         loading={importSubmitting}
+        applySubmitting={importApplySubmitting}
+        applyConfirmOpen={importApplyConfirmOpen}
+        applyEligibility={importApplyEligibility}
+        applyResult={importApplyResult}
+        applyError={importApplyError}
         error={importError}
         result={importResult}
         onFileChange={handleImportFileChange}
         onRunDryRun={handleImportDryRun}
+        onOpenApplyConfirm={openImportApplyConfirm}
+        onCloseApplyConfirm={closeImportApplyConfirm}
+        onConfirmApply={handleImportApply}
       />
 
       <Card className="shell-card">
@@ -616,40 +719,280 @@ export const dryRunDepartmentImport = async (
   file: File,
 ): Promise<DepartmentImportDryRunResult> => client.dryRunDepartmentImport({ file });
 
+export const applyDepartmentImport = async (
+  client: Pick<AccountManagementApiClient, "applyDepartmentImport">,
+  file: File,
+  mode: DepartmentImportApplyMode = departmentImportApplyMode,
+): Promise<DepartmentImportApplyResult> => client.applyDepartmentImport({ file, mode });
+
+export const buildDepartmentImportFileFingerprint = (
+  file: Pick<File, "name" | "size" | "lastModified">,
+  result: DepartmentImportDryRunResult,
+): DepartmentImportFileFingerprint => ({
+  name: file.name,
+  size: file.size,
+  lastModified: file.lastModified,
+  resultName: result.file.name,
+  resultSize: result.file.size,
+});
+
+export const isSameDepartmentImportFile = (
+  file: Pick<File, "name" | "size" | "lastModified"> | null,
+  fingerprint: DepartmentImportFileFingerprint | null,
+): boolean =>
+  Boolean(
+    file &&
+      fingerprint &&
+      file.name === fingerprint.name &&
+      file.size === fingerprint.size &&
+      file.lastModified === fingerprint.lastModified,
+  );
+
+export const getDepartmentImportApplyEligibility = ({
+  file,
+  result,
+  mode,
+  submitting,
+  fingerprint,
+}: {
+  file: Pick<File, "name" | "size" | "lastModified"> | null;
+  result: DepartmentImportDryRunResult | null;
+  mode: string;
+  submitting: boolean;
+  fingerprint: DepartmentImportFileFingerprint | null;
+}): DepartmentImportApplyEligibility => {
+  if (submitting) {
+    return { canApply: false, reason: "Department import apply is already running." };
+  }
+
+  if (mode !== departmentImportApplyMode) {
+    return { canApply: false, reason: "Only CREATE_ONLY department import apply is supported." };
+  }
+
+  if (!file) {
+    return { canApply: false, reason: "Select one department CSV file first." };
+  }
+
+  if (!result) {
+    return { canApply: false, reason: "Run department CSV dry-run before apply." };
+  }
+
+  if (!isSameDepartmentImportFile(file, fingerprint)) {
+    return { canApply: false, reason: "The selected file changed after dry-run. Run dry-run again." };
+  }
+
+  if (result.importType !== "DEPARTMENT_METADATA" || result.dryRun !== true) {
+    return { canApply: false, reason: "Only department dry-run results can be applied here." };
+  }
+
+  if (result.summary.totalRows <= 0) {
+    return { canApply: false, reason: "Department import apply requires at least one row." };
+  }
+
+  if (result.summary.errorRows > 0) {
+    return { canApply: false, reason: "Resolve dry-run errors before apply." };
+  }
+
+  if (result.summary.warningRows > 0) {
+    return { canApply: false, reason: "Resolve dry-run warnings before create-only apply." };
+  }
+
+  if (result.summary.createCandidates !== result.summary.totalRows) {
+    return { canApply: false, reason: "All rows must be CREATE candidates." };
+  }
+
+  if (result.rows.some((row) => row.status !== "VALID")) {
+    return { canApply: false, reason: "All department import rows must be VALID." };
+  }
+
+  if (result.rows.some((row) => row.candidateAction !== "CREATE")) {
+    return { canApply: false, reason: "All department import actions must be CREATE." };
+  }
+
+  return { canApply: true, reason: "Ready for CREATE_ONLY department apply." };
+};
+
+export const mapDepartmentImportApplyErrorToDisplay = (error: ApiError): ApiError => {
+  if (error.status === 401 || error.kind === "unauthorized") {
+    return {
+      ...error,
+      message: "Department import apply needs an active session.",
+      detail: "Sign in again and rerun dry-run before applying.",
+    };
+  }
+
+  if (error.status === 403 || error.kind === "forbidden") {
+    return {
+      ...error,
+      message: "Department import apply requires system:config.",
+      detail: "Use an administrator with system:config. The backend permission check remains authoritative.",
+    };
+  }
+
+  if (error.status === 400 || error.kind === "bad-request") {
+    return {
+      ...error,
+      message: "Department import apply was rejected.",
+      detail: buildRejectedApplyErrorDetail(error),
+    };
+  }
+
+  if (error.kind === "network" || (error.status ?? 0) >= 500) {
+    return {
+      ...error,
+      message: "Department import apply service is unavailable.",
+      detail: "Retry after the local API is available. No department apply result was recorded by the Web client.",
+    };
+  }
+
+  return {
+    ...error,
+    message: error.message || "Department import apply failed.",
+  };
+};
+
+const buildRejectedApplyErrorDetail = (error: ApiError): string => {
+  const summary = readRejectedApplySummary(error.body);
+  const codes = readRejectedApplyErrorCodes(error.body);
+  const parts = [
+    summary
+      ? `created=${summary.createdRows}; skipped=${summary.skippedRows}; failed=${summary.failedRows}; errors=${summary.errorCount}; warnings=${summary.warningCount}`
+      : null,
+    codes.length > 0 ? `codes=${codes.join(",")}` : null,
+    error.detail,
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.join("; ") || "Backend validation rejected the create-only apply request.";
+};
+
+const readRejectedApplySummary = (
+  body: unknown,
+): DepartmentImportApplyResult["summary"] | null => {
+  if (typeof body !== "object" || body === null || !("summary" in body)) {
+    return null;
+  }
+
+  const summary = (body as { summary?: unknown }).summary;
+  if (typeof summary !== "object" || summary === null) {
+    return null;
+  }
+
+  const candidate = summary as Partial<DepartmentImportApplyResult["summary"]>;
+  return typeof candidate.createdRows === "number" &&
+    typeof candidate.skippedRows === "number" &&
+    typeof candidate.failedRows === "number" &&
+    typeof candidate.errorCount === "number" &&
+    typeof candidate.warningCount === "number"
+    ? {
+        totalRows: typeof candidate.totalRows === "number" ? candidate.totalRows : 0,
+        createdRows: candidate.createdRows,
+        skippedRows: candidate.skippedRows,
+        failedRows: candidate.failedRows,
+        errorCount: candidate.errorCount,
+        warningCount: candidate.warningCount,
+      }
+    : null;
+};
+
+const readRejectedApplyErrorCodes = (body: unknown): string[] => {
+  if (typeof body !== "object" || body === null || !("errors" in body)) {
+    return [];
+  }
+
+  const errors = (body as { errors?: unknown }).errors;
+  if (!Array.isArray(errors)) {
+    return [];
+  }
+
+  return [
+    ...new Set(
+      errors
+        .map((error) =>
+          typeof error === "object" && error !== null && "code" in error
+            ? String((error as { code: unknown }).code)
+            : null,
+        )
+        .filter((code): code is string => Boolean(code)),
+    ),
+  ];
+};
+
 export function DepartmentImportDryRunPanel({
   file,
   loading,
+  applySubmitting = false,
+  applyConfirmOpen = false,
+  applyEligibility = { canApply: false, reason: "Run department CSV dry-run before apply." },
+  applyResult = null,
+  applyError = null,
   error,
   result,
   onFileChange,
   onRunDryRun,
+  onOpenApplyConfirm = () => undefined,
+  onCloseApplyConfirm = () => undefined,
+  onConfirmApply = () => undefined,
 }: {
   file: File | null;
   loading: boolean;
+  applySubmitting?: boolean;
+  applyConfirmOpen?: boolean;
+  applyEligibility?: DepartmentImportApplyEligibility;
+  applyResult?: DepartmentImportApplyResult | null;
+  applyError?: ApiError | null;
   error: ApiError | null;
   result: DepartmentImportDryRunResult | null;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onRunDryRun: () => void;
+  onOpenApplyConfirm?: () => void;
+  onCloseApplyConfirm?: () => void;
+  onConfirmApply?: () => void | Promise<void>;
 }) {
   return (
-    <ImportDryRunPanelShell
-      className="shell-card department-import-dry-run-card"
-      title="Department CSV dry-run"
-      endpoint="POST /imports/departments/dry-run"
-      noticeMessage="dryRun=true; CSV-only; validates structure and data without writing the database."
-      noticeDescription="Accepted headers are code and name, with optional parentCode. This screen has no real import execution control."
-      fileAriaLabel="Department CSV file"
-      file={file}
-      loading={loading}
-      error={error}
-      result={result}
-      emptyHint="Select one .csv file to preview validation results."
-      onFileChange={onFileChange}
-      onRunDryRun={onRunDryRun}
-      renderResult={(dryRunResult) => (
-        <DepartmentImportDryRunResultView result={dryRunResult} />
-      )}
-    />
+    <>
+      <ImportDryRunPanelShell
+        className="shell-card department-import-dry-run-card"
+        title="Department CSV dry-run"
+        endpoint="POST /imports/departments/dry-run"
+        noticeMessage="dryRun=true; CSV-only; validates structure and data before optional CREATE_ONLY apply."
+        noticeDescription="Accepted headers are code and name, with optional parentCode. Apply creates department metadata only; update, upsert, delete, merge, and reactivation are not supported."
+        fileAriaLabel="Department CSV file"
+        file={file}
+        loading={loading}
+        controlsDisabled={applySubmitting}
+        error={error}
+        result={result}
+        emptyHint="Select one .csv file to preview validation results."
+        onFileChange={onFileChange}
+        onRunDryRun={onRunDryRun}
+        extraActions={
+          <Button
+            loading={applySubmitting}
+            disabled={!applyEligibility.canApply || loading || applySubmitting}
+            onClick={onOpenApplyConfirm}
+          >
+            Apply create-only
+          </Button>
+        }
+        renderResult={(dryRunResult) => (
+          <DepartmentImportDryRunResultView result={dryRunResult} />
+        )}
+        afterResult={
+          <DepartmentImportApplyStatus
+            eligibility={applyEligibility}
+            result={applyResult}
+            error={applyError}
+          />
+        }
+      />
+      <DepartmentImportApplyConfirmModal
+        open={applyConfirmOpen}
+        submitting={applySubmitting}
+        result={result}
+        onCancel={onCloseApplyConfirm}
+        onConfirm={onConfirmApply}
+      />
+    </>
   );
 }
 
@@ -675,6 +1018,156 @@ export function DepartmentImportDryRunResultView({
       tableColumns={departmentImportDryRunColumns}
       tableScrollX={1040}
     />
+  );
+}
+
+function DepartmentImportApplyStatus({
+  eligibility,
+  result,
+  error,
+}: {
+  eligibility: DepartmentImportApplyEligibility;
+  result: DepartmentImportApplyResult | null;
+  error: ApiError | null;
+}) {
+  return (
+    <Space direction="vertical" size={8} className="full-width">
+      <Alert
+        type={eligibility.canApply ? "success" : "info"}
+        showIcon
+        message={
+          eligibility.canApply
+            ? "CREATE_ONLY apply is available"
+            : "CREATE_ONLY apply is disabled"
+        }
+        description={eligibility.reason}
+      />
+      {error ? (
+        <Alert
+          type="error"
+          showIcon
+          message={error.message}
+          description={error.detail}
+        />
+      ) : null}
+      {result ? <DepartmentImportApplyResultView result={result} /> : null}
+    </Space>
+  );
+}
+
+function DepartmentImportApplyResultView({
+  result,
+}: {
+  result: DepartmentImportApplyResult;
+}) {
+  const errorCodes = [...new Set(result.errors.map((error) => error.code))];
+
+  return (
+    <Card size="small" title="Department apply result">
+      <Space direction="vertical" size={10} className="full-width">
+        <Alert
+          type={result.summary.errorCount > 0 ? "warning" : "success"}
+          showIcon
+          message="Department apply summary"
+          description="Result is sanitized. Audit rows are written by the backend in the same transaction as department creation."
+        />
+        <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
+          <Descriptions.Item label="Mode">{result.mode}</Descriptions.Item>
+          <Descriptions.Item label="Created rows">
+            {result.summary.createdRows}
+          </Descriptions.Item>
+          <Descriptions.Item label="Skipped rows">
+            {result.summary.skippedRows}
+          </Descriptions.Item>
+          <Descriptions.Item label="Failed rows">
+            {result.summary.failedRows}
+          </Descriptions.Item>
+          <Descriptions.Item label="Error count">
+            {result.summary.errorCount}
+          </Descriptions.Item>
+          <Descriptions.Item label="Audit operation">
+            {departmentImportApplyAuditOperation}
+          </Descriptions.Item>
+        </Descriptions>
+        {errorCodes.length > 0 ? (
+          <Space size={[6, 6]} wrap>
+            <Typography.Text strong>Rejected codes</Typography.Text>
+            {errorCodes.map((code) => (
+              <Tag color="red" key={code}>
+                {code}
+              </Tag>
+            ))}
+          </Space>
+        ) : (
+          <Typography.Text type="secondary">Rejected/error summary: none.</Typography.Text>
+        )}
+      </Space>
+    </Card>
+  );
+}
+
+function DepartmentImportApplyConfirmModal({
+  open,
+  submitting,
+  result,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  submitting: boolean;
+  result: DepartmentImportDryRunResult | null;
+  onCancel: () => void;
+  onConfirm: () => void | Promise<void>;
+}) {
+  return (
+    <Modal
+      title="Apply department CSV create-only"
+      open={open}
+      okText="Apply create-only"
+      cancelText="Cancel"
+      confirmLoading={submitting}
+      okButtonProps={{ disabled: submitting }}
+      cancelButtonProps={{ disabled: submitting }}
+      getContainer={false}
+      onCancel={onCancel}
+      onOk={onConfirm}
+      destroyOnHidden
+    >
+      <DepartmentImportApplyConfirmContent result={result} />
+    </Modal>
+  );
+}
+
+export function DepartmentImportApplyConfirmContent({
+  result,
+}: {
+  result: DepartmentImportDryRunResult | null;
+}) {
+  return (
+    <Space direction="vertical" size={12} className="full-width">
+      <Alert
+        type="warning"
+        showIcon
+        message="This will create department metadata."
+        description="Mode is CREATE_ONLY. This action does not update, upsert, delete, merge, disable, enable, or reactivate departments."
+      />
+      <Descriptions bordered size="small" column={1}>
+        <Descriptions.Item label="Endpoint">
+          POST /imports/departments/apply
+        </Descriptions.Item>
+        <Descriptions.Item label="Mode">{departmentImportApplyMode}</Descriptions.Item>
+        <Descriptions.Item label="Rows requested">
+          {result?.summary.createCandidates ?? 0}
+        </Descriptions.Item>
+        <Descriptions.Item label="Audit operation">
+          {departmentImportApplyAuditOperation}
+        </Descriptions.Item>
+      </Descriptions>
+      <Typography.Text type="secondary">
+        The backend re-parses and revalidates the uploaded CSV before writing. Local
+        production-like acceptance is not production/VPS readiness.
+      </Typography.Text>
+    </Space>
   );
 }
 

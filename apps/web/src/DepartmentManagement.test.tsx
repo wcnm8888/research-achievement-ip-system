@@ -2,12 +2,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { AccountManagementApiClient, ApiError, AuthUser } from "./api-client";
 import {
+  applyDepartmentImport,
+  buildDepartmentImportFileFingerprint,
   buildCreateDepartmentPayload,
   buildDepartmentListQuery,
   buildDepartmentReasonPayload,
   buildDepartmentTreeQuery,
   buildUpdateDepartmentPayload,
   createDepartmentFromForm,
+  DepartmentImportApplyConfirmContent,
   DepartmentImportDryRunPanel,
   DepartmentImportDryRunResultView,
   DepartmentManagement,
@@ -16,10 +19,13 @@ import {
   fetchDepartmentDetail,
   fetchDepartments,
   fetchDepartmentTree,
+  getDepartmentImportApplyEligibility,
+  mapDepartmentImportApplyErrorToDisplay,
   updateDepartmentFromForm,
   validateDepartmentImportCsvFile,
 } from "./DepartmentManagement";
 import type {
+  DepartmentImportApplyResult,
   DepartmentDetail,
   DepartmentImpactSummary,
   DepartmentImportDryRunResult,
@@ -122,6 +128,68 @@ const departmentImportDryRunResult: DepartmentImportDryRunResult = {
   ],
 };
 
+const validDepartmentImportDryRunResult: DepartmentImportDryRunResult = {
+  ...departmentImportDryRunResult,
+  summary: {
+    totalRows: 2,
+    validRows: 2,
+    errorRows: 0,
+    warningRows: 0,
+    createCandidates: 2,
+    existingCodeRows: 0,
+  },
+  rows: [
+    {
+      rowNumber: 2,
+      parsed: {
+        code: "AI_LAB",
+        name: "AI Lab",
+        parentCode: null,
+      },
+      status: "VALID",
+      candidateAction: "CREATE",
+      errors: [],
+      warnings: [],
+    },
+    {
+      rowNumber: 3,
+      parsed: {
+        code: "AI_CHILD",
+        name: "AI Child",
+        parentCode: "AI_LAB",
+      },
+      status: "VALID",
+      candidateAction: "CREATE",
+      errors: [],
+      warnings: [],
+    },
+  ],
+};
+
+const departmentImportApplyResult: DepartmentImportApplyResult = {
+  importType: "DEPARTMENT_METADATA",
+  dryRun: false,
+  mode: "CREATE_ONLY",
+  file: validDepartmentImportDryRunResult.file,
+  summary: {
+    totalRows: 2,
+    createdRows: 2,
+    skippedRows: 0,
+    failedRows: 0,
+    errorCount: 0,
+    warningCount: 0,
+  },
+  errors: [],
+  rows: [
+    {
+      rowNumber: 2,
+      code: "AI_LAB",
+      status: "CREATED",
+      createdDepartmentId: "10000000-0000-4000-8000-0000000000a1",
+    },
+  ],
+};
+
 describe("department management permission boundary", () => {
   it("renders a permission boundary and does not request departments without system:config", () => {
     const fetchMock = vi.fn();
@@ -152,7 +220,7 @@ describe("department management permission boundary", () => {
     expect(html).toContain("Department CSV dry-run");
     expect(html).toContain("dryRun=true");
     expect(html).toContain("CSV-only");
-    expect(html).toContain("without writing the database");
+    expect(html).toContain("before optional CREATE_ONLY apply");
     expect(html).toContain("POST /imports/departments/dry-run");
   });
 });
@@ -247,6 +315,20 @@ describe("department management API helpers", () => {
     );
     expect(client.dryRunDepartmentImport).toHaveBeenCalledWith({ file });
   });
+
+  it("runs department import apply through the department client with CREATE_ONLY mode", async () => {
+    const file = new File(["code,name\nAI_LAB,AI Lab"], "departments.csv", {
+      type: "text/csv",
+    });
+    const client = {
+      applyDepartmentImport: vi.fn(async () => departmentImportApplyResult),
+    } as unknown as Pick<AccountManagementApiClient, "applyDepartmentImport">;
+
+    await expect(applyDepartmentImport(client, file)).resolves.toEqual(
+      departmentImportApplyResult,
+    );
+    expect(client.applyDepartmentImport).toHaveBeenCalledWith({ file, mode: "CREATE_ONLY" });
+  });
 });
 
 describe("department import dry-run UI", () => {
@@ -327,6 +409,173 @@ describe("department import dry-run UI", () => {
     expect(html).not.toContain("Run import");
     expect(html).not.toContain("确认导入");
     expect(html).not.toContain("执行导入");
+  });
+  it("enables apply only for same-file CREATE dry-run results without warnings or errors", () => {
+    const file = new File(["code,name\nAI_LAB,AI Lab"], "departments.csv", {
+      type: "text/csv",
+      lastModified: 123,
+    });
+    const fingerprint = buildDepartmentImportFileFingerprint(
+      file,
+      validDepartmentImportDryRunResult,
+    );
+
+    expect(
+      getDepartmentImportApplyEligibility({
+        file,
+        result: validDepartmentImportDryRunResult,
+        mode: "CREATE_ONLY",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({ canApply: true });
+
+    expect(
+      getDepartmentImportApplyEligibility({
+        file,
+        result: departmentImportDryRunResult,
+        mode: "CREATE_ONLY",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({ canApply: false, reason: "Resolve dry-run errors before apply." });
+
+    expect(
+      getDepartmentImportApplyEligibility({
+        file,
+        result: {
+          ...validDepartmentImportDryRunResult,
+          summary: { ...validDepartmentImportDryRunResult.summary, warningRows: 1 },
+        },
+        mode: "CREATE_ONLY",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "Resolve dry-run warnings before create-only apply.",
+    });
+
+    expect(
+      getDepartmentImportApplyEligibility({
+        file,
+        result: {
+          ...validDepartmentImportDryRunResult,
+          rows: [
+            {
+              ...validDepartmentImportDryRunResult.rows[0]!,
+              candidateAction: "REVIEW_EXISTING",
+            },
+          ],
+        },
+        mode: "CREATE_ONLY",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({ canApply: false, reason: "All department import actions must be CREATE." });
+
+    expect(
+      getDepartmentImportApplyEligibility({
+        file,
+        result: validDepartmentImportDryRunResult,
+        mode: "UPSERT",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "Only CREATE_ONLY department import apply is supported.",
+    });
+
+    expect(
+      getDepartmentImportApplyEligibility({
+        file,
+        result: validDepartmentImportDryRunResult,
+        mode: "CREATE_ONLY",
+        submitting: true,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "Department import apply is already running.",
+    });
+  });
+
+  it("renders enabled apply affordance, confirmation modal, and success result", () => {
+    const file = new File(["code,name\nAI_LAB,AI Lab"], "departments.csv", {
+      type: "text/csv",
+      lastModified: 123,
+    });
+    const html = renderToStaticMarkup(
+      <DepartmentImportDryRunPanel
+        file={file}
+        loading={false}
+        applyEligibility={{
+          canApply: true,
+          reason: "Ready for CREATE_ONLY department apply.",
+        }}
+        applyResult={departmentImportApplyResult}
+        error={null}
+        result={validDepartmentImportDryRunResult}
+        onFileChange={vi.fn()}
+        onRunDryRun={vi.fn()}
+        onOpenApplyConfirm={vi.fn()}
+        onCloseApplyConfirm={vi.fn()}
+        onConfirmApply={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("Apply create-only");
+    expect(html).toContain("CREATE_ONLY apply is available");
+    expect(html).toContain("Department apply summary");
+    expect(html).toContain("Created rows");
+    expect(html).toContain("DEPARTMENT_IMPORT_CREATE");
+    const confirmHtml = renderToStaticMarkup(
+      <DepartmentImportApplyConfirmContent result={validDepartmentImportDryRunResult} />,
+    );
+    expect(confirmHtml).toContain("This will create department metadata.");
+    expect(confirmHtml).toContain("This action does not update, upsert, delete");
+    expect(confirmHtml).toContain("POST /imports/departments/apply");
+  });
+
+  it("renders sanitized apply errors for rejected, unauthorized, forbidden, and network cases", () => {
+    const rejected = mapDepartmentImportApplyErrorToDisplay({
+      kind: "bad-request",
+      status: 400,
+      message: "Request failed",
+      detail: "Department import apply requires only CREATE candidates.",
+      body: {
+        summary: {
+          totalRows: 1,
+          createdRows: 0,
+          skippedRows: 1,
+          failedRows: 0,
+          errorCount: 1,
+          warningCount: 1,
+        },
+        errors: [{ code: "EXISTING_CODE" }],
+      },
+    });
+    const unauthorized = mapDepartmentImportApplyErrorToDisplay({
+      kind: "unauthorized",
+      status: 401,
+      message: "raw",
+    });
+    const forbidden = mapDepartmentImportApplyErrorToDisplay({
+      kind: "forbidden",
+      status: 403,
+      message: "raw",
+    });
+    const network = mapDepartmentImportApplyErrorToDisplay({
+      kind: "network",
+      message: "Network request failed.",
+    });
+
+    expect(rejected.message).toBe("Department import apply was rejected.");
+    expect(rejected.detail).toContain("codes=EXISTING_CODE");
+    expect(unauthorized.detail).not.toContain("cookie");
+    expect(forbidden.detail).toContain("system:config");
+    expect(network.message).toBe("Department import apply service is unavailable.");
   });
 });
 

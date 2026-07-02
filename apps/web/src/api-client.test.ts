@@ -285,6 +285,69 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
   });
 
+  it("sends department import apply as CREATE_ONLY multipart form data", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        importType: "DEPARTMENT_METADATA",
+        dryRun: false,
+        mode: "CREATE_ONLY",
+        file: {
+          name: "departments.csv",
+          size: 25,
+          mimeType: "text/csv",
+          encoding: "utf-8",
+        },
+        summary: {
+          totalRows: 1,
+          createdRows: 1,
+          skippedRows: 0,
+          failedRows: 0,
+          errorCount: 0,
+          warningCount: 0,
+        },
+        errors: [],
+        rows: [
+          {
+            rowNumber: 2,
+            code: "RD",
+            status: "CREATED",
+            createdDepartmentId: "10000000-0000-4000-8000-000000000001",
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const file = new File(["code,name\nRD,Research"], "departments.csv", {
+      type: "text/csv",
+    });
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.applyDepartmentImport({ file, mode: "CREATE_ONLY" }),
+    ).resolves.toMatchObject({
+      importType: "DEPARTMENT_METADATA",
+      dryRun: false,
+      mode: "CREATE_ONLY",
+      summary: {
+        createdRows: 1,
+      },
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+    const body = init.body as FormData;
+
+    expect(url).toBe("http://localhost/api/imports/departments/apply");
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("file")).toBe(file);
+    expect(body.get("mode")).toBe("CREATE_ONLY");
+    expect(headers.get("Content-Type")).toBeNull();
+    expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
   it("sends user account import dry-run as multipart form data", async () => {
     const fetchMock = vi.fn(async () =>
       Response.json({
