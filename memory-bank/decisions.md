@@ -4785,3 +4785,20 @@
 - Consequence:
   - Four isolated `playwright-cli` named sessions can exercise production session-auth Web flows over local HTTP without storing or printing session values.
   - This pattern is local acceptance only and must not be described as production/VPS validation.
+
+## D214 - Step 66A user/account import first write slice is non-login pending account creation
+
+- Date: 2026-07-02
+- Context: User/account import dry-run already validates account CSV shape, departments, roles, scopes, statuses, sensitive columns, existing users, and role-assignment conflicts. Moving to real-write crosses credential, lifecycle token, role binding, audit, and account activation boundaries.
+- Decision:
+  - The first user/account write slice must be backend-only `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - It may create only new `User` rows with `PENDING_ACTIVATION` status and no `UserCredential`.
+  - It may create only initial department-scoped non-`SYSTEM_ADMIN` `UserRole` rows.
+  - It must not create sessions, account lifecycle tokens, passwords, invite/reset email, DirectMail jobs, or active login capability.
+  - It must keep `system:config` as the write permission and keep backend checks authoritative.
+  - It must server-side re-parse and revalidate the uploaded file during apply and reject any errors or warnings.
+  - `employeeNo` remains file-local until a separate schema decision exists.
+- Consequence:
+  - Existing users, existing role assignments, and revoked assignment reactivation are deferred.
+  - Invite/resend/reset flows remain separate lifecycle operations under their own permissions.
+  - Step 66B can implement a narrow transaction-scoped create path without broad account lifecycle side effects.

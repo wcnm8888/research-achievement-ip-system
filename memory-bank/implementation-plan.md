@@ -9491,3 +9491,28 @@ Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Pr
   - No product feature expansion was needed and no Web/API source behavior changed.
 - Closed gap:
   - Step 58D's partial browser evidence is now supplemented by a clean four-role browser gate.
+
+## Step 66A implementation planning update - user/account import real-write
+
+- Status: DONE.
+- Documentation completed:
+  - `memory-bank/user-account-import-real-write-safety-plan.md`.
+  - Step 66A section in `memory-bank/import-real-write-rollout-plan.md`.
+- Recommended Step 66B:
+  - Add backend-only `POST /api/users/import/apply`.
+  - Accept only `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Reuse/factor the dry-run parser and validation into a server-side apply plan.
+  - Reject apply when the freshly computed plan has any error or warning.
+  - Use one Prisma transaction for all user creates, role creates, and audit events.
+  - Recheck email uniqueness, active departments, active roles, department scope, non-`SYSTEM_ADMIN`, and `PENDING_ACTIVATION` status inside the transaction.
+  - Create no credentials, sessions, lifecycle tokens, password hashes, invite/reset records, or email jobs.
+  - Map unique conflicts to safe conflict reports.
+  - Add focused controller/service/AppModule tests and audit payload safety assertions.
+- Deferred after Step 66B:
+  - Web apply entry.
+  - Local production-like write acceptance.
+  - Existing-user update/merge.
+  - Revoked role reactivation.
+  - Invite/reset issuance.
+  - Employee-number schema and database conflict handling.
+  - Production/VPS rollout.

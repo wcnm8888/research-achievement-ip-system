@@ -146,6 +146,33 @@ After a department create-only apply slice is implemented and accepted, the next
 3. User/account import write design, starting with pending users without credentials and without invite/reset issuance.
 4. Achievement draft import write design, starting with one type or a strict all-type draft create mapper only after department/user write risks are settled.
 
+## Step 66A User/Account Real-Write Safety Plan
+
+- Date: 2026-07-02.
+- Scope:
+  - Documentation-only safety plan for moving user/account import from dry-run toward a first real-write slice.
+  - No runtime code, apply API execution, database write, Docker, production/VPS access, password operation, account activation, invite/reset flow, DirectMail/real email, or achievement import work.
+- Plan document:
+  - Added `memory-bank/user-account-import-real-write-safety-plan.md`.
+- Recommended first slice:
+  - Backend-only `POST /api/users/import/apply`.
+  - Only mode: `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Static permission: `system:config`.
+  - Create new `User` rows only as `PENDING_ACTIVATION`.
+  - Create initial department-scoped non-`SYSTEM_ADMIN` `UserRole` rows.
+  - Create no `UserCredential`, no `UserSession`, and no `AccountLifecycleToken`.
+  - Send no invite/reset email and do not call account lifecycle token services.
+  - Write safe audit evidence in the same Prisma transaction.
+- Key safety decisions:
+  - Apply must server-side re-parse and revalidate the CSV; it must not trust a client dry-run result.
+  - Existing-user, existing-assignment, and revoked-assignment warnings are blockers for the first apply slice.
+  - `GLOBAL` scope, `SYSTEM_ADMIN`, and `ACTIVE` status remain non-importable.
+  - `employeeNo` remains file-local only until a separate schema decision exists.
+  - Re-running an already applied file should create no additional rows and should surface safe existing-user conflict evidence.
+- Recommended Step 66B:
+  - Implement the backend-only apply endpoint, shared planning path, transaction-scoped create, race-condition rechecks, safe audit, and targeted API tests.
+  - Keep Web apply, local production-like write acceptance, existing-user handling, invite/reset issuance, employee-number schema work, and production/VPS rollout deferred unless separately authorized.
+
 ## Step 65B Implementation Record
 
 - Date: 2026-07-02.

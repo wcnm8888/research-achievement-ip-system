@@ -10652,3 +10652,25 @@
   - Existing untracked local artifacts were left untouched.
 - Next step:
   - Step 58 browser acceptance gap is closed; any future related work can reuse the local proxy pattern documented in `testing-strategy.md`.
+
+## 2026-07-02 Step 66A - User/account import real-write safety plan
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/user-account-import-real-write-safety-plan.md`.
+  - Updated the import real-write rollout plan with the user/account safety decision and Step 66B recommendation.
+  - Reviewed only the necessary user/account dry-run, user/account model, permission, audit, login, and invite/reset lifecycle boundaries.
+- Key outcome:
+  - First safe slice should be backend-only `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - The slice may create new `PENDING_ACTIVATION` users and department-scoped non-`SYSTEM_ADMIN` role assignments only.
+  - It must not create credentials, sessions, lifecycle tokens, passwords, invite/reset email, or active login capability.
+  - Apply must server-side re-parse and revalidate the file and must block any dry-run warning.
+- Explicitly not done:
+  - No runtime implementation.
+  - No apply API call.
+  - No database write.
+  - No Docker or production/VPS access.
+  - No password, invite/reset, email, account activation, Web button, or achievement real-write work.
+- Verification:
+  - Documentation-only Step; full typecheck/test not run.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.

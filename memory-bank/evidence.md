@@ -13629,3 +13629,33 @@
   - No package or lockfile changes.
   - No `.env` / `.env.production` contents were read.
   - No cookie, token, session value, password, secret, connection string, AccessKey, private key, voucher number, storage key, checksum, or real business value was recorded.
+
+## 2026-07-02 Step 66A - User/account import real-write safety plan evidence
+
+- Canonical state checked before documentation:
+  - `git rev-parse HEAD` -> `0972c461d9814e5db280d524f10ae5e2b906a261`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched: `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context reviewed:
+  - `memory-bank/testing-strategy.md`.
+  - User/account sections in `memory-bank/import-real-write-rollout-plan.md`.
+  - Necessary code boundaries for user/account dry-run, Prisma user/account models, account management, login, permissions, audit, and account lifecycle invite/reset.
+- Documentation result:
+  - Added `memory-bank/user-account-import-real-write-safety-plan.md`.
+  - Updated rollout, progress, decisions, implementation plan, and evidence records.
+- Safety conclusions:
+  - First slice is backend-only `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Created users must be `PENDING_ACTIVATION` with no credential and no login capability.
+  - Import apply must not create sessions, lifecycle tokens, passwords, invite/reset email, or active users.
+  - Apply must server-side re-parse and revalidate the CSV and reject all warnings.
+- Validation:
+  - Full typecheck/test not run because Step 66A changed documentation only.
+  - `git diff --check` -> passed.
+  - Added-lines sensitive keyword scan -> reviewed as boundary documentation only; no real secret, credential value, connection string, AccessKey, private key, cookie, token, or password value was added.
+- Boundaries observed:
+  - No runtime source changes.
+  - No apply API call.
+  - No database write.
+  - No Docker.
+  - No production/VPS/production database access.
+  - No password change/reset, invite/reset issuance, DirectMail/real email, account activation, Web button, or achievement real-write work.
