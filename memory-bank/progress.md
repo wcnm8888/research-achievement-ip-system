@@ -1,5 +1,27 @@
 # Progress
 
+## 2026-07-02 Step 69B - Achievement SOFTWARE_COPYRIGHT import CREATE_DRAFT_ONLY backend apply
+
+- Status: DONE.
+- Scope completed:
+  - Extended the existing backend-only `POST /api/achievements/import/apply` path to support all-`SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` batches.
+  - Preserved existing all-`PAPER` apply behavior.
+  - Added software registration duplicate boundary with normalized `registrationNo` / persisted `registrationNoNormalized`.
+  - Added transaction-time software registration conflict recheck and Prisma unique conflict mapping to safe `DB_CONFLICT`.
+  - Added transaction-scoped creation for `DRAFT` `Achievement`, `SoftwareCopyrightDetail`, contributors, and safe audit evidence.
+  - Kept `PATENT` rejected and mixed `PAPER` + `SOFTWARE_COPYRIGHT` batches rejected before writes.
+  - Added focused service and repository tests for software success, missing registration number, mixed batch rejection, PATENT rejection, conflict handling, transaction rechecks, audit safety, and forbidden side-effect boundaries.
+- Explicitly not done:
+  - No Web change.
+  - No Docker/browser/local production-like acceptance.
+  - No production/VPS access, production DB access, production configuration access, `.env` / `.env.production` content read, real-data import, schema/migration/package/lockfile/config change, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `PATENT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files / 140 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 69A - Achievement import next type scope and safety plan
 
 - Status: DONE.

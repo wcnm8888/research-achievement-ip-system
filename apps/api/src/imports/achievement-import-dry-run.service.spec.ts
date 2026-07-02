@@ -70,6 +70,10 @@ const createService = (input: {
   }>;
   applyUsers?: ReturnType<typeof activeUser>[];
   applyDoiConflicts?: Array<{ field: "doi"; normalizedValue: string }>;
+  applyRegistrationConflicts?: Array<{
+    field: "registrationNo";
+    normalizedValue: string;
+  }>;
   createError?: unknown;
   auditError?: unknown;
 } = {}) => {
@@ -86,6 +90,24 @@ const createService = (input: {
     paperDetail: {
       achievementId: "30000000-0000-4000-8000-000000000001",
       doiNormalized: "10.1000/example",
+    },
+    softwareCopyrightDetail: null,
+    contributors: [{ id: "70000000-0000-4000-8000-000000000001" }],
+  };
+  const createdSoftwareAchievement = {
+    id: "30000000-0000-4000-8000-000000000002",
+    type: "SOFTWARE_COPYRIGHT",
+    status: "DRAFT",
+    secretLevel: "INTERNAL",
+    departmentId: ids.department,
+    ownerUserId: ids.owner,
+    createdById: ids.admin,
+    updatedById: ids.admin,
+    version: 1,
+    paperDetail: null,
+    softwareCopyrightDetail: {
+      achievementId: "30000000-0000-4000-8000-000000000002",
+      registrationNoNormalized: "SW001",
     },
     contributors: [{ id: "70000000-0000-4000-8000-000000000001" }],
   };
@@ -107,11 +129,20 @@ const createService = (input: {
     findApplyPaperDoiConflictsInTransaction: vi.fn().mockResolvedValue(
       input.applyDoiConflicts ?? [],
     ),
+    findApplySoftwareRegistrationConflictsInTransaction: vi.fn().mockResolvedValue(
+      input.applyRegistrationConflicts ?? [],
+    ),
     createPaperDraftInTransaction: vi.fn().mockImplementation(() => {
       if (input.createError) {
         throw input.createError;
       }
       return Promise.resolve(createdAchievement);
+    }),
+    createSoftwareCopyrightDraftInTransaction: vi.fn().mockImplementation(() => {
+      if (input.createError) {
+        throw input.createError;
+      }
+      return Promise.resolve(createdSoftwareAchievement);
     }),
     isPrismaUniqueConflict: vi.fn((error: unknown) => Boolean((error as { code?: string })?.code === "P2002")),
     getPrismaUniqueConflictTarget: vi.fn((error: unknown) => (error as { meta?: { target?: string[] } })?.meta?.target ?? []),
@@ -462,6 +493,109 @@ describe("AchievementImportDryRunService", () => {
     expect(auditJson).not.toContain("10.1000");
   });
 
+  it("applies SOFTWARE_COPYRIGHT rows as draft achievements with detail, contributors, and safe audit", async () => {
+    const { service, repository, prisma, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [
+        activeUser("owner@example.org"),
+        activeUser("contributor@example.org", { id: ids.contributor }),
+      ],
+    });
+
+    const result = await service.applyAchievementCsv(
+      adminContext,
+      makeFile(
+        [
+          "type,title,ownerEmail,departmentCode,contributors,status,softwareRegistrationNo,softwareVersion,softwareType,publishDate,registerDate,runEnv",
+          "SOFTWARE_COPYRIGHT,Software A,owner@example.org,RD,Contributor|COPYRIGHT_OWNER|OWNER|contributor@example.org|Lab,DRAFT,SW-001,1.0,APPLICATION,2026-01-02,2026-02-03,Hidden runtime",
+        ].join("\n"),
+      ),
+      "CREATE_DRAFT_ONLY",
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(repository.findApplySoftwareRegistrationConflictsInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      ["SW001"],
+    );
+    expect(repository.createSoftwareCopyrightDraftInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        type: "SOFTWARE_COPYRIGHT",
+        title: "Software A",
+        departmentId: ids.department,
+        ownerUserId: ids.owner,
+        createdById: ids.admin,
+        updatedById: ids.admin,
+        softwareCopyrightDetail: expect.objectContaining({
+          registrationNo: "SW-001",
+          registrationNoNormalized: "SW001",
+          softwareVersion: "1.0",
+          softwareType: "APPLICATION",
+          publishDate: "2026-01-02",
+          registerDate: "2026-02-03",
+          runEnv: "Hidden runtime",
+        }),
+        contributors: [
+          expect.objectContaining({
+            name: "Contributor",
+            userId: ids.contributor,
+            contributorType: "COPYRIGHT_OWNER",
+            contributorRole: "OWNER",
+            sortOrder: 1,
+          }),
+        ],
+      }),
+    );
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      importType: "ACHIEVEMENT",
+      dryRun: false,
+      mode: "CREATE_DRAFT_ONLY",
+      summary: {
+        totalRows: 1,
+        createdAchievementsCount: 1,
+        createdPaperDetailsCount: 0,
+        createdSoftwareCopyrightDetailsCount: 1,
+        createdContributorsCount: 1,
+        auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+      },
+      rows: [
+        expect.objectContaining({
+          type: "SOFTWARE_COPYRIGHT",
+          achievementStatus: "DRAFT",
+        }),
+      ],
+    });
+    const auditInput = auditService.recordEventInTransaction.mock.calls[0]![1];
+    const auditJson = JSON.stringify(auditInput);
+    expect(auditInput).toMatchObject({
+      action: "CREATE",
+      target: {
+        type: "ACHIEVEMENT",
+        id: "30000000-0000-4000-8000-000000000002",
+        departmentId: ids.department,
+        secretLevel: "INTERNAL",
+      },
+      oldValue: null,
+      newValue: expect.objectContaining({
+        operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+        mode: "CREATE_DRAFT_ONLY",
+        rowNumber: 2,
+        type: "SOFTWARE_COPYRIGHT",
+        status: "DRAFT",
+        identifierFieldsPresent: ["registrationNo"],
+      }),
+    });
+    expect(auditJson).not.toContain("Software A");
+    expect(auditJson).not.toContain("owner@example.org");
+    expect(auditJson).not.toContain("contributor@example.org");
+    expect(auditJson).not.toContain("Contributor");
+    expect(auditJson).not.toContain("SW-001");
+    expect(auditJson).not.toContain("SW001");
+    expect(auditJson).not.toContain("Hidden runtime");
+  });
+
   it("rejects unsupported apply mode before parsing or writing", async () => {
     const { service, repository, prisma } = createService();
 
@@ -475,7 +609,7 @@ describe("AchievementImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("rejects PATENT and SOFTWARE_COPYRIGHT rows for the first apply slice", async () => {
+  it("rejects PATENT rows for the software copyright apply slice", async () => {
     const { service, repository, prisma } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [
@@ -489,9 +623,8 @@ describe("AchievementImportDryRunService", () => {
         adminContext,
         makeFile(
           [
-            "type,title,ownerEmail,departmentCode,contributors,patentNo,softwareRegistrationNo",
-            "PATENT,Patent A,owner@example.org,RD,Inventor|INVENTOR|PRIMARY_INVENTOR|contributor@example.org|Lab,CN-001,",
-            "SOFTWARE_COPYRIGHT,Software A,owner@example.org,RD,Owner|COPYRIGHT_OWNER|OWNER|contributor@example.org|Lab,,SW-001",
+            "type,title,ownerEmail,departmentCode,contributors,patentNo",
+            "PATENT,Patent A,owner@example.org,RD,Inventor|INVENTOR|PRIMARY_INVENTOR|contributor@example.org|Lab,CN-001",
           ].join("\n"),
         ),
       ),
@@ -504,6 +637,37 @@ describe("AchievementImportDryRunService", () => {
     });
 
     expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects mixed PAPER and SOFTWARE_COPYRIGHT batches before opening a transaction", async () => {
+    const { service, repository, prisma } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          [
+            "type,title,ownerEmail,departmentCode,contributors,doi,softwareRegistrationNo",
+            "PAPER,Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/new,",
+            "SOFTWARE_COPYRIGHT,Software,owner@example.org,RD,B|COPYRIGHT_OWNER||owner@example.org|Lab,,SW-001",
+          ].join("\n"),
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "type", code: "MIXED_TYPE_BATCH" }),
+        ]),
+      }),
+    });
+
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -524,6 +688,30 @@ describe("AchievementImportDryRunService", () => {
       result: expect.objectContaining({
         errors: expect.arrayContaining([
           expect.objectContaining({ field: "doi", code: "REQUIRED" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing software registration number during apply even when dry-run can preview the row", async () => {
+    const { service, prisma } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors\nSOFTWARE_COPYRIGHT,Software,owner@example.org,RD,A|COPYRIGHT_OWNER||owner@example.org|Lab\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "registrationNo", code: "REQUIRED" }),
         ]),
       }),
     });
@@ -618,7 +806,7 @@ describe("AchievementImportDryRunService", () => {
     expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
   });
 
-  it("maps DOI race recheck and unique conflicts to safe conflicts", async () => {
+  it("maps identifier race recheck and unique conflicts to safe conflicts", async () => {
     const race = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
@@ -642,6 +830,29 @@ describe("AchievementImportDryRunService", () => {
 
     expect(race.repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
 
+    const softwareRace = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      applyRegistrationConflicts: [{ field: "registrationNo", normalizedValue: "SW001" }],
+    });
+
+    await expect(
+      softwareRace.service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,softwareRegistrationNo\nSOFTWARE_COPYRIGHT,Software,owner@example.org,RD,A|COPYRIGHT_OWNER||owner@example.org|Lab,SW-001\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "registrationNo", code: "DB_CONFLICT" }),
+        ]),
+      }),
+    });
+
+    expect(softwareRace.repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
+
     const unique = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
@@ -658,6 +869,25 @@ describe("AchievementImportDryRunService", () => {
     ).rejects.toMatchObject({
       result: expect.objectContaining({
         errors: [expect.objectContaining({ field: "doi", code: "DB_CONFLICT" })],
+      }),
+    });
+
+    const softwareUnique = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      createError: { code: "P2002", meta: { target: ["registration_no_normalized"] } },
+    });
+
+    await expect(
+      softwareUnique.service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,softwareRegistrationNo\nSOFTWARE_COPYRIGHT,Software,owner@example.org,RD,A|COPYRIGHT_OWNER||owner@example.org|Lab,SW-001\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: [expect.objectContaining({ field: "registrationNo", code: "DB_CONFLICT" })],
       }),
     });
   });

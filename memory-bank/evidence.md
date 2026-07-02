@@ -1,5 +1,48 @@
 # Evidence
 
+## 2026-07-02 Step 69B - Achievement SOFTWARE_COPYRIGHT import CREATE_DRAFT_ONLY backend apply evidence
+
+- Goal:
+  - Extend backend-only achievement import apply to support all-`SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` batches while preserving existing `PAPER` behavior and rejecting `PATENT` / mixed batches.
+- Initial state:
+  - `git log -1 --oneline`: `020d2c2 docs: plan achievement import next type`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - Step 68F and Step 69A snippets from `memory-bank/progress.md`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.ts`.
+  - Achievement import service/repository/controller/AppModule tests.
+  - Targeted Prisma model snippets for `Achievement`, `SoftwareCopyrightDetail`, `AchievementContributor`, and `AuditLog`.
+- Implemented files:
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.spec.ts`.
+  - `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - `SOFTWARE_COPYRIGHT` apply requires normalized software registration number.
+  - Source compatibility remains `softwareRegistrationNo` preferred with `registrationNo` alias.
+  - A successful software copyright apply writes only `Achievement`, `SoftwareCopyrightDetail`, contributors, and same-transaction audit evidence.
+  - Transaction-time rechecks cover active department, active owner, owner department match, active contributor users, and software registration conflicts.
+  - Repeated/race apply and Prisma unique conflicts map to safe `DB_CONFLICT`.
+  - Mixed `PAPER` + `SOFTWARE_COPYRIGHT` batches reject before opening a transaction.
+  - `PATENT` remains a safe unsupported type.
+  - Audit evidence omits title, owner email, contributor names/emails, raw/normalized registration number, and `runEnv`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files and 140 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; matches are code/test/documentation safety-boundary or negative-assertion terms only, with no complete URL, credential value, connection string value, private key value, AccessKey value, token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No Web code, Docker/browser/local production-like acceptance, API call against a running service, database write outside tests/mocks, schema/migration/package/lockfile/config change, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/connection-string/private-key handling, workflow/attachment/storage/fee/reminder/notification/search/resource grant/import job creation, achievement submit/approve/reject/archive/void, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts occurred.
+
 ## 2026-07-02 Step 69A - Achievement import next type scope and safety plan evidence
 
 - Goal:

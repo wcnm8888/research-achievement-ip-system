@@ -8,11 +8,13 @@ import {
 import {
   CreateAchievementContributorDraftInput,
   CreatePaperDetailDraftInput,
+  CreateSoftwareCopyrightDetailDraftInput,
 } from "../achievements/domain/achievement-repository.types";
 import {
   toAchievementCreateData,
   toContributorCreateManyData,
   toPaperDetailCreateData,
+  toSoftwareCopyrightDetailCreateData,
 } from "../achievements/domain/achievement-prisma.mapper";
 
 export type AchievementImportDepartmentLookup = {
@@ -60,7 +62,19 @@ export type AchievementImportCreatePaperDraftInput = {
   contributors: readonly CreateAchievementContributorDraftInput[];
 };
 
-export type AchievementImportCreatedPaperDraft = {
+export type AchievementImportCreateSoftwareCopyrightDraftInput = {
+  type: typeof AchievementTypeCode.softwareCopyright;
+  title: string;
+  secretLevel: SecretLevelCode;
+  departmentId: string;
+  ownerUserId: string;
+  createdById: string;
+  updatedById: string;
+  softwareCopyrightDetail: CreateSoftwareCopyrightDetailDraftInput;
+  contributors: readonly CreateAchievementContributorDraftInput[];
+};
+
+export type AchievementImportCreatedDraft = {
   id: string;
   type: string;
   status: string;
@@ -71,12 +85,21 @@ export type AchievementImportCreatedPaperDraft = {
   updatedById: string | null;
   version: number;
   paperDetail: { achievementId: string; doiNormalized: string | null } | null;
+  softwareCopyrightDetail: {
+    achievementId: string;
+    registrationNoNormalized: string | null;
+  } | null;
   contributors: Array<{ id: string }>;
 };
 
 export type AchievementImportApplyTransactionClient = Pick<
   Prisma.TransactionClient,
-  "department" | "user" | "achievement" | "paperDetail" | "achievementContributor"
+  | "department"
+  | "user"
+  | "achievement"
+  | "paperDetail"
+  | "softwareCopyrightDetail"
+  | "achievementContributor"
 >;
 
 @Injectable()
@@ -216,10 +239,33 @@ export class AchievementImportDryRunRepository {
       }));
   }
 
+  async findApplySoftwareRegistrationConflictsInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    registrationNoNormalizedValues: readonly string[],
+  ): Promise<AchievementImportNormalizedConflict[]> {
+    const uniqueValues = [...new Set(registrationNoNormalizedValues.filter(Boolean))];
+    if (uniqueValues.length === 0) {
+      return [];
+    }
+
+    const rows = await client.softwareCopyrightDetail.findMany({
+      where: { registrationNoNormalized: { in: uniqueValues } },
+      select: { registrationNoNormalized: true },
+    });
+
+    return rows
+      .map((row) => row.registrationNoNormalized)
+      .filter((value): value is string => Boolean(value))
+      .map((normalizedValue) => ({
+        field: "registrationNo",
+        normalizedValue,
+      }));
+  }
+
   async createPaperDraftInTransaction(
     client: AchievementImportApplyTransactionClient,
     input: AchievementImportCreatePaperDraftInput,
-  ): Promise<AchievementImportCreatedPaperDraft> {
+  ): Promise<AchievementImportCreatedDraft> {
     const created = await client.achievement.create({
       data: toAchievementCreateData({
         ...input,
@@ -255,6 +301,70 @@ export class AchievementImportDryRunRepository {
           select: {
             achievementId: true,
             doiNormalized: true,
+          },
+        },
+        softwareCopyrightDetail: {
+          select: {
+            achievementId: true,
+            registrationNoNormalized: true,
+          },
+        },
+        contributors: {
+          select: { id: true },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+    });
+  }
+
+  async createSoftwareCopyrightDraftInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    input: AchievementImportCreateSoftwareCopyrightDraftInput,
+  ): Promise<AchievementImportCreatedDraft> {
+    const created = await client.achievement.create({
+      data: toAchievementCreateData({
+        ...input,
+        type: AchievementTypeCode.softwareCopyright,
+        softwareCopyrightDetail: input.softwareCopyrightDetail,
+      }),
+      select: { id: true },
+    });
+
+    await client.softwareCopyrightDetail.create({
+      data: toSoftwareCopyrightDetailCreateData(
+        created.id,
+        input.softwareCopyrightDetail,
+      ),
+    });
+
+    if (input.contributors.length > 0) {
+      await client.achievementContributor.createMany({
+        data: toContributorCreateManyData(created.id, input.contributors),
+      });
+    }
+
+    return client.achievement.findUniqueOrThrow({
+      where: { id: created.id },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        secretLevel: true,
+        departmentId: true,
+        ownerUserId: true,
+        createdById: true,
+        updatedById: true,
+        version: true,
+        paperDetail: {
+          select: {
+            achievementId: true,
+            doiNormalized: true,
+          },
+        },
+        softwareCopyrightDetail: {
+          select: {
+            achievementId: true,
+            registrationNoNormalized: true,
           },
         },
         contributors: {

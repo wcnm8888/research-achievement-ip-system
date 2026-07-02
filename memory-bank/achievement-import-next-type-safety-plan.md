@@ -1,5 +1,38 @@
 # Achievement Import Next Type Safety Plan
 
+## Step 69B Implementation Addendum
+
+- Date: 2026-07-02.
+- Implemented backend-only `SOFTWARE_COPYRIGHT` support in the existing `POST /api/achievements/import/apply` path.
+- Mode remains only `CREATE_DRAFT_ONLY`.
+- Existing `PAPER` apply behavior remains supported.
+- Apply now allows:
+  - all-`PAPER` batches;
+  - all-`SOFTWARE_COPYRIGHT` batches.
+- Apply still rejects:
+  - `PATENT`;
+  - mixed `PAPER` + `SOFTWARE_COPYRIGHT` batches;
+  - dry-run errors or warnings;
+  - `SOFTWARE_COPYRIGHT` rows without normalized software registration number.
+- `SOFTWARE_COPYRIGHT` duplicate-apply boundary:
+  - source columns: `softwareRegistrationNo` preferred, `registrationNo` alias preserved;
+  - normalized field: `registrationNo`;
+  - persisted unique field: `registrationNoNormalized`;
+  - repeated/race apply maps to safe `DB_CONFLICT`.
+- The transaction covers only:
+  - `Achievement`;
+  - `SoftwareCopyrightDetail`;
+  - `AchievementContributor`;
+  - audit event.
+- Transaction-time rechecks cover active non-archived department, active non-archived owner, owner department match, active non-archived contributor users, and normalized software registration conflict absence.
+- Audit evidence excludes title, owner email, contributor email/name, raw/normalized software registration number, and `runEnv`.
+- Still not implemented:
+  - `PATENT` apply;
+  - Web expansion;
+  - Docker/browser/local production-like acceptance;
+  - production/VPS access;
+  - workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+
 ## Step 69A Scope
 
 - Date: 2026-07-02.

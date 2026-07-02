@@ -24,6 +24,7 @@ import {
 import {
   CreateAchievementContributorDraftInput,
   CreatePaperDetailDraftInput,
+  CreateSoftwareCopyrightDetailDraftInput,
 } from "../achievements/domain/achievement-repository.types";
 import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
@@ -31,7 +32,7 @@ import {
   AchievementImportApplyDepartmentLookup,
   AchievementImportApplyTransactionClient,
   AchievementImportApplyUserLookup,
-  AchievementImportCreatedPaperDraft,
+  AchievementImportCreatedDraft,
   AchievementImportDepartmentLookup,
   AchievementImportDryRunRepository,
   AchievementImportNormalizedConflict,
@@ -257,7 +258,7 @@ export type AchievementImportApplyRow = {
   rowNumber: number;
   status: "CREATED";
   createdAchievementId: string;
-  type: typeof AchievementTypeCode.paper;
+  type: typeof AchievementTypeCode.paper | typeof AchievementTypeCode.softwareCopyright;
   achievementStatus: typeof AchievementStatusCode.draft;
   departmentId: string;
   ownerUserId: string;
@@ -269,6 +270,7 @@ export type AchievementImportApplySummary = {
   totalRows: number;
   createdAchievementsCount: number;
   createdPaperDetailsCount: number;
+  createdSoftwareCopyrightDetailsCount: number;
   createdContributorsCount: number;
   skippedRows: number;
   failedRows: number;
@@ -303,6 +305,7 @@ type AchievementImportResolvedPlanRow = {
     ownerUserId: string | null;
   };
   paperDetail: CreatePaperDetailDraftInput;
+  softwareCopyrightDetail: CreateSoftwareCopyrightDetailDraftInput;
 };
 
 type WorkingRow = {
@@ -387,7 +390,12 @@ export class AchievementImportDryRunService {
         const importClient = tx as AchievementImportApplyTransactionClient;
         const auditClient = tx as AuditTransactionClient;
 
-        const [departments, users, doiConflicts] = await Promise.all([
+        const [
+          departments,
+          users,
+          doiConflicts,
+          registrationNoConflicts,
+        ] = await Promise.all([
           this.repository.findApplyDepartmentsByCodesInTransaction(
             importClient,
             collectDepartmentCodesFromResolvedRows(rowsToCreate),
@@ -400,13 +408,17 @@ export class AchievementImportDryRunService {
             importClient,
             collectDoiNormalizedFromResolvedRows(rowsToCreate),
           ),
+          this.repository.findApplySoftwareRegistrationConflictsInTransaction(
+            importClient,
+            collectRegistrationNoNormalizedFromResolvedRows(rowsToCreate),
+          ),
         ]);
 
         const blockingErrors = toTransactionRecheckErrors(
           rowsToCreate,
           departments,
           users,
-          doiConflicts,
+          [...doiConflicts, ...registrationNoConflicts],
         );
         if (blockingErrors.length > 0) {
           throw new AchievementImportApplyRejectedError(
@@ -426,22 +438,40 @@ export class AchievementImportDryRunService {
             throw new Error("Achievement import apply invariant failed after revalidation.");
           }
 
-          const created = await this.repository.createPaperDraftInTransaction(
-            importClient,
-            {
-              type: AchievementTypeCode.paper,
-              title: row.parsed.title!,
-              secretLevel: row.parsed.secretLevel as SecretLevelCode,
-              departmentId: department.id,
-              ownerUserId: owner.id,
-              createdById: context.userId,
-              updatedById: context.userId,
-              paperDetail: row.paperDetail,
-              contributors: toContributorInputs(row, userByEmail),
-            },
-          );
+          const contributors = toContributorInputs(row, userByEmail);
+          const rowType = toApplySupportedType(row.parsed.type);
+          const created =
+            rowType === AchievementTypeCode.paper
+              ? await this.repository.createPaperDraftInTransaction(
+                  importClient,
+                  {
+                    type: AchievementTypeCode.paper,
+                    title: row.parsed.title!,
+                    secretLevel: row.parsed.secretLevel as SecretLevelCode,
+                    departmentId: department.id,
+                    ownerUserId: owner.id,
+                    createdById: context.userId,
+                    updatedById: context.userId,
+                    paperDetail: row.paperDetail,
+                    contributors,
+                  },
+                )
+              : await this.repository.createSoftwareCopyrightDraftInTransaction(
+                  importClient,
+                  {
+                    type: AchievementTypeCode.softwareCopyright,
+                    title: row.parsed.title!,
+                    secretLevel: row.parsed.secretLevel as SecretLevelCode,
+                    departmentId: department.id,
+                    ownerUserId: owner.id,
+                    createdById: context.userId,
+                    updatedById: context.userId,
+                    softwareCopyrightDetail: row.softwareCopyrightDetail,
+                    contributors,
+                  },
+                );
 
-          assertCreatedAchievementIsPaperDraft(created);
+          assertCreatedAchievementIsExpectedDraft(created, rowType);
 
           await this.auditService.recordEventInTransaction(
             auditClient,
@@ -452,7 +482,7 @@ export class AchievementImportDryRunService {
             rowNumber: row.rowNumber,
             status: "CREATED",
             createdAchievementId: created.id,
-            type: AchievementTypeCode.paper,
+            type: rowType,
             achievementStatus: AchievementStatusCode.draft,
             departmentId: created.departmentId,
             ownerUserId: created.ownerUserId,
@@ -528,6 +558,7 @@ export class AchievementImportDryRunService {
 
 const assertPlanCanApply = (plan: AchievementImportPlan): void => {
   const blockingErrors = toApplyErrorSummaries(plan.rows);
+  const supportedTypes = new Set<string>();
   const applyOnlyErrors = plan.rows.flatMap((row) => {
     const errors: AchievementImportApplyErrorSummary[] = [];
 
@@ -544,16 +575,19 @@ const assertPlanCanApply = (plan: AchievementImportPlan): void => {
       });
     }
 
-    if (row.parsed.type !== AchievementTypeCode.paper) {
+    if (isApplySupportedType(row.parsed.type)) {
+      supportedTypes.add(row.parsed.type);
+    } else {
       errors.push({
         rowNumber: row.rowNumber,
         field: "type",
         code: "UNSUPPORTED_TYPE",
-        message: "Apply supports only PAPER rows in this slice.",
+        message: "Apply supports only PAPER or SOFTWARE_COPYRIGHT rows in this slice.",
       });
+      return errors;
     }
 
-    if (!row.parsed.normalizedIdentifiers.doi) {
+    if (row.parsed.type === AchievementTypeCode.paper && !row.parsed.normalizedIdentifiers.doi) {
       errors.push({
         rowNumber: row.rowNumber,
         field: "doi",
@@ -562,13 +596,46 @@ const assertPlanCanApply = (plan: AchievementImportPlan): void => {
       });
     }
 
+    if (
+      row.parsed.type === AchievementTypeCode.softwareCopyright &&
+      !row.parsed.normalizedIdentifiers.registrationNo
+    ) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "registrationNo",
+        code: "REQUIRED",
+        message:
+          "Apply requires a normalized software registration number for SOFTWARE_COPYRIGHT rows.",
+      });
+    }
+
     return errors;
   });
+  const mixedTypeErrors =
+    supportedTypes.size > 1
+      ? [
+          {
+            rowNumber: null,
+            field: "type",
+            code: "MIXED_TYPE_BATCH",
+            message:
+              "Apply supports either all-PAPER or all-SOFTWARE_COPYRIGHT rows in one batch.",
+          },
+        ]
+      : [];
 
-  if (blockingErrors.length > 0 || applyOnlyErrors.length > 0) {
+  if (
+    blockingErrors.length > 0 ||
+    applyOnlyErrors.length > 0 ||
+    mixedTypeErrors.length > 0
+  ) {
     throw new AchievementImportApplyRejectedError(
-      "Achievement import apply requires only PAPER CREATE_DRAFT candidates with DOI.",
-      buildRejectedApplyResult(plan, [...blockingErrors, ...applyOnlyErrors]),
+      "Achievement import apply requires one supported CREATE_DRAFT type with a durable identifier.",
+      buildRejectedApplyResult(plan, [
+        ...blockingErrors,
+        ...applyOnlyErrors,
+        ...mixedTypeErrors,
+      ]),
     );
   }
 };
@@ -584,7 +651,10 @@ const buildSuccessfulApplyResult = (
   summary: {
     totalRows: plan.summary.totalRows,
     createdAchievementsCount: rows.length,
-    createdPaperDetailsCount: rows.length,
+    createdPaperDetailsCount: rows.filter((row) => row.type === AchievementTypeCode.paper).length,
+    createdSoftwareCopyrightDetailsCount: rows.filter(
+      (row) => row.type === AchievementTypeCode.softwareCopyright,
+    ).length,
     createdContributorsCount: rows.reduce(
       (count, row) => count + row.contributorCount,
       0,
@@ -611,6 +681,7 @@ const buildRejectedApplyResult = (
     totalRows: plan.summary.totalRows,
     createdAchievementsCount: 0,
     createdPaperDetailsCount: 0,
+    createdSoftwareCopyrightDetailsCount: 0,
     createdContributorsCount: 0,
     skippedRows: plan.summary.warningRows,
     failedRows: plan.summary.errorRows || errors.length,
@@ -655,18 +726,27 @@ const toResolvedPlanRow = (row: WorkingRow): AchievementImportResolvedPlanRow =>
     partition: normalizeCell(row.valuesByHeader.get("partition")),
     abstract: normalizeCell(row.valuesByHeader.get("abstract")),
   },
+  softwareCopyrightDetail: {
+    registrationNo: row.parsed.identifiers.registrationNo,
+    registrationNoNormalized: row.parsed.normalizedIdentifiers.registrationNo,
+    softwareVersion: normalizeCell(row.valuesByHeader.get("softwareVersion")),
+    softwareType: normalizeEnumCell(row.valuesByHeader.get("softwareType")) as SoftwareTypeCode | null,
+    publishDate: normalizeCell(row.valuesByHeader.get("publishDate")),
+    registerDate: normalizeCell(row.valuesByHeader.get("registerDate")),
+    runEnv: normalizeCell(row.valuesByHeader.get("runEnv")),
+  },
 });
 
 const toTransactionRecheckErrors = (
   rows: readonly AchievementImportResolvedPlanRow[],
   departments: readonly AchievementImportApplyDepartmentLookup[],
   users: readonly AchievementImportApplyUserLookup[],
-  doiConflicts: readonly AchievementImportNormalizedConflict[],
+  identifierConflicts: readonly AchievementImportNormalizedConflict[],
 ): AchievementImportApplyErrorSummary[] => {
   const errors: AchievementImportApplyErrorSummary[] = [];
   const departmentByCode = new Map(departments.map((department) => [department.code, department]));
   const userByEmail = new Map(users.map((user) => [user.email, user]));
-  const conflictKeys = toConflictKeySet(doiConflicts);
+  const conflictKeys = toConflictKeySet(identifierConflicts);
 
   for (const row of rows) {
     const department = row.parsed.departmentCode
@@ -713,29 +793,52 @@ const toTransactionRecheckErrors = (
       }
     }
 
-    const normalizedDoi = row.parsed.normalizedIdentifiers.doi;
-    if (!normalizedDoi) {
-      errors.push({
-        rowNumber: row.rowNumber,
-        field: "doi",
-        code: "REQUIRED",
-        message: "Apply requires a normalized DOI for PAPER rows.",
-      });
-    } else if (conflictKeys.has(toConflictKey("doi", normalizedDoi))) {
-      errors.push({
-        rowNumber: row.rowNumber,
-        field: "doi",
-        code: "DB_CONFLICT",
-        message: "doi already exists and cannot be imported as a new draft.",
-      });
+    if (row.parsed.type === AchievementTypeCode.paper) {
+      const normalizedDoi = row.parsed.normalizedIdentifiers.doi;
+      if (!normalizedDoi) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          field: "doi",
+          code: "REQUIRED",
+          message: "Apply requires a normalized DOI for PAPER rows.",
+        });
+      } else if (conflictKeys.has(toConflictKey("doi", normalizedDoi))) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          field: "doi",
+          code: "DB_CONFLICT",
+          message: "doi already exists and cannot be imported as a new draft.",
+        });
+      }
     }
 
-    if (row.parsed.type !== AchievementTypeCode.paper) {
+    if (row.parsed.type === AchievementTypeCode.softwareCopyright) {
+      const normalizedRegistrationNo = row.parsed.normalizedIdentifiers.registrationNo;
+      if (!normalizedRegistrationNo) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          field: "registrationNo",
+          code: "REQUIRED",
+          message:
+            "Apply requires a normalized software registration number for SOFTWARE_COPYRIGHT rows.",
+        });
+      } else if (conflictKeys.has(toConflictKey("registrationNo", normalizedRegistrationNo))) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          field: "registrationNo",
+          code: "DB_CONFLICT",
+          message:
+            "registrationNo already exists and cannot be imported as a new draft.",
+        });
+      }
+    }
+
+    if (!isApplySupportedType(row.parsed.type)) {
       errors.push({
         rowNumber: row.rowNumber,
         field: "type",
         code: "UNSUPPORTED_TYPE",
-        message: "Apply supports only PAPER rows in this slice.",
+        message: "Apply supports only PAPER or SOFTWARE_COPYRIGHT rows in this slice.",
       });
     }
 
@@ -765,22 +868,30 @@ const toContributorInputs = (
     sortOrder: contributor.sortOrder,
   }));
 
-const assertCreatedAchievementIsPaperDraft = (
-  achievement: AchievementImportCreatedPaperDraft,
+const assertCreatedAchievementIsExpectedDraft = (
+  achievement: AchievementImportCreatedDraft,
+  expectedType: string | null,
 ): void => {
+  const hasExpectedDetail =
+    expectedType === AchievementTypeCode.paper
+      ? Boolean(achievement.paperDetail)
+      : expectedType === AchievementTypeCode.softwareCopyright
+        ? Boolean(achievement.softwareCopyrightDetail)
+        : false;
+
   if (
-    achievement.type !== AchievementTypeCode.paper ||
+    achievement.type !== expectedType ||
     achievement.status !== AchievementStatusCode.draft ||
-    !achievement.paperDetail ||
+    !hasExpectedDetail ||
     achievement.secretLevel === null
   ) {
-    throw new Error("Achievement import created a record outside the PAPER draft boundary.");
+    throw new Error("Achievement import created a record outside the draft boundary.");
   }
 };
 
 const toAchievementImportCreateAuditEvent = (
   context: UserContext,
-  achievement: AchievementImportCreatedPaperDraft,
+  achievement: AchievementImportCreatedDraft,
   row: AchievementImportResolvedPlanRow,
   plan: AchievementImportPlan,
 ): CreateAuditEventInput => ({
@@ -802,12 +913,13 @@ const toAchievementImportCreateAuditEvent = (
     mode: "CREATE_DRAFT_ONLY",
     rowNumber: row.rowNumber,
     achievementId: achievement.id,
-    type: AchievementTypeCode.paper,
+    type: row.parsed.type,
     status: AchievementStatusCode.draft,
     departmentId: achievement.departmentId,
     ownerUserId: achievement.ownerUserId,
     contributorCount: achievement.contributors.length,
-    identifierFieldsPresent: ["doi"],
+    identifierFieldsPresent:
+      row.parsed.type === AchievementTypeCode.paper ? ["doi"] : ["registrationNo"],
     totalRows: plan.summary.totalRows,
     createdAchievementsCount: plan.summary.createDraftCandidates,
   },
@@ -826,6 +938,19 @@ const toUniqueConflictApplyError = (
       field: "doi",
       code: "DB_CONFLICT",
       message: "doi already exists and cannot be imported as a new draft.",
+    };
+  }
+
+  if (
+    normalizedTargets.some((field) =>
+      field.includes("registrationnonormalized"),
+    )
+  ) {
+    return {
+      rowNumber: null,
+      field: "registrationNo",
+      code: "DB_CONFLICT",
+      message: "registrationNo already exists and cannot be imported as a new draft.",
     };
   }
 
@@ -869,6 +994,33 @@ const collectDoiNormalizedFromResolvedRows = (
         .filter((doi): doi is string => Boolean(doi)),
     ),
   ];
+
+const collectRegistrationNoNormalizedFromResolvedRows = (
+  rows: readonly AchievementImportResolvedPlanRow[],
+): string[] =>
+  [
+    ...new Set(
+      rows
+        .map((row) => row.parsed.normalizedIdentifiers.registrationNo)
+        .filter((registrationNo): registrationNo is string => Boolean(registrationNo)),
+    ),
+  ];
+
+const isApplySupportedType = (
+  type: string | null,
+): type is typeof AchievementTypeCode.paper | typeof AchievementTypeCode.softwareCopyright =>
+  type === AchievementTypeCode.paper ||
+  type === AchievementTypeCode.softwareCopyright;
+
+const toApplySupportedType = (
+  type: string | null,
+): typeof AchievementTypeCode.paper | typeof AchievementTypeCode.softwareCopyright => {
+  if (isApplySupportedType(type)) {
+    return type;
+  }
+
+  throw new Error("Achievement import apply invariant failed for unsupported type.");
+};
 
 const isActiveApplyDepartment = (
   department: AchievementImportApplyDepartmentLookup | null | undefined,
