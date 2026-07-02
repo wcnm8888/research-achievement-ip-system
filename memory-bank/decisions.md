@@ -1,5 +1,20 @@
 # Decisions
 
+## D230 - Department create-only import is the first real-write slice
+
+- Date: 2026-07-02.
+- Context: Step 65A pauses the backup track and returns to the import track. The task asks for a documentation-only review of how department, user/account, and achievement imports can move from dry-run to real-write, with no runtime implementation, Docker, database mutation, production/VPS access, password changes/resets, invite/reset flow, real email, secret reads, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling.
+- Decision:
+  - Add `memory-bank/import-real-write-rollout-plan.md` as the rollout scope and first-slice plan.
+  - Select department metadata as the first real-write slice.
+  - Recommend Step 65B as backend-only department `CREATE_ONLY` apply behind `system:config`, reusing server-side dry-run validation and keeping Web execute-import controls deferred.
+  - Require one all-or-nothing Prisma transaction for all department creates plus audit events.
+  - Require duplicate handling through file duplicate errors, existing-code non-writable validation, Prisma unique-conflict race protection, and a no-duplicate-data-effect re-run guarantee.
+  - Require validation consistency by deriving apply eligibility from freshly computed server-side validation rather than client-supplied dry-run output.
+  - Keep durable idempotency keys/import job history deferred because they need a schema and product decision.
+- Scope:
+  - This decision does not authorize runtime code changes, real import writes, Docker, database mutation, production/VPS access, password creation/modification/reset, invite/reset token issuance, DirectMail/real email, user/account real-write import, achievement real-write import, attachment/fee/workflow/search/resource-grant import, Prisma schema changes, migrations, seed/backfill, package/lockfile changes, deployment, push, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, or handling existing untracked artifacts.
+
 ## D229 - Local backup artifact-list v2 schema remains static and local-only
 
 - Date: 2026-07-02.

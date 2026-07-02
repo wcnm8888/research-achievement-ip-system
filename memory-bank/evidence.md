@@ -1,5 +1,41 @@
 # Evidence
 
+## 2026-07-02 Step 65A - Import real-write rollout scope and first-slice plan evidence
+
+- Purpose:
+  - Pause the backup track and return to the import track.
+  - Review department, user/account, and achievement import dry-run coverage and plan the smallest safe first real-write slice.
+  - Keep this Step documentation-only: no runtime implementation, real import write, Docker, database mutation, production/VPS access, password change/reset, invite/reset flow, DirectMail/real email, Prisma schema change, migration, seed/backfill, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `9df644e`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake for some Chinese text, but the relevant testing and sensitive-boundary rules remained identifiable.
+  - Read `memory-bank/import-dry-run-contract.md`.
+  - Read targeted Step 59/60/61 import dry-run and consolidation snippets from `memory-bank/progress.md`, `memory-bank/decisions.md`, `memory-bank/implementation-plan.md`, and `memory-bank/evidence.md`.
+  - Read import dry-run implementation under `apps/api/src/imports`.
+  - Read current write patterns in department management, account management, and achievements to compare transaction and audit boundaries.
+- Planning evidence:
+  - Added `memory-bank/import-real-write-rollout-plan.md`.
+  - Selected department metadata as the first real-write slice because it is one business table plus audit and avoids credential, lifecycle, email, workflow, fee, attachment, and typed-detail side effects.
+  - Recommended Step 65B as backend-only department `CREATE_ONLY` apply under `system:config`, likely `POST /api/imports/departments/apply`.
+  - Required server-side dry-run-equivalent validation, all-or-nothing transaction, parent-before-child insertion, duplicate/race rechecks, validation consistency, safe audit evidence, and local production-like acceptance criteria.
+  - Kept user/account and achievement real-write imports deferred to later dedicated plans.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, package, or lockfile files.
+  - `git diff --cached --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan over 244 added lines:
+    - `secret`: 4.
+    - `token`: 7.
+    - `password`: 10.
+    - `cookie`: 3.
+    - `private_key`: 3.
+    - `connection_string`: 3.
+    - `access_key`: 2.
+  - Sensitive scan result: matches are deferred-operation and sensitive-boundary terms only; no secret values, tokens, passwords, cookies, AccessKeys, private keys, or full connection strings were recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 64B - Backup artifact-list schema and local sample evidence
 
 - Purpose:

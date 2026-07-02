@@ -4,6 +4,31 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 65A Archive - Import real-write rollout scope and first-slice plan - 2026-07-02
+
+- Step identity:
+  - Documentation-only import real-write rollout review after pausing the backup track.
+  - No runtime code, real import write, Docker operation, database mutation, production/VPS access, password change/reset, invite/reset flow, DirectMail/real email, Prisma schema change, migration, seed/backfill, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented docs:
+  - Added `memory-bank/import-real-write-rollout-plan.md`.
+  - Recorded Step 65A in `memory-bank/decisions.md`, `memory-bank/progress.md`, and `memory-bank/evidence.md`.
+- Current dry-run state:
+  - Department metadata dry-run covers CSV-only upload, file-size and UTF-8 boundaries, strict columns, row validation, duplicate detection, existing-code warnings, active parent lookup, file-local parent cycle detection, safe summary, and read-only lookup.
+  - User/account dry-run covers credential/header rejection, email/display name/department/role/scope/status validation, active department/role lookup, existing user and role-assignment warnings, `GLOBAL` scope denial, `SYSTEM_ADMIN` denial, `ACTIVE` import denial, and `NO_CREDENTIAL` preview.
+  - Achievement dry-run covers strict achievement/detail columns, sensitive/direct-id/storage/workflow/fee/raw-payload rejection, three existing achievement types, contributor parsing, active owner/contributor lookup, owner department match, active department lookup, normalized duplicate/conflict checks, and `DRAFT`-only candidate boundary.
+- First-slice plan:
+  - Step 65B should start with backend-only department metadata real-write apply.
+  - Recommended route: `POST /api/imports/departments/apply`.
+  - Recommended mode: `CREATE_ONLY`, `system:config`, no Web execute button, no existing department update/merge/reactivation.
+  - Apply must recompute validation server-side, reject any errors or warnings before writes, insert parent rows before child rows, recheck parent status and code uniqueness inside one transaction, write audit events in the same transaction, and return only safe write evidence.
+- Deferred:
+  - Production/VPS writes, batch real-data import, password operations, invite/reset flow, DirectMail/real email, user/account apply, achievement apply, attachment/fee/workflow/search/resource-grant import, persisted import job history, durable idempotency keys, schema/migration work, package changes, deployment, cleanup, deletion, reset, drop, and prune.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, package, or lockfile files.
+  - `git diff --cached --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 244 added lines; matches were deferred-operation and sensitive-boundary terms only, with no sensitive values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## Current Step 64B Archive - Backup artifact-list schema and local sample - 2026-07-02
 
 - Step identity:

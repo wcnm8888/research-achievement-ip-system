@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-07-02 Step 65A - Import real-write rollout scope and first-slice plan
+
+- Status: STEP_65A_IMPORT_REAL_WRITE_ROLLOUT_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Paused the backup track and returned to the import track.
+  - Reviewed department, user/account, and achievement import dry-run coverage and planned the first real-write rollout slice.
+  - Documentation-only; no runtime code, real import write, Docker operation, DB mutation, production/VPS access, password change/reset, invite/reset flow, DirectMail/real email, Prisma schema change, migration, seed/backfill, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `memory-bank/import-real-write-rollout-plan.md`.
+  - Recorded D230 and Step 65A progress/evidence/archive entries.
+- Planning conclusions:
+  - Current dry-run coverage exists for department metadata, user/account, and achievement imports, all under `system:config` with read-only repositories and no execute-import control.
+  - Department metadata is the safest first real-write slice because it touches one business table plus audit and has no credential, lifecycle, email, workflow, fee, attachment, or typed-detail side effect.
+  - Step 65B should implement backend-only department `CREATE_ONLY` apply, likely `POST /api/imports/departments/apply`, with server-side dry-run-equivalent validation, all-or-nothing transaction, parent-before-child insert ordering, race-condition rechecks, safe audit events, and no Web execute button unless separately authorized.
+  - User/account and achievement real-write imports remain deferred to later dedicated plans.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, package, or lockfile files.
+  - `git diff --cached --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 244 added lines; matches were deferred-operation and sensitive-boundary terms only, with no sensitive values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 64B - Backup artifact-list schema and local sample
 
 - Status: STEP_64B_LOCAL_BACKUP_ARTIFACT_SCHEMA_SAMPLE_READY.
