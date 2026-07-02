@@ -365,3 +365,34 @@ After Step 68E lands, Step 68F can run local production-like Web acceptance if e
 - Record only status codes, counts, safe error codes, and redacted UI observations.
 
 Step 68F should not claim production/VPS readiness and should not add patent/software copyright apply.
+
+## Step 68E Implementation Addendum
+
+Step 68E implemented the planned Web-only minimum slice:
+
+- Added achievement import apply request/result types in `apps/web/src/types.ts`.
+- Added `applyAchievementImport({ file, mode: "CREATE_DRAFT_ONLY" })` in `apps/web/src/api-client.ts`, posting multipart form data to `POST /achievements/import/apply` without manually setting the multipart content type.
+- Extended the existing `AchievementImportDryRunPanel` in `apps/web/src/Achievements.tsx` rather than adding a new page.
+- Added same-file fingerprint helpers based on selected file name, size, last-modified value, and returned dry-run file metadata.
+- Added apply eligibility helper covering `system:config`, successful all-valid dry-run, no errors, no warnings, no `DB_CONFLICT`, all rows `PAPER`, all rows `CREATE_DRAFT`, normalized DOI on every row, matching file fingerprint, and no request in flight.
+- Added confirmation copy stating DRAFT PAPER creation, `CREATE_DRAFT_ONLY`, no approval submission, no workflow, no attachment/storage, no fee, no reminder, no notification, no search, no resource grant, no import job, no patent/software apply, and server-side CSV re-read/revalidation.
+- Added safe apply result display limited to created counts, audit operation, and forbidden-effect boundary tags.
+- Added safe apply rejection display limited to session/permission wording, rejected counts, and error codes when provided.
+- Apply success calls the existing list refresh logic and does not auto-open achievement detail.
+
+Step 68E kept these boundaries:
+
+- No backend, schema, migration, package, lockfile, config, or script change.
+- No Docker or browser acceptance.
+- No production/VPS or production DB access.
+- No `PATENT` or `SOFTWARE_COPYRIGHT` apply.
+- No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+
+Step 68E verification:
+
+```powershell
+corepack pnpm --filter @research-ip/web test -- Achievements api-client
+corepack pnpm --filter @research-ip/web typecheck
+```
+
+Both commands passed before final whitespace and sensitive-value checks.

@@ -1,5 +1,43 @@
 # Evidence
 
+## 2026-07-02 Step 68E - Achievement PAPER import Web minimal slice evidence
+
+- Goal:
+  - Implement the Web-only minimum entry for the Step 68B/68C verified backend-only `PAPER` `CREATE_DRAFT_ONLY` achievement import apply path.
+- Initial state:
+  - `git log -1 --oneline`: `73254ec docs: design achievement import web entry`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Local Docker production-like services may have remained running from Step 68C; this Step did not stop, clean, rebuild, or otherwise operate Docker.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-apply-web-entry-design.md`.
+  - Step 68D snippet from `memory-bank/progress.md`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/api-client.test.ts`.
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/importDryRunUi.tsx`.
+- Implemented files:
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/api-client.test.ts`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `memory-bank/achievement-import-apply-web-entry-design.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files and 58 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS, no matches.
+- Boundary:
+  - No backend API, Prisma schema, migration, package, lockfile, config, script, Docker, browser acceptance, production/VPS, production DB, production configuration, or real-data operation occurred.
+  - No `PATENT` / `SOFTWARE_COPYRIGHT` apply support was added.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation was added.
+
 ## 2026-07-02 Step 68D - Achievement PAPER import apply Web entry design evidence
 
 - Goal:

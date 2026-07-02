@@ -3,18 +3,29 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { AccountManagementApiClient, AuthUser } from "./api-client";
 import {
+  AchievementImportApplyConfirmation,
+  AchievementImportApplyErrorView,
+  AchievementImportApplyResultView,
   AchievementImportDryRunPanel,
   AchievementImportDryRunResultView,
+  applyAchievementImport,
+  buildAchievementImportFileFingerprint,
   buildAchievementListQuery,
   canCreateAchievementDraft,
   canEditAchievementDraft,
   dryRunAchievementImport,
+  getAchievementImportApplyEligibility,
   getAchievementDisplayTitle,
   hasAchievementImportDryRunPermission,
+  isAchievementImportFileFingerprintMatch,
   isAchievementTitleRedacted,
   validateAchievementImportCsvFile,
 } from "./Achievements";
-import type { AchievementImportDryRunResult, AchievementListItem } from "./types";
+import type {
+  AchievementImportApplyResult,
+  AchievementImportDryRunResult,
+  AchievementListItem,
+} from "./types";
 
 const createAuthUser = (
   patch: Partial<Pick<AuthUser, "id" | "permissionCodes">> = {},
@@ -185,6 +196,115 @@ const achievementImportDryRunResult: AchievementImportDryRunResult = {
   ],
 };
 
+const eligibleAchievementImportDryRunResult: AchievementImportDryRunResult = {
+  importType: "ACHIEVEMENT",
+  dryRun: true,
+  file: {
+    name: "paper-achievements.csv",
+    size: 128,
+    mimeType: "text/csv",
+    encoding: "utf-8",
+  },
+  columns: {
+    required: ["type", "title", "departmentCode", "contributors"],
+    optional: ["ownerEmail", "ownerEmployeeNo", "status", "DOI"],
+    received: ["type", "title", "departmentCode", "contributors", "DOI"],
+  },
+  summary: {
+    totalRows: 1,
+    validRows: 1,
+    errorRows: 0,
+    warningRows: 0,
+    createDraftCandidates: 1,
+    duplicateIdentifierRows: 0,
+    dbConflictRows: 0,
+    ownerEmployeeNoLookup: "NOT_AVAILABLE",
+  },
+  rows: [
+    {
+      rowNumber: 2,
+      parsed: {
+        type: "PAPER",
+        title: "Eligible Paper",
+        ownerEmail: null,
+        ownerEmployeeNo: null,
+        departmentCode: "RD",
+        secretLevel: "INTERNAL",
+        status: "DRAFT",
+        contributors: [
+          {
+            name: null,
+            contributorType: "AUTHOR",
+            contributorRole: "FIRST_AUTHOR",
+            userEmail: null,
+            organization: "Synthetic Lab",
+            sortOrder: 1,
+          },
+        ],
+        identifiers: {
+          doi: "10.2000/s68e",
+          applicationNo: null,
+          patentNo: null,
+          registrationNo: null,
+        },
+        normalizedIdentifiers: {
+          doi: "10.2000/s68e",
+          applicationNo: null,
+          patentNo: null,
+          registrationNo: null,
+        },
+      },
+      status: "VALID",
+      candidateAction: "CREATE_DRAFT",
+      errors: [],
+      warnings: [],
+    },
+  ],
+};
+
+const achievementImportApplyResult: AchievementImportApplyResult = {
+  importType: "ACHIEVEMENT",
+  dryRun: false,
+  mode: "CREATE_DRAFT_ONLY",
+  file: {
+    name: "paper-achievements.csv",
+    size: 128,
+    mimeType: "text/csv",
+    encoding: "utf-8",
+  },
+  summary: {
+    totalRows: 1,
+    createdAchievementsCount: 1,
+    createdPaperDetailsCount: 1,
+    createdContributorsCount: 1,
+    skippedRows: 0,
+    failedRows: 0,
+    errorCount: 0,
+    warningCount: 0,
+    auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+  },
+  errors: [],
+  rows: [
+    {
+      rowNumber: 2,
+      status: "CREATED",
+      createdAchievementId: "70000000-0000-4000-8000-000000000001",
+      type: "PAPER",
+      achievementStatus: "DRAFT",
+      departmentId: "20000000-0000-4000-8000-000000000001",
+      ownerUserId: "30000000-0000-4000-8000-000000000001",
+      contributorCount: 1,
+      auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+    },
+  ],
+};
+
+const createEligibleAchievementImportFile = () =>
+  new File(["x".repeat(128)], "paper-achievements.csv", {
+    type: "text/csv",
+    lastModified: 68000,
+  });
+
 describe("buildAchievementListQuery", () => {
   it("trims keyword and keeps filters with pagination", () => {
     expect(
@@ -304,7 +424,7 @@ describe("achievement import dry-run UI", () => {
     ).toContain("1 MB");
   });
 
-  it("runs achievement import dry-run through the client without write helpers", async () => {
+  it("runs achievement import dry-run through the client", async () => {
     const file = new File(
       ["type,title,ownerEmail,departmentCode,contributors\nPAPER,Paper A,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab"],
       "achievements.csv",
@@ -318,6 +438,23 @@ describe("achievement import dry-run UI", () => {
       achievementImportDryRunResult,
     );
     expect(client.dryRunAchievementImport).toHaveBeenCalledWith({ file });
+  });
+
+  it("runs achievement PAPER apply through the client with CREATE_DRAFT_ONLY mode", async () => {
+    const file = new File(["type,title\nPAPER,Paper"], "paper-achievements.csv", {
+      type: "text/csv",
+    });
+    const client = {
+      applyAchievementImport: vi.fn(async () => achievementImportApplyResult),
+    } as unknown as Pick<AccountManagementApiClient, "applyAchievementImport">;
+
+    await expect(applyAchievementImport(client, file)).resolves.toEqual(
+      achievementImportApplyResult,
+    );
+    expect(client.applyAchievementImport).toHaveBeenCalledWith({
+      file,
+      mode: "CREATE_DRAFT_ONLY",
+    });
   });
 
   it("renders summary, safe previews, type-specific conflicts, and unknown references", () => {
@@ -368,7 +505,7 @@ describe("achievement import dry-run UI", () => {
     expect(html).toContain("Unknown department code.");
   });
 
-  it("does not render any real achievement import execution entry", () => {
+  it("does not render the apply entry unless the caller wires an apply action", () => {
     const html = renderToStaticMarkup(
       createElement(AchievementImportDryRunPanel, {
         file: null,
@@ -381,10 +518,252 @@ describe("achievement import dry-run UI", () => {
     );
 
     expect(html).toContain("Run dry-run");
-    expect(html).not.toContain("Execute import");
     expect(html).not.toContain("Confirm import");
-    expect(html).not.toContain("Run import");
-    expect(html).not.toContain("Create achievement");
-    expect(html).not.toContain("Create achievements");
+    expect(html).not.toContain("Apply draft-only PAPER import");
+  });
+
+  it("computes apply eligibility from permission, dry-run result, and file fingerprint", () => {
+    const file = createEligibleAchievementImportFile();
+    const fingerprint = buildAchievementImportFileFingerprint(
+      file,
+      eligibleAchievementImportDryRunResult,
+    );
+
+    expect(
+      isAchievementImportFileFingerprintMatch(
+        file,
+        eligibleAchievementImportDryRunResult,
+        fingerprint,
+      ),
+    ).toBe(true);
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser: createAuthUser({ permissionCodes: ["system:config"] }),
+        file,
+        result: eligibleAchievementImportDryRunResult,
+        fingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }),
+    ).toEqual({
+      eligible: true,
+      reason: "Ready to create DRAFT PAPER achievements.",
+    });
+
+    const changedFile = new File(["x".repeat(128)], "paper-achievements.csv", {
+      type: "text/csv",
+      lastModified: 68001,
+    });
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser: createAuthUser({ permissionCodes: ["system:config"] }),
+        file: changedFile,
+        result: eligibleAchievementImportDryRunResult,
+        fingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("changed");
+  });
+
+  it("blocks apply for warnings, non-PAPER rows, missing DOI, and in-flight requests", () => {
+    const file = createEligibleAchievementImportFile();
+    const fingerprint = buildAchievementImportFileFingerprint(
+      file,
+      eligibleAchievementImportDryRunResult,
+    );
+    const authUser = createAuthUser({ permissionCodes: ["system:config"] });
+    const eligibleRow = eligibleAchievementImportDryRunResult.rows[0]!;
+
+    const warningResult: AchievementImportDryRunResult = {
+      ...eligibleAchievementImportDryRunResult,
+      summary: {
+        ...eligibleAchievementImportDryRunResult.summary,
+        warningRows: 1,
+        dbConflictRows: 1,
+      },
+      rows: [
+        {
+          ...eligibleRow,
+          status: "WARNING",
+          warnings: [
+            {
+              field: "doi",
+              code: "DB_CONFLICT",
+              message: "Existing normalized DOI.",
+            },
+          ],
+        },
+      ],
+    };
+    const warningFingerprint = buildAchievementImportFileFingerprint(file, warningResult);
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file,
+        result: warningResult,
+        fingerprint: warningFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("warnings");
+
+    const nonPaperResult: AchievementImportDryRunResult = {
+      ...eligibleAchievementImportDryRunResult,
+      rows: [
+        {
+          ...eligibleRow,
+          parsed: {
+            ...eligibleRow.parsed,
+            type: "PATENT",
+          },
+        },
+      ],
+    };
+    const nonPaperFingerprint = buildAchievementImportFileFingerprint(file, nonPaperResult);
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file,
+        result: nonPaperResult,
+        fingerprint: nonPaperFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("Only PAPER");
+
+    const missingDoiResult: AchievementImportDryRunResult = {
+      ...eligibleAchievementImportDryRunResult,
+      rows: [
+        {
+          ...eligibleRow,
+          parsed: {
+            ...eligibleRow.parsed,
+            normalizedIdentifiers: {
+              ...eligibleRow.parsed.normalizedIdentifiers,
+              doi: null,
+            },
+          },
+        },
+      ],
+    };
+    const missingDoiFingerprint = buildAchievementImportFileFingerprint(
+      file,
+      missingDoiResult,
+    );
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file,
+        result: missingDoiResult,
+        fingerprint: missingDoiFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("normalized DOI");
+
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file,
+        result: eligibleAchievementImportDryRunResult,
+        fingerprint,
+        dryRunLoading: false,
+        applySubmitting: true,
+      }).reason,
+    ).toContain("in progress");
+  });
+
+  it("renders the apply entry and confirmation copy only for an eligible action", () => {
+    const file = createEligibleAchievementImportFile();
+    const fingerprint = buildAchievementImportFileFingerprint(
+      file,
+      eligibleAchievementImportDryRunResult,
+    );
+    const eligibility = getAchievementImportApplyEligibility({
+      authUser: createAuthUser({ permissionCodes: ["system:config"] }),
+      file,
+      result: eligibleAchievementImportDryRunResult,
+      fingerprint,
+      dryRunLoading: false,
+      applySubmitting: false,
+    });
+    const panelHtml = renderToStaticMarkup(
+      createElement(AchievementImportDryRunPanel, {
+        file,
+        loading: false,
+        error: null,
+        result: eligibleAchievementImportDryRunResult,
+        applyEligibility: eligibility,
+        onFileChange: vi.fn(),
+        onRunDryRun: vi.fn(),
+        onOpenApplyConfirm: vi.fn(),
+      }),
+    );
+    const confirmationHtml = renderToStaticMarkup(
+      createElement(AchievementImportApplyConfirmation),
+    );
+
+    expect(panelHtml).toContain("Apply draft-only PAPER import");
+    expect(panelHtml).not.toContain("disabled");
+    expect(confirmationHtml).toContain("CREATE_DRAFT_ONLY");
+    expect(confirmationHtml).toContain("DRAFT PAPER");
+    expect(confirmationHtml).toContain("will not submit");
+    expect(confirmationHtml).toContain("workflow");
+    expect(confirmationHtml).toContain("attachment/storage");
+    expect(confirmationHtml).toContain("resource grant");
+    expect(confirmationHtml).toContain("PATENT");
+    expect(confirmationHtml).toContain("SOFTWARE_COPYRIGHT");
+    expect(confirmationHtml).toContain("re-read and validate");
+  });
+
+  it("renders safe apply success and rejection summaries without raw row values", () => {
+    const successHtml = renderToStaticMarkup(
+      createElement(AchievementImportApplyResultView, {
+        result: achievementImportApplyResult,
+      }),
+    );
+    const ownerEmail = ["owner", "@example.org"].join("");
+    const errorHtml = renderToStaticMarkup(
+      createElement(AchievementImportApplyErrorView, {
+        error: {
+          kind: "bad-request",
+          status: 409,
+          message: "Rejected",
+          detail: "raw row value should not render",
+          body: {
+            summary: {
+              failedRows: 1,
+              errorCount: 1,
+            },
+            errors: [
+              {
+                code: "DB_CONFLICT",
+                message: `raw 10.2000/s68e ${ownerEmail} Contributor`,
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    expect(successHtml).toContain("Created achievements");
+    expect(successHtml).toContain("Created paper details");
+    expect(successHtml).toContain("Created contributors");
+    expect(successHtml).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
+    expect(successHtml).toContain("DRAFT only");
+    expect(successHtml).toContain("No workflow");
+    expect(successHtml).toContain("No attachment/storage");
+    expect(successHtml).toContain("No fee");
+    expect(successHtml).toContain("No search/resource grant");
+    expect(successHtml).not.toContain("10.2000/s68e");
+    expect(successHtml).not.toContain("Eligible Paper");
+
+    expect(errorHtml).toContain("Apply rejected");
+    expect(errorHtml).toContain("DB_CONFLICT");
+    expect(errorHtml).toContain("Rejected rows: 1");
+    expect(errorHtml).not.toContain("10.2000/s68e");
+    expect(errorHtml).not.toContain(ownerEmail);
+    expect(errorHtml).not.toContain("Contributor");
   });
 });

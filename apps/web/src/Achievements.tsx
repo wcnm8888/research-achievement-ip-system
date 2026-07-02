@@ -2,7 +2,9 @@ import {
   Alert,
   Button,
   Card,
+  Descriptions,
   Input,
+  Modal,
   Select,
   Space,
   Table,
@@ -31,6 +33,7 @@ import {
   validateImportDryRunCsvFile,
 } from "./importDryRunUi";
 import type {
+  AchievementImportApplyResult,
   AchievementImportDryRunIssue,
   AchievementImportDryRunResult,
   AchievementImportDryRunRow,
@@ -59,6 +62,20 @@ type AchievementsProps = {
 };
 
 type AchievementPermissionContext = Pick<AuthUser, "id" | "permissionCodes"> | null | undefined;
+
+type AchievementImportFileFingerprint = {
+  fileName: string;
+  fileSize: number;
+  lastModified: number;
+  resultFileName: string;
+  resultFileSize: number;
+  resultEncoding: string;
+};
+
+type AchievementImportApplyEligibility = {
+  eligible: boolean;
+  reason: string;
+};
 
 type FormRequest =
   | {
@@ -122,6 +139,12 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
   const [importResult, setImportResult] = useState<AchievementImportDryRunResult | null>(
     null,
   );
+  const [importFingerprint, setImportFingerprint] =
+    useState<AchievementImportFileFingerprint | null>(null);
+  const [applySubmitting, setApplySubmitting] = useState(false);
+  const [applyConfirmOpen, setApplyConfirmOpen] = useState(false);
+  const [applyError, setApplyError] = useState<ApiError | null>(null);
+  const [applyResult, setApplyResult] = useState<AchievementImportApplyResult | null>(null);
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
 
   const query = useMemo(
@@ -162,6 +185,18 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
   const hasFilters = hasActiveFilters(appliedFilters);
   const items = achievements.data?.items ?? [];
   const canUseImportDryRun = hasAchievementImportDryRunPermission(authUser);
+  const applyEligibility = useMemo(
+    () =>
+      getAchievementImportApplyEligibility({
+        authUser,
+        file: importFile,
+        result: importResult,
+        fingerprint: importFingerprint,
+        dryRunLoading: importLoading,
+        applySubmitting,
+      }),
+    [applySubmitting, authUser, importFile, importLoading, importFingerprint, importResult],
+  );
 
   const handleImportFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
@@ -169,6 +204,10 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
     setImportFile(nextFile);
     setImportResult(null);
     setImportError(nextFile ? toValidationError(validateAchievementImportCsvFile(nextFile)) : null);
+    setImportFingerprint(null);
+    setApplyConfirmOpen(false);
+    setApplyError(null);
+    setApplyResult(null);
   };
 
   const runImportDryRun = () => {
@@ -181,21 +220,76 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
     if (validationMessage) {
       setImportError(toValidationError(validationMessage));
       setImportResult(null);
+      setImportFingerprint(null);
+      setApplyError(null);
+      setApplyResult(null);
       return;
     }
 
     setImportLoading(true);
     setImportError(null);
+    setImportFingerprint(null);
+    setApplyConfirmOpen(false);
+    setApplyError(null);
+    setApplyResult(null);
     void dryRunAchievementImport(apiClient, importFile)
       .then((result) => {
         setImportResult(result);
+        setImportFingerprint(buildAchievementImportFileFingerprint(importFile, result));
         setImportError(null);
       })
       .catch((error: unknown) => {
         setImportResult(null);
+        setImportFingerprint(null);
         setImportError(normalizeError(error));
       })
       .finally(() => setImportLoading(false));
+  };
+
+  const openApplyConfirm = () => {
+    if (!applyEligibility.eligible) {
+      setApplyError(toValidationError(applyEligibility.reason));
+      return;
+    }
+
+    setApplyError(null);
+    setApplyConfirmOpen(true);
+  };
+
+  const confirmApplyImport = () => {
+    if (!importFile || applySubmitting) {
+      return;
+    }
+
+    const currentEligibility = getAchievementImportApplyEligibility({
+      authUser,
+      file: importFile,
+      result: importResult,
+      fingerprint: importFingerprint,
+      dryRunLoading: importLoading,
+      applySubmitting,
+    });
+
+    if (!currentEligibility.eligible) {
+      setApplyError(toValidationError(currentEligibility.reason));
+      setApplyConfirmOpen(false);
+      return;
+    }
+
+    setApplySubmitting(true);
+    setApplyError(null);
+    void applyAchievementImport(apiClient, importFile)
+      .then((result) => {
+        setApplyResult(result);
+        setApplyError(null);
+        setApplyConfirmOpen(false);
+        loadAchievements();
+      })
+      .catch((error: unknown) => {
+        setApplyResult(null);
+        setApplyError(normalizeError(error));
+      })
+      .finally(() => setApplySubmitting(false));
   };
 
   if (!demoUserId) {
@@ -236,8 +330,16 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           loading={importLoading}
           error={importError}
           result={importResult}
+          applyEligibility={applyEligibility}
+          applySubmitting={applySubmitting}
+          applyConfirmOpen={applyConfirmOpen}
+          applyError={applyError}
+          applyResult={applyResult}
           onFileChange={handleImportFileChange}
           onRunDryRun={runImportDryRun}
+          onOpenApplyConfirm={openApplyConfirm}
+          onCancelApplyConfirm={() => setApplyConfirmOpen(false)}
+          onConfirmApply={confirmApplyImport}
         />
       ) : null}
 
@@ -372,40 +474,98 @@ export const dryRunAchievementImport = async (
   file: File,
 ): Promise<AchievementImportDryRunResult> => client.dryRunAchievementImport({ file });
 
+export const applyAchievementImport = async (
+  client: Pick<AccountManagementApiClient, "applyAchievementImport">,
+  file: File,
+): Promise<AchievementImportApplyResult> =>
+  client.applyAchievementImport({ file, mode: "CREATE_DRAFT_ONLY" });
+
 export function AchievementImportDryRunPanel({
   file,
   loading,
   error,
   result,
+  applyEligibility = {
+    eligible: false,
+    reason: "Run a successful dry-run before applying.",
+  },
+  applySubmitting = false,
+  applyConfirmOpen = false,
+  applyError = null,
+  applyResult = null,
   onFileChange,
   onRunDryRun,
+  onOpenApplyConfirm,
+  onCancelApplyConfirm,
+  onConfirmApply,
 }: {
   file: File | null;
   loading: boolean;
   error: ApiError | null;
   result: AchievementImportDryRunResult | null;
+  applyEligibility?: AchievementImportApplyEligibility;
+  applySubmitting?: boolean;
+  applyConfirmOpen?: boolean;
+  applyError?: ApiError | null;
+  applyResult?: AchievementImportApplyResult | null;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onRunDryRun: () => void;
+  onOpenApplyConfirm?: () => void;
+  onCancelApplyConfirm?: () => void;
+  onConfirmApply?: () => void;
 }) {
   return (
-    <ImportDryRunPanelShell
-      className="shell-card achievement-import-dry-run-card"
-      title="Achievement CSV dry-run"
-      endpoint="POST /achievements/import/dry-run"
-      noticeMessage="dryRun=true; CSV-only; validates PAPER, PATENT, and SOFTWARE_COPYRIGHT rows without writing achievements."
-      noticeDescription="Attachments, fees, workflow, audit logging, and real import execution are outside this dry-run. The preview only shows sanitized fields returned by the API."
-      fileAriaLabel="Achievement CSV file"
-      file={file}
-      loading={loading}
-      error={error}
-      result={result}
-      emptyHint="Select one .csv file to preview achievement validation results."
-      onFileChange={onFileChange}
-      onRunDryRun={onRunDryRun}
-      renderResult={(dryRunResult) => (
-        <AchievementImportDryRunResultView result={dryRunResult} />
-      )}
-    />
+    <>
+      <ImportDryRunPanelShell
+        className="shell-card achievement-import-dry-run-card"
+        title="Achievement CSV dry-run"
+        endpoint="POST /achievements/import/dry-run"
+        noticeMessage="dryRun=true; CSV-only; validates PAPER, PATENT, and SOFTWARE_COPYRIGHT rows without writing achievements."
+        noticeDescription="Attachments, fees, workflow, audit logging, and real import execution are outside this dry-run. The preview only shows sanitized fields returned by the API."
+        fileAriaLabel="Achievement CSV file"
+        file={file}
+        loading={loading}
+        error={error}
+        result={result}
+        emptyHint="Select one .csv file to preview achievement validation results."
+        onFileChange={onFileChange}
+        onRunDryRun={onRunDryRun}
+        renderResult={(dryRunResult) => (
+          <AchievementImportDryRunResultView result={dryRunResult} />
+        )}
+        controlsDisabled={applySubmitting}
+        extraActions={
+          onOpenApplyConfirm ? (
+            <Button
+              loading={applySubmitting}
+              disabled={!applyEligibility.eligible}
+              onClick={onOpenApplyConfirm}
+            >
+              Apply draft-only PAPER import
+            </Button>
+          ) : null
+        }
+        afterResult={
+          <AchievementImportApplyStatus
+            result={result}
+            eligibility={applyEligibility}
+            error={applyError}
+            applyResult={applyResult}
+          />
+        }
+      />
+      <Modal
+        title="Confirm draft-only PAPER import"
+        open={applyConfirmOpen}
+        okText="Create DRAFT PAPER achievements"
+        cancelText="Cancel"
+        confirmLoading={applySubmitting}
+        onOk={onConfirmApply}
+        onCancel={onCancelApplyConfirm}
+      >
+        <AchievementImportApplyConfirmation />
+      </Modal>
+    </>
   );
 }
 
@@ -450,6 +610,284 @@ export function AchievementImportDryRunResultView({
     />
   );
 }
+
+export function AchievementImportApplyConfirmation() {
+  return (
+    <Space direction="vertical" size={8}>
+      <Typography.Paragraph>
+        This creates DRAFT PAPER achievements with mode CREATE_DRAFT_ONLY.
+      </Typography.Paragraph>
+      <Typography.Paragraph>
+        The backend will re-read and validate the CSV before writing. The browser dry-run
+        result is not trusted as an apply source of truth.
+      </Typography.Paragraph>
+      <Typography.Paragraph>
+        It will not submit for approval, create workflow, attachment/storage, fee,
+        reminder, notification, search, resource grant, or import job records.
+      </Typography.Paragraph>
+      <Typography.Paragraph>
+        PATENT and SOFTWARE_COPYRIGHT apply are not supported in this slice.
+      </Typography.Paragraph>
+    </Space>
+  );
+}
+
+function AchievementImportApplyStatus({
+  result,
+  eligibility,
+  error,
+  applyResult,
+}: {
+  result: AchievementImportDryRunResult | null;
+  eligibility: AchievementImportApplyEligibility;
+  error: ApiError | null;
+  applyResult: AchievementImportApplyResult | null;
+}) {
+  if (!result && !error && !applyResult) {
+    return null;
+  }
+
+  return (
+    <Space direction="vertical" size={8} className="full-width">
+      {result && !eligibility.eligible ? (
+        <Alert
+          type="warning"
+          showIcon
+          message="Apply is disabled"
+          description={eligibility.reason}
+        />
+      ) : null}
+      {error ? <AchievementImportApplyErrorView error={error} /> : null}
+      {applyResult ? <AchievementImportApplyResultView result={applyResult} /> : null}
+    </Space>
+  );
+}
+
+export function AchievementImportApplyResultView({
+  result,
+}: {
+  result: AchievementImportApplyResult;
+}) {
+  return (
+    <Alert
+      type="success"
+      showIcon
+      message="Draft-only PAPER import applied"
+      description={
+        <Space direction="vertical" size={8} className="full-width">
+          <Descriptions size="small" column={2}>
+            <Descriptions.Item label="Created achievements">
+              {result.summary.createdAchievementsCount}
+            </Descriptions.Item>
+            <Descriptions.Item label="Created paper details">
+              {result.summary.createdPaperDetailsCount}
+            </Descriptions.Item>
+            <Descriptions.Item label="Created contributors">
+              {result.summary.createdContributorsCount}
+            </Descriptions.Item>
+            <Descriptions.Item label="Audit operation">
+              {result.summary.auditOperation}
+            </Descriptions.Item>
+          </Descriptions>
+          <Space size={6} wrap>
+            <Tag>DRAFT only</Tag>
+            <Tag>No workflow</Tag>
+            <Tag>No attachment/storage</Tag>
+            <Tag>No fee</Tag>
+            <Tag>No search/resource grant</Tag>
+          </Space>
+        </Space>
+      }
+    />
+  );
+}
+
+export function AchievementImportApplyErrorView({ error }: { error: ApiError }) {
+  const summary = getAchievementImportApplyErrorSummary(error);
+
+  return (
+    <Alert
+      type="error"
+      showIcon
+      message={summary.message}
+      description={
+        <Space direction="vertical" size={4}>
+          <Typography.Text>{summary.description}</Typography.Text>
+          {summary.codes.length > 0 ? (
+            <Space size={4} wrap>
+              {summary.codes.map((code) => (
+                <Tag key={code} color="red">
+                  {code}
+                </Tag>
+              ))}
+            </Space>
+          ) : null}
+        </Space>
+      }
+    />
+  );
+}
+
+export const buildAchievementImportFileFingerprint = (
+  file: File,
+  result: AchievementImportDryRunResult,
+): AchievementImportFileFingerprint => ({
+  fileName: file.name,
+  fileSize: file.size,
+  lastModified: file.lastModified,
+  resultFileName: result.file.name,
+  resultFileSize: result.file.size,
+  resultEncoding: result.file.encoding,
+});
+
+export const isAchievementImportFileFingerprintMatch = (
+  file: File | null,
+  result: AchievementImportDryRunResult | null,
+  fingerprint: AchievementImportFileFingerprint | null,
+): boolean =>
+  Boolean(
+    file &&
+      result &&
+      fingerprint &&
+      fingerprint.fileName === file.name &&
+      fingerprint.fileSize === file.size &&
+      fingerprint.lastModified === file.lastModified &&
+      fingerprint.resultFileName === result.file.name &&
+      fingerprint.resultFileSize === result.file.size &&
+      fingerprint.resultEncoding === result.file.encoding,
+  );
+
+export const getAchievementImportApplyEligibility = ({
+  authUser,
+  file,
+  result,
+  fingerprint,
+  dryRunLoading,
+  applySubmitting,
+}: {
+  authUser: AchievementPermissionContext;
+  file: File | null;
+  result: AchievementImportDryRunResult | null;
+  fingerprint: AchievementImportFileFingerprint | null;
+  dryRunLoading: boolean;
+  applySubmitting: boolean;
+}): AchievementImportApplyEligibility => {
+  if (!hasAchievementImportDryRunPermission(authUser)) {
+    return { eligible: false, reason: "system:config permission is required." };
+  }
+
+  if (!file) {
+    return { eligible: false, reason: "Select the same CSV file used for dry-run." };
+  }
+
+  if (!result) {
+    return { eligible: false, reason: "Run a successful dry-run before applying." };
+  }
+
+  if (!isAchievementImportFileFingerprintMatch(file, result, fingerprint)) {
+    return { eligible: false, reason: "Selected file changed after dry-run." };
+  }
+
+  if (dryRunLoading || applySubmitting) {
+    return { eligible: false, reason: "An import request is already in progress." };
+  }
+
+  if (
+    result.importType !== "ACHIEVEMENT" ||
+    result.dryRun !== true ||
+    result.summary.totalRows <= 0 ||
+    result.summary.validRows !== result.summary.totalRows
+  ) {
+    return { eligible: false, reason: "Dry-run did not produce an all-valid result." };
+  }
+
+  if (result.summary.errorRows > 0 || result.rows.some((row) => row.errors.length > 0)) {
+    return { eligible: false, reason: "Dry-run errors must be fixed before apply." };
+  }
+
+  if (
+    result.summary.warningRows > 0 ||
+    result.summary.duplicateIdentifierRows > 0 ||
+    result.summary.dbConflictRows > 0 ||
+    result.rows.some((row) => row.warnings.length > 0)
+  ) {
+    return {
+      eligible: false,
+      reason: "Dry-run warnings or DB_CONFLICT rows must be fixed before apply.",
+    };
+  }
+
+  if (
+    result.summary.createDraftCandidates !== result.summary.totalRows ||
+    result.rows.some((row) => row.status !== "VALID" || row.candidateAction !== "CREATE_DRAFT")
+  ) {
+    return { eligible: false, reason: "Only CREATE_DRAFT candidates can be applied." };
+  }
+
+  if (result.rows.some((row) => row.parsed.type !== "PAPER")) {
+    return { eligible: false, reason: "Only PAPER rows are supported for apply." };
+  }
+
+  if (result.rows.some((row) => !row.parsed.normalizedIdentifiers.doi)) {
+    return { eligible: false, reason: "Every PAPER row must have a normalized DOI." };
+  }
+
+  return { eligible: true, reason: "Ready to create DRAFT PAPER achievements." };
+};
+
+const getAchievementImportApplyErrorSummary = (
+  error: ApiError,
+): { message: string; description: string; codes: string[] } => {
+  const body = error.body as
+    | {
+        summary?: {
+          failedRows?: number;
+          errorCount?: number;
+        };
+        errors?: Array<{
+          code?: unknown;
+        }>;
+      }
+    | undefined;
+  const codes = Array.from(
+    new Set(
+      (Array.isArray(body?.errors) ? body.errors : [])
+        .map((item) => (typeof item.code === "string" ? item.code : null))
+        .filter((code): code is string => Boolean(code)),
+    ),
+  );
+
+  if (error.kind === "unauthorized") {
+    return {
+      message: "Session required",
+      description: "Select or refresh the demo user session before applying.",
+      codes,
+    };
+  }
+
+  if (error.kind === "forbidden") {
+    return {
+      message: "Permission denied",
+      description: "system:config permission is required for this apply action.",
+      codes,
+    };
+  }
+
+  const failedRows =
+    typeof body?.summary?.failedRows === "number" ? body.summary.failedRows : null;
+  const errorCount =
+    typeof body?.summary?.errorCount === "number" ? body.summary.errorCount : null;
+  const countText =
+    failedRows !== null || errorCount !== null
+      ? `Rejected rows: ${failedRows ?? "unknown"}; errors: ${errorCount ?? "unknown"}.`
+      : "The backend rejected the apply request.";
+
+  return {
+    message: "Apply rejected",
+    description: `${countText} Safe error codes are shown when provided.`,
+    codes,
+  };
+};
 
 const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["columns"] = [
   {

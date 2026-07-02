@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-07-02 Step 68E - Achievement PAPER import Web minimal slice
+
+- Status: DONE.
+- Scope completed:
+  - Added Web request/response types for achievement import apply in `apps/web/src/types.ts`.
+  - Added `applyAchievementImport({ file, mode: "CREATE_DRAFT_ONLY" })` in `apps/web/src/api-client.ts`, using multipart form data without overriding the browser content type.
+  - Extended the existing achievement import dry-run panel in `apps/web/src/Achievements.tsx` with a backend-only `PAPER` `CREATE_DRAFT_ONLY` apply entry.
+  - Added same-file fingerprint checks, apply eligibility checks, request-in-flight blocking, confirmation modal copy, safe success summary, and safe rejection display.
+  - Kept apply visible only through the existing `system:config` achievement import entry point; backend authorization remains authoritative.
+  - Apply success refreshes the existing achievement list and does not auto-open details.
+  - Added Web Vitest coverage for the API client helper, apply helper, eligibility/fingerprint behavior, confirmation copy, and safe result/error rendering.
+- Explicitly not done:
+  - No backend, Prisma schema, migration, package, lockfile, config, or script changes.
+  - No Docker operation, browser acceptance, production/VPS access, production DB access, production configuration access, real-data import, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `PATENT` or `SOFTWARE_COPYRIGHT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 68D - Achievement PAPER import apply Web entry design
 
 - Status: DONE.

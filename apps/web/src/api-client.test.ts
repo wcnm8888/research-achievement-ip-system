@@ -536,6 +536,79 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
   });
 
+  it("sends achievement import apply as CREATE_DRAFT_ONLY multipart form data", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        importType: "ACHIEVEMENT",
+        dryRun: false,
+        mode: "CREATE_DRAFT_ONLY",
+        file: {
+          name: "achievements.csv",
+          size: 128,
+          mimeType: "text/csv",
+          encoding: "utf-8",
+        },
+        summary: {
+          totalRows: 1,
+          createdAchievementsCount: 1,
+          createdPaperDetailsCount: 1,
+          createdContributorsCount: 2,
+          skippedRows: 0,
+          failedRows: 0,
+          errorCount: 0,
+          warningCount: 0,
+          auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+        },
+        errors: [],
+        rows: [
+          {
+            rowNumber: 2,
+            status: "CREATED",
+            createdAchievementId: "70000000-0000-4000-8000-000000000001",
+            type: "PAPER",
+            achievementStatus: "DRAFT",
+            departmentId: "20000000-0000-4000-8000-000000000001",
+            ownerUserId: "30000000-0000-4000-8000-000000000001",
+            contributorCount: 2,
+            auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+          },
+        ],
+      }),
+    );
+    const origin = ["http", "://localhost"].join("");
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin } });
+
+    const file = new File(["type,title\nPAPER,Paper"], "achievements.csv", {
+      type: "text/csv",
+    });
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.applyAchievementImport({ file, mode: "CREATE_DRAFT_ONLY" }),
+    ).resolves.toMatchObject({
+      importType: "ACHIEVEMENT",
+      dryRun: false,
+      mode: "CREATE_DRAFT_ONLY",
+      summary: {
+        createdAchievementsCount: 1,
+        createdPaperDetailsCount: 1,
+      },
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+    const body = init.body as FormData;
+
+    expect(url).toBe([origin, "/api/achievements/import/apply"].join(""));
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("file")).toBe(file);
+    expect(body.get("mode")).toBe("CREATE_DRAFT_ONLY");
+    expect(headers.get("Content-Type")).toBeNull();
+    expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
   it("downloads attachment blobs with credentials and demo user context", async () => {
     const blob = new Blob(["download body"], { type: "application/pdf" });
     const fetchMock = vi.fn(async () => new Response(blob, { status: 200 }));

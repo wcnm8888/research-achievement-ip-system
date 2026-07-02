@@ -873,6 +873,52 @@ export type AchievementImportDryRunInput = {
   file: File;
 };
 
+export type AchievementImportApplyMode = "CREATE_DRAFT_ONLY";
+
+export type AchievementImportApplyInput = {
+  file: File;
+  mode: AchievementImportApplyMode;
+};
+
+export type AchievementImportApplyErrorSummary = {
+  rowNumber: number | null;
+  field: string;
+  code: string;
+  message: string;
+};
+
+export type AchievementImportApplyRow = {
+  rowNumber: number;
+  status: "CREATED";
+  createdAchievementId: string;
+  type: "PAPER";
+  achievementStatus: "DRAFT";
+  departmentId: string;
+  ownerUserId: string;
+  contributorCount: number;
+  auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT";
+};
+
+export type AchievementImportApplyResult = {
+  importType: "ACHIEVEMENT";
+  dryRun: false;
+  mode: AchievementImportApplyMode;
+  file: AchievementImportDryRunResult["file"];
+  summary: {
+    totalRows: number;
+    createdAchievementsCount: number;
+    createdPaperDetailsCount: number;
+    createdContributorsCount: number;
+    skippedRows: number;
+    failedRows: number;
+    errorCount: number;
+    warningCount: number;
+    auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT";
+  };
+  errors: AchievementImportApplyErrorSummary[];
+  rows: AchievementImportApplyRow[];
+};
+
 export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED" | "PENDING_ACTIVATION";
 
 export type AccountCredentialStatus = "ACTIVE" | "DISABLED";
