@@ -212,3 +212,31 @@ After a department create-only apply slice is implemented and accepted, the next
   - User/account real-write import.
   - Achievement real-write import.
   - Password changes/resets, invite/reset flow, and DirectMail/real email.
+
+## Step 65D Web Entry Design Record
+
+- Date: 2026-07-02.
+- Scope:
+  - Documentation-only design for a future department apply Web entry.
+  - No Web button implementation, no apply API call, no Docker, no database write, and no production/VPS access.
+- Design document:
+  - Added `memory-bank/department-import-apply-web-entry-design.md`.
+- Permission:
+  - Reuse the existing department maintenance frontend gate: `hasSystemConfigPermission(authUser)`.
+  - Backend `system:config` guard remains authoritative.
+  - Do not add department-scoped import permission in the first Web entry.
+- Eligibility:
+  - Apply should be visible/enabled only after a same-file dry-run result is eligible.
+  - Required conditions: `CREATE_ONLY`, `DEPARTMENT_METADATA`, `dryRun=true`, total rows > 0, zero errors, zero warnings, all rows `VALID`, all candidate actions `CREATE`, and no in-flight submit.
+  - Warnings are not allowed because current department warnings include existing-code conflicts and therefore do not represent pure create-only work.
+- Interaction:
+  - Keep `Run dry-run` as the first action.
+  - Show a secondary `Apply create-only` entry only after eligibility passes.
+  - Require a confirmation modal that states this creates department metadata only and does not update/upsert/delete/merge/reactivate.
+  - Use separate apply loading state, duplicate-submit protection, stale-file reset, and sanitized error/result display.
+- Evidence display:
+  - Show created count, skipped/failed count if present, safe error codes, and audit operation `DEPARTMENT_IMPORT_CREATE`.
+  - Do not display raw uploaded content, local paths, credentials, cookies, tokens, private keys, connection strings, or unmasked audit payloads.
+- Step 65E recommendation:
+  - Implement the smallest Web slice: typed apply result/input, API client helper, panel/page state, confirmation modal, safe result view, and focused Web Vitest coverage.
+  - Keep user/account apply, achievement apply, production/VPS writes, browser/Docker acceptance, and production rollout deferred unless separately authorized.

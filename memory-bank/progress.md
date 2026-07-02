@@ -1,5 +1,27 @@
 # Progress
 
+## 2026-07-02 Step 65D - Department apply Web entry permission and interaction design
+
+- Status: STEP_65D_DEPARTMENT_APPLY_WEB_ENTRY_DESIGNED_DOCS_ONLY.
+- Step identity:
+  - Designed the Web entry, permission model, interaction flow, and risk boundaries for department metadata `CREATE_ONLY` apply.
+  - Documentation-only; no Web UI button, apply API call, Docker operation, database write, production/VPS access, production DB access, production rollout, password change/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `memory-bank/department-import-apply-web-entry-design.md`.
+  - Recorded D233 and Step 65D progress/evidence/archive entries.
+  - Appended the Step 65D Web entry design record to `memory-bank/import-real-write-rollout-plan.md`.
+- Design conclusions:
+  - Apply entry should remain inside department maintenance and be visible only to users with `system:config`; backend guards remain authoritative.
+  - Apply should be enabled only for a same-file, latest dry-run result with `CREATE_ONLY`, zero errors, zero warnings, all rows `VALID`, and all candidate actions `CREATE`.
+  - Warnings must block apply because department warnings currently include existing-code/create-only conflict conditions.
+  - Apply requires a confirmation modal, separate in-flight state, duplicate-submit protection, sanitized 401/403/400 handling, and a compact created/error/audit-operation summary.
+  - User/account apply, achievement apply, production/VPS writes, batch real-data import, password/invite/reset/email flows, and production-readiness claims remain deferred.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, package, or lockfile files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 262 added lines including the new design doc; matches were boundary/design/count-label terms only, with no values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 65C - Department import create-only local production-like acceptance
 
 - Status: STEP_65C_DEPARTMENT_IMPORT_CREATE_ONLY_LOCAL_ACCEPTED.

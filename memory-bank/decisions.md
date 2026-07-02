@@ -1,5 +1,19 @@
 # Decisions
 
+## D233 - Department apply Web entry stays system:config and dry-run-gated
+
+- Date: 2026-07-02.
+- Context: Step 65D designs the Web entry for the Step 65B/65C department `CREATE_ONLY` apply capability. The task allows documentation and memory-bank updates only, while prohibiting Web button implementation, apply API calls, Docker, database writes, production/VPS access, password changes/resets, invite/reset flow, real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling.
+- Decision:
+  - Keep the Web apply entry under the existing department maintenance page and `system:config` frontend gate.
+  - Treat the frontend gate as an affordance only; backend `system:config` remains authoritative.
+  - Enable apply only after an eligible same-file dry-run: `CREATE_ONLY`, department metadata, `dryRun=true`, no errors, no warnings, all rows `VALID`, all candidate actions `CREATE`, and no in-flight submit.
+  - Block warnings because current department warnings include existing-code conflicts, which are not create-only writes.
+  - Require a confirmation modal that states the operation creates department metadata only and does not support update/upsert/delete/merge/reactivation.
+  - Display only sanitized status/count/error/audit-operation evidence after apply.
+- Scope:
+  - This decision does not authorize runtime Web implementation, apply API execution, production/VPS writes, batch real-data import, user/account apply, achievement apply, account password work, invite/reset flow, DirectMail/real email, persisted import jobs, durable idempotency keys, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D232 - Step 65C acceptance remains local production-like and synthetic only
 
 - Date: 2026-07-02.

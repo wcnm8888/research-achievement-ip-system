@@ -4,6 +4,33 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 65D Archive - Department apply Web entry permission and interaction design - 2026-07-02
+
+- Step identity:
+  - Documentation-only design for a future department import apply Web entry.
+  - No Web UI button, apply API call, Docker operation, database write, production/VPS access, production DB access, production rollout, password change/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented docs:
+  - Added `memory-bank/department-import-apply-web-entry-design.md`.
+  - Recorded Step 65D in `memory-bank/progress.md`, `memory-bank/decisions.md`, `memory-bank/evidence.md`, and `memory-bank/import-real-write-rollout-plan.md`.
+- Design:
+  - Reuse existing department maintenance `system:config` gate; backend permission remains authoritative.
+  - Add no new department-scoped import permission for the first Web entry.
+  - Show apply only after eligible dry-run; keep dry-run as the first action.
+  - Eligibility requires same file, `CREATE_ONLY`, `DEPARTMENT_METADATA`, `dryRun=true`, total rows > 0, zero errors, zero warnings, all rows `VALID`, and all candidate actions `CREATE`.
+  - Block warnings because existing department warnings include existing-code rows and therefore conflict with create-only apply.
+  - Use confirmation modal, separate apply loading state, duplicate-submit protection, stale-file checks, and sanitized apply result display.
+  - Show audit operation as `DEPARTMENT_IMPORT_CREATE`, but do not inline unmasked audit payloads.
+- Step 65E recommendation:
+  - Add typed Web apply contract and API client helper.
+  - Extend only the department import panel/page with eligibility, modal, submit state, safe errors, and result summary.
+  - Add Web Vitest coverage for permission gating, eligibility, warning/error disabled state, file-change reset, duplicate-submit protection, sanitized errors, and successful summary.
+  - Do not add user/account or achievement apply, Web production/VPS acceptance, browser/Docker acceptance, or production rollout unless separately authorized.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, package, or lockfile files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 262 added lines including the new design doc; matches were boundary/design/count-label terms only, with no values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## Current Step 65C Archive - Department import create-only local production-like acceptance - 2026-07-02
 
 - Step identity:

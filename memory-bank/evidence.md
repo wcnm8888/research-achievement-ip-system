@@ -1,5 +1,44 @@
 # Evidence
 
+## 2026-07-02 Step 65D - Department apply Web entry permission and interaction design evidence
+
+- Purpose:
+  - Design the Web execution entry for department metadata create-only apply.
+  - Keep this Step documentation-only: no Web button implementation, no apply API call, no Docker, no database write, no production/VPS access, no password change/reset, no invite/reset flow, no DirectMail/real email, no cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `fbd7d8f`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`.
+  - Read `memory-bank/import-real-write-rollout-plan.md` Step 65 content.
+  - Read targeted department import dry-run Web files and snippets:
+    - `apps/web/src/DepartmentManagement.tsx`.
+    - `apps/web/src/DepartmentManagement.test.tsx`.
+    - `apps/web/src/importDryRunUi.tsx`.
+    - `apps/web/src/api-client.ts`.
+    - `apps/web/src/types.ts`.
+    - `apps/web/src/AuditLogs.tsx` references through targeted search only.
+- Design evidence:
+  - Existing Web page gates department maintenance with `hasSystemConfigPermission(authUser)`.
+  - Existing dry-run panel only calls `POST /imports/departments/dry-run`.
+  - Existing test coverage explicitly asserts no real import execution entry is rendered.
+  - Existing API client has `postForm<T>()`, so Step 65E can add a typed `applyDepartmentImport` helper without changing lower-level request mechanics.
+  - Existing audit UI is masked readonly; apply result display should mention `DEPARTMENT_IMPORT_CREATE` but not inline raw audit payloads.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, package, or lockfile files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 262 added lines including the new design doc:
+    - `secret`: 1.
+    - `token`: 4.
+    - `password`: 8.
+    - `cookie`: 3.
+    - `private_key`: 3.
+    - `connection_string`: 3.
+    - `access_key`: 1.
+  - Sensitive scan result: matches are boundary/design/count-label terms only; no values were recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 65C - Department import create-only local production-like acceptance evidence
 
 - Purpose:
