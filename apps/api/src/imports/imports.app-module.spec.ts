@@ -31,6 +31,7 @@ type UserAccountImportDryRunServiceMock = {
 };
 
 type AchievementImportDryRunServiceMock = {
+  applyAchievementCsv: ReturnType<typeof vi.fn>;
   dryRunAchievementCsv: ReturnType<typeof vi.fn>;
 };
 
@@ -171,6 +172,42 @@ const createUserAccountServiceMock = (): UserAccountImportDryRunServiceMock => (
 });
 
 const createAchievementServiceMock = (): AchievementImportDryRunServiceMock => ({
+  applyAchievementCsv: vi.fn().mockResolvedValue({
+    importType: "ACHIEVEMENT",
+    dryRun: false,
+    mode: "CREATE_DRAFT_ONLY",
+    file: {
+      name: "achievements.csv",
+      size: 120,
+      mimeType: "text/csv",
+      encoding: "utf-8",
+    },
+    summary: {
+      totalRows: 1,
+      createdAchievementsCount: 1,
+      createdPaperDetailsCount: 1,
+      createdContributorsCount: 1,
+      skippedRows: 0,
+      failedRows: 0,
+      errorCount: 0,
+      warningCount: 0,
+      auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+    },
+    errors: [],
+    rows: [
+      {
+        rowNumber: 2,
+        status: "CREATED",
+        createdAchievementId: "30000000-0000-4000-8000-000000000010",
+        type: "PAPER",
+        achievementStatus: "DRAFT",
+        departmentId: ids.department,
+        ownerUserId: ids.user,
+        contributorCount: 1,
+        auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+      },
+    ],
+  }),
   dryRunAchievementCsv: vi.fn().mockResolvedValue({
     importType: "ACHIEVEMENT",
     dryRun: true,
@@ -288,6 +325,28 @@ describe("Import routes through AppModule", () => {
         .expect(201);
 
       expect(services.achievement.dryRunAchievementCsv).toHaveBeenCalledOnce();
+    });
+  });
+
+  it("exposes achievement PAPER create-draft apply through AppModule", async () => {
+    await withAppModule(async (app, services) => {
+      await request(app.getHttpServer() as Server)
+        .post("/achievements/import/apply")
+        .set("X-Demo-User-Id", ids.user)
+        .field("mode", "CREATE_DRAFT_ONLY")
+        .attach(
+          "file",
+          Buffer.from(
+            "type,title,ownerEmail,departmentCode,contributors,doi\nPAPER,Paper,owner@example.org,RD,A|AUTHOR|||Lab,10.1000/new\n",
+          ),
+          {
+            filename: "achievements.csv",
+            contentType: "text/csv",
+          },
+        )
+        .expect(201);
+
+      expect(services.achievement.applyAchievementCsv).toHaveBeenCalledOnce();
     });
   });
 });

@@ -1,5 +1,54 @@
 # Evidence
 
+## 2026-07-02 Step 68B - Achievement PAPER import CREATE_DRAFT_ONLY backend apply evidence
+
+- Goal:
+  - Implement the backend-only first achievement import apply slice: `PAPER` + `CREATE_DRAFT_ONLY`.
+- Initial state:
+  - `git log -1 --oneline`: `9c997a6 docs: add achievement import real-write safety plan`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - Step 68A section from `memory-bank/import-real-write-rollout-plan.md`.
+  - Achievement import dry-run service/repository/controller/tests and `imports.module.ts`.
+  - Existing department and user/account import apply patterns.
+  - Achievement repository/mapper/domain/module/tests.
+  - Targeted Prisma snippets for achievement, paper detail, contributor, and audit models.
+- Implemented files:
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.controller.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.controller.spec.ts`.
+  - `apps/api/src/imports/imports.app-module.spec.ts`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+- Backend behavior:
+  - Added `POST /api/achievements/import/apply`.
+  - Supports only `mode=CREATE_DRAFT_ONLY`.
+  - Supports only `PAPER` rows.
+  - Requires normalized DOI for apply.
+  - Server-side apply re-parses the uploaded CSV and reuses the same validation plan as dry-run.
+  - Dry-run errors and warnings block apply before any transaction is opened.
+  - Apply-only blockers reject unsupported mode, unsupported type, missing DOI, and non-`CREATE_DRAFT` candidates.
+  - One Prisma transaction covers achievement, paper detail, contributor, and audit writes.
+  - Transaction-time rechecks cover active department, active owner, owner department match, active contributor users, and normalized DOI absence.
+  - Prisma unique conflicts on DOI map to safe `DB_CONFLICT` apply errors.
+  - Audit evidence records operation, mode, row number, created achievement id, type, status, department id, owner user id, contributor count, and identifier field presence only.
+  - Audit does not record title, abstract, owner email, contributor email/name, DOI source value, or normalized DOI.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files / 136 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan covered the required terms; 1719 added lines scanned, 20 total keyword matches, all code/test/documentation safety-boundary or local test terminology, with `connection_string=0`, `private_key=0`, `access_key=0`, and complete URL matches `0`.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No Docker, browser/Web acceptance, database write outside unit tests, migration, seed, backfill, production/VPS access, production DB access, production configuration access, schema/package/lockfile/deployment change, real-data import, password/cookie/token/secret/connection/private-key handling, workflow/attachment/storage/fee/reminder/notification/search/resource grant/import job creation, submit/approve/reject/archive/void, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+
 ## 2026-07-02 Step 68A - Achievement import real-write safety plan evidence
 
 - Goal:

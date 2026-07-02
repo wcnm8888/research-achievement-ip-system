@@ -1,6 +1,19 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DepartmentStatus, UserStatus } from "@prisma/client";
+import { DepartmentStatus, Prisma, UserStatus } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service";
+import {
+  AchievementTypeCode,
+  SecretLevelCode,
+} from "../achievements/domain/achievement-domain.types";
+import {
+  CreateAchievementContributorDraftInput,
+  CreatePaperDetailDraftInput,
+} from "../achievements/domain/achievement-repository.types";
+import {
+  toAchievementCreateData,
+  toContributorCreateManyData,
+  toPaperDetailCreateData,
+} from "../achievements/domain/achievement-prisma.mapper";
 
 export type AchievementImportDepartmentLookup = {
   id: string;
@@ -19,6 +32,52 @@ export type AchievementImportNormalizedConflict = {
   field: "doi" | "applicationNo" | "patentNo" | "grantNo" | "registrationNo";
   normalizedValue: string;
 };
+
+export type AchievementImportApplyDepartmentLookup = {
+  id: string;
+  code: string;
+  status: DepartmentStatus;
+  archivedAt: Date | null;
+};
+
+export type AchievementImportApplyUserLookup = {
+  id: string;
+  email: string;
+  departmentId: string;
+  status: UserStatus;
+  archivedAt: Date | null;
+};
+
+export type AchievementImportCreatePaperDraftInput = {
+  type: typeof AchievementTypeCode.paper;
+  title: string;
+  secretLevel: SecretLevelCode;
+  departmentId: string;
+  ownerUserId: string;
+  createdById: string;
+  updatedById: string;
+  paperDetail: CreatePaperDetailDraftInput;
+  contributors: readonly CreateAchievementContributorDraftInput[];
+};
+
+export type AchievementImportCreatedPaperDraft = {
+  id: string;
+  type: string;
+  status: string;
+  secretLevel: string;
+  departmentId: string;
+  ownerUserId: string;
+  createdById: string | null;
+  updatedById: string | null;
+  version: number;
+  paperDetail: { achievementId: string; doiNormalized: string | null } | null;
+  contributors: Array<{ id: string }>;
+};
+
+export type AchievementImportApplyTransactionClient = Pick<
+  Prisma.TransactionClient,
+  "department" | "user" | "achievement" | "paperDetail" | "achievementContributor"
+>;
 
 @Injectable()
 export class AchievementImportDryRunRepository {
@@ -91,6 +150,139 @@ export class AchievementImportDryRunRepository {
       ...patentNoConflicts,
       ...softwareConflicts,
     ];
+  }
+
+  async findApplyDepartmentsByCodesInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    codes: readonly string[],
+  ): Promise<AchievementImportApplyDepartmentLookup[]> {
+    const uniqueCodes = [...new Set(codes.filter(Boolean))];
+    if (uniqueCodes.length === 0) {
+      return [];
+    }
+
+    return client.department.findMany({
+      where: { code: { in: uniqueCodes } },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        archivedAt: true,
+      },
+    });
+  }
+
+  async findApplyUsersByEmailsInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    emails: readonly string[],
+  ): Promise<AchievementImportApplyUserLookup[]> {
+    const uniqueEmails = [...new Set(emails.filter(Boolean))];
+    if (uniqueEmails.length === 0) {
+      return [];
+    }
+
+    return client.user.findMany({
+      where: { email: { in: uniqueEmails } },
+      select: {
+        id: true,
+        email: true,
+        departmentId: true,
+        status: true,
+        archivedAt: true,
+      },
+    });
+  }
+
+  async findApplyPaperDoiConflictsInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    doiNormalizedValues: readonly string[],
+  ): Promise<AchievementImportNormalizedConflict[]> {
+    const uniqueValues = [...new Set(doiNormalizedValues.filter(Boolean))];
+    if (uniqueValues.length === 0) {
+      return [];
+    }
+
+    const rows = await client.paperDetail.findMany({
+      where: { doiNormalized: { in: uniqueValues } },
+      select: { doiNormalized: true },
+    });
+
+    return rows
+      .map((row) => row.doiNormalized)
+      .filter((value): value is string => Boolean(value))
+      .map((normalizedValue) => ({
+        field: "doi",
+        normalizedValue,
+      }));
+  }
+
+  async createPaperDraftInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    input: AchievementImportCreatePaperDraftInput,
+  ): Promise<AchievementImportCreatedPaperDraft> {
+    const created = await client.achievement.create({
+      data: toAchievementCreateData({
+        ...input,
+        type: AchievementTypeCode.paper,
+        paperDetail: input.paperDetail,
+      }),
+      select: { id: true },
+    });
+
+    await client.paperDetail.create({
+      data: toPaperDetailCreateData(created.id, input.paperDetail),
+    });
+
+    if (input.contributors.length > 0) {
+      await client.achievementContributor.createMany({
+        data: toContributorCreateManyData(created.id, input.contributors),
+      });
+    }
+
+    return client.achievement.findUniqueOrThrow({
+      where: { id: created.id },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        secretLevel: true,
+        departmentId: true,
+        ownerUserId: true,
+        createdById: true,
+        updatedById: true,
+        version: true,
+        paperDetail: {
+          select: {
+            achievementId: true,
+            doiNormalized: true,
+          },
+        },
+        contributors: {
+          select: { id: true },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+    });
+  }
+
+  isPrismaUniqueConflict(error: unknown): boolean {
+    return isPrismaKnownRequestError(error) && error.code === "P2002";
+  }
+
+  getPrismaUniqueConflictTarget(error: unknown): string[] {
+    if (!this.isPrismaUniqueConflict(error) || !("meta" in (error as object))) {
+      return [];
+    }
+
+    const meta = (error as { meta?: { target?: unknown } }).meta;
+    if (Array.isArray(meta?.target)) {
+      return meta.target.filter((item): item is string => typeof item === "string");
+    }
+    if (typeof meta?.target === "string") {
+      return [meta.target];
+    }
+
+    return [];
   }
 
   private async findPaperDoiConflicts(
@@ -181,3 +373,11 @@ export class AchievementImportDryRunRepository {
       }));
   }
 }
+
+const isPrismaKnownRequestError = (error: unknown): error is { code: string } => {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  return typeof (error as { code?: unknown }).code === "string";
+};

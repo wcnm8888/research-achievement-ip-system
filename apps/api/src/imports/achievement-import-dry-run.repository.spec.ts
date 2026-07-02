@@ -144,4 +144,193 @@ describe("AchievementImportDryRunRepository", () => {
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
+
+  it("writes only PAPER draft import data through the provided transaction client", async () => {
+    const createdAchievement = {
+      id: "achievement-id",
+      type: "PAPER",
+      status: "DRAFT",
+      secretLevel: "INTERNAL",
+      departmentId: "department-id",
+      ownerUserId: "owner-id",
+      createdById: "admin-id",
+      updatedById: "admin-id",
+      version: 1,
+      paperDetail: { achievementId: "achievement-id", doiNormalized: "10.1000/a" },
+      contributors: [{ id: "contributor-row-id" }],
+    };
+    const tx = {
+      department: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "department-id",
+            code: "RD",
+            status: DepartmentStatus.ACTIVE,
+            archivedAt: null,
+          },
+        ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "owner-id",
+            email: "owner@example.org",
+            departmentId: "department-id",
+            status: UserStatus.ACTIVE,
+            archivedAt: null,
+          },
+        ]),
+      },
+      paperDetail: {
+        findMany: vi.fn().mockResolvedValue([{ doiNormalized: "10.1000/a" }]),
+        create: vi.fn(),
+      },
+      achievement: {
+        create: vi.fn().mockResolvedValue({ id: "achievement-id" }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(createdAchievement),
+        update: vi.fn(),
+        upsert: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      achievementContributor: {
+        createMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      patentDetail: {
+        create: vi.fn(),
+      },
+      softwareCopyrightDetail: {
+        create: vi.fn(),
+      },
+      attachment: {
+        create: vi.fn(),
+      },
+      feeRecord: {
+        create: vi.fn(),
+      },
+      workflowInstance: {
+        create: vi.fn(),
+      },
+      workflowTask: {
+        create: vi.fn(),
+      },
+      workflowAction: {
+        create: vi.fn(),
+      },
+      resourceAccessGrant: {
+        create: vi.fn(),
+      },
+      auditLog: {
+        create: vi.fn(),
+      },
+    };
+    const repository = new AchievementImportDryRunRepository({} as PrismaService);
+
+    await expect(
+      repository.findApplyDepartmentsByCodesInTransaction(tx as never, ["RD"]),
+    ).resolves.toEqual([
+      {
+        id: "department-id",
+        code: "RD",
+        status: DepartmentStatus.ACTIVE,
+        archivedAt: null,
+      },
+    ]);
+    await expect(
+      repository.findApplyUsersByEmailsInTransaction(tx as never, ["owner@example.org"]),
+    ).resolves.toEqual([
+      {
+        id: "owner-id",
+        email: "owner@example.org",
+        departmentId: "department-id",
+        status: UserStatus.ACTIVE,
+        archivedAt: null,
+      },
+    ]);
+    await expect(
+      repository.findApplyPaperDoiConflictsInTransaction(tx as never, ["10.1000/a"]),
+    ).resolves.toEqual([{ field: "doi", normalizedValue: "10.1000/a" }]);
+
+    await expect(
+      repository.createPaperDraftInTransaction(tx as never, {
+        type: "PAPER",
+        title: "Paper draft",
+        secretLevel: "INTERNAL",
+        departmentId: "department-id",
+        ownerUserId: "owner-id",
+        createdById: "admin-id",
+        updatedById: "admin-id",
+        paperDetail: {
+          doi: "10.1000/a",
+          doiNormalized: "10.1000/a",
+          journal: "Journal",
+        },
+        contributors: [
+          {
+            name: "Author",
+            userId: "owner-id",
+            contributorType: "AUTHOR",
+            contributorRole: "FIRST_AUTHOR",
+            sortOrder: 1,
+          },
+        ],
+      }),
+    ).resolves.toEqual(createdAchievement);
+
+    expect(tx.achievement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "PAPER",
+        status: "DRAFT",
+        title: "Paper draft",
+        departmentId: "department-id",
+        ownerUserId: "owner-id",
+      }),
+      select: { id: true },
+    });
+    expect(tx.paperDetail.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        achievementId: "achievement-id",
+        doiNormalized: "10.1000/a",
+      }),
+    });
+    expect(tx.achievementContributor.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          achievementId: "achievement-id",
+          name: "Author",
+          userId: "owner-id",
+          contributorType: "AUTHOR",
+          contributorRole: "FIRST_AUTHOR",
+          sortOrder: 1,
+        }),
+      ],
+    });
+    expect(tx.achievement.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: "achievement-id" },
+      select: expect.objectContaining({
+        id: true,
+        paperDetail: expect.any(Object),
+        contributors: expect.any(Object),
+      }),
+    });
+    expect(tx.patentDetail.create).not.toHaveBeenCalled();
+    expect(tx.softwareCopyrightDetail.create).not.toHaveBeenCalled();
+    expect(tx.attachment.create).not.toHaveBeenCalled();
+    expect(tx.feeRecord.create).not.toHaveBeenCalled();
+    expect(tx.workflowInstance.create).not.toHaveBeenCalled();
+    expect(tx.workflowTask.create).not.toHaveBeenCalled();
+    expect(tx.workflowAction.create).not.toHaveBeenCalled();
+    expect(tx.resourceAccessGrant.create).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("maps Prisma unique conflicts safely", () => {
+    const repository = new AchievementImportDryRunRepository({} as PrismaService);
+    const error = { code: "P2002", meta: { target: ["doi_normalized"] } };
+
+    expect(repository.isPrismaUniqueConflict(error)).toBe(true);
+    expect(repository.getPrismaUniqueConflictTarget(error)).toEqual(["doi_normalized"]);
+    expect(repository.isPrismaUniqueConflict({ code: "P2025" })).toBe(false);
+  });
 });

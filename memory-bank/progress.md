@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-02 Step 68B - Achievement PAPER import CREATE_DRAFT_ONLY backend apply
+
+- Status: DONE.
+- Scope completed:
+  - Added backend-only `POST /api/achievements/import/apply`.
+  - Added only mode `CREATE_DRAFT_ONLY`.
+  - Implemented the first achievement import apply slice for `PAPER` rows only.
+  - Refactored achievement dry-run to build a server-side import plan reused by apply while keeping the dry-run response shape compatible.
+  - Required normalized DOI for apply so repeated exact apply has a durable duplicate boundary.
+  - Added transaction-scoped creation of `DRAFT` `Achievement` rows, `PaperDetail` rows, contributor rows, and same-transaction audit evidence.
+  - Added transaction-time rechecks for active department, active owner, owner department match, active contributor users, and normalized DOI conflicts.
+  - Added safe rejected apply summaries for unsupported mode, unsupported type, missing DOI, dry-run errors/warnings, transaction-time conflicts, and Prisma unique conflicts.
+  - Added focused service, repository, controller, and AppModule route tests.
+- Explicitly not done:
+  - No `PATENT` or `SOFTWARE_COPYRIGHT` apply support.
+  - No Web UI/client work.
+  - No Docker or browser/local production-like acceptance.
+  - No production/VPS access, production DB access, production configuration access, real-data import, schema change, migration, seed, backfill, package, lockfile, deployment, cleanup, deletion, reset, drop, prune, or handling of known untracked local artifacts.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files / 136 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 68A - Achievement import real-write safety plan
 
 - Status: DONE.

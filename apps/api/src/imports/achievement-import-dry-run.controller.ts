@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Inject,
   PayloadTooLargeException,
@@ -17,9 +18,11 @@ import { PermissionGuard } from "../authorization/guards/permission.guard";
 import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import { UserContext } from "../identity/user-context";
 import {
+  AchievementImportApplyRejectedError,
   AchievementImportDryRunFile,
   AchievementImportDryRunService,
   InvalidAchievementImportCsvError,
+  InvalidAchievementImportApplyModeError,
 } from "./achievement-import-dry-run.service";
 import { importDryRunMaxFileBytes } from "./import-dry-run.shared";
 
@@ -59,6 +62,29 @@ export class AchievementImportDryRunController {
       );
     } catch (error) {
       throw mapAchievementImportDryRunError(error);
+    }
+  }
+
+  @Post("apply")
+  @RequirePermissions(PermissionCode.systemConfig)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: { fileSize: importFileMaxBytes },
+    }),
+  )
+  async applyAchievementImport(
+    @CurrentUser() currentUser: UserContext,
+    @UploadedFile() file?: UploadedImportFile,
+    @Body("mode") mode?: string,
+  ) {
+    try {
+      return await this.achievementImportDryRunService.applyAchievementCsv(
+        currentUser,
+        toAchievementImportDryRunFile(file),
+        mode,
+      );
+    } catch (error) {
+      throw mapAchievementImportApplyError(error);
     }
   }
 }
@@ -119,6 +145,22 @@ const mapAchievementImportDryRunError = (error: unknown): Error => {
   return error instanceof Error
     ? error
     : new Error("Unknown achievement import dry-run controller error.");
+};
+
+const mapAchievementImportApplyError = (error: unknown): Error => {
+  if (error instanceof AchievementImportApplyRejectedError) {
+    return new BadRequestException({
+      message: error.message,
+      summary: error.result.summary,
+      errors: error.result.errors,
+    });
+  }
+
+  if (error instanceof InvalidAchievementImportApplyModeError) {
+    return new BadRequestException(error.message);
+  }
+
+  return mapAchievementImportDryRunError(error);
 };
 
 const isMulterFileSizeError = (

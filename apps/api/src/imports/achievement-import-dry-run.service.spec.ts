@@ -62,17 +62,81 @@ const createService = (input: {
     field: "doi" | "applicationNo" | "patentNo" | "grantNo" | "registrationNo";
     normalizedValue: string;
   }>;
+  applyDepartments?: Array<{
+    id: string;
+    code: string;
+    status: "ACTIVE" | "ARCHIVED";
+    archivedAt: Date | null;
+  }>;
+  applyUsers?: ReturnType<typeof activeUser>[];
+  applyDoiConflicts?: Array<{ field: "doi"; normalizedValue: string }>;
+  createError?: unknown;
+  auditError?: unknown;
 } = {}) => {
+  const createdAchievement = {
+    id: "30000000-0000-4000-8000-000000000001",
+    type: "PAPER",
+    status: "DRAFT",
+    secretLevel: "INTERNAL",
+    departmentId: ids.department,
+    ownerUserId: ids.owner,
+    createdById: ids.admin,
+    updatedById: ids.admin,
+    version: 1,
+    paperDetail: {
+      achievementId: "30000000-0000-4000-8000-000000000001",
+      doiNormalized: "10.1000/example",
+    },
+    contributors: [{ id: "70000000-0000-4000-8000-000000000001" }],
+  };
   const repository = {
     findActiveDepartmentsByCodes: vi.fn().mockResolvedValue(input.departments ?? []),
     findUsersByEmails: vi.fn().mockResolvedValue(input.users ?? []),
     findNormalizedConflicts: vi.fn().mockResolvedValue(input.conflicts ?? []),
+    findApplyDepartmentsByCodesInTransaction: vi.fn().mockResolvedValue(
+      input.applyDepartments ??
+        (input.departments ?? []).map((department) => ({
+          ...department,
+          status: "ACTIVE",
+          archivedAt: null,
+        })),
+    ),
+    findApplyUsersByEmailsInTransaction: vi.fn().mockResolvedValue(
+      input.applyUsers ?? input.users ?? [],
+    ),
+    findApplyPaperDoiConflictsInTransaction: vi.fn().mockResolvedValue(
+      input.applyDoiConflicts ?? [],
+    ),
+    createPaperDraftInTransaction: vi.fn().mockImplementation(() => {
+      if (input.createError) {
+        throw input.createError;
+      }
+      return Promise.resolve(createdAchievement);
+    }),
+    isPrismaUniqueConflict: vi.fn((error: unknown) => Boolean((error as { code?: string })?.code === "P2002")),
+    getPrismaUniqueConflictTarget: vi.fn((error: unknown) => (error as { meta?: { target?: string[] } })?.meta?.target ?? []),
+  };
+  const tx = {};
+  const prisma = {
+    $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+  };
+  const auditService = {
+    recordEventInTransaction: vi.fn().mockImplementation(() => {
+      if (input.auditError) {
+        throw input.auditError;
+      }
+      return Promise.resolve({ id: "audit-log-id" });
+    }),
   };
 
   return {
+    auditService,
+    prisma,
     repository,
     service: new AchievementImportDryRunService(
       repository as unknown as AchievementImportDryRunRepository,
+      prisma as never,
+      auditService as never,
     ),
   };
 };
@@ -309,5 +373,313 @@ describe("AchievementImportDryRunService", () => {
         makeFile(["type,title,ownerEmail,departmentCode,contributors,doi", ...rows].join("\n")),
       ),
     ).rejects.toThrow(InvalidAchievementImportCsvError);
+  });
+
+  it("applies PAPER rows as draft achievements with detail, contributors, and safe audit", async () => {
+    const { service, repository, prisma, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [
+        activeUser("owner@example.org"),
+        activeUser("contributor@example.org", { id: ids.contributor }),
+      ],
+    });
+
+    const result = await service.applyAchievementCsv(
+      adminContext,
+      makeFile(
+        [
+          "type,title,ownerEmail,departmentCode,contributors,status,doi,journal,abstract",
+          "PAPER,Paper A,owner@example.org,RD,Contributor|AUTHOR|FIRST_AUTHOR|contributor@example.org|Lab,DRAFT,10.1000/Example,Journal,Hidden abstract",
+        ].join("\n"),
+      ),
+      "CREATE_DRAFT_ONLY",
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(repository.createPaperDraftInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        type: "PAPER",
+        title: "Paper A",
+        departmentId: ids.department,
+        ownerUserId: ids.owner,
+        createdById: ids.admin,
+        updatedById: ids.admin,
+        paperDetail: expect.objectContaining({
+          doi: "10.1000/Example",
+          doiNormalized: "10.1000/example",
+          journal: "Journal",
+          abstract: "Hidden abstract",
+        }),
+        contributors: [
+          expect.objectContaining({
+            name: "Contributor",
+            userId: ids.contributor,
+            contributorType: "AUTHOR",
+            contributorRole: "FIRST_AUTHOR",
+            sortOrder: 1,
+          }),
+        ],
+      }),
+    );
+    expect(result).toMatchObject({
+      importType: "ACHIEVEMENT",
+      dryRun: false,
+      mode: "CREATE_DRAFT_ONLY",
+      summary: {
+        totalRows: 1,
+        createdAchievementsCount: 1,
+        createdPaperDetailsCount: 1,
+        createdContributorsCount: 1,
+        auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+      },
+    });
+    const auditInput = auditService.recordEventInTransaction.mock.calls[0]![1];
+    const auditJson = JSON.stringify(auditInput);
+    expect(auditInput).toMatchObject({
+      action: "CREATE",
+      target: {
+        type: "ACHIEVEMENT",
+        id: "30000000-0000-4000-8000-000000000001",
+        departmentId: ids.department,
+        secretLevel: "INTERNAL",
+      },
+      oldValue: null,
+      newValue: expect.objectContaining({
+        operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+        mode: "CREATE_DRAFT_ONLY",
+        rowNumber: 2,
+        type: "PAPER",
+        status: "DRAFT",
+        identifierFieldsPresent: ["doi"],
+      }),
+    });
+    expect(auditJson).not.toContain("Paper A");
+    expect(auditJson).not.toContain("Hidden abstract");
+    expect(auditJson).not.toContain("owner@example.org");
+    expect(auditJson).not.toContain("contributor@example.org");
+    expect(auditJson).not.toContain("Contributor");
+    expect(auditJson).not.toContain("10.1000");
+  });
+
+  it("rejects unsupported apply mode before parsing or writing", async () => {
+    const { service, repository, prisma } = createService();
+
+    await expect(
+      service.applyAchievementCsv(adminContext, makeFile("not,a,valid,csv\n"), "CREATE_ALL"),
+    ).rejects.toMatchObject({
+      name: "InvalidAchievementImportApplyModeError",
+    });
+
+    expect(repository.findActiveDepartmentsByCodes).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects PATENT and SOFTWARE_COPYRIGHT rows for the first apply slice", async () => {
+    const { service, repository, prisma } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [
+        activeUser("owner@example.org"),
+        activeUser("contributor@example.org", { id: ids.contributor }),
+      ],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          [
+            "type,title,ownerEmail,departmentCode,contributors,patentNo,softwareRegistrationNo",
+            "PATENT,Patent A,owner@example.org,RD,Inventor|INVENTOR|PRIMARY_INVENTOR|contributor@example.org|Lab,CN-001,",
+            "SOFTWARE_COPYRIGHT,Software A,owner@example.org,RD,Owner|COPYRIGHT_OWNER|OWNER|contributor@example.org|Lab,,SW-001",
+          ].join("\n"),
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "type", code: "UNSUPPORTED_TYPE" }),
+        ]),
+      }),
+    });
+
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing DOI during apply even when dry-run can preview the row", async () => {
+    const { service, prisma } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors\nPAPER,Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "doi", code: "REQUIRED" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("blocks apply when the dry-run plan has warnings or errors", async () => {
+    const { service, prisma } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      conflicts: [{ field: "doi", normalizedValue: "10.1000/existing" }],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          [
+            "type,title,ownerEmail,departmentCode,contributors,doi",
+            "PAPER,Existing,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/existing",
+            "PAPER,Missing Owner,missing@example.org,RD,A|AUTHOR|||Lab,10.1000/new",
+          ].join("\n"),
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ code: "DB_CONFLICT" }),
+          expect.objectContaining({ code: "OWNER_NOT_FOUND" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects owner department mismatch found during transaction recheck", async () => {
+    const { service, repository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      applyUsers: [
+        activeUser("owner@example.org", {
+          departmentId: "10000000-0000-4000-8000-000000000099",
+        }),
+      ],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,doi\nPAPER,Paper,owner@example.org,RD,A|AUTHOR|||Lab,10.1000/new\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ code: "OWNER_DEPARTMENT_MISMATCH" }),
+        ]),
+      }),
+    });
+
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing contributor user found during transaction recheck", async () => {
+    const { service, repository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [
+        activeUser("owner@example.org"),
+        activeUser("contributor@example.org", { id: ids.contributor }),
+      ],
+      applyUsers: [activeUser("owner@example.org")],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,doi\nPAPER,Paper,owner@example.org,RD,Contributor|AUTHOR||contributor@example.org|Lab,10.1000/new\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ code: "CONTRIBUTOR_USER_NOT_FOUND" }),
+        ]),
+      }),
+    });
+
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("maps DOI race recheck and unique conflicts to safe conflicts", async () => {
+    const race = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      applyDoiConflicts: [{ field: "doi", normalizedValue: "10.1000/new" }],
+    });
+
+    await expect(
+      race.service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,doi\nPAPER,Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/new\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "doi", code: "DB_CONFLICT" }),
+        ]),
+      }),
+    });
+
+    expect(race.repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+
+    const unique = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      createError: { code: "P2002", meta: { target: ["doi_normalized"] } },
+    });
+
+    await expect(
+      unique.service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,doi\nPAPER,Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/new\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: [expect.objectContaining({ field: "doi", code: "DB_CONFLICT" })],
+      }),
+    });
+  });
+
+  it("rejects apply when audit writing fails inside the transaction boundary", async () => {
+    const auditError = new Error("audit failed");
+    const { service, repository, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      auditError,
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,doi\nPAPER,Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/new\n",
+        ),
+      ),
+    ).rejects.toBe(auditError);
+
+    expect(repository.createPaperDraftInTransaction).toHaveBeenCalledOnce();
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledOnce();
   });
 });

@@ -278,3 +278,33 @@ Keep deferred:
 - Real data import.
 - Workflow, attachment, fee, reminder, notification, search, resource grant, and import job history.
 - Schema/migration/package/deployment work.
+
+## Step 68B Implementation Addendum
+
+- Date: 2026-07-02.
+- Implemented backend-only `POST /api/achievements/import/apply`.
+- Implemented only mode `CREATE_DRAFT_ONLY`.
+- Implemented only `PAPER` apply; `PATENT` and `SOFTWARE_COPYRIGHT` remain rejected by apply-only blockers.
+- Apply now re-parses the uploaded CSV and builds the same server-side validation plan used by dry-run.
+- Dry-run errors and warnings block apply before any transaction is opened.
+- Apply requires normalized DOI and maps repeated apply / DOI race conflicts to safe `DB_CONFLICT` evidence.
+- One Prisma transaction covers only:
+  - `Achievement` create with `DRAFT` status;
+  - `PaperDetail` create;
+  - `AchievementContributor` createMany;
+  - audit event create through `AuditService.recordEventInTransaction`.
+- Transaction-time rechecks cover:
+  - active non-archived department by `departmentCode`;
+  - active non-archived owner by `ownerEmail`;
+  - owner department match;
+  - active non-archived contributor users for contributor `userEmail`;
+  - normalized DOI absence.
+- Audit evidence intentionally excludes title, abstract, owner email, contributor email/name, DOI source value, and normalized DOI.
+- Focused API tests and API typecheck passed.
+- Still deferred to Step 68C or later:
+  - local production-like API acceptance;
+  - Web apply entry;
+  - `PATENT` / `SOFTWARE_COPYRIGHT` apply;
+  - production/VPS rollout;
+  - real-data import;
+  - workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job history, and durable idempotency keys.
