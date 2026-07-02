@@ -10674,3 +10674,25 @@
 - Verification:
   - Documentation-only Step; full typecheck/test not run.
   - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
+## 2026-07-02 Step 66B - User/account pending no-credential backend apply
+
+- Status: DONE.
+- Scope completed:
+  - Added backend-only `POST /users/import/apply`.
+  - Added only mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Factored user/account dry-run into a shared server-side plan used by both dry-run and apply.
+  - Added transaction-scoped creation of `PENDING_ACTIVATION` users with no credential plus one department-scoped initial role assignment per imported row.
+  - Added same-transaction audit event operation `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`.
+  - Added controller, service, repository, and AppModule tests.
+- Explicitly not done:
+  - No Web UI apply button.
+  - No production/VPS or production DB access.
+  - No Docker.
+  - No password creation/reset, `UserCredential`, session, invite/reset/lifecycle token, DirectMail, or real email.
+  - No achievement real-write work.
+  - No employee-number schema or database uniqueness implementation.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Final `git diff --check` and added-lines sensitive scan recorded in `memory-bank/evidence.md`.

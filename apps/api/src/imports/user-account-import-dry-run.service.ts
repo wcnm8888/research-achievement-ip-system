@@ -1,9 +1,20 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { UserStatus } from "@prisma/client";
+import { DepartmentStatus, RoleStatus, UserStatus } from "@prisma/client";
+import { AuditTransactionClient } from "../audit/audit.repository";
+import { AuditService } from "../audit/audit.service";
+import { AuditActionCode } from "../audit/domain/audit-action-code";
+import { CreateAuditEventInput } from "../audit/domain/audit-event.types";
+import { AuditTargetTypeCode } from "../audit/domain/audit-target-type-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
+import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
 import {
+  UserAccountImportApplyDepartmentLookup,
+  UserAccountImportApplyRoleLookup,
+  UserAccountImportApplyTransactionClient,
+  UserAccountImportApplyUserLookup,
+  UserAccountImportCreatedUser,
   UserAccountImportDepartmentLookup,
   UserAccountImportDryRunRepository,
   UserAccountImportRoleLookup,
@@ -121,6 +132,64 @@ export type UserAccountImportDryRunResult = ImportDryRunResult<
   UserAccountImportDryRunRow
 >;
 
+export type UserAccountImportApplyMode = "CREATE_ONLY_PENDING_NO_CREDENTIAL";
+
+export type UserAccountImportApplyErrorSummary = {
+  rowNumber: number | null;
+  field: string;
+  code: string;
+  message: string;
+};
+
+export type UserAccountImportApplyRow = {
+  rowNumber: number;
+  emailMasked: string;
+  status: "CREATED";
+  createdUserId: string;
+  createdUserRoleIds: string[];
+  roleCode: string;
+  scopeType: "DEPARTMENT";
+};
+
+export type UserAccountImportApplySummary = {
+  totalRows: number;
+  createdUsersCount: number;
+  createdRolesCount: number;
+  skippedRows: number;
+  failedRows: number;
+  errorCount: number;
+  warningCount: number;
+  auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL";
+};
+
+export type UserAccountImportApplyResult = {
+  importType: typeof userAccountImportType;
+  dryRun: false;
+  mode: UserAccountImportApplyMode;
+  file: ReturnType<typeof buildImportDryRunFileMetadata>;
+  summary: UserAccountImportApplySummary;
+  errors: UserAccountImportApplyErrorSummary[];
+  rows: UserAccountImportApplyRow[];
+};
+
+type UserAccountImportPlan = {
+  file: UserAccountImportDryRunResult["file"];
+  columns: UserAccountImportDryRunResult["columns"];
+  summary: UserAccountImportDryRunSummary;
+  rows: UserAccountImportDryRunRow[];
+  resolvedRows: UserAccountImportResolvedPlanRow[];
+};
+
+type UserAccountImportResolvedPlanRow = {
+  rowNumber: number;
+  parsed: UserAccountImportDryRunParsedRow;
+  resolved: {
+    departmentId: string | null;
+    roleId: string | null;
+    scopeDepartmentId: string | null;
+  };
+};
+
 type WorkingRow = {
   rowNumber: number;
   valuesByHeader: Map<string, string>;
@@ -141,17 +210,174 @@ export class InvalidUserAccountImportCsvError extends Error {
   }
 }
 
+export class InvalidUserAccountImportApplyModeError extends Error {
+  constructor(mode: string) {
+    super(`Unsupported user account import apply mode: ${mode}.`);
+    this.name = "InvalidUserAccountImportApplyModeError";
+  }
+}
+
+export class UserAccountImportApplyRejectedError extends Error {
+  constructor(
+    message: string,
+    readonly result: UserAccountImportApplyResult,
+  ) {
+    super(message);
+    this.name = "UserAccountImportApplyRejectedError";
+  }
+}
+
 @Injectable()
 export class UserAccountImportDryRunService {
   constructor(
     @Inject(UserAccountImportDryRunRepository)
     private readonly repository: UserAccountImportDryRunRepository,
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
+    @Inject(AuditService)
+    private readonly auditService: AuditService,
   ) {}
 
   async dryRunUserAccountCsv(
     _context: UserContext,
     file: UserAccountImportDryRunFile,
   ): Promise<UserAccountImportDryRunResult> {
+    const plan = await this.buildUserAccountImportPlan(file);
+
+    return {
+      importType: userAccountImportType,
+      dryRun: true,
+      file: plan.file,
+      columns: plan.columns,
+      summary: plan.summary,
+      rows: plan.rows,
+    };
+  }
+
+  async applyUserAccountCsv(
+    context: UserContext,
+    file: UserAccountImportDryRunFile,
+    mode: string | undefined = "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+  ): Promise<UserAccountImportApplyResult> {
+    if (mode !== "CREATE_ONLY_PENDING_NO_CREDENTIAL") {
+      throw new InvalidUserAccountImportApplyModeError(mode ?? "(missing)");
+    }
+
+    const plan = await this.buildUserAccountImportPlan(file);
+    assertPlanCanApply(plan);
+
+    const rowsToCreate = plan.resolvedRows;
+
+    try {
+      const appliedRows = await this.prisma.$transaction(async (tx) => {
+        const importClient = tx as UserAccountImportApplyTransactionClient;
+        const auditClient = tx as AuditTransactionClient;
+
+        const [departments, roles, users] = await Promise.all([
+          this.repository.findApplyDepartmentsByCodesInTransaction(
+            importClient,
+            collectDepartmentCodesFromResolvedRows(rowsToCreate),
+          ),
+          this.repository.findApplyRolesByCodesInTransaction(
+            importClient,
+            collectRoleCodesFromResolvedRows(rowsToCreate),
+          ),
+          this.repository.findApplyUsersByEmailsInTransaction(
+            importClient,
+            collectEmailsFromResolvedRows(rowsToCreate),
+          ),
+        ]);
+
+        const blockingErrors = toTransactionRecheckErrors(
+          rowsToCreate,
+          departments,
+          roles,
+          users,
+        );
+        if (blockingErrors.length > 0) {
+          throw new UserAccountImportApplyRejectedError(
+            "User account import apply failed transaction-time revalidation.",
+            buildRejectedApplyResult(plan, blockingErrors),
+          );
+        }
+
+        const departmentByCode = new Map(departments.map((department) => [department.code, department]));
+        const roleByCode = new Map(roles.map((role) => [role.code, role]));
+        const resultRows: UserAccountImportApplyRow[] = [];
+
+        for (const row of rowsToCreate) {
+          const department = departmentByCode.get(row.parsed.departmentCode!);
+          const scopeDepartment = departmentByCode.get(row.parsed.scopeDepartmentCode!);
+          const role = roleByCode.get(row.parsed.roleCode!);
+          if (!department || !scopeDepartment || !role) {
+            throw new Error("User account import apply invariant failed after revalidation.");
+          }
+
+          const created = await this.repository.createPendingNoCredentialUserInTransaction(
+            importClient,
+            {
+              email: row.parsed.email!,
+              name: row.parsed.displayName!,
+              departmentId: department.id,
+              role: {
+                roleId: role.id,
+                scopeType: ScopeType.department,
+                scopeKey: scopeDepartment.id,
+                departmentId: scopeDepartment.id,
+              },
+            },
+          );
+
+          assertCreatedUserIsNoCredentialPending(created);
+
+          await this.auditService.recordEventInTransaction(
+            auditClient,
+            toUserAccountImportCreateAuditEvent(context, created, row, plan),
+          );
+
+          resultRows.push({
+            rowNumber: row.rowNumber,
+            emailMasked: maskEmail(created.email),
+            status: "CREATED",
+            createdUserId: created.id,
+            createdUserRoleIds: created.userRoles.map((userRole) => userRole.id),
+            roleCode: role.code,
+            scopeType: ScopeType.department,
+          });
+        }
+
+        return resultRows;
+      });
+
+      return buildSuccessfulApplyResult(plan, appliedRows);
+    } catch (error) {
+      if (error instanceof UserAccountImportApplyRejectedError) {
+        throw error;
+      }
+
+      if (this.repository.isPrismaUniqueConflict(error)) {
+        throw new UserAccountImportApplyRejectedError(
+          "User account import apply encountered a uniqueness conflict.",
+          buildRejectedApplyResult(plan, [
+            {
+              rowNumber: null,
+              field: "email",
+              code: "EXISTING_USER",
+              message: "User email or role assignment already exists.",
+            },
+          ]),
+        );
+      }
+
+      throw error instanceof Error
+        ? error
+        : new Error("Unknown user account import apply error.");
+    }
+  }
+
+  private async buildUserAccountImportPlan(
+    file: UserAccountImportDryRunFile,
+  ): Promise<UserAccountImportPlan> {
     const csv = parseImportCsv(file.buffer, {
       maxRows,
       createError: (message) => new InvalidUserAccountImportCsvError(message),
@@ -178,8 +404,6 @@ export class UserAccountImportDryRunService {
     const resultRows = rows.map(toResultRow);
 
     return {
-      importType: userAccountImportType,
-      dryRun: true,
       file: buildImportDryRunFileMetadata(file, "user-accounts.csv"),
       columns: {
         required: [...requiredColumns],
@@ -188,9 +412,270 @@ export class UserAccountImportDryRunService {
       },
       summary: summarizeRows(resultRows),
       rows: resultRows,
+      resolvedRows: rows.map(toResolvedPlanRow),
     };
   }
 }
+
+const assertPlanCanApply = (plan: UserAccountImportPlan): void => {
+  const blockingErrors = toApplyErrorSummaries(plan.rows);
+  const applyOnlyErrors = plan.rows.flatMap((row) => {
+    const errors: UserAccountImportApplyErrorSummary[] = [];
+
+    if (
+      row.status === "VALID" &&
+      row.candidateAction === "CREATE_PENDING_USER" &&
+      row.parsed.status !== UserStatus.PENDING_ACTIVATION
+    ) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "status",
+        code: "UNSUPPORTED_STATUS",
+        message: "Apply supports only PENDING_ACTIVATION users.",
+      });
+    }
+
+    if (
+      row.status === "VALID" &&
+      row.candidateAction === "CREATE_PENDING_USER" &&
+      row.parsed.scopeType !== ScopeType.department
+    ) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "scopeType",
+        code: "INVALID_SCOPE",
+        message: "Apply supports only DEPARTMENT role scope.",
+      });
+    }
+
+    return errors;
+  });
+
+  if (blockingErrors.length > 0 || applyOnlyErrors.length > 0) {
+    throw new UserAccountImportApplyRejectedError(
+      "User account import apply requires only pending no-credential create candidates.",
+      buildRejectedApplyResult(plan, [...blockingErrors, ...applyOnlyErrors]),
+    );
+  }
+};
+
+const buildSuccessfulApplyResult = (
+  plan: UserAccountImportPlan,
+  rows: UserAccountImportApplyRow[],
+): UserAccountImportApplyResult => ({
+  importType: userAccountImportType,
+  dryRun: false,
+  mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+  file: plan.file,
+  summary: {
+    totalRows: plan.summary.totalRows,
+    createdUsersCount: rows.length,
+    createdRolesCount: rows.reduce(
+      (count, row) => count + row.createdUserRoleIds.length,
+      0,
+    ),
+    skippedRows: 0,
+    failedRows: 0,
+    errorCount: 0,
+    warningCount: 0,
+    auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+  },
+  errors: [],
+  rows,
+});
+
+const buildRejectedApplyResult = (
+  plan: UserAccountImportPlan,
+  errors: UserAccountImportApplyErrorSummary[],
+): UserAccountImportApplyResult => ({
+  importType: userAccountImportType,
+  dryRun: false,
+  mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+  file: plan.file,
+  summary: {
+    totalRows: plan.summary.totalRows,
+    createdUsersCount: 0,
+    createdRolesCount: 0,
+    skippedRows: plan.summary.warningRows,
+    failedRows: plan.summary.errorRows || errors.length,
+    errorCount: errors.length,
+    warningCount: plan.summary.warningRows,
+    auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+  },
+  errors,
+  rows: [],
+});
+
+const toApplyErrorSummaries = (
+  rows: readonly UserAccountImportDryRunRow[],
+): UserAccountImportApplyErrorSummary[] =>
+  rows.flatMap((row) => [
+    ...row.errors.map((error) => ({
+      rowNumber: row.rowNumber,
+      field: error.field,
+      code: error.code,
+      message: error.message,
+    })),
+    ...row.warnings.map((warning) => ({
+      rowNumber: row.rowNumber,
+      field: warning.field,
+      code: warning.code,
+      message: warning.message,
+    })),
+  ]);
+
+const toResolvedPlanRow = (row: WorkingRow): UserAccountImportResolvedPlanRow => ({
+  rowNumber: row.rowNumber,
+  parsed: row.parsed,
+  resolved: row.resolved,
+});
+
+const toTransactionRecheckErrors = (
+  rows: readonly UserAccountImportResolvedPlanRow[],
+  departments: readonly UserAccountImportApplyDepartmentLookup[],
+  roles: readonly UserAccountImportApplyRoleLookup[],
+  users: readonly UserAccountImportApplyUserLookup[],
+): UserAccountImportApplyErrorSummary[] => {
+  const errors: UserAccountImportApplyErrorSummary[] = [];
+  const departmentByCode = new Map(departments.map((department) => [department.code, department]));
+  const roleByCode = new Map(roles.map((role) => [role.code, role]));
+  const existingEmailSet = new Set(users.map((user) => user.email));
+
+  for (const row of rows) {
+    const department = row.parsed.departmentCode
+      ? departmentByCode.get(row.parsed.departmentCode)
+      : null;
+    if (!isActiveApplyDepartment(department)) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "departmentCode",
+        code: "UNKNOWN_DEPARTMENT",
+        message: "departmentCode was not found as active data during apply.",
+      });
+    }
+
+    const scopeDepartment = row.parsed.scopeDepartmentCode
+      ? departmentByCode.get(row.parsed.scopeDepartmentCode)
+      : null;
+    if (!isActiveApplyDepartment(scopeDepartment)) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "scopeDepartmentCode",
+        code: "UNKNOWN_SCOPE_DEPARTMENT",
+        message: "scopeDepartmentCode was not found as active data during apply.",
+      });
+    }
+
+    const role = row.parsed.roleCode ? roleByCode.get(row.parsed.roleCode) : null;
+    if (!isActiveApplyRole(role)) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "roleCode",
+        code: "UNKNOWN_ROLE",
+        message: "roleCode was not found as active data during apply.",
+      });
+    } else if (role.code === RoleCode.systemAdmin) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "roleCode",
+        code: "ROLE_NOT_IMPORTABLE",
+        message: "SYSTEM_ADMIN role assignment is not supported by import apply.",
+      });
+    }
+
+    if (row.parsed.email && existingEmailSet.has(row.parsed.email)) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "email",
+        code: "EXISTING_USER",
+        message: "email already belongs to an existing user.",
+      });
+    }
+
+    if (row.parsed.scopeType !== ScopeType.department) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "scopeType",
+        code: "INVALID_SCOPE",
+        message: "Apply supports only DEPARTMENT role scope.",
+      });
+    }
+
+    if (row.parsed.status !== UserStatus.PENDING_ACTIVATION) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "status",
+        code: "UNSUPPORTED_STATUS",
+        message: "Apply supports only PENDING_ACTIVATION users.",
+      });
+    }
+  }
+
+  return errors;
+};
+
+const isActiveApplyDepartment = (
+  department: UserAccountImportApplyDepartmentLookup | null | undefined,
+): department is UserAccountImportApplyDepartmentLookup =>
+  Boolean(
+    department &&
+      department.status === DepartmentStatus.ACTIVE &&
+      !department.archivedAt,
+  );
+
+const isActiveApplyRole = (
+  role: UserAccountImportApplyRoleLookup | null | undefined,
+): role is UserAccountImportApplyRoleLookup =>
+  Boolean(role && role.status === RoleStatus.ACTIVE && !role.archivedAt);
+
+const assertCreatedUserIsNoCredentialPending = (
+  user: UserAccountImportCreatedUser,
+): void => {
+  if (
+    user.status !== UserStatus.PENDING_ACTIVATION ||
+    user.credential !== null ||
+    user.sessions.length !== 0 ||
+    user.userRoles.some((role) => role.scopeType !== ScopeType.department)
+  ) {
+    throw new Error("User account import created a record outside the no-credential pending boundary.");
+  }
+};
+
+const toUserAccountImportCreateAuditEvent = (
+  context: UserContext,
+  user: UserAccountImportCreatedUser,
+  row: UserAccountImportResolvedPlanRow,
+  plan: UserAccountImportPlan,
+): CreateAuditEventInput => ({
+  actor: {
+    userId: context.userId,
+    departmentId: context.departmentId,
+  },
+  action: AuditActionCode.create,
+  target: {
+    type: AuditTargetTypeCode.user,
+    id: user.id,
+    departmentId: user.departmentId,
+  },
+  oldValue: null,
+  newValue: {
+    operation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+    importType: userAccountImportType,
+    mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    rowNumber: row.rowNumber,
+    targetUserId: user.id,
+    emailMasked: maskEmail(user.email),
+    departmentId: user.departmentId,
+    roleCodes: user.userRoles.map((userRole) => userRole.role.code),
+    scopeType: ScopeType.department,
+    scopeDepartmentId: row.resolved.scopeDepartmentId,
+    credentialMode: "NO_CREDENTIAL",
+    status: UserStatus.PENDING_ACTIVATION,
+    totalRows: plan.summary.totalRows,
+    createdUsersCount: plan.summary.createCandidates,
+    createdRolesCount: plan.summary.createCandidates,
+  },
+});
 
 const toWorkingRows = (csv: ImportCsvParseResult): WorkingRow[] =>
   csv.records.map((record) => {
@@ -622,6 +1107,31 @@ const collectRoleCodes = (rows: readonly WorkingRow[]): string[] =>
 const collectEmails = (rows: readonly WorkingRow[]): string[] =>
   [...new Set(rows.map((row) => row.parsed.email).filter((email): email is string => Boolean(email)))];
 
+const collectDepartmentCodesFromResolvedRows = (
+  rows: readonly UserAccountImportResolvedPlanRow[],
+): string[] => {
+  const codes: string[] = [];
+  for (const row of rows) {
+    if (row.parsed.departmentCode) {
+      codes.push(row.parsed.departmentCode);
+    }
+    if (row.parsed.scopeDepartmentCode) {
+      codes.push(row.parsed.scopeDepartmentCode);
+    }
+  }
+  return [...new Set(codes)];
+};
+
+const collectRoleCodesFromResolvedRows = (
+  rows: readonly UserAccountImportResolvedPlanRow[],
+): string[] =>
+  [...new Set(rows.map((row) => row.parsed.roleCode).filter((code): code is string => Boolean(code)))];
+
+const collectEmailsFromResolvedRows = (
+  rows: readonly UserAccountImportResolvedPlanRow[],
+): string[] =>
+  [...new Set(rows.map((row) => row.parsed.email).filter((email): email is string => Boolean(email)))];
+
 const normalizeCell = (value: string | undefined): string | null => {
   const normalized = value?.trim();
   return normalized ? normalized : null;
@@ -648,3 +1158,12 @@ const isSensitiveColumn = (header: string): boolean =>
 
 const sanitizeHeaderForOutput = (header: string): string =>
   isSensitiveColumn(header) ? "(sensitive)" : header;
+
+const maskEmail = (email: string): string => {
+  const [localPart, domainPart] = email.split("@");
+  if (!localPart || !domainPart) {
+    return "[masked-email]";
+  }
+
+  return `${localPart.slice(0, 1)}***@${domainPart}`;
+};

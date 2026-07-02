@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DepartmentStatus, RoleStatus, UserStatus } from "@prisma/client";
+import { DepartmentStatus, Prisma, RoleStatus, UserStatus } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service";
 
 export type UserAccountImportDepartmentLookup = {
@@ -27,6 +27,62 @@ export type UserAccountImportUserLookup = {
     };
   }[];
 };
+
+export type UserAccountImportApplyDepartmentLookup = {
+  id: string;
+  code: string;
+  status: DepartmentStatus;
+  archivedAt: Date | null;
+};
+
+export type UserAccountImportApplyRoleLookup = {
+  id: string;
+  code: string;
+  status: RoleStatus;
+  archivedAt: Date | null;
+};
+
+export type UserAccountImportApplyUserLookup = {
+  id: string;
+  email: string;
+};
+
+export type UserAccountImportCreateUserInput = {
+  email: string;
+  name: string;
+  departmentId: string;
+  role: {
+    roleId: string;
+    scopeType: "DEPARTMENT";
+    scopeKey: string;
+    departmentId: string;
+  };
+};
+
+export type UserAccountImportCreatedUser = {
+  id: string;
+  email: string;
+  name: string;
+  departmentId: string;
+  status: UserStatus;
+  credential: unknown | null;
+  sessions: unknown[];
+  userRoles: {
+    id: string;
+    roleId: string;
+    scopeType: "GLOBAL" | "DEPARTMENT";
+    scopeKey: string;
+    departmentId: string | null;
+    role: {
+      code: string;
+    };
+  }[];
+};
+
+export type UserAccountImportApplyTransactionClient = Pick<
+  Prisma.TransactionClient,
+  "department" | "role" | "user"
+>;
 
 @Injectable()
 export class UserAccountImportDryRunRepository {
@@ -107,4 +163,121 @@ export class UserAccountImportDryRunRepository {
       },
     });
   }
+
+  async findApplyDepartmentsByCodesInTransaction(
+    client: UserAccountImportApplyTransactionClient,
+    codes: readonly string[],
+  ): Promise<UserAccountImportApplyDepartmentLookup[]> {
+    const uniqueCodes = [...new Set(codes.filter(Boolean))];
+    if (uniqueCodes.length === 0) {
+      return [];
+    }
+
+    return client.department.findMany({
+      where: { code: { in: uniqueCodes } },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        archivedAt: true,
+      },
+    });
+  }
+
+  async findApplyRolesByCodesInTransaction(
+    client: UserAccountImportApplyTransactionClient,
+    codes: readonly string[],
+  ): Promise<UserAccountImportApplyRoleLookup[]> {
+    const uniqueCodes = [...new Set(codes.filter(Boolean))];
+    if (uniqueCodes.length === 0) {
+      return [];
+    }
+
+    return client.role.findMany({
+      where: { code: { in: uniqueCodes } },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        archivedAt: true,
+      },
+    });
+  }
+
+  async findApplyUsersByEmailsInTransaction(
+    client: UserAccountImportApplyTransactionClient,
+    emails: readonly string[],
+  ): Promise<UserAccountImportApplyUserLookup[]> {
+    const uniqueEmails = [...new Set(emails.filter(Boolean))];
+    if (uniqueEmails.length === 0) {
+      return [];
+    }
+
+    return client.user.findMany({
+      where: { email: { in: uniqueEmails } },
+      select: {
+        id: true,
+        email: true,
+      },
+    });
+  }
+
+  async createPendingNoCredentialUserInTransaction(
+    client: UserAccountImportApplyTransactionClient,
+    input: UserAccountImportCreateUserInput,
+  ): Promise<UserAccountImportCreatedUser> {
+    return client.user.create({
+      data: {
+        email: input.email,
+        name: input.name,
+        departmentId: input.departmentId,
+        status: UserStatus.PENDING_ACTIVATION,
+        userRoles: {
+          create: [
+            {
+              roleId: input.role.roleId,
+              scopeType: input.role.scopeType,
+              scopeKey: input.role.scopeKey,
+              departmentId: input.role.departmentId,
+            },
+          ],
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        departmentId: true,
+        status: true,
+        credential: true,
+        sessions: true,
+        userRoles: {
+          select: {
+            id: true,
+            roleId: true,
+            scopeType: true,
+            scopeKey: true,
+            departmentId: true,
+            role: {
+              select: {
+                code: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  isPrismaUniqueConflict(error: unknown): boolean {
+    return isPrismaKnownRequestError(error) && error.code === "P2002";
+  }
 }
+
+const isPrismaKnownRequestError = (error: unknown): error is { code: string } => {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  return typeof (error as { code?: unknown }).code === "string";
+};

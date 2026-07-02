@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Inject,
   PayloadTooLargeException,
@@ -17,7 +18,9 @@ import { PermissionGuard } from "../authorization/guards/permission.guard";
 import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import { UserContext } from "../identity/user-context";
 import {
+  InvalidUserAccountImportApplyModeError,
   InvalidUserAccountImportCsvError,
+  UserAccountImportApplyRejectedError,
   UserAccountImportDryRunFile,
   UserAccountImportDryRunService,
 } from "./user-account-import-dry-run.service";
@@ -59,6 +62,29 @@ export class UserAccountImportDryRunController {
       );
     } catch (error) {
       throw mapUserAccountImportDryRunError(error);
+    }
+  }
+
+  @Post("apply")
+  @RequirePermissions(PermissionCode.systemConfig)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: { fileSize: importFileMaxBytes },
+    }),
+  )
+  async applyUserAccountImport(
+    @CurrentUser() currentUser: UserContext,
+    @UploadedFile() file?: UploadedImportFile,
+    @Body("mode") mode?: string,
+  ) {
+    try {
+      return await this.userAccountImportDryRunService.applyUserAccountCsv(
+        currentUser,
+        toUserAccountImportDryRunFile(file),
+        mode,
+      );
+    } catch (error) {
+      throw mapUserAccountImportApplyError(error);
     }
   }
 }
@@ -119,6 +145,22 @@ const mapUserAccountImportDryRunError = (error: unknown): Error => {
   return error instanceof Error
     ? error
     : new Error("Unknown user account import dry-run controller error.");
+};
+
+const mapUserAccountImportApplyError = (error: unknown): Error => {
+  if (error instanceof UserAccountImportApplyRejectedError) {
+    return new BadRequestException({
+      message: error.message,
+      summary: error.result.summary,
+      errors: error.result.errors,
+    });
+  }
+
+  if (error instanceof InvalidUserAccountImportApplyModeError) {
+    return new BadRequestException(error.message);
+  }
+
+  return mapUserAccountImportDryRunError(error);
 };
 
 const isMulterFileSizeError = (

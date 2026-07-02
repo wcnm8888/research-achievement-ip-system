@@ -26,6 +26,7 @@ type DepartmentImportDryRunServiceMock = {
 };
 
 type UserAccountImportDryRunServiceMock = {
+  applyUserAccountCsv: ReturnType<typeof vi.fn>;
   dryRunUserAccountCsv: ReturnType<typeof vi.fn>;
 };
 
@@ -106,6 +107,39 @@ const createServiceMock = (): DepartmentImportDryRunServiceMock => ({
 });
 
 const createUserAccountServiceMock = (): UserAccountImportDryRunServiceMock => ({
+  applyUserAccountCsv: vi.fn().mockResolvedValue({
+    importType: "USER_ACCOUNT",
+    dryRun: false,
+    mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    file: {
+      name: "user-accounts.csv",
+      size: 75,
+      mimeType: "text/csv",
+      encoding: "utf-8",
+    },
+    summary: {
+      totalRows: 1,
+      createdUsersCount: 1,
+      createdRolesCount: 1,
+      skippedRows: 0,
+      failedRows: 0,
+      errorCount: 0,
+      warningCount: 0,
+      auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+    },
+    errors: [],
+    rows: [
+      {
+        rowNumber: 2,
+        emailMasked: "a***@example.org",
+        status: "CREATED",
+        createdUserId: "40000000-0000-4000-8000-000000000010",
+        createdUserRoleIds: ["60000000-0000-4000-8000-000000000010"],
+        roleCode: "RESEARCHER",
+        scopeType: "DEPARTMENT",
+      },
+    ],
+  }),
   dryRunUserAccountCsv: vi.fn().mockResolvedValue({
     importType: "USER_ACCOUNT",
     dryRun: true,
@@ -212,6 +246,26 @@ describe("Import routes through AppModule", () => {
         .expect(201);
 
       expect(services.userAccount.dryRunUserAccountCsv).toHaveBeenCalledOnce();
+    });
+  });
+
+  it("exposes user account pending no-credential apply through AppModule", async () => {
+    await withAppModule(async (app, services) => {
+      await request(app.getHttpServer() as Server)
+        .post("/users/import/apply")
+        .set("X-Demo-User-Id", ids.user)
+        .field("mode", "CREATE_ONLY_PENDING_NO_CREDENTIAL")
+        .attach(
+          "file",
+          Buffer.from("email,displayName,departmentCode,roleCode\nalice@example.org,Alice,RD,RESEARCHER\n"),
+          {
+            filename: "user-accounts.csv",
+            contentType: "text/csv",
+          },
+        )
+        .expect(201);
+
+      expect(services.userAccount.applyUserAccountCsv).toHaveBeenCalledOnce();
     });
   });
 

@@ -5,7 +5,7 @@ import { PrismaService } from "../database/prisma.service";
 import { UserAccountImportDryRunRepository } from "./user-account-import-dry-run.repository";
 
 describe("UserAccountImportDryRunRepository", () => {
-  it("uses only read queries and never writes users, credentials, roles, tokens, sessions, or audits", async () => {
+  it("uses only read queries for dry-run lookups", async () => {
     const prisma = {
       department: {
         findMany: vi.fn().mockResolvedValue([{ id: "department-id", code: "RD" }]),
@@ -123,5 +123,91 @@ describe("UserAccountImportDryRunRepository", () => {
     expect(prisma.userSession.update).not.toHaveBeenCalled();
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("creates pending users with one department-scoped role and no credential, token, or session writes", async () => {
+    const createdUser = {
+      id: "user-id",
+      email: "new@example.org",
+      name: "New User",
+      departmentId: "department-id",
+      status: UserStatus.PENDING_ACTIVATION,
+      credential: null,
+      sessions: [],
+      userRoles: [
+        {
+          id: "user-role-id",
+          roleId: "role-id",
+          scopeType: "DEPARTMENT",
+          scopeKey: "department-id",
+          departmentId: "department-id",
+          role: { code: RoleCode.researcher },
+        },
+      ],
+    };
+    const tx = {
+      user: {
+        create: vi.fn().mockResolvedValue(createdUser),
+      },
+      userCredential: {
+        create: vi.fn(),
+        update: vi.fn(),
+        upsert: vi.fn(),
+      },
+      userSession: {
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      accountLifecycleToken: {
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+    };
+    const repository = new UserAccountImportDryRunRepository({} as PrismaService);
+
+    await expect(
+      repository.createPendingNoCredentialUserInTransaction(tx as never, {
+        email: "new@example.org",
+        name: "New User",
+        departmentId: "department-id",
+        role: {
+          roleId: "role-id",
+          scopeType: "DEPARTMENT",
+          scopeKey: "department-id",
+          departmentId: "department-id",
+        },
+      }),
+    ).resolves.toEqual(createdUser);
+
+    expect(tx.user.create).toHaveBeenCalledWith({
+      data: {
+        email: "new@example.org",
+        name: "New User",
+        departmentId: "department-id",
+        status: UserStatus.PENDING_ACTIVATION,
+        userRoles: {
+          create: [
+            {
+              roleId: "role-id",
+              scopeType: "DEPARTMENT",
+              scopeKey: "department-id",
+              departmentId: "department-id",
+            },
+          ],
+        },
+      },
+      select: expect.objectContaining({
+        credential: true,
+        sessions: true,
+        userRoles: expect.any(Object),
+      }),
+    });
+    expect(tx.userCredential.create).not.toHaveBeenCalled();
+    expect(tx.userCredential.update).not.toHaveBeenCalled();
+    expect(tx.userCredential.upsert).not.toHaveBeenCalled();
+    expect(tx.userSession.create).not.toHaveBeenCalled();
+    expect(tx.userSession.update).not.toHaveBeenCalled();
+    expect(tx.accountLifecycleToken.create).not.toHaveBeenCalled();
+    expect(tx.accountLifecycleToken.update).not.toHaveBeenCalled();
   });
 });

@@ -13659,3 +13659,34 @@
   - No Docker.
   - No production/VPS/production database access.
   - No password change/reset, invite/reset issuance, DirectMail/real email, account activation, Web button, or achievement real-write work.
+
+## 2026-07-02 Step 66B - User/account pending no-credential backend apply evidence
+
+- Canonical state checked before implementation:
+  - `git rev-parse HEAD` -> `f117fbbcb61faab5b46e3717609226f7ae6da295`.
+  - `git log -1 --pretty=format:"%h %s"` -> `f117fbb docs: plan user account import real-write safety`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched: `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Implementation:
+  - Added backend-only `POST /users/import/apply`.
+  - Only accepted mode is `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Apply re-parses and revalidates the CSV server-side through the shared user/account import plan.
+  - Apply rejects dry-run errors, dry-run warnings, non-pending status, global scope, `SYSTEM_ADMIN`, existing users, duplicate file emails, and duplicate file employee numbers before writes.
+  - Transaction-time rechecks cover active departments, active scope departments, active roles, non-`SYSTEM_ADMIN`, department scope, pending status, and email uniqueness.
+  - Successful apply creates `PENDING_ACTIVATION` users with no credential plus department-scoped initial role assignments.
+  - Audit event operation is `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL` and is recorded in the same transaction.
+- Employee number boundary:
+  - The current schema has no persisted user employee-number field.
+  - Step 66B rejects duplicate `employeeNo` values inside the uploaded file only; it does not claim database employee-number uniqueness.
+- Local validation:
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module` -> passed; 4 files, 30 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+  - `git diff --check` -> passed.
+  - Added-lines sensitive keyword scan -> reviewed as code/test boundary terms only; no real secret, credential value, connection string, AccessKey, private key, cookie, token, or password value was added.
+- Boundaries observed:
+  - No Web UI changes.
+  - No Docker.
+  - No production/VPS/production DB access.
+  - No apply API execution against a running service.
+  - No database write outside isolated tests/mocks.
+  - No password creation/reset, `UserCredential`, session, invite/reset/lifecycle token, DirectMail, real email, achievement real-write, deployment, cleanup, deletion, reset, drop, or prune.

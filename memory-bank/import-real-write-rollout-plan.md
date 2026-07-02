@@ -173,6 +173,42 @@ After a department create-only apply slice is implemented and accepted, the next
   - Implement the backend-only apply endpoint, shared planning path, transaction-scoped create, race-condition rechecks, safe audit, and targeted API tests.
   - Keep Web apply, local production-like write acceptance, existing-user handling, invite/reset issuance, employee-number schema work, and production/VPS rollout deferred unless separately authorized.
 
+## Step 66B User/Account Pending No-Credential Backend Apply
+
+- Date: 2026-07-02.
+- Implemented backend-only user/account import apply.
+- Added `POST /api/users/import/apply`.
+- Apply mode:
+  - Supports only `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Rejects any other mode before parsing or opening a transaction.
+- Validation and write path:
+  - Reuses the same server-side CSV parsing and dry-run validation plan as `POST /api/users/import/dry-run`.
+  - Rejects apply when any row has dry-run errors or warnings.
+  - Adds apply-only rejection for non-`PENDING_ACTIVATION` rows.
+  - Uses one Prisma transaction for all user creates and audit events.
+  - Rechecks email uniqueness, active department, active scope department, active role, department scope, non-`SYSTEM_ADMIN`, and pending status inside the transaction.
+  - Creates only `User` rows with `PENDING_ACTIVATION` and initial department-scoped `UserRole` rows.
+  - Does not create `UserCredential`, `UserSession`, `AccountLifecycleToken`, password hashes, invite/reset tokens, or email jobs.
+  - Maps Prisma unique conflicts to a safe apply rejection summary.
+- Audit:
+  - Records `CREATE` audit events in the same transaction.
+  - Uses operation `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`.
+  - Audit metadata records masked email and stable row/user/role/scope facts only.
+- Employee number boundary:
+  - `employeeNo` remains file-local only because the current schema has no persisted user employee-number field.
+  - Step 66B keeps same-file duplicate employee number rejection but does not claim database employee-number uniqueness.
+- Response:
+  - Successful apply returns `dryRun: false`, mode, sanitized file metadata, created user/role counts, skipped/failed/error/warning counts, audit operation, masked email, created user id, and created user-role ids.
+  - Rejected apply returns safe error summaries through a 400 response.
+- Still deferred:
+  - Web execute button.
+  - Local production-like write acceptance.
+  - Existing-user update/merge.
+  - Revoked role reactivation.
+  - Invite/resend/reset issuance.
+  - Employee-number schema and durable account identifier work.
+  - Production/VPS writes, batch real-data import, DirectMail/real email, deployment, cleanup, deletion, reset, drop, and prune.
+
 ## Step 65B Implementation Record
 
 - Date: 2026-07-02.

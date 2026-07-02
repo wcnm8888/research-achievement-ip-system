@@ -9516,3 +9516,28 @@ Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Pr
   - Invite/reset issuance.
   - Employee-number schema and database conflict handling.
   - Production/VPS rollout.
+
+## Step 66B implementation update - user/account pending no-credential backend apply
+
+- Status: DONE.
+- Backend implemented:
+  - `POST /users/import/apply`.
+  - Mode `CREATE_ONLY_PENDING_NO_CREDENTIAL` only.
+  - Shared server-side dry-run/apply plan.
+  - Apply rejects any dry-run error or warning and any non-`PENDING_ACTIVATION` row.
+  - One Prisma transaction wraps all user creates, role creates, and audit events.
+  - Transaction-time rechecks cover email uniqueness, active departments, active roles, department scope, non-`SYSTEM_ADMIN`, and pending status.
+  - Created rows are limited to `User` plus initial department-scoped `UserRole`.
+  - No `UserCredential`, `UserSession`, `AccountLifecycleToken`, password hash, invite/reset token, or mail job is created.
+- Tests added:
+  - Service success and negative matrix.
+  - Controller permission/file/apply delegation.
+  - Repository no-credential write boundary.
+  - AppModule route wiring.
+- Deferred:
+  - Web apply entry.
+  - Local production-like write acceptance.
+  - Existing-user/revoked-assignment handling.
+  - Invite/reset issuance.
+  - Employee-number persistence and database uniqueness.
+  - Production/VPS rollout.

@@ -1,5 +1,7 @@
-import { UserStatus } from "@prisma/client";
+import { DepartmentStatus, RoleStatus, UserStatus } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
+import { AuditActionCode } from "../audit/domain/audit-action-code";
+import { AuditTargetTypeCode } from "../audit/domain/audit-target-type-code";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
@@ -12,6 +14,7 @@ import {
 
 const ids = {
   user: "40000000-0000-4000-8000-000000000001",
+  secondUser: "40000000-0000-4000-8000-000000000002",
   role: "50000000-0000-4000-8000-000000000001",
   researcherRole: "50000000-0000-4000-8000-000000000002",
   department: "10000000-0000-4000-8000-000000000001",
@@ -57,16 +60,67 @@ const createService = (input: {
     }>;
   }>;
 } = {}) => {
+  const tx = { department: {}, role: {}, user: {}, auditLog: {} };
   const repository = {
     findActiveDepartmentsByCodes: vi.fn().mockResolvedValue(input.departments ?? []),
     findActiveRolesByCodes: vi.fn().mockResolvedValue(input.roles ?? []),
     findUsersByEmails: vi.fn().mockResolvedValue(input.users ?? []),
+    findApplyDepartmentsByCodesInTransaction: vi.fn().mockResolvedValue(
+      (input.departments ?? []).map((department) => ({
+        ...department,
+        status: DepartmentStatus.ACTIVE,
+        archivedAt: null,
+      })),
+    ),
+    findApplyRolesByCodesInTransaction: vi.fn().mockResolvedValue(
+      (input.roles ?? []).map((role) => ({
+        ...role,
+        status: RoleStatus.ACTIVE,
+        archivedAt: null,
+      })),
+    ),
+    findApplyUsersByEmailsInTransaction: vi.fn().mockResolvedValue([]),
+    createPendingNoCredentialUserInTransaction: vi.fn().mockImplementation(async (_tx, createInput) => ({
+      id: createInput.email.startsWith("bob@") ? ids.secondUser : ids.user,
+      email: createInput.email,
+      name: createInput.name,
+      departmentId: createInput.departmentId,
+      status: UserStatus.PENDING_ACTIVATION,
+      credential: null,
+      sessions: [],
+      userRoles: [
+        {
+          id: createInput.email.startsWith("bob@")
+            ? "60000000-0000-4000-8000-000000000002"
+            : "60000000-0000-4000-8000-000000000001",
+          roleId: createInput.role.roleId,
+          scopeType: createInput.role.scopeType,
+          scopeKey: createInput.role.scopeKey,
+          departmentId: createInput.role.departmentId,
+          role: { code: RoleCode.researcher },
+        },
+      ],
+    })),
+    isPrismaUniqueConflict: vi.fn((error: unknown) =>
+      Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002"),
+    ),
+  };
+  const prisma = {
+    tx,
+    $transaction: vi.fn(async (callback) => callback(tx)),
+  };
+  const auditService = {
+    recordEventInTransaction: vi.fn().mockResolvedValue({ id: "audit-1" }),
   };
 
   return {
+    auditService,
+    prisma,
     repository,
     service: new UserAccountImportDryRunService(
       repository as unknown as UserAccountImportDryRunRepository,
+      prisma as never,
+      auditService as never,
     ),
   };
 };
@@ -319,5 +373,346 @@ describe("UserAccountImportDryRunService", () => {
         makeFile(["email,displayName,departmentCode,roleCode", ...rows].join("\n")),
       ),
     ).rejects.toThrow(InvalidUserAccountImportCsvError);
+  });
+
+  it("applies CREATE_ONLY_PENDING_NO_CREDENTIAL users and department-scoped roles with audit in the same transaction", async () => {
+    const { service, repository, prisma, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+
+    const result = await service.applyUserAccountCsv(
+      adminContext,
+      makeFile(
+        [
+          "email,displayName,departmentCode,roleCode",
+          "alice@example.org,Alice,RD,RESEARCHER",
+          "bob@example.org,Bob,RD,RESEARCHER",
+        ].join("\n"),
+      ),
+      "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    );
+
+    expect(result).toMatchObject({
+      importType: "USER_ACCOUNT",
+      dryRun: false,
+      mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      summary: {
+        totalRows: 2,
+        createdUsersCount: 2,
+        createdRolesCount: 2,
+        skippedRows: 0,
+        failedRows: 0,
+        auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+      },
+    });
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(repository.createPendingNoCredentialUserInTransaction).toHaveBeenNthCalledWith(
+      1,
+      prisma.tx,
+      {
+        email: "alice@example.org",
+        name: "Alice",
+        departmentId: ids.department,
+        role: {
+          roleId: ids.researcherRole,
+          scopeType: ScopeType.department,
+          scopeKey: ids.department,
+          departmentId: ids.department,
+        },
+      },
+    );
+    expect(repository.createPendingNoCredentialUserInTransaction).toHaveBeenNthCalledWith(
+      2,
+      prisma.tx,
+      expect.objectContaining({
+        email: "bob@example.org",
+        name: "Bob",
+      }),
+    );
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledWith(
+      prisma.tx,
+      expect.objectContaining({
+        action: AuditActionCode.create,
+        target: expect.objectContaining({
+          type: AuditTargetTypeCode.user,
+          id: ids.user,
+          departmentId: ids.department,
+        }),
+        newValue: expect.objectContaining({
+          operation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+          credentialMode: "NO_CREDENTIAL",
+          status: UserStatus.PENDING_ACTIVATION,
+          roleCodes: [RoleCode.researcher],
+          scopeType: ScopeType.department,
+        }),
+      }),
+    );
+    const serializedAudit = JSON.stringify(auditService.recordEventInTransaction.mock.calls);
+    expect(serializedAudit).not.toContain("passwordHash");
+    expect(serializedAudit).not.toContain("sessionHash");
+    expect(serializedAudit).not.toContain("tokenHash");
+    expect(serializedAudit).not.toContain("invite");
+    expect(serializedAudit).not.toContain("reset");
+  });
+
+  it("rejects duplicate email and employee number before opening a write transaction", async () => {
+    const { service, prisma, repository, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile(
+          [
+            "email,displayName,employeeNo,departmentCode,roleCode",
+            "dup@example.org,Dup One,E001,RD,RESEARCHER",
+            "dup@example.org,Dup Two,E001,RD,RESEARCHER",
+          ].join("\n"),
+        ),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        summary: expect.objectContaining({ createdUsersCount: 0 }),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing departments before opening a write transaction", async () => {
+    const { service, prisma, repository } = createService({
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile("email,displayName,departmentCode,roleCode\nalice@example.org,Alice,MISSING,RESEARCHER\n"),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "departmentCode", code: "UNKNOWN_DEPARTMENT" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects transaction-time inactive departments without creating rows", async () => {
+    const { service, repository, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+    repository.findApplyDepartmentsByCodesInTransaction.mockResolvedValueOnce([
+      {
+        id: ids.department,
+        code: "RD",
+        status: DepartmentStatus.ARCHIVED,
+        archivedAt: null,
+      },
+    ]);
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile("email,displayName,departmentCode,roleCode\nalice@example.org,Alice,RD,RESEARCHER\n"),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "departmentCode", code: "UNKNOWN_DEPARTMENT" }),
+        ]),
+      }),
+    });
+
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects SYSTEM_ADMIN and global scope before opening a write transaction", async () => {
+    const { service, prisma, repository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [
+        { id: ids.researcherRole, code: RoleCode.researcher },
+        { id: ids.role, code: RoleCode.systemAdmin },
+      ],
+    });
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile(
+          [
+            "email,displayName,departmentCode,roleCode,scopeType",
+            "global@example.org,Global,RD,RESEARCHER,GLOBAL",
+            "admin@example.org,Admin,RD,SYSTEM_ADMIN,DEPARTMENT",
+          ].join("\n"),
+        ),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "scopeType", code: "GLOBAL_SCOPE_NOT_ALLOWED" }),
+          expect.objectContaining({ field: "roleCode", code: "ROLE_NOT_IMPORTABLE" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects dry-run warnings for existing users before opening a write transaction", async () => {
+    const { service, prisma, repository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+      users: [
+        {
+          id: ids.user,
+          email: "existing@example.org",
+          status: UserStatus.ACTIVE,
+          userRoles: [],
+        },
+      ],
+    });
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile("email,displayName,departmentCode,roleCode\nexisting@example.org,Existing,RD,RESEARCHER\n"),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "email", code: "EXISTING_USER" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects transaction-time duplicate email rechecks without creating rows", async () => {
+    const { service, repository, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+    repository.findApplyUsersByEmailsInTransaction.mockResolvedValueOnce([
+      { id: ids.user, email: "alice@example.org" },
+    ]);
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile("email,displayName,departmentCode,roleCode\nalice@example.org,Alice,RD,RESEARCHER\n"),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "email", code: "EXISTING_USER" }),
+        ]),
+      }),
+    });
+
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("keeps user create and audit inside one transaction for rollback on partial failure", async () => {
+    const { service, repository, prisma, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+    repository.createPendingNoCredentialUserInTransaction
+      .mockResolvedValueOnce({
+        id: ids.user,
+        email: "alice@example.org",
+        name: "Alice",
+        departmentId: ids.department,
+        status: UserStatus.PENDING_ACTIVATION,
+        credential: null,
+        sessions: [],
+        userRoles: [
+          {
+            id: "60000000-0000-4000-8000-000000000001",
+            roleId: ids.researcherRole,
+            scopeType: ScopeType.department,
+            scopeKey: ids.department,
+            departmentId: ids.department,
+            role: { code: RoleCode.researcher },
+          },
+        ],
+      })
+      .mockRejectedValueOnce(new Error("insert failed"));
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile(
+          [
+            "email,displayName,departmentCode,roleCode",
+            "alice@example.org,Alice,RD,RESEARCHER",
+            "bob@example.org,Bob,RD,RESEARCHER",
+          ].join("\n"),
+        ),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toThrow("insert failed");
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(repository.createPendingNoCredentialUserInTransaction).toHaveBeenCalledTimes(2);
+    expect(auditService.recordEventInTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects non CREATE_ONLY_PENDING_NO_CREDENTIAL modes", async () => {
+    const { service, repository, prisma } = createService();
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile("email,displayName,departmentCode,roleCode\nalice@example.org,Alice,RD,RESEARCHER\n"),
+        "UPSERT",
+      ),
+    ).rejects.toThrow("Unsupported user account import apply mode");
+
+    expect(repository.findActiveDepartmentsByCodes).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects repository uniqueness conflicts with a safe conflict report", async () => {
+    const { service, repository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+    repository.createPendingNoCredentialUserInTransaction.mockRejectedValueOnce({ code: "P2002" });
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile("email,displayName,departmentCode,roleCode\nalice@example.org,Alice,RD,RESEARCHER\n"),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "email", code: "EXISTING_USER" }),
+        ]),
+      }),
+    });
   });
 });
