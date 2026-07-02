@@ -1,5 +1,40 @@
 # Evidence
 
+## 2026-07-02 Step 66E - User/account pending import Web minimal slice evidence
+
+- Goal:
+  - Implement the minimal Web slice for user/account pending no-credential import apply.
+- Initial state:
+  - `git rev-parse --short HEAD`: `8d4799a`.
+  - `git log -1 --pretty=format:"%s"`: `docs: design user account import apply web entry`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched, including `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/user-account-import-apply-web-entry-design.md`.
+  - Relevant Web snippets only: account import dry-run page/component, API client, tests, permission/error display, user/account import types.
+  - Step 66B backend request/response structure only: controller apply route and apply result summary/row/error types.
+- Implemented files:
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/AccountManagement.tsx`.
+  - `apps/web/src/AccountManagement.test.tsx`.
+  - `apps/web/src/api-client.test.ts`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 72 tests.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive keyword scan completed on 1098 added lines with counts/redacted summary only; matches are safety-boundary terminology, not values.
+- Boundary:
+  - No Docker or browser production-like acceptance.
+  - No production/VPS access, production DB access, or production rollout.
+  - No achievement apply.
+  - No invite/reset/email/activation flow.
+  - No credential/session/token creation.
+  - No account password creation, modification, or reset.
+
 ## 2026-07-02 Step 66D - User/account pending import Web entry design evidence
 
 - Goal:

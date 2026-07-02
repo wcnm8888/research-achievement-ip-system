@@ -4,6 +4,28 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 66E Archive - User/account pending import Web minimal slice - 2026-07-02
+
+- Status: DONE.
+- Scope:
+  - Minimal Web entry for user/account pending no-credential apply.
+  - Existing account management import page only.
+  - No achievement apply, Docker/browser acceptance, production/VPS access, production DB access, production rollout, invite/reset/email/activation, credential/session/token creation, or password operation.
+- Implemented:
+  - `apps/web/src/types.ts`: user/account apply mode/input/result/error/row types.
+  - `apps/web/src/api-client.ts`: multipart `applyUserAccountImport()` client for `POST /users/import/apply`.
+  - `apps/web/src/AccountManagement.tsx`: apply state, same-file fingerprint, eligibility, confirmation modal, duplicate-submit guard, sanitized error mapping, and result display.
+  - `apps/web/src/AccountManagement.test.tsx` and `apps/web/src/api-client.test.ts`: focused Web Vitest coverage.
+- Safety behavior:
+  - Apply is enabled only for same-file latest dry-run results with mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`, `USER_ACCOUNT`, `dryRun=true`, zero errors, zero warnings, all rows `VALID`, all actions `CREATE_PENDING_USER`, pending status, no credential action, department scope, non-`SYSTEM_ADMIN`, and no in-flight submit.
+  - File change clears apply result/error/confirmation/fingerprint to prevent stale dry-run apply.
+  - Confirmation states that apply creates only `PENDING_ACTIVATION` users and department-scoped initial `UserRole` rows, and creates no credential, session, invite/reset/lifecycle token, email, or login activation.
+  - Error display maps 400/401/403/network cases to safe messages and safe rejected counts/codes.
+- Verification:
+  - Web Vitest, Step 66B API tests, Web typecheck, and API typecheck passed.
+- Recommended next step:
+  - Step 66F should perform local production-like Web acceptance with synthetic data only if explicitly authorized, and must still avoid production/VPS and real email/account lifecycle flows.
+
 ## Current Step 66D Archive - User/account pending import Web entry design - 2026-07-02
 
 - Status: DONE.

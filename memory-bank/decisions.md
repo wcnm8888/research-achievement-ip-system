@@ -1,5 +1,19 @@
 # Decisions
 
+## D237 - User/account apply Web implementation mirrors pending no-credential backend contract
+
+- Date: 2026-07-02.
+- Context: Step 66E implements the minimal Web entry for the Step 66B/66C user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` apply capability. The task allows Web API client, user/account import page/components, related Web tests, necessary types, and memory-bank updates, while prohibiting Docker/browser production-like acceptance, production/VPS access, production DB access, production rollout, password changes/resets, credential/session/token creation, invite/reset/email/activation flows, achievement apply, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling.
+- Decision:
+  - Add only a user/account import Web entry for `POST /users/import/apply`; do not add achievement apply or lifecycle entries.
+  - Keep frontend visibility under the existing account management `system:config` gate, with backend permission checks remaining authoritative.
+  - Enable apply only for a same-file latest dry-run result with `mode=CREATE_ONLY_PENDING_NO_CREDENTIAL`, `USER_ACCOUNT`, `dryRun=true`, zero errors, zero warnings, all rows `VALID`, all candidate actions `CREATE_PENDING_USER`, pending status, no credential action, department scope, non-`SYSTEM_ADMIN`, and no in-flight submit.
+  - Use a confirmation modal before apply and disable file/dry-run/apply controls while apply is in flight.
+  - Display only sanitized result evidence: created user count, created role count, skipped/failed counts, safe rejected codes, audit operation `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`, and pending/no-credential status.
+  - Preserve rejected apply summary from safe backend error bodies for 400 responses without displaying uploaded file content or sensitive values.
+- Scope:
+  - This decision does not authorize production/VPS writes, batch real-data import, browser/Docker acceptance, production session-cookie acceptance, achievement apply, account lifecycle work, DirectMail/real email, employee-number schema work, persisted import jobs, durable idempotency keys, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D236 - User/account apply Web entry stays pending no-credential and dry-run-gated
 
 - Date: 2026-07-02.

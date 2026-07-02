@@ -273,6 +273,34 @@ After a department create-only apply slice is implemented and accepted, the next
   - Implement the smallest Web slice: typed apply input/result, API client helper, account import panel/page state, eligibility, confirmation modal, safe result view, and focused Web Vitest coverage.
   - Keep production/VPS writes, browser/Docker acceptance, production session-cookie acceptance, invite/reset/email/activation flows, credentials, sessions, employee-number schema work, achievement apply, and production rollout deferred unless separately authorized.
 
+## Step 66E User/Account Web Minimal Slice
+
+- Date: 2026-07-02.
+- Scope:
+  - Minimal Web implementation for user/account pending no-credential apply.
+  - Existing account management import panel only.
+  - No achievement apply, Docker/browser acceptance, production/VPS access, production DB access, production rollout, invite/reset/email/activation, credential/session/token creation, or password operation.
+- Implemented:
+  - Web user/account apply input/result/error/row types.
+  - `AccountManagementApiClient.applyUserAccountImport()` multipart client for `POST /users/import/apply`.
+  - User/account import panel apply affordance with same-file fingerprinting, eligibility, confirmation modal, in-flight disable state, safe error mapping, and safe result display.
+  - Focused Web Vitest coverage for mode/action/warning/error/stale-file blocking, confirmation copy, client invocation, loading guard, success summary, and sanitized error handling.
+- Eligibility:
+  - Requires `CREATE_ONLY_PENDING_NO_CREDENTIAL`, `USER_ACCOUNT`, `dryRun=true`, total rows > 0, zero errors, zero warnings, all rows `VALID`, all actions `CREATE_PENDING_USER`, pending status, `NO_CREDENTIAL`, department scope, non-`SYSTEM_ADMIN`, same selected file as the latest dry-run, and no apply in flight.
+- Result and error display:
+  - Shows created user count, created role count, skipped/failed counts, safe rejected codes, audit operation `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`, and pending/no-credential state.
+  - 400/401/403/network errors map to sanitized operator-facing messages.
+  - Does not display uploaded content, local paths, credential material, cookies, tokens, private keys, connection strings, mail payloads, or unmasked audit payloads.
+- Verification:
+  - Web Vitest, Step 66B API tests, Web typecheck, and API typecheck passed.
+- Still deferred:
+  - Local production-like Web acceptance.
+  - Production session-cookie acceptance for this endpoint.
+  - Production/VPS rollout.
+  - Invite/reset/email/activation flows.
+  - Employee-number schema and database uniqueness.
+  - Achievement apply.
+
 ## Step 65B Implementation Record
 
 - Date: 2026-07-02.

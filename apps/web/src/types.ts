@@ -732,6 +732,49 @@ export type UserAccountImportDryRunInput = {
   file: File;
 };
 
+export type UserAccountImportApplyMode = "CREATE_ONLY_PENDING_NO_CREDENTIAL";
+
+export type UserAccountImportApplyInput = {
+  file: File;
+  mode: UserAccountImportApplyMode;
+};
+
+export type UserAccountImportApplyErrorSummary = {
+  rowNumber: number | null;
+  field: string;
+  code: string;
+  message: string;
+};
+
+export type UserAccountImportApplyRow = {
+  rowNumber: number;
+  emailMasked: string;
+  status: "CREATED";
+  createdUserId: string;
+  createdUserRoleIds: string[];
+  roleCode: string;
+  scopeType: "DEPARTMENT";
+};
+
+export type UserAccountImportApplyResult = {
+  importType: "USER_ACCOUNT";
+  dryRun: false;
+  mode: UserAccountImportApplyMode;
+  file: UserAccountImportDryRunResult["file"];
+  summary: {
+    totalRows: number;
+    createdUsersCount: number;
+    createdRolesCount: number;
+    skippedRows: number;
+    failedRows: number;
+    errorCount: number;
+    warningCount: number;
+    auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL";
+  };
+  errors: UserAccountImportApplyErrorSummary[];
+  rows: UserAccountImportApplyRow[];
+};
+
 export type AchievementImportDryRunIssueCode =
   | "REQUIRED"
   | "INVALID_FORMAT"

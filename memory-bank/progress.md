@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-07-02 Step 66E - User/account pending import Web minimal slice
+
+- Status: DONE.
+- Scope completed:
+  - Added typed Web request/response types for user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` apply.
+  - Added `AccountManagementApiClient.applyUserAccountImport()` multipart client for `POST /users/import/apply`.
+  - Added the minimal apply entry to the existing user/account import panel only.
+  - Added same-file dry-run fingerprinting, stale-file reset, no-error/no-warning/all-valid/create-pending eligibility, confirmation modal, duplicate-submit protection, sanitized error mapping, and safe result display.
+  - Result display shows created user count, created role count, audit operation, rejected codes if present, and pending/no-credential status.
+  - Added focused Web Vitest coverage for eligibility, stale-file blocking, mode/action/warning/error blocking, confirmation copy, client invocation, loading guard, success summary, and sanitized 400/401/403/network errors.
+- Explicitly not done:
+  - No achievement apply entry.
+  - No invite/reset/email/activation flow.
+  - No credential/session/token creation.
+  - No Docker or browser production-like acceptance.
+  - No production/VPS access, production DB access, or production rollout.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 72 tests.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 66D - User/account pending import Web entry design
 
 - Status: DONE.

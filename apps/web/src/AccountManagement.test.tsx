@@ -3,12 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import type { AccountManagementApiClient, AuthUser } from "./api-client";
 import {
   AccountManagement,
+  applyUserAccountImport,
   buildActiveDepartmentOptions,
   buildAssignRolePayload,
   buildChangeDepartmentPayload,
   buildCreateAccountUserPayload,
   buildCreateInvitePayload,
   buildAccountUserListQuery,
+  buildUserAccountImportFileFingerprint,
   buildReasonPayload,
   createAccountUserFromForm,
   createInviteFromForm,
@@ -18,10 +20,13 @@ import {
   fetchAccountUserDetail,
   fetchAccountUsers,
   getDepartmentSelectorErrorDescription,
+  getUserAccountImportApplyEligibility,
   hasAccountInvitePermission,
   hasAccountResetPasswordPermission,
   hasSystemConfigPermission,
+  mapUserAccountImportApplyErrorToDisplay,
   shouldLoadAccountDepartmentOptions,
+  UserAccountImportApplyConfirmContent,
   UserAccountImportDryRunPanel,
   UserAccountImportDryRunResultView,
   validateUserAccountImportCsvFile,
@@ -32,6 +37,7 @@ import type {
   AssignAccountUserRoleResponse,
   DepartmentSummary,
   DisableAccountUserResponse,
+  UserAccountImportApplyResult,
   UserAccountImportDryRunResult,
 } from "./types";
 
@@ -215,6 +221,51 @@ const userAccountImportDryRunResult: UserAccountImportDryRunResult = {
   ],
 };
 
+const validUserAccountImportDryRunResult: UserAccountImportDryRunResult = {
+  ...userAccountImportDryRunResult,
+  summary: {
+    totalRows: 1,
+    validRows: 1,
+    errorRows: 0,
+    warningRows: 0,
+    createCandidates: 1,
+    existingUserRows: 0,
+    existingRoleAssignmentRows: 0,
+    reactivationCandidateRows: 0,
+    employeeNoDbConflictCheck: "NOT_AVAILABLE",
+  },
+  rows: [userAccountImportDryRunResult.rows[0]!],
+};
+
+const userAccountImportApplyResult: UserAccountImportApplyResult = {
+  importType: "USER_ACCOUNT",
+  dryRun: false,
+  mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+  file: validUserAccountImportDryRunResult.file,
+  summary: {
+    totalRows: 1,
+    createdUsersCount: 1,
+    createdRolesCount: 1,
+    skippedRows: 0,
+    failedRows: 0,
+    errorCount: 0,
+    warningCount: 0,
+    auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+  },
+  errors: [],
+  rows: [
+    {
+      rowNumber: 2,
+      emailMasked: "n***@example.com",
+      status: "CREATED",
+      createdUserId: "40000000-0000-4000-8000-000000000099",
+      createdUserRoleIds: ["50000000-0000-4000-8000-000000000099"],
+      roleCode: "RESEARCHER",
+      scopeType: "DEPARTMENT",
+    },
+  ],
+};
+
 describe("account management permission helpers", () => {
   it("allows only users with system:config to enter account management", () => {
     expect(hasSystemConfigPermission(adminUser)).toBe(true);
@@ -368,6 +419,25 @@ describe("user account import dry-run UI", () => {
     expect(client.dryRunUserAccountImport).toHaveBeenCalledWith({ file });
   });
 
+  it("runs user account import apply through the client with pending no-credential mode", async () => {
+    const file = new File(
+      ["email,displayName,departmentCode,roleCode\nnew.user@example.com,New User,D001,RESEARCHER"],
+      "users.csv",
+      { type: "text/csv" },
+    );
+    const client = {
+      applyUserAccountImport: vi.fn(async () => userAccountImportApplyResult),
+    } as unknown as Pick<AccountManagementApiClient, "applyUserAccountImport">;
+
+    await expect(applyUserAccountImport(client, file)).resolves.toEqual(
+      userAccountImportApplyResult,
+    );
+    expect(client.applyUserAccountImport).toHaveBeenCalledWith({
+      file,
+      mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    });
+  });
+
   it("renders summary, safe previews, warnings, and employeeNo DB check status", () => {
     const html = renderToStaticMarkup(
       <UserAccountImportDryRunResultView result={userAccountImportDryRunResult} />,
@@ -416,7 +486,132 @@ describe("user account import dry-run UI", () => {
     expect(html).toContain("Credential and link columns are not supported.");
   });
 
-  it("does not render any real account import execution entry", () => {
+  it("enables apply only for same-file pending no-credential dry-run results", () => {
+    const file = new File(
+      ["email,displayName,departmentCode,roleCode\nnew.user@example.com,New User,D001,RESEARCHER"],
+      "users.csv",
+      { type: "text/csv", lastModified: 123 },
+    );
+    const fingerprint = buildUserAccountImportFileFingerprint(
+      file,
+      validUserAccountImportDryRunResult,
+    );
+
+    expect(
+      getUserAccountImportApplyEligibility({
+        file,
+        result: validUserAccountImportDryRunResult,
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({ canApply: true });
+
+    expect(
+      getUserAccountImportApplyEligibility({
+        file,
+        result: userAccountImportDryRunResult,
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({ canApply: false, reason: "Resolve dry-run errors before apply." });
+
+    expect(
+      getUserAccountImportApplyEligibility({
+        file,
+        result: {
+          ...validUserAccountImportDryRunResult,
+          summary: { ...validUserAccountImportDryRunResult.summary, warningRows: 1 },
+        },
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "Resolve dry-run warnings before pending no-credential apply.",
+    });
+
+    expect(
+      getUserAccountImportApplyEligibility({
+        file,
+        result: {
+          ...validUserAccountImportDryRunResult,
+          rows: [
+            {
+              ...validUserAccountImportDryRunResult.rows[0]!,
+              candidateAction: "REVIEW_EXISTING_USER",
+            },
+          ],
+        },
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "All user account import actions must be CREATE_PENDING_USER.",
+    });
+
+    expect(
+      getUserAccountImportApplyEligibility({
+        file,
+        result: validUserAccountImportDryRunResult,
+        mode: "UPSERT",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "Only CREATE_ONLY_PENDING_NO_CREDENTIAL user account import apply is supported.",
+    });
+
+    expect(
+      getUserAccountImportApplyEligibility({
+        file,
+        result: validUserAccountImportDryRunResult,
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        submitting: true,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "User account import apply is already running.",
+    });
+  });
+
+  it("disables stale dry-run apply after the selected file changes", () => {
+    const file = new File(
+      ["email,displayName,departmentCode,roleCode\nnew.user@example.com,New User,D001,RESEARCHER"],
+      "users.csv",
+      { type: "text/csv", lastModified: 123 },
+    );
+    const changedFile = new File(
+      ["email,displayName,departmentCode,roleCode\nanother.user@example.com,Another,D001,RESEARCHER"],
+      "users.csv",
+      { type: "text/csv", lastModified: 456 },
+    );
+    const fingerprint = buildUserAccountImportFileFingerprint(
+      file,
+      validUserAccountImportDryRunResult,
+    );
+
+    expect(
+      getUserAccountImportApplyEligibility({
+        file: changedFile,
+        result: validUserAccountImportDryRunResult,
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "The selected file changed after dry-run. Run dry-run again.",
+    });
+  });
+
+  it("renders disabled pending apply affordance before an eligible dry-run", () => {
     const html = renderToStaticMarkup(
       <UserAccountImportDryRunPanel
         file={null}
@@ -429,10 +624,99 @@ describe("user account import dry-run UI", () => {
     );
 
     expect(html).toContain("Run dry-run");
+    expect(html).toContain("Apply pending no-credential");
+    expect(html).toContain("Pending no-credential apply is disabled");
     expect(html).not.toContain("Execute import");
-    expect(html).not.toContain("Confirm import");
     expect(html).not.toContain("Run import");
     expect(html).not.toContain("Create accounts");
+  });
+
+  it("renders enabled apply affordance, confirmation copy, and success result", () => {
+    const file = new File(
+      ["email,displayName,departmentCode,roleCode\nnew.user@example.com,New User,D001,RESEARCHER"],
+      "users.csv",
+      { type: "text/csv", lastModified: 123 },
+    );
+    const html = renderToStaticMarkup(
+      <UserAccountImportDryRunPanel
+        file={file}
+        loading={false}
+        applyEligibility={{
+          canApply: true,
+          reason: "Ready for pending no-credential user account apply.",
+        }}
+        applyResult={userAccountImportApplyResult}
+        error={null}
+        result={validUserAccountImportDryRunResult}
+        onFileChange={vi.fn()}
+        onRunDryRun={vi.fn()}
+        onOpenApplyConfirm={vi.fn()}
+        onCloseApplyConfirm={vi.fn()}
+        onConfirmApply={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("Apply pending no-credential");
+    expect(html).toContain("Pending no-credential apply is available");
+    expect(html).toContain("User account apply summary");
+    expect(html).toContain("Created users");
+    expect(html).toContain("Created roles");
+    expect(html).toContain("USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL");
+    expect(html).toContain("PENDING_ACTIVATION");
+    expect(html).toContain("no credential");
+
+    const confirmHtml = renderToStaticMarkup(
+      <UserAccountImportApplyConfirmContent result={validUserAccountImportDryRunResult} />,
+    );
+    expect(confirmHtml).toContain("This will create pending user account records.");
+    expect(confirmHtml).toContain("POST /users/import/apply");
+    expect(confirmHtml).toContain("CREATE_ONLY_PENDING_NO_CREDENTIAL");
+    expect(confirmHtml).toContain("PENDING_ACTIVATION");
+    expect(confirmHtml).toContain("Department-scoped UserRole only");
+    expect(confirmHtml).toContain("No UserCredential");
+    expect(confirmHtml).toContain("No UserCredential, password generation/reset, session");
+  });
+
+  it("renders sanitized apply errors for rejected, unauthorized, forbidden, and network cases", () => {
+    const rejected = mapUserAccountImportApplyErrorToDisplay({
+      kind: "bad-request",
+      status: 400,
+      message: "Request failed",
+      detail: "User account import apply requires pending no-credential rows.",
+      body: {
+        summary: {
+          totalRows: 1,
+          createdUsersCount: 0,
+          createdRolesCount: 0,
+          skippedRows: 1,
+          failedRows: 0,
+          errorCount: 1,
+          warningCount: 1,
+        },
+        errors: [{ code: "EXISTING_USER" }],
+      },
+    });
+    const unauthorized = mapUserAccountImportApplyErrorToDisplay({
+      kind: "unauthorized",
+      status: 401,
+      message: "raw",
+    });
+    const forbidden = mapUserAccountImportApplyErrorToDisplay({
+      kind: "forbidden",
+      status: 403,
+      message: "raw",
+    });
+    const network = mapUserAccountImportApplyErrorToDisplay({
+      kind: "network",
+      message: "Network request failed.",
+    });
+
+    expect(rejected.message).toBe("User account import apply was rejected.");
+    expect(rejected.detail).toContain("codes=EXISTING_USER");
+    expect(rejected.detail).toContain("createdUsers=0");
+    expect(unauthorized.detail).not.toContain("cookie");
+    expect(forbidden.detail).toContain("system:config");
+    expect(network.message).toBe("User account import apply service is unavailable.");
   });
 });
 

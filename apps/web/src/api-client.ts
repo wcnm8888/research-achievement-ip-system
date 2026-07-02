@@ -44,6 +44,8 @@ import type {
   RejectFeeReviewInput,
   UpdateApiIntegrationInput,
   UpdateDepartmentInput,
+  UserAccountImportApplyInput,
+  UserAccountImportApplyResult,
   UserAccountImportDryRunInput,
   UserAccountImportDryRunResult,
 } from "./types";
@@ -106,6 +108,9 @@ export type AccountManagementApiClient = ApiClient & {
   dryRunUserAccountImport(
     input: UserAccountImportDryRunInput,
   ): Promise<UserAccountImportDryRunResult>;
+  applyUserAccountImport(
+    input: UserAccountImportApplyInput,
+  ): Promise<UserAccountImportApplyResult>;
   dryRunAchievementImport(
     input: AchievementImportDryRunInput,
   ): Promise<AchievementImportDryRunResult>;
@@ -373,6 +378,13 @@ export const createApiClient = (
     body.append("file", input.file);
     const response = await requestForm("/users/import/dry-run", demoUserId, body, options);
     return response as UserAccountImportDryRunResult;
+  },
+  async applyUserAccountImport(input: UserAccountImportApplyInput) {
+    const body = new FormData();
+    body.append("mode", input.mode);
+    body.append("file", input.file);
+    const response = await requestForm("/users/import/apply", demoUserId, body, options);
+    return response as UserAccountImportApplyResult;
   },
   async dryRunAchievementImport(input: AchievementImportDryRunInput) {
     const body = new FormData();

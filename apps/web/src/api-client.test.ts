@@ -405,6 +405,80 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
   });
 
+  it("sends user account import apply as pending no-credential multipart form data", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        importType: "USER_ACCOUNT",
+        dryRun: false,
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        file: {
+          name: "users.csv",
+          size: 96,
+          mimeType: "text/csv",
+          encoding: "utf-8",
+        },
+        summary: {
+          totalRows: 1,
+          createdUsersCount: 1,
+          createdRolesCount: 1,
+          skippedRows: 0,
+          failedRows: 0,
+          errorCount: 0,
+          warningCount: 0,
+          auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+        },
+        errors: [],
+        rows: [
+          {
+            rowNumber: 2,
+            emailMasked: "r***@example.com",
+            status: "CREATED",
+            createdUserId: "40000000-0000-4000-8000-000000000099",
+            createdUserRoleIds: ["50000000-0000-4000-8000-000000000099"],
+            roleCode: "RESEARCHER",
+            scopeType: "DEPARTMENT",
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const file = new File(
+      ["email,displayName,departmentCode,roleCode\nresearcher@example.com,Researcher,D001,RESEARCHER"],
+      "users.csv",
+      { type: "text/csv" },
+    );
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.applyUserAccountImport({
+        file,
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      }),
+    ).resolves.toMatchObject({
+      importType: "USER_ACCOUNT",
+      dryRun: false,
+      mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      summary: {
+        createdUsersCount: 1,
+        createdRolesCount: 1,
+      },
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+    const body = init.body as FormData;
+
+    expect(url).toBe("http://localhost/api/users/import/apply");
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("file")).toBe(file);
+    expect(body.get("mode")).toBe("CREATE_ONLY_PENDING_NO_CREDENTIAL");
+    expect(headers.get("Content-Type")).toBeNull();
+    expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
   it("sends achievement import dry-run as multipart form data", async () => {
     const fetchMock = vi.fn(async () =>
       Response.json({

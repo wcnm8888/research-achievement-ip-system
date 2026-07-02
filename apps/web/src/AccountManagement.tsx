@@ -50,6 +50,8 @@ import type {
   InviteIssueResponse,
   ListAccountUsersQuery,
   RevokeAccountUserRoleInput,
+  UserAccountImportApplyMode,
+  UserAccountImportApplyResult,
   UserAccountImportDryRunIssue,
   UserAccountImportDryRunResult,
   UserAccountImportDryRunRow,
@@ -126,7 +128,24 @@ type AccountManagementProps = {
   authUser: Pick<AuthUser, "permissionCodes"> | null;
 };
 
+type UserAccountImportApplyEligibility = {
+  canApply: boolean;
+  reason: string;
+};
+
+type UserAccountImportFileFingerprint = {
+  name: string;
+  size: number;
+  lastModified: number;
+  resultName: string;
+  resultSize: number;
+};
+
 const defaultPageSize = 20;
+const userAccountImportApplyMode: UserAccountImportApplyMode =
+  "CREATE_ONLY_PENDING_NO_CREDENTIAL";
+const userAccountImportApplyAuditOperation =
+  "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL";
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
   loading: false,
@@ -184,6 +203,13 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
   const [importLoading, setImportLoading] = useState(false);
   const [importError, setImportError] = useState<ApiError | null>(null);
   const [importResult, setImportResult] = useState<UserAccountImportDryRunResult | null>(null);
+  const [importApplySubmitting, setImportApplySubmitting] = useState(false);
+  const [importApplyConfirmOpen, setImportApplyConfirmOpen] = useState(false);
+  const [importApplyResult, setImportApplyResult] =
+    useState<UserAccountImportApplyResult | null>(null);
+  const [importApplyError, setImportApplyError] = useState<ApiError | null>(null);
+  const [importFileFingerprint, setImportFileFingerprint] =
+    useState<UserAccountImportFileFingerprint | null>(null);
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Loadable<AccountUserDetail>>(emptyLoadable);
   const [createOpen, setCreateOpen] = useState(false);
@@ -216,6 +242,17 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
       error: departments.error,
     }),
     [departmentOptions, departments.error, departments.loading],
+  );
+  const importApplyEligibility = useMemo(
+    () =>
+      getUserAccountImportApplyEligibility({
+        file: importFile,
+        result: importResult,
+        mode: userAccountImportApplyMode,
+        submitting: importApplySubmitting,
+        fingerprint: importFileFingerprint,
+      }),
+    [importApplySubmitting, importFile, importFileFingerprint, importResult],
   );
 
   const loadUsers = useCallback(() => {
@@ -353,6 +390,10 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
   const handleImportFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.currentTarget.files?.[0] ?? null;
     setImportResult(null);
+    setImportApplyResult(null);
+    setImportApplyError(null);
+    setImportApplyConfirmOpen(false);
+    setImportFileFingerprint(null);
     setImportFile(nextFile);
     setImportError(nextFile ? toValidationError(validateUserAccountImportCsvFile(nextFile)) : null);
   };
@@ -372,15 +413,74 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
     setImportLoading(true);
     setImportError(null);
     setImportResult(null);
+    setImportApplyResult(null);
+    setImportApplyError(null);
+    setImportFileFingerprint(null);
 
     try {
       const result = await dryRunUserAccountImport(apiClient, importFile);
       setImportResult(result);
+      setImportFileFingerprint(buildUserAccountImportFileFingerprint(importFile, result));
       message.success("User account CSV dry-run completed.");
     } catch (error) {
       setImportError(normalizeError(error));
     } finally {
       setImportLoading(false);
+    }
+  };
+
+  const openImportApplyConfirm = () => {
+    if (!importApplyEligibility.canApply) {
+      setImportApplyError(toValidationError(importApplyEligibility.reason));
+      return;
+    }
+
+    setImportApplyError(null);
+    setImportApplyConfirmOpen(true);
+  };
+
+  const closeImportApplyConfirm = () => {
+    if (!importApplySubmitting) {
+      setImportApplyConfirmOpen(false);
+    }
+  };
+
+  const handleUserImportApply = async () => {
+    if (importApplySubmitting) {
+      return;
+    }
+
+    const eligibility = getUserAccountImportApplyEligibility({
+      file: importFile,
+      result: importResult,
+      mode: userAccountImportApplyMode,
+      submitting: false,
+      fingerprint: importFileFingerprint,
+    });
+
+    if (!eligibility.canApply || !importFile) {
+      setImportApplyError(toValidationError(eligibility.reason));
+      return;
+    }
+
+    setImportApplySubmitting(true);
+    setImportApplyError(null);
+    setImportApplyResult(null);
+
+    try {
+      const result = await applyUserAccountImport(
+        apiClient,
+        importFile,
+        userAccountImportApplyMode,
+      );
+      setImportApplyResult(result);
+      setImportApplyConfirmOpen(false);
+      message.success("User account CSV apply completed.");
+      loadUsers();
+    } catch (error) {
+      setImportApplyError(mapUserAccountImportApplyErrorToDisplay(normalizeError(error)));
+    } finally {
+      setImportApplySubmitting(false);
     }
   };
 
@@ -505,10 +605,18 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
       <UserAccountImportDryRunPanel
         file={importFile}
         loading={importLoading}
+        applySubmitting={importApplySubmitting}
+        applyConfirmOpen={importApplyConfirmOpen}
+        applyEligibility={importApplyEligibility}
+        applyResult={importApplyResult}
+        applyError={importApplyError}
         error={importError}
         result={importResult}
         onFileChange={handleImportFileChange}
         onRunDryRun={handleUserImportDryRun}
+        onOpenApplyConfirm={openImportApplyConfirm}
+        onCloseApplyConfirm={closeImportApplyConfirm}
+        onConfirmApply={handleUserImportApply}
       />
 
       <Card className="shell-card" title="Account lifecycle">
@@ -739,40 +847,316 @@ export const dryRunUserAccountImport = async (
   file: File,
 ): Promise<UserAccountImportDryRunResult> => client.dryRunUserAccountImport({ file });
 
+export const applyUserAccountImport = async (
+  client: Pick<AccountManagementApiClient, "applyUserAccountImport">,
+  file: File,
+  mode: UserAccountImportApplyMode = userAccountImportApplyMode,
+): Promise<UserAccountImportApplyResult> => client.applyUserAccountImport({ file, mode });
+
+export const buildUserAccountImportFileFingerprint = (
+  file: Pick<File, "name" | "size" | "lastModified">,
+  result: UserAccountImportDryRunResult,
+): UserAccountImportFileFingerprint => ({
+  name: file.name,
+  size: file.size,
+  lastModified: file.lastModified,
+  resultName: result.file.name,
+  resultSize: result.file.size,
+});
+
+export const isSameUserAccountImportFile = (
+  file: Pick<File, "name" | "size" | "lastModified"> | null,
+  fingerprint: UserAccountImportFileFingerprint | null,
+): boolean =>
+  Boolean(
+    file &&
+      fingerprint &&
+      file.name === fingerprint.name &&
+      file.size === fingerprint.size &&
+      file.lastModified === fingerprint.lastModified,
+  );
+
+export const getUserAccountImportApplyEligibility = ({
+  file,
+  result,
+  mode,
+  submitting,
+  fingerprint,
+}: {
+  file: Pick<File, "name" | "size" | "lastModified"> | null;
+  result: UserAccountImportDryRunResult | null;
+  mode: string;
+  submitting: boolean;
+  fingerprint: UserAccountImportFileFingerprint | null;
+}): UserAccountImportApplyEligibility => {
+  if (submitting) {
+    return { canApply: false, reason: "User account import apply is already running." };
+  }
+
+  if (mode !== userAccountImportApplyMode) {
+    return {
+      canApply: false,
+      reason: "Only CREATE_ONLY_PENDING_NO_CREDENTIAL user account import apply is supported.",
+    };
+  }
+
+  if (!file) {
+    return { canApply: false, reason: "Select one user account CSV file first." };
+  }
+
+  if (!result) {
+    return { canApply: false, reason: "Run user account CSV dry-run before apply." };
+  }
+
+  if (!isSameUserAccountImportFile(file, fingerprint)) {
+    return { canApply: false, reason: "The selected file changed after dry-run. Run dry-run again." };
+  }
+
+  if (result.importType !== "USER_ACCOUNT" || result.dryRun !== true) {
+    return { canApply: false, reason: "Only user account dry-run results can be applied here." };
+  }
+
+  if (result.summary.totalRows <= 0) {
+    return { canApply: false, reason: "User account import apply requires at least one row." };
+  }
+
+  if (result.summary.errorRows > 0) {
+    return { canApply: false, reason: "Resolve dry-run errors before apply." };
+  }
+
+  if (result.summary.warningRows > 0) {
+    return {
+      canApply: false,
+      reason: "Resolve dry-run warnings before pending no-credential apply.",
+    };
+  }
+
+  if (result.summary.createCandidates !== result.summary.totalRows) {
+    return { canApply: false, reason: "All rows must be pending create candidates." };
+  }
+
+  if (result.summary.existingUserRows > 0 || result.summary.existingRoleAssignmentRows > 0) {
+    return { canApply: false, reason: "Existing users or role assignments cannot be applied." };
+  }
+
+  if (result.summary.reactivationCandidateRows > 0) {
+    return { canApply: false, reason: "Revoked role reactivation candidates cannot be applied." };
+  }
+
+  if (result.rows.some((row) => row.status !== "VALID")) {
+    return { canApply: false, reason: "All user account import rows must be VALID." };
+  }
+
+  if (result.rows.some((row) => row.candidateAction !== "CREATE_PENDING_USER")) {
+    return {
+      canApply: false,
+      reason: "All user account import actions must be CREATE_PENDING_USER.",
+    };
+  }
+
+  if (
+    result.rows.some(
+      (row) =>
+        row.parsed.status !== "PENDING_ACTIVATION" ||
+        row.parsed.credentialAction !== "NO_CREDENTIAL" ||
+        row.parsed.scopeType !== "DEPARTMENT" ||
+        row.parsed.roleCode === "SYSTEM_ADMIN",
+    )
+  ) {
+    return {
+      canApply: false,
+      reason:
+        "Rows must stay pending activation, no-credential, department-scoped, and non-SYSTEM_ADMIN.",
+    };
+  }
+
+  return { canApply: true, reason: "Ready for pending no-credential user account apply." };
+};
+
+export const mapUserAccountImportApplyErrorToDisplay = (error: ApiError): ApiError => {
+  if (error.status === 401 || error.kind === "unauthorized") {
+    return {
+      ...error,
+      message: "User account import apply needs an active session.",
+      detail: "Sign in again and rerun dry-run before applying.",
+    };
+  }
+
+  if (error.status === 403 || error.kind === "forbidden") {
+    return {
+      ...error,
+      message: "User account import apply requires system:config.",
+      detail: "Use an administrator with system:config. The backend permission check remains authoritative.",
+    };
+  }
+
+  if (error.status === 400 || error.kind === "bad-request") {
+    return {
+      ...error,
+      message: "User account import apply was rejected.",
+      detail: buildRejectedUserAccountApplyErrorDetail(error),
+    };
+  }
+
+  if (error.kind === "network" || (error.status ?? 0) >= 500) {
+    return {
+      ...error,
+      message: "User account import apply service is unavailable.",
+      detail: "Retry after the local API is available. No user account apply result was recorded by the Web client.",
+    };
+  }
+
+  return {
+    ...error,
+    message: error.message || "User account import apply failed.",
+  };
+};
+
+const buildRejectedUserAccountApplyErrorDetail = (error: ApiError): string => {
+  const summary = readRejectedUserAccountApplySummary(error.body);
+  const codes = readRejectedUserAccountApplyErrorCodes(error.body);
+  const parts = [
+    summary
+      ? `createdUsers=${summary.createdUsersCount}; createdRoles=${summary.createdRolesCount}; skipped=${summary.skippedRows}; failed=${summary.failedRows}; errors=${summary.errorCount}; warnings=${summary.warningCount}`
+      : null,
+    codes.length > 0 ? `codes=${codes.join(",")}` : null,
+    error.detail,
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.join("; ") || "Backend validation rejected the pending no-credential apply request.";
+};
+
+const readRejectedUserAccountApplySummary = (
+  body: unknown,
+): UserAccountImportApplyResult["summary"] | null => {
+  if (typeof body !== "object" || body === null || !("summary" in body)) {
+    return null;
+  }
+
+  const summary = (body as { summary?: unknown }).summary;
+  if (typeof summary !== "object" || summary === null) {
+    return null;
+  }
+
+  const candidate = summary as Partial<UserAccountImportApplyResult["summary"]>;
+  return typeof candidate.createdUsersCount === "number" &&
+    typeof candidate.createdRolesCount === "number" &&
+    typeof candidate.skippedRows === "number" &&
+    typeof candidate.failedRows === "number" &&
+    typeof candidate.errorCount === "number" &&
+    typeof candidate.warningCount === "number"
+    ? {
+        totalRows: typeof candidate.totalRows === "number" ? candidate.totalRows : 0,
+        createdUsersCount: candidate.createdUsersCount,
+        createdRolesCount: candidate.createdRolesCount,
+        skippedRows: candidate.skippedRows,
+        failedRows: candidate.failedRows,
+        errorCount: candidate.errorCount,
+        warningCount: candidate.warningCount,
+        auditOperation: userAccountImportApplyAuditOperation,
+      }
+    : null;
+};
+
+const readRejectedUserAccountApplyErrorCodes = (body: unknown): string[] => {
+  if (typeof body !== "object" || body === null || !("errors" in body)) {
+    return [];
+  }
+
+  const errors = (body as { errors?: unknown }).errors;
+  if (!Array.isArray(errors)) {
+    return [];
+  }
+
+  return [
+    ...new Set(
+      errors
+        .map((error) =>
+          typeof error === "object" && error !== null && "code" in error
+            ? String((error as { code: unknown }).code)
+            : null,
+        )
+        .filter((code): code is string => Boolean(code)),
+    ),
+  ];
+};
+
 export function UserAccountImportDryRunPanel({
   file,
   loading,
+  applySubmitting = false,
+  applyConfirmOpen = false,
+  applyEligibility = { canApply: false, reason: "Run user account CSV dry-run before apply." },
+  applyResult = null,
+  applyError = null,
   error,
   result,
   onFileChange,
   onRunDryRun,
+  onOpenApplyConfirm = () => undefined,
+  onCloseApplyConfirm = () => undefined,
+  onConfirmApply = () => undefined,
 }: {
   file: File | null;
   loading: boolean;
+  applySubmitting?: boolean;
+  applyConfirmOpen?: boolean;
+  applyEligibility?: UserAccountImportApplyEligibility;
+  applyResult?: UserAccountImportApplyResult | null;
+  applyError?: ApiError | null;
   error: ApiError | null;
   result: UserAccountImportDryRunResult | null;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onRunDryRun: () => void;
+  onOpenApplyConfirm?: () => void;
+  onCloseApplyConfirm?: () => void;
+  onConfirmApply?: () => void | Promise<void>;
 }) {
   return (
-    <ImportDryRunPanelShell
-      className="shell-card user-account-import-dry-run-card"
-      title="User account CSV dry-run"
-      endpoint="POST /users/import/dry-run"
-      noticeMessage="dryRun=true; CSV-only; validates users, departments, roles, scopes, and conflicts without writing accounts."
-      noticeDescription="Required headers are email, displayName, departmentCode, and roleCode; optional headers are employeeNo, scopeType, scopeDepartmentCode, and status. Password, passwordHash, token, cookie, secret, invite link, and reset link columns are rejected."
-      fileAriaLabel="User account CSV file"
-      file={file}
-      loading={loading}
-      error={error}
-      result={result}
-      emptyHint="Select one .csv file to preview account validation results."
-      onFileChange={onFileChange}
-      onRunDryRun={onRunDryRun}
-      renderResult={(dryRunResult) => (
-        <UserAccountImportDryRunResultView result={dryRunResult} />
-      )}
-    />
+    <>
+      <ImportDryRunPanelShell
+        className="shell-card user-account-import-dry-run-card"
+        title="User account CSV dry-run"
+        endpoint="POST /users/import/dry-run"
+        noticeMessage="dryRun=true; CSV-only; validates users, departments, roles, scopes, and conflicts before optional pending no-credential apply."
+        noticeDescription="Required headers are email, displayName, departmentCode, and roleCode; optional headers are employeeNo, scopeType, scopeDepartmentCode, and status. Password, passwordHash, token, cookie, secret, invite link, and reset link columns are rejected."
+        fileAriaLabel="User account CSV file"
+        file={file}
+        loading={loading}
+        controlsDisabled={applySubmitting}
+        error={error}
+        result={result}
+        emptyHint="Select one .csv file to preview account validation results."
+        onFileChange={onFileChange}
+        onRunDryRun={onRunDryRun}
+        extraActions={
+          <Button
+            loading={applySubmitting}
+            disabled={!applyEligibility.canApply || loading || applySubmitting}
+            onClick={onOpenApplyConfirm}
+          >
+            Apply pending no-credential
+          </Button>
+        }
+        renderResult={(dryRunResult) => (
+          <UserAccountImportDryRunResultView result={dryRunResult} />
+        )}
+        afterResult={
+          <UserAccountImportApplyStatus
+            eligibility={applyEligibility}
+            result={applyResult}
+            error={applyError}
+          />
+        }
+      />
+      <UserAccountImportApplyConfirmModal
+        open={applyConfirmOpen}
+        submitting={applySubmitting}
+        result={result}
+        onCancel={onCloseApplyConfirm}
+        onConfirm={onConfirmApply}
+      />
+    </>
   );
 }
 
@@ -819,6 +1203,165 @@ export function UserAccountImportDryRunResultView({
       tableScrollX={1320}
       receivedColumnColor={(column) => (column === "(sensitive)" ? "red" : "geekblue")}
     />
+  );
+}
+
+function UserAccountImportApplyStatus({
+  eligibility,
+  result,
+  error,
+}: {
+  eligibility: UserAccountImportApplyEligibility;
+  result: UserAccountImportApplyResult | null;
+  error: ApiError | null;
+}) {
+  return (
+    <Space direction="vertical" size={8} className="full-width">
+      <Alert
+        type={eligibility.canApply ? "success" : "info"}
+        showIcon
+        message={
+          eligibility.canApply
+            ? "Pending no-credential apply is available"
+            : "Pending no-credential apply is disabled"
+        }
+        description={eligibility.reason}
+      />
+      {error ? (
+        <Alert
+          type="error"
+          showIcon
+          message={error.message}
+          description={error.detail}
+        />
+      ) : null}
+      {result ? <UserAccountImportApplyResultView result={result} /> : null}
+    </Space>
+  );
+}
+
+function UserAccountImportApplyResultView({
+  result,
+}: {
+  result: UserAccountImportApplyResult;
+}) {
+  const errorCodes = [...new Set(result.errors.map((error) => error.code))];
+
+  return (
+    <Card size="small" title="User account apply result">
+      <Space direction="vertical" size={10} className="full-width">
+        <Alert
+          type={result.summary.errorCount > 0 ? "warning" : "success"}
+          showIcon
+          message="User account apply summary"
+          description="Result is sanitized. Created users remain PENDING_ACTIVATION, have no credential, and cannot log in."
+        />
+        <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
+          <Descriptions.Item label="Mode">{result.mode}</Descriptions.Item>
+          <Descriptions.Item label="Created users">
+            {result.summary.createdUsersCount}
+          </Descriptions.Item>
+          <Descriptions.Item label="Created roles">
+            {result.summary.createdRolesCount}
+          </Descriptions.Item>
+          <Descriptions.Item label="Skipped rows">
+            {result.summary.skippedRows}
+          </Descriptions.Item>
+          <Descriptions.Item label="Failed rows">
+            {result.summary.failedRows}
+          </Descriptions.Item>
+          <Descriptions.Item label="Audit operation">
+            {result.summary.auditOperation}
+          </Descriptions.Item>
+        </Descriptions>
+        <Typography.Text type="secondary">
+          Pending/no-credential status: PENDING_ACTIVATION users with department-scoped initial
+          roles; no login activation is created.
+        </Typography.Text>
+        {errorCodes.length > 0 ? (
+          <Space size={[6, 6]} wrap>
+            <Typography.Text strong>Rejected codes</Typography.Text>
+            {errorCodes.map((code) => (
+              <Tag color="red" key={code}>
+                {code}
+              </Tag>
+            ))}
+          </Space>
+        ) : (
+          <Typography.Text type="secondary">Rejected/error summary: none.</Typography.Text>
+        )}
+      </Space>
+    </Card>
+  );
+}
+
+function UserAccountImportApplyConfirmModal({
+  open,
+  submitting,
+  result,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  submitting: boolean;
+  result: UserAccountImportDryRunResult | null;
+  onCancel: () => void;
+  onConfirm: () => void | Promise<void>;
+}) {
+  return (
+    <Modal
+      title="Apply user account CSV pending no-credential"
+      open={open}
+      okText="Apply pending no-credential"
+      cancelText="Cancel"
+      confirmLoading={submitting}
+      okButtonProps={{ disabled: submitting }}
+      cancelButtonProps={{ disabled: submitting }}
+      getContainer={false}
+      onCancel={onCancel}
+      onOk={onConfirm}
+      destroyOnHidden
+    >
+      <UserAccountImportApplyConfirmContent result={result} />
+    </Modal>
+  );
+}
+
+export function UserAccountImportApplyConfirmContent({
+  result,
+}: {
+  result: UserAccountImportDryRunResult | null;
+}) {
+  return (
+    <Space direction="vertical" size={12} className="full-width">
+      <Alert
+        type="warning"
+        showIcon
+        message="This will create pending user account records."
+        description="Mode is CREATE_ONLY_PENDING_NO_CREDENTIAL. This action does not update existing users, activate login, invite users, or reset passwords."
+      />
+      <Descriptions bordered size="small" column={1}>
+        <Descriptions.Item label="Endpoint">POST /users/import/apply</Descriptions.Item>
+        <Descriptions.Item label="Mode">{userAccountImportApplyMode}</Descriptions.Item>
+        <Descriptions.Item label="Users requested">
+          {result?.summary.createCandidates ?? 0}
+        </Descriptions.Item>
+        <Descriptions.Item label="Audit operation">
+          {userAccountImportApplyAuditOperation}
+        </Descriptions.Item>
+        <Descriptions.Item label="Created user status">
+          PENDING_ACTIVATION
+        </Descriptions.Item>
+        <Descriptions.Item label="Initial role scope">
+          Department-scoped UserRole only
+        </Descriptions.Item>
+      </Descriptions>
+      <Typography.Text type="secondary">
+        No UserCredential, password generation/reset, session, invite/reset/lifecycle token,
+        email, or login activation will be created by this apply. The backend re-parses and
+        revalidates the uploaded CSV before writing.
+      </Typography.Text>
+    </Space>
   );
 }
 
