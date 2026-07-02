@@ -532,8 +532,8 @@ describe("AchievementImportDryRunService", () => {
           registrationNoNormalized: "SW001",
           softwareVersion: "1.0",
           softwareType: "APPLICATION",
-          publishDate: "2026-01-02",
-          registerDate: "2026-02-03",
+          publishDate: new Date("2026-01-02T00:00:00.000Z"),
+          registerDate: new Date("2026-02-03T00:00:00.000Z"),
           runEnv: "Hidden runtime",
         }),
         contributors: [

@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-07-02 Step 69C - Achievement SOFTWARE_COPYRIGHT import local production-like API acceptance evidence
+
+- Goal:
+  - Validate Step 69B backend-only `SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` apply in local Docker production-like API/DB conditions with synthetic `S69C_*` data only.
+- Initial state:
+  - `git log -1 --oneline`: `350035f feat: add software copyright import apply`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - Step 69A and Step 69B snippets from `memory-bank/progress.md`.
+  - `memory-bank/step68c-achievement-import-acceptance.mjs`.
+  - Step 69B apply/dry-run service and tests.
+- Implemented files:
+  - `memory-bank/step69c-achievement-import-acceptance.mjs`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Runtime fix evidence:
+  - Initial local production-like apply returned HTTP 500 on the success path.
+  - A rollback-only Prisma probe identified the runtime issue as `publishDate` / `registerDate` being passed as `YYYY-MM-DD` strings to Prisma DateTime fields.
+  - The apply plan now converts accepted ISO date cells to `Date` values before `SoftwareCopyrightDetail` writes.
+- Local Docker acceptance evidence:
+  - `docker compose -f docker-compose.production.yml build api`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d api`: API image/container recreated, but host port `127.0.0.1:13001` could not be published in this Windows environment; no orphan cleanup was run.
+  - Acceptance was completed with the freshly built production API image in a no-host-port compose run container against the same local Docker Postgres.
+  - Local Docker production-like acceptance helper: PASS.
+  - Success path: HTTP 201; achievements +2; software copyright details +2; contributors +4; audit operation `ACHIEVEMENT_IMPORT_CREATE_DRAFT` +2; all created achievements were `SOFTWARE_COPYRIGHT` `DRAFT`; normalized registration identifier persistence count 2; state change count 0.
+  - Repeated exact apply: HTTP 400; safe error code `DB_CONFLICT`; achievement/detail/contributor/audit deltas 0.
+  - Missing registration number: HTTP 400; safe error code `REQUIRED`; achievement delta 0.
+  - Mixed `PAPER` + `SOFTWARE_COPYRIGHT`: HTTP 400; safe error code `MIXED_TYPE_BATCH`; achievement delta 0.
+  - `PATENT`: HTTP 400; safe error code `UNSUPPORTED_TYPE`; achievement delta 0.
+  - Dry-run error input: HTTP 400; safe error code `OWNER_NOT_FOUND`; achievement delta 0.
+  - Limited user: HTTP 403; achievement delta 0.
+  - Forbidden side-effect deltas were 0 for workflow instances, workflow tasks, workflow actions, attachments, fee records, reminder tasks, notifications, search logs, and resource access grants.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files and 140 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; matches are code/test/documentation safety-boundary or negative-assertion terms only, with no complete URL, credential value, connection string value, private key value, AccessKey value, token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Web UI/browser acceptance, VPS access, production DB/config access, real-data import, schema/migration/package/lockfile/config change, credential/session/token/cookie/password/secret/private-key handling, Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts occurred.
+
 ## 2026-07-02 Step 69B - Achievement SOFTWARE_COPYRIGHT import CREATE_DRAFT_ONLY backend apply evidence
 
 - Goal:

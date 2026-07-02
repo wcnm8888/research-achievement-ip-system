@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-02 Step 69C - Achievement SOFTWARE_COPYRIGHT import local production-like API acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step69c-achievement-import-acceptance.mjs`.
+  - Used local Docker production-like API image and Docker Postgres with synthetic `S69C_*` data only.
+  - Verified backend-only `SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` apply creates `DRAFT` achievements, `SoftwareCopyrightDetail` rows with normalized registration identifiers persisted, contributors, and `ACHIEVEMENT_IMPORT_CREATE_DRAFT` audit rows.
+  - Verified repeated exact apply returns safe `DB_CONFLICT` and creates no additional achievement/detail/contributor/audit rows.
+  - Verified missing registration number, mixed `PAPER` + `SOFTWARE_COPYRIGHT`, `PATENT`, dry-run error, and limited user 403 are safely rejected with no achievement writes.
+  - Verified workflow instance/task/action, attachment, fee record, reminder task, notification, search log, and resource access grant deltas stayed 0.
+  - Found and fixed a production-like runtime gap: software copyright `publishDate` / `registerDate` CSV values are now converted from accepted `YYYY-MM-DD` cells to Prisma-compatible `Date` values before apply writes.
+- Environment note:
+  - `docker compose up -d api` rebuilt/recreated the API container but could not bind host port `127.0.0.1:13001`; acceptance was completed with the freshly built production API image via a no-host-port compose run container against the same local Docker Postgres. Docker orphan cleanup was not run.
+- Explicitly not done:
+  - No Web UI or browser acceptance.
+  - No VPS, production DB, production config, `.env` / `.env.production` content read, real-data import, schema/migration/package/lockfile/config change, Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, or prune.
+  - No `PATENT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - Local Docker production-like acceptance helper: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files / 140 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 69B - Achievement SOFTWARE_COPYRIGHT import CREATE_DRAFT_ONLY backend apply
 
 - Status: DONE.

@@ -731,8 +731,8 @@ const toResolvedPlanRow = (row: WorkingRow): AchievementImportResolvedPlanRow =>
     registrationNoNormalized: row.parsed.normalizedIdentifiers.registrationNo,
     softwareVersion: normalizeCell(row.valuesByHeader.get("softwareVersion")),
     softwareType: normalizeEnumCell(row.valuesByHeader.get("softwareType")) as SoftwareTypeCode | null,
-    publishDate: normalizeCell(row.valuesByHeader.get("publishDate")),
-    registerDate: normalizeCell(row.valuesByHeader.get("registerDate")),
+    publishDate: parseOptionalIsoDate(row.valuesByHeader.get("publishDate")),
+    registerDate: parseOptionalIsoDate(row.valuesByHeader.get("registerDate")),
     runEnv: normalizeCell(row.valuesByHeader.get("runEnv")),
   },
 });
@@ -1398,6 +1398,11 @@ const validateDate = (row: WorkingRow, field: string): void => {
       message: `${field} must be an ISO date string.`,
     });
   }
+};
+
+const parseOptionalIsoDate = (value: string | undefined): Date | null => {
+  const normalized = normalizeCell(value);
+  return normalized ? new Date(`${normalized}T00:00:00.000Z`) : null;
 };
 
 const validateIntegerRange = (
