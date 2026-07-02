@@ -1,5 +1,18 @@
 # Decisions
 
+## D229 - Local backup artifact-list v2 schema remains static and local-only
+
+- Date: 2026-07-02.
+- Context: Step 64B adds a committable schema/sample for the Step 64A local backup artifact-list metadata design. The task allows schema, fixture/sample, documentation, memory-bank updates, and lightweight static validation only, while prohibiting real backup execution, real artifact generation, real artifact encryption, offsite upload, restore, Docker operations, VPS/production DB access, `.env` / `.env.production` content reads, cleanup, deletion, reset, drop, prune, account/password changes, and existing untracked-artifact handling.
+- Decision:
+  - Add `deploy/local-backup-artifact-list.schema.json` as the local backup-set artifact-list v2 JSON Schema.
+  - Add `deploy/local-backup-artifact-list.sample.json` as a synthetic/local sample that does not reference untracked local artifacts or real paths.
+  - Add `deploy/validate-local-backup-artifact-list-sample.mjs` as a no-dependency static validator for the committed schema/sample.
+  - Do not add a package script in this Step; the direct validator command is sufficient and avoids package/config churn.
+  - Keep the schema/sample local-only. Passing validation proves only structure, not backup execution, production/VPS readiness, encryption, offsite upload, or restore readiness.
+- Scope:
+  - This decision does not authorize runtime code changes, deployment configuration, CI/CD changes, package/lockfile changes, backup execution, real artifact generation, artifact encryption, offsite upload, restore, Docker, VPS/production access, database commands, migration/seed/backfill, account/password work, cleanup, deletion, reset, drop, prune, deployment, push, or handling existing untracked artifacts.
+
 ## D228 - Local backup artifact metadata extends existing artifact-list contract
 
 - Date: 2026-07-02.

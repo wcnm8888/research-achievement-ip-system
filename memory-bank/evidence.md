@@ -1,5 +1,37 @@
 # Evidence
 
+## 2026-07-02 Step 64B - Backup artifact-list schema and local sample evidence
+
+- Purpose:
+  - Add a local backup artifact-list schema/sample and static validation for Step 64A's local-only metadata design.
+  - Keep this Step limited to schema, fixture/sample, documentation, memory-bank updates, and lightweight local static validation.
+  - Do not execute real backups, generate real backup artifacts, encrypt real artifacts, upload offsite, restore, run Docker, access VPS/production DB, read `.env` / `.env.production` contents, change accounts/passwords, clean up, delete, reset, drop, prune, or handle existing untracked artifacts.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `4a41bd5`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short --untracked-files=all` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`.
+  - Read `deploy/local-backup-artifact-metadata-design.md`.
+  - Read `deploy/production-backup-readiness-checklist.md`.
+  - Read `deploy/backup-policy-implementation-gap-review.md`.
+  - Read targeted `BACKUP_ARTIFACT_LIST` implementation and focused spec snippets from `apps/api/src/operations/attachment-binary-backup.ts` and `apps/api/src/operations/attachment-binary-backup.spec.ts`.
+- Implementation evidence:
+  - Added `deploy/local-backup-artifact-list.schema.json`.
+  - Added `deploy/local-backup-artifact-list.sample.json`.
+  - Added `deploy/validate-local-backup-artifact-list-sample.mjs`.
+  - Updated `deploy/local-backup-artifact-metadata-design.md` with the static validation command and validator boundary.
+  - Did not add package scripts, runtime code, deployment config, CI/CD config, or lockfile changes.
+- Static validation evidence:
+  - `node deploy/validate-local-backup-artifact-list-sample.mjs`: PASS.
+  - Output confirmed required categories: `POSTGRES_DUMP`, `ATTACHMENT_BINARY_ARCHIVE`, and `ATTACHMENT_BACKUP_MANIFEST`.
+  - Validator reads only committed schema/sample files; it does not read `.env`, run Docker, execute backups, encrypt artifacts, upload offsite, restore, or access production/VPS.
+- Verification:
+  - Full typecheck/test not run because this Step changed docs, schema/sample, and a static validator only; no runtime code, deployment config, CI/CD, package, or lockfile changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed; matches were validator forbidden-patterns and documentation boundary terms only, with no sensitive values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 64A - Backup artifact-list metadata local design evidence
 
 - Purpose:

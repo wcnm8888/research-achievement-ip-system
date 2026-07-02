@@ -185,3 +185,19 @@ It does not prove:
 3. Later documentation-only Step: choose an encryption tool family and redacted evidence shape without real key material.
 4. Later documentation-only Step: define an offsite target class and least-privilege permission model without credentials or network operations.
 5. Later restore-design Step: define an isolated restore-drill target guard without executing restore commands.
+
+## Static Schema/sample Validation
+
+Step 64B adds a local-only JSON Schema, synthetic sample, and no-dependency static validator:
+
+- `deploy/local-backup-artifact-list.schema.json`.
+- `deploy/local-backup-artifact-list.sample.json`.
+- `deploy/validate-local-backup-artifact-list-sample.mjs`.
+
+Run:
+
+```powershell
+node deploy/validate-local-backup-artifact-list-sample.mjs
+```
+
+The validator parses only the committed schema and synthetic sample, checks the required artifact categories and local-only status fields, rejects obvious sensitive markers in the sample, and does not run Docker, read `.env`, execute backups, encrypt artifacts, upload offsite, restore, or access production/VPS.

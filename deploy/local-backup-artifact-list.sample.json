@@ -1,0 +1,133 @@
+{
+  "artifactType": "BACKUP_ARTIFACT_LIST",
+  "version": 2,
+  "createdAt": "2026-07-02T10:00:00.000Z",
+  "backupSet": {
+    "id": "local-backup-set-20260702T100000Z-synthetic",
+    "timestamp": "2026-07-02T10:00:00.000Z",
+    "environmentLabel": "local-synthetic",
+    "scope": "LOCAL_ONLY",
+    "productionReadinessClaim": false,
+    "generatedBy": {
+      "tool": "local-backup-artifact-list-static-sample",
+      "mode": "static-sample",
+      "schemaVersion": 2
+    },
+    "localOnlyNotice": "Synthetic local sample for schema validation only; not production or VPS backup readiness evidence."
+  },
+  "artifacts": [
+    {
+      "type": "POSTGRES_DUMP",
+      "basename": "sample-local-db.dump",
+      "relativePath": "sample-artifacts/sample-local-db.dump",
+      "bytes": 2048,
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "generatedBy": {
+        "tool": "synthetic-local-db-dump-placeholder",
+        "mode": "external-local-db-dump",
+        "schemaVersion": 2
+      },
+      "createdAt": "2026-07-02T09:58:00.000Z",
+      "requiredForCompleteSet": true,
+      "format": "postgres-custom-format",
+      "restoreListStatus": "NOT_RUN",
+      "credentialExposure": "NOT_RECORDED"
+    },
+    {
+      "type": "ATTACHMENT_BINARY_ARCHIVE",
+      "basename": "sample-local-attachments.attachment-archive.bin",
+      "relativePath": "sample-artifacts/sample-local-attachments.attachment-archive.bin",
+      "bytes": 1024,
+      "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "generatedBy": {
+        "tool": "synthetic-attachment-binary-backup",
+        "mode": "attachment-binary-backup",
+        "schemaVersion": 2
+      },
+      "createdAt": "2026-07-02T09:59:00.000Z",
+      "requiredForCompleteSet": true,
+      "supportedRelationTypes": [
+        "ACHIEVEMENT",
+        "FEE_RECORD"
+      ],
+      "manifestBasename": "sample-local-attachments.attachment-manifest.json",
+      "manifestVersion": 1,
+      "manifestConsistencyStatus": "PASS",
+      "aggregateCounts": {
+        "fileCount": 2,
+        "totalBytes": 768,
+        "relationTypeCounts": {
+          "ACHIEVEMENT": 1,
+          "FEE_RECORD": 1
+        },
+        "missingBinaryCount": 0,
+        "extraBinaryCount": 0,
+        "unsupportedRelationCount": 0
+      }
+    },
+    {
+      "type": "ATTACHMENT_BACKUP_MANIFEST",
+      "basename": "sample-local-attachments.attachment-manifest.json",
+      "relativePath": "sample-artifacts/sample-local-attachments.attachment-manifest.json",
+      "bytes": 1536,
+      "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "generatedBy": {
+        "tool": "synthetic-attachment-binary-backup",
+        "mode": "attachment-binary-backup",
+        "schemaVersion": 2
+      },
+      "createdAt": "2026-07-02T09:59:00.000Z",
+      "requiredForCompleteSet": true,
+      "manifestVersion": 1,
+      "consistencyStatus": "PASS",
+      "issueSummary": []
+    }
+  ],
+  "readiness": {
+    "retention": {
+      "class": "local-synthetic",
+      "holdStatus": "NONE",
+      "cleanupAllowed": false
+    },
+    "encryption": {
+      "status": "NOT_REQUIRED_SYNTHETIC",
+      "evidence": "Synthetic sample only; no real artifact encryption was performed."
+    },
+    "offsite": {
+      "status": "NOT_UPLOADED_LOCAL_ONLY",
+      "targetAlias": "NONE"
+    },
+    "restoreReadiness": {
+      "status": "NOT_TESTED",
+      "scope": "LOCAL_ONLY"
+    }
+  },
+  "redactedEvidence": {
+    "readinessLevel": "local artifact-ready",
+    "targetSummary": "synthetic local sample only",
+    "backupSetId": "local-backup-set-20260702T100000Z-synthetic",
+    "artifactBasenames": [
+      "sample-local-db.dump",
+      "sample-local-attachments.attachment-archive.bin",
+      "sample-local-attachments.attachment-manifest.json"
+    ],
+    "artifactCategories": [
+      "POSTGRES_DUMP",
+      "ATTACHMENT_BINARY_ARCHIVE",
+      "ATTACHMENT_BACKUP_MANIFEST"
+    ],
+    "byteCounts": {
+      "sample-local-db.dump": 2048,
+      "sample-local-attachments.attachment-archive.bin": 1024,
+      "sample-local-attachments.attachment-manifest.json": 1536
+    },
+    "digestStatus": "RECORDED_WHOLE_ARTIFACT_DIGESTS",
+    "manifestStatus": "PASS",
+    "retentionClass": "local-synthetic",
+    "encryptionStatus": "NOT_REQUIRED_SYNTHETIC",
+    "offsiteStatus": "NOT_UPLOADED_LOCAL_ONLY",
+    "restoreReadinessStatus": "NOT_TESTED",
+    "timestamp": "2026-07-02T10:00:00.000Z",
+    "operatorConfirmation": "Static synthetic sample; no production or VPS operation was performed."
+  }
+}

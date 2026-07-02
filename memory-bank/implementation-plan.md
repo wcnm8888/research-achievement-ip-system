@@ -4,6 +4,27 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 64B Archive - Backup artifact-list schema and local sample - 2026-07-02
+
+- Step identity:
+  - Local-only schema/sample and static validation for the Step 64A backup artifact-list metadata design.
+  - No real backup execution, real artifact generation, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, database command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented files:
+  - `deploy/local-backup-artifact-list.schema.json`: JSON Schema for `BACKUP_ARTIFACT_LIST` v2.
+  - `deploy/local-backup-artifact-list.sample.json`: synthetic/local sample covering DB dump, attachment archive, attachment manifest, checksums, sizes, relative paths, generated-by, manifest version, redacted evidence, retention, encryption, offsite, and restore-readiness statuses.
+  - `deploy/validate-local-backup-artifact-list-sample.mjs`: no-dependency static validator for the committed schema/sample.
+  - `deploy/local-backup-artifact-metadata-design.md`: static validation command and local-only validator boundary.
+- Static validation:
+  - `node deploy/validate-local-backup-artifact-list-sample.mjs`: PASS.
+  - The validator reads only committed schema/sample files and does not read `.env`, run Docker, execute backups, encrypt artifacts, upload offsite, restore, or access production/VPS.
+- Next:
+  - A later local-only Step can implement a dry-run aggregator around explicitly supplied pre-existing local artifacts; it should still avoid production/VPS, offsite, restore, and real backup execution unless separately authorized.
+- Verification:
+  - Full typecheck/test not run because this Step changed docs, schema/sample, and a static validator only; no runtime code, deployment config, CI/CD, package, or lockfile changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed; matches were validator forbidden-patterns and documentation boundary terms only, with no sensitive values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## Current Step 64A Archive - Backup artifact-list metadata local design - 2026-07-02
 
 - Step identity:

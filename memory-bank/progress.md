@@ -1,5 +1,24 @@
 # Progress
 
+## 2026-07-02 Step 64B - Backup artifact-list schema and local sample
+
+- Status: STEP_64B_LOCAL_BACKUP_ARTIFACT_SCHEMA_SAMPLE_READY.
+- Step identity:
+  - Added local-only artifact-list schema/sample and lightweight static validation for the Step 64A metadata design.
+  - No real backup execution, real artifact generation, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, DB command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `deploy/local-backup-artifact-list.schema.json`.
+  - Added `deploy/local-backup-artifact-list.sample.json`.
+  - Added `deploy/validate-local-backup-artifact-list-sample.mjs`.
+  - Updated `deploy/local-backup-artifact-metadata-design.md` with the static validation command.
+  - Recorded D229 and Step 64B progress/evidence/archive entries.
+- Validation:
+  - `node deploy/validate-local-backup-artifact-list-sample.mjs`: PASS.
+  - Full typecheck/test not run because this Step changed docs, schema/sample, and a static validator only; no runtime code, deployment config, CI/CD, package, or lockfile changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed; matches were validator forbidden-patterns and documentation boundary terms only, with no sensitive values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 64A - Backup artifact-list metadata local design
 
 - Status: STEP_64A_LOCAL_BACKUP_ARTIFACT_METADATA_DESIGNED_DOCS_ONLY.

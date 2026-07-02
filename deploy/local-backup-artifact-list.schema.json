@@ -1,0 +1,707 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://research-ip.local/schemas/local-backup-artifact-list.schema.json",
+  "title": "Local Backup Artifact-list Metadata",
+  "description": "Schema for local-only backup-set artifact-list metadata. It is not production/VPS backup readiness evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifactType",
+    "version",
+    "createdAt",
+    "backupSet",
+    "artifacts",
+    "readiness",
+    "redactedEvidence"
+  ],
+  "properties": {
+    "artifactType": {
+      "const": "BACKUP_ARTIFACT_LIST"
+    },
+    "version": {
+      "const": 2
+    },
+    "createdAt": {
+      "$ref": "#/$defs/isoTimestamp"
+    },
+    "backupSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "timestamp",
+        "environmentLabel",
+        "scope",
+        "productionReadinessClaim",
+        "generatedBy",
+        "localOnlyNotice"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^local-backup-set-[0-9]{8}T[0-9]{6}Z-[a-z0-9-]+$"
+        },
+        "timestamp": {
+          "$ref": "#/$defs/isoTimestamp"
+        },
+        "environmentLabel": {
+          "enum": [
+            "local-synthetic",
+            "local-production-like"
+          ]
+        },
+        "scope": {
+          "enum": [
+            "LOCAL_ONLY",
+            "LOCAL_PRODUCTION_LIKE"
+          ]
+        },
+        "productionReadinessClaim": {
+          "const": false
+        },
+        "generatedBy": {
+          "$ref": "#/$defs/generatedBy"
+        },
+        "localOnlyNotice": {
+          "type": "string",
+          "minLength": 20
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/postgresDumpArtifact"
+          },
+          {
+            "$ref": "#/$defs/attachmentArchiveArtifact"
+          },
+          {
+            "$ref": "#/$defs/attachmentManifestArtifact"
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "POSTGRES_DUMP"
+              }
+            }
+          },
+          "minContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "ATTACHMENT_BINARY_ARCHIVE"
+              }
+            }
+          },
+          "minContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "ATTACHMENT_BACKUP_MANIFEST"
+              }
+            }
+          },
+          "minContains": 1
+        }
+      ]
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retention",
+        "encryption",
+        "offsite",
+        "restoreReadiness"
+      ],
+      "properties": {
+        "retention": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "class",
+            "holdStatus",
+            "cleanupAllowed"
+          ],
+          "properties": {
+            "class": {
+              "enum": [
+                "local-synthetic",
+                "local-production-like"
+              ]
+            },
+            "holdStatus": {
+              "enum": [
+                "NONE",
+                "INCIDENT_HOLD",
+                "MIGRATION_HOLD",
+                "AUDIT_HOLD",
+                "ROLLBACK_WINDOW_HOLD"
+              ]
+            },
+            "cleanupAllowed": {
+              "const": false
+            }
+          }
+        },
+        "encryption": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "evidence"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_REQUIRED_SYNTHETIC",
+                "NOT_ENCRYPTED_LOCAL_ONLY",
+                "ENCRYPTED_SYNTHETIC",
+                "BLOCKED"
+              ]
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 3
+            }
+          }
+        },
+        "offsite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "targetAlias"
+          ],
+          "properties": {
+            "status": {
+              "const": "NOT_UPLOADED_LOCAL_ONLY"
+            },
+            "targetAlias": {
+              "enum": [
+                "NONE"
+              ]
+            }
+          }
+        },
+        "restoreReadiness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "scope"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_TESTED",
+                "RESTORE_LIST_PASS",
+                "MANIFEST_PASS",
+                "LOCAL_READ_ONLY_SMOKE_PASS",
+                "WARNING",
+                "FAILED"
+              ]
+            },
+            "scope": {
+              "enum": [
+                "LOCAL_ONLY",
+                "LOCAL_PRODUCTION_LIKE"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "redactedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "readinessLevel",
+        "targetSummary",
+        "backupSetId",
+        "artifactBasenames",
+        "artifactCategories",
+        "byteCounts",
+        "digestStatus",
+        "manifestStatus",
+        "retentionClass",
+        "encryptionStatus",
+        "offsiteStatus",
+        "restoreReadinessStatus",
+        "timestamp",
+        "operatorConfirmation"
+      ],
+      "properties": {
+        "readinessLevel": {
+          "enum": [
+            "local artifact-ready",
+            "production-like backup-ready"
+          ]
+        },
+        "targetSummary": {
+          "type": "string",
+          "minLength": 3
+        },
+        "backupSetId": {
+          "type": "string"
+        },
+        "artifactBasenames": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/basename"
+          }
+        },
+        "artifactCategories": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/artifactType"
+          }
+        },
+        "byteCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "digestStatus": {
+          "enum": [
+            "RECORDED_WHOLE_ARTIFACT_DIGESTS",
+            "MISSING_OR_FAILED"
+          ]
+        },
+        "manifestStatus": {
+          "$ref": "#/$defs/consistencyStatus"
+        },
+        "retentionClass": {
+          "enum": [
+            "local-synthetic",
+            "local-production-like"
+          ]
+        },
+        "encryptionStatus": {
+          "type": "string"
+        },
+        "offsiteStatus": {
+          "const": "NOT_UPLOADED_LOCAL_ONLY"
+        },
+        "restoreReadinessStatus": {
+          "type": "string"
+        },
+        "timestamp": {
+          "$ref": "#/$defs/isoTimestamp"
+        },
+        "operatorConfirmation": {
+          "type": "string",
+          "minLength": 3
+        }
+      }
+    }
+  },
+  "$defs": {
+    "artifactType": {
+      "enum": [
+        "POSTGRES_DUMP",
+        "ATTACHMENT_BINARY_ARCHIVE",
+        "ATTACHMENT_BACKUP_MANIFEST"
+      ]
+    },
+    "basename": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._/-]+$",
+      "not": {
+        "pattern": "(^/|^[A-Za-z]:|\\.\\.|\\\\)"
+      }
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "isoTimestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generatedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool",
+        "mode"
+      ],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "minLength": 3
+        },
+        "mode": {
+          "enum": [
+            "static-sample",
+            "local-static-validation",
+            "external-local-db-dump",
+            "attachment-binary-backup",
+            "local-backup-set-aggregator"
+          ]
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "consistencyStatus": {
+      "enum": [
+        "PASS",
+        "WARNING",
+        "FAILED"
+      ]
+    },
+    "issueSummary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "count"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "MISSING_BINARY",
+              "EXTRA_BINARY"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "artifactBase": {
+      "type": "object",
+      "required": [
+        "type",
+        "basename",
+        "relativePath",
+        "bytes",
+        "digest",
+        "generatedBy",
+        "createdAt",
+        "requiredForCompleteSet"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/artifactType"
+        },
+        "basename": {
+          "$ref": "#/$defs/basename"
+        },
+        "relativePath": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "generatedBy": {
+          "$ref": "#/$defs/generatedBy"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/isoTimestamp"
+        },
+        "requiredForCompleteSet": {
+          "const": true
+        }
+      }
+    },
+    "postgresDumpArtifact": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifactBase"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "basename",
+            "relativePath",
+            "bytes",
+            "digest",
+            "generatedBy",
+            "createdAt",
+            "requiredForCompleteSet",
+            "format",
+            "restoreListStatus",
+            "credentialExposure"
+          ],
+          "properties": {
+            "type": {
+              "const": "POSTGRES_DUMP"
+            },
+            "basename": {
+              "$ref": "#/$defs/basename"
+            },
+            "relativePath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "generatedBy": {
+              "$ref": "#/$defs/generatedBy"
+            },
+            "createdAt": {
+              "$ref": "#/$defs/isoTimestamp"
+            },
+            "requiredForCompleteSet": {
+              "const": true
+            },
+            "format": {
+              "const": "postgres-custom-format"
+            },
+            "restoreListStatus": {
+              "enum": [
+                "NOT_RUN",
+                "PASS",
+                "WARNING",
+                "FAILED"
+              ]
+            },
+            "credentialExposure": {
+              "const": "NOT_RECORDED"
+            }
+          }
+        }
+      ]
+    },
+    "attachmentArchiveArtifact": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifactBase"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "basename",
+            "relativePath",
+            "bytes",
+            "digest",
+            "generatedBy",
+            "createdAt",
+            "requiredForCompleteSet",
+            "supportedRelationTypes",
+            "manifestBasename",
+            "manifestVersion",
+            "manifestConsistencyStatus",
+            "aggregateCounts"
+          ],
+          "properties": {
+            "type": {
+              "const": "ATTACHMENT_BINARY_ARCHIVE"
+            },
+            "basename": {
+              "$ref": "#/$defs/basename"
+            },
+            "relativePath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "generatedBy": {
+              "$ref": "#/$defs/generatedBy"
+            },
+            "createdAt": {
+              "$ref": "#/$defs/isoTimestamp"
+            },
+            "requiredForCompleteSet": {
+              "const": true
+            },
+            "supportedRelationTypes": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "ACHIEVEMENT",
+                  "FEE_RECORD"
+                ]
+              },
+              "minItems": 2,
+              "uniqueItems": true
+            },
+            "manifestBasename": {
+              "$ref": "#/$defs/basename"
+            },
+            "manifestVersion": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "manifestConsistencyStatus": {
+              "$ref": "#/$defs/consistencyStatus"
+            },
+            "aggregateCounts": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "fileCount",
+                "totalBytes",
+                "relationTypeCounts",
+                "missingBinaryCount",
+                "extraBinaryCount",
+                "unsupportedRelationCount"
+              ],
+              "properties": {
+                "fileCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "totalBytes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "relationTypeCounts": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "ACHIEVEMENT",
+                    "FEE_RECORD"
+                  ],
+                  "properties": {
+                    "ACHIEVEMENT": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "FEE_RECORD": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "missingBinaryCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "extraBinaryCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unsupportedRelationCount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "attachmentManifestArtifact": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifactBase"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "basename",
+            "relativePath",
+            "bytes",
+            "digest",
+            "generatedBy",
+            "createdAt",
+            "requiredForCompleteSet",
+            "manifestVersion",
+            "consistencyStatus",
+            "issueSummary"
+          ],
+          "properties": {
+            "type": {
+              "const": "ATTACHMENT_BACKUP_MANIFEST"
+            },
+            "basename": {
+              "$ref": "#/$defs/basename"
+            },
+            "relativePath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "generatedBy": {
+              "$ref": "#/$defs/generatedBy"
+            },
+            "createdAt": {
+              "$ref": "#/$defs/isoTimestamp"
+            },
+            "requiredForCompleteSet": {
+              "const": true
+            },
+            "manifestVersion": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "consistencyStatus": {
+              "$ref": "#/$defs/consistencyStatus"
+            },
+            "issueSummary": {
+              "$ref": "#/$defs/issueSummary"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
