@@ -1,5 +1,25 @@
 # Decisions
 
+## D224 - Synthetic local artifact acceptance verifies backup contract without Docker
+
+- Date: 2026-07-02.
+- Context: Step 62C validates the Step 62B attachment binary backup artifact/list/manifest capability. The task allows local artifact acceptance and necessary minimal fixes, while prohibiting restore drill, VPS/production access, Web UI, Prisma schema changes, migrations, production seeds/backfills, real attachment operations, `.env` / `.env.production` content reads, package installs, lockfile changes, push/deploy, cleanup/deletion/reset/drop/prune, and existing untracked-artifact handling.
+- Decision:
+  - Use `.local-step62c/` as the Step-specific local artifact acceptance directory.
+  - Validate artifact generation with synthetic local attachment storage, synthetic Attachment metadata input, and a synthetic DB dump placeholder instead of starting Docker or touching production-like data.
+  - Treat this as artifact contract acceptance only, not restore validation and not production backup acceptance.
+  - Keep generated `.local-step62c/` artifacts untracked and out of commits.
+- Acceptance contract:
+  - Verify nonzero attachment archive, attachment manifest, and artifact-list files.
+  - Verify artifact-list recognizes `POSTGRES_DUMP`, `ATTACHMENT_BINARY_ARCHIVE`, and `ATTACHMENT_BACKUP_MANIFEST`.
+  - Verify aggregate relation-type, file, byte, missing-binary, and extra-binary counts match the synthetic setup.
+  - Verify missing/extra binaries are represented only as counts and issue codes.
+  - Verify manifest/artifact-list do not contain storage-key markers, file contents, raw checksum labels, `voucherNo`, `amount`, raw fee markers, cookies, tokens, secrets, connection-string markers, AccessKeys, private-key markers, or concrete storage path fragments.
+- Fix decision:
+  - Allow the minimal `parseCliArgs` fix that ignores a standalone `--`, because normal `pnpm run ... -- --help` invocation otherwise fails before reaching the help path.
+- Scope:
+  - This decision does not authorize real backup execution against Docker data, restore drill, production/VPS access, Web UI, schema/migration/seed/backfill, real attachment upload/download/change, account/password work, dependency install, lockfile changes, deployment, push, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D223 - Attachment binary backup is a local ops command, not a Web surface
 
 - Date: 2026-07-01.

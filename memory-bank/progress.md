@@ -1,5 +1,47 @@
 # Progress
 
+## 2026-07-02 Step 62C - Attachment binary backup local artifact acceptance
+
+- Status: STEP_62C_ATTACHMENT_BINARY_BACKUP_ARTIFACTS_ACCEPTED_LOCALLY.
+- Step identity:
+  - Verified Step 62B attachment binary backup artifact/list/manifest behavior in a local synthetic environment.
+  - Scope stayed limited to `.local-step62c/` artifact acceptance, one minimal ops parser fix, focused tests/typecheck/schema validation, and memory-bank updates.
+  - No Docker production-like acceptance, restore drill, VPS/production access, Prisma schema change, migration, seed/backfill, real attachment upload/download/change, Web UI, account/password change, package install, lockfile change, push/deploy, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Acceptance setup:
+  - Created new Step-specific untracked `.local-step62c/` directory.
+  - Used synthetic local attachment storage files and synthetic Attachment metadata input only.
+  - Used a synthetic DB dump placeholder only for artifact-list `POSTGRES_DUMP` recognition.
+  - Did not start Docker and did not access production/VPS or a real DB.
+- Artifact results:
+  - `step62c-attachment-backup.attachment-archive.bin`: generated, 388 bytes.
+  - `step62c-attachment-backup.attachment-manifest.json`: generated, 879 bytes.
+  - `step62c-attachment-backup.artifact-list.json`: generated, 790 bytes.
+  - Artifact-list types: `POSTGRES_DUMP`, `ATTACHMENT_BINARY_ARCHIVE`, `ATTACHMENT_BACKUP_MANIFEST`.
+- Aggregate validation:
+  - `fileCount=2`.
+  - `totalBytes=44`.
+  - `relationTypeCounts.ACHIEVEMENT=2`.
+  - `relationTypeCounts.FEE_RECORD=1`.
+  - `missingBinaryCount=1`.
+  - `extraBinaryCount=1`.
+  - `unsupportedRelationCount=0`.
+  - `consistency.status=FAILED`, with aggregate `MISSING_BINARY` and `EXTRA_BINARY` issue counts only.
+- Sensitive-field validation:
+  - Manifest/artifact-list scan passed for absence of storage-key markers, synthetic file contents, raw checksum labels, `voucherNo`, `amount`, raw fee marker, cookie/token/secret/connection markers, AccessKey/private-key markers, and concrete storage path fragments.
+- Minimal fix:
+  - Updated `parseCliArgs` to ignore standalone `--`.
+  - `corepack pnpm --filter @research-ip/api ops:backup:attachments -- --help`: PASS.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/api test -- src/operations/attachment-binary-backup.spec.ts`: PASS, 1 file / 2 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm prisma:validate` with one-off dummy `DATABASE_URL`: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Next:
+  - Commit and run post-commit tracked diff check.
+  - Real Docker production-like backup acceptance, restore drill, production/VPS backup, retention/encryption/offsite policy, and durable attachment volume design remain separate explicit steps.
+
 ## 2026-07-01 Step 62B - Attachment binary backup backend/ops-only implementation
 
 - Status: STEP_62B_ATTACHMENT_BINARY_BACKUP_OPS_IMPLEMENTED.

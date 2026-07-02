@@ -345,7 +345,9 @@ function parseCliArgs(args: string[]): CliOptions {
     const arg = args[index];
     const next = args[index + 1];
 
-    if (arg === "--output-dir" && next) {
+    if (arg === "--") {
+      continue;
+    } else if (arg === "--output-dir" && next) {
       options.outputDirectory = path.resolve(next);
       index += 1;
     } else if (arg === "--storage-root" && next) {

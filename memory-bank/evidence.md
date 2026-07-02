@@ -1,5 +1,64 @@
 # Evidence
 
+## 2026-07-02 Step 62C - Attachment binary backup local artifact acceptance evidence
+
+- Purpose:
+  - Validate Step 62B attachment binary backup archive, manifest, and artifact-list metadata behavior locally.
+  - Use synthetic local storage and synthetic Attachment metadata only.
+  - Keep restore drill, Docker production-like acceptance, VPS/production access, schema changes, migrations, production seed/backfill, real attachment operations, Web UI, package installs, lockfile changes, push/deploy, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling out of scope.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `4fe6351`.
+  - Latest commit subject: `feat(api): add attachment binary backup artifacts`.
+  - `git status --short` showed existing untracked local artifacts and no tracked changes before Step 62C edits.
+  - Existing untracked local artifacts were not staged, cleaned, deleted, moved, or modified.
+  - `.env` / `.env.production` contents were not read or output.
+- Context read:
+  - Read `AGENTS.md`.
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but relevant gate and sensitive-boundary rules remained identifiable.
+  - Read Step 62A, Step 62B, Step 53D, and Step 56D top/archive snippets in memory-bank.
+  - Read `apps/api/src/operations/attachment-binary-backup.ts` and its spec.
+  - Read API package script entry for `ops:backup:attachments`.
+  - Read `docker-compose.production.yml` local storage/volume boundaries.
+  - Confirmed compose still defines only the Postgres named volume and no dedicated attachment-storage volume.
+- Acceptance execution:
+  - Created Step-specific untracked local directory `.local-step62c/`.
+  - Used synthetic local storage files and synthetic Attachment metadata; no real attachment files were read.
+  - Used a synthetic local DB dump placeholder to verify artifact-list `POSTGRES_DUMP` recognition; no `pg_dump` command was run.
+  - Initial inline `tsx -` attempts failed before artifact generation because stdin evaluation used ESM semantics; after switching to the module default export path, generation succeeded.
+- Generated artifact evidence:
+  - Output directory: `.local-step62c/artifacts/`.
+  - Attachment archive artifact: `step62c-attachment-backup.attachment-archive.bin`, 388 bytes.
+  - Attachment manifest artifact: `step62c-attachment-backup.attachment-manifest.json`, 879 bytes.
+  - Artifact-list metadata: `step62c-attachment-backup.artifact-list.json`, 790 bytes.
+  - Artifact-list recognized three artifact types: `POSTGRES_DUMP`, `ATTACHMENT_BINARY_ARCHIVE`, and `ATTACHMENT_BACKUP_MANIFEST`.
+- Aggregate manifest evidence:
+  - `fileCount=2`.
+  - `totalBytes=44`.
+  - `relationTypeCounts.ACHIEVEMENT=2`.
+  - `relationTypeCounts.FEE_RECORD=1`.
+  - `missingBinaryCount=1`.
+  - `extraBinaryCount=1`.
+  - `unsupportedRelationCount=0`.
+  - Consistency status: `FAILED`.
+  - Issue summary contained aggregate `MISSING_BINARY` and `EXTRA_BINARY` counts only.
+- Sensitive output evidence:
+  - Manifest/artifact-list forbidden-content scan passed.
+  - Scan covered storage-key markers, synthetic binary contents, raw checksum labels, `voucherNo`, `amount`, raw fee marker, cookie/token/secret/connection markers, AccessKey/private-key markers, and concrete storage path fragments.
+  - Archive content was not printed or recorded.
+- Minimal fix evidence:
+  - Found `pnpm` invocation compatibility issue: `ops:backup:attachments -- --help` passed the standalone separator to the CLI parser.
+  - Fixed `parseCliArgs` to ignore standalone `--`.
+  - `corepack pnpm --filter @research-ip/api ops:backup:attachments -- --help`: PASS.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- src/operations/attachment-binary-backup.spec.ts`: PASS, 1 file / 2 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm prisma:validate` with one-off dummy `DATABASE_URL`: PASS.
+  - `git diff --name-only -- prisma/schema.prisma`: no output; schema unchanged.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive value scan: PASS.
+- Boundaries observed:
+  - No Docker production-like acceptance, restore drill, real backup against Docker data, `pg_dump`, `pg_restore`, migration, seed, backfill, VPS/production access, real attachment upload/download/change, account/password operation, package install, lockfile change, push, deploy, cleanup, deletion, reset, drop, prune, or existing untracked-artifact handling occurred.
+
 ## 2026-07-01 Step 62B - Attachment binary backup backend/ops-only implementation evidence
 
 - Purpose:
