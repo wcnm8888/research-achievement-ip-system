@@ -10696,3 +10696,25 @@
   - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
   - Final `git diff --check` and added-lines sensitive scan recorded in `memory-bank/evidence.md`.
+
+## 2026-07-02 Step 66C - User/account pending import local production-like acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step66c-user-account-import-acceptance.mjs`.
+  - Rebuilt and restarted the local Docker production-like API container so it includes Step 66B code.
+  - Ran local Docker DB/API acceptance with synthetic `S66C_*` data only.
+  - Verified success, duplicate/warning/department/high-privilege/permission-denied negative paths, side-effect counts, and audit operation.
+- Acceptance boundary:
+  - No production/VPS or production DB access.
+  - No Web UI work.
+  - No password, credential, session, invite/reset/lifecycle token, DirectMail, or real email creation.
+  - Auth harness used a temporary in-container Nest app with `NODE_ENV=staging` and `X-Demo-User-Id` to avoid creating credentials or sessions; production session-cookie auth remains deferred.
+  - Docker reported an existing orphan run container; it was not cleaned because cleanup is forbidden.
+- Verification:
+  - `docker compose -f docker-compose.production.yml build api`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d api`: PASS.
+  - `node /app/step66c-user-account-import-acceptance.mjs` inside the API container: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Final `git diff --check` and added-lines sensitive scan recorded in `memory-bank/evidence.md`.

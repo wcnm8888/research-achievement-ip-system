@@ -13690,3 +13690,46 @@
   - No apply API execution against a running service.
   - No database write outside isolated tests/mocks.
   - No password creation/reset, `UserCredential`, session, invite/reset/lifecycle token, DirectMail, real email, achievement real-write, deployment, cleanup, deletion, reset, drop, or prune.
+
+## 2026-07-02 Step 66C - User/account pending import local production-like acceptance evidence
+
+- Canonical state checked before acceptance:
+  - `git rev-parse HEAD` -> `0a37f9160abfe77f58fb22b2e2be65048159cff2`.
+  - `git log -1 --pretty=format:"%h %s"` -> `0a37f91 feat: add user account pending import apply`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched: `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Local Docker production-like setup:
+  - `.env.production` existence check returned true; contents were not read.
+  - Existing local Docker API/Postgres/Web services were healthy before acceptance.
+  - `docker compose -f docker-compose.production.yml build api` passed.
+  - `docker compose -f docker-compose.production.yml up -d api` passed.
+  - API container became healthy after restart.
+  - Docker reported an existing orphan run container; it was not cleaned.
+- Acceptance helper:
+  - Added `memory-bank/step66c-user-account-import-acceptance.mjs`.
+  - Copied into the API container and run with `node /app/step66c-user-account-import-acceptance.mjs`.
+  - Uses the built API AppModule and local Docker DB.
+  - Auth harness uses `NODE_ENV=staging` and `X-Demo-User-Id` with synthetic no-credential active actor users so the Step does not create credentials or sessions.
+- Sanitized acceptance result:
+  - Running API health status: 200.
+  - Temporary API health status: 200.
+  - Success apply: status 201, created users 2, created roles 2, user count 0 -> 2.
+  - Success side-effect counts for imported users: pending activation 2, department-scoped role 2, credential 0, session 0, lifecycle token 0.
+  - Audit operation delta: 2 for `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`.
+  - Repeat existing-user warning rejection: status 400, user count 2 -> 2, error codes `EXISTING_USER`, `EXISTING_ROLE_ASSIGNMENT`.
+  - Duplicate email / duplicate employee number file rejection: status 400, user count 0 -> 0, error code `DUPLICATE_IN_FILE`.
+  - Missing/archived department rejection: status 400, user count 0 -> 0, error codes `UNKNOWN_DEPARTMENT`, `UNKNOWN_SCOPE_DEPARTMENT`.
+  - `SYSTEM_ADMIN` / `GLOBAL` scope rejection: status 400, user count 0 -> 0, error codes `ROLE_NOT_IMPORTABLE`, `GLOBAL_SCOPE_NOT_ALLOWED`.
+  - Existing-user dry-run warning rejection: status 400, user count 1 -> 1, error codes `EXISTING_USER`, `EXISTING_ROLE_ASSIGNMENT`.
+  - Permission denied: status 403, user count 0 -> 0.
+  - Employee number boundary: file-local duplicate validation only.
+- Local validation after acceptance:
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module` -> passed; 4 files, 30 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No Web UI changes.
+  - No production rollout.
+  - No password creation/reset, `UserCredential`, session, invite/reset/lifecycle token, DirectMail, real email, or achievement real-write.
+  - No database employee-number uniqueness was claimed.
+  - No raw cookie, token, session value, password, secret, connection string, AccessKey, private key, or mail payload was recorded.

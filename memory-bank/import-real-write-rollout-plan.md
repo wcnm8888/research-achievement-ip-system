@@ -209,6 +209,39 @@ After a department create-only apply slice is implemented and accepted, the next
   - Employee-number schema and durable account identifier work.
   - Production/VPS writes, batch real-data import, DirectMail/real email, deployment, cleanup, deletion, reset, drop, and prune.
 
+## Step 66C User/Account Local Production-Like API Acceptance
+
+- Date: 2026-07-02.
+- Scope:
+  - Local Docker production-like API/DB acceptance for `POST /users/import/apply`.
+  - Synthetic `S66C_*` CSV/data only.
+  - This record does not claim production/VPS acceptance.
+- Acceptance helper:
+  - Added `memory-bank/step66c-user-account-import-acceptance.mjs`.
+  - Runs inside the API container against the local Docker database.
+  - Starts a temporary Nest app from the built API AppModule with `NODE_ENV=staging` so `X-Demo-User-Id` can provide auth context without creating credentials or sessions.
+  - Outputs only status codes, counts, safe error codes, audit operation, and boundary summaries.
+- Covered checks:
+  - Successful apply created two `PENDING_ACTIVATION` users.
+  - Successful apply created two department-scoped initial `UserRole` rows.
+  - Imported users had zero credentials, zero sessions, and zero lifecycle tokens.
+  - Repeated exact apply was rejected by existing-user / existing-assignment warnings and created no additional users.
+  - Duplicate email / duplicate `employeeNo` in the file was rejected and created no users.
+  - Missing and archived departments were rejected and created no users.
+  - `SYSTEM_ADMIN` and `GLOBAL` scope were rejected and created no users.
+  - Existing-user dry-run warning was rejected and created no additional users.
+  - Caller without `system:config` was rejected with 403 and created no users.
+  - Audit operation `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL` was written for successful rows.
+- Acceptance boundary:
+  - Because this Step forbids creating credentials and sessions, the acceptance harness does not cover production session-cookie authentication.
+  - Employee number remains file-local duplicate validation only; no DB employee-number uniqueness is claimed.
+- Still deferred:
+  - Web apply entry.
+  - Production/VPS acceptance.
+  - Production session-cookie acceptance for this endpoint.
+  - Invite/reset/email issuance.
+  - Employee-number schema and database uniqueness.
+
 ## Step 65B Implementation Record
 
 - Date: 2026-07-02.

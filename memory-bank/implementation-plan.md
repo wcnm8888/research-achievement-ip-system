@@ -9541,3 +9541,29 @@ Step 3 已拆分为 3A / 3B / 3C / 3D，避免一次性混合 schema 设计、Pr
   - Invite/reset issuance.
   - Employee-number persistence and database uniqueness.
   - Production/VPS rollout.
+
+## Step 66C acceptance update - user/account pending import
+
+- Status: DONE.
+- Local acceptance implemented:
+  - Added `memory-bank/step66c-user-account-import-acceptance.mjs`.
+  - Rebuilt/restarted local Docker API.
+  - Copied the helper into the API container and ran it against the local Docker DB.
+  - Used synthetic active actor users without credentials and a temporary in-container Nest app with staging identity headers to avoid credential/session creation.
+- Acceptance covered:
+  - Successful pending/no-credential user import.
+  - Department-scoped role creation.
+  - Zero imported-user credential/session/lifecycle-token side effects.
+  - Repeat existing-user warning rejection.
+  - File duplicate email / employee-number rejection.
+  - Missing/archived department rejection.
+  - `SYSTEM_ADMIN` and `GLOBAL` scope rejection.
+  - Existing-user dry-run warning rejection.
+  - Non-`system:config` caller rejection.
+  - Audit operation count.
+- Deferred:
+  - Production session-cookie acceptance for this endpoint.
+  - Web apply entry.
+  - Production/VPS rollout.
+  - Invite/reset/email flow.
+  - Employee-number persistence and DB uniqueness.
