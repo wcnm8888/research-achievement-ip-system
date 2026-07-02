@@ -1,5 +1,43 @@
 # Evidence
 
+## 2026-07-02 Step 63C - Production backup readiness checklist alignment evidence
+
+- Purpose:
+  - Align Step 63A backup policy and Step 63B implementation gap review into a production backup readiness checklist.
+  - Keep this Step documentation-only: no backup implementation, backup execution, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, database command, migration, seed/backfill, account/password change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `3136da6`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but relevant gate and sensitive-boundary rules remained identifiable.
+  - Read `deploy/backup-retention-encryption-offsite-policy.md` in full.
+  - Read `deploy/backup-policy-implementation-gap-review.md` in full.
+  - Read the backup-related section of `deploy/runbook-production.md`.
+  - Read targeted Step 63A and Step 63B memory-bank snippets.
+- Documentation evidence:
+  - Added `deploy/production-backup-readiness-checklist.md`.
+  - Updated `deploy/runbook-production.md` backup prerequisites to reference the readiness checklist.
+  - Updated `deploy/checklist-production-cutover.md` backup section to require readiness checklist review and backup-set/encryption/offsite/restore-plan evidence.
+  - Recorded production backup readiness decision D227 and Step 63C progress/archive entries.
+- Readiness evidence:
+  - Current repository status is `policy-ready`.
+  - Attachment local artifact-ready status remains local/synthetic only and does not prove production/VPS readiness.
+  - Production-like backup-ready and production backup-ready remain blocked/deferred until separately authorized Steps provide redacted evidence.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, or package files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan over 296 added lines:
+    - `secret`: 6.
+    - `token`: 3.
+    - `password`: 9.
+    - `cookie`: 3.
+    - `private_key`: 3.
+    - `connection_string`: 2.
+    - `access_key`: 3.
+  - Sensitive scan result: matches are readiness/evidence boundary terms only; no secret values, tokens, passwords, cookies, AccessKeys, private keys, or full connection strings were recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 63B - Backup policy implementation gap review evidence
 
 - Purpose:

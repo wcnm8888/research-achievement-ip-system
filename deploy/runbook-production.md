@@ -74,6 +74,10 @@ Retention, encryption, offsite storage, and restore-drill boundaries are defined
 reading before any production backup acceptance, offsite upload, production cleanup,
 or restore drill Step.
 
+Production backup readiness levels and acceptance checklist are defined in
+`deploy/production-backup-readiness-checklist.md`. Do not claim production
+backup-ready until that checklist is satisfied with redacted production/VPS evidence.
+
 Before migration or deployment:
 
 - Confirm the target is the production VPS and production database.

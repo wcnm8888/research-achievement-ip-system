@@ -33,9 +33,16 @@ This checklist is for a single VPS production cutover. It must not contain real 
 
 ## 3. Backup
 
+- [ ] `deploy/production-backup-readiness-checklist.md` reviewed.
 - [ ] Current demo/staging application directory backup completed if rollback to demo/staging is required.
 - [ ] Production database backup completed.
-- [ ] Restore path is known.
+- [ ] Production attachment binary archive completed as part of the same backup set.
+- [ ] Manifest and artifact-list include DB dump, attachment archive, and attachment manifest categories.
+- [ ] Backup retention class recorded.
+- [ ] Encryption status recorded with redacted evidence.
+- [ ] Offsite status recorded with redacted evidence.
+- [ ] Restore-drill plan status recorded; actual restore remains separately authorized.
+- [ ] Restore path is known without exposing credentials.
 - [ ] Backup evidence is脱敏 and contains no passwords or connection strings.
 
 ## 4. Migration Target Confirmation

@@ -4,6 +4,29 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 63C Archive - Production backup readiness checklist alignment - 2026-07-02
+
+- Step identity:
+  - Documentation-only alignment of Step 63A policy and Step 63B implementation gap review into production backup readiness criteria.
+  - No backup implementation, backup execution, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, database command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented docs:
+  - Added `deploy/production-backup-readiness-checklist.md`.
+  - Updated `deploy/runbook-production.md` backup prerequisites to reference the readiness checklist.
+  - Updated `deploy/checklist-production-cutover.md` backup section to align with DB dump, attachment binary, manifest/artifact-list, retention, encryption, offsite, restore-drill, and evidence gates.
+  - Recorded Step 63C in `memory-bank/decisions.md`, `memory-bank/progress.md`, and `memory-bank/evidence.md`.
+- Readiness levels:
+  - `policy-ready`: policy and boundaries are documented.
+  - `local artifact-ready`: local/synthetic artifact contract evidence only, not production/VPS readiness.
+  - `production-like backup-ready`: future authorized local production-like complete backup set evidence.
+  - `production backup-ready`: future authorized VPS/production evidence for complete backup set, retention, encryption, offsite, restore-drill plan, and redacted evidence.
+- Deferred production/VPS-dependent items:
+  - Production target confirmation, production DB dump, production attachment binary archive, production artifact metadata, production digest calculation, encryption of real artifacts, offsite upload/list/read, production restore, and any cleanup/deletion/prune remain blocked/deferred.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, or package files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan completed over 296 added lines; matches were readiness/evidence boundary terms only, with no secret values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## Current Step 63B Archive - Backup policy implementation gap review - 2026-07-02
 
 - Step identity:

@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-07-02 Step 63C - Production backup readiness checklist alignment
+
+- Status: STEP_63C_PRODUCTION_BACKUP_READINESS_CHECKLIST_READY_DOCS_ONLY.
+- Step identity:
+  - Aligned Step 63A policy and Step 63B gap review into a production backup readiness checklist.
+  - Documentation-only; no backup implementation, backup execution, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, DB command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `deploy/production-backup-readiness-checklist.md`.
+  - Updated `deploy/runbook-production.md` backup prerequisites to point to the readiness checklist.
+  - Updated `deploy/checklist-production-cutover.md` backup section to require DB dump plus attachment archive, manifest/artifact-list, retention, encryption, offsite, restore-drill plan status, and redacted evidence.
+  - Added memory-bank decision, progress, evidence, and implementation archive records.
+- Checklist conclusions:
+  - Current status is `policy-ready`; attachment local artifact-ready exists only for the local synthetic artifact contract.
+  - `production-like backup-ready` remains blocked/deferred until a separately authorized local production-like backup Step.
+  - `production backup-ready` remains blocked/deferred until an authorized VPS/production Step provides redacted evidence for DB plus attachment backup set, retention, encryption, offsite, and restore-drill plan status.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, or package files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan completed over 296 added lines; matches were readiness/evidence boundary terms only, with no secret values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 63B - Backup policy implementation gap review
 
 - Status: STEP_63B_BACKUP_POLICY_GAP_REVIEW_READY_DOCS_ONLY.

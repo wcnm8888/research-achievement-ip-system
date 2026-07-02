@@ -1,5 +1,18 @@
 # Decisions
 
+## D227 - Production backup-ready requires DB plus attachment plus encrypted offsite evidence
+
+- Date: 2026-07-02.
+- Context: Step 63C aligns the Step 63A backup policy and Step 63B implementation gap review into a production backup readiness checklist. The task is documentation-only and prohibits backup implementation, backup execution, real artifact encryption, offsite upload, restore drill, Docker operations, VPS/production DB access, `.env` / `.env.production` content reads, cleanup, deletion, reset, drop, prune, account/password changes, and existing untracked-artifact handling.
+- Decision:
+  - Add `deploy/production-backup-readiness-checklist.md`.
+  - Update `deploy/runbook-production.md` and `deploy/checklist-production-cutover.md` backup references to require the readiness checklist.
+  - Define readiness levels as `policy-ready`, `local artifact-ready`, `production-like backup-ready`, and `production backup-ready`.
+  - Require production backup-ready evidence to cover DB dump, attachment binary archive, manifest, artifact-list metadata, retention class, encryption status, offsite status, restore-drill plan status, and redacted evidence boundaries.
+  - Treat production/VPS execution-dependent items as blocked/deferred until an explicitly authorized production Step supplies redacted evidence.
+- Scope:
+  - This decision does not authorize runtime code changes, scripts, config, CI/CD changes, backup execution, encryption of real artifacts, offsite upload, restore drill, Docker, VPS/production access, database commands, migration/seed/backfill, account/password work, cleanup, deletion, reset, drop, prune, package/lockfile changes, deployment, push, or handling existing untracked artifacts.
+
 ## D226 - Backup policy gap review keeps implementation and operations deferred
 
 - Date: 2026-07-02.
