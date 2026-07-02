@@ -49,6 +49,7 @@ This checklist is for a single VPS production cutover. It must not contain real 
 
 - [ ] Migration target is confirmed as production DB using脱敏 summary only.
 - [ ] Migration files reviewed.
+- [ ] If applying the employee-number migration, `deploy/employee-no-production-migration-readiness.md` is reviewed and its stop conditions are accepted.
 - [ ] No demo users or demo business data will be imported as production data.
 - [ ] `prisma migrate deploy` is authorized for the production migration step.
 - [ ] Migration command is run through the production Compose stack, not demo/staging.

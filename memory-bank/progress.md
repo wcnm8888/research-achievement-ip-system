@@ -1,5 +1,20 @@
 # Progress
 
+## 2026-07-02 Step 67E - EmployeeNo production migration readiness runbook
+
+- Status: DONE.
+- Scope completed:
+  - Added `deploy/employee-no-production-migration-readiness.md`.
+  - Updated `deploy/runbook-production.md` migration prerequisites to reference the employee-number readiness runbook.
+  - Updated `deploy/checklist-production-cutover.md` migration target confirmation checklist with the employee-number runbook review gate.
+  - Documented backup prerequisites, production authorization gates, employee-number preflight phases, nullable unique-index migration risks, execution window confirmation points, forward-only strategy, stop conditions, post-migration structural checks, and application-level acceptance checks.
+  - Clarified that production migration readiness is not claimed by this Step.
+- Explicitly not done:
+  - No production migration, VPS access, production DB access, production backup execution, real-data preflight, real-data backfill, Docker, Prisma schema change, migration change, credential/session/lifecycle token creation, password operation, real email, achievement apply, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+- Verification:
+  - Documentation-only Step; full typecheck/test not run because no runtime, schema, API, Web, or migration code changed.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 67D - User employeeNo local migration/API/Web acceptance
 
 - Status: DONE.

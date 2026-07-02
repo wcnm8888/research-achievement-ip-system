@@ -255,3 +255,10 @@ Because Step 66A is documentation-only, full typecheck/test is not required. Req
   - Web shows `employeeNoDbConflictCheck=AVAILABLE`, disables apply on employee-number conflict, and displays safe business-conflict copy.
   - Imported synthetic user evidence has zero credential, zero session, zero lifecycle token, and zero mail-delivery counts.
 - This does not authorize or complete production migration, production/VPS acceptance, production DB access, real-data backfill, account lifecycle flows, real email, achievement apply, cleanup, deletion, reset, drop, or prune.
+
+## Step 67E Employee Number Production Migration Readiness Addendum
+
+- Step 67E added `deploy/employee-no-production-migration-readiness.md`.
+- The runbook defines the production backup gate, manual authorization requirements, employee-number preflight phases, nullable unique-index migration risks, forward-only strategy, stop conditions, post-migration structural checks, application-level acceptance, and backfill boundary.
+- Production migration readiness is not claimed by Step 67E.
+- Production/VPS access, production database access, production backup execution, migration execution, real-data preflight, real-data backfill, credential/session/lifecycle token creation, real email, achievement apply, cleanup, deletion, reset, drop, and prune remain separately authorized work.

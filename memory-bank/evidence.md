@@ -1,5 +1,47 @@
 # Evidence
 
+## 2026-07-02 Step 67E - EmployeeNo production migration readiness runbook evidence
+
+- Goal:
+  - Create a production migration readiness/runbook for employee-number nullable persistence without running production migration, accessing VPS/production DB, or backfilling real data.
+- Initial state:
+  - `git rev-parse --short HEAD`: `aaf0ae6`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/user-account-identity-employee-no-persistence-plan.md`.
+  - Step 67B/67C/67D memory-bank records in progress, decisions, implementation plan, evidence, and user-account import safety plan.
+  - Targeted snippets only from `prisma/migrations/20260702090000_add_user_employee_number/migration.sql`, `deploy/runbook-production.md`, `deploy/checklist-production-cutover.md`, and `deploy/production-backup-readiness-checklist.md`.
+- Implemented files:
+  - `deploy/employee-no-production-migration-readiness.md`.
+  - `deploy/runbook-production.md`.
+  - `deploy/checklist-production-cutover.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+  - `memory-bank/implementation-plan.md`.
+  - `memory-bank/user-account-import-real-write-safety-plan.md`.
+- Runbook coverage:
+  - Production backup preconditions and stop condition.
+  - Manual authorization gates for VPS/production DB access, production migration, real-data preflight/backfill, and production backup acceptance.
+  - Employee-number preflight phases before and after the migration.
+  - Nullable columns plus unique normalized index risk review.
+  - Migration window confirmation points.
+  - Forward-only recovery strategy.
+  - Failure/stop conditions.
+  - Post-migration structural checks.
+  - Application-level acceptance for `employeeNoDbConflictCheck=AVAILABLE`, `EXISTING_EMPLOYEE_NO`, apply transaction recheck, and no-credential/no-session/no-token/no-email/no-login boundaries.
+- Validation:
+  - Full typecheck/test not run because this Step changed documentation and memory-bank only.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Added-lines sensitive keyword scan covered the required terms; 325 added lines scanned, 40 total keyword matches, all documentation safety-boundary or evidence-format terminology, no sensitive values printed.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No Docker, migration, VPS access, production DB access, production backup execution, real-data preflight, real-data backfill, Prisma schema/migration modification, account password operation, credential/session/lifecycle token creation, real mail, achievement apply, cleanup, deletion, reset, drop, prune, or staging/commit of known untracked local artifacts.
+  - This Step provides a readiness runbook only and does not claim production readiness.
+
 ## 2026-07-02 Step 67D - User employeeNo local migration/API/Web acceptance evidence
 
 - Goal:

@@ -95,6 +95,7 @@ Before running production migration:
 - Confirm `DATABASE_URL` points to the intended production database using a脱敏 target summary.
 - Confirm backup exists and restore path is known.
 - Confirm migration files have been reviewed.
+- For the employee-number migration, review `deploy/employee-no-production-migration-readiness.md` before any production `prisma migrate deploy`, real-data preflight, or backfill.
 - Confirm no demo/staging seed data will be imported as production data.
 - Run `prisma migrate deploy` only in the authorized production migration step.
 - With Docker Compose, prefer running migration through the production API image after the production env file is in place:

@@ -1,5 +1,19 @@
 # Decisions
 
+## D243 - Employee-number production migration requires separate authorization and backup gate
+
+- Date: 2026-07-02.
+- Context: Step 67E prepares a production migration readiness/runbook for the Step 67B employee-number schema migration after Step 67D local synthetic acceptance. The task allows documentation and memory-bank updates only, while prohibiting production migration, VPS/production DB access, real-data preflight/backfill, Docker, Prisma schema or migration changes, account lifecycle side effects, real email, achievement apply, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Add a dedicated employee-number production migration readiness runbook under `deploy/`.
+  - Require production backup readiness review before any production employee-number migration.
+  - Treat the migration as additive but not risk-free because unique index creation can fail on unexpected prior data and can affect `users` table writes.
+  - Prefer forward-only recovery after nullable columns and unique index are applied.
+  - Keep real-data employee-number preflight and any backfill as separately authorized work.
+  - Do not claim production readiness from a documentation-only runbook.
+- Scope:
+  - This decision does not authorize production migration, VPS/production DB access, production backup execution, real-data preflight/backfill, login by employee number, account lifecycle changes, credential/session/lifecycle token creation, DirectMail/real email, achievement apply, cleanup, deletion, reset, drop, prune, or handling known untracked local artifacts.
+
 ## D242 - Step 67D uses local synthetic acceptance for employeeNo migration/API/Web
 
 - Date: 2026-07-02.

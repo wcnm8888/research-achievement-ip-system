@@ -4,6 +4,22 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 67E Archive - EmployeeNo production migration readiness runbook - 2026-07-02
+
+- Status: DONE.
+- Scope:
+  - Documentation-only production migration readiness/runbook for the employee-number migration.
+  - No production migration, VPS/production DB access, real-data preflight/backfill, Docker, Prisma schema/migration change, or runtime code change.
+- Implemented:
+  - Added `deploy/employee-no-production-migration-readiness.md`.
+  - Linked the runbook from production migration prerequisites and cutover migration target confirmation checklist.
+  - Covered backup prerequisites, authorization gates, preflight phases, migration risk, execution window, forward-only strategy, stop conditions, structural acceptance, application-level acceptance, backfill boundary, and redacted evidence format.
+- Preserved boundaries:
+  - This Step does not provide a production readiness conclusion.
+  - Production backup acceptance, production migration, production preflight, and real-data backfill remain blocked until separately authorized.
+- Recommended next step:
+  - A future documentation-only production preflight worksheet can define exact redacted query result shapes and GO/NO_GO decision fields without accessing production.
+
 ## Current Step 67D Archive - User employeeNo local migration/API/Web acceptance - 2026-07-02
 
 - Status: DONE.
