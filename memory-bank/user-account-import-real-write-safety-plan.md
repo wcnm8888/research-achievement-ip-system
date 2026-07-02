@@ -242,3 +242,16 @@ Because Step 66A is documentation-only, full typecheck/test is not required. Req
 - For the current schema, non-null normalized employee numbers should be globally unique; inactive and archived users should still reserve identifiers.
 - Future dry-run/apply behavior should add safe `EXISTING_EMPLOYEE_NO` reporting, keep Web apply blocked on that issue, and recheck employee-number uniqueness inside the apply transaction before writes.
 - Step 67A does not authorize schema changes, migrations, runtime implementation, production/VPS access, production database access, real-data backfill, credential/session/lifecycle token creation, email, achievement apply, cleanup, deletion, reset, drop, or prune.
+
+## Step 67D Local Employee Number Acceptance Addendum
+
+- Step 67D accepted the Step 67B/67C employee-number path with local synthetic `S67D` data.
+- Acceptance used local Docker services, local Prisma migration deploy, local DB, and a no-session/no-credential proxy harness.
+- Accepted safety evidence:
+  - `users.employee_no` and `users.employee_no_normalized` columns exist locally.
+  - The normalized employee-number unique index exists locally.
+  - Apply persists employee-number fields for a `PENDING_ACTIVATION` no-credential synthetic user.
+  - Dry-run and apply conflict paths expose safe `EXISTING_EMPLOYEE_NO`.
+  - Web shows `employeeNoDbConflictCheck=AVAILABLE`, disables apply on employee-number conflict, and displays safe business-conflict copy.
+  - Imported synthetic user evidence has zero credential, zero session, zero lifecycle token, and zero mail-delivery counts.
+- This does not authorize or complete production migration, production/VPS acceptance, production DB access, real-data backfill, account lifecycle flows, real email, achievement apply, cleanup, deletion, reset, drop, or prune.

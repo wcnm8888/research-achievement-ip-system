@@ -1,5 +1,18 @@
 # Decisions
 
+## D242 - Step 67D uses local synthetic acceptance for employeeNo migration/API/Web
+
+- Date: 2026-07-02.
+- Context: Step 67D verifies Step 67B/67C employee-number persistence, database conflict checks, and Web display with local synthetic data. The task allows local Docker/local DB/browser and Step-specific acceptance helpers, while prohibiting production migration, production/VPS access, production DB access, real-data backfill, credential/session/lifecycle token creation, real email, achievement apply, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Use a Step-specific local proxy and API-container helper based on the Step 66F no-session/no-credential harness.
+  - Apply local Prisma migrations only to the local Docker database and verify column/index existence through booleans.
+  - Record only status codes, counts, safe error codes, audit operation, and redacted summaries.
+  - Exercise transaction-time employee-number conflict rejection by hiding the dry-run employee-number lookup in the local helper while leaving transaction recheck lookup real.
+  - Treat the result as local synthetic acceptance only, not production migration readiness or production/VPS acceptance.
+- Scope:
+  - This decision does not authorize production migration, production/VPS access, production DB access, real-data backfill, login by employee number, account lifecycle changes, credential/session/lifecycle token creation, DirectMail/real email, achievement apply, cleanup, deletion, reset, drop, prune, or handling known untracked local artifacts.
+
 ## D241 - Web treats employeeNo conflicts as safe business-identifier blockers
 
 - Date: 2026-07-02.

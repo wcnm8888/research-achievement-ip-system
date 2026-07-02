@@ -1,5 +1,47 @@
 # Evidence
 
+## 2026-07-02 Step 67D - User employeeNo local migration/API/Web acceptance evidence
+
+- Goal:
+  - Verify Step 67B/67C employee-number persistence, API conflict checks, and Web conflict display with local synthetic migration/API/Web acceptance.
+- Initial state:
+  - `git rev-parse HEAD`: `048de66bc20e88e6890057d36b727364e9205986`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/user-account-identity-employee-no-persistence-plan.md`.
+  - Step 67B/67C records in progress, decisions, implementation plan, and evidence.
+  - Targeted snippets only from Step 66F helpers, user/account import API/Web code, focused tests, the Step 67B migration, and local Docker compose service shape.
+- Implemented files:
+  - `memory-bank/step67d-db-helper.mjs`.
+  - `memory-bank/step67d-browser-acceptance.js`.
+  - `memory-bank/step67d-web-acceptance.mjs`.
+- Local synthetic acceptance:
+  - `node memory-bank/step67d-web-acceptance.mjs`: PASS.
+  - Scope: local synthetic migration/API/Web acceptance only.
+  - Web health status: `200`.
+  - Schema booleans: `employeeNoColumnExists=true`, `employeeNoNormalizedColumnExists=true`, `employeeNoNormalizedUniqueIndexExists=true`.
+  - API/Web safe evidence: `employeeNoDbConflictCheck=AVAILABLE`, `EXISTING_EMPLOYEE_NO` dry-run conflict observed, apply disabled on employee-number conflict, apply rejection safe code `EXISTING_EMPLOYEE_NO`.
+  - Persistence counts: created synthetic target user count `1`, pending activation count `1`, employee-number persisted count `1`, normalized employee-number persisted count `1`, normalization matched count `1`.
+  - Transaction-time rejection evidence: target user count after rejected apply `0`.
+  - Boundary counts for imported synthetic user: credential `0`, session `0`, lifecycle token `0`, mail delivery `0`.
+  - Audit operation observed: `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`, audit operation count `1`.
+- Validation:
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement.test.tsx api-client.test.ts`: PASS, 2 files / 73 tests.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run.service.spec.ts user-account-import-dry-run.repository.spec.ts user-account-import-dry-run.controller.spec.ts imports.app-module.spec.ts`: PASS, 4 files / 33 tests.
+  - First `corepack pnpm prisma validate` failed because no `DATABASE_URL` was present in the process environment; `.env` contents were not read.
+  - `corepack pnpm prisma validate` with a placeholder local `DATABASE_URL`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Added-lines sensitive keyword scan covered the required terms; 1161 added lines scanned, 28 total keyword matches, all local helper/documentation safety-boundary or scrubber terminology, with `secret=0`, `connection_string=0`, `private_key=0`, and `access_key=0`.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No production migration, production/VPS access, production DB access, real-data backfill, account password creation/reset, credential/session/lifecycle token creation, real mail, achievement apply, cleanup, deletion, reset, drop, prune, or staging/commit of known untracked local artifacts.
+  - This local acceptance does not equal production migration readiness, production/VPS acceptance, or production session-cookie acceptance.
+
 ## 2026-07-02 Step 67C - User/account employeeNo Web conflict display alignment evidence
 
 - Goal:

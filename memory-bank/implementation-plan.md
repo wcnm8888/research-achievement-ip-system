@@ -4,6 +4,28 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 67D Archive - User employeeNo local migration/API/Web acceptance - 2026-07-02
+
+- Status: DONE.
+- Scope:
+  - Local synthetic migration/API/Web acceptance for Step 67B/67C employee-number persistence and conflict display.
+  - No production migration, production/VPS access, production DB access, real-data backfill, credential/session/lifecycle token creation, real email, or achievement apply.
+- Implemented:
+  - `memory-bank/step67d-db-helper.mjs` for local API-container schema evidence, synthetic setup, dry-run/apply routing, transaction-time conflict harness, and sanitized DB evidence.
+  - `memory-bank/step67d-browser-acceptance.js` for Web assertions covering AVAILABLE display, successful employee-number persistence, dry-run conflict display, disabled apply, and rejected apply display.
+  - `memory-bank/step67d-web-acceptance.mjs` for local Docker build/start, local migration deploy, proxy auth harness, browser execution, and sanitized JSON evidence.
+- Accepted:
+  - Local DB has `users.employee_no`, `users.employee_no_normalized`, and the normalized employee-number unique index.
+  - API apply persists employee-number fields for pending no-credential user creation.
+  - API dry-run and apply report `EXISTING_EMPLOYEE_NO` for database employee-number conflicts.
+  - Web shows employee-number DB conflict checking as available, displays safe business-conflict copy, and disables apply on conflict.
+  - Imported synthetic user has zero credential, session, lifecycle token, and mail-delivery counts.
+- Preserved boundaries:
+  - Local synthetic acceptance does not certify production migration, production/VPS readiness, or production session-cookie behavior.
+  - No cleanup or rollback of local synthetic data was performed because deletion/cleanup was out of scope.
+- Recommended next step:
+  - A future production-readiness planning Step should define preflight duplicate scans, backup/rollback posture, deployment window, and production migration runbook before any production DB migration.
+
 ## Current Step 67C Archive - User/account employeeNo Web conflict display alignment - 2026-07-02
 
 - Status: DONE.

@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-02 Step 67D - User employeeNo local migration/API/Web acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added Step 67D local synthetic acceptance helpers under `memory-bank/`.
+  - Rebuilt and started local Docker services, applied local Prisma migrations, and verified the local `users.employee_no` / `users.employee_no_normalized` columns and normalized employee-number unique index exist.
+  - Ran local Web acceptance through a no-session/no-credential proxy harness against the built API service and local DB.
+  - Verified API apply creates a `PENDING_ACTIVATION` no-credential user and persists employee-number fields with trim + uppercase normalization.
+  - Verified API dry-run reports existing database employee-number conflicts as `EXISTING_EMPLOYEE_NO` with `employeeNoDbConflictCheck=AVAILABLE`.
+  - Verified API apply rejects a transaction-time employee-number conflict as `EXISTING_EMPLOYEE_NO` with no net target-user creation.
+  - Verified Web renders `employeeNoDbConflictCheck=AVAILABLE`, shows safe employee-number business-conflict copy, disables apply on employee-number conflict, and displays apply rejection safely.
+  - Reconfirmed no credential, session, lifecycle token, mail delivery, or login activation evidence for the imported synthetic user.
+- Explicitly not done:
+  - No production migration, production/VPS access, production DB access, real-data backfill, credential/session/lifecycle token creation, password operation, real email, achievement apply, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+  - Local migration/API/Web acceptance is not production migration readiness or production/VPS acceptance.
+- Verification:
+  - `node memory-bank/step67d-web-acceptance.mjs`: PASS with local synthetic data.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement.test.tsx api-client.test.ts`: PASS, 2 files / 73 tests.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run.service.spec.ts user-account-import-dry-run.repository.spec.ts user-account-import-dry-run.controller.spec.ts imports.app-module.spec.ts`: PASS, 4 files / 33 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm prisma validate` with a placeholder local `DATABASE_URL`: PASS.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 67C - User/account employeeNo Web conflict display alignment
 
 - Status: DONE.
