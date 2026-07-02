@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-07-02 Step 65F - Department import apply Web local production-like acceptance
+
+- Status: STEP_65F_DEPARTMENT_IMPORT_APPLY_WEB_LOCAL_ACCEPTED.
+- Step identity:
+  - Verified the Step 65E department metadata `CREATE_ONLY` apply Web entry in the local production-like Docker stack.
+  - Used only synthetic `S65F_*` department CSV/data and synthetic local users.
+  - This is local production-like Web acceptance only; it is not production/VPS acceptance.
+  - No user/account apply, achievement apply, production/VPS access, production DB access, production rollout, account password change/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `memory-bank/step65f-db-helper.mjs` for container-side synthetic setup and sanitized database evidence.
+  - Added `memory-bank/step65f-browser-acceptance.js` for named-session Playwright browser acceptance.
+  - Added `memory-bank/step65f-web-acceptance.mjs` to orchestrate local Web asset refresh, transient localhost session proxies, admin/limited browser runs, and sanitized evidence output.
+  - Updated `memory-bank/step65c-department-import-acceptance.mjs` to allow an optional local API base override while preserving the default container-local API target.
+- Acceptance evidence:
+  - Local Web health status: 200.
+  - Synthetic admin and limited-user login statuses: 200 / 200; session material stayed in process memory and was not printed.
+  - Admin browser: dry-run made apply eligible, confirmation modal appeared, apply created 2 rows, result displayed `DEPARTMENT_IMPORT_CREATE`.
+  - Repeat apply: rejected with safe error code `EXISTING_CODE`; department count stayed 2 -> 2.
+  - Limited user: apply UI hidden and direct apply attempt returned 403.
+  - Database evidence: target department count 2; audit operation `DEPARTMENT_IMPORT_CREATE` count 2.
+- Verification:
+  - `node memory-bank/step65f-web-acceptance.mjs`: PASS with sanitized local production-like Web evidence.
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement.test.tsx api-client.test.ts`: PASS, 2 files / 59 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run.service.spec.ts department-import-dry-run.controller.spec.ts imports.app-module.spec.ts`: PASS, 3 files / 27 tests.
+  - `docker compose -f docker-compose.production.yml exec -T api node /app/step65c-department-import-acceptance.mjs`: PASS with sanitized Step 65C API acceptance evidence.
+  - Pending `git diff --check`, added-lines sensitive keyword scan, commit, and post-commit tracked diff check.
+
 ## 2026-07-02 Step 65E - Department import apply Web minimal slice
 
 - Status: STEP_65E_DEPARTMENT_IMPORT_APPLY_WEB_ENTRY_IMPLEMENTED.

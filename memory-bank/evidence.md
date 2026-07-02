@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-07-02 Step 65F - Department import apply Web local production-like acceptance evidence
+
+- Purpose:
+  - Verify the minimal Web entry for department metadata create-only apply in a local production-like browser flow.
+  - Use synthetic department CSV and synthetic local auth/business data only.
+  - Do not perform production/VPS acceptance, production DB access, production rollout, user/account apply, achievement apply, account password changes/resets, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `59e482f`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`.
+  - Read `memory-bank/department-import-apply-web-entry-design.md`.
+  - Read Step 65E records in `memory-bank/progress.md`, `memory-bank/evidence.md`, `memory-bank/implementation-plan.md`, `memory-bank/decisions.md`, and `memory-bank/import-real-write-rollout-plan.md`.
+  - Read targeted snippets for `DepartmentManagement`, the Web API client/tests, Step 65B apply response shape, and the Step 65C local acceptance helper.
+  - Read only the local production-like Docker compose and Web/API Dockerfile snippets needed to run local acceptance.
+- Local production-like Web acceptance:
+  - Helper: `node memory-bank/step65f-web-acceptance.mjs`.
+  - Local Web health status: 200.
+  - Synthetic admin / limited login statuses: 200 / 200.
+  - Admin browser evidence:
+    - Dry-run apply button became enabled after eligible synthetic department CSV dry-run.
+    - Confirmation modal was shown before apply.
+    - Successful apply created 2 rows.
+    - Page displayed audit operation `DEPARTMENT_IMPORT_CREATE`.
+    - Repeated apply returned safe error code `EXISTING_CODE`; department count stayed 2 -> 2.
+  - Limited browser evidence:
+    - Apply UI was hidden.
+    - Direct apply attempt returned 403.
+  - Database evidence:
+    - Target department count: 2.
+    - Audit operation: `DEPARTMENT_IMPORT_CREATE`.
+    - Audit operation count: 2.
+- Step 65C continuity check:
+  - The existing Step 65C helper was copied into the already-running local API container and executed there.
+  - Sanitized API acceptance output remained passing: success status 201 / created rows 2; repeat apply 400 with `EXISTING_CODE`; missing-parent rollback 400 with `UNKNOWN_PARENT`; duplicate-file rollback 400 with `DUPLICATE_IN_FILE`; permission denied 403.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement.test.tsx api-client.test.ts`: PASS, 2 files / 59 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run.service.spec.ts department-import-dry-run.controller.spec.ts imports.app-module.spec.ts`: PASS, 3 files / 27 tests.
+  - Pending `git diff --check`, added-lines sensitive keyword scan, commit, and post-commit tracked diff check.
+- Boundary:
+  - Local production-like Web acceptance does not equal production/VPS acceptance.
+  - Evidence recorded only status codes, counts, safe error codes, and audit operation names.
+  - No token/cookie/session/connection string/credential values were printed or recorded.
+
 ## 2026-07-02 Step 65E - Department import apply Web minimal slice evidence
 
 - Purpose:

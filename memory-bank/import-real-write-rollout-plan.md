@@ -279,3 +279,42 @@ After a department create-only apply slice is implemented and accepted, the next
   - User/account real-write import.
   - Achievement real-write import.
   - Password changes/resets, invite/reset flow, and DirectMail/real email.
+
+## Step 65F Local Production-Like Web Acceptance Record
+
+- Date: 2026-07-02.
+- Scope:
+  - Local production-like browser acceptance for the department metadata `CREATE_ONLY` apply Web entry.
+  - Synthetic `S65F_*` CSV/data and synthetic local users only.
+  - This record does not claim production/VPS acceptance.
+- Acceptance helpers:
+  - Added `memory-bank/step65f-db-helper.mjs`.
+  - Added `memory-bank/step65f-browser-acceptance.js`.
+  - Added `memory-bank/step65f-web-acceptance.mjs`.
+  - Updated `memory-bank/step65c-department-import-acceptance.mjs` so its API base can be overridden for local helper reuse while the default container-local target remains unchanged.
+- Covered checks:
+  - Department dry-run success made the apply button eligible in the admin browser flow.
+  - Apply confirmation modal appeared before write.
+  - Confirmed apply succeeded and the page displayed created count plus `DEPARTMENT_IMPORT_CREATE`.
+  - Repeated apply was rejected with safe duplicate code `EXISTING_CODE` and no net new department rows.
+  - Limited user did not see the apply UI and direct apply returned 403.
+  - Audit operation `DEPARTMENT_IMPORT_CREATE` was confirmed through sanitized local database evidence.
+- Sanitized evidence:
+  - Web health status: 200.
+  - Synthetic admin / limited login statuses: 200 / 200.
+  - Admin browser success: created rows 2; audit operation displayed `DEPARTMENT_IMPORT_CREATE`.
+  - Repeat apply: department count 2 -> 2; error code `EXISTING_CODE`.
+  - Limited browser: permission-denied status 403; apply UI hidden.
+  - Database evidence: department count 2; audit operation `DEPARTMENT_IMPORT_CREATE`; audit operation count 2.
+- Verification:
+  - `node memory-bank/step65f-web-acceptance.mjs`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement.test.tsx api-client.test.ts`: PASS, 2 files / 59 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run.service.spec.ts department-import-dry-run.controller.spec.ts imports.app-module.spec.ts`: PASS, 3 files / 27 tests.
+  - Step 65C local API acceptance helper rerun inside the local API container: PASS.
+- Still deferred:
+  - Production/VPS write execution.
+  - Batch real-data import.
+  - User/account real-write import.
+  - Achievement real-write import.
+  - Password changes/resets, invite/reset flow, and DirectMail/real email.

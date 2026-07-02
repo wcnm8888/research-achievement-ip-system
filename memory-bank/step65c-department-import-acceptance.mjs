@@ -2,7 +2,7 @@ import { randomBytes, scrypt } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const apiBaseUrl = "http://127.0.0.1:3000/api";
+const apiBaseUrl = process.env.STEP65C_API_BASE_URL ?? "http://127.0.0.1:3000/api";
 const suffix = Date.now().toString(36).toUpperCase();
 
 const codes = {

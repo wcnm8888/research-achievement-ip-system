@@ -1,5 +1,18 @@
 # Decisions
 
+## D235 - Department apply Web acceptance stays local and synthetic
+
+- Date: 2026-07-02.
+- Context: Step 65F verifies the Step 65E department `CREATE_ONLY` apply Web entry in a local production-like browser flow. The task allows local Docker, synthetic department CSV/test business data, browser acceptance, memory-bank updates, and small fixes, while prohibiting production/VPS access, production DB access, production rollout, account password changes/resets, real email, user/account apply, achievement apply, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling.
+- Decision:
+  - Add a committable local Web acceptance harness under `memory-bank/` instead of adding any production rollout code.
+  - Use synthetic `S65F_*` rows and generated local-only users for acceptance.
+  - Keep session material inside the helper process and transient localhost proxies; evidence may include status codes, counts, safe error codes, and audit operation names only.
+  - Treat repeated apply as accepted when the Web path shows a safe duplicate rejection and the department count has no net increase.
+  - Treat local production-like Web acceptance as evidence for the local stack only, not production/VPS readiness.
+- Scope:
+  - This decision does not authorize production/VPS writes, production DB access, production rollout, batch real-data import, user/account apply, achievement apply, password work, invite/reset flow, DirectMail/real email, persisted import jobs, durable idempotency keys, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D234 - Department apply Web entry mirrors backend create-only constraints
 
 - Date: 2026-07-02.

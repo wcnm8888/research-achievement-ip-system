@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 65F Archive - Department import apply Web local production-like acceptance - 2026-07-02
+
+- Step identity:
+  - Local production-like browser acceptance for the Step 65E department metadata `CREATE_ONLY` apply Web entry.
+  - Used synthetic `S65F_*` department CSV/data and synthetic local users only.
+  - This is not production/VPS acceptance.
+  - No user/account apply, achievement apply, production/VPS access, production DB access, production rollout, account password change/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented files:
+  - `memory-bank/step65f-db-helper.mjs`.
+  - `memory-bank/step65f-browser-acceptance.js`.
+  - `memory-bank/step65f-web-acceptance.mjs`.
+  - Small configurability update to `memory-bank/step65c-department-import-acceptance.mjs`.
+  - Step 65F memory-bank updates.
+- Acceptance helper:
+  - Builds Web assets locally, copies the built static assets into the local Web container, and restarts only the local Web container.
+  - Creates synthetic users/data in the local API container.
+  - Uses transient localhost proxies so browser sessions can call the local API with in-memory sessions without printing session material.
+  - Uses named `playwright-cli` sessions for admin and limited-user browser checks.
+  - Outputs only sanitized status/count/error-code/audit-operation evidence.
+- Acceptance results:
+  - Web health status: 200.
+  - Synthetic admin / limited login statuses: 200 / 200.
+  - Admin browser: dry-run enabled apply, confirmation modal appeared, apply created 2 rows, result displayed `DEPARTMENT_IMPORT_CREATE`.
+  - Repeat apply: safe error code `EXISTING_CODE`; department count stayed 2 -> 2.
+  - Limited user: apply UI hidden; direct apply attempt returned 403.
+  - Database evidence: target department count 2; audit operation `DEPARTMENT_IMPORT_CREATE` count 2.
+- Verification:
+  - `node memory-bank/step65f-web-acceptance.mjs`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- DepartmentManagement.test.tsx api-client.test.ts`: PASS, 2 files / 59 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run.service.spec.ts department-import-dry-run.controller.spec.ts imports.app-module.spec.ts`: PASS, 3 files / 27 tests.
+  - `docker compose -f docker-compose.production.yml exec -T api node /app/step65c-department-import-acceptance.mjs`: PASS.
+- Next:
+  - Keep production/VPS write execution, batch real-data import, user/account apply, achievement apply, password/invite/reset/email flows, and production rollout deferred behind separate authorization and runbooks.
+  - A later Step can design/implement operational production gating or broader import types, but Step 65F only proves the local Web path.
+
 ## Current Step 65E Archive - Department import apply Web minimal slice - 2026-07-02
 
 - Step identity:
