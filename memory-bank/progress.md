@@ -1,5 +1,35 @@
 # Progress
 
+## 2026-07-02 Step 66F - User/account pending import Web local production-like acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step66f-db-helper.mjs`.
+  - Added `memory-bank/step66f-browser-acceptance.js`.
+  - Added `memory-bank/step66f-web-acceptance.mjs`.
+  - Refreshed local production-like Web static assets with the Step 66E Web entry.
+  - Ran named-session Playwright browser acceptance for admin and limited users.
+  - Verified user/account dry-run makes apply available, confirmation modal appears, apply succeeds, result displays created users/roles, audit operation, and pending/no-credential state.
+  - Verified duplicate repeat apply is rejected with safe `EXISTING_USER` evidence and no net user increase.
+  - Verified limited user does not see the account import apply UI and direct apply returns 403.
+  - Verified imported users have zero credentials, zero sessions, zero lifecycle tokens, zero mail delivery evidence, and department-scoped roles.
+- Acceptance boundary:
+  - Used local production-like Web assets, local Docker DB, and a no-credential/no-session auth harness.
+  - This is not production/VPS acceptance.
+  - This is not production session-cookie full acceptance because the Step forbids creating credentials and sessions.
+- Explicitly not done:
+  - No production/VPS access, production DB access, or production rollout.
+  - No credential/session/token creation.
+  - No invite/reset/email/activation flow.
+  - No achievement apply.
+- Verification:
+  - `node memory-bank/step66f-web-acceptance.mjs`: PASS with sanitized local Web evidence.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 72 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 66E - User/account pending import Web minimal slice
 
 - Status: DONE.

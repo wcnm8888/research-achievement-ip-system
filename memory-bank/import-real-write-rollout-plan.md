@@ -301,6 +301,38 @@ After a department create-only apply slice is implemented and accepted, the next
   - Employee-number schema and database uniqueness.
   - Achievement apply.
 
+## Step 66F User/Account Web Local Production-Like Acceptance
+
+- Date: 2026-07-02.
+- Scope:
+  - Local production-like Web/browser acceptance for the Step 66E user/account pending no-credential apply entry.
+  - Synthetic `S66F_*` user/account CSV and local business data only.
+  - No production/VPS acceptance, no production DB access, no production rollout, no achievement apply, no invite/reset/email/activation, and no credential/session/token creation.
+- Acceptance helpers:
+  - Added `memory-bank/step66f-db-helper.mjs`.
+  - Added `memory-bank/step66f-browser-acceptance.js`.
+  - Added `memory-bank/step66f-web-acceptance.mjs`.
+- Auth boundary:
+  - Because this Step forbids creating credentials and sessions, the acceptance used a no-session/no-credential harness instead of real production session-cookie login.
+  - The harness combines local production-like Web static assets, local Docker DB, synthetic `/api/auth/me`, and staging identity headers into the built backend service.
+  - This is not production session-cookie full acceptance.
+- Accepted checks:
+  - Admin dry-run success made `Apply pending no-credential` available.
+  - Confirmation modal showed pending/no-credential/no-email/no-login boundary copy.
+  - Confirmed apply created two `PENDING_ACTIVATION` users and two department-scoped roles.
+  - Web result displayed created users, created roles, audit operation `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`, and pending/no-credential state.
+  - DB evidence confirmed zero credentials, zero sessions, zero lifecycle tokens, zero mail delivery evidence, two department-scoped roles, and audit operation count 2.
+  - Repeat apply rejected with safe code `EXISTING_USER` and user count stayed 2 -> 2.
+  - Limited user could not see the apply UI and direct apply returned 403.
+- Verification:
+  - Local Web acceptance, Web Vitest, Web typecheck, Step 66B/66C API tests, and API typecheck passed.
+- Still deferred:
+  - Production session-cookie full acceptance.
+  - Production/VPS rollout.
+  - Invite/reset/email/activation flows.
+  - Employee-number schema and database uniqueness.
+  - Achievement apply.
+
 ## Step 65B Implementation Record
 
 - Date: 2026-07-02.

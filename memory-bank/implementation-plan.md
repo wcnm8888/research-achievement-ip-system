@@ -4,6 +4,33 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 66F Archive - User/account pending import Web local production-like acceptance - 2026-07-02
+
+- Status: DONE.
+- Scope:
+  - Local production-like Web/browser acceptance for user/account pending no-credential import apply.
+  - Synthetic `S66F_*` CSV/data only.
+  - No production/VPS acceptance, no production DB access, no production rollout, no achievement apply, no invite/reset/email/activation, no credential/session/token creation, and no password operation.
+- Implemented files:
+  - `memory-bank/step66f-db-helper.mjs`.
+  - `memory-bank/step66f-browser-acceptance.js`.
+  - `memory-bank/step66f-web-acceptance.mjs`.
+- Acceptance method:
+  - Built Web static assets and refreshed the local production-like Web container.
+  - Used a local proxy plus API-container helper to provide synthetic `/api/auth/me` and route account import calls to the built backend service with `NODE_ENV=staging`.
+  - The harness uses active synthetic users without credentials or sessions; therefore this is not production session-cookie full acceptance.
+  - Browser automation used named `playwright-cli` sessions.
+- Accepted behavior:
+  - Admin dry-run enabled `Apply pending no-credential`.
+  - Confirmation modal showed pending/no-credential/no-email/no-login boundary copy.
+  - Confirmed apply created two `PENDING_ACTIVATION` users and two department-scoped roles.
+  - Result displayed `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL` and pending/no-credential summary.
+  - Database evidence showed `credentialCount=0`, `sessionCount=0`, `lifecycleTokenCount=0`, `mailDeliveryCount=0`, and `departmentScopedRoleCount=2`.
+  - Repeat apply rejected with `EXISTING_USER` and kept user count 2 -> 2.
+  - Limited user UI hid account import apply and direct apply returned 403.
+- Recommended next step:
+  - A later separately authorized Step can cover production session-cookie authentication for this endpoint if credential/session creation is explicitly allowed.
+
 ## Current Step 66E Archive - User/account pending import Web minimal slice - 2026-07-02
 
 - Status: DONE.

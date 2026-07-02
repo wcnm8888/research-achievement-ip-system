@@ -1,5 +1,18 @@
 # Decisions
 
+## D238 - Step 66F Web acceptance uses no-session harness because credentials are forbidden
+
+- Date: 2026-07-02.
+- Context: Step 66F verifies the Step 66E user/account pending no-credential apply Web entry in a local production-like browser flow. The task allows local Docker and synthetic CSV/test data, while prohibiting production/VPS access, production DB access, production rollout, account password creation/reset, `UserCredential`, sessions, invite/reset/lifecycle tokens, real email, achievement apply, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling.
+- Decision:
+  - Use local production-like Web static assets and local Docker DB for browser acceptance.
+  - Do not create synthetic passwords, credentials, or sessions for login.
+  - Use a Step-specific local proxy and API-container helper to provide synthetic `/api/auth/me` and route import API requests through the built backend service with staging identity headers.
+  - Record this as local production-like Web acceptance with a no-session/no-credential harness, not production session-cookie full acceptance.
+  - Evidence may include only status codes, counts, safe error codes, audit operation, and no-credential/no-session side-effect counts.
+- Scope:
+  - This decision does not authorize production/VPS writes, production DB access, production rollout, production session-cookie full acceptance, batch real-data import, achievement apply, account lifecycle work, DirectMail/real email, employee-number schema work, persisted import jobs, durable idempotency keys, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D237 - User/account apply Web implementation mirrors pending no-credential backend contract
 
 - Date: 2026-07-02.

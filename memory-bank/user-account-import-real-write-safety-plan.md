@@ -218,3 +218,16 @@ Because Step 66A is documentation-only, full typecheck/test is not required. Req
 - Step 66E confirmation must explicitly say the apply creates only pending users and department-scoped initial roles; it creates no `UserCredential`, password, session, invite/reset/lifecycle token, email, or login activation.
 - Step 66C local production-like API acceptance remains local and synthetic; it did not cover production session-cookie auth.
 - Step 66E should be a Web-only minimal implementation slice with typed API client, eligibility, confirmation, safe result display, and focused Web Vitest coverage.
+
+## Step 66F Web Acceptance Addendum
+
+- Step 66F accepted the Step 66E Web entry in a local production-like browser flow with synthetic `S66F_*` data.
+- Because the Step explicitly forbids creating credentials and sessions, it used a no-session/no-credential local auth harness instead of a real production session-cookie login.
+- The acceptance does not complete production/VPS acceptance or production session-cookie full acceptance.
+- Accepted safety evidence:
+  - Created users remain `PENDING_ACTIVATION`.
+  - Created roles are department-scoped.
+  - `UserCredential`, `UserSession`, and `AccountLifecycleToken` counts are zero for imported users.
+  - Mail delivery evidence count is zero.
+  - Audit operation is `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`.
+  - Duplicate repeat apply is rejected with safe `EXISTING_USER` evidence and no net user increase.

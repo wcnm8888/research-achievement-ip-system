@@ -1,5 +1,46 @@
 # Evidence
 
+## 2026-07-02 Step 66F - User/account pending import Web local production-like acceptance evidence
+
+- Goal:
+  - Verify the Step 66E user/account pending no-credential apply Web entry in a local production-like browser flow.
+- Initial state:
+  - `git rev-parse --short HEAD`: `9a1be12`.
+  - `git log -1 --pretty=format:"%s"`: `feat: add user account import apply web entry`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched, including `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/user-account-import-apply-web-entry-design.md`.
+  - Step 66E records in progress, implementation plan, evidence, decisions, and rollout plan.
+  - Targeted snippets for `AccountManagement`, the Web API client/tests, Step 66C helper, and Step 65F browser acceptance.
+- Acceptance helper:
+  - Added `memory-bank/step66f-db-helper.mjs`.
+  - Added `memory-bank/step66f-browser-acceptance.js`.
+  - Added `memory-bank/step66f-web-acceptance.mjs`.
+- Sanitized local Web acceptance result:
+  - Scope: local production-like Web with no-session/no-credential harness.
+  - Production/VPS acceptance: false.
+  - Production session-cookie full acceptance: false.
+  - Web health status: 200.
+  - Admin browser: dry-run apply button enabled, confirmation modal seen, success user delta 2, repeat user count 2 -> 2, repeat safe code `EXISTING_USER`, audit operation displayed `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`, pending/no-credential summary displayed.
+  - Limited browser: permission UI hidden, direct apply status 403.
+  - Database evidence: user count 2, pending activation count 2, credential count 0, session count 0, lifecycle token count 0, department-scoped role count 2, audit operation count 2, mail delivery count 0.
+- Boundary:
+  - Used synthetic `S66F_*` local data only.
+  - Did not read `.env.production` contents; only confirmed required file existence earlier in the Step.
+  - Did not create account credentials, user sessions, invite/reset/lifecycle tokens, or real email delivery.
+  - Did not access production/VPS or production DB.
+  - Did not process achievement apply.
+- Verification:
+  - `node memory-bank/step66f-web-acceptance.mjs`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 72 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: recorded after edits.
+  - Added-lines sensitive keyword scan completed on 1068 added lines with counts/redacted summary only; matches are harness safety-boundary terminology and field names, not values.
+
 ## 2026-07-02 Step 66E - User/account pending import Web minimal slice evidence
 
 - Goal:
