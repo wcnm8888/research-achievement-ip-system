@@ -920,6 +920,13 @@ export const getUserAccountImportApplyEligibility = ({
     return { canApply: false, reason: "User account import apply requires at least one row." };
   }
 
+  if (result.summary.existingEmployeeNoRows > 0) {
+    return {
+      canApply: false,
+      reason: "Resolve employeeNo business identifier conflicts before apply.",
+    };
+  }
+
   if (result.summary.errorRows > 0) {
     return { canApply: false, reason: "Resolve dry-run errors before apply." };
   }
@@ -1015,15 +1022,30 @@ export const mapUserAccountImportApplyErrorToDisplay = (error: ApiError): ApiErr
 const buildRejectedUserAccountApplyErrorDetail = (error: ApiError): string => {
   const summary = readRejectedUserAccountApplySummary(error.body);
   const codes = readRejectedUserAccountApplyErrorCodes(error.body);
+  const safeCodeDetails = codes.map(toUserAccountImportRejectedCodeDescription);
+  const canUseRawDetail = !codes.includes("EXISTING_EMPLOYEE_NO");
   const parts = [
     summary
       ? `createdUsers=${summary.createdUsersCount}; createdRoles=${summary.createdRolesCount}; skipped=${summary.skippedRows}; failed=${summary.failedRows}; errors=${summary.errorCount}; warnings=${summary.warningCount}`
       : null,
     codes.length > 0 ? `codes=${codes.join(",")}` : null,
-    error.detail,
+    ...safeCodeDetails,
+    canUseRawDetail ? error.detail : null,
   ].filter((part): part is string => Boolean(part));
 
   return parts.join("; ") || "Backend validation rejected the pending no-credential apply request.";
+};
+
+const toUserAccountImportRejectedCodeDescription = (code: string): string | null => {
+  if (code === "EXISTING_EMPLOYEE_NO") {
+    return "employeeNo business identifier already exists; this row cannot create a new pending account.";
+  }
+
+  if (code === "EXISTING_USER") {
+    return "email already belongs to an existing user.";
+  }
+
+  return null;
 };
 
 const readRejectedUserAccountApplySummary = (
@@ -1165,16 +1187,22 @@ export function UserAccountImportDryRunResultView({
 }: {
   result: UserAccountImportDryRunResult;
 }) {
+  const employeeNoDbCheckAvailable = result.summary.employeeNoDbConflictCheck === "AVAILABLE";
+
   return (
     <ImportDryRunResultShell
       result={result}
       writeSafetyDescription="no account writes, credential changes, or role assignments were requested."
       extraAlerts={
         <Alert
-          type="info"
+          type={employeeNoDbCheckAvailable ? "success" : "info"}
           showIcon
-          message="employeeNo DB conflict check: NOT_AVAILABLE"
-          description="Current schema does not persist employeeNo for account users, so the dry-run only checks employeeNo duplicates within the uploaded file."
+          message={`employeeNo DB conflict check: ${result.summary.employeeNoDbConflictCheck}`}
+          description={
+            employeeNoDbCheckAvailable
+              ? "employeeNo is checked as an optional business identifier for existing-account conflicts. Account sign-in behavior is unchanged."
+              : "Current schema does not persist employeeNo for account users, so the dry-run only checks employeeNo duplicates within the uploaded file."
+          }
         />
       }
       summaryItems={[
@@ -1185,6 +1213,10 @@ export function UserAccountImportDryRunResultView({
         {
           label: "Existing users",
           value: result.summary.existingUserRows,
+        },
+        {
+          label: "Existing employeeNo",
+          value: result.summary.existingEmployeeNoRows,
         },
         {
           label: "Existing role assignments",
@@ -1412,7 +1444,7 @@ const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["co
     key: "errors",
     width: 300,
     render: (issues: UserAccountImportDryRunIssue[]) =>
-      renderImportDryRunIssueList(issues, "error"),
+      renderImportDryRunIssueList(toUserAccountImportDisplayIssues(issues), "error"),
   },
   {
     title: "Warnings",
@@ -1420,9 +1452,22 @@ const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["co
     key: "warnings",
     width: 300,
     render: (issues: UserAccountImportDryRunIssue[]) =>
-      renderImportDryRunIssueList(issues, "warning"),
+      renderImportDryRunIssueList(toUserAccountImportDisplayIssues(issues), "warning"),
   },
 ];
+
+const toUserAccountImportDisplayIssues = (
+  issues: readonly UserAccountImportDryRunIssue[],
+): UserAccountImportDryRunIssue[] =>
+  issues.map((issue) =>
+    issue.code === "EXISTING_EMPLOYEE_NO"
+      ? {
+          ...issue,
+          message:
+            "employeeNo is already registered as a business identifier; this row cannot create a new pending account.",
+        }
+      : issue,
+  );
 
 const toValidationError = (message: string | null): ApiError | null =>
   message

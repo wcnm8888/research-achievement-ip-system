@@ -196,3 +196,13 @@ Recommended later slices:
   - No production/VPS or production database access.
   - No real-data backfill.
   - No credential, session, lifecycle token, real email, login activation, or achievement apply.
+
+## Step 67C Web Alignment Addendum
+
+- Step 67C aligned Web display with the Step 67B backend contract.
+- Web now accepts `employeeNoDbConflictCheck=AVAILABLE`.
+- Web now accepts and renders `EXISTING_EMPLOYEE_NO` as a safe business-identifier conflict.
+- Web apply eligibility blocks employee-number conflicts through `existingEmployeeNoRows` and the existing no-error/no-warning gates.
+- Apply rejected-error display includes `EXISTING_EMPLOYEE_NO` as a safe code and omits raw backend detail for that code.
+- The Web copy does not present employee number as a login identity.
+- Step 67C did not change schema, migration, API runtime, Docker/browser acceptance, production/VPS, production database, credentials, sessions, lifecycle tokens, real email, login activation, or achievement apply.

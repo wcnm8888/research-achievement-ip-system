@@ -1,5 +1,34 @@
 # Evidence
 
+## 2026-07-02 Step 67C - User/account employeeNo Web conflict display alignment evidence
+
+- Goal:
+  - Align Web user/account import types, display, eligibility, and apply-error handling with Step 67B employee-number DB conflict contract.
+- Initial state:
+  - `git rev-parse HEAD`: `134afd2ea81615053766a9b87235cad9329634c1`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/user-account-identity-employee-no-persistence-plan.md`.
+  - Step 67B memory-bank records in progress, decisions, implementation plan, and evidence.
+  - Targeted snippets only from Web user/account import types, API client tests, `AccountManagement` user/account dry-run/apply display, relevant Web tests, and Step 67B backend response shape.
+- Implemented files:
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/AccountManagement.tsx`.
+  - `apps/web/src/AccountManagement.test.tsx`.
+  - `apps/web/src/api-client.test.ts`.
+- Validation:
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 73 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - API tests not run because this Step changed Web-only source/types/tests and did not modify API/shared backend code.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Added-lines sensitive keyword scan covered the required terms; 240 added lines scanned, 6 total keyword matches, all Web test/copy/documentation safety-boundary terminology, no sensitive values printed.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No Prisma schema change, migration, Docker, browser production-like acceptance, production/VPS access, production DB access, account password creation/reset, credential/session/lifecycle token creation, real mail, achievement apply, cleanup, deletion, reset, drop, prune, staging, or commit of known untracked local artifacts.
+
 ## 2026-07-02 Step 67B - User/account employeeNo persistence and duplicate checks evidence
 
 - Goal:

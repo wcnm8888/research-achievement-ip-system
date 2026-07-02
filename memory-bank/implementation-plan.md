@@ -4,6 +4,27 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 67C Archive - User/account employeeNo Web conflict display alignment - 2026-07-02
+
+- Status: DONE.
+- Scope:
+  - Web-only type, display, eligibility, apply-error mapping, and focused Web tests for Step 67B employee-number conflict contract.
+  - No Prisma schema/migration, Docker/browser acceptance, production/VPS access, production DB access, or API runtime changes.
+- Implemented:
+  - Web types now accept `employeeNoDbConflictCheck: "AVAILABLE"` and `EXISTING_EMPLOYEE_NO`.
+  - Web dry-run summary includes `existingEmployeeNoRows`.
+  - Dry-run result view shows employee-number DB conflict check availability and a safe optional-business-identifier description.
+  - Row issue rendering maps `EXISTING_EMPLOYEE_NO` to a safe message that does not reveal matched account details or normalized lookup internals.
+  - Apply eligibility blocks employee-number conflicts before apply.
+  - Apply rejected-error details include safe `EXISTING_EMPLOYEE_NO` code messaging and omit raw backend detail for that code.
+  - Web tests cover AVAILABLE display, dry-run conflict rendering, apply disabled state, sanitized apply rejection, and existing pending/no-credential success display.
+- Preserved boundaries:
+  - Backend permission remains authoritative.
+  - Pending/no-credential/no-email/no-login copy remains visible.
+  - No Web production-like browser acceptance in this Step.
+- Recommended next step:
+  - Step 67D can perform local synthetic migration/API/Web acceptance if explicitly authorized, without production/VPS or real-data backfill.
+
 ## Current Step 67B Archive - User/account employeeNo persistence and duplicate checks - 2026-07-02
 
 - Status: DONE.

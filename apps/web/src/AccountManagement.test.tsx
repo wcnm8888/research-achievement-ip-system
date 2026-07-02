@@ -136,9 +136,10 @@ const userAccountImportDryRunResult: UserAccountImportDryRunResult = {
     warningRows: 1,
     createCandidates: 1,
     existingUserRows: 1,
+    existingEmployeeNoRows: 1,
     existingRoleAssignmentRows: 0,
     reactivationCandidateRows: 1,
-    employeeNoDbConflictCheck: "NOT_AVAILABLE",
+    employeeNoDbConflictCheck: "AVAILABLE",
   },
   rows: [
     {
@@ -209,6 +210,11 @@ const userAccountImportDryRunResult: UserAccountImportDryRunResult = {
           code: "UNKNOWN_DEPARTMENT",
           message: "Department code does not exist.",
         },
+        {
+          field: "employeeNo",
+          code: "EXISTING_EMPLOYEE_NO",
+          message: "employeeNo already belongs to an existing user.",
+        },
       ],
       warnings: [
         {
@@ -230,9 +236,10 @@ const validUserAccountImportDryRunResult: UserAccountImportDryRunResult = {
     warningRows: 0,
     createCandidates: 1,
     existingUserRows: 0,
+    existingEmployeeNoRows: 0,
     existingRoleAssignmentRows: 0,
     reactivationCandidateRows: 0,
-    employeeNoDbConflictCheck: "NOT_AVAILABLE",
+    employeeNoDbConflictCheck: "AVAILABLE",
   },
   rows: [userAccountImportDryRunResult.rows[0]!],
 };
@@ -447,10 +454,27 @@ describe("user account import dry-run UI", () => {
     expect(html).toContain("USER_ACCOUNT");
     expect(html).toContain("Total rows");
     expect(html).toContain("Existing users");
-    expect(html).toContain("NOT_AVAILABLE");
+    expect(html).toContain("employeeNo DB conflict check: AVAILABLE");
+    expect(html).toContain("Existing employeeNo");
     expect(html).toContain("NO_CREDENTIAL");
     expect(html).toContain("EXISTING_USER");
+    expect(html).toContain("EXISTING_EMPLOYEE_NO");
+    expect(html).toContain("business identifier");
     expect(html).toContain("DUPLICATE_IN_FILE");
+    expect(html).not.toContain("login identity");
+  });
+
+  it("renders employeeNo DB conflict check AVAILABLE without exposing matched account details", () => {
+    const html = renderToStaticMarkup(
+      <UserAccountImportDryRunResultView result={userAccountImportDryRunResult} />,
+    );
+
+    expect(html).toContain("employeeNo DB conflict check: AVAILABLE");
+    expect(html).toContain("optional business identifier");
+    expect(html).toContain("EXISTING_EMPLOYEE_NO");
+    expect(html).toContain("this row cannot create a new pending account");
+    expect(html).not.toContain("existing.user@example.com matched by employeeNo");
+    expect(html).not.toContain("employeeNoNormalized");
   });
 
   it("renders sensitive column rejection without exposing a sensitive original value", () => {
@@ -515,7 +539,44 @@ describe("user account import dry-run UI", () => {
         submitting: false,
         fingerprint,
       }),
-    ).toMatchObject({ canApply: false, reason: "Resolve dry-run errors before apply." });
+    ).toMatchObject({
+      canApply: false,
+      reason: "Resolve employeeNo business identifier conflicts before apply.",
+    });
+
+    expect(
+      getUserAccountImportApplyEligibility({
+        file,
+        result: {
+          ...validUserAccountImportDryRunResult,
+          summary: {
+            ...validUserAccountImportDryRunResult.summary,
+            errorRows: 1,
+            existingEmployeeNoRows: 1,
+          },
+          rows: [
+            {
+              ...validUserAccountImportDryRunResult.rows[0]!,
+              status: "ERROR",
+              candidateAction: "SKIP",
+              errors: [
+                {
+                  field: "employeeNo",
+                  code: "EXISTING_EMPLOYEE_NO",
+                  message: "employeeNo already belongs to an existing user.",
+                },
+              ],
+            },
+          ],
+        },
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        submitting: false,
+        fingerprint,
+      }),
+    ).toMatchObject({
+      canApply: false,
+      reason: "Resolve employeeNo business identifier conflicts before apply.",
+    });
 
     expect(
       getUserAccountImportApplyEligibility({
@@ -664,6 +725,7 @@ describe("user account import dry-run UI", () => {
     expect(html).toContain("USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL");
     expect(html).toContain("PENDING_ACTIVATION");
     expect(html).toContain("no credential");
+    expect(html).toContain("Rejected/error summary: none.");
 
     const confirmHtml = renderToStaticMarkup(
       <UserAccountImportApplyConfirmContent result={validUserAccountImportDryRunResult} />,
@@ -710,10 +772,33 @@ describe("user account import dry-run UI", () => {
       kind: "network",
       message: "Network request failed.",
     });
+    const employeeNoRejected = mapUserAccountImportApplyErrorToDisplay({
+      kind: "bad-request",
+      status: 400,
+      message: "Request failed",
+      detail: "raw employee E001 matched existing.user@example.com",
+      body: {
+        summary: {
+          totalRows: 1,
+          createdUsersCount: 0,
+          createdRolesCount: 0,
+          skippedRows: 0,
+          failedRows: 1,
+          errorCount: 1,
+          warningCount: 0,
+        },
+        errors: [{ code: "EXISTING_EMPLOYEE_NO" }],
+      },
+    });
 
     expect(rejected.message).toBe("User account import apply was rejected.");
     expect(rejected.detail).toContain("codes=EXISTING_USER");
     expect(rejected.detail).toContain("createdUsers=0");
+    expect(employeeNoRejected.message).toBe("User account import apply was rejected.");
+    expect(employeeNoRejected.detail).toContain("codes=EXISTING_EMPLOYEE_NO");
+    expect(employeeNoRejected.detail).toContain("business identifier already exists");
+    expect(employeeNoRejected.detail).not.toContain("E001");
+    expect(employeeNoRejected.detail).not.toContain("existing.user@example.com");
     expect(unauthorized.detail).not.toContain("cookie");
     expect(forbidden.detail).toContain("system:config");
     expect(network.message).toBe("User account import apply service is unavailable.");

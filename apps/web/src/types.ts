@@ -664,6 +664,7 @@ export type UserAccountImportDryRunIssueCode =
   | "INVALID_STATUS"
   | "UNSUPPORTED_STATUS"
   | "EXISTING_USER"
+  | "EXISTING_EMPLOYEE_NO"
   | "EXISTING_ROLE_ASSIGNMENT"
   | "REVOKED_ROLE_ASSIGNMENT";
 
@@ -721,9 +722,10 @@ export type UserAccountImportDryRunResult = {
     warningRows: number;
     createCandidates: number;
     existingUserRows: number;
+    existingEmployeeNoRows: number;
     existingRoleAssignmentRows: number;
     reactivationCandidateRows: number;
-    employeeNoDbConflictCheck: "NOT_AVAILABLE";
+    employeeNoDbConflictCheck: "NOT_AVAILABLE" | "AVAILABLE";
   };
   rows: UserAccountImportDryRunRow[];
 };

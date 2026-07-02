@@ -1,5 +1,18 @@
 # Decisions
 
+## D241 - Web treats employeeNo conflicts as safe business-identifier blockers
+
+- Date: 2026-07-02.
+- Context: Step 67C aligns the Web user/account import dry-run/apply display with Step 67B backend employee-number persistence. The task allows Web types/client display/tests and memory-bank updates, while prohibiting Prisma schema/migration changes, Docker/browser production-like acceptance, production/VPS access, production DB access, account lifecycle side effects, real email, achievement apply, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Accept `employeeNoDbConflictCheck=AVAILABLE` and `EXISTING_EMPLOYEE_NO` in Web types.
+  - Display employee-number conflicts as optional business-identifier conflicts, not as login identity behavior.
+  - Disable pending no-credential apply when `existingEmployeeNoRows > 0` or any dry-run error/warning exists.
+  - For rejected apply responses with `EXISTING_EMPLOYEE_NO`, show safe codes/counts and omit raw backend detail to avoid echoing uploaded employee numbers or matched-account facts.
+  - Keep backend permission checks authoritative and keep pending/no-credential/no-email/no-login copy unchanged.
+- Scope:
+  - This decision does not authorize schema/migration work, production migration, production/VPS access, production DB access, real-data backfill, browser/Docker acceptance, credential/session/lifecycle token creation, DirectMail/real email, achievement apply, cleanup, deletion, reset, drop, prune, or handling known untracked local artifacts.
+
 ## D240 - User imports persist nullable normalized employee numbers
 
 - Date: 2026-07-02.

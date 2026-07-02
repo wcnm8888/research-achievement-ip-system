@@ -1,5 +1,27 @@
 # Progress
 
+## 2026-07-02 Step 67C - User/account employeeNo Web conflict display alignment
+
+- Status: DONE.
+- Scope completed:
+  - Updated Web user/account import types for `employeeNoDbConflictCheck: "AVAILABLE"` and `EXISTING_EMPLOYEE_NO`.
+  - Added `existingEmployeeNoRows` to the Web dry-run summary contract.
+  - Updated dry-run rendering to show employee-number database conflict checking as available and describe `employeeNo` only as an optional business identifier.
+  - Rendered `EXISTING_EMPLOYEE_NO` with a safe business-identifier conflict message and no matched-account/internal lookup details.
+  - Updated apply eligibility to disable pending no-credential apply when employee-number conflicts are present.
+  - Updated apply rejection display to show `EXISTING_EMPLOYEE_NO` safely without echoing raw employee-number or matched-account details.
+  - Added focused Web Vitest coverage for AVAILABLE rendering, dry-run conflict display, disabled apply, sanitized apply rejection, and pending/no-credential success display.
+- Explicitly not done:
+  - No Prisma schema or migration changes.
+  - No API runtime changes.
+  - No Docker/browser production-like acceptance.
+  - No production/VPS access, production DB access, credential/session/lifecycle token creation, password operation, real email, achievement apply, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 73 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - API tests not run because this Step changed Web-only source/types/tests and did not modify API/shared backend code.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 67B - User/account import employeeNo persistence and duplicate checks
 
 - Status: DONE.
