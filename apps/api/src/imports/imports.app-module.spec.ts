@@ -21,6 +21,7 @@ const ids = {
 };
 
 type DepartmentImportDryRunServiceMock = {
+  applyDepartmentCsv: ReturnType<typeof vi.fn>;
   dryRunDepartmentCsv: ReturnType<typeof vi.fn>;
 };
 
@@ -50,6 +51,34 @@ const makeUserContext = (): UserContext => ({
 });
 
 const createServiceMock = (): DepartmentImportDryRunServiceMock => ({
+  applyDepartmentCsv: vi.fn().mockResolvedValue({
+    importType: "DEPARTMENT_METADATA",
+    dryRun: false,
+    mode: "CREATE_ONLY",
+    file: {
+      name: "departments.csv",
+      size: 35,
+      mimeType: "text/csv",
+      encoding: "utf-8",
+    },
+    summary: {
+      totalRows: 1,
+      createdRows: 1,
+      skippedRows: 0,
+      failedRows: 0,
+      errorCount: 0,
+      warningCount: 0,
+    },
+    errors: [],
+    rows: [
+      {
+        rowNumber: 2,
+        code: "AI_RESEARCH",
+        status: "CREATED",
+        createdDepartmentId: "10000000-0000-4000-8000-000000000010",
+      },
+    ],
+  }),
   dryRunDepartmentCsv: vi.fn().mockResolvedValue({
     importType: "DEPARTMENT_METADATA",
     dryRun: true,
@@ -148,6 +177,22 @@ describe("Import routes through AppModule", () => {
         .expect(201);
 
       expect(services.department.dryRunDepartmentCsv).toHaveBeenCalledOnce();
+    });
+  });
+
+  it("exposes department import create-only apply through AppModule", async () => {
+    await withAppModule(async (app, services) => {
+      await request(app.getHttpServer() as Server)
+        .post("/imports/departments/apply")
+        .set("X-Demo-User-Id", ids.user)
+        .field("mode", "CREATE_ONLY")
+        .attach("file", Buffer.from("code,name\nAI_RESEARCH,AI Research\n"), {
+          filename: "departments.csv",
+          contentType: "text/csv",
+        })
+        .expect(201);
+
+      expect(services.department.applyDepartmentCsv).toHaveBeenCalledOnce();
     });
   });
 

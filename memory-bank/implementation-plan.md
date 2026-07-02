@@ -4,6 +4,36 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 65B Archive - Department import create-only backend apply - 2026-07-02
+
+- Step identity:
+  - Backend-only implementation of department metadata create-only apply as the first import real-write slice.
+  - No Web UI apply button, user/account real-write import, achievement real-write import, production/VPS access, production DB access, Docker operation, password change/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented files:
+  - `apps/api/src/imports/department-import-dry-run.service.ts`.
+  - `apps/api/src/imports/department-import-dry-run.repository.ts`.
+  - `apps/api/src/imports/department-import-dry-run.controller.ts`.
+  - `apps/api/src/imports/imports.module.ts`.
+  - Focused service/repository/controller/AppModule tests.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+- Runtime contract:
+  - `POST /api/imports/departments/apply`.
+  - Multipart field `file`; optional `mode` must be omitted or `CREATE_ONLY`.
+  - Permission remains `system:config` through existing guards.
+  - Apply recomputes server-side validation from the uploaded CSV and rejects errors or warnings before writes.
+  - Creates departments in parent-before-child order.
+  - Uses one Prisma transaction for all creates and audit events.
+  - Rechecks code uniqueness and external parent active existence inside the transaction.
+  - Returns safe apply summary and created row ids/codes only.
+- Deferred:
+  - Web execute button, update/upsert/delete/merge behavior, persisted import jobs, durable idempotency keys, user/account apply, achievement apply, attachment/fee/workflow/search/resource-grant import, production/VPS writes, real-data batch import, password operations, invite/reset flow, DirectMail/real email, schema/migration work, deployment, cleanup, deletion, reset, drop, and prune.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed; matches were boundary/test terms only, with no sensitive values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## Current Step 65A Archive - Import real-write rollout scope and first-slice plan - 2026-07-02
 
 - Step identity:

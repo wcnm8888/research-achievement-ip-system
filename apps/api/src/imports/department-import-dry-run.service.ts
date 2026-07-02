@@ -1,8 +1,17 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { DepartmentStatus } from "@prisma/client";
+import { AuditTransactionClient } from "../audit/audit.repository";
+import { AuditService } from "../audit/audit.service";
+import { AuditActionCode } from "../audit/domain/audit-action-code";
+import { CreateAuditEventInput } from "../audit/domain/audit-event.types";
+import { AuditTargetTypeCode } from "../audit/domain/audit-target-type-code";
+import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
 import {
   DepartmentCodeLookup,
+  DepartmentImportApplyDepartmentLookup,
+  DepartmentImportApplyTransactionClient,
+  DepartmentImportCreatedDepartment,
   DepartmentImportDryRunRepository,
 } from "./department-import-dry-run.repository";
 import {
@@ -75,6 +84,48 @@ export type DepartmentImportDryRunResult = ImportDryRunResult<
   DepartmentImportDryRunRow
 >;
 
+export type DepartmentImportApplyMode = "CREATE_ONLY";
+
+export type DepartmentImportApplyErrorSummary = {
+  rowNumber: number | null;
+  field: string;
+  code: string;
+  message: string;
+};
+
+export type DepartmentImportApplyRow = {
+  rowNumber: number;
+  code: string;
+  status: "CREATED";
+  createdDepartmentId: string;
+};
+
+export type DepartmentImportApplySummary = {
+  totalRows: number;
+  createdRows: number;
+  skippedRows: number;
+  failedRows: number;
+  errorCount: number;
+  warningCount: number;
+};
+
+export type DepartmentImportApplyResult = {
+  importType: typeof departmentImportType;
+  dryRun: false;
+  mode: DepartmentImportApplyMode;
+  file: ReturnType<typeof buildImportDryRunFileMetadata>;
+  summary: DepartmentImportApplySummary;
+  errors: DepartmentImportApplyErrorSummary[];
+  rows: DepartmentImportApplyRow[];
+};
+
+type DepartmentImportPlan = {
+  file: DepartmentImportDryRunResult["file"];
+  columns: DepartmentImportDryRunResult["columns"];
+  summary: DepartmentImportDryRunSummary;
+  rows: DepartmentImportDryRunRow[];
+};
+
 type WorkingRow = {
   rowNumber: number;
   valuesByHeader: Map<string, string>;
@@ -90,17 +141,174 @@ export class InvalidImportCsvError extends Error {
   }
 }
 
+export class InvalidDepartmentImportApplyModeError extends Error {
+  constructor(mode: string) {
+    super(`Unsupported department import apply mode: ${mode}.`);
+    this.name = "InvalidDepartmentImportApplyModeError";
+  }
+}
+
+export class DepartmentImportApplyRejectedError extends Error {
+  constructor(
+    message: string,
+    readonly result: DepartmentImportApplyResult,
+  ) {
+    super(message);
+    this.name = "DepartmentImportApplyRejectedError";
+  }
+}
+
 @Injectable()
 export class DepartmentImportDryRunService {
   constructor(
     @Inject(DepartmentImportDryRunRepository)
     private readonly repository: DepartmentImportDryRunRepository,
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
+    @Inject(AuditService)
+    private readonly auditService: AuditService,
   ) {}
 
   async dryRunDepartmentCsv(
     _context: UserContext,
     file: DepartmentImportDryRunFile,
   ): Promise<DepartmentImportDryRunResult> {
+    const plan = await this.buildDepartmentImportPlan(file);
+
+    return {
+      importType: departmentImportType,
+      dryRun: true,
+      file: plan.file,
+      columns: plan.columns,
+      summary: plan.summary,
+      rows: plan.rows,
+    };
+  }
+
+  async applyDepartmentCsv(
+    context: UserContext,
+    file: DepartmentImportDryRunFile,
+    mode: string | undefined = "CREATE_ONLY",
+  ): Promise<DepartmentImportApplyResult> {
+    if (mode !== "CREATE_ONLY") {
+      throw new InvalidDepartmentImportApplyModeError(mode ?? "(missing)");
+    }
+
+    const plan = await this.buildDepartmentImportPlan(file);
+    assertPlanCanApply(plan);
+
+    const orderedRows = orderRowsForCreate(plan.rows);
+
+    try {
+      const createdRows = await this.prisma.$transaction(async (tx) => {
+        const departmentClient = tx as DepartmentImportApplyTransactionClient;
+        const auditClient = tx as AuditTransactionClient;
+        const codes = orderedRows.map((row) => row.parsed.code!);
+        const existingCodes =
+          await this.repository.findApplyDepartmentsByCodesInTransaction(
+            departmentClient,
+            codes,
+          );
+
+        if (existingCodes.length > 0) {
+          throw new DepartmentImportApplyRejectedError(
+            "Department import apply found existing department codes.",
+            buildRejectedApplyResult(plan, existingCodes.map(toExistingCodeApplyError)),
+          );
+        }
+
+        const fileCodes = new Set(codes);
+        const externalParentCodes = [
+          ...new Set(
+            orderedRows
+              .map((row) => row.parsed.parentCode)
+              .filter((code): code is string => Boolean(code && !fileCodes.has(code))),
+          ),
+        ];
+        const parentRows =
+          await this.repository.findApplyDepartmentsByCodesInTransaction(
+            departmentClient,
+            externalParentCodes,
+          );
+        const parentByCode = new Map(parentRows.map((row) => [row.code, row]));
+        const missingParent = externalParentCodes.find(
+          (code) => !isActiveDepartment(parentByCode.get(code)),
+        );
+
+        if (missingParent) {
+          throw new DepartmentImportApplyRejectedError(
+            "Department import apply found a missing or inactive parent.",
+            buildRejectedApplyResult(plan, [
+              {
+                rowNumber: findRowNumberByParentCode(orderedRows, missingParent),
+                field: "parentCode",
+                code: "UNKNOWN_PARENT",
+                message: "Parent department code was not found as active data during apply.",
+              },
+            ]),
+          );
+        }
+
+        const createdByCode = new Map<string, DepartmentImportCreatedDepartment>();
+        const appliedRows: DepartmentImportApplyRow[] = [];
+
+        for (const row of orderedRows) {
+          const parentId = resolveParentId(row, parentByCode, createdByCode);
+          const created = await this.repository.createDepartmentInTransaction(
+            departmentClient,
+            {
+              code: row.parsed.code!,
+              name: row.parsed.name!,
+              parentId,
+            },
+          );
+
+          await this.auditService.recordEventInTransaction(
+            auditClient,
+            toDepartmentImportCreateAuditEvent(context, created, row, plan),
+          );
+
+          createdByCode.set(created.code, created);
+          appliedRows.push({
+            rowNumber: row.rowNumber,
+            code: created.code,
+            status: "CREATED",
+            createdDepartmentId: created.id,
+          });
+        }
+
+        return appliedRows;
+      });
+
+      return buildSuccessfulApplyResult(plan, createdRows);
+    } catch (error) {
+      if (error instanceof DepartmentImportApplyRejectedError) {
+        throw error;
+      }
+
+      if (this.repository.isPrismaUniqueConflict(error)) {
+        throw new DepartmentImportApplyRejectedError(
+          "Department import apply encountered a uniqueness conflict.",
+          buildRejectedApplyResult(plan, [
+            {
+              rowNumber: null,
+              field: "code",
+              code: "EXISTING_CODE",
+              message: "Department code already exists.",
+            },
+          ]),
+        );
+      }
+
+      throw error instanceof Error
+        ? error
+        : new Error("Unknown department import apply error.");
+    }
+  }
+
+  private async buildDepartmentImportPlan(
+    file: DepartmentImportDryRunFile,
+  ): Promise<DepartmentImportPlan> {
     const csv = parseImportCsv(file.buffer, {
       maxRows,
       createError: (message) => new InvalidImportCsvError(message),
@@ -127,8 +335,6 @@ export class DepartmentImportDryRunService {
     const resultRows = rows.map(toResultRow);
 
     return {
-      importType: departmentImportType,
-      dryRun: true,
       file: buildImportDryRunFileMetadata(file, "departments.csv"),
       columns: {
         required: [...requiredColumns],
@@ -140,6 +346,175 @@ export class DepartmentImportDryRunService {
     };
   }
 }
+
+const assertPlanCanApply = (plan: DepartmentImportPlan): void => {
+  const blockingErrors = toApplyErrorSummaries(plan.rows);
+  if (blockingErrors.length > 0) {
+    throw new DepartmentImportApplyRejectedError(
+      "Department import apply requires only CREATE candidates.",
+      buildRejectedApplyResult(plan, blockingErrors),
+    );
+  }
+};
+
+const buildSuccessfulApplyResult = (
+  plan: DepartmentImportPlan,
+  rows: DepartmentImportApplyRow[],
+): DepartmentImportApplyResult => ({
+  importType: departmentImportType,
+  dryRun: false,
+  mode: "CREATE_ONLY",
+  file: plan.file,
+  summary: {
+    totalRows: plan.summary.totalRows,
+    createdRows: rows.length,
+    skippedRows: 0,
+    failedRows: 0,
+    errorCount: 0,
+    warningCount: 0,
+  },
+  errors: [],
+  rows,
+});
+
+const buildRejectedApplyResult = (
+  plan: DepartmentImportPlan,
+  errors: DepartmentImportApplyErrorSummary[],
+): DepartmentImportApplyResult => ({
+  importType: departmentImportType,
+  dryRun: false,
+  mode: "CREATE_ONLY",
+  file: plan.file,
+  summary: {
+    totalRows: plan.summary.totalRows,
+    createdRows: 0,
+    skippedRows: plan.summary.warningRows,
+    failedRows: plan.summary.errorRows || errors.length,
+    errorCount: errors.length,
+    warningCount: plan.summary.warningRows,
+  },
+  errors,
+  rows: [],
+});
+
+const toApplyErrorSummaries = (
+  rows: readonly DepartmentImportDryRunRow[],
+): DepartmentImportApplyErrorSummary[] =>
+  rows.flatMap((row) => [
+    ...row.errors.map((error) => ({
+      rowNumber: row.rowNumber,
+      field: error.field,
+      code: error.code,
+      message: error.message,
+    })),
+    ...row.warnings.map((warning) => ({
+      rowNumber: row.rowNumber,
+      field: warning.field,
+      code: warning.code,
+      message: warning.message,
+    })),
+  ]);
+
+const toExistingCodeApplyError = (
+  row: DepartmentImportApplyDepartmentLookup,
+): DepartmentImportApplyErrorSummary => ({
+  rowNumber: null,
+  field: "code",
+  code: "EXISTING_CODE",
+  message: `Department code already exists: ${row.code}.`,
+});
+
+const orderRowsForCreate = (
+  rows: readonly DepartmentImportDryRunRow[],
+): DepartmentImportDryRunRow[] => {
+  const rowByCode = new Map<string, DepartmentImportDryRunRow>();
+  for (const row of rows) {
+    if (row.parsed.code) {
+      rowByCode.set(row.parsed.code, row);
+    }
+  }
+
+  const ordered: DepartmentImportDryRunRow[] = [];
+  const visited = new Set<string>();
+
+  const visit = (row: DepartmentImportDryRunRow): void => {
+    const code = row.parsed.code;
+    if (!code || visited.has(code)) {
+      return;
+    }
+
+    const parentRow = row.parsed.parentCode
+      ? rowByCode.get(row.parsed.parentCode)
+      : null;
+    if (parentRow) {
+      visit(parentRow);
+    }
+
+    visited.add(code);
+    ordered.push(row);
+  };
+
+  for (const row of rows) {
+    visit(row);
+  }
+
+  return ordered;
+};
+
+const isActiveDepartment = (
+  row: DepartmentImportApplyDepartmentLookup | undefined,
+): row is DepartmentImportApplyDepartmentLookup =>
+  Boolean(row && row.status === DepartmentStatus.ACTIVE && row.archivedAt === null);
+
+const findRowNumberByParentCode = (
+  rows: readonly DepartmentImportDryRunRow[],
+  parentCode: string,
+): number | null =>
+  rows.find((row) => row.parsed.parentCode === parentCode)?.rowNumber ?? null;
+
+const resolveParentId = (
+  row: DepartmentImportDryRunRow,
+  parentByCode: ReadonlyMap<string, DepartmentImportApplyDepartmentLookup>,
+  createdByCode: ReadonlyMap<string, DepartmentImportCreatedDepartment>,
+): string | null => {
+  const parentCode = row.parsed.parentCode;
+  if (!parentCode) {
+    return null;
+  }
+
+  return createdByCode.get(parentCode)?.id ?? parentByCode.get(parentCode)?.id ?? null;
+};
+
+const toDepartmentImportCreateAuditEvent = (
+  context: UserContext,
+  department: DepartmentImportCreatedDepartment,
+  row: DepartmentImportDryRunRow,
+  plan: DepartmentImportPlan,
+): CreateAuditEventInput => ({
+  actor: {
+    userId: context.userId,
+    departmentId: context.departmentId,
+  },
+  action: AuditActionCode.configUpdate,
+  target: {
+    type: AuditTargetTypeCode.systemConfig,
+    id: department.id,
+    departmentId: department.id,
+  },
+  oldValue: null,
+  newValue: {
+    operation: "DEPARTMENT_IMPORT_CREATE",
+    importType: departmentImportType,
+    mode: "CREATE_ONLY",
+    rowNumber: row.rowNumber,
+    departmentId: department.id,
+    code: department.code,
+    name: department.name,
+    parentId: department.parentId,
+    totalRows: plan.summary.totalRows,
+    createdRows: plan.summary.createCandidates,
+  },
+});
 
 const toWorkingRows = (csv: ImportCsvParseResult): WorkingRow[] =>
   csv.records.map((record) => {

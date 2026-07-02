@@ -19,6 +19,7 @@ const ids = {
 };
 
 type DepartmentImportDryRunServiceMock = {
+  applyDepartmentCsv: ReturnType<typeof vi.fn>;
   dryRunDepartmentCsv: ReturnType<typeof vi.fn>;
 };
 
@@ -50,6 +51,34 @@ const makeUserContext = (permissions: readonly PermissionCode[]): UserContext =>
 });
 
 const createServiceMock = (): DepartmentImportDryRunServiceMock => ({
+  applyDepartmentCsv: vi.fn().mockResolvedValue({
+    importType: "DEPARTMENT_METADATA",
+    dryRun: false,
+    mode: "CREATE_ONLY",
+    file: {
+      name: "departments.csv",
+      size: 35,
+      mimeType: "text/csv",
+      encoding: "utf-8",
+    },
+    summary: {
+      totalRows: 1,
+      createdRows: 1,
+      skippedRows: 0,
+      failedRows: 0,
+      errorCount: 0,
+      warningCount: 0,
+    },
+    errors: [],
+    rows: [
+      {
+        rowNumber: 2,
+        code: "AI_RESEARCH",
+        status: "CREATED",
+        createdDepartmentId: "10000000-0000-4000-8000-000000000010",
+      },
+    ],
+  }),
   dryRunDepartmentCsv: vi.fn().mockResolvedValue({
     importType: "DEPARTMENT_METADATA",
     dryRun: true,
@@ -92,6 +121,7 @@ describe("DepartmentImportDryRunController HTTP", () => {
         .expect(401);
 
       expect(service.dryRunDepartmentCsv).not.toHaveBeenCalled();
+      expect(service.applyDepartmentCsv).not.toHaveBeenCalled();
     });
   });
 
@@ -107,6 +137,7 @@ describe("DepartmentImportDryRunController HTTP", () => {
         .expect(403);
 
       expect(service.dryRunDepartmentCsv).not.toHaveBeenCalled();
+      expect(service.applyDepartmentCsv).not.toHaveBeenCalled();
     });
   });
 
@@ -152,6 +183,72 @@ describe("DepartmentImportDryRunController HTTP", () => {
         .expect(415);
 
       expect(service.dryRunDepartmentCsv).not.toHaveBeenCalled();
+    });
+  });
+
+  it("returns 403 for apply before service execution when permission is missing", async () => {
+    await withTestApp([PermissionCode.achievementCreate], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .post("/imports/departments/apply")
+        .set("X-Demo-User-Id", ids.user)
+        .attach("file", csvBuffer(), {
+          filename: "departments.csv",
+          contentType: "text/csv",
+        })
+        .expect(403);
+
+      expect(service.applyDepartmentCsv).not.toHaveBeenCalled();
+    });
+  });
+
+  it("accepts CSV multipart files and delegates to the create-only apply service", async () => {
+    await withTestApp([PermissionCode.systemConfig], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .post("/imports/departments/apply")
+        .set("X-Demo-User-Id", ids.user)
+        .field("mode", "CREATE_ONLY")
+        .attach("file", csvBuffer(), {
+          filename: "departments.csv",
+          contentType: "text/csv",
+        })
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        importType: "DEPARTMENT_METADATA",
+        dryRun: false,
+        mode: "CREATE_ONLY",
+        summary: { createdRows: 1 },
+      });
+      expect(service.applyDepartmentCsv).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: ids.user }),
+        expect.objectContaining({
+          originalName: "departments.csv",
+          mimeType: "text/csv",
+          size: csvBuffer().byteLength,
+          buffer: expect.any(Buffer),
+        }),
+        "CREATE_ONLY",
+      );
+    });
+  });
+
+  it("rejects missing files and unsupported non-CSV uploads for apply", async () => {
+    await withTestApp([PermissionCode.systemConfig], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .post("/imports/departments/apply")
+        .set("X-Demo-User-Id", ids.user)
+        .expect(400);
+
+      await request(app.getHttpServer() as Server)
+        .post("/imports/departments/apply")
+        .set("X-Demo-User-Id", ids.user)
+        .attach("file", csvBuffer(), {
+          filename: "departments.xlsx",
+          contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        })
+        .expect(415);
+
+      expect(service.applyDepartmentCsv).not.toHaveBeenCalled();
     });
   });
 });

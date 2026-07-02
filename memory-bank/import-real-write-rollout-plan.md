@@ -145,3 +145,31 @@ After a department create-only apply slice is implemented and accepted, the next
 2. Department existing-record review/update design as a separate docs-only Step.
 3. User/account import write design, starting with pending users without credentials and without invite/reset issuance.
 4. Achievement draft import write design, starting with one type or a strict all-type draft create mapper only after department/user write risks are settled.
+
+## Step 65B Implementation Record
+
+- Date: 2026-07-02.
+- Implemented backend-only department metadata create-only apply.
+- Added `POST /api/imports/departments/apply`.
+- Apply mode:
+  - Supports only `CREATE_ONLY`.
+  - Rejects non-`CREATE_ONLY` mode before parsing or opening a transaction.
+- Validation and write path:
+  - Reuses the same server-side department import parsing and dry-run validation plan as `POST /api/imports/departments/dry-run`.
+  - Rejects apply when any row has dry-run errors or warnings, including duplicate file codes, unknown parents, file-local parent cycles, unsupported columns, formula-like values, or existing department codes.
+  - Inserts file-local parents before children.
+  - Uses one Prisma transaction for all department creates and audit events.
+  - Rechecks department code uniqueness and external parent active existence inside the transaction.
+  - Maps Prisma unique conflicts to a safe apply rejection summary.
+- Audit:
+  - Records `CONFIG_UPDATE` audit events in the same transaction.
+  - Uses operation `DEPARTMENT_IMPORT_CREATE`.
+  - Audit metadata records stable row/department facts only.
+- Response:
+  - Successful apply returns `dryRun: false`, `mode: CREATE_ONLY`, sanitized file metadata, created/skipped/failed counts, error count, warning count, and created row ids/codes.
+  - Rejected apply returns safe error summaries through a 400 response.
+- Still deferred:
+  - Web execute button.
+  - Department update/upsert/delete/import merge.
+  - User/account and achievement real-write import.
+  - Production/VPS writes, batch real-data import, password operations, invite/reset flow, DirectMail/real email, attachment/fee/workflow/search/resource-grant import, persisted import jobs, durable idempotency keys, schema/migration work, deployment, cleanup, deletion, reset, drop, and prune.

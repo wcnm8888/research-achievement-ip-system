@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Inject,
   PayloadTooLargeException,
@@ -17,8 +18,10 @@ import { PermissionGuard } from "../authorization/guards/permission.guard";
 import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import { UserContext } from "../identity/user-context";
 import {
+  DepartmentImportApplyRejectedError,
   DepartmentImportDryRunFile,
   DepartmentImportDryRunService,
+  InvalidDepartmentImportApplyModeError,
   InvalidImportCsvError,
 } from "./department-import-dry-run.service";
 import { importDryRunMaxFileBytes } from "./import-dry-run.shared";
@@ -59,6 +62,29 @@ export class DepartmentImportDryRunController {
       );
     } catch (error) {
       throw mapDepartmentImportDryRunError(error);
+    }
+  }
+
+  @Post("apply")
+  @RequirePermissions(PermissionCode.systemConfig)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: { fileSize: importFileMaxBytes },
+    }),
+  )
+  async applyDepartmentImport(
+    @CurrentUser() currentUser: UserContext,
+    @UploadedFile() file?: UploadedImportFile,
+    @Body("mode") mode?: string,
+  ) {
+    try {
+      return await this.departmentImportDryRunService.applyDepartmentCsv(
+        currentUser,
+        toDepartmentImportDryRunFile(file),
+        mode,
+      );
+    } catch (error) {
+      throw mapDepartmentImportApplyError(error);
     }
   }
 }
@@ -119,6 +145,22 @@ const mapDepartmentImportDryRunError = (error: unknown): Error => {
   return error instanceof Error
     ? error
     : new Error("Unknown department import dry-run controller error.");
+};
+
+const mapDepartmentImportApplyError = (error: unknown): Error => {
+  if (error instanceof DepartmentImportApplyRejectedError) {
+    return new BadRequestException({
+      message: error.message,
+      summary: error.result.summary,
+      errors: error.result.errors,
+    });
+  }
+
+  if (error instanceof InvalidDepartmentImportApplyModeError) {
+    return new BadRequestException(error.message);
+  }
+
+  return mapDepartmentImportDryRunError(error);
 };
 
 const isMulterFileSizeError = (

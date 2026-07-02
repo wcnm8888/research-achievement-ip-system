@@ -1,5 +1,21 @@
 # Decisions
 
+## D231 - Department import apply is create-only and transaction-scoped
+
+- Date: 2026-07-02.
+- Context: Step 65B implements the first import real-write slice from Step 65A. The task allows backend-only department create-only apply and related tests/memory-bank updates, while prohibiting Web apply UI, user/account real-write import, achievement real-write import, production/VPS access, production DB access, password changes/resets, invite/reset flow, real email, Docker production/VPS operations, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling.
+- Decision:
+  - Add `POST /api/imports/departments/apply`.
+  - Support only `CREATE_ONLY`; reject other modes.
+  - Reuse the server-side dry-run validation plan rather than accepting any client-supplied dry-run result.
+  - Reject apply if any row has dry-run errors or warnings, so existing department codes remain non-writable in this slice.
+  - Keep the whole apply operation in one Prisma transaction, including department creates and audit events.
+  - Insert file-local parent rows before child rows.
+  - Recheck department code uniqueness and external parent active existence inside the transaction.
+  - Return only sanitized apply summaries and safe created row ids/codes.
+- Scope:
+  - This decision does not authorize Web execute controls, update/upsert/delete/merge import behavior, persisted import jobs, durable idempotency keys, user/account real-write import, achievement real-write import, attachment/fee/workflow/search/resource-grant import, production/VPS writes, batch real-data import, password work, invite/reset flow, DirectMail/real email, schema/migration work, deployment, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D230 - Department create-only import is the first real-write slice
 
 - Date: 2026-07-02.

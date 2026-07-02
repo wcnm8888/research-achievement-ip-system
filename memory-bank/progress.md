@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-07-02 Step 65B - Department import create-only backend apply
+
+- Status: STEP_65B_DEPARTMENT_IMPORT_CREATE_ONLY_APPLY_IMPLEMENTED.
+- Step identity:
+  - Implemented the first import real-write slice as backend-only department metadata create-only apply.
+  - No Web UI apply button, user/account real-write import, achievement real-write import, production/VPS access, production DB access, Docker operation, password change/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `POST /api/imports/departments/apply`.
+  - Reused the server-side department dry-run validation plan for apply.
+  - Added `CREATE_ONLY` mode validation and rejected non-`CREATE_ONLY` modes.
+  - Added all-or-nothing Prisma transaction for department creates plus audit events.
+  - Added parent-before-child insertion.
+  - Added transaction-time department code uniqueness and external parent active-existence rechecks.
+  - Added safe apply summary responses and rejected-apply error summaries.
+  - Updated `ImportsModule` to import `AuditModule`.
+  - Updated department import service, repository, controller, and AppModule tests.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed; matches were boundary/test terms only, with no sensitive values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 65A - Import real-write rollout scope and first-slice plan
 
 - Status: STEP_65A_IMPORT_REAL_WRITE_ROLLOUT_PLAN_READY_DOCS_ONLY.

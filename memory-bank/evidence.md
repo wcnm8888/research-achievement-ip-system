@@ -1,5 +1,46 @@
 # Evidence
 
+## 2026-07-02 Step 65B - Department import create-only backend apply evidence
+
+- Purpose:
+  - Implement backend-only `POST /api/imports/departments/apply` as the first department import real-write slice.
+  - Keep this Step limited to department create-only apply, tests, and memory-bank updates.
+  - Do not add Web UI apply controls, user/account real-write import, achievement real-write import, production/VPS access, production DB access, Docker operation, account password work, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `ce20af7`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`.
+  - Read `memory-bank/import-real-write-rollout-plan.md`.
+  - Read department import dry-run service, repository, controller, focused specs, and AppModule import route spec.
+  - Read import shared helper through current dry-run service usage.
+  - Read audit module/service/repository/action/target types and current department management audit pattern.
+- Implementation evidence:
+  - Added `POST /api/imports/departments/apply`.
+  - Added service-level `applyDepartmentCsv` with `CREATE_ONLY` mode enforcement.
+  - Refactored department dry-run service to build one reusable validation plan for both dry-run and apply.
+  - Added transaction-scoped department code and external parent rechecks.
+  - Added parent-before-child insertion for file-local department trees.
+  - Added transaction-scoped `CONFIG_UPDATE` audit events with operation `DEPARTMENT_IMPORT_CREATE`.
+  - Added repository transaction methods for apply lookup and create.
+  - Added `AuditModule` to `ImportsModule`.
+  - Added focused tests for success tree creation, duplicate code rejection, missing parent rejection, transaction-time code/parent conflicts, partial failure transaction boundary, non-`CREATE_ONLY` rejection, permission denial, route wiring, and audit transaction client usage.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan over final staged additions:
+    - `secret`: 1.
+    - `token`: 1.
+    - `password`: 8.
+    - `cookie`: 1.
+    - `private_key`: 1.
+    - `connection_string`: 1.
+    - `access_key`: 1.
+  - Sensitive scan result: matches are boundary/test/count-label terms only; no values were recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 65A - Import real-write rollout scope and first-slice plan evidence
 
 - Purpose:
