@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-07-02 Step 65C - Department import create-only local production-like acceptance evidence
+
+- Purpose:
+  - Verify Step 65B `POST /api/imports/departments/apply` in a local production-like stack.
+  - Use synthetic department CSV and synthetic local auth/business data only.
+  - Keep this Step limited to local acceptance helper/docs and small bug fixes only if needed.
+  - Do not add Web UI apply controls, user/account real-write import, achievement real-write import, production/VPS access, production DB access, production rollout, account password changes/resets, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `86acbb4`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`.
+  - Read `memory-bank/import-real-write-rollout-plan.md` Step 65 content.
+  - Read Step 65B department import route/service/repository/tests, AppModule route test, and relevant auth/session/permission/audit patterns.
+  - Read only the relevant local production-like Docker compose file needed to run local acceptance.
+- Local production-like execution:
+  - `docker compose -f docker-compose.production.yml build api web`: web image built; API image build was blocked by npm registry network failures (`ECONNRESET` / `ENOTFOUND`) during dependency install.
+  - `corepack pnpm --filter @research-ip/api build`: PASS.
+  - Local-only fallback used for acceptance: copied the host-built API dist and the Step 65C helper into the already-running local API container, then restarted the local API container.
+  - Local API health after restart: 200.
+  - Acceptance helper: `docker compose -f docker-compose.production.yml exec -T api node /app/step65c-department-import-acceptance.mjs`.
+- Sanitized acceptance output:
+  - `healthStatus`: 200.
+  - `loginStatuses`: admin 200, limited 200.
+  - Success apply: status 201, created rows 2, department count 0 -> 2, audit operation delta 2.
+  - Repeat apply: status 400, department count 2 -> 2, error codes `EXISTING_CODE`.
+  - Missing-parent rollback: status 400, department count 0 -> 0, error codes `UNKNOWN_PARENT`.
+  - Duplicate-file rollback: status 400, department count 0 -> 0, error codes `DUPLICATE_IN_FILE`.
+  - Permission denied: status 403, department count 0 -> 0.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 449 added lines including the new helper; matches were boundary/helper variable terms only, with no values recorded.
+  - Pending commit and post-commit tracked diff check.
+- Boundary:
+  - Local production-like acceptance does not equal production/VPS acceptance.
+  - No token/cookie/session/connection string/credential values were printed or recorded.
+
 ## 2026-07-02 Step 65B - Department import create-only backend apply evidence
 
 - Purpose:

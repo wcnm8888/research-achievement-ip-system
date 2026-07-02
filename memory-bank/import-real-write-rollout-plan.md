@@ -173,3 +173,42 @@ After a department create-only apply slice is implemented and accepted, the next
   - Department update/upsert/delete/import merge.
   - User/account and achievement real-write import.
   - Production/VPS writes, batch real-data import, password operations, invite/reset flow, DirectMail/real email, attachment/fee/workflow/search/resource-grant import, persisted import jobs, durable idempotency keys, schema/migration work, deployment, cleanup, deletion, reset, drop, and prune.
+
+## Step 65C Local Production-Like Acceptance Record
+
+- Date: 2026-07-02.
+- Scope:
+  - Local production-like acceptance for `POST /api/imports/departments/apply`.
+  - Synthetic CSV and synthetic local `S65C_*` auth/business rows only.
+  - This record does not claim production/VPS acceptance.
+- Acceptance helper:
+  - Added `memory-bank/step65c-department-import-acceptance.mjs`.
+  - Intended to run inside the local API container.
+  - Posts multipart CSV to `/api/imports/departments/apply`.
+  - Outputs only sanitized status codes, department count deltas, audit operation delta, and safe error codes.
+  - Does not print cookie/session/credential/connection values.
+- Covered checks:
+  - Parent-before-child tree create succeeded with 2 created rows.
+  - Repeated exact apply was rejected by `CREATE_ONLY` duplicate handling and produced no net new department rows.
+  - Missing parent rejection left department counts unchanged.
+  - Duplicate code in the file was rejected and left department counts unchanged.
+  - Limited user without `system:config` was rejected and left department counts unchanged.
+  - Audit operation `DEPARTMENT_IMPORT_CREATE` was written for the successful create path.
+- Sanitized evidence:
+  - Health status: 200.
+  - Synthetic admin / limited login statuses: 200 / 200.
+  - Success: status 201, created rows 2, department count 0 -> 2, audit operation delta 2.
+  - Repeat apply: status 400, department count 2 -> 2, error code `EXISTING_CODE`.
+  - Missing parent rollback: status 400, department count 0 -> 0, error code `UNKNOWN_PARENT`.
+  - Duplicate file rollback: status 400, department count 0 -> 0, error code `DUPLICATE_IN_FILE`.
+  - Permission denied: status 403, department count 0 -> 0.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Still deferred:
+  - Production/VPS write execution.
+  - Batch real-data import.
+  - Web apply button.
+  - User/account real-write import.
+  - Achievement real-write import.
+  - Password changes/resets, invite/reset flow, and DirectMail/real email.

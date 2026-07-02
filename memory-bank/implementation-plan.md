@@ -4,6 +4,42 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 65C Archive - Department import create-only local production-like acceptance - 2026-07-02
+
+- Step identity:
+  - Local production-like acceptance of Step 65B `POST /api/imports/departments/apply`.
+  - Used synthetic department CSV and synthetic local auth/business rows only.
+  - This is not production/VPS acceptance.
+  - No Web UI apply button, user/account real-write import, achievement real-write import, production/VPS access, production DB access, production rollout, password modification/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented files:
+  - `memory-bank/step65c-department-import-acceptance.mjs`.
+  - Memory-bank Step 65C progress, decision, rollout-plan, and evidence records.
+- Acceptance helper:
+  - Runs inside the local API container against `http://127.0.0.1:3000/api`.
+  - Creates synthetic `S65C_*` local role/user/department rows and posts synthetic CSV multipart requests.
+  - Keeps generated login credential and session cookie in process memory only.
+  - Outputs sanitized JSON with status codes, department count deltas, audit operation delta, and safe error codes.
+- Acceptance results:
+  - Health status: 200.
+  - Synthetic admin / limited login statuses: 200 / 200.
+  - Success tree apply: status 201, created rows 2, department count 0 -> 2, audit operation delta 2.
+  - Repeated apply: status 400, department count 2 -> 2, error code `EXISTING_CODE`.
+  - Missing-parent rollback: status 400, department count 0 -> 0, error code `UNKNOWN_PARENT`.
+  - Duplicate-file rollback: status 400, department count 0 -> 0, error code `DUPLICATE_IN_FILE`.
+  - Permission denied: status 403, department count 0 -> 0.
+- Verification:
+  - `docker compose -f docker-compose.production.yml build api web`: web built; API build blocked by npm registry network failures (`ECONNRESET` / `ENOTFOUND`) during dependency install.
+  - `corepack pnpm --filter @research-ip/api build`: PASS; used as local-only fallback before copying compiled API dist into the already-running local API container and restarting that container.
+  - Local acceptance helper run inside API container: PASS with sanitized evidence above.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 449 added lines including the new helper; matches were boundary/helper variable terms only, with no values recorded.
+  - Pending commit and post-commit tracked diff check.
+- Next:
+  - Step 65D should remain docs/planning unless explicitly authorized to add Web controls or design the next import write slice.
+  - Do not move to production/VPS write acceptance without a separate authorization gate and runbook.
+
 ## Current Step 65B Archive - Department import create-only backend apply - 2026-07-02
 
 - Step identity:

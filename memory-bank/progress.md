@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-07-02 Step 65C - Department import create-only local production-like acceptance
+
+- Status: STEP_65C_DEPARTMENT_IMPORT_CREATE_ONLY_LOCAL_ACCEPTED.
+- Step identity:
+  - Verified Step 65B `POST /api/imports/departments/apply` in the local production-like Docker stack with synthetic department CSV and synthetic local auth data.
+  - This is local production-like acceptance only; it is not production/VPS acceptance.
+  - No Web UI apply button, user/account real-write import, achievement real-write import, production/VPS access, production DB access, production rollout, password modification/reset, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `memory-bank/step65c-department-import-acceptance.mjs` as a committable local acceptance helper intended to run inside the local API container.
+  - The helper creates only synthetic `S65C_*` local data, posts synthetic CSV to `/api/imports/departments/apply`, and outputs sanitized status/count/error-code evidence.
+- Acceptance evidence:
+  - Local production-like health status: 200.
+  - Synthetic admin and limited-user login statuses: 200 / 200; session material was kept in memory and not printed.
+  - Successful apply returned 201, created 2 rows, department count changed 0 -> 2, and `DEPARTMENT_IMPORT_CREATE` audit operation delta was 2.
+  - Repeated apply returned 400 with `EXISTING_CODE`, department count stayed 2 -> 2.
+  - Missing-parent rollback returned 400 with `UNKNOWN_PARENT`, department count stayed 0 -> 0.
+  - Duplicate-file rollback returned 400 with `DUPLICATE_IN_FILE`, department count stayed 0 -> 0.
+  - Permission-denied apply returned 403, department count stayed 0 -> 0.
+- Verification:
+  - `docker compose -f docker-compose.production.yml build api web`: web image built; API image build was blocked by npm registry network failures (`ECONNRESET` / `ENOTFOUND`) during dependency install.
+  - Fallback for local-only acceptance: `corepack pnpm --filter @research-ip/api build` passed; the compiled API dist and acceptance helper were copied into the already-running local API container and the local API container was restarted.
+  - `corepack pnpm --filter @research-ip/api test -- department-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan completed over 449 added lines including the new helper; matches were boundary/helper variable terms only, with no values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 65B - Department import create-only backend apply
 
 - Status: STEP_65B_DEPARTMENT_IMPORT_CREATE_ONLY_APPLY_IMPLEMENTED.

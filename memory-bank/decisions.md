@@ -1,5 +1,18 @@
 # Decisions
 
+## D232 - Step 65C acceptance remains local production-like and synthetic only
+
+- Date: 2026-07-02.
+- Context: Step 65C verifies the Step 65B department create-only apply endpoint in a local production-like environment. The task allows local Docker usage and synthetic department CSV/test business data, while prohibiting production/VPS access, production rollout, Web apply UI, user/account or achievement real-write import, password changes/resets, invite/reset flow, real email, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling.
+- Decision:
+  - Add a committable local acceptance helper under `memory-bank/` rather than adding Web UI controls or broadening runtime behavior.
+  - Use only synthetic `S65C_*` local rows and synthetic CSV content.
+  - Keep authentication material inside the helper process; evidence output may include login status codes but not cookies, sessions, generated credentials, connection strings, or local environment values.
+  - Treat repeated apply as a successful create-only idempotency acceptance when it returns a duplicate rejection with no net new department rows.
+  - Treat local production-like acceptance as evidence for the local stack only, not as production/VPS readiness.
+- Scope:
+  - This decision does not authorize production/VPS writes, production DB access, production rollout, Web apply controls, user/account real-write import, achievement real-write import, batch real-data import, password work, invite/reset flow, DirectMail/real email, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D231 - Department import apply is create-only and transaction-scoped
 
 - Date: 2026-07-02.
