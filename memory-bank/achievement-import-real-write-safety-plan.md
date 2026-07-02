@@ -308,3 +308,27 @@ Keep deferred:
   - production/VPS rollout;
   - real-data import;
   - workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job history, and durable idempotency keys.
+
+## Step 68D Web Entry Design Addendum
+
+- Date: 2026-07-02.
+- Added `memory-bank/achievement-import-apply-web-entry-design.md`.
+- Designed the Web entry as an extension of the existing `AchievementImportDryRunPanel` in `apps/web/src/Achievements.tsx`.
+- The Web apply affordance should be visible only for `system:config` users, while backend guards remain authoritative.
+- The Web should enable apply only for an eligible dry-run:
+  - `importType=ACHIEVEMENT`;
+  - `dryRun=true`;
+  - mode intended as `CREATE_DRAFT_ONLY`;
+  - all rows `VALID`;
+  - all candidates `CREATE_DRAFT`;
+  - no errors;
+  - no warnings;
+  - all rows `PAPER`;
+  - every row has normalized DOI;
+  - selected file fingerprint still matches the successful dry-run.
+- Confirmation copy must state that the action creates only draft paper achievements, paper details, contributors, and safe audit evidence.
+- Confirmation copy must also state that it does not submit for approval, does not create workflow/attachment/storage/fee/reminder/notification/search/resource-grant/import-job side effects, and does not support patent/software copyright apply.
+- Result display should show only safe counts, audit operation, safe rejected error codes, and boundary copy.
+- Result and error UI must not echo raw DOI values, normalized DOI values, owner email, contributor email/name, uploaded CSV content, local paths, credential/session material, or stack traces.
+- Step 68E recommended scope is Web-only: types, API client helper, eligibility/fingerprint helper, confirmation modal, safe result/error UI, Web Vitest, and memory-bank updates.
+- Step 68F recommended scope is local production-like Web acceptance with synthetic data only, if explicitly authorized.

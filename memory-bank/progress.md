@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-07-02 Step 68D - Achievement PAPER import apply Web entry design
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/achievement-import-apply-web-entry-design.md`.
+  - Updated `memory-bank/achievement-import-real-write-safety-plan.md` with the Step 68D Web entry design addendum.
+  - Designed the minimal Web entry adjacent to the existing `AchievementImportDryRunPanel` in `apps/web/src/Achievements.tsx`.
+  - Defined Web state, same-file fingerprinting, apply eligibility, confirmation copy, safe success/error display, permission boundary, status refresh behavior, and Web test plan.
+  - Recommended Step 68E as Web-only implementation: types, API client helper, eligibility/fingerprint helper, confirmation modal, safe result/error UI, and Web Vitest.
+  - Recommended Step 68F as a later local production-like Web acceptance step with synthetic data only.
+- Explicitly not done:
+  - No Web code implementation.
+  - No apply API call.
+  - No Docker operation, browser acceptance, Web build, typecheck, test, production/VPS access, production DB access, production configuration access, real-data import, schema/package/lockfile/config/script change, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `PATENT` or `SOFTWARE_COPYRIGHT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime, API, Web, schema, package, lockfile, configuration, or script code changed.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 68C - Achievement PAPER import local production-like API acceptance
 
 - Status: DONE.

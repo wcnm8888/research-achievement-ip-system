@@ -1,5 +1,20 @@
 # Decisions
 
+## D245 - Achievement import Web apply entry stays PAPER draft-only and dry-run gated
+
+- Date: 2026-07-02.
+- Context: Step 68D designs the first Web entry for the Step 68B/68C backend-only achievement import apply path. The backend has accepted only `PAPER` + `CREATE_DRAFT_ONLY`, with normalized DOI required, dry-run warnings/errors blocking apply, transaction-time rechecks, safe audit evidence, and local production-like API acceptance. The task is documentation-only and prohibits Web implementation, API calls, Docker, production/VPS access, production DB/config access, secret handling, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Place the apply affordance next to the existing achievement import dry-run panel in `Achievements.tsx`.
+  - Show the apply affordance only for users with `system:config`; backend guards remain authoritative.
+  - Enable apply only after a successful dry-run for the same file fingerprint and only when all rows are `VALID` `CREATE_DRAFT` `PAPER` rows with normalized DOI and no errors or warnings.
+  - Block Web apply for `PATENT`, `SOFTWARE_COPYRIGHT`, missing DOI, dry-run warnings, dry-run errors, stale file selection, and non-`CREATE_DRAFT` candidates.
+  - Require confirmation copy that states the action creates only draft paper achievements, paper detail rows, contributors, and safe audit evidence, with no approval submission or workflow/attachment/storage/fee/reminder/notification/search/resource-grant/import-job side effects.
+  - Display only safe summary counts, audit operation, boundary text, and safe error codes after apply.
+  - Keep Step 68E implementation Web-only and defer browser/Docker local production-like Web acceptance to Step 68F if separately authorized.
+- Scope:
+  - This decision does not authorize Web implementation in Step 68D, apply API calls, patent/software copyright apply, backend/API changes, Prisma schema/migration changes, package/lockfile/config changes, Docker/browser acceptance, production/VPS access, production DB/config access, real-data import, workflow/attachment/storage/fee/reminder/notification/search/resource grant/import job creation, state-machine transitions, cleanup, deletion, reset, drop, prune, or known untracked-artifact handling.
+
 ## D244 - Achievement import first write slice is PAPER draft-only
 
 - Date: 2026-07-02.

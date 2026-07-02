@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-07-02 Step 68D - Achievement PAPER import apply Web entry design evidence
+
+- Goal:
+  - Design the minimum Web entry for the Step 68B/68C verified backend-only `PAPER` `CREATE_DRAFT_ONLY` achievement import apply path, without implementing Web code.
+- Initial state:
+  - `git log -1 --oneline`: `b00e127 test: add achievement import local acceptance`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Local Docker production-like services may have remained running from Step 68C; this Step did not stop, clean, rebuild, or otherwise operate Docker.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - Step 68A-68C snippets from `memory-bank/progress.md`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/api-client.test.ts`.
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/importDryRunUi.tsx`.
+  - `memory-bank/department-import-apply-web-entry-design.md`.
+  - `memory-bank/user-account-import-apply-web-entry-design.md`.
+- Implemented files:
+  - `memory-bank/achievement-import-apply-web-entry-design.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Design coverage:
+  - Placement: extend the existing achievement import dry-run panel in `Achievements.tsx`, not a new page.
+  - Permission: show apply only for `system:config`; backend remains authoritative.
+  - State machine: dry-run state, apply state, confirmation state, same-file fingerprint, success/error states, and list refresh.
+  - Eligibility: only `ACHIEVEMENT`, `CREATE_DRAFT_ONLY`, all rows `VALID`, all candidates `CREATE_DRAFT`, no errors, no warnings, all rows `PAPER`, and normalized DOI present for every row.
+  - Confirmation copy: draft-only paper creation, no approval submission, no workflow, no attachment/storage, no fee, no notification/search/resource grant, and no patent/software apply.
+  - API client/types: add `AchievementImportApplyInput` / result types and `applyAchievementImport` multipart helper in Step 68E.
+  - Result/error display: show safe counts, audit operation, boundary copy, and safe error codes only.
+  - Step 68E: Web-only minimum implementation scope and Web Vitest plan.
+  - Step 68F: later local production-like Web acceptance recommendation with synthetic data only.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime, API, Web, schema, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan: PASS; final staged scan covered the new design document and memory-bank updates, and matches were documentation safety-boundary terms only with no complete URL, credential value, connection string value, private key value, AccessKey value, token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No Web code was implemented.
+  - No apply API was called.
+  - No Docker command, browser acceptance, Web build, typecheck, test, production/VPS access, production DB access, production configuration access, real-data import, `.env` / `.env.production` content read, password/cookie/token/secret/connection string/AccessKey/private key handling, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts occurred.
+
 ## 2026-07-02 Step 68C - Achievement PAPER import local production-like API acceptance evidence
 
 - Goal:
