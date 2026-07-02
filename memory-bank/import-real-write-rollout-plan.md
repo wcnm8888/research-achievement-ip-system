@@ -333,6 +333,38 @@ After a department create-only apply slice is implemented and accepted, the next
   - Employee-number schema and database uniqueness.
   - Achievement apply.
 
+## Step 68A Achievement Real-Write Safety Plan
+
+- Date: 2026-07-02.
+- Scope:
+  - Documentation-only safety plan for moving achievement import from dry-run toward a first real-write slice.
+  - No runtime implementation, apply API execution, database write, Docker, production/VPS access, production DB access, schema/migration work, package changes, or Web apply entry.
+- Plan document:
+  - Added `memory-bank/achievement-import-real-write-safety-plan.md`.
+- Recommended first slice:
+  - Backend-only `POST /api/achievements/import/apply`.
+  - Only mode: `CREATE_DRAFT_ONLY`.
+  - Static permission: `system:config`.
+  - First implementation type: `PAPER` only.
+  - Require normalized DOI for every apply row so repeated exact apply has a durable conflict boundary.
+  - Create only `DRAFT` achievement rows, `PaperDetail` rows, contributor rows, and safe audit evidence in one transaction.
+- Key safety decisions:
+  - Apply must server-side re-parse and revalidate the uploaded CSV; it must not trust client dry-run output.
+  - Apply must reject any dry-run errors or warnings, plus apply-only blockers such as unsupported type or missing DOI.
+  - Transaction-time rechecks must cover active department, active owner, owner department match, active contributor users, and normalized DOI absence.
+  - Partial success is not allowed.
+  - Repeated exact apply after success must create no additional achievement rows and should surface a safe DOI conflict.
+  - Patent and software copyright apply are deferred until the `PAPER` slice proves the transaction, audit, race-condition, and duplicate-apply pattern.
+- Explicit exclusions:
+  - No workflow instance/task/action creation.
+  - No attachment/storage import.
+  - No fee, reminder, notification, search, or resource grant import.
+  - No submit/approve/reject/archive/void or achievement state-machine transition.
+  - No production/VPS writes, production DB access, real-data import, persisted import jobs, durable idempotency keys, cleanup, deletion, reset, drop, or prune.
+- Recommended Step 68B:
+  - Implement only the backend `PAPER` `CREATE_DRAFT_ONLY` apply endpoint, shared server-side planning path, transaction-scoped achievement/detail/contributor/audit writes, race-condition rechecks, safe conflict mapping, and focused API tests.
+  - Keep Web apply, `PATENT`/`SOFTWARE_COPYRIGHT`, local production-like write acceptance, production/VPS rollout, and all side-effect imports deferred unless separately authorized.
+
 ## Step 65B Implementation Record
 
 - Date: 2026-07-02.

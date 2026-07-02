@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-07-02 Step 68A - Achievement import real-write safety plan evidence
+
+- Goal:
+  - Design the achievement import first real-write slice and safety boundary without implementing writes.
+- Initial state:
+  - `git log -1 --oneline`: `88e5954 docs: add employee number migration readiness runbook`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - `memory-bank/import-dry-run-contract.md`.
+  - Targeted Step 65A-67E/latest snippets from `memory-bank/progress.md`.
+  - Achievement dry-run service/repository/controller and focused tests.
+  - Achievement draft service/repository/controller/domain/DTO code and focused tests.
+  - Targeted Prisma snippets for achievement, typed detail, contributor, workflow, fee, attachment, audit, and resource grant models.
+- Implemented files:
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Plan coverage:
+  - First safe slice: backend-only `CREATE_DRAFT_ONLY`.
+  - Type scope: first implementation should support `PAPER` only and require normalized DOI for apply.
+  - Allowed writes: `DRAFT` achievement, `PaperDetail`, contributors, and safe audit evidence only.
+  - Forbidden writes: workflow, attachment/storage, fee, reminder, notification, search, resource grant, state-machine transition, production/VPS/production DB, and real-data import.
+  - Required apply behavior: server-side re-parse and dry-run-equivalent validation; no trust in client dry-run output.
+  - Transaction boundary: all-or-nothing Prisma transaction including audit; no partial success.
+  - Race-condition rechecks: active department, active owner, owner department match, active contributor users, normalized DOI absence, and final unique-conflict mapping.
+  - Duplicate apply behavior: repeated exact apply must create no additional achievement rows and should return a safe normalized DOI conflict.
+  - Step 68B recommendation: implement only backend `PAPER` apply with focused API tests; defer Web, patent/software copyright, local production-like write acceptance, production rollout, and side-effect imports.
+- Validation:
+  - Full typecheck/test/build not run because this Step changed documentation and memory-bank files only.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines plus new safety-plan file sensitive keyword scan covered the required terms; 392 added/new lines scanned, 14 total keyword matches, all documentation safety-boundary terminology, with complete URL matches `0` and no sensitive values printed.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No Docker, database write, migration, seed, backfill, runtime implementation, apply API call, production/VPS access, production DB access, schema/package/config/test-code change, credential/session/lifecycle token creation, account password operation, real mail, attachment/storage import, workflow/fee/reminder/notification/search/resource grant import, cleanup, deletion, reset, drop, prune, or staging/commit of known untracked local artifacts.
+
 ## 2026-07-02 Step 67E - EmployeeNo production migration readiness runbook evidence
 
 - Goal:

@@ -1,5 +1,21 @@
 # Decisions
 
+## D244 - Achievement import first write slice is PAPER draft-only
+
+- Date: 2026-07-02.
+- Context: Step 68A designs the first achievement import real-write slice after department and user/account import write paths reached local closure. Achievement dry-run already previews `PAPER`, `PATENT`, and `SOFTWARE_COPYRIGHT`, but real-write crosses achievement, typed detail, contributor, normalized identifier, owner identity, audit, workflow, attachment, fee, reminder, notification, search, and resource-grant boundaries.
+- Decision:
+  - The first achievement write slice should be backend-only `CREATE_DRAFT_ONLY`.
+  - Step 68B should support `PAPER` only.
+  - Step 68B should require normalized DOI for every apply row so repeated exact apply has a durable duplicate boundary.
+  - Apply must server-side re-parse and revalidate the uploaded CSV; it must not trust client dry-run output.
+  - Apply must reject any dry-run errors or warnings, plus apply-only blockers such as unsupported type or missing DOI.
+  - The only allowed data effects are `DRAFT` achievement rows, `PaperDetail` rows, contributor rows, and safe audit evidence in one Prisma transaction.
+  - Transaction-time rechecks must cover active department, active owner, owner department match, active contributor users, normalized DOI absence, and final unique-conflict mapping.
+  - Partial success is not allowed.
+- Scope:
+  - This decision does not authorize implementation, API execution, Web apply, patent/software copyright apply, workflow instance/task/action creation, attachment/storage import, fee/reminder/notification/search/resource grant import, achievement submit/approve/reject/archive/void, production/VPS access, production DB access, real-data import, schema/migration/package/config changes, cleanup, deletion, reset, drop, prune, or handling known untracked local artifacts.
+
 ## D243 - Employee-number production migration requires separate authorization and backup gate
 
 - Date: 2026-07-02.

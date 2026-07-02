@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-02 Step 68A - Achievement import real-write safety plan
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - Updated `memory-bank/import-real-write-rollout-plan.md` with the achievement safety decision and Step 68B recommendation.
+  - Reviewed only Step 68A-relevant import rollout/dry-run docs, Step 65A-67E progress snippets, achievement import dry-run code/tests, achievement draft write code/tests, and targeted Prisma achievement/detail/contributor/audit/workflow/fee/attachment/resource grant model snippets.
+- Key outcome:
+  - First safe slice should be backend-only `CREATE_DRAFT_ONLY`.
+  - Step 68B should implement `PAPER` only, with normalized DOI required for apply, before adding patent or software copyright write support.
+  - Apply must server-side re-parse and revalidate the uploaded CSV and must block any dry-run errors or warnings.
+  - Allowed data effects are limited to `DRAFT` achievement rows, `PaperDetail` rows, contributor rows, and safe audit evidence inside one transaction.
+  - Workflow, attachment/storage, fee, reminder, notification, search, resource grant, submit/approve/archive/state-machine changes, production/VPS access, and real-data import remain excluded.
+- Explicitly not done:
+  - No runtime implementation.
+  - No apply API call.
+  - No database write.
+  - No Docker or production/VPS access.
+  - No schema, migration, package, lockfile, configuration, Web UI, or test-code change.
+  - No cleanup, deletion, reset, drop, prune, or handling of known untracked local artifacts.
+- Verification:
+  - Documentation-only Step; full typecheck/test/build not run because no runtime, schema, API, Web, package, lockfile, or configuration files changed.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 67E - EmployeeNo production migration readiness runbook
 
 - Status: DONE.
