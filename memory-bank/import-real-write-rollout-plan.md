@@ -242,6 +242,37 @@ After a department create-only apply slice is implemented and accepted, the next
   - Invite/reset/email issuance.
   - Employee-number schema and database uniqueness.
 
+## Step 66D User/Account Web Entry Design
+
+- Date: 2026-07-02.
+- Scope:
+  - Documentation-only design for the future user/account pending no-credential apply Web entry.
+  - No Web button implementation, no apply API call, no Docker, no database write, no production/VPS access, and no credential/session/email/lifecycle side effects.
+- Design document:
+  - Added `memory-bank/user-account-import-apply-web-entry-design.md`.
+- Permission:
+  - Reuse the existing account management frontend gate: `hasSystemConfigPermission(authUser)`.
+  - Backend `system:config` guard remains authoritative.
+  - Do not use `account:invite`, `account:reset_password`, department-admin, audit-only, or lifecycle permissions as sufficient for import apply.
+- Eligibility:
+  - Apply should be visible/enabled only after a same-file latest dry-run result is eligible.
+  - Required conditions: `CREATE_ONLY_PENDING_NO_CREDENTIAL`, `USER_ACCOUNT`, `dryRun=true`, total rows > 0, zero errors, zero warnings, all rows `VALID`, all candidate actions `CREATE_PENDING_USER`, pending status, no credential action, department scope, and no in-flight submit.
+  - Warnings are not allowed because existing-user, existing-assignment, and revoked-assignment cases are not pure create-only pending records.
+  - `employeeNo` remains file-local only; Web must not imply database uniqueness.
+- Interaction:
+  - Keep `Run dry-run` as the first action.
+  - Show a secondary `Apply pending no-credential` entry only after eligibility passes.
+  - Require a confirmation modal that states the apply creates only `PENDING_ACTIVATION` users and department-scoped initial `UserRole` rows.
+  - Confirmation must explicitly state it creates no `UserCredential`, password, session, invite/reset/lifecycle token, email, or login activation.
+  - Use separate apply loading state, duplicate-submit protection, stale-file reset, and sanitized error/result display.
+- Evidence display:
+  - Show created user count, created role count, skipped/failed count if present, safe error code/rejected summary, audit operation `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`, and pending/no-credential status.
+  - Do not display raw uploaded content, local paths, credential material, cookies, tokens, private keys, connection strings, mail payloads, or unmasked audit payloads.
+  - Do not describe Step 66C as production session-cookie auth acceptance.
+- Step 66E recommendation:
+  - Implement the smallest Web slice: typed apply input/result, API client helper, account import panel/page state, eligibility, confirmation modal, safe result view, and focused Web Vitest coverage.
+  - Keep production/VPS writes, browser/Docker acceptance, production session-cookie acceptance, invite/reset/email/activation flows, credentials, sessions, employee-number schema work, achievement apply, and production rollout deferred unless separately authorized.
+
 ## Step 65B Implementation Record
 
 - Date: 2026-07-02.

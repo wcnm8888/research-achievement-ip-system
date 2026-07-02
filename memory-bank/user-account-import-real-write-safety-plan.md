@@ -208,3 +208,13 @@ Because Step 66A is documentation-only, full typecheck/test is not required. Req
 - `git diff --check`.
 - Added-lines sensitive keyword scan with only counts or redacted summary.
 - Commit with tracked diff clean afterward.
+
+## Step 66D Web Entry Addendum
+
+- Design document: `memory-bank/user-account-import-apply-web-entry-design.md`.
+- Web visibility should stay inside the existing account management page and existing `system:config` frontend gate.
+- Backend `system:config` remains authoritative; Web visibility is not enforcement.
+- Apply eligibility should require a same-file latest dry-run with mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`, `USER_ACCOUNT`, `dryRun=true`, total rows > 0, zero errors, zero warnings, all rows `VALID`, all actions `CREATE_PENDING_USER`, `PENDING_ACTIVATION` status, `NO_CREDENTIAL`, and department scope.
+- Step 66E confirmation must explicitly say the apply creates only pending users and department-scoped initial roles; it creates no `UserCredential`, password, session, invite/reset/lifecycle token, email, or login activation.
+- Step 66C local production-like API acceptance remains local and synthetic; it did not cover production session-cookie auth.
+- Step 66E should be a Web-only minimal implementation slice with typed API client, eligibility, confirmation, safe result display, and focused Web Vitest coverage.

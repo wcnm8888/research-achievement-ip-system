@@ -1,5 +1,21 @@
 # Decisions
 
+## D236 - User/account apply Web entry stays pending no-credential and dry-run-gated
+
+- Date: 2026-07-02.
+- Context: Step 66D designs the Web entry for the Step 66B/66C user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` apply capability. The task allows documentation and memory-bank updates only, while prohibiting Web button implementation, apply API calls, Docker, database writes, production/VPS access, password changes/resets, credential/session/token creation, invite/reset flow, real email, login activation, achievement apply, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content reads, and existing untracked-artifact handling.
+- Decision:
+  - Keep the Web apply entry under the existing account management page and `system:config` frontend gate.
+  - Treat the frontend gate as an affordance only; backend `system:config` remains authoritative.
+  - Enable apply only after an eligible same-file dry-run: `CREATE_ONLY_PENDING_NO_CREDENTIAL`, `USER_ACCOUNT`, `dryRun=true`, no errors, no warnings, all rows `VALID`, all candidate actions `CREATE_PENDING_USER`, pending status, no credential action, department scope, and no in-flight submit.
+  - Block warnings because existing-user, existing-assignment, and revoked-assignment cases are not pure create-only pending records.
+  - Require a confirmation modal that states the operation creates only `PENDING_ACTIVATION` users and department-scoped initial `UserRole` rows.
+  - Confirmation and result display must state that no `UserCredential`, password, session, invite/reset/lifecycle token, email, or login activation is created.
+  - Display only sanitized counts, safe error codes, audit operation `USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL`, and pending/no-credential status.
+  - Do not present Step 66C local synthetic API acceptance as production session-cookie auth acceptance.
+- Scope:
+  - This decision does not authorize runtime Web implementation, apply API execution, production/VPS writes, batch real-data import, achievement apply, account lifecycle work, DirectMail/real email, employee-number schema work, persisted import jobs, durable idempotency keys, cleanup, deletion, reset, drop, prune, or handling existing untracked artifacts.
+
 ## D235 - Department apply Web acceptance stays local and synthetic
 
 - Date: 2026-07-02.

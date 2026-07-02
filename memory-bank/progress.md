@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-07-02 Step 66D - User/account pending import Web entry design
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/user-account-import-apply-web-entry-design.md`.
+  - Designed Web visibility under the existing account management `system:config` gate with backend permission remaining authoritative.
+  - Defined same-file latest dry-run eligibility for `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Defined confirmation copy for pending/no-credential/no-login side effects.
+  - Defined loading, duplicate-submit, stale-file, 401/403/400/network, and sanitized result-display behavior.
+  - Recorded that Step 66C was local synthetic API acceptance and not production session-cookie auth acceptance.
+- Explicitly not done:
+  - No Web UI button implementation.
+  - No apply API call.
+  - No database write.
+  - No Docker or production/VPS access.
+  - No password creation/reset, `UserCredential`, session, invite/reset/lifecycle token, DirectMail, real email, login activation, achievement apply, or employee-number schema work.
+- Verification:
+  - Documentation-only Step; full typecheck/test not run.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 65F - Department import apply Web local production-like acceptance
 
 - Status: STEP_65F_DEPARTMENT_IMPORT_APPLY_WEB_LOCAL_ACCEPTED.

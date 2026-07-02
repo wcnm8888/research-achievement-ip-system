@@ -1,5 +1,30 @@
 # Evidence
 
+## 2026-07-02 Step 66D - User/account pending import Web entry design evidence
+
+- Goal:
+  - Design Web entry permission, interaction, and safety boundaries for `CREATE_ONLY_PENDING_NO_CREDENTIAL` user/account import apply.
+- Initial state:
+  - `git rev-parse --short HEAD`: `8d94479`.
+  - `git log -1 --pretty=format:"%s"`: `test: verify user account pending import acceptance`.
+  - Tracked diff was empty.
+  - Existing untracked local artifacts were present and left untouched, including `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/user-account-import-real-write-safety-plan.md`.
+  - Step 66C memory-bank records in rollout/progress/implementation/evidence.
+  - Relevant Web snippets only: account import dry-run page/component, API client dry-run helper, user/account import types, permission gate, and department apply Web pattern.
+- Documentation changes:
+  - Added `memory-bank/user-account-import-apply-web-entry-design.md`.
+  - Updated safety plan, rollout plan, progress, implementation plan, decisions, and evidence.
+- Boundary:
+  - Documentation-only.
+  - No Web button implementation, apply API call, Docker, database write, production/VPS access, password change/reset, credential/session/token creation, email, login activation, employee-number schema work, or achievement apply.
+- Validation:
+  - Full typecheck/test not run because this Step changed documentation and memory-bank only.
+  - `git diff --cached --check`: PASS.
+  - Added-lines sensitive keyword scan completed with counts/redacted summary only; matches are safety-boundary terminology in documentation, not secret values.
+
 ## 2026-07-02 Step 65F - Department import apply Web local production-like acceptance evidence
 
 - Purpose:

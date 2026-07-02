@@ -4,6 +4,23 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 66D Archive - User/account pending import Web entry design - 2026-07-02
+
+- Status: DONE.
+- Scope:
+  - Documentation-only Web entry design for user/account pending no-credential apply.
+  - No runtime code, Web button, apply API execution, database write, Docker, production/VPS access, password/account lifecycle operation, email, or achievement apply.
+- Completed:
+  - Added `memory-bank/user-account-import-apply-web-entry-design.md`.
+  - Updated rollout, progress, decisions, evidence, and safety plan memory.
+  - Confirmed the Web design should reuse the existing account management `system:config` gate and keep backend authorization authoritative.
+  - Required same-file latest dry-run eligibility with mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`, `USER_ACCOUNT`, `dryRun=true`, zero errors, zero warnings, all rows `VALID`, all actions `CREATE_PENDING_USER`, pending status, no credential action, and department scope.
+  - Required confirmation copy for pending user creation, department-scoped initial role creation, and no credential/password/session/invite/reset/lifecycle/email/login activation.
+  - Required sanitized 401/403/400/network handling and result display with created user count, created role count, safe rejection summary, audit operation, and pending/no-credential state.
+- Recommended Step 66E:
+  - Implement the smallest Web slice: typed apply request/response, API client helper, account import panel/page state, same-file fingerprint, eligibility, confirmation modal, safe result view, and focused Web Vitest coverage.
+  - Do not add production/VPS execution, browser/Docker acceptance, production session-cookie acceptance, invite/reset/email/activation flows, credentials, sessions, employee-number schema work, or achievement apply unless separately authorized.
+
 ## Current Step 65F Archive - Department import apply Web local production-like acceptance - 2026-07-02
 
 - Step identity:
