@@ -4,6 +4,33 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 63B Archive - Backup policy implementation gap review - 2026-07-02
+
+- Step identity:
+  - Documentation-only implementation gap review for the Step 63A backup retention, encryption, offsite, and restore-drill policy.
+  - No backup logic implementation, backup execution, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, database command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented docs:
+  - Added `deploy/backup-policy-implementation-gap-review.md`.
+  - Recorded Step 63B in `memory-bank/decisions.md`, `memory-bank/progress.md`, and `memory-bank/evidence.md`.
+- Review findings:
+  - DB dump plus attachment binary coverage is not yet a single complete backup-set command. The attachment command can include an existing DB dump in artifact-list metadata, but DB dump creation remains external/manual.
+  - Retention targets exist as policy only; no retention class metadata, inventory command, cleanup proposal template, or hold marker exists.
+  - Encryption targets exist as policy only; no tool family, key injection method, key owner process, redacted command shape, or synthetic validation exists.
+  - Offsite targets exist as policy only; no provider decision, bucket/prefix alias, permission boundary, upload command, retry procedure, or checklist gate exists.
+  - Restore drill scope exists as policy only; no isolated restore environment, target guard, read-only verification script, or complete backup-set restore evidence exists.
+- Step recommendations:
+  - Align production cutover checklist with Step 63A backup readiness gates.
+  - Add backup-set id and retention class to future artifact-list contract.
+  - Add a local-only complete backup-set aggregator around an existing DB dump plus attachment outputs.
+  - Choose encryption tool family and redacted evidence format.
+  - Choose offsite target class and permission model.
+  - Add isolated restore-drill checklist and target guard design.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, or package files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan completed over 281 added lines; matches were policy/gap-category terms only, with no secret values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## Current Step 63A Archive - Backup retention encryption offsite policy scope and local plan - 2026-07-02
 
 - Step identity:

@@ -1,5 +1,18 @@
 # Decisions
 
+## D226 - Backup policy gap review keeps implementation and operations deferred
+
+- Date: 2026-07-02.
+- Context: Step 63B reviews implementation gaps after Step 63A defined backup retention, encryption, offsite storage, and restore-drill policy boundaries. The task allows documentation and memory-bank updates only, while prohibiting backup logic implementation, backup execution, offsite upload, encryption of real artifacts, restore drill, Docker operations, VPS/production access, `.env` / `.env.production` content reads, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling.
+- Decision:
+  - Add `deploy/backup-policy-implementation-gap-review.md`.
+  - Treat current repository state as policy-ready but not production backup-ready.
+  - Recognize the current implemented backup support as attachment-binary local ops only; DB dump remains runbook/manual, and no complete backup-set command exists.
+  - Keep retention, encryption, offsite, and restore-drill execution deferred to later explicitly authorized Steps.
+  - Recommend future work as small low-risk Steps: checklist alignment, metadata contract update, local-only aggregator, encryption tool decision, offsite target decision, and isolated restore-drill checklist/guard design.
+- Scope:
+  - This decision does not authorize runtime code changes, scripts, CI/CD changes, backup execution, real artifact encryption, offsite upload, restore drill, Docker, VPS/production access, database commands, migration/seed/backfill, account/password work, cleanup, deletion, reset, drop, prune, package/lockfile changes, deployment, push, or handling existing untracked artifacts.
+
 ## D225 - Backup retention encryption offsite policy is documentation-only until authorized operations
 
 - Date: 2026-07-02.

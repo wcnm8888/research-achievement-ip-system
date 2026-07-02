@@ -1,5 +1,44 @@
 # Evidence
 
+## 2026-07-02 Step 63B - Backup policy implementation gap review evidence
+
+- Purpose:
+  - Review implementation gaps between the current repository and Step 63A backup retention, encryption, offsite, and restore-drill policy.
+  - Keep this Step documentation-only: no backup logic implementation, backup execution, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, database command, migration, seed/backfill, account/password change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `6403841`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but relevant gate and sensitive-boundary rules remained identifiable.
+  - Read `deploy/backup-retention-encryption-offsite-policy.md` in full.
+  - Read `apps/api/src/operations/attachment-binary-backup.ts` and its focused spec.
+  - Read root and API package scripts.
+  - Read `deploy/runbook-production.md`, `deploy/checklist-production-cutover.md`, `deploy/local-production-like-env-checklist.md`, and `docker-compose.production.yml`.
+  - Read targeted Step 62B, Step 62C, and Step 63A memory-bank snippets.
+- Review evidence:
+  - Existing package scripts expose `ops:backup:attachments` only for attachment binary artifacts.
+  - No committed DB backup package script or complete backup-set command was found.
+  - Production compose defines a Postgres named volume and no dedicated attachment-storage volume.
+  - Production checklist backup section has not yet been aligned with Step 63A retention/encryption/offsite/attachment-binary gates.
+  - Local artifact acceptance remains local/synthetic and is not production/VPS readiness.
+- Documentation evidence:
+  - Added `deploy/backup-policy-implementation-gap-review.md`.
+  - Recorded policy gap review decision D226 and Step 63B progress/archive entries.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, or package files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan over 281 added lines:
+    - `secret`: 6.
+    - `token`: 2.
+    - `password`: 7.
+    - `cookie`: 2.
+    - `private_key`: 1.
+    - `connection_string`: 1.
+    - `access_key`: 1.
+  - Sensitive scan result: matches are policy/gap-category terms only; no secret values, tokens, passwords, cookies, AccessKeys, private keys, or full connection strings were recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 63A - Backup retention encryption offsite policy scope and local plan evidence
 
 - Purpose:
