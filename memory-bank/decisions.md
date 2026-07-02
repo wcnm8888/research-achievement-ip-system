@@ -1,5 +1,20 @@
 # Decisions
 
+## D246 - Achievement import second apply type should be SOFTWARE_COPYRIGHT
+
+- Date: 2026-07-02.
+- Context: Step 69A evaluates the next achievement import apply type after Step 68 completed `PAPER` `CREATE_DRAFT_ONLY` backend and Web local closure. The task is documentation-only and prohibits API/Web implementation, Docker/browser execution, database writes, production/VPS access, `.env` / `.env.production` content reads, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - The second achievement import apply type should be `SOFTWARE_COPYRIGHT`.
+  - The durable duplicate boundary should be `registrationNoNormalized`, sourced from `softwareRegistrationNo` or `registrationNo`.
+  - `SOFTWARE_COPYRIGHT` apply should require a normalized software registration number for every row.
+  - The second-type backend slice should remain backend-only first, `CREATE_DRAFT_ONLY`, `DRAFT` only, create-only, all-or-nothing, and no workflow/attachment/storage/fee/reminder/notification/search/resource-grant/import-job side effects.
+  - Preserve existing `PAPER` support, reject `PATENT`, and reject mixed `PAPER` + `SOFTWARE_COPYRIGHT` apply batches in the second-type slice.
+  - Defer Web expansion until backend API tests and local API acceptance prove `SOFTWARE_COPYRIGHT` repeat-apply and forbidden-side-effect behavior.
+  - Keep `PATENT` deferred until fee/reminder boundaries are separately planned.
+- Scope:
+  - This decision does not authorize runtime implementation, apply API execution, Web changes, Docker/browser acceptance, database writes, production/VPS access, production DB/config access, real-data import, Prisma schema/migration changes, package/lockfile/config changes, fee/reminder/notification/search/resource grant/import job creation, state-machine transitions, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+
 ## D245 - Achievement import Web apply entry stays PAPER draft-only and dry-run gated
 
 - Date: 2026-07-02.

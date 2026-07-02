@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-07-02 Step 69A - Achievement import next type scope and safety plan
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - Updated `memory-bank/achievement-import-real-write-safety-plan.md` with the next-type planning addendum.
+  - Recorded decision D246 in `memory-bank/decisions.md`.
+  - Reviewed only the requested Step 68A-68F progress snippets, existing achievement import safety/Web design docs, achievement dry-run service/repository identifier and conflict logic, achievement typed detail DTO/mapper snippets, and targeted Prisma `PatentDetail`, `SoftwareCopyrightDetail`, fee/reminder/workflow side-effect model snippets.
+- Key outcome:
+  - The second achievement import apply type should be `SOFTWARE_COPYRIGHT`.
+  - The durable duplicate boundary should be normalized software registration number: `registrationNoNormalized`, sourced from `softwareRegistrationNo` or `registrationNo`.
+  - `PATENT` remains deferred until fee/reminder boundaries are separately planned because patent detail includes `nextFeeDate` and `feeAmount`, and patent apply must decide application-number versus grant-number duplicate semantics.
+  - The next implementation should remain backend-only first, `CREATE_DRAFT_ONLY`, `DRAFT` only, create-only, all-or-nothing, with no workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, production/VPS, or real-data side effects.
+  - Web expansion should wait until backend API acceptance for `SOFTWARE_COPYRIGHT` is complete.
+- Explicitly not done:
+  - No API/Web implementation.
+  - No apply API call.
+  - No Docker/browser operation.
+  - No database write.
+  - No production/VPS access, production DB access, production configuration access, `.env` / `.env.production` content read, real-data import, schema/migration/package/lockfile/config/script change, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `SOFTWARE_COPYRIGHT` or `PATENT` apply support was added.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 68F - Achievement PAPER import Web local production-like acceptance
 
 - Status: DONE.

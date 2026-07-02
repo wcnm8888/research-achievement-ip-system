@@ -1,5 +1,44 @@
 # Evidence
 
+## 2026-07-02 Step 69A - Achievement import next type scope and safety plan evidence
+
+- Goal:
+  - Plan the next achievement import apply type after Step 68 completed `PAPER` `CREATE_DRAFT_ONLY` local backend and Web closure, without implementing runtime code.
+- Initial state:
+  - `git log -1 --oneline`: `d3dd10d test: add achievement import web acceptance`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - `memory-bank/achievement-import-apply-web-entry-design.md`.
+  - Step 68A-68F snippets from `memory-bank/progress.md`.
+  - Targeted `PATENT` / `SOFTWARE_COPYRIGHT` field, identifier, duplicate, and conflict snippets from `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.ts`.
+  - `apps/api/src/achievements/dto/patent-detail.dto.ts`.
+  - `apps/api/src/achievements/dto/software-copyright-detail.dto.ts`.
+  - Targeted typed detail mapper and repository type snippets.
+  - Targeted Prisma model snippets for `PatentDetail`, `SoftwareCopyrightDetail`, workflow, fee, reminder, notification, search, and resource grant boundaries.
+- Implemented files:
+  - `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - `memory-bank/decisions.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Plan result:
+  - Recommended `SOFTWARE_COPYRIGHT` as the second apply type.
+  - Required durable duplicate boundary: `registrationNoNormalized`, sourced from `softwareRegistrationNo` or `registrationNo`.
+  - Kept the next slice backend-only first, `CREATE_DRAFT_ONLY`, `DRAFT` only, create-only, all-or-nothing, and no workflow/attachment/storage/fee/reminder/notification/search/resource-grant/import-job effects.
+  - Kept Web expansion deferred until backend API acceptance.
+  - Kept `PATENT` deferred until fee/reminder boundaries and application/grant identifier semantics are separately planned.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; matches are documentation safety-boundary terms only, with no complete URL, credential value, connection string value, private key value, AccessKey value, token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No Docker/browser command, apply API call, database write, API/Web implementation, schema/migration/package/lockfile/config/script change, production/VPS access, production DB access, real-data import, credential/session/token/cookie/password/secret/connection-string/private-key handling, workflow/attachment/storage/fee/reminder/notification/search/resource grant/import job creation, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts occurred.
+
 ## 2026-07-02 Step 68F - Achievement PAPER import Web local production-like acceptance evidence
 
 - Goal:

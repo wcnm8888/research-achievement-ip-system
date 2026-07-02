@@ -1,5 +1,19 @@
 # Achievement Import Real-Write Safety Plan
 
+## Step 69A Next-Type Planning Addendum
+
+- Date: 2026-07-02.
+- Added `memory-bank/achievement-import-next-type-safety-plan.md`.
+- Decision: the second achievement import apply type should be `SOFTWARE_COPYRIGHT`, not `PATENT`.
+- Rationale:
+  - `SOFTWARE_COPYRIGHT` has a single durable duplicate boundary: `registrationNoNormalized`.
+  - The existing dry-run parser already accepts `softwareRegistrationNo` / `registrationNo` and normalizes to the same conflict field.
+  - Prisma has a unique constraint on `software_copyright_details.registration_no_normalized`.
+  - The software detail surface is narrow and does not overlap with fee/reminder semantics.
+- `PATENT` remains deferred because it has two identifier candidates (`applicationNoNormalized`, `grantNoNormalized`) and detail fields (`nextFeeDate`, `feeAmount`) that must be separated from `FeeRecord`, `ReminderTask`, notification, dashboard/search, and fee-review behavior in a later dedicated plan.
+- Recommended Step 69B: backend-only `SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` apply support, preserving existing `PAPER` support, rejecting `PATENT`, rejecting mixed-type apply batches, requiring normalized software registration number, and keeping all Step 68 forbidden side-effect boundaries.
+- Web expansion should wait until backend API acceptance for `SOFTWARE_COPYRIGHT` is complete.
+
 ## Step 68A Scope
 
 - Date: 2026-07-02.
