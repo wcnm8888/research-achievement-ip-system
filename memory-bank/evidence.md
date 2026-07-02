@@ -1,5 +1,72 @@
 # Evidence
 
+## 2026-07-02 Step 68F - Achievement PAPER import Web local production-like acceptance evidence
+
+- Goal:
+  - Validate the Step 68E Web entry for backend-only `PAPER` `CREATE_DRAFT_ONLY` achievement import apply in local Docker production-like Web/API/DB.
+- Initial state:
+  - `git log -1 --oneline`: `7f9b6ca feat: add achievement import web entry`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-apply-web-entry-design.md`.
+  - Step 68C-68E snippets from `memory-bank/progress.md`.
+  - `memory-bank/step68c-achievement-import-acceptance.mjs`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - Existing local Web acceptance helper patterns for local proxy/browser usage.
+- Implemented files:
+  - `memory-bank/step68f-db-helper.mjs`.
+  - `memory-bank/step68f-browser-acceptance.js`.
+  - `memory-bank/step68f-web-acceptance.mjs`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Local acceptance result:
+  - `node memory-bank/step68f-web-acceptance.mjs`: PASS.
+  - Scope: local production-like Web/API/DB only; not production/VPS acceptance.
+  - Auth boundary: local proxy auth harness without credential/session/cookie output.
+  - Web health status: 200.
+  - System-config browser:
+    - Eligible `PAPER` dry-run enabled apply.
+    - Confirmation copy was observed with draft-only and forbidden side-effect boundaries.
+    - Apply success created 2 `DRAFT` achievements, 2 paper details, 2 contributors, and 2 audit-operation events.
+    - Safe success panel showed counts and `ACHIEVEMENT_IMPORT_CREATE_DRAFT`.
+    - Achievement list refresh was verified by the imported synthetic title appearing after apply.
+    - Repeated exact apply returned safe `DB_CONFLICT` and achievement count stayed 2.
+    - Missing DOI, non-`PAPER`, dry-run error, and warning dry-run paths kept apply disabled.
+    - Success and rejection panels were checked for no raw DOI, owner/contributor email/name, CSV body, cookie, session, or token display.
+  - Limited browser:
+    - Apply UI hidden.
+    - Direct apply returned HTTP 403.
+  - Final counts:
+    - `achievementCount`: 2.
+    - `paperDraftCount`: 2.
+    - `paperDetailCount`: 2.
+    - `normalizedDoiPersistedCount`: 2.
+    - `contributorCount`: 2.
+    - `stateChangeCount`: 0.
+    - `auditOperation`: `ACHIEVEMENT_IMPORT_CREATE_DRAFT`.
+    - `auditOperationCount`: 2.
+  - Forbidden side-effect deltas:
+    - `workflowInstanceCount`: 0.
+    - `workflowTaskCount`: 0.
+    - `workflowActionCount`: 0.
+    - `attachmentCount`: 0.
+    - `feeRecordCount`: 0.
+    - `reminderTaskCount`: 0.
+    - `notificationCount`: 0.
+    - `searchLogCount`: 0.
+    - `resourceAccessGrantCount`: 0.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files and 58 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS, no credential values or complete links.
+- Boundary:
+  - No VPS, production DB, production configuration, `.env` / `.env.production` content, real data, password, cookie, token, session, secret, connection string, AccessKey, or private key was accessed, output, or recorded.
+  - No Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, prune, `PATENT` / `SOFTWARE_COPYRIGHT` apply support, workflow/attachment/storage/fee/reminder/notification/search/resource grant/import job creation, or achievement state-machine transition occurred.
+
 ## 2026-07-02 Step 68E - Achievement PAPER import Web minimal slice evidence
 
 - Goal:

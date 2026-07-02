@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-07-02 Step 68F - Achievement PAPER import Web local production-like acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step68f-db-helper.mjs`, `memory-bank/step68f-browser-acceptance.js`, and `memory-bank/step68f-web-acceptance.mjs`.
+  - Used local Docker production-like Web/API/DB with synthetic `S68F_*` data only.
+  - Rebuilt/started local Docker services and copied the Step 68F helper into the API container; did not clean or remove orphans or local artifacts.
+  - Verified system-config Web flow: dry-run, eligible `PAPER` apply entry, confirmation copy, apply success, safe counts/audit operation display, and list refresh.
+  - Verified limited user boundary: apply UI hidden and direct apply rejected with HTTP 403.
+  - Verified repeated exact apply shows safe `DB_CONFLICT` and creates no additional achievement data.
+  - Verified missing DOI, non-`PAPER`, dry-run error, and post-success warning dry-runs keep apply disabled.
+  - Verified apply success/error panels do not display raw DOI, owner/contributor email/name, CSV body, cookie, session, or token values.
+  - Verified workflow instance/task/action, attachment, fee, reminder, notification, search log, and resource grant side-effect deltas stayed 0.
+- Explicitly not done:
+  - No production/VPS access, production DB access, production configuration access, `.env` / `.env.production` content read, real-data import, schema change, migration authoring, package/lockfile change, cleanup, deletion, reset, drop, prune, Docker orphan cleanup, or known untracked local artifact handling.
+  - No `PATENT` or `SOFTWARE_COPYRIGHT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - `node memory-bank/step68f-web-acceptance.mjs`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 68E - Achievement PAPER import Web minimal slice
 
 - Status: DONE.
