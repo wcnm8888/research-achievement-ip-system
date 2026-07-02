@@ -1,5 +1,41 @@
 # Evidence
 
+## 2026-07-02 Step 64A - Backup artifact-list metadata local design evidence
+
+- Purpose:
+  - Design the local backup artifact-list / metadata structure for a future local-only backup-set aggregator.
+  - Keep this Step documentation-only: no script implementation, real backup generation, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, database command, migration, seed/backfill, account/password change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `cd56eae`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short --untracked-files=all` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md` with UTF-8 output after default terminal output showed mojibake.
+  - Read `deploy/production-backup-readiness-checklist.md`.
+  - Read `deploy/backup-policy-implementation-gap-review.md`.
+  - Read `deploy/backup-retention-encryption-offsite-policy.md`.
+  - Read targeted Step 62 attachment artifact/list/manifest snippets from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - Read targeted artifact-list type and generation snippets from `apps/api/src/operations/attachment-binary-backup.ts` and its focused spec.
+- Design evidence:
+  - Added `deploy/local-backup-artifact-metadata-design.md`.
+  - The design extends the current `BACKUP_ARTIFACT_LIST` shape instead of replacing it.
+  - The complete local backup-set design covers backup set id, timestamp, local environment label, DB dump metadata, attachment binary metadata, checksum/digest, size, relative path, generated-by, manifest version, redacted evidence, retention status, encryption status, offsite status, and restore-readiness status.
+  - The local-only boundary states that the design is not production/VPS readiness.
+  - The forbidden-values boundary covers secret values, tokens, passwords, cookies, full connection strings, AccessKeys, private keys, `.env` contents, raw storage object keys, per-file checksums, uploaded filenames, file contents, voucher numbers, amounts, and business payload fragments.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, or package files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan over 282 added lines:
+    - `secret`: 9.
+    - `token`: 7.
+    - `password`: 11.
+    - `cookie`: 6.
+    - `private_key`: 6.
+    - `connection_string`: 8.
+    - `access_key`: 6.
+  - Sensitive scan result: matches are forbidden-value/boundary terms only; no secret values, tokens, passwords, cookies, AccessKeys, private keys, or full connection strings were recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 63C - Production backup readiness checklist alignment evidence
 
 - Purpose:

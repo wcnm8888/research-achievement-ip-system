@@ -1,5 +1,21 @@
 # Decisions
 
+## D228 - Local backup artifact metadata extends existing artifact-list contract
+
+- Date: 2026-07-02.
+- Context: Step 64A designs local backup artifact-list / metadata structure for a later local-only backup-set aggregator. The task is documentation-only and prohibits script implementation, real backup generation, real artifact encryption, offsite upload, restore, Docker operations, VPS/production DB access, `.env` / `.env.production` content reads, cleanup, deletion, reset, drop, prune, account/password changes, and existing untracked-artifact handling.
+- Decision:
+  - Add `deploy/local-backup-artifact-metadata-design.md`.
+  - Extend the existing attachment artifact-list shape instead of introducing an unrelated format.
+  - Preserve `artifactType: BACKUP_ARTIFACT_LIST`, `createdAt`, and `artifacts[]` entries with `type`, `basename`, `bytes`, and whole-artifact `digest`.
+  - Define a future complete local backup-set artifact-list version that adds backup set id, timestamp, local environment label, relative path, generated-by, manifest version, redacted evidence, retention status, encryption status, offsite status, and restore-readiness status fields.
+  - Keep `POSTGRES_DUMP`, `ATTACHMENT_BINARY_ARCHIVE`, and `ATTACHMENT_BACKUP_MANIFEST` as the required artifact categories for a complete local backup set.
+  - Treat the design as local-only acceptance preparation, not production/VPS readiness.
+- Sensitive boundary:
+  - Artifact-list, manifest, logs, evidence, and committed docs must not record secret values, tokens, passwords, cookies, full connection strings, AccessKeys, private keys, `.env` contents, raw storage paths/object keys, per-file checksums, uploaded filenames, file contents, voucher numbers, amounts, or business payload fragments.
+- Scope:
+  - This decision does not authorize runtime code changes, scripts, config, CI/CD changes, backup execution, artifact generation, encryption of real artifacts, offsite upload, restore, Docker, VPS/production access, database commands, migration/seed/backfill, account/password work, cleanup, deletion, reset, drop, prune, package/lockfile changes, deployment, push, or handling existing untracked artifacts.
+
 ## D227 - Production backup-ready requires DB plus attachment plus encrypted offsite evidence
 
 - Date: 2026-07-02.

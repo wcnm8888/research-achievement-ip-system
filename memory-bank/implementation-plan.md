@@ -4,6 +4,29 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 64A Archive - Backup artifact-list metadata local design - 2026-07-02
+
+- Step identity:
+  - Documentation-only design of local backup artifact-list / metadata for a later local-only backup-set aggregator.
+  - No script implementation, real backup generation, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, database command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented docs:
+  - Added `deploy/local-backup-artifact-metadata-design.md`.
+  - Recorded Step 64A in `memory-bank/decisions.md`, `memory-bank/progress.md`, and `memory-bank/evidence.md`.
+- Contract direction:
+  - Extend the current attachment artifact-list structure instead of introducing an unrelated format.
+  - Preserve `BACKUP_ARTIFACT_LIST`, `createdAt`, and `artifacts[]` entries with `type`, `basename`, `bytes`, and whole-artifact `digest`.
+  - Add complete local backup-set fields for backup set id, timestamp, environment label, local-only scope, relative path, generated-by, manifest version, retention, encryption, offsite, restore-readiness, and redacted evidence.
+  - Require `POSTGRES_DUMP`, `ATTACHMENT_BINARY_ARCHIVE`, and `ATTACHMENT_BACKUP_MANIFEST` for complete local backup-set metadata.
+- Sensitive boundary:
+  - The artifact-list design forbids secret values, tokens, cookies, passwords, full connection strings, AccessKeys, private keys, `.env` contents, raw storage object keys, raw paths, per-file checksums, uploaded filenames, file contents, voucher numbers, amounts, and business payload fragments.
+- Next:
+  - Step 64B can implement a local-only artifact-list schema/sample around existing local artifacts without running `pg_dump`, backup execution, encryption, offsite upload, restore, Docker, VPS, or production DB access.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, or package files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan completed over 282 added lines; matches were forbidden-value/boundary terms only, with no secret values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## Current Step 63C Archive - Production backup readiness checklist alignment - 2026-07-02
 
 - Step identity:

@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-07-02 Step 64A - Backup artifact-list metadata local design
+
+- Status: STEP_64A_LOCAL_BACKUP_ARTIFACT_METADATA_DESIGNED_DOCS_ONLY.
+- Step identity:
+  - Designed the local-only backup artifact-list / metadata structure for a future backup-set aggregator.
+  - Documentation-only; no script implementation, real backup generation, real artifact encryption, offsite upload, restore drill, Docker operation, VPS/production access, DB command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `deploy/local-backup-artifact-metadata-design.md`.
+  - Recorded D228 and Step 64A progress/evidence/archive entries.
+- Design conclusions:
+  - Future local complete backup-set artifact-list should extend the existing `BACKUP_ARTIFACT_LIST` shape rather than replace it.
+  - Required artifact categories remain `POSTGRES_DUMP`, `ATTACHMENT_BINARY_ARCHIVE`, and `ATTACHMENT_BACKUP_MANIFEST`.
+  - Required metadata covers backup set id, timestamp, local environment label, DB dump metadata, attachment binary metadata, checksum/digest, size, relative path, generated-by, manifest version, redacted evidence, retention status, encryption status, offsite status, and restore-readiness status.
+  - The design is local-only and does not claim production/VPS backup readiness.
+- Verification:
+  - Full typecheck/test not run because this Step changed documentation only and no runtime code, scripts, config, CI/CD, or package files.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan completed over 282 added lines; matches were forbidden-value/boundary terms only, with no secret values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 63C - Production backup readiness checklist alignment
 
 - Status: STEP_63C_PRODUCTION_BACKUP_READINESS_CHECKLIST_READY_DOCS_ONLY.
