@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-07-02 Step 63A - Backup retention encryption offsite policy scope and local plan
+
+- Status: STEP_63A_BACKUP_POLICY_PLAN_READY_DOCS_ONLY.
+- Step identity:
+  - Defined backup retention, encryption, offsite storage, and restore-drill policy boundaries.
+  - Documentation-only; no backup execution, real artifact encryption, restore drill, offsite upload, VPS/production access, Docker operation, DB command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented:
+  - Added `deploy/backup-retention-encryption-offsite-policy.md`.
+  - Updated `deploy/runbook-production.md` backup prerequisites to reference the policy and require DB plus attachment binary coverage for backup readiness.
+  - Added memory-bank decision, progress, evidence, and implementation archive records.
+- Policy conclusions:
+  - Local synthetic artifacts are review-only and may be cleaned only after explicit confirmation with exact paths.
+  - Local production-like backups can support local rehearsal only; they do not prove production/VPS acceptance.
+  - Production backups should retain daily/weekly/monthly sets, keep pre-migration/pre-cutover sets through the rollback window, and suspend deletion during incidents or audit holds.
+  - Production backup sets must be encrypted before leaving the VPS or trusted operator machine; key material and recovery material stay outside git/logs/evidence/chat.
+  - Offsite target selection, permissions, upload execution, and upload failure handling require a later authorized operations Step.
+  - Restore drill prerequisites and acceptance evidence are defined, but restore execution remains separately authorized.
+- Verification:
+  - `corepack pnpm -r typecheck`: PASS.
+  - `corepack pnpm prisma:validate` with one-off dummy `DATABASE_URL`: PASS.
+  - No dedicated markdown/docs test exists in package scripts; no behavior tests were applicable for this docs-only Step.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan completed over 216 added lines; matches were policy/prohibited-class terms only, with no secret values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 62C - Attachment binary backup local artifact acceptance
 
 - Status: STEP_62C_ATTACHMENT_BINARY_BACKUP_ARTIFACTS_ACCEPTED_LOCALLY.

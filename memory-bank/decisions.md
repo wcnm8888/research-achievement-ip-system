@@ -1,5 +1,24 @@
 # Decisions
 
+## D225 - Backup retention encryption offsite policy is documentation-only until authorized operations
+
+- Date: 2026-07-02.
+- Context: Step 63A defines backup retention, encryption, offsite storage, and restore-drill scope after Step 62C accepted attachment binary backup artifacts only in a synthetic local artifact environment. The task is documentation-only and prohibits backup execution, encryption of real artifacts, restore drill, offsite upload, VPS access, production DB access, `.env` / `.env.production` content reads, cleanup, deletion, reset, drop, prune, and existing untracked-artifact handling.
+- Decision:
+  - Add `deploy/backup-retention-encryption-offsite-policy.md` as the focused policy document.
+  - Link the policy from `deploy/runbook-production.md` backup prerequisites.
+  - Define three retention classes: local synthetic artifacts, local production-like backups, and production backups.
+  - Require manual confirmation before any cleanup candidate is removed, moved, pruned, or deleted.
+  - Require production backup sets to cover both Postgres dump artifacts and attachment binary artifacts before backup readiness can be accepted.
+  - Require production backup encryption before artifacts leave the VPS or trusted operator machine, while keeping all key material outside git, logs, evidence, screenshots, and chat.
+  - Defer offsite target selection and upload execution to a later authorized operations Step with least-privilege permissions and redacted evidence.
+  - Define restore drill prerequisites and acceptance evidence only; no restore is authorized by this Step.
+- Acceptance boundary:
+  - Local artifact acceptance, including Step 62C synthetic attachment artifact acceptance, is not production backup acceptance and not VPS acceptance.
+  - Local production-like backup evidence remains local-only and cannot satisfy production offsite or production restore-readiness claims.
+- Scope:
+  - This decision does not authorize backup execution, encryption of real artifacts, offsite upload, restore drill, VPS/production access, database commands, Docker operations, migration/seed/backfill, account/password work, cleanup, deletion, reset, drop, prune, package/lockfile changes, deployment, push, or handling existing untracked artifacts.
+
 ## D224 - Synthetic local artifact acceptance verifies backup contract without Docker
 
 - Date: 2026-07-02.

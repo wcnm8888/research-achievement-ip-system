@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-07-02 Step 63A - Backup retention encryption offsite policy scope and local plan evidence
+
+- Purpose:
+  - Define backup retention, encryption, offsite storage, and restore-drill scope after Step 62C accepted only synthetic local attachment backup artifacts.
+  - Keep this Step documentation-only: no backup execution, real artifact encryption, restore drill, offsite upload, VPS/production access, Docker operation, database command, migration, seed/backfill, account/password change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling.
+- Starting state evidence:
+  - `git rev-parse --short HEAD`: `b2a8cda`.
+  - Tracked diff before Step edits: empty.
+  - `git status --short` showed only the known untracked local artifacts supplied by the user; they were not staged, cleaned, deleted, moved, or modified.
+- Context read:
+  - Read `memory-bank/testing-strategy.md`; terminal output was mojibake, but relevant gate and sensitive-boundary rules remained identifiable.
+  - Read targeted Step 62A, Step 62B, Step 62C, Step 53A, Step 53D, D188, D191, D222, D223, and D224 snippets from memory-bank.
+  - Read `deploy/runbook-production.md` and searched existing `deploy` operation docs for backup/restore/policy references.
+  - Read package script listings to choose the minimum repeatable docs gate.
+- Documentation evidence:
+  - Added `deploy/backup-retention-encryption-offsite-policy.md`.
+  - Updated `deploy/runbook-production.md` backup prerequisites to reference the new policy.
+  - Recorded policy decision D225 and Step 63A progress/archive entries.
+- Policy evidence:
+  - Retention covers local synthetic, local production-like, and production backup classes.
+  - Encryption policy keeps all key material, recovery material, provider credentials, and decrypted production artifacts out of git/logs/evidence/chat.
+  - Offsite policy requires later target selection, least-privilege permissions, redacted upload evidence, and failed-upload stop behavior.
+  - Restore drill policy defines prerequisites, isolated target rules, redacted acceptance evidence, and prohibited actions without authorizing execution.
+  - Local artifact acceptance is explicitly not production backup acceptance and not VPS acceptance.
+- Verification:
+  - `corepack pnpm -r typecheck`: PASS.
+  - `corepack pnpm prisma:validate` with one-off dummy `DATABASE_URL`: PASS.
+  - No dedicated markdown/docs test exists in package scripts; no behavior tests were applicable for this docs-only Step.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan over 239 added lines:
+    - `secret`: 10.
+    - `token`: 5.
+    - `password`: 10.
+    - `cookie`: 4.
+    - `private_key`: 3.
+    - `connection_string`: 6.
+    - `access_key`: 3.
+  - Sensitive scan result: matches are policy/prohibited-class terms only; no secret values, tokens, passwords, cookies, AccessKeys, private keys, or full connection strings were recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## 2026-07-02 Step 62C - Attachment binary backup local artifact acceptance evidence
 
 - Purpose:

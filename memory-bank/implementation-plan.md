@@ -4,6 +4,39 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 63A Archive - Backup retention encryption offsite policy scope and local plan - 2026-07-02
+
+- Step identity:
+  - Documentation-only policy scope and local plan for backup retention, encryption, offsite storage, and restore drill boundaries.
+  - No backup execution, real artifact encryption, restore drill, offsite upload, VPS/production access, Docker operation, database command, migration, seed/backfill, account/password change, package/lockfile change, cleanup, deletion, reset, drop, prune, `.env` / `.env.production` content read, or existing untracked-artifact handling occurred.
+- Implemented docs:
+  - Added `deploy/backup-retention-encryption-offsite-policy.md`.
+  - Updated `deploy/runbook-production.md` backup prerequisites to reference the policy and require DB plus attachment binary coverage for backup readiness.
+  - Recorded Step 63A in `memory-bank/decisions.md`, `memory-bank/progress.md`, and `memory-bank/evidence.md`.
+- Retention policy:
+  - Local synthetic artifacts are kept only for current Step review unless explicitly preserved.
+  - Local production-like backups may retain the latest accepted set and up to 3 recent accepted sets or 14 calendar days, whichever is smaller, but cleanup is never automatic.
+  - Production retention target is daily 14 days, weekly 8 weeks, monthly 6 months, with pre-migration/pre-cutover sets held through the rollback window.
+  - Any cleanup candidate list must be reviewed and explicitly confirmed before files are removed, moved, pruned, or deleted.
+- Encryption and offsite policy:
+  - Production backup sets must be encrypted before leaving the VPS or trusted operator machine.
+  - Key material, passphrases, recovery material, object-store credentials, and provider secrets must stay outside git, logs, evidence, screenshots, and chat.
+  - Offsite target selection and upload execution are deferred to a later authorized Step with least-privilege permissions and redacted evidence.
+  - Upload failure leaves production backup readiness unaccepted; encrypted local artifacts are retained for retry until a separate cleanup/retry decision.
+- Restore drill policy:
+  - Restore drill remains separately authorized.
+  - Future drill target must be isolated and must not be production or the current production-like working database.
+  - Acceptance evidence is aggregate and redacted: restore/list result category, manifest consistency counts, read-only sanity checks, and optional GET-only local smoke.
+- Boundary:
+  - Step 62C local synthetic artifact acceptance is not production backup acceptance and not VPS acceptance.
+- Verification:
+  - `corepack pnpm -r typecheck`: PASS.
+  - `corepack pnpm prisma:validate` with one-off dummy `DATABASE_URL`: PASS.
+  - No dedicated markdown/docs test exists in package scripts; no behavior tests were applicable for this docs-only Step.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword count scan completed over 216 added lines; matches were policy/prohibited-class terms only, with no secret values recorded.
+  - Pending commit and post-commit tracked diff check.
+
 ## Current Step 62C Archive - Attachment binary backup local artifact acceptance - 2026-07-02
 
 - Step identity:

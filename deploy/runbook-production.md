@@ -69,10 +69,17 @@ Do not reuse demo ports, demo env files, demo database volumes, or demo Compose 
 
 ## Backup Prerequisites
 
+Retention, encryption, offsite storage, and restore-drill boundaries are defined in
+`deploy/backup-retention-encryption-offsite-policy.md`. That policy is required
+reading before any production backup acceptance, offsite upload, production cleanup,
+or restore drill Step.
+
 Before migration or deployment:
 
 - Confirm the target is the production VPS and production database.
 - Create a production database backup.
+- Confirm the backup set covers both the Postgres dump and attachment binary artifacts, or record the gap as a `NO_GO` / `CONDITIONAL_GO` backup-readiness issue.
+- Confirm production backup encryption and offsite status using redacted evidence only.
 - Back up the current demo/staging application directory and service configuration if rollback to demo/staging is required.
 - Record only脱敏 backup evidence: timestamp, target summary, result, and operator confirmation.
 - Do not record database passwords, full paths containing secrets, or full connection strings.
