@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-07-02 Step 68C - Achievement PAPER import local production-like API acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step68c-achievement-import-acceptance.mjs` as a local Docker production-like API acceptance helper.
+  - Rebuilt and restarted the local production-like API service so it includes Step 68B code.
+  - Ran the helper inside the API container against the local Docker DB and a temporary local Nest API listener.
+  - Used only unique synthetic `S68C_*` departments, roles, users, and achievement import rows.
+  - Verified successful `PAPER` `CREATE_DRAFT_ONLY` apply created 2 `DRAFT` achievements, 2 `PaperDetail` rows, 4 contributors, and 2 same-operation audit events.
+  - Verified repeated exact apply returned safe `DB_CONFLICT` with no additional achievement, paper detail, contributor, or audit effect.
+  - Verified missing DOI, unsupported `PATENT` / `SOFTWARE_COPYRIGHT`, dry-run error, and limited-user permission paths rejected safely with no additional imported achievement effect.
+  - Verified workflow instance/task/action, attachment, fee, reminder, notification, search log, and resource grant count deltas stayed 0.
+- Explicitly not done:
+  - No Web UI, browser acceptance, production/VPS access, production DB access, production configuration access, real-data import, schema change, migration, seed, backfill, package, lockfile, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `PATENT` or `SOFTWARE_COPYRIGHT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+  - Docker reported an orphan container during `up`; it was not cleaned because cleanup/orphan removal was outside the Step boundary.
+- Verification:
+  - Local Docker production-like acceptance helper: PASS after a helper-only module-resolution fix.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files / 136 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 68B - Achievement PAPER import CREATE_DRAFT_ONLY backend apply
 
 - Status: DONE.

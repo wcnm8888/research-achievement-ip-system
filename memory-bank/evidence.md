@@ -1,5 +1,88 @@
 # Evidence
 
+## 2026-07-02 Step 68C - Achievement PAPER import local production-like API acceptance evidence
+
+- Goal:
+  - Validate the Step 68B backend-only `PAPER` import apply loop in a local Docker production-like API/DB environment.
+- Initial state:
+  - `git log -1 --oneline`: `334743c feat: add achievement paper import apply`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md` Step 68B addendum and local acceptance plan.
+  - `memory-bank/progress.md` Step 68B section.
+  - Step 68B achievement import apply/dry-run service, repository, controller, module route test, and focused tests.
+  - Existing Step 65C and Step 66C local acceptance helper patterns.
+  - Targeted Prisma achievement, paper detail, contributor, audit, user, department, permission, role, workflow, attachment, fee, reminder, notification, search, and resource grant model snippets.
+- Implemented files:
+  - `memory-bank/step68c-achievement-import-acceptance.mjs`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Local production-like acceptance:
+  - `docker compose -f docker-compose.production.yml build api`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d postgres api`: PASS.
+  - `docker compose -f docker-compose.production.yml ps`: Postgres healthy; API healthy; Web was already running and left untouched.
+  - API health through mapped port returned HTTP 200.
+  - Helper first run failed before DB/API acceptance because `/tmp` ESM static import could not resolve `@prisma/client`; helper was changed to load Prisma through `/app/apps/api/dist/main.js` module resolution.
+  - Helper re-run inside the API container: PASS.
+- Helper PASS summary:
+  - Scope: local production-like Docker DB/API harness only; not production/VPS acceptance.
+  - Auth harness: `x-demo-user-id` synthetic local users; no cookie/session/password output.
+  - Success apply:
+    - HTTP status: 201.
+    - Created achievements summary: 2.
+    - Created paper details summary: 2.
+    - Created contributors summary: 4.
+    - Imported achievement count delta: 0 -> 2.
+    - Persisted normalized DOI count: 2.
+    - DRAFT paper count: 2.
+    - State-change timestamp count: 0.
+    - Audit operation `ACHIEVEMENT_IMPORT_CREATE_DRAFT` delta: 2.
+  - Repeat exact apply:
+    - HTTP status: 400.
+    - Safe error code: `DB_CONFLICT`.
+    - Imported achievement count stayed 2.
+    - Paper detail count stayed 2.
+    - Contributor count stayed 4.
+    - Audit operation delta stayed 0.
+  - Missing DOI:
+    - HTTP status: 400.
+    - Safe error code: `REQUIRED`.
+    - Imported achievement count stayed 2.
+  - Unsupported type:
+    - HTTP status: 400.
+    - Safe error codes included `UNSUPPORTED_TYPE` and `REQUIRED`.
+    - Imported achievement count stayed 2.
+  - Dry-run error:
+    - HTTP status: 400.
+    - Safe error code: `OWNER_NOT_FOUND`.
+    - Imported achievement count stayed 2.
+  - Limited user:
+    - HTTP status: 403.
+    - Imported achievement count stayed 2.
+  - Forbidden side-effect deltas:
+    - Workflow instance: 0.
+    - Workflow task: 0.
+    - Workflow action: 0.
+    - Attachment: 0.
+    - Fee record: 0.
+    - Reminder task: 0.
+    - Notification: 0.
+    - Search log: 0.
+    - Resource access grant: 0.
+- Focused verification:
+  - `node --check memory-bank/step68c-achievement-import-acceptance.mjs`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files / 136 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive keyword scan: PASS; matches were local helper environment access or documentation safety-boundary terms only, with no complete URL, connection string value, private key value, AccessKey value, token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No password, cookie, token, secret, connection string, AccessKey, private key, raw DOI, normalized DOI value, or uploaded CSV content was recorded in evidence.
+  - No Web UI/browser acceptance, production/VPS access, production DB access, production configuration access, real-data import, schema change, migration, seed, backfill, package, lockfile, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+  - Docker reported an orphan container during `up`; it was not cleaned because cleanup/orphan removal was outside the Step boundary.
+
 ## 2026-07-02 Step 68B - Achievement PAPER import CREATE_DRAFT_ONLY backend apply evidence
 
 - Goal:
