@@ -17,6 +17,7 @@ import {
   UserAccountImportCreatedUser,
   UserAccountImportDepartmentLookup,
   UserAccountImportDryRunRepository,
+  UserAccountImportEmployeeNoLookup,
   UserAccountImportRoleLookup,
   UserAccountImportUserLookup,
 } from "./user-account-import-dry-run.repository";
@@ -84,6 +85,7 @@ export type UserAccountImportDryRunIssueCode =
   | "INVALID_STATUS"
   | "UNSUPPORTED_STATUS"
   | "EXISTING_USER"
+  | "EXISTING_EMPLOYEE_NO"
   | "EXISTING_ROLE_ASSIGNMENT"
   | "REVOKED_ROLE_ASSIGNMENT";
 
@@ -121,9 +123,10 @@ export type UserAccountImportDryRunSummary = {
   warningRows: number;
   createCandidates: number;
   existingUserRows: number;
+  existingEmployeeNoRows: number;
   existingRoleAssignmentRows: number;
   reactivationCandidateRows: number;
-  employeeNoDbConflictCheck: "NOT_AVAILABLE";
+  employeeNoDbConflictCheck: "AVAILABLE";
 };
 
 export type UserAccountImportDryRunResult = ImportDryRunResult<
@@ -187,6 +190,7 @@ type UserAccountImportResolvedPlanRow = {
     departmentId: string | null;
     roleId: string | null;
     scopeDepartmentId: string | null;
+    employeeNoNormalized: string | null;
   };
 };
 
@@ -198,6 +202,7 @@ type WorkingRow = {
     departmentId: string | null;
     roleId: string | null;
     scopeDepartmentId: string | null;
+    employeeNoNormalized: string | null;
   };
   errors: UserAccountImportDryRunIssue[];
   warnings: UserAccountImportDryRunIssue[];
@@ -273,7 +278,7 @@ export class UserAccountImportDryRunService {
         const importClient = tx as UserAccountImportApplyTransactionClient;
         const auditClient = tx as AuditTransactionClient;
 
-        const [departments, roles, users] = await Promise.all([
+        const [departments, roles, users, employeeNoUsers] = await Promise.all([
           this.repository.findApplyDepartmentsByCodesInTransaction(
             importClient,
             collectDepartmentCodesFromResolvedRows(rowsToCreate),
@@ -286,6 +291,10 @@ export class UserAccountImportDryRunService {
             importClient,
             collectEmailsFromResolvedRows(rowsToCreate),
           ),
+          this.repository.findApplyUsersByEmployeeNoNormalizedInTransaction(
+            importClient,
+            collectEmployeeNoNormalizedFromResolvedRows(rowsToCreate),
+          ),
         ]);
 
         const blockingErrors = toTransactionRecheckErrors(
@@ -293,6 +302,7 @@ export class UserAccountImportDryRunService {
           departments,
           roles,
           users,
+          employeeNoUsers,
         );
         if (blockingErrors.length > 0) {
           throw new UserAccountImportApplyRejectedError(
@@ -317,6 +327,8 @@ export class UserAccountImportDryRunService {
             importClient,
             {
               email: row.parsed.email!,
+              employeeNo: row.parsed.employeeNo,
+              employeeNoNormalized: row.resolved.employeeNoNormalized,
               name: row.parsed.displayName!,
               departmentId: department.id,
               role: {
@@ -356,16 +368,11 @@ export class UserAccountImportDryRunService {
       }
 
       if (this.repository.isPrismaUniqueConflict(error)) {
+        const target = this.repository.getPrismaUniqueConflictTarget(error);
+        const conflictError = toUniqueConflictApplyError(target);
         throw new UserAccountImportApplyRejectedError(
           "User account import apply encountered a uniqueness conflict.",
-          buildRejectedApplyResult(plan, [
-            {
-              rowNumber: null,
-              field: "email",
-              code: "EXISTING_USER",
-              message: "User email or role assignment already exists.",
-            },
-          ]),
+          buildRejectedApplyResult(plan, [conflictError]),
         );
       }
 
@@ -387,17 +394,24 @@ export class UserAccountImportDryRunService {
     applyRowValidation(rows);
     applyDuplicateValidation(rows);
 
-    const [departments, roles, users] = await Promise.all([
+    const [departments, roles, users, employeeNoUsers] = await Promise.all([
       this.repository.findActiveDepartmentsByCodes(collectDepartmentCodes(rows)),
       this.repository.findActiveRolesByCodes(collectRoleCodes(rows)),
       this.repository.findUsersByEmails(collectEmails(rows)),
+      this.repository.findUsersByEmployeeNoNormalized(collectEmployeeNoNormalized(rows)),
     ]);
 
     const departmentByCode = new Map(departments.map((department) => [department.code, department]));
     const roleByCode = new Map(roles.map((role) => [role.code, role]));
     const userByEmail = new Map(users.map((user) => [user.email, user]));
+    const userByEmployeeNo = new Map(
+      employeeNoUsers
+        .filter((user) => user.employeeNoNormalized)
+        .map((user) => [user.employeeNoNormalized!, user]),
+    );
 
     applyReferenceValidation(rows, departmentByCode, roleByCode);
+    applyExistingEmployeeNoErrors(rows, userByEmployeeNo);
     applyExistingUserWarnings(rows, userByEmail);
     applyRoleAssignmentWarnings(rows, userByEmail);
 
@@ -506,6 +520,39 @@ const buildRejectedApplyResult = (
   rows: [],
 });
 
+const toUniqueConflictApplyError = (
+  target: readonly string[],
+): UserAccountImportApplyErrorSummary => {
+  if (target.some((field) => field === "email" || field === "users_email_key")) {
+    return {
+      rowNumber: null,
+      field: "email",
+      code: "EXISTING_USER",
+      message: "User email already exists.",
+    };
+  }
+
+  if (
+    target.some((field) =>
+      ["employeeNoNormalized", "employee_no_normalized", "users_employee_no_normalized_key"].includes(field),
+    )
+  ) {
+    return {
+      rowNumber: null,
+      field: "employeeNo",
+      code: "EXISTING_EMPLOYEE_NO",
+      message: "employeeNo already belongs to an existing user.",
+    };
+  }
+
+  return {
+    rowNumber: null,
+    field: "identity",
+    code: "IDENTITY_CONFLICT",
+    message: "User identity already exists.",
+  };
+};
+
 const toApplyErrorSummaries = (
   rows: readonly UserAccountImportDryRunRow[],
 ): UserAccountImportApplyErrorSummary[] =>
@@ -535,11 +582,17 @@ const toTransactionRecheckErrors = (
   departments: readonly UserAccountImportApplyDepartmentLookup[],
   roles: readonly UserAccountImportApplyRoleLookup[],
   users: readonly UserAccountImportApplyUserLookup[],
+  employeeNoUsers: readonly UserAccountImportApplyUserLookup[],
 ): UserAccountImportApplyErrorSummary[] => {
   const errors: UserAccountImportApplyErrorSummary[] = [];
   const departmentByCode = new Map(departments.map((department) => [department.code, department]));
   const roleByCode = new Map(roles.map((role) => [role.code, role]));
   const existingEmailSet = new Set(users.map((user) => user.email));
+  const existingEmployeeNoSet = new Set(
+    employeeNoUsers
+      .map((user) => user.employeeNoNormalized)
+      .filter((employeeNo): employeeNo is string => Boolean(employeeNo)),
+  );
 
   for (const row of rows) {
     const department = row.parsed.departmentCode
@@ -589,6 +642,18 @@ const toTransactionRecheckErrors = (
         field: "email",
         code: "EXISTING_USER",
         message: "email already belongs to an existing user.",
+      });
+    }
+
+    if (
+      row.resolved.employeeNoNormalized &&
+      existingEmployeeNoSet.has(row.resolved.employeeNoNormalized)
+    ) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        field: "employeeNo",
+        code: "EXISTING_EMPLOYEE_NO",
+        message: "employeeNo already belongs to an existing user.",
       });
     }
 
@@ -703,6 +768,7 @@ const toWorkingRows = (csv: ImportCsvParseResult): WorkingRow[] =>
         departmentId: null,
         roleId: null,
         scopeDepartmentId: null,
+        employeeNoNormalized: normalizeEmployeeNoNormalized(valuesByHeader.get("employeeNo")),
       },
       errors: [],
       warnings: [],
@@ -911,10 +977,10 @@ const applyDuplicateValidation = (rows: WorkingRow[]): void => {
     if (row.parsed.email) {
       emailCounts.set(row.parsed.email, (emailCounts.get(row.parsed.email) ?? 0) + 1);
     }
-    if (row.parsed.employeeNo) {
+    if (row.resolved.employeeNoNormalized) {
       employeeNoCounts.set(
-        row.parsed.employeeNo,
-        (employeeNoCounts.get(row.parsed.employeeNo) ?? 0) + 1,
+        row.resolved.employeeNoNormalized,
+        (employeeNoCounts.get(row.resolved.employeeNoNormalized) ?? 0) + 1,
       );
     }
   }
@@ -928,11 +994,33 @@ const applyDuplicateValidation = (rows: WorkingRow[]): void => {
       });
     }
 
-    if (row.parsed.employeeNo && (employeeNoCounts.get(row.parsed.employeeNo) ?? 0) > 1) {
+    if (
+      row.resolved.employeeNoNormalized &&
+      (employeeNoCounts.get(row.resolved.employeeNoNormalized) ?? 0) > 1
+    ) {
       row.errors.push({
         field: "employeeNo",
         code: "DUPLICATE_IN_FILE",
         message: "employeeNo is duplicated in this file.",
+      });
+    }
+  }
+};
+
+const applyExistingEmployeeNoErrors = (
+  rows: WorkingRow[],
+  userByEmployeeNo: ReadonlyMap<string, UserAccountImportEmployeeNoLookup>,
+): void => {
+  for (const row of rows) {
+    if (
+      row.resolved.employeeNoNormalized &&
+      isValidEmployeeNo(row.parsed.employeeNo) &&
+      userByEmployeeNo.has(row.resolved.employeeNoNormalized)
+    ) {
+      row.errors.push({
+        field: "employeeNo",
+        code: "EXISTING_EMPLOYEE_NO",
+        message: "employeeNo already belongs to an existing user.",
       });
     }
   }
@@ -1079,13 +1167,16 @@ const summarizeRows = (rows: readonly UserAccountImportDryRunRow[]) => ({
   existingUserRows: rows.filter((row) =>
     row.warnings.some((warning) => warning.code === "EXISTING_USER"),
   ).length,
+  existingEmployeeNoRows: rows.filter((row) =>
+    row.errors.some((error) => error.code === "EXISTING_EMPLOYEE_NO"),
+  ).length,
   existingRoleAssignmentRows: rows.filter((row) =>
     row.warnings.some((warning) => warning.code === "EXISTING_ROLE_ASSIGNMENT"),
   ).length,
   reactivationCandidateRows: rows.filter((row) =>
     row.warnings.some((warning) => warning.code === "REVOKED_ROLE_ASSIGNMENT"),
   ).length,
-  employeeNoDbConflictCheck: "NOT_AVAILABLE" as const,
+  employeeNoDbConflictCheck: "AVAILABLE" as const,
 });
 
 const collectDepartmentCodes = (rows: readonly WorkingRow[]): string[] => {
@@ -1106,6 +1197,16 @@ const collectRoleCodes = (rows: readonly WorkingRow[]): string[] =>
 
 const collectEmails = (rows: readonly WorkingRow[]): string[] =>
   [...new Set(rows.map((row) => row.parsed.email).filter((email): email is string => Boolean(email)))];
+
+const collectEmployeeNoNormalized = (rows: readonly WorkingRow[]): string[] =>
+  [
+    ...new Set(
+      rows
+        .filter((row) => isValidEmployeeNo(row.parsed.employeeNo))
+        .map((row) => row.resolved.employeeNoNormalized)
+        .filter((employeeNo): employeeNo is string => Boolean(employeeNo)),
+    ),
+  ];
 
 const collectDepartmentCodesFromResolvedRows = (
   rows: readonly UserAccountImportResolvedPlanRow[],
@@ -1132,6 +1233,17 @@ const collectEmailsFromResolvedRows = (
 ): string[] =>
   [...new Set(rows.map((row) => row.parsed.email).filter((email): email is string => Boolean(email)))];
 
+const collectEmployeeNoNormalizedFromResolvedRows = (
+  rows: readonly UserAccountImportResolvedPlanRow[],
+): string[] =>
+  [
+    ...new Set(
+      rows
+        .map((row) => row.resolved.employeeNoNormalized)
+        .filter((employeeNo): employeeNo is string => Boolean(employeeNo)),
+    ),
+  ];
+
 const normalizeCell = (value: string | undefined): string | null => {
   const normalized = value?.trim();
   return normalized ? normalized : null;
@@ -1147,11 +1259,19 @@ const normalizeEnumCell = (value: string | undefined): string | null => {
   return normalized ? normalized.toUpperCase() : null;
 };
 
+const normalizeEmployeeNoNormalized = (value: string | undefined): string | null => {
+  const normalized = normalizeCell(value);
+  return normalized ? normalized.toUpperCase() : null;
+};
+
 const isValidDepartmentCode = (code: string): boolean =>
   code.length <= 64 && departmentCodePattern.test(code);
 
 const isValidRoleCode = (code: string): boolean =>
   code.length <= 64 && roleCodePattern.test(code);
+
+const isValidEmployeeNo = (employeeNo: string | null): employeeNo is string =>
+  Boolean(employeeNo && employeeNo.length <= 64 && employeeNoPattern.test(employeeNo));
 
 const isSensitiveColumn = (header: string): boolean =>
   sensitiveColumns.has(normalizeImportHeaderToken(header));

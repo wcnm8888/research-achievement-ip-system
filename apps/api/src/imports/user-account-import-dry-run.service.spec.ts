@@ -50,6 +50,7 @@ const createService = (input: {
   users?: Array<{
     id: string;
     email: string;
+    employeeNoNormalized?: string | null;
     status: UserStatus;
     userRoles: Array<{
       revokedAt: Date | null;
@@ -59,12 +60,17 @@ const createService = (input: {
       role: { id: string; code: string };
     }>;
   }>;
+  employeeNoUsers?: Array<{
+    id: string;
+    employeeNoNormalized: string | null;
+  }>;
 } = {}) => {
   const tx = { department: {}, role: {}, user: {}, auditLog: {} };
   const repository = {
     findActiveDepartmentsByCodes: vi.fn().mockResolvedValue(input.departments ?? []),
     findActiveRolesByCodes: vi.fn().mockResolvedValue(input.roles ?? []),
     findUsersByEmails: vi.fn().mockResolvedValue(input.users ?? []),
+    findUsersByEmployeeNoNormalized: vi.fn().mockResolvedValue(input.employeeNoUsers ?? []),
     findApplyDepartmentsByCodesInTransaction: vi.fn().mockResolvedValue(
       (input.departments ?? []).map((department) => ({
         ...department,
@@ -80,9 +86,12 @@ const createService = (input: {
       })),
     ),
     findApplyUsersByEmailsInTransaction: vi.fn().mockResolvedValue([]),
+    findApplyUsersByEmployeeNoNormalizedInTransaction: vi.fn().mockResolvedValue([]),
     createPendingNoCredentialUserInTransaction: vi.fn().mockImplementation(async (_tx, createInput) => ({
       id: createInput.email.startsWith("bob@") ? ids.secondUser : ids.user,
       email: createInput.email,
+      employeeNo: createInput.employeeNo,
+      employeeNoNormalized: createInput.employeeNoNormalized,
       name: createInput.name,
       departmentId: createInput.departmentId,
       status: UserStatus.PENDING_ACTIVATION,
@@ -104,6 +113,17 @@ const createService = (input: {
     isPrismaUniqueConflict: vi.fn((error: unknown) =>
       Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002"),
     ),
+    getPrismaUniqueConflictTarget: vi.fn((error: unknown) => {
+      if (!error || typeof error !== "object" || !("meta" in error)) {
+        return [];
+      }
+      const target = (error as { meta?: { target?: unknown } }).meta?.target;
+      return Array.isArray(target)
+        ? target.filter((item): item is string => typeof item === "string")
+        : typeof target === "string"
+          ? [target]
+          : [];
+    }),
   };
   const prisma = {
     tx,
@@ -151,7 +171,7 @@ describe("UserAccountImportDryRunService", () => {
         errorRows: 0,
         warningRows: 0,
         createCandidates: 1,
-        employeeNoDbConflictCheck: "NOT_AVAILABLE",
+        employeeNoDbConflictCheck: "AVAILABLE",
       },
     });
     expect(result.rows[0]!).toMatchObject({
@@ -175,6 +195,7 @@ describe("UserAccountImportDryRunService", () => {
     expect(repository.findActiveDepartmentsByCodes).toHaveBeenCalledWith(["RD"]);
     expect(repository.findActiveRolesByCodes).toHaveBeenCalledWith(["RESEARCHER"]);
     expect(repository.findUsersByEmails).toHaveBeenCalledWith(["alice@example.org"]);
+    expect(repository.findUsersByEmployeeNoNormalized).toHaveBeenCalledWith(["E001"]);
   });
 
   it("reports sensitive columns without returning the original sensitive header", async () => {
@@ -214,7 +235,7 @@ describe("UserAccountImportDryRunService", () => {
           "email,displayName,employeeNo,departmentCode,roleCode",
           "bad-email,,E001,RD,RESEARCHER",
           "dup@example.org,Dup One,E002,RD,RESEARCHER",
-          "dup@example.org,Dup Two,E002,RD,RESEARCHER",
+          "dup@example.org,Dup Two,e002,RD,RESEARCHER",
         ].join("\n"),
       ),
     );
@@ -230,6 +251,45 @@ describe("UserAccountImportDryRunService", () => {
       expect.arrayContaining([
         expect.objectContaining({ field: "email", code: "DUPLICATE_IN_FILE" }),
         expect.objectContaining({ field: "employeeNo", code: "DUPLICATE_IN_FILE" }),
+      ]),
+    );
+  });
+
+  it("reports existing employee numbers by normalized database lookup", async () => {
+    const { service, repository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+      employeeNoUsers: [
+        {
+          id: ids.user,
+          employeeNoNormalized: "E001",
+        },
+      ],
+    });
+
+    const result = await service.dryRunUserAccountCsv(
+      adminContext,
+      makeFile(
+        [
+          "email,displayName,employeeNo,departmentCode,roleCode",
+          "new@example.org,New User, e001 ,RD,RESEARCHER",
+        ].join("\n"),
+      ),
+    );
+
+    expect(repository.findUsersByEmployeeNoNormalized).toHaveBeenCalledWith(["E001"]);
+    expect(result.summary).toMatchObject({
+      errorRows: 1,
+      existingEmployeeNoRows: 1,
+      createCandidates: 0,
+      employeeNoDbConflictCheck: "AVAILABLE",
+    });
+    expect(result.rows[0]!.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: "employeeNo",
+          code: "EXISTING_EMPLOYEE_NO",
+        }),
       ]),
     );
   });
@@ -412,6 +472,8 @@ describe("UserAccountImportDryRunService", () => {
       prisma.tx,
       {
         email: "alice@example.org",
+        employeeNo: null,
+        employeeNoNormalized: null,
         name: "Alice",
         departmentId: ids.department,
         role: {
@@ -454,6 +516,38 @@ describe("UserAccountImportDryRunService", () => {
     expect(serializedAudit).not.toContain("tokenHash");
     expect(serializedAudit).not.toContain("invite");
     expect(serializedAudit).not.toContain("reset");
+  });
+
+  it("persists employee number display and normalized values during apply", async () => {
+    const { service, repository, prisma } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+
+    const result = await service.applyUserAccountCsv(
+      adminContext,
+      makeFile(
+        [
+          "email,displayName,employeeNo,departmentCode,roleCode",
+          "alice@example.org,Alice, e001 ,RD,RESEARCHER",
+        ].join("\n"),
+      ),
+      "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    );
+
+    expect(result.summary.createdUsersCount).toBe(1);
+    expect(repository.findApplyUsersByEmployeeNoNormalizedInTransaction).toHaveBeenCalledWith(
+      prisma.tx,
+      ["E001"],
+    );
+    expect(repository.createPendingNoCredentialUserInTransaction).toHaveBeenCalledWith(
+      prisma.tx,
+      expect.objectContaining({
+        email: "alice@example.org",
+        employeeNo: "e001",
+        employeeNoNormalized: "E001",
+      }),
+    );
   });
 
   it("rejects duplicate email and employee number before opening a write transaction", async () => {
@@ -612,7 +706,7 @@ describe("UserAccountImportDryRunService", () => {
       roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
     });
     repository.findApplyUsersByEmailsInTransaction.mockResolvedValueOnce([
-      { id: ids.user, email: "alice@example.org" },
+      { id: ids.user, email: "alice@example.org", employeeNoNormalized: null },
     ]);
 
     await expect(
@@ -633,6 +727,35 @@ describe("UserAccountImportDryRunService", () => {
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
   });
 
+  it("rejects transaction-time duplicate employee number rechecks without creating rows", async () => {
+    const { service, repository, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
+    });
+    repository.findApplyUsersByEmployeeNoNormalizedInTransaction.mockResolvedValueOnce([
+      { id: ids.user, email: "existing@example.org", employeeNoNormalized: "E001" },
+    ]);
+
+    await expect(
+      service.applyUserAccountCsv(
+        adminContext,
+        makeFile(
+          "email,displayName,employeeNo,departmentCode,roleCode\nalice@example.org,Alice,e001,RD,RESEARCHER\n",
+        ),
+        "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "employeeNo", code: "EXISTING_EMPLOYEE_NO" }),
+        ]),
+      }),
+    });
+
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
   it("keeps user create and audit inside one transaction for rollback on partial failure", async () => {
     const { service, repository, prisma, auditService } = createService({
       departments: [{ id: ids.department, code: "RD" }],
@@ -642,6 +765,8 @@ describe("UserAccountImportDryRunService", () => {
       .mockResolvedValueOnce({
         id: ids.user,
         email: "alice@example.org",
+        employeeNo: null,
+        employeeNoNormalized: null,
         name: "Alice",
         departmentId: ids.department,
         status: UserStatus.PENDING_ACTIVATION,
@@ -699,7 +824,10 @@ describe("UserAccountImportDryRunService", () => {
       departments: [{ id: ids.department, code: "RD" }],
       roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
     });
-    repository.createPendingNoCredentialUserInTransaction.mockRejectedValueOnce({ code: "P2002" });
+    repository.createPendingNoCredentialUserInTransaction.mockRejectedValueOnce({
+      code: "P2002",
+      meta: { target: ["email"] },
+    });
 
     await expect(
       service.applyUserAccountCsv(

@@ -175,3 +175,24 @@ Recommended later slices:
 - Step 67C: local migration/acceptance with synthetic data only.
 - Step 67D: read-only production preflight plan if production rollout is considered.
 - Step 67E or later: reviewed backfill/import of real employee numbers, only after conflict analysis and approval.
+
+## Step 67B Implementation Addendum
+
+- Step 67B implemented the smallest backend/API persistence slice.
+- Schema/migration:
+  - Added nullable `User.employeeNo`.
+  - Added nullable unique `User.employeeNoNormalized`.
+  - Added local migration `20260702090000_add_user_employee_number`.
+  - The migration does not backfill real data and does not add `NOT NULL`.
+- Import behavior:
+  - Same-file duplicate employee-number checks now use trim + uppercase normalization.
+  - Dry-run checks existing users by `employeeNoNormalized`.
+  - Dry-run reports `EXISTING_EMPLOYEE_NO` on `employeeNo` conflicts.
+  - Apply rechecks `employeeNoNormalized` conflicts inside the transaction.
+  - Apply persists `employeeNo` and `employeeNoNormalized` on created pending no-credential users.
+- Preserved exclusions:
+  - No Web UI update.
+  - No production migration.
+  - No production/VPS or production database access.
+  - No real-data backfill.
+  - No credential, session, lifecycle token, real email, login activation, or achievement apply.

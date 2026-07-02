@@ -1,5 +1,40 @@
 # Evidence
 
+## 2026-07-02 Step 67B - User/account employeeNo persistence and duplicate checks evidence
+
+- Goal:
+  - Implement nullable employee-number persistence and database-level duplicate checks for user/account import.
+- Initial state:
+  - `git rev-parse HEAD`: `cdeafee6fe44e029f279cccb3e20094a1a045a2e`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/user-account-identity-employee-no-persistence-plan.md`.
+  - Step 67A records in progress, decisions, implementation plan, and evidence.
+  - Targeted snippets only from Prisma `User`, user/account import dry-run/apply service and repository, focused API tests, package scripts, and migration directory names.
+- Implemented files:
+  - `prisma/schema.prisma`.
+  - `prisma/migrations/20260702090000_add_user_employee_number/migration.sql`.
+  - `apps/api/src/imports/user-account-import-dry-run.repository.ts`.
+  - `apps/api/src/imports/user-account-import-dry-run.service.ts`.
+  - `apps/api/src/imports/user-account-import-dry-run.repository.spec.ts`.
+  - `apps/api/src/imports/user-account-import-dry-run.service.spec.ts`.
+  - `apps/api/src/imports/user-account-import-dry-run.controller.spec.ts`.
+  - `apps/api/src/imports/imports.app-module.spec.ts`.
+- Validation:
+  - First `corepack pnpm prisma:validate` failed because no `DATABASE_URL` was present in the process environment; `.env` contents were not read.
+  - `corepack pnpm prisma:validate` with a placeholder local `DATABASE_URL`: PASS.
+  - `corepack pnpm prisma generate` with a placeholder local `DATABASE_URL`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 33 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Added-lines sensitive keyword scan covered the required terms; 497 added lines scanned, 11 total keyword matches, all code/test/documentation safety-boundary terminology, no sensitive values printed.
+- Boundary:
+  - No `.env` or `.env.production` contents were read.
+  - No production migration, production/VPS access, production DB access, real-data backfill, Web UI change, account password creation/reset, credential/session/lifecycle token creation, real mail, achievement apply, cleanup, deletion, reset, drop, prune, staging, or commit of known untracked local artifacts.
+
 ## 2026-07-02 Step 67A - User/account identity uniqueness and employeeNo persistence plan evidence
 
 - Goal:

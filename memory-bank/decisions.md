@@ -1,5 +1,19 @@
 # Decisions
 
+## D240 - User imports persist nullable normalized employee numbers
+
+- Date: 2026-07-02.
+- Context: Step 67B implements the Step 67A plan for user/account import employee-number persistence. The task allows Prisma schema, local migration, dry-run/apply, and focused API tests, while prohibiting production migration, production/VPS access, production DB access, real-data backfill, Web UI changes, credentials, sessions, lifecycle tokens, real email, achievement apply, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Add nullable `User.employeeNo` and nullable unique `User.employeeNoNormalized`.
+  - Normalize employee numbers with trim + uppercase for lookup, same-file duplicate detection, transaction rechecks, and writes.
+  - Report existing database employee-number conflicts as safe `EXISTING_EMPLOYEE_NO` row errors.
+  - Keep email as the only login identifier and keep employee number optional.
+  - Keep create-only apply limited to pending no-credential users and department-scoped roles.
+  - Defer Web UI/type/copy updates for the new backend summary value and error code to a later Step.
+- Scope:
+  - This decision does not authorize production migration, production/VPS access, production DB access, real-data backfill, login by employee number, Web UI changes, account lifecycle changes, credential/session/lifecycle token creation, DirectMail/real email, achievement apply, cleanup, deletion, reset, drop, prune, or handling known untracked local artifacts.
+
 ## D239 - Persist employeeNo as optional normalized user business identity
 
 - Date: 2026-07-02.

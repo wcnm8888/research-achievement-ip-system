@@ -4,6 +4,29 @@
 
 - Product brief: `memory-bank/product-brief.md`
 
+## Current Step 67B Archive - User/account employeeNo persistence and duplicate checks - 2026-07-02
+
+- Status: DONE.
+- Scope:
+  - Backend/API and Prisma local schema/migration implementation for nullable user employee-number persistence.
+  - No Web UI changes, production migration, production/VPS access, production DB access, or real-data backfill.
+- Implemented:
+  - `User.employeeNo` nullable display/source value.
+  - `User.employeeNoNormalized` nullable unique normalized lookup value.
+  - Local migration `20260702090000_add_user_employee_number` with nullable columns and unique index only.
+  - User/account dry-run DB lookup for normalized employee numbers.
+  - `EXISTING_EMPLOYEE_NO` safe row error and `existingEmployeeNoRows` summary count.
+  - Apply transaction-time employee-number recheck and persistence on pending no-credential user create.
+  - Focused repository/service/controller/AppModule tests.
+- Preserved boundaries:
+  - Email remains the login identifier.
+  - Employee number remains optional.
+  - Import still creates only `PENDING_ACTIVATION` users with department-scoped roles.
+  - No `UserCredential`, `UserSession`, `AccountLifecycleToken`, password, token, mail, or login activation is created.
+- Recommended next step:
+  - A Web/API contract follow-up should update Web types/copy/eligibility for `employeeNoDbConflictCheck=AVAILABLE` and `EXISTING_EMPLOYEE_NO`.
+  - A later local acceptance Step can apply the migration against synthetic local data only, if explicitly authorized.
+
 ## Current Step 67A Archive - User/account identity uniqueness and employeeNo persistence plan - 2026-07-02
 
 - Status: DONE.

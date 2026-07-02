@@ -24,6 +24,7 @@ describe("UserAccountImportDryRunRepository", () => {
           {
             id: "user-id",
             email: "existing@example.org",
+            employeeNoNormalized: null,
             status: UserStatus.ACTIVE,
             userRoles: [],
           },
@@ -69,6 +70,16 @@ describe("UserAccountImportDryRunRepository", () => {
       {
         id: "user-id",
         email: "existing@example.org",
+        employeeNoNormalized: null,
+        status: UserStatus.ACTIVE,
+        userRoles: [],
+      },
+    ]);
+    await expect(repository.findUsersByEmployeeNoNormalized(["E001"])).resolves.toEqual([
+      {
+        id: "user-id",
+        email: "existing@example.org",
+        employeeNoNormalized: null,
         status: UserStatus.ACTIVE,
         userRoles: [],
       },
@@ -101,6 +112,15 @@ describe("UserAccountImportDryRunRepository", () => {
         userRoles: expect.any(Object),
       }),
     });
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        employeeNoNormalized: { in: ["E001"] },
+      },
+      select: {
+        id: true,
+        employeeNoNormalized: true,
+      },
+    });
 
     expect(prisma.department.create).not.toHaveBeenCalled();
     expect(prisma.department.update).not.toHaveBeenCalled();
@@ -129,6 +149,8 @@ describe("UserAccountImportDryRunRepository", () => {
     const createdUser = {
       id: "user-id",
       email: "new@example.org",
+      employeeNo: "e001",
+      employeeNoNormalized: "E001",
       name: "New User",
       departmentId: "department-id",
       status: UserStatus.PENDING_ACTIVATION,
@@ -168,6 +190,8 @@ describe("UserAccountImportDryRunRepository", () => {
     await expect(
       repository.createPendingNoCredentialUserInTransaction(tx as never, {
         email: "new@example.org",
+        employeeNo: "e001",
+        employeeNoNormalized: "E001",
         name: "New User",
         departmentId: "department-id",
         role: {
@@ -182,6 +206,8 @@ describe("UserAccountImportDryRunRepository", () => {
     expect(tx.user.create).toHaveBeenCalledWith({
       data: {
         email: "new@example.org",
+        employeeNo: "e001",
+        employeeNoNormalized: "E001",
         name: "New User",
         departmentId: "department-id",
         status: UserStatus.PENDING_ACTIVATION,
@@ -197,6 +223,8 @@ describe("UserAccountImportDryRunRepository", () => {
         },
       },
       select: expect.objectContaining({
+        employeeNo: true,
+        employeeNoNormalized: true,
         credential: true,
         sessions: true,
         userRoles: expect.any(Object),

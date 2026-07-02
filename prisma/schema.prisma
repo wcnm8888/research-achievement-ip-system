@@ -334,14 +334,16 @@ model Department {
 }
 
 model User {
-  id           String     @id @default(uuid()) @db.Uuid
-  email        String     @unique @db.VarChar(255)
-  name         String     @db.VarChar(120)
-  departmentId String     @map("department_id") @db.Uuid
-  status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  archivedAt   DateTime?  @map("archived_at")
+  id                   String     @id @default(uuid()) @db.Uuid
+  email                String     @unique @db.VarChar(255)
+  employeeNo           String?    @map("employee_no") @db.VarChar(64)
+  employeeNoNormalized String?    @unique @map("employee_no_normalized") @db.VarChar(64)
+  name                 String     @db.VarChar(120)
+  departmentId         String     @map("department_id") @db.Uuid
+  status               UserStatus @default(ACTIVE)
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+  archivedAt           DateTime?  @map("archived_at")
 
   department            Department               @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   credential            UserCredential?

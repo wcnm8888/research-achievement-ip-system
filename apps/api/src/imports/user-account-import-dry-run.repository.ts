@@ -28,6 +28,11 @@ export type UserAccountImportUserLookup = {
   }[];
 };
 
+export type UserAccountImportEmployeeNoLookup = {
+  id: string;
+  employeeNoNormalized: string | null;
+};
+
 export type UserAccountImportApplyDepartmentLookup = {
   id: string;
   code: string;
@@ -45,10 +50,13 @@ export type UserAccountImportApplyRoleLookup = {
 export type UserAccountImportApplyUserLookup = {
   id: string;
   email: string;
+  employeeNoNormalized: string | null;
 };
 
 export type UserAccountImportCreateUserInput = {
   email: string;
+  employeeNo: string | null;
+  employeeNoNormalized: string | null;
   name: string;
   departmentId: string;
   role: {
@@ -62,6 +70,8 @@ export type UserAccountImportCreateUserInput = {
 export type UserAccountImportCreatedUser = {
   id: string;
   email: string;
+  employeeNo: string | null;
+  employeeNoNormalized: string | null;
   name: string;
   departmentId: string;
   status: UserStatus;
@@ -164,6 +174,25 @@ export class UserAccountImportDryRunRepository {
     });
   }
 
+  async findUsersByEmployeeNoNormalized(
+    employeeNoNormalizedValues: readonly string[],
+  ): Promise<UserAccountImportEmployeeNoLookup[]> {
+    const uniqueEmployeeNos = [...new Set(employeeNoNormalizedValues.filter(Boolean))];
+    if (uniqueEmployeeNos.length === 0) {
+      return [];
+    }
+
+    return this.prisma.user.findMany({
+      where: {
+        employeeNoNormalized: { in: uniqueEmployeeNos },
+      },
+      select: {
+        id: true,
+        employeeNoNormalized: true,
+      },
+    });
+  }
+
   async findApplyDepartmentsByCodesInTransaction(
     client: UserAccountImportApplyTransactionClient,
     codes: readonly string[],
@@ -218,6 +247,26 @@ export class UserAccountImportDryRunRepository {
       select: {
         id: true,
         email: true,
+        employeeNoNormalized: true,
+      },
+    });
+  }
+
+  async findApplyUsersByEmployeeNoNormalizedInTransaction(
+    client: UserAccountImportApplyTransactionClient,
+    employeeNoNormalizedValues: readonly string[],
+  ): Promise<UserAccountImportApplyUserLookup[]> {
+    const uniqueEmployeeNos = [...new Set(employeeNoNormalizedValues.filter(Boolean))];
+    if (uniqueEmployeeNos.length === 0) {
+      return [];
+    }
+
+    return client.user.findMany({
+      where: { employeeNoNormalized: { in: uniqueEmployeeNos } },
+      select: {
+        id: true,
+        email: true,
+        employeeNoNormalized: true,
       },
     });
   }
@@ -229,6 +278,8 @@ export class UserAccountImportDryRunRepository {
     return client.user.create({
       data: {
         email: input.email,
+        employeeNo: input.employeeNo,
+        employeeNoNormalized: input.employeeNoNormalized,
         name: input.name,
         departmentId: input.departmentId,
         status: UserStatus.PENDING_ACTIVATION,
@@ -246,6 +297,8 @@ export class UserAccountImportDryRunRepository {
       select: {
         id: true,
         email: true,
+        employeeNo: true,
+        employeeNoNormalized: true,
         name: true,
         departmentId: true,
         status: true,
@@ -271,6 +324,22 @@ export class UserAccountImportDryRunRepository {
 
   isPrismaUniqueConflict(error: unknown): boolean {
     return isPrismaKnownRequestError(error) && error.code === "P2002";
+  }
+
+  getPrismaUniqueConflictTarget(error: unknown): string[] {
+    if (!this.isPrismaUniqueConflict(error) || !("meta" in (error as object))) {
+      return [];
+    }
+
+    const meta = (error as { meta?: { target?: unknown } }).meta;
+    if (Array.isArray(meta?.target)) {
+      return meta.target.filter((item): item is string => typeof item === "string");
+    }
+    if (typeof meta?.target === "string") {
+      return [meta.target];
+    }
+
+    return [];
   }
 }
 

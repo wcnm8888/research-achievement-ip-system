@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-07-02 Step 67B - User/account import employeeNo persistence and duplicate checks
+
+- Status: DONE.
+- Scope completed:
+  - Added nullable `User.employeeNo` and nullable unique `User.employeeNoNormalized`.
+  - Added local migration `prisma/migrations/20260702090000_add_user_employee_number/migration.sql` with nullable columns and a unique normalized employee-number index only.
+  - Updated user/account dry-run to normalize employee numbers with trim + uppercase, keep same-file duplicate checks, and add database employee-number conflict detection.
+  - Added safe `EXISTING_EMPLOYEE_NO` row errors and `existingEmployeeNoRows` summary count.
+  - Updated user/account apply to persist `employeeNo` / `employeeNoNormalized` and recheck normalized employee-number conflicts inside the transaction.
+  - Kept pending/no-credential/no-session/no-token/no-email/no-login import boundary.
+  - Added focused API tests for persistence, normalization, dry-run DB conflict, transaction-time conflict, duplicate email, and no-side-effect boundaries.
+- Explicitly not done:
+  - No production migration, production/VPS access, production DB access, real-data backfill, Web UI change, credential/session/lifecycle token creation, password operation, real email, achievement apply, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+- Verification:
+  - `corepack pnpm prisma:validate` with a placeholder local `DATABASE_URL`: PASS.
+  - `corepack pnpm prisma generate` with a placeholder local `DATABASE_URL`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 33 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive keyword scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 67A - User/account import identity uniqueness and employeeNo persistence plan
 
 - Status: DONE.
