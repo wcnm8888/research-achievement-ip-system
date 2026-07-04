@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-04 Step 70C - Patent import local production-like API acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step70c-patent-import-acceptance.mjs`.
+  - Rebuilt and recreated the local Docker production-like API service against the existing Docker Postgres.
+  - Used local Docker production-like API image and Docker Postgres with synthetic `S70C_*` data only.
+  - Verified backend-only `PATENT` `CREATE_DRAFT_ONLY` apply creates `DRAFT` achievements, `PatentDetail` rows, contributors, and `ACHIEVEMENT_IMPORT_CREATE_DRAFT` audit rows.
+  - Verified repeated exact apply returns safe `DB_CONFLICT` and creates no additional achievement/detail/contributor/audit rows.
+  - Verified missing application number, grant-only, no identifier, mixed batch, dry-run error, and limited-user permission paths are safely rejected with no additional imported achievement writes.
+  - Verified `nextFeeDate` and `feeAmount` are not persisted to `PatentDetail` in the first patent apply slice.
+  - Verified workflow instance/task/action, attachment, fee record, fee review history, reminder task, notification, search log, and resource access grant deltas stayed 0.
+- Environment note:
+  - `docker compose up -d api` reported existing orphan containers; no orphan cleanup was run.
+- Explicitly not done:
+  - No Web UI or browser acceptance.
+  - No VPS, production DB, production config, `.env` / `.env.production` content read, real-data import, schema/migration/package/lockfile/config change, Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, or prune.
+  - No workflow, attachment/storage, fee, fee review history, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation outside the local synthetic acceptance rows.
+- Verification:
+  - Local Docker production-like acceptance helper: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files / 143 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 70B - Patent import CREATE_DRAFT_ONLY backend apply
 
 - Status: DONE.

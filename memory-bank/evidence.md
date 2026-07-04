@@ -1,5 +1,48 @@
 # Evidence
 
+## 2026-07-04 Step 70C - Patent import local API acceptance evidence
+
+- Goal:
+  - Validate `PATENT` achievement import apply in local Docker production-like API/Postgres with synthetic `S70C_*` data only.
+- Initial state:
+  - `git log -1 --oneline`: `c864256 feat: add patent import apply`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - Step 70A and Step 70B snippets from `memory-bank/progress.md`.
+  - `memory-bank/step69c-achievement-import-acceptance.mjs`.
+  - Step 70B relevant apply/dry-run implementation and tests under `apps/api/src/imports/`.
+- Implemented files:
+  - `memory-bank/step70c-patent-import-acceptance.mjs`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Local production-like acceptance evidence:
+  - `docker compose -f docker-compose.production.yml build api`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d api`: PASS; Docker reported existing orphan containers, and no orphan cleanup was run.
+  - `GET http://127.0.0.1:14001/api/health`: HTTP 200.
+  - `docker compose -f docker-compose.production.yml exec -T api node /tmp/step70c-patent-import-acceptance.mjs`: PASS.
+  - Successful apply: HTTP 201, 2 created achievements, 2 created patent details, 4 contributors, and 2 audit operation rows.
+  - Successful imported rows: 2 `DRAFT` `PATENT` achievements, 2 `PatentDetail` rows, 2 persisted normalized application identifiers, 1 persisted normalized grant identifier, 0 state-machine timestamp changes.
+  - Fee/reminder detail boundary: `nextFeeDate` persisted count 0 and `feeAmount` persisted count 0.
+  - Repeated exact apply: HTTP 400 with safe `DB_CONFLICT`; achievement/detail/contributor counts unchanged and audit operation delta 0.
+  - Missing application number: HTTP 400 with safe `REQUIRED`; achievement count unchanged.
+  - Grant-only: HTTP 400 with safe `REQUIRED`; achievement count unchanged.
+  - No identifier: HTTP 400 with safe `REQUIRED`; achievement count unchanged.
+  - Mixed batch: HTTP 400 with safe `MIXED_TYPE_BATCH`; achievement count unchanged.
+  - Dry-run error file: HTTP 400 with safe `OWNER_NOT_FOUND`; achievement count unchanged.
+  - Limited user: HTTP 403; achievement count unchanged.
+  - Forbidden side-effect deltas: workflow instances 0, workflow tasks 0, workflow actions 0, attachments 0, fee records 0, fee review history rows 0, reminder tasks 0, notifications 0, search logs 0, and resource access grants 0.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files and 143 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; no credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Web UI, browser acceptance, production/VPS access, production DB/config access, real-data import, Prisma schema/migration change, package/lockfile/config change, credential/session/token/cookie/password/secret/private-key handling, Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 70B - Patent import backend apply evidence
 
 - Goal:
