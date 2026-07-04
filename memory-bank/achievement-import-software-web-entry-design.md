@@ -1,5 +1,37 @@
 # Achievement Import SOFTWARE_COPYRIGHT Web Entry Design
 
+## Step 69F Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented the planned Web-only minimal slice.
+- `AchievementImportApplyRow.type` now accepts `PAPER` or `SOFTWARE_COPYRIGHT`.
+- `AchievementImportApplyResult.summary` now includes `createdSoftwareCopyrightDetailsCount`.
+- Web apply eligibility now returns `applyType: "PAPER" | "SOFTWARE_COPYRIGHT" | null`.
+- Web apply allows:
+  - all-`PAPER` rows with normalized DOI on every row;
+  - all-`SOFTWARE_COPYRIGHT` rows with normalized registration number on every row.
+- Web apply still blocks:
+  - mixed `PAPER` + `SOFTWARE_COPYRIGHT`;
+  - `PATENT`;
+  - missing DOI;
+  - missing software registration number;
+  - dry-run errors, warnings, or `DB_CONFLICT`;
+  - non-`CREATE_DRAFT` candidates;
+  - stale file fingerprint;
+  - in-flight requests.
+- Confirmation copy is type-aware for `PAPER` and `SOFTWARE_COPYRIGHT`, while keeping shared `CREATE_DRAFT_ONLY`, `DRAFT` only, no approval submission, no workflow, no attachment/storage, no fee/reminder, no notification/search/resource grant, and no import job boundaries.
+- Success display is type-aware and shows only safe counts, mode, total rows, audit operation, and boundary tags.
+- Error display remains code/count based and does not render backend row messages.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Still not implemented:
+  - backend/API changes;
+  - Prisma schema/migration changes;
+  - Docker/browser/local production-like acceptance;
+  - `PATENT` apply;
+  - workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, or achievement state-machine side effects.
+
 ## Step 69E Scope
 
 - Date: 2026-07-04.

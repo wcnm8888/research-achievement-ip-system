@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-04 Step 69F - Achievement SOFTWARE_COPYRIGHT import Web minimal slice
+
+- Status: DONE.
+- Scope completed:
+  - Extended Web achievement import apply from `PAPER`-only to homogeneous all-`PAPER` or all-`SOFTWARE_COPYRIGHT` batches.
+  - Added Web result typing for `SOFTWARE_COPYRIGHT` apply rows and `createdSoftwareCopyrightDetailsCount`.
+  - Added type-aware apply eligibility with `applyType: "PAPER" | "SOFTWARE_COPYRIGHT" | null`.
+  - Kept mixed `PAPER` + `SOFTWARE_COPYRIGHT`, `PATENT`, missing DOI, missing software registration number, dry-run error/warning/`DB_CONFLICT`, non-`CREATE_DRAFT`, stale fingerprint, and in-flight requests disabled before confirmation.
+  - Updated confirmation copy and success display to be type-aware while keeping `CREATE_DRAFT_ONLY`, `DRAFT` only, no approval submission, no workflow, no attachment/storage, no fee/reminder, no notification/search/resource grant, and no import job boundaries.
+  - Kept rejected apply display limited to safe counts and safe error codes.
+  - Added implementation addendum to `memory-bank/achievement-import-software-web-entry-design.md`.
+- Explicitly not done:
+  - No backend/API implementation.
+  - No Prisma schema/migration change.
+  - No package/lockfile change.
+  - No Docker/browser/local production-like acceptance.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `PATENT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files / 61 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 69E - Achievement SOFTWARE_COPYRIGHT import Web entry design
 
 - Status: DONE.

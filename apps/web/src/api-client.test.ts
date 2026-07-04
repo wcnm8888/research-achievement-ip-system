@@ -552,6 +552,7 @@ describe("createApiClient writes JSON requests", () => {
           totalRows: 1,
           createdAchievementsCount: 1,
           createdPaperDetailsCount: 1,
+          createdSoftwareCopyrightDetailsCount: 0,
           createdContributorsCount: 2,
           skippedRows: 0,
           failedRows: 0,
@@ -592,6 +593,7 @@ describe("createApiClient writes JSON requests", () => {
       summary: {
         createdAchievementsCount: 1,
         createdPaperDetailsCount: 1,
+        createdSoftwareCopyrightDetailsCount: 0,
       },
     });
 

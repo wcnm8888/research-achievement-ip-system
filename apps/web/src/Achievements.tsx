@@ -72,9 +72,12 @@ type AchievementImportFileFingerprint = {
   resultEncoding: string;
 };
 
+type AchievementImportApplyEligibleType = "PAPER" | "SOFTWARE_COPYRIGHT";
+
 type AchievementImportApplyEligibility = {
   eligible: boolean;
   reason: string;
+  applyType: AchievementImportApplyEligibleType | null;
 };
 
 type FormRequest =
@@ -488,6 +491,7 @@ export function AchievementImportDryRunPanel({
   applyEligibility = {
     eligible: false,
     reason: "Run a successful dry-run before applying.",
+    applyType: null,
   },
   applySubmitting = false,
   applyConfirmOpen = false,
@@ -541,7 +545,7 @@ export function AchievementImportDryRunPanel({
               disabled={!applyEligibility.eligible}
               onClick={onOpenApplyConfirm}
             >
-              Apply draft-only PAPER import
+              Apply draft-only import
             </Button>
           ) : null
         }
@@ -555,15 +559,15 @@ export function AchievementImportDryRunPanel({
         }
       />
       <Modal
-        title="Confirm draft-only PAPER import"
+        title={`Confirm draft-only ${formatAchievementImportApplyType(applyEligibility.applyType)} import`}
         open={applyConfirmOpen}
-        okText="Create DRAFT PAPER achievements"
+        okText={getAchievementImportApplyConfirmButtonText(applyEligibility.applyType)}
         cancelText="Cancel"
         confirmLoading={applySubmitting}
         onOk={onConfirmApply}
         onCancel={onCancelApplyConfirm}
       >
-        <AchievementImportApplyConfirmation />
+        <AchievementImportApplyConfirmation applyType={applyEligibility.applyType} />
       </Modal>
     </>
   );
@@ -611,23 +615,44 @@ export function AchievementImportDryRunResultView({
   );
 }
 
-export function AchievementImportApplyConfirmation() {
+export function AchievementImportApplyConfirmation({
+  applyType,
+}: {
+  applyType: AchievementImportApplyEligibleType | null;
+}) {
+  const typeLabel = formatAchievementImportApplyType(applyType);
+  const detailLabel =
+    applyType === "SOFTWARE_COPYRIGHT"
+      ? "software copyright detail rows"
+      : "paper detail rows";
+  const boundaryLabel =
+    applyType === "SOFTWARE_COPYRIGHT"
+      ? "normalized software registration number"
+      : "normalized DOI";
+
   return (
     <Space direction="vertical" size={8}>
       <Typography.Paragraph>
-        This creates DRAFT PAPER achievements with mode CREATE_DRAFT_ONLY.
+        This creates DRAFT {typeLabel} achievements and {detailLabel} with mode
+        CREATE_DRAFT_ONLY.
       </Typography.Paragraph>
       <Typography.Paragraph>
         The backend will re-read and validate the CSV before writing. The browser dry-run
         result is not trusted as an apply source of truth.
       </Typography.Paragraph>
       <Typography.Paragraph>
+        The duplicate-apply boundary is the {boundaryLabel} from the uploaded CSV.
+      </Typography.Paragraph>
+      <Typography.Paragraph>
         It will not submit for approval, create workflow, attachment/storage, fee,
         reminder, notification, search, resource grant, or import job records.
       </Typography.Paragraph>
-      <Typography.Paragraph>
-        PATENT and SOFTWARE_COPYRIGHT apply are not supported in this slice.
-      </Typography.Paragraph>
+      {applyType === "SOFTWARE_COPYRIGHT" ? (
+        <Typography.Paragraph>
+          Software copyright fees and reminders are intentionally not created by this
+          draft-only import.
+        </Typography.Paragraph>
+      ) : null}
     </Space>
   );
 }
@@ -657,6 +682,19 @@ function AchievementImportApplyStatus({
           description={eligibility.reason}
         />
       ) : null}
+      {result && eligibility.eligible && eligibility.applyType ? (
+        <Alert
+          type="info"
+          showIcon
+          message="Apply is ready"
+          description={
+            <Space size={6} wrap>
+              <Tag color="blue">{eligibility.applyType}</Tag>
+              <Typography.Text>{eligibility.reason}</Typography.Text>
+            </Space>
+          }
+        />
+      ) : null}
       {error ? <AchievementImportApplyErrorView error={error} /> : null}
       {applyResult ? <AchievementImportApplyResultView result={applyResult} /> : null}
     </Space>
@@ -668,20 +706,38 @@ export function AchievementImportApplyResultView({
 }: {
   result: AchievementImportApplyResult;
 }) {
+  const applyType = getAchievementImportApplyResultType(result);
+  const showPaperCount =
+    applyType === "PAPER" || result.summary.createdPaperDetailsCount > 0;
+  const showSoftwareCount =
+    applyType === "SOFTWARE_COPYRIGHT" ||
+    result.summary.createdSoftwareCopyrightDetailsCount > 0;
+
   return (
     <Alert
       type="success"
       showIcon
-      message="Draft-only PAPER import applied"
+      message={`Draft-only ${formatAchievementImportApplyType(applyType)} import applied`}
       description={
         <Space direction="vertical" size={8} className="full-width">
           <Descriptions size="small" column={2}>
+            <Descriptions.Item label="Mode">{result.mode}</Descriptions.Item>
+            <Descriptions.Item label="Total rows">
+              {result.summary.totalRows}
+            </Descriptions.Item>
             <Descriptions.Item label="Created achievements">
               {result.summary.createdAchievementsCount}
             </Descriptions.Item>
-            <Descriptions.Item label="Created paper details">
-              {result.summary.createdPaperDetailsCount}
-            </Descriptions.Item>
+            {showPaperCount ? (
+              <Descriptions.Item label="Created paper details">
+                {result.summary.createdPaperDetailsCount}
+              </Descriptions.Item>
+            ) : null}
+            {showSoftwareCount ? (
+              <Descriptions.Item label="Created software copyright details">
+                {result.summary.createdSoftwareCopyrightDetailsCount}
+              </Descriptions.Item>
+            ) : null}
             <Descriptions.Item label="Created contributors">
               {result.summary.createdContributorsCount}
             </Descriptions.Item>
@@ -693,8 +749,9 @@ export function AchievementImportApplyResultView({
             <Tag>DRAFT only</Tag>
             <Tag>No workflow</Tag>
             <Tag>No attachment/storage</Tag>
-            <Tag>No fee</Tag>
-            <Tag>No search/resource grant</Tag>
+            <Tag>No fee/reminder</Tag>
+            <Tag>No notification/search/resource grant</Tag>
+            <Tag>No import job</Tag>
           </Space>
         </Space>
       }
@@ -727,6 +784,57 @@ export function AchievementImportApplyErrorView({ error }: { error: ApiError }) 
     />
   );
 }
+
+const formatAchievementImportApplyType = (
+  applyType: AchievementImportApplyEligibleType | null,
+): string => {
+  if (applyType === "PAPER") {
+    return "PAPER";
+  }
+
+  if (applyType === "SOFTWARE_COPYRIGHT") {
+    return "SOFTWARE_COPYRIGHT";
+  }
+
+  return "achievement";
+};
+
+const getAchievementImportApplyConfirmButtonText = (
+  applyType: AchievementImportApplyEligibleType | null,
+): string =>
+  applyType === "SOFTWARE_COPYRIGHT"
+    ? "Create DRAFT software copyright achievements"
+    : "Create DRAFT PAPER achievements";
+
+const getAchievementImportApplyResultType = (
+  result: AchievementImportApplyResult,
+): AchievementImportApplyEligibleType | null => {
+  const rowTypes = new Set(result.rows.map((row) => row.type));
+
+  if (rowTypes.size === 1 && rowTypes.has("PAPER")) {
+    return "PAPER";
+  }
+
+  if (rowTypes.size === 1 && rowTypes.has("SOFTWARE_COPYRIGHT")) {
+    return "SOFTWARE_COPYRIGHT";
+  }
+
+  if (
+    result.summary.createdSoftwareCopyrightDetailsCount > 0 &&
+    result.summary.createdPaperDetailsCount === 0
+  ) {
+    return "SOFTWARE_COPYRIGHT";
+  }
+
+  if (
+    result.summary.createdPaperDetailsCount > 0 &&
+    result.summary.createdSoftwareCopyrightDetailsCount === 0
+  ) {
+    return "PAPER";
+  }
+
+  return null;
+};
 
 export const buildAchievementImportFileFingerprint = (
   file: File,
@@ -773,23 +881,43 @@ export const getAchievementImportApplyEligibility = ({
   applySubmitting: boolean;
 }): AchievementImportApplyEligibility => {
   if (!hasAchievementImportDryRunPermission(authUser)) {
-    return { eligible: false, reason: "system:config permission is required." };
+    return {
+      eligible: false,
+      reason: "system:config permission is required.",
+      applyType: null,
+    };
   }
 
   if (!file) {
-    return { eligible: false, reason: "Select the same CSV file used for dry-run." };
+    return {
+      eligible: false,
+      reason: "Select the same CSV file used for dry-run.",
+      applyType: null,
+    };
   }
 
   if (!result) {
-    return { eligible: false, reason: "Run a successful dry-run before applying." };
+    return {
+      eligible: false,
+      reason: "Run a successful dry-run before applying.",
+      applyType: null,
+    };
   }
 
   if (!isAchievementImportFileFingerprintMatch(file, result, fingerprint)) {
-    return { eligible: false, reason: "Selected file changed after dry-run." };
+    return {
+      eligible: false,
+      reason: "Selected file changed after dry-run.",
+      applyType: null,
+    };
   }
 
   if (dryRunLoading || applySubmitting) {
-    return { eligible: false, reason: "An import request is already in progress." };
+    return {
+      eligible: false,
+      reason: "An import request is already in progress.",
+      applyType: null,
+    };
   }
 
   if (
@@ -798,11 +926,19 @@ export const getAchievementImportApplyEligibility = ({
     result.summary.totalRows <= 0 ||
     result.summary.validRows !== result.summary.totalRows
   ) {
-    return { eligible: false, reason: "Dry-run did not produce an all-valid result." };
+    return {
+      eligible: false,
+      reason: "Dry-run did not produce an all-valid result.",
+      applyType: null,
+    };
   }
 
   if (result.summary.errorRows > 0 || result.rows.some((row) => row.errors.length > 0)) {
-    return { eligible: false, reason: "Dry-run errors must be fixed before apply." };
+    return {
+      eligible: false,
+      reason: "Dry-run errors must be fixed before apply.",
+      applyType: null,
+    };
   }
 
   if (
@@ -814,6 +950,7 @@ export const getAchievementImportApplyEligibility = ({
     return {
       eligible: false,
       reason: "Dry-run warnings or DB_CONFLICT rows must be fixed before apply.",
+      applyType: null,
     };
   }
 
@@ -821,18 +958,71 @@ export const getAchievementImportApplyEligibility = ({
     result.summary.createDraftCandidates !== result.summary.totalRows ||
     result.rows.some((row) => row.status !== "VALID" || row.candidateAction !== "CREATE_DRAFT")
   ) {
-    return { eligible: false, reason: "Only CREATE_DRAFT candidates can be applied." };
+    return {
+      eligible: false,
+      reason: "Only CREATE_DRAFT candidates can be applied.",
+      applyType: null,
+    };
   }
 
-  if (result.rows.some((row) => row.parsed.type !== "PAPER")) {
-    return { eligible: false, reason: "Only PAPER rows are supported for apply." };
+  if (result.rows.some((row) => row.parsed.type === "PATENT")) {
+    return {
+      eligible: false,
+      reason: "PATENT apply is not enabled yet.",
+      applyType: null,
+    };
   }
 
-  if (result.rows.some((row) => !row.parsed.normalizedIdentifiers.doi)) {
-    return { eligible: false, reason: "Every PAPER row must have a normalized DOI." };
+  const applyTypes = new Set(result.rows.map((row) => row.parsed.type));
+  const hasPaper = applyTypes.has("PAPER");
+  const hasSoftwareCopyright = applyTypes.has("SOFTWARE_COPYRIGHT");
+
+  if (hasPaper && hasSoftwareCopyright) {
+    return {
+      eligible: false,
+      reason: "Mixed PAPER and SOFTWARE_COPYRIGHT batches must be split before apply.",
+      applyType: null,
+    };
   }
 
-  return { eligible: true, reason: "Ready to create DRAFT PAPER achievements." };
+  if (hasPaper && applyTypes.size === 1) {
+    if (result.rows.some((row) => !row.parsed.normalizedIdentifiers.doi)) {
+      return {
+        eligible: false,
+        reason: "Every PAPER row must have a normalized DOI.",
+        applyType: null,
+      };
+    }
+
+    return {
+      eligible: true,
+      reason: "Ready to create DRAFT PAPER achievements.",
+      applyType: "PAPER",
+    };
+  }
+
+  if (hasSoftwareCopyright && applyTypes.size === 1) {
+    if (result.rows.some((row) => !row.parsed.normalizedIdentifiers.registrationNo)) {
+      return {
+        eligible: false,
+        reason:
+          "Every SOFTWARE_COPYRIGHT row must have a normalized software registration number.",
+        applyType: null,
+      };
+    }
+
+    return {
+      eligible: true,
+      reason: "Ready to create DRAFT SOFTWARE_COPYRIGHT achievements.",
+      applyType: "SOFTWARE_COPYRIGHT",
+    };
+  }
+
+  return {
+    eligible: false,
+    reason: "Only all-PAPER or all-SOFTWARE_COPYRIGHT batches can be applied.",
+    applyType: null,
+  };
 };
 
 const getAchievementImportApplyErrorSummary = (
@@ -843,6 +1033,7 @@ const getAchievementImportApplyErrorSummary = (
         summary?: {
           failedRows?: number;
           errorCount?: number;
+          warningCount?: number;
         };
         errors?: Array<{
           code?: unknown;
@@ -877,9 +1068,11 @@ const getAchievementImportApplyErrorSummary = (
     typeof body?.summary?.failedRows === "number" ? body.summary.failedRows : null;
   const errorCount =
     typeof body?.summary?.errorCount === "number" ? body.summary.errorCount : null;
+  const warningCount =
+    typeof body?.summary?.warningCount === "number" ? body.summary.warningCount : null;
   const countText =
-    failedRows !== null || errorCount !== null
-      ? `Rejected rows: ${failedRows ?? "unknown"}; errors: ${errorCount ?? "unknown"}.`
+    failedRows !== null || errorCount !== null || warningCount !== null
+      ? `Rejected rows: ${failedRows ?? "unknown"}; errors: ${errorCount ?? "unknown"}; warnings: ${warningCount ?? "unknown"}.`
       : "The backend rejected the apply request.";
 
   return {

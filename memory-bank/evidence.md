@@ -1,5 +1,48 @@
 # Evidence
 
+## 2026-07-04 Step 69F - Achievement SOFTWARE_COPYRIGHT import Web minimal slice evidence
+
+- Goal:
+  - Implement the Step 69E Web-only minimal slice so achievement import apply supports homogeneous all-`PAPER` or all-`SOFTWARE_COPYRIGHT` batches.
+- Initial state:
+  - `git log -1 --oneline`: `20f03f6 docs: design software copyright import web entry`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-software-web-entry-design.md`.
+  - Step 69E snippet from `memory-bank/progress.md`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/api-client.test.ts`.
+- Implemented files:
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `apps/web/src/api-client.test.ts`.
+  - `memory-bank/achievement-import-software-web-entry-design.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - `AchievementImportApplyRow.type` accepts `PAPER` or `SOFTWARE_COPYRIGHT`.
+  - `AchievementImportApplyResult.summary` includes `createdSoftwareCopyrightDetailsCount`.
+  - `getAchievementImportApplyEligibility` returns `applyType`.
+  - All-`PAPER` apply remains enabled only when every row has normalized DOI.
+  - All-`SOFTWARE_COPYRIGHT` apply is enabled only when every row has normalized registration number.
+  - Mixed `PAPER` + `SOFTWARE_COPYRIGHT`, `PATENT`, missing identifier, dry-run errors/warnings/`DB_CONFLICT`, non-`CREATE_DRAFT`, stale fingerprint, and in-flight requests remain blocked before confirmation.
+  - Confirmation copy is type-aware and keeps draft-only and forbidden-side-effect boundaries.
+  - Success panel renders safe counts and audit operation only; rejected apply display remains safe-code/count based.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files and 61 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; no credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No backend/API implementation, Prisma schema/migration change, package/lockfile change, Docker/browser/local production-like acceptance, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, local artifact cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts occurred.
+
 ## 2026-07-04 Step 69E - Achievement SOFTWARE_COPYRIGHT import Web entry design evidence
 
 - Goal:

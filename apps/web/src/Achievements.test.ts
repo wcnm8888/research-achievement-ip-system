@@ -262,6 +262,59 @@ const eligibleAchievementImportDryRunResult: AchievementImportDryRunResult = {
   ],
 };
 
+const eligibleSoftwareCopyrightImportDryRunResult: AchievementImportDryRunResult = {
+  ...eligibleAchievementImportDryRunResult,
+  file: {
+    name: "software-achievements.csv",
+    size: 160,
+    mimeType: "text/csv",
+    encoding: "utf-8",
+  },
+  columns: {
+    required: ["type", "title", "departmentCode", "contributors"],
+    optional: ["ownerEmail", "ownerEmployeeNo", "status", "softwareRegistrationNo"],
+    received: [
+      "type",
+      "title",
+      "departmentCode",
+      "contributors",
+      "softwareRegistrationNo",
+    ],
+  },
+  rows: [
+    {
+      ...eligibleAchievementImportDryRunResult.rows[0]!,
+      parsed: {
+        ...eligibleAchievementImportDryRunResult.rows[0]!.parsed,
+        type: "SOFTWARE_COPYRIGHT",
+        title: "Eligible Software",
+        contributors: [
+          {
+            name: null,
+            contributorType: "COPYRIGHT_OWNER",
+            contributorRole: "OWNER",
+            userEmail: null,
+            organization: "Synthetic Lab",
+            sortOrder: 1,
+          },
+        ],
+        identifiers: {
+          doi: null,
+          applicationNo: null,
+          patentNo: null,
+          registrationNo: "SW-69F-001",
+        },
+        normalizedIdentifiers: {
+          doi: null,
+          applicationNo: null,
+          patentNo: null,
+          registrationNo: "SW69F001",
+        },
+      },
+    },
+  ],
+};
+
 const achievementImportApplyResult: AchievementImportApplyResult = {
   importType: "ACHIEVEMENT",
   dryRun: false,
@@ -276,6 +329,7 @@ const achievementImportApplyResult: AchievementImportApplyResult = {
     totalRows: 1,
     createdAchievementsCount: 1,
     createdPaperDetailsCount: 1,
+    createdSoftwareCopyrightDetailsCount: 0,
     createdContributorsCount: 1,
     skippedRows: 0,
     failedRows: 0,
@@ -299,10 +353,37 @@ const achievementImportApplyResult: AchievementImportApplyResult = {
   ],
 };
 
+const softwareCopyrightImportApplyResult: AchievementImportApplyResult = {
+  ...achievementImportApplyResult,
+  file: {
+    name: "software-achievements.csv",
+    size: 160,
+    mimeType: "text/csv",
+    encoding: "utf-8",
+  },
+  summary: {
+    ...achievementImportApplyResult.summary,
+    createdPaperDetailsCount: 0,
+    createdSoftwareCopyrightDetailsCount: 1,
+  },
+  rows: [
+    {
+      ...achievementImportApplyResult.rows[0]!,
+      type: "SOFTWARE_COPYRIGHT",
+    },
+  ],
+};
+
 const createEligibleAchievementImportFile = () =>
   new File(["x".repeat(128)], "paper-achievements.csv", {
     type: "text/csv",
     lastModified: 68000,
+  });
+
+const createEligibleSoftwareCopyrightImportFile = () =>
+  new File(["x".repeat(160)], "software-achievements.csv", {
+    type: "text/csv",
+    lastModified: 69000,
   });
 
 describe("buildAchievementListQuery", () => {
@@ -520,6 +601,7 @@ describe("achievement import dry-run UI", () => {
     expect(html).toContain("Run dry-run");
     expect(html).not.toContain("Confirm import");
     expect(html).not.toContain("Apply draft-only PAPER import");
+    expect(html).not.toContain("Apply draft-only import");
   });
 
   it("computes apply eligibility from permission, dry-run result, and file fingerprint", () => {
@@ -548,6 +630,7 @@ describe("achievement import dry-run UI", () => {
     ).toEqual({
       eligible: true,
       reason: "Ready to create DRAFT PAPER achievements.",
+      applyType: "PAPER",
     });
 
     const changedFile = new File(["x".repeat(128)], "paper-achievements.csv", {
@@ -566,7 +649,51 @@ describe("achievement import dry-run UI", () => {
     ).toContain("changed");
   });
 
-  it("blocks apply for warnings, non-PAPER rows, missing DOI, and in-flight requests", () => {
+  it("enables SOFTWARE_COPYRIGHT apply and keeps PAPER eligibility unchanged", () => {
+    const paperFile = createEligibleAchievementImportFile();
+    const paperFingerprint = buildAchievementImportFileFingerprint(
+      paperFile,
+      eligibleAchievementImportDryRunResult,
+    );
+    const softwareFile = createEligibleSoftwareCopyrightImportFile();
+    const softwareFingerprint = buildAchievementImportFileFingerprint(
+      softwareFile,
+      eligibleSoftwareCopyrightImportDryRunResult,
+    );
+    const authUser = createAuthUser({ permissionCodes: ["system:config"] });
+
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file: paperFile,
+        result: eligibleAchievementImportDryRunResult,
+        fingerprint: paperFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }),
+    ).toEqual({
+      eligible: true,
+      reason: "Ready to create DRAFT PAPER achievements.",
+      applyType: "PAPER",
+    });
+
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file: softwareFile,
+        result: eligibleSoftwareCopyrightImportDryRunResult,
+        fingerprint: softwareFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }),
+    ).toEqual({
+      eligible: true,
+      reason: "Ready to create DRAFT SOFTWARE_COPYRIGHT achievements.",
+      applyType: "SOFTWARE_COPYRIGHT",
+    });
+  });
+
+  it("blocks apply for warnings, PATENT, mixed types, missing identifiers, and in-flight requests", () => {
     const file = createEligibleAchievementImportFile();
     const fingerprint = buildAchievementImportFileFingerprint(
       file,
@@ -608,7 +735,7 @@ describe("achievement import dry-run UI", () => {
       }).reason,
     ).toContain("warnings");
 
-    const nonPaperResult: AchievementImportDryRunResult = {
+    const patentResult: AchievementImportDryRunResult = {
       ...eligibleAchievementImportDryRunResult,
       rows: [
         {
@@ -620,17 +747,45 @@ describe("achievement import dry-run UI", () => {
         },
       ],
     };
-    const nonPaperFingerprint = buildAchievementImportFileFingerprint(file, nonPaperResult);
+    const patentFingerprint = buildAchievementImportFileFingerprint(file, patentResult);
     expect(
       getAchievementImportApplyEligibility({
         authUser,
         file,
-        result: nonPaperResult,
-        fingerprint: nonPaperFingerprint,
+        result: patentResult,
+        fingerprint: patentFingerprint,
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("Only PAPER");
+    ).toContain("PATENT");
+
+    const mixedResult: AchievementImportDryRunResult = {
+      ...eligibleAchievementImportDryRunResult,
+      summary: {
+        ...eligibleAchievementImportDryRunResult.summary,
+        totalRows: 2,
+        validRows: 2,
+        createDraftCandidates: 2,
+      },
+      rows: [
+        eligibleRow,
+        {
+          ...eligibleSoftwareCopyrightImportDryRunResult.rows[0]!,
+          rowNumber: 3,
+        },
+      ],
+    };
+    const mixedFingerprint = buildAchievementImportFileFingerprint(file, mixedResult);
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file,
+        result: mixedResult,
+        fingerprint: mixedFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("Mixed PAPER and SOFTWARE_COPYRIGHT");
 
     const missingDoiResult: AchievementImportDryRunResult = {
       ...eligibleAchievementImportDryRunResult,
@@ -662,6 +817,37 @@ describe("achievement import dry-run UI", () => {
       }).reason,
     ).toContain("normalized DOI");
 
+    const missingRegistrationResult: AchievementImportDryRunResult = {
+      ...eligibleSoftwareCopyrightImportDryRunResult,
+      rows: [
+        {
+          ...eligibleSoftwareCopyrightImportDryRunResult.rows[0]!,
+          parsed: {
+            ...eligibleSoftwareCopyrightImportDryRunResult.rows[0]!.parsed,
+            normalizedIdentifiers: {
+              ...eligibleSoftwareCopyrightImportDryRunResult.rows[0]!.parsed.normalizedIdentifiers,
+              registrationNo: null,
+            },
+          },
+        },
+      ],
+    };
+    const softwareFile = createEligibleSoftwareCopyrightImportFile();
+    const missingRegistrationFingerprint = buildAchievementImportFileFingerprint(
+      softwareFile,
+      missingRegistrationResult,
+    );
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file: softwareFile,
+        result: missingRegistrationResult,
+        fingerprint: missingRegistrationFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("normalized software registration number");
+
     expect(
       getAchievementImportApplyEligibility({
         authUser,
@@ -674,7 +860,7 @@ describe("achievement import dry-run UI", () => {
     ).toContain("in progress");
   });
 
-  it("renders the apply entry and confirmation copy only for an eligible action", () => {
+  it("renders the apply entry and PAPER confirmation copy only for an eligible action", () => {
     const file = createEligibleAchievementImportFile();
     const fingerprint = buildAchievementImportFileFingerprint(
       file,
@@ -701,19 +887,42 @@ describe("achievement import dry-run UI", () => {
       }),
     );
     const confirmationHtml = renderToStaticMarkup(
-      createElement(AchievementImportApplyConfirmation),
+      createElement(AchievementImportApplyConfirmation, { applyType: "PAPER" }),
     );
 
-    expect(panelHtml).toContain("Apply draft-only PAPER import");
+    expect(panelHtml).toContain("Apply draft-only import");
     expect(panelHtml).not.toContain("disabled");
     expect(confirmationHtml).toContain("CREATE_DRAFT_ONLY");
     expect(confirmationHtml).toContain("DRAFT PAPER");
+    expect(confirmationHtml).toContain("paper detail rows");
+    expect(confirmationHtml).toContain("normalized DOI");
     expect(confirmationHtml).toContain("will not submit");
     expect(confirmationHtml).toContain("workflow");
     expect(confirmationHtml).toContain("attachment/storage");
     expect(confirmationHtml).toContain("resource grant");
-    expect(confirmationHtml).toContain("PATENT");
-    expect(confirmationHtml).toContain("SOFTWARE_COPYRIGHT");
+    expect(confirmationHtml).toContain("re-read and validate");
+  });
+
+  it("renders SOFTWARE_COPYRIGHT confirmation copy with registration and side-effect boundaries", () => {
+    const confirmationHtml = renderToStaticMarkup(
+      createElement(AchievementImportApplyConfirmation, {
+        applyType: "SOFTWARE_COPYRIGHT",
+      }),
+    );
+
+    expect(confirmationHtml).toContain("CREATE_DRAFT_ONLY");
+    expect(confirmationHtml).toContain("DRAFT SOFTWARE_COPYRIGHT");
+    expect(confirmationHtml).toContain("software copyright detail rows");
+    expect(confirmationHtml).toContain("normalized software registration number");
+    expect(confirmationHtml).toContain("will not submit");
+    expect(confirmationHtml).toContain("workflow");
+    expect(confirmationHtml).toContain("attachment/storage");
+    expect(confirmationHtml).toContain("fee");
+    expect(confirmationHtml).toContain("reminder");
+    expect(confirmationHtml).toContain("notification");
+    expect(confirmationHtml).toContain("search");
+    expect(confirmationHtml).toContain("resource grant");
+    expect(confirmationHtml).toContain("import job");
     expect(confirmationHtml).toContain("re-read and validate");
   });
 
@@ -735,6 +944,7 @@ describe("achievement import dry-run UI", () => {
             summary: {
               failedRows: 1,
               errorCount: 1,
+              warningCount: 0,
             },
             errors: [
               {
@@ -749,21 +959,51 @@ describe("achievement import dry-run UI", () => {
 
     expect(successHtml).toContain("Created achievements");
     expect(successHtml).toContain("Created paper details");
+    expect(successHtml).not.toContain("Created software copyright details");
     expect(successHtml).toContain("Created contributors");
     expect(successHtml).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
     expect(successHtml).toContain("DRAFT only");
     expect(successHtml).toContain("No workflow");
     expect(successHtml).toContain("No attachment/storage");
-    expect(successHtml).toContain("No fee");
-    expect(successHtml).toContain("No search/resource grant");
+    expect(successHtml).toContain("No fee/reminder");
+    expect(successHtml).toContain("No notification/search/resource grant");
+    expect(successHtml).toContain("No import job");
     expect(successHtml).not.toContain("10.2000/s68e");
     expect(successHtml).not.toContain("Eligible Paper");
 
     expect(errorHtml).toContain("Apply rejected");
     expect(errorHtml).toContain("DB_CONFLICT");
     expect(errorHtml).toContain("Rejected rows: 1");
+    expect(errorHtml).toContain("warnings: 0");
     expect(errorHtml).not.toContain("10.2000/s68e");
     expect(errorHtml).not.toContain(ownerEmail);
     expect(errorHtml).not.toContain("Contributor");
+  });
+
+  it("renders safe SOFTWARE_COPYRIGHT apply success without registration or person fields", () => {
+    const html = renderToStaticMarkup(
+      createElement(AchievementImportApplyResultView, {
+        result: softwareCopyrightImportApplyResult,
+      }),
+    );
+
+    expect(html).toContain("Draft-only SOFTWARE_COPYRIGHT import applied");
+    expect(html).toContain("Created achievements");
+    expect(html).toContain("Created software copyright details");
+    expect(html).not.toContain("Created paper details");
+    expect(html).toContain("Created contributors");
+    expect(html).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
+    expect(html).toContain("DRAFT only");
+    expect(html).toContain("No workflow");
+    expect(html).toContain("No attachment/storage");
+    expect(html).toContain("No fee/reminder");
+    expect(html).toContain("No notification/search/resource grant");
+    expect(html).toContain("No import job");
+    expect(html).not.toContain("SW-69F-001");
+    expect(html).not.toContain("SW69F001");
+    expect(html).not.toContain("Eligible Software");
+    expect(html).not.toContain("owner@example.org");
+    expect(html).not.toContain("Contributor");
+    expect(html).not.toContain("70000000-0000-4000-8000-000000000001");
   });
 });
