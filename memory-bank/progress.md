@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-07-04 Step 74D - Settings/system import history overview final archive
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-job-history-settings-overview-final-archive.md`.
+  - Archived Step 74A settings/system overview design.
+  - Archived Step 74B Web implementation.
+  - Archived Step 74C local browser acceptance.
+  - Recorded verified capability for the settings/system secondary read-only index, `GET /api/import-jobs`, `GET /api/import-jobs/:id`, `system:config` visibility, non-`system:config` hidden/no-request behavior, default query, filters, pagination, loading/empty/error/list/detail states, GET-only import-history network, and retained Department/User account/Achievement page-local entries.
+  - Recorded unsupported boundaries for new backend routes, schema/migration changes, retry/delete/cleanup/rollback, download/export/raw JSON/bulk action, raw audit ID browsing, source CSV download, business-object drilldown, production/VPS acceptance, and real-data import.
+  - Recorded safety boundaries for raw CSV, personal/business identifiers, credential/session/token/cookie/password/connection-string values, opaque import job id display, and route-mock acceptance not being production DB acceptance.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 74D closure note.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No import apply, retry, delete, cleanup, rollback, download, export, raw JSON copy, bulk action, or business-object drilldown.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 74D docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, backend, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-04 Step 74C - Settings/system import history overview local browser acceptance
 
 - Status: DONE.

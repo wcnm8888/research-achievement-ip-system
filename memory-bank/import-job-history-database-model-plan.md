@@ -1177,3 +1177,43 @@ Step 74B completes the Web implementation slice for the settings/system unified 
 - `git status --short`: PASS; tracked changes limited to Step 74C docs plus existing untracked local artifacts.
 
 Step 74C accepts the settings/system unified read-only import history overview locally with route-mocked read-only API data. This does not prove production readiness; production readiness still requires a separate read-only preflight runbook.
+
+## Step 74D Settings/System Unified Read-Only Overview Final Archive
+
+- Date: 2026-07-04.
+- Scope: documentation-only final archive for the Step 74A through Step 74C settings/system unified read-only import history overview mini-line.
+- Added final archive:
+  - `memory-bank/import-job-history-settings-overview-final-archive.md`.
+- Non-scope: no runtime/API/Web/schema/migration/package/lockfile/config changes, no service startup, no browser run, no database access, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no import apply, and no retry/delete/cleanup/rollback/download/export behavior.
+
+### Archived Completed Work
+
+- Step 74A: settings/system unified read-only overview design.
+- Step 74B: Web implementation and targeted Web tests.
+- Step 74C: local browser acceptance with local Vite and route-mocked read-only API responses.
+
+### Archived Verified Capability
+
+- The overview is inside the existing settings/system configuration area as a secondary read-only index.
+- Department, User account, and Achievement page-local import history entries remain present and are not replaced.
+- The overview reuses `GET /api/import-jobs` and `GET /api/import-jobs/:id`; no backend route was added.
+- `system:config` users can see the overview.
+- Users without `system:config` do not see the overview and do not trigger overview-owned import-history requests.
+- The accepted behavior covers the default query, `family` / `mode` / `achievementType` / `status` / `createdFrom` / `createdTo` filters, page reset on filter changes, pagination limited to `page` / `pageSize`, loading/empty/error/list/detail drawer states, and GET-only import-history network traffic.
+
+### Archived Unsupported Boundary
+
+- No backend route, schema, or migration support was added.
+- The overview does not support retry, delete, cleanup, rollback, download, export, raw JSON copy, bulk action, raw audit ID browsing, source CSV download, business-object drilldown, production/VPS acceptance, or real-data import.
+
+### Archived Safety Boundary
+
+- The overview does not display raw CSV, email, employee number, DOI, registration number, patent number, title, personnel names, credential/session/token/cookie/password/connection-string values, raw audit IDs, or opaque `ImportJob` ids as user-facing business fields.
+- Step 74C route-mocked local browser acceptance is not production DB acceptance.
+
+### Follow-Up Position
+
+- Production readiness remains a separate read-only preflight runbook.
+- Real-environment acceptance requires separate explicit authorization and must not place database URLs, passwords, tokens, cookies, or connection strings in chat, documentation, logs, or commits.
+
+Step 74D closes the settings/system unified read-only import history overview mini-line as documentation-only. It does not authorize production access, production DB access, real-data import, write actions, export actions, cleanup, rollback, or broader permission changes.

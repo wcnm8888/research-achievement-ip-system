@@ -1,5 +1,41 @@
 # Evidence
 
+## 2026-07-04 Step 74D - Settings/system import history overview final archive evidence
+
+- Goal:
+  - Produce a docs-only final archive for Step 74A through Step 74C covering the settings/system unified read-only import history overview design, Web implementation, and local browser acceptance.
+- Initial state:
+  - `git log -1 --oneline`: `aef705f test: accept settings import history overview`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - Latest Step 74A through Step 74C sections from `memory-bank/progress.md`.
+  - Latest Step 74A through Step 74C sections from `memory-bank/evidence.md`.
+  - `memory-bank/import-job-history-settings-overview-plan.md`.
+  - Step 74A through Step 74C sections from `memory-bank/import-job-history-database-model-plan.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-history-settings-overview-final-archive.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Archive evidence:
+  - Recorded completed delivery for Step 74A design, Step 74B Web implementation, and Step 74C local browser acceptance.
+  - Recorded verified settings/system secondary read-only index behavior, reuse of `GET /api/import-jobs` and `GET /api/import-jobs/:id`, `system:config` visibility, non-`system:config` hidden/no-request behavior, default query, all required filters, pagination, loading/empty/error/list/detail states, GET-only import-history network, and retained Department/User account/Achievement page-local entries.
+  - Recorded unsupported boundaries for backend routes, schema/migration, retry/delete/cleanup/rollback, download/export/raw JSON/bulk action, raw audit ID browsing, source CSV download, business-object drilldown, production/VPS acceptance, and real-data import.
+  - Recorded safety boundaries: no raw CSV display, no email/employee number/DOI/registration or patent number/title/personnel name display, no credential/session/token/cookie/password/connection-string display, no opaque `ImportJob` id as a user-facing business field, and no production DB inference from route-mocked browser acceptance.
+  - Recorded follow-up recommendations for a separate production read-only preflight runbook and separately authorized real-environment acceptance with safe evidence handling.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 74D docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, backend, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No runtime, API, Web, Prisma schema, migration, package, lockfile, config, service startup, browser run, database, production/VPS, production DB, import apply, retry, delete, cleanup, rollback, download, export, raw JSON copy, bulk action, or business-object drilldown work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts in the repository were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-04 Step 74C - Settings/system import history overview local browser acceptance evidence
 
 - Goal:
