@@ -1,5 +1,48 @@
 # Evidence
 
+## 2026-07-04 Step 75A - Import job history production read-only preflight runbook evidence
+
+- Goal:
+  - Produce a docs-only production read-only preflight runbook for `ImportJob` / `ImportRun` and import history readiness.
+- Initial state:
+  - `git log -1 --oneline`: `fcdd39b docs: archive settings import history overview`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `memory-bank/import-job-history-final-archive.md`.
+  - `memory-bank/import-job-history-settings-overview-final-archive.md`.
+  - `memory-bank/import-real-write-production-readonly-preflight-runbook.md`.
+  - Latest Step 73E and Step 74D sections from `memory-bank/progress.md`.
+  - Latest Step 73E and Step 74D sections from `memory-bank/evidence.md`.
+  - Relevant Step 73E and Step 74D addenda from `memory-bank/import-job-history-database-model-plan.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Runbook evidence:
+  - Recorded preflight objectives for verifying production read-only check readiness before any later production-readiness decision.
+  - Covered read-only migration state checks and explicitly prohibited migration execution.
+  - Covered `ImportJob` / `ImportRun` table-structure existence checks and explicitly prohibited table mutation or DB writes.
+  - Covered `system:config` permission-grant confirmation and explicitly prohibited permission modification.
+  - Covered API health, `GET /api/import-jobs`, and conditional `GET /api/import-jobs/:id` only when a safe sample id is authorized.
+  - Covered Web read-only visibility for Department, User/account, Achievement page-local entries and the settings/system overview.
+  - Recorded backup precondition rules that allow only de-identified backup confirmation summaries.
+  - Recorded safety evidence rules prohibiting raw CSV, personal/business identifiers, credentials, raw audit IDs, full request headers, user agents, IP addresses, raw exception text, and raw production JSON payloads.
+  - Recorded stop conditions for unknown migration state, unconfirmed backup, unclear `system:config`, failed API health, sensitive history API fields, forbidden Web controls, unclear safe sample ids, credential-paste requests, and any requested write/mutation behavior.
+  - Recorded explicit non-authorization for production apply, real-data import, migration execution, retry/delete/cleanup/rollback, download/export, DB writes, permission modification, credential reads or propagation, and production/VPS access by Step 75A itself.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 75A docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in four memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 75A docs plus existing untracked local artifacts before commit.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No runtime, API, Web, Prisma schema, migration, package, lockfile, config, service startup, browser run, database, production/VPS, production DB, import apply, real-data import, migration execution, retry, delete, cleanup, rollback, download, export, DB write, permission modification, credential read, or credential propagation work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts in the repository were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-04 Step 74D - Settings/system import history overview final archive evidence
 
 - Goal:

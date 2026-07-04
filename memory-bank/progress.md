@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-07-04 Step 75A - Import job history production read-only preflight runbook
+
+- Status: DONE.
+- Task classification:
+  - M-level docs-only safety/runbook task because the content concerns production readiness, database migration state, permissions, and safe evidence boundaries, while implementation remains limited to memory-bank documentation.
+- Scope completed:
+  - Added `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+  - Defined the production read-only preflight objective for `ImportJob` / `ImportRun` and import history readiness before any later production-readiness decision.
+  - Covered migration state, `ImportJob` / `ImportRun` table-structure presence, API health, `system:config` permission confirmation, read-only `GET /api/import-jobs`, conditional read-only `GET /api/import-jobs/:id`, three page-local Web entries, settings/system overview visibility, backup confirmation, safety evidence rules, stop conditions, and explicit non-authorization boundaries.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 75A runbook addendum.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production apply, real-data import, migration execution, retry, delete, cleanup, rollback, download, export, DB write, permission modification, credential read, or credential propagation.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 75A docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in four memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 75A docs plus existing untracked local artifacts before commit.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-04 Step 74D - Settings/system import history overview final archive
 
 - Status: DONE.

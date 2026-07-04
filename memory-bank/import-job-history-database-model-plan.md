@@ -1217,3 +1217,22 @@ Step 74C accepts the settings/system unified read-only import history overview l
 - Real-environment acceptance requires separate explicit authorization and must not place database URLs, passwords, tokens, cookies, or connection strings in chat, documentation, logs, or commits.
 
 Step 74D closes the settings/system unified read-only import history overview mini-line as documentation-only. It does not authorize production access, production DB access, real-data import, write actions, export actions, cleanup, rollback, or broader permission changes.
+
+## Step 75A Import Job History Production Read-Only Preflight Runbook
+
+- Date: 2026-07-04.
+- Scope: documentation-only production read-only preflight runbook for `ImportJob` / `ImportRun` and import history readiness.
+- Added runbook:
+  - `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+- Non-scope: no runtime/API/Web/schema/migration/package/lockfile/config changes, no service startup, no browser run, no database access, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no import apply, no real-data import, no migration execution, no permission modification, and no retry/delete/cleanup/rollback/download/export behavior.
+
+### Runbook Coverage
+
+- Preflight objectives cover migration state, API health, `system:config` permission, read-only history API, Web entries, and safety evidence boundaries.
+- Read-only checks cover backup confirmation, migration state, `ImportJob` / `ImportRun` table-structure presence, `system:config` confirmation, API health, `GET /api/import-jobs`, conditional `GET /api/import-jobs/:id`, and Web visibility for three page-local entries plus the settings/system overview.
+- Backup evidence rules require confirming production backup status first while recording only de-identified confirmation summaries.
+- Safety evidence rules prohibit raw CSV, personal/business identifiers, credentials, raw audit IDs, full request headers, user agents, IP addresses, raw exception text, and raw production JSON payloads.
+- Stop conditions cover unknown migration state, unconfirmed backup, unclear `system:config`, failed API health, sensitive history API fields, forbidden Web controls, unclear safe sample ids, credential-paste requests, and any request for write or mutation behavior.
+- Explicit non-authorization covers production apply, real-data import, migration execution, retry/delete/cleanup/rollback, download/export, DB writes, permission modification, credential reads or propagation, and production/VPS access by Step 75A itself.
+
+Step 75A documents the production read-only preflight path only. It does not execute the runbook or authorize production readiness, production access, real-data import, or any write behavior.
