@@ -1,5 +1,48 @@
 # Evidence
 
+## 2026-07-04 Step 69G - Achievement SOFTWARE_COPYRIGHT import Web local acceptance evidence
+
+- Goal:
+  - Validate the Step 69F Web entry for `SOFTWARE_COPYRIGHT` achievement import apply in local Docker production-like Web/API/DB with synthetic `S69G_*` data only.
+- Initial state:
+  - `git log -1 --oneline`: `a53909f feat: add software copyright import web entry`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-software-web-entry-design.md`.
+  - Step 69F snippet from `memory-bank/progress.md`.
+  - `memory-bank/step68f-web-acceptance.mjs`.
+  - `memory-bank/step68f-db-helper.mjs`.
+  - `memory-bank/step68f-browser-acceptance.js`.
+  - `memory-bank/step69c-achievement-import-acceptance.mjs`.
+  - Relevant `SOFTWARE_COPYRIGHT` apply/eligibility sections from `apps/web/src/Achievements.tsx` and `apps/web/src/Achievements.test.ts`.
+- Implemented files:
+  - `memory-bank/step69g-db-helper.mjs`.
+  - `memory-bank/step69g-browser-acceptance.js`.
+  - `memory-bank/step69g-web-acceptance.mjs`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Local production-like acceptance evidence:
+  - `node memory-bank/step69g-web-acceptance.mjs`: PASS.
+  - Web health status: HTTP 200.
+  - API health status: HTTP 200 at local production-like `127.0.0.1:14001`.
+  - System-config user: eligible all-`SOFTWARE_COPYRIGHT` dry-run enabled apply, confirmation copy was verified, apply success displayed safe counts and `ACHIEVEMENT_IMPORT_CREATE_DRAFT`, and list refresh was verified.
+  - Successful apply deltas: 2 achievements, 2 `DRAFT` `SOFTWARE_COPYRIGHT` achievements, 2 software copyright details, 2 persisted normalized registration identifiers, 2 contributors, 2 audit operation rows, and 0 state-change rows.
+  - Repeated exact apply: safe `DB_CONFLICT`; achievement count stayed 2 before and after repeat.
+  - Negative paths: dry-run warning/`DB_CONFLICT`, missing registration, mixed `PAPER` + `SOFTWARE_COPYRIGHT`, `PATENT`, and dry-run error all kept apply disabled or rejected safely.
+  - Limited user: apply UI hidden and direct apply returned HTTP 403.
+  - Forbidden side-effect deltas: workflow instances 0, workflow tasks 0, workflow actions 0, attachments 0, fee records 0, reminder tasks 0, notifications 0, search logs 0, and resource access grants 0.
+  - Safe display checks passed for success and error panels without exposing raw/normalized registration identifiers, owner/contributor person fields, CSV body, cookie, session, token, password, secret, or connection-string material.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files and 61 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive-value scan: PASS; no credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No VPS, production DB, production config, real-data import, backend/API runtime change, Prisma schema/migration change, package/lockfile change, credential/session/token/cookie/password/secret/private-key handling, Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 69F - Achievement SOFTWARE_COPYRIGHT import Web minimal slice evidence
 
 - Goal:

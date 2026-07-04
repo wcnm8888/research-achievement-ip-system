@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-07-04 Step 69G - Achievement SOFTWARE_COPYRIGHT import Web local acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added local production-like Web acceptance helpers for Step 69G:
+    - `memory-bank/step69g-db-helper.mjs`.
+    - `memory-bank/step69g-browser-acceptance.js`.
+    - `memory-bank/step69g-web-acceptance.mjs`.
+  - Used local Docker production-like Web/API/DB with synthetic `S69G_*` data only.
+  - Verified system-config user can complete `SOFTWARE_COPYRIGHT` dry-run, eligibility, confirmation, `CREATE_DRAFT_ONLY` apply, safe result display, and list refresh.
+  - Verified successful apply creates only `DRAFT` achievements, `SoftwareCopyrightDetail` rows with normalized registration identifiers persisted, contributors, and `ACHIEVEMENT_IMPORT_CREATE_DRAFT` audit rows.
+  - Verified repeated exact apply returns safe `DB_CONFLICT` and creates no additional achievement/detail/contributor/audit rows.
+  - Verified missing registration, mixed `PAPER` + `SOFTWARE_COPYRIGHT`, `PATENT`, dry-run warning/`DB_CONFLICT`, and dry-run error disable or reject apply safely.
+  - Verified limited user cannot see apply UI and direct apply returns HTTP 403.
+  - Verified workflow instance/task/action, attachment, fee record, reminder task, notification, search log, and resource access grant deltas stayed 0.
+  - Verified success/error UI redaction for registration identifiers, owner/contributor person fields, CSV body, and credential/session/token classes.
+- Explicitly not done:
+  - No Web UI feature implementation beyond local acceptance helper scripts.
+  - No backend/API implementation, Prisma schema/migration change, package/lockfile change, or production/VPS access.
+  - No `.env` / `.env.production` content read or output.
+  - No real-data import, Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `PATENT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation outside the local synthetic acceptance rows.
+- Verification:
+  - `node memory-bank/step69g-web-acceptance.mjs`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files / 61 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 69F - Achievement SOFTWARE_COPYRIGHT import Web minimal slice
 
 - Status: DONE.
