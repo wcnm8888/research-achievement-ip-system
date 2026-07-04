@@ -1,5 +1,44 @@
 # Evidence
 
+## 2026-07-04 Step 71C - Import production readonly preflight runbook evidence
+
+- Goal:
+  - Produce a documentation-only production/VPS read-only preflight runbook for the import real-write mainline without accessing production/VPS or executing writes.
+- Initial state:
+  - `git log -1 --oneline`: `66c2c90 docs: audit import local acceptance coverage`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-real-write-readiness-review.md`.
+  - `memory-bank/import-real-write-local-acceptance-checklist.md`.
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - Targeted Step 71A/71B sections from `memory-bank/progress.md`.
+  - Targeted Step 71A/71B sections from `memory-bank/evidence.md`.
+- Implemented files:
+  - `memory-bank/import-real-write-production-readonly-preflight-runbook.md`.
+  - `memory-bank/import-real-write-readiness-review.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Runbook evidence:
+  - Covered applicability for department `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+  - Documented that the runbook is not production write authorization.
+  - Documented read-only preflight order for backup evidence, migration/status, service health, operator permission, target before-counts, forbidden side-effect before-counts, dry-run review, apply-before manual confirmation, apply-after count reconciliation, and stop conditions.
+  - Added family-specific read-only baselines for department counts/conflict/audit, user/role/credential/session/lifecycle/mail evidence counts, and achievement/type-detail/contributor/audit/forbidden side-effect counts.
+  - Reaffirmed that user/account import must not create credentials, sessions, invite/reset flows, lifecycle tokens, activation, or email.
+  - Reaffirmed that `PATENT` `nextFeeDate` and `feeAmount` are not first-slice write items and must not create fee/reminder side effects.
+  - Added dry-run human review checklist and apply-before/apply-after templates.
+  - Explicitly prohibited skipping dry-run, applying warning/error files, batch real-data import, automatic retry, automatic cleanup/delete, sensitive-value recording, and writing production credentials/cookies/tokens/connection strings into docs or chat.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; 365 added lines scanned, with 0 complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, runtime/source/schema/API/Web/package/lockfile/config/script change, cleanup, deletion, reset, restore, checkout, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 71B - Import local acceptance coverage checklist evidence
 
 - Goal:

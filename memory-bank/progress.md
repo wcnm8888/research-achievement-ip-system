@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-07-04 Step 71C - Import production readonly preflight runbook
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-real-write-production-readonly-preflight-runbook.md`.
+  - Updated `memory-bank/import-real-write-readiness-review.md` with the Step 71C addendum.
+  - Reviewed Step 71A/71B readiness and local coverage records plus `memory-bank/testing-strategy.md` and `memory-bank/import-real-write-rollout-plan.md` context.
+- Key outcome:
+  - Documented a read-only production/VPS preflight sequence for backup evidence, migration/status, service health, operator permission, target before-counts, forbidden side-effect before-counts, dry-run human review, apply-before confirmation, apply-after count reconciliation, and stop conditions.
+  - Added family-specific read-only baselines for department `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+  - Captured dry-run review requirements: zero errors, zero warnings, file fingerprint/same-file confirmation, row count confirmation, mode confirmation, duplicate/conflict/warning code review, unsupported-column review, and authorized de-identified CSV sample boundary.
+  - Added apply-before and apply-after templates with expected created counts, audit deltas, forbidden side-effect zero-delta checks, backup evidence, operator identity/permission, safe evidence rules, and remediation stop rules.
+  - Reaffirmed that Step 71C is not production write authorization and that real production apply must be separately authorized.
+- Explicitly not done:
+  - No runtime/source/schema/API/Web/package/lockfile/config/script changes.
+  - No Docker/browser execution.
+  - No apply API execution.
+  - No database writes.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 71B - Import local acceptance coverage checklist
 
 - Status: DONE.

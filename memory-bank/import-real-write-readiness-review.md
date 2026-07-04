@@ -297,3 +297,21 @@ The following remain prohibited unless separately authorized in a later Step:
   - Add a synthetic aggregate local acceptance plan if future work needs a single end-to-end rerun.
   - Add explicit user/account missing required email/display-name local helper cases if local-helper parity with focused API tests is required.
   - Add broad no-unrelated-table delta checks for department import if future aggregate smoke wants the same side-effect matrix across all import families.
+
+## Step 71C Addendum - Production Readonly Preflight Runbook
+
+- Date: 2026-07-04.
+- Added `memory-bank/import-real-write-production-readonly-preflight-runbook.md`.
+- Purpose:
+  - Convert the Step 71A readiness gates and Step 71B local coverage findings into a production/VPS preflight runbook that stays read-only until a separately authorized production apply Step.
+- Covered scope:
+  - Department metadata `CREATE_ONLY`.
+  - User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Achievement `CREATE_DRAFT_ONLY` for homogeneous `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` batches.
+- Key boundaries captured:
+  - This is not production write authorization.
+  - Production apply still requires fresh dry-run, backup evidence, operator permission confirmation, exact-file confirmation, expected count deltas, forbidden side-effect zero-delta expectations, and explicit human approval.
+  - User/account import remains no-credential/no-session/no-invite/no-reset/no-activation.
+  - `PATENT` `nextFeeDate` and `feeAmount` remain dry-run preview fields only, not first-slice write items.
+  - Any abnormal count or side-effect result must stop into manual remediation; automatic retry, cleanup, deletion, and batch real-data import remain prohibited.
+- Step 71C did not access production/VPS, read `.env` / `.env.production` contents, run Docker/browser, execute apply API, write a database, use real business data, or change runtime/source/schema/API/Web/package/lockfile/config/script files.
