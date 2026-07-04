@@ -1,5 +1,81 @@
 # Evidence
 
+## 2026-07-04 Step 74C - Settings/system import history overview local browser acceptance evidence
+
+- Goal:
+  - Browser-accept the Step 74B settings/system unified read-only import history overview.
+- Initial state:
+  - `git log -1 --oneline`: `56eeb9c feat: add settings import history overview`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - 74C Acceptance Notes from `memory-bank/import-job-history-settings-overview-plan.md`.
+  - Step 74B section from `memory-bank/import-job-history-database-model-plan.md`.
+  - Latest Step 74B section from `memory-bank/progress.md`.
+  - `apps/web/src/SettingsImportJobHistoryOverview.tsx`.
+  - `apps/web/src/SettingsApiIntegrations.tsx`.
+  - Settings navigation and demo-user permission context in `apps/web/src/App.tsx`.
+  - Safe detail rendering in `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - Import-history API client path in `apps/web/src/api-client.ts`.
+- Local setup:
+  - Web URL: `http://127.0.0.1:5173/`.
+  - Started local Vite only.
+  - Used Playwright route mock for `/api/**`.
+  - No real API server, Docker service, production/VPS host, production DB, or `.env` / `.env.production` content was used.
+  - Stopped the local Vite process after acceptance and confirmed port `5173` closed.
+- Page and permission acceptance:
+  - `system:config` demo user reached Settings and saw `Import history overview`.
+  - Non-`system:config` demo user reached Settings, did not see `Import history overview`, and did not trigger additional `/api/import-jobs` requests.
+  - Existing local entries remained present:
+    - `Achievement import history`;
+    - `User account import history`;
+    - `Department import history`.
+- State acceptance:
+  - Loading: observed `Loading import history overview`.
+  - Empty: observed `No import history records`.
+  - Error: observed `Import history overview unavailable` via route-mocked read failure.
+  - List: observed safe aggregate row with safe machine error codes.
+  - Detail drawer: observed `Import job detail`, `Safe summary`, `Run status`, `auditCount`, and failed-state explanation.
+- Filter and pagination acceptance:
+  - Default overview request: `GET /api/import-jobs?page=1&pageSize=20`.
+  - Default request contained no `family`, `mode`, `status`, or `achievementType`.
+  - Verified filter query values:
+    - `family=ACHIEVEMENT`;
+    - `mode=CREATE_DRAFT_ONLY`;
+    - `achievementType=PATENT`;
+    - `status=FAILED`;
+    - `createdFrom=2026-07-01`;
+    - `createdTo=2026-07-04`.
+  - Verified every non-pagination filter change reset `page=1`.
+  - Verified pagination changed only `page/pageSize`; accepted request used `page=2&pageSize=20` with active filters preserved.
+  - Verified changing status after pagination reset `page=1`.
+- Network acceptance:
+  - Import-history list traffic used only `GET /api/import-jobs`.
+  - Detail traffic used only `GET /api/import-jobs/:id`.
+  - Import-history network traffic was GET-only.
+  - No apply, dry-run, retry, delete, cleanup, rollback, download, export, raw-json, or bulk-action URL was observed.
+  - Non-import mocked GETs were limited to existing page dependencies such as dashboard summary, workflow tasks, settings API integrations, achievements, account users, and departments.
+- Safety and privacy acceptance:
+  - List showed only safe DTO fields: family, mode, achievement type, status, aggregate counts, safe machine error codes, `createdAt`, and `completedAt`.
+  - Detail showed sanitized safe summary, run status, run `auditCount`, and failed-state explanation.
+  - Detail showed `auditCount` only; no raw audit IDs were visible.
+  - Opaque import job ids were not visible as user-facing business fields.
+  - No retry, delete, cleanup, rollback, download, export, raw JSON, or bulk-action control was visible in the overview.
+  - Synthetic unsafe response values for raw CSV, raw audit IDs, email, employee number, DOI, registration/patent numbers, title/person names, credential/session/token/cookie/password, and connection string were not displayed.
+  - No link to business object details inferred from imported row identifiers was observed.
+- Verification:
+  - No Web code changed in Step 74C, so Web test/typecheck/build were not rerun.
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 74C docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, backend, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No backend, Prisma schema, migration, package, lockfile, config, production/VPS, production DB, real API, Docker, import apply, retry, delete, cleanup, rollback, download, export, raw JSON copy, bulk action, or business-object drilldown work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts in the repository were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-04 Step 74B - Settings/system import history overview Web implementation evidence
 
 - Goal:

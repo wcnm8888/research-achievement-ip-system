@@ -1108,3 +1108,72 @@ Step 74A approves only the documentation design for the settings/system unified 
 - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
 
 Step 74B completes the Web implementation slice for the settings/system unified read-only import history overview. Step 74C should run local browser acceptance for visibility, GET-only requests, filter query behavior, pagination, list/detail safe display, and absence of forbidden controls or sensitive strings.
+
+## Step 74C Settings/System Unified Read-Only Overview Local Browser Acceptance
+
+- Date: 2026-07-04.
+- Scope: local browser acceptance for the Step 74B settings/system unified read-only import history overview.
+- Non-scope: no backend changes, no Prisma schema or migration changes, no package or lockfile changes, no config changes, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no import apply, and no retry/delete/cleanup/rollback/download/export behavior.
+
+### Local Acceptance Setup
+
+- Web URL: `http://127.0.0.1:5173/`.
+- Web server: local Vite only.
+- API behavior: Playwright route mock for read-only local acceptance.
+- No real API server, Docker service, database, production/VPS host, or production data source was used.
+- Playwright acceptance data included synthetic unsafe DTO values to verify the UI filters them before display.
+
+### Acceptance Result
+
+- `system:config` demo user:
+  - Entered Settings.
+  - Saw `Import history overview`.
+  - Verified loading, empty, error, list, and detail drawer states.
+- Non-`system:config` demo user:
+  - Entered Settings.
+  - Did not see `Import history overview`.
+  - Did not trigger additional `/api/import-jobs` requests.
+- Existing local entries remained present:
+  - Achievement page: `Achievement import history`.
+  - User account page: `User account import history`.
+  - Department page: `Department import history`.
+
+### Query And Network Acceptance
+
+- Default settings overview request:
+  - `GET /api/import-jobs?page=1&pageSize=20`.
+  - No `family`, `mode`, `status`, or `achievementType` query value.
+- Filter requests represented:
+  - `family=ACHIEVEMENT`;
+  - `mode=CREATE_DRAFT_ONLY`;
+  - `achievementType=PATENT`;
+  - `status=FAILED`;
+  - `createdFrom=2026-07-01`;
+  - `createdTo=2026-07-04`.
+- Every non-pagination filter change reset `page` to `1`.
+- Pagination changed only `page` / `pageSize`; accepted example kept the active filters and moved to `page=2&pageSize=20`.
+- Error-state acceptance changed `status` after pagination and verified `page=1` reset.
+- Detail drawer request was `GET /api/import-jobs/:id`.
+- Import-history network traffic was GET-only.
+- No import-history apply, dry-run, retry, delete, cleanup, rollback, download, export, raw-json, or bulk-action URL was observed.
+- Other mocked local GETs were limited to existing page data dependencies such as dashboard summary, workflow tasks, settings API integrations, achievements, account users, and departments.
+
+### Safety Acceptance
+
+- List displayed only safe DTO fields: family, mode, achievement type, status, aggregate counts, safe machine error codes, `createdAt`, and `completedAt`.
+- Detail displayed sanitized safe summary, run status, run `auditCount`, and failed-state explanation.
+- Detail displayed `auditCount` only and did not display raw audit IDs.
+- The overview did not display opaque import job ids as user-facing business fields.
+- The overview did not render retry, delete, cleanup, rollback, download, export, raw JSON, or bulk-action controls.
+- Synthetic unsafe response values for raw CSV, raw audit IDs, email, employee number, DOI, registration/patent numbers, title/person names, credential/session/token/cookie/password, and connection string were not visible in list or detail.
+- No import-row-derived business object detail links were observed.
+
+### Verification
+
+- No Web code changes were needed, so Step 74C did not rerun Web test/typecheck/build.
+- `git diff --check`: PASS.
+- `git diff --stat`: PASS; docs-only files changed.
+- `git diff --cached --stat`: PASS; empty before staging.
+- `git status --short`: PASS; tracked changes limited to Step 74C docs plus existing untracked local artifacts.
+
+Step 74C accepts the settings/system unified read-only import history overview locally with route-mocked read-only API data. This does not prove production readiness; production readiness still requires a separate read-only preflight runbook.

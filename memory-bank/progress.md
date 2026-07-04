@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-07-04 Step 74C - Settings/system import history overview local browser acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Ran local browser acceptance for the Step 74B settings/system unified read-only import history overview.
+  - Used local Vite at `http://127.0.0.1:5173/`.
+  - Used Playwright route mock for read-only API responses.
+  - Verified `system:config` demo user can see `Import history overview`.
+  - Verified non-`system:config` demo user cannot see the overview and does not trigger additional `/api/import-jobs` requests.
+  - Verified loading, empty, error, list, and detail drawer states.
+  - Verified default query, family/mode/achievementType/status/date filters, page reset on filter changes, and pagination behavior.
+  - Verified import-history network traffic is GET-only and detail uses `GET /api/import-jobs/:id`.
+  - Verified no forbidden import-history write/export URLs or controls.
+  - Verified no raw CSV, raw audit IDs, personal/business identifiers, credential/session/token/cookie/password/connection-string values, opaque import job id display, or import-row-derived business detail links.
+  - Verified Department, User account, and Achievement page-local import history entries still exist.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 74C addendum.
+  - Updated `memory-bank/evidence.md` with browser acceptance evidence.
+- Explicitly not done:
+  - No Web runtime code changes.
+  - No backend/schema/migration/package/lockfile/config changes.
+  - No real API server, Docker, browser-to-production, database, production/VPS, or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No import apply, retry, delete, cleanup, rollback, download, export, raw JSON copy, bulk action, or business-object drilldown.
+  - No test/typecheck/build rerun because Step 74C made no Web code changes; Step 74B already passed those gates.
+- Verification:
+  - Local browser acceptance script: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 74C docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, raw audit IDs, personal identifier display, runtime code, backend, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-04 Step 74B - Settings/system import history overview Web implementation
 
 - Status: DONE.
