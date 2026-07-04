@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-07-04 Step 72B - Import job history database model plan
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/import-job-history-idempotency-plan.md` with the Step 72B addendum.
+  - Recorded decision D252 in `memory-bank/decisions.md`.
+  - Reviewed Step 72A plan, import real-write final archive, readiness review, Step 72A progress/evidence, and `prisma/schema.prisma` read-only for enum/model/index/relation style.
+- Key outcome:
+  - Recommended adding `ImportJob` and `ImportRun` together in a later schema-authorized Step.
+  - Kept `ImportJobItem` deferred.
+  - Proposed enums for import family, mode, job status, run status, run trigger, and failure stage.
+  - Recommended reusing nullable existing `AchievementType` for achievement import type.
+  - Defined fields, nullability, defaults, safe JSON fields, constraints, and indexes for `import_jobs` and `import_runs`.
+  - Recommended composite uniqueness on target environment, scope type, scope hash, and idempotency key hash.
+  - Recommended first migration as additive only: no business table changes, no business-object foreign keys, no seed, and no backfill.
+  - Recommended Step 72C as schema/migration plus generated client/typecheck only before runtime Department idempotency wiring.
+- Explicitly not done:
+  - No Prisma schema change.
+  - No migration.
+  - No runtime/source/API/Web/package/lockfile/config/script changes.
+  - No Docker/browser execution.
+  - No apply API execution.
+  - No database writes.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 72A - Import job history and idempotency plan
 
 - Status: DONE.

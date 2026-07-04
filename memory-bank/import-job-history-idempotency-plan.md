@@ -300,3 +300,25 @@ Prohibited for this plan and the first implementation slice:
 ## Step 72A Position
 
 The next production-hardening direction should be durable import job history plus server-side idempotency, but only as a separately authorized implementation track. Step 72A establishes the product, data, state-machine, security, and acceptance boundaries. It does not change the current first-slice import behavior and does not authorize any production/VPS action.
+
+## Step 72B Addendum - Database Model Plan
+
+- Date: 2026-07-04.
+- Added `memory-bank/import-job-history-database-model-plan.md` as a documentation-only database model and migration plan.
+- Recommended first migration shape:
+  - Add `ImportJob` as the main logical idempotency table.
+  - Add `ImportRun` at the same time as the attempt ledger.
+  - Keep `ImportJobItem` deferred.
+  - Add import-specific enums for family, mode, job status, run status, run trigger, and failure stage.
+  - Reuse nullable existing `AchievementType` for achievement import type.
+- Recommended safety model:
+  - Store only safe counts, safe codes, status, timestamps, internal ids, target environment discriminator, scope hash, file fingerprint, and safe summaries.
+  - Do not store CSV raw content, raw DOI, software registration number, patent number, email, employee number, title, contributor list, credential/session/token/cookie/password/connection string, `.env` values, storage key, or mail payload.
+- Recommended first migration:
+  - Add only `import_jobs` and `import_runs`.
+  - Do not touch existing business tables.
+  - Do not add business-object foreign keys, seed data, or historical backfill.
+  - Prefer JSON `auditLogIds` first, with relational audit links deferred.
+- Recommended implementation order:
+  - Step 72C should be schema/migration plus generated client/typecheck only.
+  - A later Step should implement backend-only Department `CREATE_ONLY` job/run claim and replay behavior.

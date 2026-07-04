@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-07-04 Step 72B - Import job history database model plan evidence
+
+- Goal:
+  - Produce a documentation-only database model and migration plan for import job history and idempotency without changing Prisma schema or adding migrations.
+- Initial state:
+  - `git log -1 --oneline`: `f086a29 docs: plan import job history idempotency`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-job-history-idempotency-plan.md`.
+  - `memory-bank/import-real-write-final-archive.md`.
+  - `memory-bank/import-real-write-readiness-review.md`.
+  - Targeted Step 72A section from `memory-bank/progress.md`.
+  - Targeted Step 72A section from `memory-bank/evidence.md`.
+  - `prisma/schema.prisma` read-only for existing enum/model/index/relation style.
+  - Current top section from `memory-bank/decisions.md` for decision numbering/style.
+- Implemented files:
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/import-job-history-idempotency-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Plan evidence:
+  - Recommended `ImportJob` as the main logical idempotency table and `ImportRun` as the attempt ledger.
+  - Kept `ImportJobItem` deferred.
+  - Proposed enums for import family, mode, job status, run status, run trigger, and failure stage.
+  - Recommended reusing nullable existing `AchievementType` for achievement import type.
+  - Defined proposed fields, types, nullability, defaults, safe JSON fields, constraints, and indexes.
+  - Recommended composite uniqueness on `targetEnvironment`, `scopeType`, `scopeHash`, and `idempotencyKeyHash`.
+  - Recommended `jobId + attemptNo` uniqueness for runs.
+  - Recommended JSON `auditLogIds` first and relational audit links later only if needed.
+  - Recommended a two-phase runtime pattern later: short claim transaction, then business transaction containing business writes, audit writes, and job/run success update.
+  - Recommended first implementation order as schema/migration plus generated client/typecheck before backend-only Department runtime wiring.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; no complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No Prisma schema file was modified.
+  - No migration was added or executed.
+  - No `.env` or `.env.production` contents were read or output.
+  - No Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, runtime/source/API/Web/package/lockfile/config/script change, cleanup, deletion, reset, restore, checkout, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72A - Import job history and idempotency plan evidence
 
 - Goal:

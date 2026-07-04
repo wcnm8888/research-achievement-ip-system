@@ -1,5 +1,24 @@
 # Decisions
 
+## D252 - Import job history database model starts with ImportJob and ImportRun only
+
+- Date: 2026-07-04.
+- Context: Step 72B refines the Step 72A import job history and idempotency plan into a database model and migration plan. The current task is documentation-only and prohibits Prisma schema changes, migrations, runtime/source/API/Web/package/lockfile/config/script changes, Docker/browser execution, apply API execution, database writes, production/VPS access, production DB/config access, `.env` / `.env.production` content reads, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - A future schema-authorized migration should add `ImportJob` and `ImportRun` together.
+  - `ImportJob` is the main logical idempotency table keyed by safe target environment, scope, and idempotency hash.
+  - `ImportRun` is the required attempt ledger for retry, replay, failure-stage, timeout, safe summary, and audit-reference evidence.
+  - `ImportJobItem` stays deferred until row-level safe history has a separate privacy review.
+  - Add import-specific enums for family, mode, job status, run status, run trigger, and failure stage.
+  - Reuse nullable existing `AchievementType` for achievement import type rather than creating a duplicate achievement import type enum.
+  - Use composite uniqueness on `targetEnvironment`, `scopeType`, `scopeHash`, and `idempotencyKeyHash`, plus `jobId + attemptNo` uniqueness for runs.
+  - Store only safe JSON summaries and JSON audit log id references in the first migration; defer relational audit joins.
+  - Do not store CSV raw content, raw DOI, software registration number, patent number, email, employee number, title, contributor list, credential/session/token/cookie/password/connection string, `.env` values, storage key, mail payload, or raw exception values.
+  - Keep the first migration additive only: no business-table changes, no business-object foreign keys, no seed, and no backfill.
+  - Recommend the next implementation Step be schema/migration plus generated client/typecheck only before Department runtime idempotency wiring.
+- Scope:
+  - This decision does not authorize schema/migration/runtime/API/Web/package/config implementation, production/VPS writes, production DB access, real-data import, apply API execution, Docker/browser execution, credential/session/lifecycle token creation, invite/reset/real email, workflow/attachment/storage/fee/reminder/notification/search/resource grant side effects, automatic cleanup/delete/rollback/retry, update/merge/reactivation, partial success, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D251 - Import job history and idempotency are a future backend-first product slice
 
 - Date: 2026-07-04.
