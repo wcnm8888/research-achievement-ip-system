@@ -537,3 +537,29 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
 - PAPER job/idempotency behavior remains covered by regression tests.
 - `PATENT` apply path explicitly remains outside import job/idempotency wiring in this Step.
 - No user/account import, Web UI, schema/migration, apply API execution, Docker/browser, production/VPS, or real-data path was added.
+
+## Step 72I Acceptance Addendum
+
+- Date: 2026-07-04.
+- Added local API/DB acceptance helper `memory-bank/step72i-software-import-job-acceptance.mjs`.
+- Helper scope:
+  - Achievement `SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` only.
+  - Synthetic `S72I_*` data only.
+  - Temporary local Nest API harness with staging auth through `X-Demo-User-Id`.
+  - Local Docker API/Postgres environment only.
+  - No Web, `PATENT`, user/account import, schema/migration, production/VPS, or real-data path.
+- Acceptance result: PASS.
+  - First `SOFTWARE_COPYRIGHT` apply returned `EXECUTED`, created 2 draft software copyright achievements, 2 software copyright details, 2 contributors, 2 audit rows, and persisted successful `ImportJob` / `ImportRun` records.
+  - Same-key `SUCCESS` replay returned `REPLAYED_SUCCESS` with no extra achievement, software copyright detail, contributor, audit, job, or run rows.
+  - Validation-blocked missing registration flow stored one `REJECTED` job/run safe summary and replayed the stored safe rejection without business writes.
+  - DB-helper seeded `RUNNING` same-key claim returned `IMPORT_IN_PROGRESS` with no business writes.
+  - Safe summary scan passed.
+  - Non-target side-effect boundary passed.
+  - No `PATENT` import job path was exercised.
+- Boundary maintained:
+  - no schema/migration/model change;
+  - no Web, user/account, or `PATENT` wiring;
+  - no `.env` / `.env.production` content read or printed;
+  - no `DATABASE_URL` value printed or recorded;
+  - no production/VPS access;
+  - no Docker orphan cleanup, prune, or volume deletion.
