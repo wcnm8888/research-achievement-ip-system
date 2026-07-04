@@ -48,7 +48,7 @@ DirectMail variable names for later authorized local production-like checks:
 
 After the stack starts successfully:
 
-- API health: `http://127.0.0.1:13001/api/health`
+- API health: `http://127.0.0.1:14001/api/health`
 - Web root: `http://127.0.0.1:18081/`
 
 ## Explicitly Out Of Scope

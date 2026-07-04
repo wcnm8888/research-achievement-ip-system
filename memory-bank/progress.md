@@ -1,5 +1,21 @@
 # Progress
 
+## 2026-07-02 Step 69D - Local production-like API host port fix
+
+- Status: DONE.
+- Scope completed:
+  - Changed the local production-like API host port from `127.0.0.1:13001` to `127.0.0.1:14001` because Windows reserved `13001` in an excluded TCP port range.
+  - Updated active local production-like docs and the reusable Step 65F Web acceptance helper to use `14001`.
+  - Left historical `memory-bank/progress.md` / `memory-bank/evidence.md` entries that recorded past `13001` checks unchanged.
+- Explicitly not done:
+  - No Windows port reservation or system network settings were modified.
+  - No Docker orphan cleanup, volume cleanup, local artifact cleanup, deletion, reset, drop, prune, production/VPS access, production DB access, `.env` / `.env.production` content read, package/lockfile change, schema/migration change, or real-data import.
+- Verification:
+  - `127.0.0.1:14001` was not in the Windows excluded TCP port ranges and had no listener before the change.
+  - Local production-like API service started healthy on `127.0.0.1:14001`.
+  - `GET http://127.0.0.1:14001/api/health`: HTTP 200.
+  - `git diff --check` and added-lines sensitive-value scan passed.
+
 ## 2026-07-02 Step 69C - Achievement SOFTWARE_COPYRIGHT import local production-like API acceptance
 
 - Status: DONE.

@@ -5,7 +5,7 @@ import http from "node:http";
 const composeFile = "docker-compose.production.yml";
 const adminPort = 19251;
 const limitedPort = 19252;
-const apiBaseUrl = "http://127.0.0.1:13001/api";
+const apiBaseUrl = "http://127.0.0.1:14001/api";
 const webBaseUrl = "http://127.0.0.1:18081";
 
 const logStep = (message) => {

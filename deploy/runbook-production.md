@@ -8,7 +8,7 @@ This runbook covers the single VPS production cutover route for the research ach
 - API route strategy: same-origin `/api`
 - Deployment model: Docker Compose production stack.
 - Production compose file: `docker-compose.production.yml`
-- Production API local port: `127.0.0.1:13001 -> 3000`
+- Production API local port: `127.0.0.1:14001 -> 3000`
 - Production Web local port: `127.0.0.1:18081 -> 80`
 - Current demo/staging deployment will be replaced by production during cutover.
 - This document is a runbook only. It is not evidence that production is configured, deployed, or accepted.
@@ -57,7 +57,7 @@ Use `docker-compose.production.yml` for production.
 Expected stack properties:
 
 - Compose project name: `research-achievement-production`.
-- Production API: `127.0.0.1:13001 -> 3000`.
+- Production API: `127.0.0.1:14001 -> 3000`.
 - Production Web: `127.0.0.1:18081 -> 80`.
 - Production Postgres: internal Docker network only, no public port binding.
 - Production database volume: `research_achievement_production_pgdata`.

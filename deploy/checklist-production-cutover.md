@@ -23,7 +23,7 @@ This checklist is for a single VPS production cutover. It must not contain real 
 
 - [ ] `docker-compose.production.yml` is used for production.
 - [ ] Compose project name is `research-achievement-production`.
-- [ ] API port mapping is `127.0.0.1:13001:3000`.
+- [ ] API port mapping is `127.0.0.1:14001:3000`.
 - [ ] Web port mapping is `127.0.0.1:18081:80`.
 - [ ] Production Postgres has no public port binding.
 - [ ] Production DB volume is separate from demo/staging volume.
@@ -72,7 +72,7 @@ This checklist is for a single VPS production cutover. It must not contain real 
 
 - [ ] Current demo/staging service stop window is approved.
 - [ ] Production Docker build artifact or deployment package is ready.
-- [ ] Production API container starts on `127.0.0.1:13001`.
+- [ ] Production API container starts on `127.0.0.1:14001`.
 - [ ] Production Web container starts on `127.0.0.1:18081`.
 - [ ] Reverse proxy routes `https://production.wangyimin.cn/api` to the local API port.
 - [ ] Web app serves from `https://production.wangyimin.cn`.

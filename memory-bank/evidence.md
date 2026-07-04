@@ -1,5 +1,38 @@
 # Evidence
 
+## 2026-07-02 Step 69D - Local production-like API host port fix evidence
+
+- Goal:
+  - Fix local Docker production-like API startup failure caused by Windows refusing host port `127.0.0.1:13001`.
+- Initial state:
+  - `git log -1 --oneline`: `292ed7a test: add software copyright import acceptance`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched.
+- Diagnosis:
+  - `127.0.0.1:13001` was not held by a visible TCP listener when checked.
+  - Windows excluded TCP port ranges included `12908-13007` earlier in the session, which covers `13001`.
+  - Docker Desktop reported `bind: An attempt was made to access a socket in a way forbidden by its access permissions` when trying to publish `127.0.0.1:13001`.
+  - `127.0.0.1:14001` was not in the excluded TCP port ranges and had no listener before the change.
+- Changed files:
+  - `docker-compose.production.yml`.
+  - `.env.production.example`.
+  - `deploy/local-production-like-env-checklist.md`.
+  - `deploy/runbook-production.md`.
+  - `deploy/checklist-production-cutover.md`.
+  - `memory-bank/step65f-web-acceptance.mjs`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Verification:
+  - `docker compose -f docker-compose.production.yml up -d api`: PASS.
+  - `docker compose -f docker-compose.production.yml ps`: API service was healthy and published on `127.0.0.1:14001->3000`.
+  - `GET http://127.0.0.1:14001/api/health`: HTTP 200.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive-value scan: PASS; no complete URL with sensitive query, credential value, connection string value, private key value, AccessKey value, token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Windows network settings were changed.
+  - No Docker orphan cleanup, volume cleanup, local artifact cleanup, deletion, reset, drop, prune, production/VPS access, production DB/config access, package/lockfile change, schema/migration change, or real-data import occurred.
+
 ## 2026-07-02 Step 69C - Achievement SOFTWARE_COPYRIGHT import local production-like API acceptance evidence
 
 - Goal:
