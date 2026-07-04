@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-07-04 Step 72L - User/account import job idempotency plan evidence
+
+- Goal:
+  - Produce a docs-only plan for safely wiring `ImportJob` / `ImportRun` history and idempotency into User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` apply.
+- Initial state:
+  - `git log -1 --oneline`: `680b309 test: add patent import job acceptance`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/user-account-import-real-write-safety-plan.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/import-job-history-idempotency-plan.md`.
+  - Targeted Step 66B / 66C / 66F sections from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - Targeted Step 72D-K addendum sections from `memory-bank/import-job-history-database-model-plan.md`.
+  - User/account import apply service, repository, controller/AppModule routing references, and focused tests under `apps/api/src/imports`.
+- Implemented files:
+  - `memory-bank/user-account-import-job-idempotency-plan.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Plan evidence:
+  - The plan treats user/account separately from department and achievement imports because it creates pending users, creates role assignments, now includes employee-number persistence/readiness, and must preserve no-credential/no-session/no-lifecycle/no-mail behavior.
+  - Idempotency key design uses family `USER_ACCOUNT`, mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`, file fingerprint, safe target environment discriminator, and operator-scope hash.
+  - Stored key and summaries explicitly forbid raw CSV, raw email, normalized email, employee number, display name, role/department names, credentials, sessions, lifecycle token material, cookies, passwords, connection strings, `.env` values, storage keys, and mail payloads.
+  - Runtime behavior is specified for `SUCCESS` replay, `RUNNING` in-flight, `REJECTED` replay, and first-slice non-retryable `FAILED`.
+  - Successful transaction design requires `User`, `UserRole`, audit, `ImportRun` success summary, and `ImportJob` success summary in one Prisma transaction.
+  - Rejected paths must store safe codes for existing user, employee-number conflict, high-privilege role, invalid scope, invalid department, duplicate-in-file, warning/error, and sensitive-column blockers without business writes.
+  - Acceptance strategy covers backend tests, local API/DB acceptance, no credential/session/lifecycle/mail delta, replay, in-flight, rejected replay, and safe summary scan.
+  - Step 72M and Step 72N are recommended as the next implementation and local acceptance slices; Web/history list remains deferred.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, schema, API, Web, package, lockfile, config, migration, or script behavior changed.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS.
+- Boundary:
+  - No runtime/source/schema/API/Web/package/lockfile/config/script files were changed.
+  - No schema or migration was added.
+  - No apply API was executed.
+  - No database was written.
+  - No Docker/browser execution occurred.
+  - No `.env` or `.env.production` content was read or output.
+  - No `DATABASE_URL` value, credential, password, token, cookie, connection string, raw CSV, raw email, employee number, display name, role/department name, raw local path, storage key, or mail payload was printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72K - Patent import job idempotency local acceptance evidence
 
 - Goal:

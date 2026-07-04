@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-07-04 Step 72L - User/account import job idempotency plan
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/user-account-import-job-idempotency-plan.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with Step 72L user/account plan addendum.
+  - Updated `memory-bank/evidence.md`.
+- Key outcome:
+  - Planned safe `ImportJob` / `ImportRun` wiring for User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Documented why user/account needs a separate scheme: pending user rows, department-scoped role assignment, employee-number readiness, and strict no-credential/no-session/no-lifecycle/no-mail boundaries.
+  - Defined idempotency key dimensions: family `USER_ACCOUNT`, mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`, normalized file fingerprint, safe target environment discriminator, and operator scope hash.
+  - Defined same-key behavior for `SUCCESS`, `RUNNING`, `REJECTED`, and `FAILED`.
+  - Required the success transaction to include `User`, `UserRole`, audit, `ImportRun` success update, and `ImportJob` success update in the same Prisma transaction.
+  - Defined safe summary fields and forbidden persisted values.
+  - Recommended Step 72M backend-only implementation and Step 72N local Docker API/DB acceptance.
+  - Kept Web/history list deferred.
+- Explicitly not done:
+  - No runtime/source/schema/API/Web/package/lockfile/config/script changes.
+  - No schema or migration changes.
+  - No apply API execution.
+  - No database writes.
+  - No Docker/browser execution.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, schema, API, Web, package, lockfile, config, migration, or script behavior changed.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 72K - Patent import job idempotency local acceptance
 
 - Status: DONE.

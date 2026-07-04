@@ -616,3 +616,33 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
   - no `DATABASE_URL` value printed or recorded;
   - no production/VPS access;
   - no Docker orphan cleanup, prune, or volume deletion.
+
+## Step 72L User Account Plan Addendum
+
+- Date: 2026-07-04.
+- Added docs-only plan `memory-bank/user-account-import-job-idempotency-plan.md`.
+- The plan scopes User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` import job/idempotency separately because the import touches pending users, role assignment, employee-number readiness, and strict no-credential/no-session/no-lifecycle/no-mail boundaries.
+- Recommended idempotency dimensions:
+  - family `USER_ACCOUNT`;
+  - mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`;
+  - normalized file fingerprint;
+  - safe target environment discriminator;
+  - `GLOBAL_OPERATOR_SCOPE` or equivalent operator-scope hash for the first slice;
+  - no raw email, employee number, display name, role name, department name, CSV content, credential/session/token/cookie/password/connection string/env/storage/mail payload values.
+- Recommended runtime behavior:
+  - same-key `SUCCESS` returns `REPLAYED_SUCCESS` with stored safe counts;
+  - same-key `RUNNING` returns `IMPORT_IN_PROGRESS`;
+  - same-key `REJECTED` returns stored safe rejection;
+  - same-key `FAILED` is not automatically retried in the first user/account slice.
+- Recommended success transaction:
+  - create `User`;
+  - create `UserRole`;
+  - write safe audit;
+  - update `ImportRun` and `ImportJob` success summaries/statuses;
+  - keep all of the above in one Prisma transaction.
+- Safe summaries should contain only counts, status, operation, safe error codes, `NO_CREDENTIAL`, `PENDING_ACTIVATION`, and department-scope facts.
+- Safe summaries must not store raw CSV, email, employee number, display name, role/department names, credentials, sessions, lifecycle token material, cookies, passwords, connection strings, `.env` values, storage keys, or mail payloads.
+- Step 72M is recommended as backend-only user/account job/idempotency implementation.
+- Step 72N is recommended as local Docker API/DB acceptance with synthetic `S72N_*` data.
+- Web/history list remains deferred.
+- This Step did not modify runtime/source/schema/API/Web/package/lockfile/config/script files, did not add migrations, did not execute apply, did not run Docker/browser, did not write a database, and did not access production/VPS.
