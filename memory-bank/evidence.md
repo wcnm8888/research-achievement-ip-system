@@ -1,5 +1,42 @@
 # Evidence
 
+## 2026-07-04 Step 73E - Import job history final archive evidence
+
+- Goal:
+  - Produce a docs-only final archive for Step 72A through Step 73D covering `ImportJob` / `ImportRun` import history, idempotency, duplicate-execution prevention, backend read-only history API, Web read-only entries, and local acceptance evidence.
+- Initial state:
+  - `git log -1 --oneline`: `3ad27f4 test: accept import job history web entries`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - Latest Step 72A through Step 73D sections from `memory-bank/progress.md`.
+  - Latest Step 72A through Step 73D sections from `memory-bank/evidence.md`.
+  - Step 72 and Step 73 addenda from `memory-bank/import-job-history-database-model-plan.md`.
+  - Step 72A addendum from `memory-bank/import-real-write-final-archive.md`.
+  - D253 and D252 from `memory-bank/decisions.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-history-final-archive.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+- Archive evidence:
+  - Recorded completed capability coverage for `ImportJob` / `ImportRun` schema and migration, Department `CREATE_ONLY`, Achievement `PAPER` / `SOFTWARE_COPYRIGHT` / `PATENT`, User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, backend read-only history API, Web three-page read-only entries, local API/DB acceptance, and local browser acceptance.
+  - Recorded verified semantics for `EXECUTED`, `REPLAYED_SUCCESS`, `IMPORT_IN_PROGRESS`, `REJECTED` safe replay, `FAILED` non-automatic retry, Web read-only list/detail, `system:config`, and GET-only history network access.
+  - Recorded unsupported boundaries for automatic retry, cleanup/delete/rollback, persisted `ImportJobItem`, settings/system overview, production apply, real-data import, source CSV download, and raw audit identifier browsing.
+  - Recorded safety boundaries: no raw CSV display, no personal/business identifier display, no credential/session/token/cookie/password/connection-string display, no production/VPS inference from local browser acceptance, and no production DB inference from route mock/stub acceptance.
+  - Recorded follow-up recommendations for Step 74A settings/system overview design, separate production read-only preflight runbook, and separately authorized real-environment acceptance.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 73E docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No API, Web, Docker, browser, database, production/VPS, import apply, retry, delete, cleanup, rollback, schema, migration, package, lockfile, or config work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-04 Step 73D - Import job history Web local browser acceptance evidence
 
 - Goal:

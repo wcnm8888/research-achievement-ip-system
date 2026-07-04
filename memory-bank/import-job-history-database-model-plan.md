@@ -962,3 +962,46 @@ Step 73C completes the Web implementation slice for the three local import pages
 - `corepack pnpm --filter @research-ip/web build`: PASS, with only the existing Vite large chunk warning.
 
 Step 73D completes local browser acceptance for the three Web read-only import history entries and records the small dev-mode permission-context fix needed to make those entries reachable in local browser testing.
+
+## Step 73E Final Archive Addendum
+
+- Date: 2026-07-04.
+- Added `memory-bank/import-job-history-final-archive.md` as the closure archive for Step 72A through Step 73D.
+- Archived completed capabilities:
+  - `ImportJob` / `ImportRun` schema and migration;
+  - Department `CREATE_ONLY` job/run/idempotency;
+  - Achievement `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` `CREATE_DRAFT_ONLY` job/run/idempotency;
+  - User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` job/run/idempotency;
+  - backend read-only import job history API;
+  - Web read-only history entries on Department, User account, and Achievement import pages;
+  - local API/DB acceptance and local browser acceptance.
+- Archived verified semantics:
+  - `EXECUTED`;
+  - `REPLAYED_SUCCESS`;
+  - `IMPORT_IN_PROGRESS`;
+  - `REJECTED` safe replay;
+  - `FAILED` as non-automatic retry;
+  - Web read-only list/detail;
+  - `system:config` permission boundary;
+  - GET-only history network boundary.
+- Reconfirmed unsupported capabilities:
+  - automatic retry;
+  - cleanup/delete/rollback;
+  - persisted `ImportJobItem`;
+  - settings/system import-history overview;
+  - production apply;
+  - real-data import;
+  - source CSV download;
+  - raw audit identifier browsing.
+- Reconfirmed safety boundaries:
+  - no raw CSV display;
+  - no personal or business identifier display;
+  - no credential/session/token/cookie/password/connection-string display;
+  - no production/VPS inference from local browser acceptance;
+  - no production DB inference from route mock/stub acceptance.
+- Recommended future routes:
+  - Step 74A may design a settings/system unified read-only import-history overview.
+  - Production readiness should be a separate read-only preflight runbook.
+  - Real-environment acceptance requires separate explicit authorization and safe, de-identified evidence handling.
+
+Step 73E closes the local import job history and idempotency delivery mainline as documentation-only. It does not authorize runtime/API/Web/schema/migration/package/lockfile/config changes, production/VPS access, production DB access, import apply, retry, cleanup, delete, rollback, or real-data import.

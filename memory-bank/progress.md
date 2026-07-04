@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-04 Step 73E - Import job history and idempotency final archive
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-job-history-final-archive.md` as the final archive for Step 72A through Step 73D.
+  - Archived completed `ImportJob` / `ImportRun` schema, migration, backend idempotency, backend read-only API, Web read-only entries, and local acceptance evidence.
+  - Archived verified semantics for `EXECUTED`, `REPLAYED_SUCCESS`, `IMPORT_IN_PROGRESS`, `REJECTED` safe replay, `FAILED` non-automatic retry, Web list/detail, `system:config`, and GET-only history access.
+  - Reconfirmed unsupported capabilities: automatic retry, cleanup/delete/rollback, persisted `ImportJobItem`, settings/system overview, production apply, real-data import, source CSV download, and raw audit identifier browsing.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 73E closure note.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No import apply, retry, delete, cleanup, or rollback.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 73E docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-04 Step 73D - Import job history Web local browser acceptance
 
 - Status: DONE_WITH_SMALL_WEB_FIX.
