@@ -1,5 +1,99 @@
 # Evidence
 
+## 2026-07-04 Step 72K - Patent import job idempotency local acceptance evidence
+
+- Goal:
+  - Run local production-like API/DB acceptance for Achievement `PATENT` `CREATE_DRAFT_ONLY` import job history and idempotency with synthetic `S72K_*` data only.
+- Initial state:
+  - `git log -1 --oneline`: `c6182ee feat: add patent import job idempotency`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Implemented file:
+  - `memory-bank/step72k-patent-import-job-acceptance.mjs`.
+- Helper scope:
+  - Achievement `PATENT` `CREATE_DRAFT_ONLY` only.
+  - Synthetic `S72K_*` data only.
+  - Temporary local Nest API harness with staging auth through `X-Demo-User-Id`.
+  - Runs against the local Docker API container environment without printing the DB connection value.
+  - No Web, user/account import, schema/migration, production/VPS, or real-data path.
+- Docker preflight and migration:
+  - `docker build -f Dockerfile.api -t research-achievement-production-api .`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d --no-deps api`: PASS.
+  - Compose reported existing orphan containers; no `--remove-orphans`, prune, volume deletion, or cleanup command was run.
+  - Local API container health check after update: PASS.
+  - Container contained `apps/api/dist/imports/achievement-import-job.repository.js`.
+  - DB environment presence in the container was checked as a boolean only; no value was printed.
+  - `docker exec research-achievement-production-api-1 sh -lc 'corepack pnpm prisma migrate deploy'`: PASS, no pending migrations.
+- Acceptance helper:
+  - The helper was copied into `/app/memory-bank/` inside the local API container solely to run it in the container's local DB environment.
+  - `docker exec research-achievement-production-api-1 sh -lc 'node /app/memory-bank/step72k-patent-import-job-acceptance.mjs'`: PASS.
+  - Sanitized acceptance output:
+    - `success.status`: `201`.
+    - `success.disposition`: `EXECUTED`.
+    - `success.achievementCountBefore`: `0`.
+    - `success.achievementCountAfter`: `2`.
+    - `success.patentDetailCountAfter`: `2`.
+    - `success.contributorCountAfter`: `2`.
+    - `success.stateChangeCountAfter`: `0`.
+    - `success.nextFeeDatePersistedCount`: `0`.
+    - `success.feeAmountPersistedCount`: `0`.
+    - `success.auditOperationDelta`: `2`.
+    - `success.importJobStatus`: `SUCCESS`.
+    - `success.importRunStatus`: `SUCCESS`.
+    - `success.createdAchievementsCount`: `2`.
+    - `success.createdCompanionCount`: `4`.
+    - `success.auditCount`: `2`.
+    - `successReplay.disposition`: `REPLAYED_SUCCESS`.
+    - `successReplay.achievementCountBefore`: `2`.
+    - `successReplay.achievementCountAfter`: `2`.
+    - `successReplay.patentDetailCountBefore`: `2`.
+    - `successReplay.patentDetailCountAfter`: `2`.
+    - `successReplay.contributorCountBefore`: `2`.
+    - `successReplay.contributorCountAfter`: `2`.
+    - `successReplay.auditOperationDelta`: `0`.
+    - `successReplay.importJobCount`: `1`.
+    - `successReplay.importRunCount`: `1`.
+    - `rejectedReplay.firstStatus`: `400`.
+    - `rejectedReplay.replayStatus`: `400`.
+    - `rejectedReplay.errorCodes`: `REQUIRED`.
+    - `rejectedReplay.achievementCountAfter`: `0`.
+    - `rejectedReplay.patentDetailCountAfter`: `0`.
+    - `rejectedReplay.auditOperationDelta`: `0`.
+    - `rejectedReplay.importJobStatus`: `REJECTED`.
+    - `rejectedReplay.importRunStatus`: `REJECTED`.
+    - `rejectedReplay.importJobCount`: `1`.
+    - `rejectedReplay.importRunCount`: `1`.
+    - `runningClaim.status`: `201`.
+    - `runningClaim.disposition`: `IMPORT_IN_PROGRESS`.
+    - `runningClaim.achievementCountBefore`: `0`.
+    - `runningClaim.achievementCountAfter`: `0`.
+    - `runningClaim.patentDetailCountAfter`: `0`.
+    - `runningClaim.auditOperationDelta`: `0`.
+    - `runningClaim.importJobCount`: `1`.
+    - `runningClaim.importRunCount`: `1`.
+    - `safeSummaryScan`: `PASS`.
+    - `feeReminderBoundary.nextFeeDatePersistedCount`: `0`.
+    - `feeReminderBoundary.feeAmountPersistedCount`: `0`.
+    - `feeReminderBoundary.feeRecordDelta`: `0`.
+    - `feeReminderBoundary.feeReviewHistoryDelta`: `0`.
+    - `feeReminderBoundary.reminderTaskDelta`: `0`.
+    - `feeReminderBoundary.notificationDelta`: `0`.
+    - `sideEffectBoundary`: `PASS`.
+    - `nonPatentImportJobCountSinceStart`: `0`.
+    - `userImportJobCountSinceStart`: `0`.
+- Regression verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import department-import imports.app-module`: PASS, 9 files / 84 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Boundary:
+  - No Web files were changed.
+  - No user/account import behavior was changed.
+  - No runtime/source/schema/API/Web/package/lockfile/config/script file was modified, except adding the memory-bank acceptance helper and documentation.
+  - No new schema or migration was created.
+  - No `.env` or `.env.production` content was read or printed.
+  - No `DATABASE_URL` value, credential, password, token, cookie, connection string, raw CSV, application number, normalized application number, grant number, normalized grant number, title, contributor/owner email/name, `nextFeeDate`, `feeAmount`, raw local path, storage key, or mail payload was printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, prune, volume deletion, file deletion, reset, restore, checkout, drop, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72J - Patent achievement import job idempotency evidence
 
 - Goal:

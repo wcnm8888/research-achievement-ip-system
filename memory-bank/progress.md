@@ -1,5 +1,39 @@
 # Progress
 
+## 2026-07-04 Step 72K - Patent import job idempotency local acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step72k-patent-import-job-acceptance.mjs`.
+  - Reused the local Docker API/Postgres environment for production-like API/DB acceptance.
+  - Rebuilt the local API image, updated the local API container, confirmed the container contained the Step 72J compiled achievement import job repository, and confirmed existing Prisma migrations had no pending local Docker DB migration.
+  - Ran the Step 72K synthetic helper inside the local API container.
+- Acceptance result:
+  - Success path: PASS, first `PATENT` `CREATE_DRAFT_ONLY` apply returned `EXECUTED`, created 2 draft patent achievements, 2 patent details, 2 contributors, 2 audit rows, and persisted `ImportJob.status = SUCCESS` plus `ImportRun.status = SUCCESS`.
+  - `SUCCESS` replay: PASS, returned `REPLAYED_SUCCESS`, created no additional achievement/detail/contributor/audit/job/run rows, and returned stored safe counts.
+  - `REJECTED` replay: PASS, grant-only missing application validation returned safe `REQUIRED` rejection, created no achievement/detail/contributor/audit rows, and kept one rejected job/run across replay.
+  - `RUNNING` in-flight: PASS, DB-helper-seeded same-key running claim returned `IMPORT_IN_PROGRESS`, created no achievement/detail/contributor/audit rows, and kept one running job/run.
+  - Patent safe summary scan: PASS.
+  - Fee/reminder boundary: PASS, persisted `nextFeeDate` count 0, persisted `feeAmount` count 0, fee record delta 0, fee review history delta 0, reminder delta 0, notification delta 0.
+  - Side-effect boundary: PASS.
+  - PAPER and `SOFTWARE_COPYRIGHT` import job regression boundary: PASS, no non-PATENT achievement job path was exercised by the helper.
+  - User/account import job boundary: PASS, no user/account import job was created.
+- Verification:
+  - `docker build -f Dockerfile.api -t research-achievement-production-api .`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d --no-deps api`: PASS; Docker reported existing orphan containers but no orphan cleanup was run.
+  - Local API container health check after update: PASS.
+  - Container DB environment presence was checked as a boolean only; the value was not printed or recorded.
+  - `docker exec research-achievement-production-api-1 sh -lc 'corepack pnpm prisma migrate deploy'`: PASS, no pending migrations.
+  - `docker exec research-achievement-production-api-1 sh -lc 'node /app/memory-bank/step72k-patent-import-job-acceptance.mjs'`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import department-import imports.app-module`: PASS, 9 files / 84 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Explicitly not done:
+  - No Web changes.
+  - No user/account import wiring.
+  - No schema or migration changes.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, Docker orphan cleanup, prune, volume deletion, file deletion, reset, restore, checkout, or known unrelated untracked local artifact handling.
+  - No `DATABASE_URL` value, credential, password, token, cookie, connection string, raw CSV, application number, normalized application number, grant number, normalized grant number, title, contributor/owner email/name, `nextFeeDate`, `feeAmount`, or raw path was printed or recorded.
+
 ## 2026-07-04 Step 72J - Patent achievement import job idempotency backend wiring
 
 - Status: DONE.

@@ -589,3 +589,30 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
 - PATENT still does not persist `nextFeeDate` / `feeAmount` and does not create fee, reminder, notification, search, resource grant, workflow, or attachment side effects.
 - PAPER and `SOFTWARE_COPYRIGHT` job/idempotency behavior remains covered by regression tests.
 - No user/account import, Web UI, schema/migration, apply API execution, Docker/browser, production/VPS, or real-data path was added.
+
+## Step 72K Acceptance Addendum
+
+- Date: 2026-07-04.
+- Added local API/DB acceptance helper `memory-bank/step72k-patent-import-job-acceptance.mjs`.
+- Helper scope:
+  - Achievement `PATENT` `CREATE_DRAFT_ONLY` only.
+  - Synthetic `S72K_*` data only.
+  - Temporary local Nest API harness with staging auth through `X-Demo-User-Id`.
+  - Local Docker API/Postgres environment only.
+  - No Web, user/account import, schema/migration, production/VPS, or real-data path.
+- Acceptance result: PASS.
+  - First `PATENT` apply returned `EXECUTED`, created 2 draft patent achievements, 2 patent details, 2 contributors, 2 audit rows, and persisted successful `ImportJob` / `ImportRun` records.
+  - Same-key `SUCCESS` replay returned `REPLAYED_SUCCESS` with no extra achievement, patent detail, contributor, audit, job, or run rows.
+  - Validation-blocked grant-only missing application flow stored one `REJECTED` job/run safe summary and replayed the stored safe rejection without business writes.
+  - DB-helper seeded `RUNNING` same-key claim returned `IMPORT_IN_PROGRESS` with no business writes.
+  - Safe summary scan passed for raw CSV, patent identifiers, title, owner/contributor email/name, `nextFeeDate`, `feeAmount`, raw path, and credential/session/token/cookie/password/connection-string/storage/mail-payload terms.
+  - Fee/reminder boundary passed: persisted `nextFeeDate` count 0, persisted `feeAmount` count 0, fee record delta 0, fee review history delta 0, reminder delta 0, notification delta 0.
+  - Non-target side-effect boundary passed.
+  - No PAPER, `SOFTWARE_COPYRIGHT`, or user/account import job path was exercised.
+- Boundary maintained:
+  - no schema/migration/model change;
+  - no Web or user/account wiring;
+  - no `.env` / `.env.production` content read or printed;
+  - no `DATABASE_URL` value printed or recorded;
+  - no production/VPS access;
+  - no Docker orphan cleanup, prune, or volume deletion.
