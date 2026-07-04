@@ -1057,3 +1057,54 @@ Step 73E closes the local import job history and idempotency delivery mainline a
 - Production readiness remains a separate read-only preflight runbook and must not be merged into Step 74A.
 
 Step 74A approves only the documentation design for the settings/system unified read-only import history overview. It does not authorize runtime/API/Web/schema/migration/package/lockfile/config changes, production/VPS access, production DB access, import apply, retry, cleanup, delete, rollback, download, or business-object drilldown behavior.
+
+## Step 74B Settings/System Unified Read-Only Overview Web Implementation
+
+- Date: 2026-07-04.
+- Scope: Web-only implementation and tests for the settings/system unified read-only import history overview.
+- Non-scope: no backend changes, no Prisma schema or migration changes, no package or lockfile changes, no config changes, no service startup, no browser run, no database access, no production/VPS access, and no import apply execution.
+
+### Web Implementation
+
+- Added `apps/web/src/SettingsImportJobHistoryOverview.tsx`.
+- Added `apps/web/src/SettingsImportJobHistoryOverview.test.tsx`.
+- Mounted the overview inside `apps/web/src/SettingsApiIntegrations.tsx`, keeping it within the existing settings/system configuration page.
+- Kept the overview as a secondary read-only index; Department, User account, and Achievement page-local history entries remain unchanged and continue using fixed family/mode filters.
+- Reused existing Web API client methods:
+  - `listImportJobHistory`;
+  - `getImportJobHistoryDetail`.
+- Did not add backend routes. The client still calls `/import-jobs`, which the Web base composes to `/api/import-jobs`.
+
+### Filters, Pagination, And Display
+
+- Implemented filters for:
+  - `family`;
+  - `mode`;
+  - `achievementType`;
+  - `status`;
+  - `createdFrom`;
+  - `createdTo`.
+- Implemented pagination through `page` and `pageSize`.
+- Default query is `page = 1`, `pageSize = 20`, with no family/mode/status/achievementType filters.
+- Non-pagination filter changes reset `page` to `1`.
+- Pagination changes are limited to `page` and `pageSize`.
+- The UI relies on backend default ordering by `createdAt desc` and does not display opaque import job ids.
+- List display includes only safe DTO fields: family, mode, achievement type or `N/A`, status, accepted/business/companion/audit counts, safe machine error codes, `createdAt`, and `completedAt`.
+- Detail display reuses the existing safe detail component for sanitized safe summary, run status, run `auditCount`, and replay/in-flight/rejected/failed explanations.
+
+### Permission And Safety Boundary
+
+- The overview is visible only to `system:config` users.
+- Users without `system:config` do not render the overview and do not trigger import-history client calls from the overview component.
+- No new permission was added.
+- Backend guard remains authoritative.
+- No retry, delete, cleanup, rollback, download, export, raw JSON copy, or bulk-action controls were added.
+- No raw CSV, raw audit ids, personal identifiers, business object names, credential/session/token/cookie/password/connection-string values, or import-row-derived business detail links were added.
+
+### Verification
+
+- `corepack pnpm --filter @research-ip/web test -- SettingsImportJobHistory SettingsApiIntegrations App ImportJobHistory`: PASS, 5 files / 35 tests.
+- `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+
+Step 74B completes the Web implementation slice for the settings/system unified read-only import history overview. Step 74C should run local browser acceptance for visibility, GET-only requests, filter query behavior, pagination, list/detail safe display, and absence of forbidden controls or sensitive strings.

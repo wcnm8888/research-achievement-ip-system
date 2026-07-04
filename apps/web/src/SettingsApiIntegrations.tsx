@@ -28,6 +28,7 @@ import {
 } from "./api-client";
 import { hasSystemConfigPermission } from "./AccountManagement";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { SettingsImportJobHistoryOverview } from "./SettingsImportJobHistoryOverview";
 import type {
   ApiIntegrationListResponse,
   ApiIntegrationMetadata,
@@ -344,6 +345,8 @@ export function SettingsApiIntegrations({
       />
 
       <PermissionHint description="This page stores metadata only: code, provider, enabled flag, timeout and config reference name. It does not read environment files, store provider credentials, or switch runtime adapters." />
+
+      <SettingsImportJobHistoryOverview demoUserId={demoUserId} authUser={authUser} />
 
       <Card className="shell-card">
         <Space className="settings-api-filter-bar" size={12} wrap>

@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-07-04 Step 74B - Settings/system import history overview Web implementation
+
+- Status: DONE.
+- Scope completed:
+  - Added `apps/web/src/SettingsImportJobHistoryOverview.tsx`.
+  - Added `apps/web/src/SettingsImportJobHistoryOverview.test.tsx`.
+  - Mounted the overview inside `apps/web/src/SettingsApiIntegrations.tsx`.
+  - Kept the overview as a secondary read-only index within the existing settings/system configuration page.
+  - Reused `listImportJobHistory` and `getImportJobHistoryDetail`; no backend route was added.
+  - Implemented filters for `family`, `mode`, `achievementType`, `status`, `createdFrom`, and `createdTo`.
+  - Implemented default `page = 1`, `pageSize = 20`, filter changes resetting page to `1`, and pagination limited to `page/pageSize`.
+  - Reused safe import-history detail rendering and exported small safe display helpers from `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - Added tests for permissions, default query, filters, filter reset, pagination, safe list/detail display, no forbidden action labels, and fixed local-entry filters.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 74B addendum.
+  - Updated `memory-bank/evidence.md` with Web implementation evidence.
+- Explicitly not done:
+  - No backend/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup for browser acceptance.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No import apply, retry, delete, cleanup, rollback, download, export, raw JSON copy, bulk action, or business-object drilldown.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- SettingsImportJobHistory SettingsApiIntegrations App ImportJobHistory`: PASS, 5 files / 35 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; Web and docs files only.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 74B files plus existing untracked local artifacts.
+  - Manual diff review: PASS; no backend/schema/migration/package/lockfile/config changes, no sensitive values, no raw CSV, no raw audit IDs, no personal identifier display, and no forbidden write controls.
+
 ## 2026-07-04 Step 74A - Settings/system import history overview design
 
 - Status: DONE.

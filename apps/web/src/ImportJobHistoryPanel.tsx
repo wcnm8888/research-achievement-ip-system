@@ -280,9 +280,9 @@ export function ImportJobHistoryDetailView({
         <Descriptions.Item label="safeErrorCode" span={2}>
           {renderSafeErrorCodes(detail.data)}
         </Descriptions.Item>
-        <Descriptions.Item label="createdAt">{formatTimestamp(detail.data.createdAt)}</Descriptions.Item>
+        <Descriptions.Item label="createdAt">{formatImportJobTimestamp(detail.data.createdAt)}</Descriptions.Item>
         <Descriptions.Item label="completedAt">
-          {formatTimestamp(detail.data.completedAt)}
+          {formatImportJobTimestamp(detail.data.completedAt)}
         </Descriptions.Item>
       </Descriptions>
 
@@ -393,13 +393,13 @@ const buildImportJobHistoryColumns = (
     title: "createdAt",
     dataIndex: "createdAt",
     key: "createdAt",
-    render: formatTimestamp,
+    render: formatImportJobTimestamp,
   },
   {
     title: "completedAt",
     dataIndex: "completedAt",
     key: "completedAt",
-    render: formatTimestamp,
+    render: formatImportJobTimestamp,
   },
   {
     title: "detail",
@@ -412,7 +412,7 @@ const buildImportJobHistoryColumns = (
   },
 ];
 
-const safeSummaryColumns: TableProps<SafeSummaryRow>["columns"] = [
+export const safeSummaryColumns: TableProps<SafeSummaryRow>["columns"] = [
   {
     title: "field",
     dataIndex: "key",
@@ -425,7 +425,7 @@ const safeSummaryColumns: TableProps<SafeSummaryRow>["columns"] = [
   },
 ];
 
-const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] = [
+export const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] = [
   {
     title: "attemptNo",
     dataIndex: "attemptNo",
@@ -457,19 +457,19 @@ const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] = [
     title: "startedAt",
     dataIndex: "startedAt",
     key: "startedAt",
-    render: formatTimestamp,
+    render: formatImportJobTimestamp,
   },
   {
     title: "finishedAt",
     dataIndex: "finishedAt",
     key: "finishedAt",
-    render: formatTimestamp,
+    render: formatImportJobTimestamp,
   },
   {
     title: "completedBusinessTransactionAt",
     dataIndex: "completedBusinessTransactionAt",
     key: "completedBusinessTransactionAt",
-    render: formatTimestamp,
+    render: formatImportJobTimestamp,
   },
   {
     title: "auditCount",
@@ -478,12 +478,12 @@ const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] = [
   },
 ];
 
-type SafeSummaryRow = {
+export type SafeSummaryRow = {
   key: string;
   value: string;
 };
 
-const collectSafeSummaryRows = (summary: unknown, prefix = ""): SafeSummaryRow[] => {
+export const collectSafeSummaryRows = (summary: unknown, prefix = ""): SafeSummaryRow[] => {
   if (!summary || typeof summary !== "object" || Array.isArray(summary)) {
     return [];
   }
@@ -570,7 +570,7 @@ const toSafeSummaryDisplayValue = (value: unknown): string | null => {
   return null;
 };
 
-const renderSafeErrorCodes = (job: Pick<ImportJobHistoryListItem, "safeErrorCodes" | "latestRun">) => {
+export const renderSafeErrorCodes = (job: Pick<ImportJobHistoryListItem, "safeErrorCodes" | "latestRun">) => {
   const codes = [
     ...job.safeErrorCodes,
     ...(job.latestRun?.failureCode ? [job.latestRun.failureCode] : []),
@@ -591,7 +591,7 @@ const renderSafeErrorCodes = (job: Pick<ImportJobHistoryListItem, "safeErrorCode
   );
 };
 
-const getStatusTagColor = (status: string): string | undefined => {
+export const getStatusTagColor = (status: string): string | undefined => {
   if (status === "SUCCESS") {
     return "green";
   }
@@ -607,7 +607,7 @@ const getStatusTagColor = (status: string): string | undefined => {
   return undefined;
 };
 
-function formatTimestamp(value?: string | null): string {
+export function formatImportJobTimestamp(value?: string | null): string {
   return value ?? "N/A";
 }
 

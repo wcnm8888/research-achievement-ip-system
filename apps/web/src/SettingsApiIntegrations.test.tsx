@@ -66,6 +66,8 @@ describe("settings api integrations permission boundary", () => {
     );
 
     expect(html).toContain("settings-api-page");
+    expect(html).toContain("Import history overview");
+    expect(html).toContain("read-only index");
     expect(html).toContain("API integrations");
     expect(html).toContain("Config reference is a non-sensitive reference name");
     expect(html).not.toContain("API key");

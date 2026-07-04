@@ -1,5 +1,61 @@
 # Evidence
 
+## 2026-07-04 Step 74B - Settings/system import history overview Web implementation evidence
+
+- Goal:
+  - Implement the settings/system unified read-only import history overview in Web and cover it with targeted tests.
+- Initial state:
+  - `git log -1 --oneline`: `40419d2 docs: design import history settings overview`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `memory-bank/import-job-history-settings-overview-plan.md`.
+  - Step 74A section from `memory-bank/import-job-history-database-model-plan.md`.
+  - `apps/web/src/SettingsApiIntegrations.tsx`.
+  - `apps/web/src/SettingsBoundary.tsx`.
+  - Settings navigation and permission boundary in `apps/web/src/App.tsx`.
+  - `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/types.ts`.
+  - Existing Web tests for Settings, App, and Import job history.
+- Web files updated:
+  - Added `apps/web/src/SettingsImportJobHistoryOverview.tsx`.
+  - Added `apps/web/src/SettingsImportJobHistoryOverview.test.tsx`.
+  - Updated `apps/web/src/SettingsApiIntegrations.tsx`.
+  - Updated `apps/web/src/SettingsApiIntegrations.test.tsx`.
+  - Updated `apps/web/src/ImportJobHistoryPanel.tsx` to export safe display helpers.
+- Documentation updated:
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Implementation evidence:
+  - The overview is mounted inside the existing Settings page as `Import history overview`.
+  - The overview remains a secondary read-only index; Department, User account, and Achievement page-local entries keep fixed filters.
+  - The overview reuses `listImportJobHistory` and `getImportJobHistoryDetail`; no backend route was added.
+  - Default settings overview query is `{ page: 1, pageSize: 20 }`.
+  - Filter query coverage includes `family`, `mode`, `achievementType`, `status`, `createdFrom`, and `createdTo`.
+  - Non-pagination filter changes reset `page` to `1`; pagination changes only `page` and `pageSize`.
+  - List display covers family, mode, achievement type or `N/A`, status, aggregate counts, safe machine error codes, `createdAt`, and `completedAt`.
+  - Detail display uses sanitized safe summary, run status, run `auditCount`, and replay/in-flight/rejected/failed explanations.
+  - The settings overview does not display opaque import job ids.
+  - Users without `system:config` do not render the overview and do not call import-history client methods from the overview component.
+  - No retry, delete, cleanup, rollback, download, export, raw JSON copy, or bulk-action labels are rendered by the overview.
+  - No raw CSV, raw audit ids, personal identifiers, business-object names, credential/session/token/cookie/password/connection-string values, or import-row-derived business detail links were added.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- SettingsImportJobHistory SettingsApiIntegrations App ImportJobHistory`: PASS, 5 files / 35 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS, with the existing Vite large chunk warning.
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; Web and docs files only.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 74B files plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, raw audit IDs, personal identifier display, backend/schema/migration/package/lockfile/config changes, or forbidden write controls.
+- Boundary:
+  - No backend, Prisma schema, migration, package, lockfile, config, Docker, browser, database, production/VPS, import apply, retry, delete, cleanup, rollback, download, export, raw JSON copy, bulk action, or business-object drilldown work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-04 Step 74A - Settings/system import history overview design evidence
 
 - Goal:
