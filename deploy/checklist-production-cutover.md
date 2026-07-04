@@ -43,6 +43,7 @@ This checklist is for a single VPS production cutover. It must not contain real 
 - [ ] Offsite status recorded with redacted evidence.
 - [ ] Restore-drill plan status recorded; actual restore remains separately authorized.
 - [ ] Restore path is known without exposing credentials.
+- [ ] If import task history readiness is in scope, `memory-bank/import-job-history-production-readonly-preflight-runbook.md` is reviewed as a read-only reference only.
 - [ ] Backup evidence is脱敏 and contains no passwords or connection strings.
 
 ## 4. Migration Target Confirmation
@@ -50,6 +51,7 @@ This checklist is for a single VPS production cutover. It must not contain real 
 - [ ] Migration target is confirmed as production DB using脱敏 summary only.
 - [ ] Migration files reviewed.
 - [ ] If applying the employee-number migration, `deploy/employee-no-production-migration-readiness.md` is reviewed and its stop conditions are accepted.
+- [ ] If import task history readiness is in scope, its runbook is referenced only for read-only migration-state and table-structure checks; it does not authorize migration execution.
 - [ ] No demo users or demo business data will be imported as production data.
 - [ ] `prisma migrate deploy` is authorized for the production migration step.
 - [ ] Migration command is run through the production Compose stack, not demo/staging.
@@ -120,6 +122,8 @@ This checklist is for a single VPS production cutover. It must not contain real 
 - [ ] Readonly search endpoint checked.
 - [ ] Readonly workflow tasks endpoint checked if authorized.
 - [ ] Readonly masked audit logs endpoint checked if authorized.
+- [ ] If import task history readonly checks are authorized, `memory-bank/import-job-history-production-readonly-preflight-runbook.md` boundaries are followed and only safe aggregate evidence is recorded.
+- [ ] Import history detail checks are skipped unless a safe sample alias is separately authorized; raw production sample ids and raw audit ids are not recorded.
 - [ ] `X-Demo-User-Id` without session cannot bypass auth.
 - [ ] No POST/PATCH/PUT/DELETE executed in readonly smoke.
 
@@ -150,6 +154,7 @@ Rollback must be considered if any item occurs:
 - [ ] Bootstrap closed evidence reviewed.
 - [ ] HTTPS cookie smoke evidence reviewed.
 - [ ] GET-only smoke evidence reviewed.
+- [ ] Import task history read-only preflight status is recorded as not in scope, skipped, passed, or blocked without sensitive evidence, if applicable.
 - [ ] Write acceptance status explicitly recorded as completed, deferred, or separately blocked.
 - [ ] Final decision recorded as `GO`, `CONDITIONAL_GO`, `NO_GO`, or `ROLLBACK`.
 

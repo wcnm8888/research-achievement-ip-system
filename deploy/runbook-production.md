@@ -22,6 +22,7 @@ This runbook covers the single VPS production cutover route for the research ach
 - Do not treat demo/staging evidence as production/live smoke evidence.
 - Do not run `docker-compose.demo.yml` as the production stack.
 - Do not remove demo containers, images, volumes, or directories until production `GO` and explicit cleanup confirmation.
+- Do not treat `memory-bank/import-job-history-production-readonly-preflight-runbook.md` as production apply authorization, production/VPS access authorization, or migration execution authorization.
 
 ## Production Environment Preparation
 
@@ -106,6 +107,29 @@ docker compose -f docker-compose.production.yml run --rm api corepack pnpm exec 
 
 Do not run migration against demo/staging Compose or any unconfirmed database target.
 
+## Import Job History Readonly Preflight Reference
+
+If import task history readiness is in scope for a production readiness review,
+first review `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+
+That document is a read-only preflight runbook for `ImportJob` / `ImportRun`,
+history API health, `system:config` permission confirmation, and Web visibility
+checks. It is a reference for discovery and boundary alignment only.
+
+It is not:
+
+- production apply authorization;
+- production/VPS access authorization;
+- production DB access authorization;
+- migration execution authorization;
+- real-data import authorization;
+- retry, delete, cleanup, rollback, download, or export authorization.
+
+Do not paste or record `DATABASE_URL`, passwords, tokens, cookies, connection
+strings, raw production sample ids, raw audit ids, raw CSV, personal identifiers,
+or credentials in chat, docs, logs, screenshots, or commits while using that
+runbook.
+
 ## Foundation Seed
 
 After migration succeeds and before bootstrap admin initialization, run the production foundation seed.
@@ -174,6 +198,12 @@ Suggested GET-only checks:
 - readonly search endpoint
 - readonly workflow tasks endpoint
 - readonly masked audit logs endpoint for authorized admin
+
+If import task history readonly checks are explicitly authorized as part of
+production smoke, use `memory-bank/import-job-history-production-readonly-preflight-runbook.md`
+as the boundary reference. Keep the check GET-only, record only aggregate status,
+counts, HTTP status, and safe machine codes, and skip detail checks unless a safe
+sample alias is separately authorized.
 
 Do not run POST, PATCH, PUT, DELETE, imports, exports, notifications, approvals, or production writes in readonly smoke.
 

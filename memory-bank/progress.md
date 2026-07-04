@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-07-04 Step 75B - Production runbook reference for import history read-only preflight
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only cross-reference task with production-safety wording; no runtime or operational execution.
+- Scope completed:
+  - Linked `memory-bank/import-job-history-production-readonly-preflight-runbook.md` from `deploy/runbook-production.md`.
+  - Linked the same runbook from `deploy/checklist-production-cutover.md`.
+  - Positioned the link under production backup/migration/read-only smoke/checklist discovery areas without turning the Step 75A runbook into an execution step.
+  - Clarified that the Step 75A runbook is read-only preflight reference material only and is not production apply authorization, production/VPS access authorization, production DB access authorization, migration execution authorization, real-data import authorization, or retry/delete/cleanup/rollback/download/export authorization.
+  - Preserved evidence boundaries against recording `DATABASE_URL`, passwords, tokens, cookies, connection strings, raw production sample ids, raw audit IDs, raw CSV, personal identifiers, or credentials.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 75B reference addendum.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production apply, real-data import, migration execution, retry, delete, cleanup, rollback, download, export, DB write, permission modification, credential read, or credential propagation.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 75B docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in five allowed files.
+  - `git status --short`: PASS; staged changes limited to Step 75B docs plus existing untracked local artifacts before commit.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-04 Step 75A - Import job history production read-only preflight runbook
 
 - Status: DONE.

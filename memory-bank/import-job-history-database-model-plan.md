@@ -1236,3 +1236,23 @@ Step 74D closes the settings/system unified read-only import history overview mi
 - Explicit non-authorization covers production apply, real-data import, migration execution, retry/delete/cleanup/rollback, download/export, DB writes, permission modification, credential reads or propagation, and production/VPS access by Step 75A itself.
 
 Step 75A documents the production read-only preflight path only. It does not execute the runbook or authorize production readiness, production access, real-data import, or any write behavior.
+
+## Step 75B Production Runbook Reference Addendum
+
+- Date: 2026-07-04.
+- Scope: documentation-only link-in of the Step 75A import job history production read-only preflight runbook into the production cutover runbook and checklist discovery path.
+- Updated:
+  - `deploy/runbook-production.md`;
+  - `deploy/checklist-production-cutover.md`;
+  - `memory-bank/progress.md`;
+  - `memory-bank/evidence.md`.
+- Non-scope: no execution of the preflight runbook, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no migration execution, no import apply, no runtime/API/Web/schema/migration/package/lockfile/config changes, and no retry/delete/cleanup/rollback/download/export behavior.
+
+### Reference Boundary
+
+- The production runbook now points operators to `memory-bank/import-job-history-production-readonly-preflight-runbook.md` when import task history readiness is in scope.
+- The production cutover checklist now records that the runbook is a read-only reference for backup/migration-state/API/Web visibility boundaries and GET-only smoke, where applicable.
+- The added references explicitly state that the Step 75A runbook is not production apply authorization, production/VPS access authorization, production DB access authorization, migration execution authorization, real-data import authorization, or retry/delete/cleanup/rollback/download/export authorization.
+- The added references preserve the safety boundary against recording `DATABASE_URL`, passwords, tokens, cookies, connection strings, raw production sample ids, raw audit ids, raw CSV, personal identifiers, or credentials.
+
+Step 75B improves discoverability only. It does not execute the Step 75A runbook or expand production authority.
