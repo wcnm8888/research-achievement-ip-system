@@ -1,5 +1,52 @@
 # Evidence
 
+## 2026-07-04 Step 72E - Department import job idempotency local acceptance evidence
+
+- Goal:
+  - Run local production-like API/DB acceptance for Department metadata `CREATE_ONLY` import job history and idempotency with synthetic `S72E_*` data only.
+- Initial state:
+  - `git log -1 --oneline`: `e587b55 feat: add department import job idempotency`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/import-job-history-idempotency-plan.md`.
+  - Targeted Step 72D sections from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - `prisma/schema.prisma` `ImportJob` / `ImportRun` section.
+  - Department import apply service, import job repository, controller, Prisma repository, and existing Step 65C / Step 66C local acceptance helper patterns.
+  - `package.json` and `apps/api/package.json` scripts.
+- Implemented files:
+  - `memory-bank/step72e-department-import-job-acceptance.mjs`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Acceptance helper design:
+  - Starts a temporary local Nest API harness with `NODE_ENV=staging`.
+  - Requires an explicit local non-production `DATABASE_URL` in the current process; it does not read `.env` or `.env.production`.
+  - Uses only synthetic `S72E_*` departments, role, and user data.
+  - Verifies first success, `SUCCESS` replay, `REJECTED` replay, and DB-helper-seeded `RUNNING` in-flight behavior.
+  - Verifies department/audit/job/run consistency for success.
+  - Verifies no extra department/audit/job/run creation for replay and running cases.
+  - Scans persisted job/run JSON summaries for raw CSV content, synthetic department names/codes, raw path, credential/session/token/cookie/password/connection-string/env/storage/mail-payload terms, and URL-like values.
+  - Snapshots non-department side-effect tables after synthetic setup and asserts stability after import acceptance flows.
+- Verification:
+  - `node memory-bank/step72e-department-import-job-acceptance.mjs`: BLOCKED in this shell with sanitized output:
+    - `{"step":"72E","status":"BLOCKED","reason":"DATABASE_URL_NOT_SET",...}`
+  - Reason: `DATABASE_URL` was not set in the current process environment.
+  - No `.env` or `.env.production` content was read, no guessed local connection string was used, and no production/VPS/database access was attempted.
+  - `corepack pnpm --filter @research-ip/api test -- department-import imports.app-module`: PASS, 5 files / 36 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; no complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - Local API/DB acceptance result is not PASS yet; it is blocked until the command is rerun with an explicit local non-production `DATABASE_URL`.
+  - No Web files were changed.
+  - No user/account import or achievement import behavior was changed.
+  - No schema or migration was added.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, Docker/browser execution, cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72D - Department import job history idempotency evidence
 
 - Goal:

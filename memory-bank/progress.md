@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-07-04 Step 72E - Department import job idempotency local acceptance
+
+- Status: BLOCKED_ON_LOCAL_DB_ENV.
+- Scope completed:
+  - Added `memory-bank/step72e-department-import-job-acceptance.mjs`.
+  - The helper is API/DB-only and starts a temporary local Nest API harness against an explicitly provided local non-production `DATABASE_URL`.
+  - The helper uses only synthetic `S72E_*` data and `X-Demo-User-Id` staging auth.
+  - The helper covers:
+    - first successful Department `CREATE_ONLY` apply with department, audit, `ImportJob`, and `ImportRun` consistency checks;
+    - same-key `SUCCESS` replay with no extra department/audit/job/run;
+    - validation-blocked `REJECTED` apply and replay with no partial department/audit write;
+    - DB-helper-seeded same-key `RUNNING` claim returning `IMPORT_IN_PROGRESS`;
+    - persisted job/run JSON summary scan for raw CSV, department names/codes, raw path, and credential/session/token/cookie/password/connection-string/env/storage/mail-payload terms;
+    - non-department side-effect table count stability after synthetic setup.
+- Current blocker:
+  - `node memory-bank/step72e-department-import-job-acceptance.mjs` is blocked in this shell because `DATABASE_URL` is not set in the process environment.
+  - No `.env` or `.env.production` content was read to work around the missing local DB connection.
+  - No guessed connection string was used.
+- Verification:
+  - `node memory-bank/step72e-department-import-job-acceptance.mjs`: BLOCKED with sanitized `DATABASE_URL_NOT_SET`.
+  - `corepack pnpm --filter @research-ip/api test -- department-import imports.app-module`: PASS, 5 files / 36 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS.
+- Explicitly not done:
+  - Local API/DB acceptance has not completed because the required local DB connection was not provided in the environment.
+  - No Web changes.
+  - No user/account import or achievement import wiring.
+  - No schema or migration changes.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, Docker/browser execution, cleanup, deletion, reset, restore, checkout, drop, prune, or known unrelated untracked local artifact handling.
+
 ## 2026-07-04 Step 72D - Department import job history idempotency backend wiring
 
 - Status: DONE.

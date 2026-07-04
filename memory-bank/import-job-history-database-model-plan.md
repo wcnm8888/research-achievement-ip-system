@@ -410,3 +410,30 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
 - Validation-blocked apply marks job/run `REJECTED` and stores a safe validation summary without writing department or audit rows.
 - Same-key `SUCCESS`, `RUNNING`, `REJECTED`, and `FAILED` claims short-circuit before the business write transaction.
 - No user/account import, achievement import, Web UI, schema/migration, apply API execution, Docker/browser, production/VPS, or real-data path was added.
+
+## Step 72E Acceptance Addendum
+
+- Date: 2026-07-04.
+- Added local API/DB acceptance helper `memory-bank/step72e-department-import-job-acceptance.mjs`.
+- Helper scope:
+  - Department metadata `CREATE_ONLY` only.
+  - Synthetic `S72E_*` data only.
+  - Temporary local Nest API harness with `NODE_ENV=staging`.
+  - Explicit local non-production `DATABASE_URL` required from the current process environment.
+  - No Web, user/account import, achievement import, schema/migration, Docker/browser, production/VPS, or real-data path.
+- Helper coverage:
+  - first successful apply creates department rows, audit rows, `ImportJob`, and `ImportRun`;
+  - success job/run statuses and safe summary counts match business/audit writes;
+  - same-key `SUCCESS` replay returns `REPLAYED_SUCCESS` and does not add department/audit/job/run rows;
+  - validation-blocked apply writes job/run `REJECTED` safe summary without partial department/audit writes;
+  - same-key `REJECTED` replay returns stored safe rejection without extra job/run or business writes;
+  - DB-helper seeded `RUNNING` job returns `IMPORT_IN_PROGRESS` without business writes;
+  - persisted job/run JSON summaries are scanned for raw CSV, synthetic department names/codes, raw paths, credentials, sessions, tokens, cookies, passwords, connection strings, env values, storage keys, mail payloads, and URL-like values;
+  - non-department side-effect tables are snapshotted after synthetic setup and checked for stability after the acceptance flows.
+- Current local run status:
+  - `node memory-bank/step72e-department-import-job-acceptance.mjs` was blocked because `DATABASE_URL` was not set in this shell.
+  - The helper failed closed with sanitized `DATABASE_URL_NOT_SET` output.
+  - No `.env` or `.env.production` content was read, no guessed connection string was used, and no production/VPS/database access was attempted.
+- Regression gates during this Step:
+  - `corepack pnpm --filter @research-ip/api test -- department-import imports.app-module`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
