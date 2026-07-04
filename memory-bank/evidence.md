@@ -1,5 +1,47 @@
 # Evidence
 
+## 2026-07-04 Step 72A - Import job history and idempotency plan evidence
+
+- Goal:
+  - Produce a documentation-only plan for durable import job history and idempotency behavior for the import real-write mainline without schema/runtime implementation or production execution.
+- Initial state:
+  - `git log -1 --oneline`: `8f6bce6 docs: archive import real-write readiness`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-real-write-final-archive.md`.
+  - `memory-bank/import-real-write-readiness-review.md`.
+  - `memory-bank/import-real-write-local-acceptance-checklist.md`.
+  - `memory-bank/import-real-write-production-readonly-preflight-runbook.md`.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - Targeted Step 71D section from `memory-bank/progress.md`.
+  - Targeted Step 71D section from `memory-bank/evidence.md`.
+  - Current top section from `memory-bank/decisions.md` for decision numbering/style.
+- Implemented files:
+  - `memory-bank/import-job-history-idempotency-plan.md`.
+  - `memory-bank/import-real-write-final-archive.md`.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Plan evidence:
+  - Covered product goals for import job history and idempotency: duplicate-submit clarity, timeout retry recovery, audit correlation, safe history query, and operator explainability.
+  - Covered data model candidates for future `ImportJob`, `ImportRun`, and deferred `ImportJobItem`.
+  - Covered safe persisted metadata and explicit exclusions for raw CSV content, raw DOI, software registration number, patent number, person names/emails, employee numbers, credentials, tokens, cookies, connection strings, private keys, and `.env` values.
+  - Covered server-side idempotency key dimensions and same-key behavior for success replay, in-flight duplicate submissions, rejected jobs, failed jobs, and unsafe recovery states.
+  - Covered state-machine and transaction-boundary guidance for `PENDING`, `RUNNING`, `SUCCESS`, `FAILED`, `REJECTED`, response-only replay/in-flight dispositions, retryability, and response-timeout recovery.
+  - Reconfirmed compatibility with current first-slice semantics: department `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, achievement `CREATE_DRAFT_ONLY`, no partial success, warning/error blocking, no forbidden side effects, and no PATENT fee/reminder writes.
+  - Recommended backend-only Department `CREATE_ONLY` as the first future implementation slice, with Web history list deferred.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; no complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, runtime/source/schema/API/Web/package/lockfile/config/script change, schema change, migration, cleanup, deletion, reset, restore, checkout, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 71D - Import real-write final archive evidence
 
 - Goal:

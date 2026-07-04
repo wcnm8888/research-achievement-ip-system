@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-07-04 Step 72A - Import job history and idempotency plan
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-job-history-idempotency-plan.md`.
+  - Updated `memory-bank/import-real-write-final-archive.md` with the Step 72A addendum.
+  - Updated `memory-bank/import-real-write-rollout-plan.md` with the Step 72A rollout record.
+  - Recorded decision D251 in `memory-bank/decisions.md`.
+  - Reviewed the requested Step 71A-71D import real-write documents plus targeted Step 71D progress/evidence.
+- Key outcome:
+  - Designed the product goals for import job history and idempotency: duplicate-submit clarity, timeout retry recovery, audit correlation, safe history query, and operator explainability.
+  - Proposed future `ImportJob` / `ImportRun` candidates with `ImportJobItem` deferred unless row-level safe history is needed.
+  - Defined safe fields only: family, mode, achievement type, safe file fingerprint, target environment discriminator, scope hash, operator-safe actor reference, status, safe counts, safe error codes, timestamps, and audit references.
+  - Explicitly prohibited storing CSV raw content, raw DOI, software registration number, patent number, person names/emails, employee numbers, credentials, tokens, cookies, connection strings, private keys, or `.env` values.
+  - Designed idempotency key dimensions and same-key behavior for `SUCCESS`, `RUNNING`, `PENDING`, `REJECTED`, and `FAILED`.
+  - Designed a conservative state machine and transaction boundary so replay after response timeout can return a safe stored result rather than re-running writes.
+  - Recommended backend-only Department `CREATE_ONLY` as the first future implementation slice, with achievement and user/account expansion later.
+- Explicitly not done:
+  - No runtime/source/schema/API/Web/package/lockfile/config/script changes.
+  - No schema change or migration.
+  - No Docker/browser execution.
+  - No apply API execution.
+  - No database writes.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 71D - Import real-write final archive
 
 - Status: DONE.

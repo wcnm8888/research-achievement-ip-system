@@ -579,3 +579,28 @@ After a department create-only apply slice is implemented and accepted, the next
   - Update/merge/reactivation.
   - Production session-cookie acceptance for user/account import.
   - Patent fee/reminder separate slice.
+
+## Step 72A Import Job History And Idempotency Plan
+
+- Date: 2026-07-04.
+- Scope:
+  - Documentation-only plan for durable import job history and idempotency behavior.
+  - Added `memory-bank/import-job-history-idempotency-plan.md`.
+  - No runtime/source/schema/API/Web/package/lockfile/config/script changes.
+  - No schema change, migration, Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Product position:
+  - Current repeated apply safety is conflict-based through `EXISTING_CODE`, `EXISTING_USER`, or `DB_CONFLICT`.
+  - A future `ImportJob` / `ImportRun` ledger should make duplicate submits, timeout retries, audit correlation, status recovery, and import history queryable without re-running writes.
+  - The ledger must not become update/merge/rollback/cleanup, production approval, warning override, or partial-success machinery.
+- Data model direction:
+  - Add `ImportJob` and `ImportRun` in a later schema-authorized Step.
+  - Defer `ImportJobItem` unless row-level safe history is needed.
+  - Store only safe metadata: family, mode, achievement type, safe file fingerprint, target environment discriminator, scope hash, operator-safe actor reference, status, safe counts, safe error codes, timestamps, and audit references.
+  - Do not store CSV raw content, raw DOI, software registration number, patent number, person names/emails, employee numbers, credentials, tokens, cookies, connection strings, private keys, or `.env` values.
+- Idempotency direction:
+  - Derive the server-side key from import family, mode, achievement type where relevant, normalized file fingerprint, operator/department scope, and target environment.
+  - Return safe replay for existing success, in-flight status for running jobs, explicit retry only for retryable failed jobs, and blocking results for rejected or unsafe states.
+- Recommended first implementation slice:
+  - Backend-only Department `CREATE_ONLY` because it has the smallest data graph and least sensitive key material.
+  - Extend later to achievement `PAPER`, `SOFTWARE_COPYRIGHT`, `PATENT`, then user/account pending no-credential after the history and idempotency semantics are stable.
+  - Keep Web history list deferred until backend status semantics are accepted.

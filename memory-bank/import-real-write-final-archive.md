@@ -155,6 +155,23 @@ Product capability route:
 - Add production session-cookie full acceptance for user/account import only under a separately authorized credential/session boundary.
 - Add patent fee/reminder import as a separate slice with its own data model, workflow, notification, reminder, fee, audit, and Web acceptance plan.
 
+## Step 72A Addendum - Import Job History And Idempotency Plan
+
+- Date: 2026-07-04.
+- Added `memory-bank/import-job-history-idempotency-plan.md` as a documentation-only product/engineering plan for durable import job history and idempotency behavior.
+- The plan covers department `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and achievement `CREATE_DRAFT_ONLY` for homogeneous `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` batches.
+- Recommended future model:
+  - `ImportJob` as the durable logical request keyed by family, mode, safe file fingerprint, scope/operator boundary, and target environment.
+  - `ImportRun` as the execution attempt ledger for status transitions, retry decisions, safe counts, safe error codes, and audit references.
+  - `ImportJobItem` deferred unless row-level safe history becomes necessary.
+- Recommended future idempotency behavior:
+  - Same key after success returns a safe replay result such as `REPLAYED_SUCCESS` without re-running writes.
+  - Same key while running returns an in-flight status and does not start another transaction.
+  - Failed jobs may retry only through explicit retryable failure codes and a new run record.
+  - Rejected warning/error/mode/permission cases remain blocked and must not become write retries.
+- Recommended first implementation slice, if separately authorized later: backend-only Department `CREATE_ONLY`, before achievement and user/account expansion.
+- The plan does not authorize schema/migration/runtime implementation, production/VPS access, production apply, database writes, Docker/browser execution, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## Final Archive Position
 
 The import real-write mainline is locally implemented, locally accepted with synthetic data, and documented through production-readiness gates. It is ready for a later separately authorized read-only production preflight or dry-run planning step. It is not ready for unapproved production apply, batch real-data import, warning/error apply, automatic retry, automatic cleanup, or any production action without the explicit family/mode/file/operator/count/backup/stop-condition authorization described above.

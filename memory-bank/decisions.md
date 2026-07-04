@@ -1,5 +1,21 @@
 # Decisions
 
+## D251 - Import job history and idempotency are a future backend-first product slice
+
+- Date: 2026-07-04.
+- Context: Step 72A designs the next import real-write production-hardening direction after Step 71D archived local synthetic closure. The current apply paths are data-effect safe on repeated apply because business conflicts such as `EXISTING_CODE`, `EXISTING_USER`, and `DB_CONFLICT` prevent new rows, but they do not provide a durable import job ledger, replay result, retry history, or status recovery after client timeout. The Step is documentation-only and prohibits runtime/source/schema/API/Web/package/lockfile/config/script changes, schema changes, migrations, Docker/browser execution, apply API execution, database writes, production/VPS access, production DB/config access, `.env` / `.env.production` content reads, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Treat import job history and idempotency as a future separately authorized backend-first product slice.
+  - Prefer `ImportJob` for the logical idempotent request and `ImportRun` for execution attempts, status transitions, retry decisions, safe summaries, and audit references.
+  - Defer `ImportJobItem` unless row-level safe history is required after backend semantics are stable.
+  - Derive idempotency keys server-side from import family, mode, achievement type where relevant, normalized file fingerprint, operator or department scope, and target environment.
+  - Exclude CSV raw content, raw DOI, software registration number, patent number, person names/emails, employee numbers, credentials, tokens, cookies, connection strings, private keys, `.env` values, and other sensitive fields from keys and durable summaries.
+  - Return safe replay for same-key success, in-flight status for same-key running jobs, explicit retry only for retryable failed jobs, and blocking/rejection for warning/error/mode/permission/unsafe states.
+  - Keep first-slice import semantics unchanged: department `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, achievement `CREATE_DRAFT_ONLY`, no partial success, warning/error blocking, no workflow/attachment/fee/reminder/notification/search/resource grant side effects, and no PATENT fee/reminder writes.
+  - If implementation is later authorized, start with backend-only Department `CREATE_ONLY` before achievement and user/account expansion; defer Web history list until backend status semantics are accepted.
+- Scope:
+  - This decision does not authorize schema/migration/runtime/API/Web/package/config implementation, production/VPS writes, production DB access, real-data import, apply API execution, Docker/browser execution, credential/session/lifecycle token creation, invite/reset/real email, workflow/attachment/storage/fee/reminder/notification/search/resource grant side effects, automatic cleanup/delete/rollback/retry, update/merge/reactivation, partial success, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D250 - Step 71A import real-write readiness does not authorize production apply
 
 - Date: 2026-07-04.
