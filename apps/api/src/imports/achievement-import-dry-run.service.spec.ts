@@ -1116,7 +1116,15 @@ describe("AchievementImportDryRunService", () => {
     );
     expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
     expect(repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
-    expect(importJobRepository.claimAchievementCreateDraftJob).not.toHaveBeenCalled();
+    expect(importJobRepository.claimAchievementCreateDraftJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        achievementType: "PATENT",
+        targetEnvironment: "test",
+        scopeType: "GLOBAL_OPERATOR_SCOPE",
+        fileSizeBytes: expect.any(Number),
+        operatorUserId: ids.admin,
+      }),
+    );
     expect(result).toMatchObject({
       importType: "ACHIEVEMENT",
       dryRun: false,
@@ -1136,7 +1144,55 @@ describe("AchievementImportDryRunService", () => {
           achievementStatus: "DRAFT",
         }),
       ],
+      job: {
+        disposition: "EXECUTED",
+        jobId: "import-job-id",
+        runId: "import-run-id",
+      },
     });
+    expect(importJobRepository.markSucceededInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        jobId: "import-job-id",
+        runId: "import-run-id",
+        acceptedRowCount: 1,
+        createdAchievementsCount: 1,
+        createdPaperDetailsCount: 0,
+        createdPatentDetailsCount: 1,
+        createdSoftwareCopyrightDetailsCount: 0,
+        createdContributorsCount: 1,
+        auditCount: 1,
+        safeErrorCodes: [],
+      }),
+    );
+    const successSummary =
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1].safeSummary;
+    const successSummaryJson = JSON.stringify(successSummary);
+    expect(successSummary).toMatchObject({
+      importType: "ACHIEVEMENT",
+      mode: "CREATE_DRAFT_ONLY",
+      achievementType: "PATENT",
+      operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+      createdAchievementsCount: 1,
+      createdPaperDetailsCount: 0,
+      createdPatentDetailsCount: 1,
+      createdSoftwareCopyrightDetailsCount: 0,
+      createdContributorsCount: 1,
+      auditCount: 1,
+    });
+    expect(successSummaryJson).not.toContain("Patent A");
+    expect(successSummaryJson).not.toContain("owner@example.org");
+    expect(successSummaryJson).not.toContain("inventor@example.org");
+    expect(successSummaryJson).not.toContain("Inventor|INVENTOR");
+    expect(successSummaryJson).not.toContain("APP-001");
+    expect(successSummaryJson).not.toContain("APP001");
+    expect(successSummaryJson).not.toContain("CN-001");
+    expect(successSummaryJson).not.toContain("CN001");
+    expect(successSummaryJson).not.toContain("2027-02-03");
+    expect(successSummaryJson).not.toContain("1200.50");
+    expect(successSummaryJson).not.toContain("credential");
+    expect(successSummaryJson).not.toContain("session");
+    expect(successSummaryJson).not.toContain("token");
     const auditInput = auditService.recordEventInTransaction.mock.calls[0]![1];
     const auditJson = JSON.stringify(auditInput);
     expect(auditInput).toMatchObject({
@@ -1167,6 +1223,242 @@ describe("AchievementImportDryRunService", () => {
     expect(auditJson).not.toContain("CN001");
     expect(auditJson).not.toContain("2027-02-03");
     expect(auditJson).not.toContain("1200.50");
+  });
+
+  it("replays same-key successful PATENT imports without business writes", async () => {
+    const { service, repository, prisma, auditService, importJobRepository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      claimResult: {
+        disposition: "REPLAYED_SUCCESS",
+        jobId: "import-job-id",
+        latestRunId: "import-run-id",
+        safeSummary: {
+          importType: "ACHIEVEMENT",
+          mode: "CREATE_DRAFT_ONLY",
+          achievementType: "PATENT",
+          operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+          totalRows: 1,
+          acceptedRowCount: 1,
+          createdAchievementsCount: 1,
+          createdPaperDetailsCount: 0,
+          createdPatentDetailsCount: 1,
+          createdSoftwareCopyrightDetailsCount: 0,
+          createdContributorsCount: 1,
+          auditCount: 1,
+          warningCount: 0,
+          errorCount: 0,
+          errors: [],
+        },
+      },
+    });
+
+    const result = await service.applyAchievementCsv(
+      adminContext,
+      makeFile(
+        "type,title,ownerEmail,departmentCode,contributors,applicationNo,grantNo\nPATENT,Patent A,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,APP-001,CN-001\n",
+      ),
+      "CREATE_DRAFT_ONLY",
+    );
+
+    expect(result).toMatchObject({
+      summary: {
+        createdAchievementsCount: 1,
+        createdPaperDetailsCount: 0,
+        createdPatentDetailsCount: 1,
+        createdSoftwareCopyrightDetailsCount: 0,
+        createdContributorsCount: 1,
+      },
+      rows: [],
+      job: {
+        disposition: "REPLAYED_SUCCESS",
+        jobId: "import-job-id",
+        runId: "import-run-id",
+      },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).not.toHaveBeenCalled();
+  });
+
+  it("returns in-progress for same-key running PATENT imports without business writes", async () => {
+    const { service, repository, prisma, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      claimResult: {
+        disposition: "IMPORT_IN_PROGRESS",
+        jobId: "import-job-id",
+        latestRunId: "import-run-id",
+        safeSummary: null,
+      },
+    });
+
+    const result = await service.applyAchievementCsv(
+      adminContext,
+      makeFile(
+        "type,title,ownerEmail,departmentCode,contributors,applicationNo\nPATENT,Patent A,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,APP-001\n",
+      ),
+      "CREATE_DRAFT_ONLY",
+    );
+
+    expect(result).toMatchObject({
+      summary: {
+        createdAchievementsCount: 0,
+        createdPatentDetailsCount: 0,
+        createdContributorsCount: 0,
+      },
+      rows: [],
+      job: {
+        disposition: "IMPORT_IN_PROGRESS",
+        jobId: "import-job-id",
+        runId: "import-run-id",
+      },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("stores safe rejected PATENT job summaries for grant-only rows without business writes", async () => {
+    const { service, repository, prisma, importJobRepository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,grantNo,nextFeeDate,feeAmount\nPATENT,Secret Patent,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,CN-001,2027-02-03,1200.50\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "applicationNo", code: "REQUIRED" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobId: "import-job-id",
+        runId: "import-run-id",
+        safeErrorCodes: ["REQUIRED"],
+      }),
+    );
+    const rejectedSummary = importJobRepository.markRejected.mock.calls[0]![0].safeSummary;
+    const rejectedSummaryJson = JSON.stringify(rejectedSummary);
+    expect(rejectedSummary).toMatchObject({
+      importType: "ACHIEVEMENT",
+      mode: "CREATE_DRAFT_ONLY",
+      achievementType: "PATENT",
+      operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+      createdAchievementsCount: 0,
+      createdPaperDetailsCount: 0,
+      createdPatentDetailsCount: 0,
+      createdSoftwareCopyrightDetailsCount: 0,
+      createdContributorsCount: 0,
+      auditCount: 0,
+      errorCount: 1,
+      errors: [expect.objectContaining({ field: "applicationNo", code: "REQUIRED" })],
+    });
+    expect(rejectedSummaryJson).not.toContain("Secret Patent");
+    expect(rejectedSummaryJson).not.toContain("owner@example.org");
+    expect(rejectedSummaryJson).not.toContain("CN-001");
+    expect(rejectedSummaryJson).not.toContain("CN001");
+    expect(rejectedSummaryJson).not.toContain("nextFeeDate");
+    expect(rejectedSummaryJson).not.toContain("feeAmount");
+    expect(rejectedSummaryJson).not.toContain("2027-02-03");
+    expect(rejectedSummaryJson).not.toContain("1200.50");
+    expect(rejectedSummaryJson).not.toContain("credential");
+    expect(rejectedSummaryJson).not.toContain("session");
+    expect(rejectedSummaryJson).not.toContain("token");
+  });
+
+  it("stores safe rejected PATENT job summaries for warning-blocked identifier conflicts", async () => {
+    const { service, repository, prisma, importJobRepository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      conflicts: [{ field: "applicationNo", normalizedValue: "APP001" }],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,applicationNo,grantNo\nPATENT,Secret Patent,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,APP-001,CN-001\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "applicationNo", code: "DB_CONFLICT" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        safeErrorCodes: ["DB_CONFLICT"],
+      }),
+    );
+    const rejectedSummaryJson = JSON.stringify(
+      importJobRepository.markRejected.mock.calls[0]![0].safeSummary,
+    );
+    expect(rejectedSummaryJson).not.toContain("APP-001");
+    expect(rejectedSummaryJson).not.toContain("APP001");
+    expect(rejectedSummaryJson).not.toContain("CN-001");
+    expect(rejectedSummaryJson).not.toContain("CN001");
+    expect(rejectedSummaryJson).not.toContain("Secret Patent");
+    expect(rejectedSummaryJson).not.toContain("owner@example.org");
+  });
+
+  it("redacts PATENT fee and reminder field validation details from stored job summaries", async () => {
+    const { service, repository, prisma, importJobRepository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,applicationNo,nextFeeDate,feeAmount\nPATENT,Secret Patent,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,APP-001,not-a-date,1200.501\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "nextFeeDate", code: "INVALID_FORMAT" }),
+          expect.objectContaining({ field: "feeAmount", code: "INVALID_FORMAT" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        safeErrorCodes: ["INVALID_FORMAT"],
+      }),
+    );
+    const rejectedSummaryJson = JSON.stringify(
+      importJobRepository.markRejected.mock.calls[0]![0].safeSummary,
+    );
+    expect(rejectedSummaryJson).not.toContain("nextFeeDate");
+    expect(rejectedSummaryJson).not.toContain("feeAmount");
+    expect(rejectedSummaryJson).not.toContain("not-a-date");
+    expect(rejectedSummaryJson).not.toContain("1200.501");
+    expect(rejectedSummaryJson).not.toContain("APP-001");
+    expect(rejectedSummaryJson).not.toContain("APP001");
+    expect(rejectedSummaryJson).not.toContain("Secret Patent");
   });
 
   it("rejects unsupported apply mode before parsing or writing", async () => {
@@ -1296,7 +1588,7 @@ describe("AchievementImportDryRunService", () => {
   });
 
   it("rejects missing patent application number during apply even when dry-run can preview the row", async () => {
-    const { service, prisma } = createService({
+    const { service, prisma, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
     });
@@ -1317,6 +1609,16 @@ describe("AchievementImportDryRunService", () => {
     });
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        safeErrorCodes: ["REQUIRED"],
+        safeSummary: expect.objectContaining({
+          achievementType: "PATENT",
+          createdPatentDetailsCount: 0,
+          errorCount: 1,
+        }),
+      }),
+    );
   });
 
   it("blocks apply when the dry-run plan has warnings or errors", async () => {

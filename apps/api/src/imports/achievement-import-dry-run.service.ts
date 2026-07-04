@@ -869,6 +869,7 @@ type StoredAchievementImportSafeError = {
 
 type ImportJobAchievementType =
   | typeof AchievementTypeCode.paper
+  | typeof AchievementTypeCode.patent
   | typeof AchievementTypeCode.softwareCopyright;
 
 type StoredAchievementImportSafeSummary = {
@@ -880,6 +881,7 @@ type StoredAchievementImportSafeSummary = {
   acceptedRowCount: number;
   createdAchievementsCount: number;
   createdPaperDetailsCount: number;
+  createdPatentDetailsCount: number;
   createdSoftwareCopyrightDetailsCount: number;
   createdContributorsCount: number;
   auditCount: number;
@@ -996,6 +998,7 @@ const toSuccessfulAchievementImportJobInput = (
     acceptedRowCount: plan.summary.createDraftCandidates,
     createdAchievementsCount: rows.length,
     createdPaperDetailsCount: rows.filter((row) => row.type === AchievementTypeCode.paper).length,
+    createdPatentDetailsCount: rows.filter((row) => row.type === AchievementTypeCode.patent).length,
     createdSoftwareCopyrightDetailsCount: rows.filter(
       (row) => row.type === AchievementTypeCode.softwareCopyright,
     ).length,
@@ -1015,6 +1018,7 @@ const toSuccessfulAchievementImportJobInput = (
     acceptedRowCount: safeSummary.acceptedRowCount,
     createdAchievementsCount: safeSummary.createdAchievementsCount,
     createdPaperDetailsCount: safeSummary.createdPaperDetailsCount,
+    createdPatentDetailsCount: safeSummary.createdPatentDetailsCount,
     createdSoftwareCopyrightDetailsCount:
       safeSummary.createdSoftwareCopyrightDetailsCount,
     createdContributorsCount: safeSummary.createdContributorsCount,
@@ -1042,6 +1046,7 @@ const toRejectedAchievementImportJobInput = (
     acceptedRowCount: 0,
     createdAchievementsCount: 0,
     createdPaperDetailsCount: 0,
+    createdPatentDetailsCount: 0,
     createdSoftwareCopyrightDetailsCount: 0,
     createdContributorsCount: 0,
     auditCount: 0,
@@ -1073,9 +1078,12 @@ const toStoredSafeError = (
   error: AchievementImportApplyErrorSummary,
 ): StoredAchievementImportSafeError => ({
   rowNumber: error.rowNumber,
-  field: error.field,
+  field: toSafeStoredErrorField(error.field),
   code: error.code,
 });
+
+const toSafeStoredErrorField = (field: string): string =>
+  field === "nextFeeDate" || field === "feeAmount" ? "patentFeeBoundary" : field;
 
 const toStoredSafeErrorResult = (
   error: StoredAchievementImportSafeError,
@@ -1110,6 +1118,7 @@ const toStoredAchievementImportSafeSummary = (
     acceptedRowCount: safeNumber(summary.acceptedRowCount),
     createdAchievementsCount: safeNumber(summary.createdAchievementsCount),
     createdPaperDetailsCount: safeNumber(summary.createdPaperDetailsCount),
+    createdPatentDetailsCount: safeNumber(summary.createdPatentDetailsCount),
     createdSoftwareCopyrightDetailsCount: safeNumber(
       summary.createdSoftwareCopyrightDetailsCount,
     ),
@@ -1147,7 +1156,7 @@ const toApplySummaryFromStoredAchievementSafeSummary = (
   totalRows: summary.totalRows,
   createdAchievementsCount: summary.createdAchievementsCount,
   createdPaperDetailsCount: summary.createdPaperDetailsCount,
-  createdPatentDetailsCount: 0,
+  createdPatentDetailsCount: summary.createdPatentDetailsCount,
   createdSoftwareCopyrightDetailsCount: summary.createdSoftwareCopyrightDetailsCount,
   createdContributorsCount: summary.createdContributorsCount,
   skippedRows: summary.warningCount,
@@ -1185,6 +1194,10 @@ const getImportJobAchievementType = (
     return AchievementTypeCode.paper;
   }
 
+  if (plan.rows.every((row) => row.parsed.type === AchievementTypeCode.patent)) {
+    return AchievementTypeCode.patent;
+  }
+
   if (
     plan.rows.every(
       (row) => row.parsed.type === AchievementTypeCode.softwareCopyright,
@@ -1200,13 +1213,16 @@ const isImportJobAchievementType = (
   value: unknown,
 ): value is ImportJobAchievementType =>
   value === AchievementTypeCode.paper ||
+  value === AchievementTypeCode.patent ||
   value === AchievementTypeCode.softwareCopyright;
 
 const toPrismaImportJobAchievementType = (
   achievementType: ImportJobAchievementType,
-): "PAPER" | "SOFTWARE_COPYRIGHT" =>
+): "PAPER" | "PATENT" | "SOFTWARE_COPYRIGHT" =>
   achievementType === AchievementTypeCode.paper
     ? "PAPER"
+    : achievementType === AchievementTypeCode.patent
+      ? "PATENT"
     : "SOFTWARE_COPYRIGHT";
 
 const toApplyErrorSummaries = (

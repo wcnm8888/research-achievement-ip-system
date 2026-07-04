@@ -10,7 +10,7 @@ import {
 import { PrismaService } from "../database/prisma.service";
 
 export type AchievementImportJobClaimInput = {
-  achievementType: "PAPER" | "SOFTWARE_COPYRIGHT";
+  achievementType: "PAPER" | "PATENT" | "SOFTWARE_COPYRIGHT";
   idempotencyKeyHash: string;
   targetEnvironment: string;
   scopeType: string;
@@ -49,6 +49,7 @@ export type AchievementImportJobSuccessInput = {
   acceptedRowCount: number;
   createdAchievementsCount: number;
   createdPaperDetailsCount: number;
+  createdPatentDetailsCount: number;
   createdSoftwareCopyrightDetailsCount: number;
   createdContributorsCount: number;
   auditCount: number;
@@ -161,6 +162,7 @@ export class AchievementImportJobRepository {
         createdBusinessCount: input.createdAchievementsCount,
         createdCompanionCount:
           input.createdPaperDetailsCount +
+          input.createdPatentDetailsCount +
           input.createdSoftwareCopyrightDetailsCount +
           input.createdContributorsCount,
         auditCount: input.auditCount,

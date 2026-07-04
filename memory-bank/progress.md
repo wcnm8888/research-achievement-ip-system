@@ -1,5 +1,41 @@
 # Progress
 
+## 2026-07-04 Step 72J - Patent achievement import job idempotency backend wiring
+
+- Status: DONE.
+- Scope completed:
+  - Updated `apps/api/src/imports/achievement-import-job.repository.ts`.
+  - Updated `apps/api/src/imports/achievement-import-job.repository.spec.ts`.
+  - Updated `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - Updated `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/evidence.md`.
+- Key outcome:
+  - `PATENT` apply now computes server-side idempotency from family `ACHIEVEMENT`, mode `CREATE_DRAFT_ONLY`, achievement type `PATENT`, SHA-256 file fingerprint, safe target environment discriminator, scope type, and scope hash.
+  - First same-key `PATENT` apply creates `ImportJob` + `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` without opening the business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` without opening the business transaction.
+  - Same-key `REJECTED` returns stored safe rejection through the existing rejected error path.
+  - Same-key `FAILED` blocks automatic retry.
+  - Successful `PATENT` apply keeps achievement creation, `PatentDetail`, contributors, audit writes, `ImportRun` success summary, and `ImportJob` success summary in one Prisma transaction.
+  - Validation-blocked `PATENT` apply stores safe `REJECTED` summary without writing achievement/detail/contributor/audit rows.
+  - Persisted safe summaries store only safe counts, operation/status/code fields, and do not store raw CSV, raw/normalized application number, raw/normalized grant number, title, owner/contributor email/name, `nextFeeDate`, `feeAmount`, raw path, credential/session/token/cookie/password/connection string/env/storage/mail payload values.
+  - Validation fields for patent fee/reminder inputs are redacted in stored job summaries.
+  - PATENT remains draft-only and all-or-nothing; it still does not write `nextFeeDate` / `feeAmount` or create fee/reminder/workflow/attachment/notification/search/resource grant side effects.
+  - PAPER and `SOFTWARE_COPYRIGHT` job/idempotency regression tests still pass.
+- Explicitly not done:
+  - No Web changes.
+  - No user/account import idempotency wiring.
+  - No schema or migration changes.
+  - No apply API execution.
+  - No real business data writes.
+  - No Docker/browser execution.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import`: PASS, 4 files / 48 tests.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import department-import imports.app-module`: PASS, 9 files / 84 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+
 ## 2026-07-04 Step 72I - Software copyright import job idempotency local acceptance
 
 - Status: DONE.

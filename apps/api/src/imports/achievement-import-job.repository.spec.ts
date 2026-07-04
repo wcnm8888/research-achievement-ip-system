@@ -97,6 +97,45 @@ describe("AchievementImportJobRepository", () => {
     });
   });
 
+  it("creates a running ACHIEVEMENT PATENT job for a first same-key claim", async () => {
+    const tx = {
+      importJob: {
+        create: vi.fn().mockResolvedValue({ id: "job-1" }),
+        update: vi.fn().mockResolvedValue({ id: "job-1" }),
+      },
+      importRun: {
+        create: vi.fn().mockResolvedValue({ id: "run-1" }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+      importJob: {
+        findFirst: vi.fn(),
+      },
+    };
+    const repository = new AchievementImportJobRepository(prisma as never);
+
+    const result = await repository.claimAchievementCreateDraftJob({
+      ...claimInput,
+      achievementType: "PATENT",
+    });
+
+    expect(result).toEqual({
+      disposition: "RUNNER",
+      jobId: "job-1",
+      runId: "run-1",
+    });
+    expect(tx.importJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        importFamily: "ACHIEVEMENT",
+        mode: "CREATE_DRAFT_ONLY",
+        achievementType: "PATENT",
+        status: "RUNNING",
+      }),
+      select: { id: true },
+    });
+  });
+
   it("resolves a same-key unique conflict as in-progress without creating another run", async () => {
     const tx = {
       importJob: {

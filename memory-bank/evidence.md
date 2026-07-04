@@ -1,5 +1,56 @@
 # Evidence
 
+## 2026-07-04 Step 72J - Patent achievement import job idempotency evidence
+
+- Goal:
+  - Add backend-only `ImportJob` / `ImportRun` history and idempotency behavior for Achievement `PATENT` `CREATE_DRAFT_ONLY` apply without Web changes, user-account wiring, schema/migration changes, apply API execution, Docker/browser, production/VPS access, or real-data writes.
+- Initial state:
+  - `git log -1 --oneline`: `8dc9d8f test: add software import job acceptance`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - Targeted Step 72H / 72I sections from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - `apps/api/src/imports/achievement-import-job.repository.ts`.
+  - Achievement import dry-run/apply service, repository, tests, PatentDetail create path, and Prisma `ImportJob` / `ImportRun` schema.
+- Implemented files:
+  - `apps/api/src/imports/achievement-import-job.repository.ts`.
+  - `apps/api/src/imports/achievement-import-job.repository.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - Achievement job claim now supports `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+  - `PATENT` apply derives idempotency server-side using `ACHIEVEMENT`, `CREATE_DRAFT_ONLY`, `PATENT`, SHA-256 file fingerprint, safe target environment discriminator, scope type, and scope hash.
+  - First `PATENT` same-key claim creates `ImportJob` and `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` with stored safe counts and no business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` with no business transaction.
+  - Same-key `REJECTED` and `FAILED` are returned through the existing rejected error path; `FAILED` remains non-retryable.
+  - `PATENT` success path updates achievement row, `PatentDetail`, contributors, audit rows, `ImportRun` success summary, and `ImportJob` success summary inside the same Prisma transaction.
+  - `PATENT` validation warning/error rejection stores `REJECTED` safe summary and writes no achievement/detail/contributor/audit rows.
+  - Patent fee/reminder validation field names are redacted in persisted job summaries.
+  - Safe summary tests assert persisted summaries exclude raw title, owner/contributor email/name fragments, application/grant identifier fragments, `nextFeeDate`, `feeAmount`, raw validation values, credential/session/token strings, and only contain safe counts/codes/status/operation values.
+  - PAPER and `SOFTWARE_COPYRIGHT` job/idempotency behavior remains covered by regression tests.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import`: PASS, 4 files / 48 tests.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import department-import imports.app-module`: PASS, 9 files / 84 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Boundary:
+  - No Web files were changed.
+  - No user/account import job/idempotency behavior was added.
+  - No schema or migration was added.
+  - No apply API was executed.
+  - No real business data was written.
+  - No Docker/browser execution occurred.
+  - No `.env` or `.env.production` content was read or output.
+  - No `nextFeeDate` / `feeAmount` write path or fee/reminder/notification/search/resource grant/workflow/attachment side effect was added.
+  - No raw CSV, raw/normalized patent identifier, title, owner/contributor email/name, raw path, credential, password, token, cookie, connection string, storage key, or mail payload was printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72I - Software copyright import job idempotency local acceptance evidence
 
 - Goal:
