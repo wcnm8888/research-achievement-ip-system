@@ -5,6 +5,7 @@ import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
 import { UserContext } from "../identity/user-context";
 import { AchievementImportDryRunRepository } from "./achievement-import-dry-run.repository";
+import { AchievementImportJobRepository } from "./achievement-import-job.repository";
 import {
   AchievementImportDryRunService,
   InvalidAchievementImportCsvError,
@@ -82,6 +83,16 @@ const createService = (input: {
     field: "registrationNo";
     normalizedValue: string;
   }>;
+  claimResult?: {
+    disposition: "RUNNER";
+    jobId: string;
+    runId: string;
+  } | {
+    disposition: "REPLAYED_SUCCESS" | "IMPORT_IN_PROGRESS" | "REJECTED" | "FAILED";
+    jobId: string;
+    latestRunId: string | null;
+    safeSummary: unknown;
+  };
   createError?: unknown;
   auditError?: unknown;
 } = {}) => {
@@ -200,13 +211,27 @@ const createService = (input: {
       return Promise.resolve({ id: "audit-log-id" });
     }),
   };
+  const importJobRepository = {
+    claimPaperCreateDraftJob: vi.fn().mockResolvedValue(
+      input.claimResult ?? {
+        disposition: "RUNNER",
+        jobId: "import-job-id",
+        runId: "import-run-id",
+      },
+    ),
+    markSucceededInTransaction: vi.fn().mockResolvedValue(undefined),
+    markRejected: vi.fn().mockResolvedValue(undefined),
+    markFailed: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
     auditService,
+    importJobRepository,
     prisma,
     repository,
     service: new AchievementImportDryRunService(
       repository as unknown as AchievementImportDryRunRepository,
+      importJobRepository as unknown as AchievementImportJobRepository,
       prisma as never,
       auditService as never,
     ),
@@ -447,8 +472,8 @@ describe("AchievementImportDryRunService", () => {
     ).rejects.toThrow(InvalidAchievementImportCsvError);
   });
 
-  it("applies PAPER rows as draft achievements with detail, contributors, and safe audit", async () => {
-    const { service, repository, prisma, auditService } = createService({
+  it("applies PAPER rows as draft achievements with detail, contributors, audit, and job success", async () => {
+    const { service, repository, prisma, auditService, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [
         activeUser("owner@example.org"),
@@ -505,7 +530,55 @@ describe("AchievementImportDryRunService", () => {
         createdContributorsCount: 1,
         auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
       },
+      job: {
+        disposition: "EXECUTED",
+        jobId: "import-job-id",
+        runId: "import-run-id",
+      },
     });
+    expect(importJobRepository.claimPaperCreateDraftJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetEnvironment: "test",
+        scopeType: "GLOBAL_OPERATOR_SCOPE",
+        fileSizeBytes: expect.any(Number),
+        operatorUserId: ids.admin,
+      }),
+    );
+    expect(importJobRepository.markSucceededInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        jobId: "import-job-id",
+        runId: "import-run-id",
+        acceptedRowCount: 1,
+        createdAchievementsCount: 1,
+        createdPaperDetailsCount: 1,
+        createdContributorsCount: 1,
+        auditCount: 1,
+        safeErrorCodes: [],
+      }),
+    );
+    const successSummary =
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1].safeSummary;
+    const successSummaryJson = JSON.stringify(successSummary);
+    expect(successSummary).toMatchObject({
+      importType: "ACHIEVEMENT",
+      mode: "CREATE_DRAFT_ONLY",
+      achievementType: "PAPER",
+      operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+      createdAchievementsCount: 1,
+      createdPaperDetailsCount: 1,
+      createdContributorsCount: 1,
+      auditCount: 1,
+    });
+    expect(successSummaryJson).not.toContain("Paper A");
+    expect(successSummaryJson).not.toContain("Hidden abstract");
+    expect(successSummaryJson).not.toContain("owner@example.org");
+    expect(successSummaryJson).not.toContain("contributor@example.org");
+    expect(successSummaryJson).not.toContain("Contributor|AUTHOR");
+    expect(successSummaryJson).not.toContain("10.1000");
+    expect(successSummaryJson).not.toContain("credential");
+    expect(successSummaryJson).not.toContain("session");
+    expect(successSummaryJson).not.toContain("token");
     const auditInput = auditService.recordEventInTransaction.mock.calls[0]![1];
     const auditJson = JSON.stringify(auditInput);
     expect(auditInput).toMatchObject({
@@ -534,8 +607,152 @@ describe("AchievementImportDryRunService", () => {
     expect(auditJson).not.toContain("10.1000");
   });
 
-  it("applies SOFTWARE_COPYRIGHT rows as draft achievements with detail, contributors, and safe audit", async () => {
+  it("replays same-key successful PAPER imports without business writes", async () => {
+    const { service, repository, prisma, auditService, importJobRepository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      claimResult: {
+        disposition: "REPLAYED_SUCCESS",
+        jobId: "import-job-id",
+        latestRunId: "import-run-id",
+        safeSummary: {
+          importType: "ACHIEVEMENT",
+          mode: "CREATE_DRAFT_ONLY",
+          achievementType: "PAPER",
+          operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+          totalRows: 1,
+          acceptedRowCount: 1,
+          createdAchievementsCount: 1,
+          createdPaperDetailsCount: 1,
+          createdContributorsCount: 1,
+          auditCount: 1,
+          warningCount: 0,
+          errorCount: 0,
+          errors: [],
+        },
+      },
+    });
+
+    const result = await service.applyAchievementCsv(
+      adminContext,
+      makeFile(
+        "type,title,ownerEmail,departmentCode,contributors,doi\nPAPER,Paper A,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/replay\n",
+      ),
+      "CREATE_DRAFT_ONLY",
+    );
+
+    expect(result).toMatchObject({
+      summary: {
+        createdAchievementsCount: 1,
+        createdPaperDetailsCount: 1,
+        createdContributorsCount: 1,
+      },
+      rows: [],
+      job: {
+        disposition: "REPLAYED_SUCCESS",
+        jobId: "import-job-id",
+        runId: "import-run-id",
+      },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).not.toHaveBeenCalled();
+  });
+
+  it("returns in-progress for same-key running PAPER imports without business writes", async () => {
     const { service, repository, prisma, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      claimResult: {
+        disposition: "IMPORT_IN_PROGRESS",
+        jobId: "import-job-id",
+        latestRunId: "import-run-id",
+        safeSummary: null,
+      },
+    });
+
+    const result = await service.applyAchievementCsv(
+      adminContext,
+      makeFile(
+        "type,title,ownerEmail,departmentCode,contributors,doi\nPAPER,Paper A,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/running\n",
+      ),
+      "CREATE_DRAFT_ONLY",
+    );
+
+    expect(result).toMatchObject({
+      summary: {
+        createdAchievementsCount: 0,
+        createdPaperDetailsCount: 0,
+        createdContributorsCount: 0,
+      },
+      rows: [],
+      job: {
+        disposition: "IMPORT_IN_PROGRESS",
+        jobId: "import-job-id",
+        runId: "import-run-id",
+      },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("stores safe rejected PAPER job summaries for missing DOI without business writes", async () => {
+    const { service, repository, prisma, importJobRepository } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors\nPAPER,Secret Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "doi", code: "REQUIRED" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobId: "import-job-id",
+        runId: "import-run-id",
+        safeErrorCodes: ["REQUIRED"],
+      }),
+    );
+    const rejectedSummary = importJobRepository.markRejected.mock.calls[0]![0].safeSummary;
+    const rejectedSummaryJson = JSON.stringify(rejectedSummary);
+    expect(rejectedSummary).toMatchObject({
+      importType: "ACHIEVEMENT",
+      mode: "CREATE_DRAFT_ONLY",
+      achievementType: "PAPER",
+      operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+      createdAchievementsCount: 0,
+      createdPaperDetailsCount: 0,
+      createdContributorsCount: 0,
+      auditCount: 0,
+      errorCount: 1,
+      errors: [expect.objectContaining({ field: "doi", code: "REQUIRED" })],
+    });
+    expect(rejectedSummaryJson).not.toContain("Secret Paper");
+    expect(rejectedSummaryJson).not.toContain("owner@example.org");
+    expect(rejectedSummaryJson).not.toContain("10.1000");
+    expect(rejectedSummaryJson).not.toContain("credential");
+    expect(rejectedSummaryJson).not.toContain("session");
+    expect(rejectedSummaryJson).not.toContain("token");
+  });
+
+  it("applies SOFTWARE_COPYRIGHT rows as draft achievements with detail, contributors, and safe audit", async () => {
+    const { service, repository, prisma, auditService, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [
         activeUser("owner@example.org"),
@@ -589,6 +806,7 @@ describe("AchievementImportDryRunService", () => {
       }),
     );
     expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.claimPaperCreateDraftJob).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       importType: "ACHIEVEMENT",
       dryRun: false,
@@ -638,7 +856,7 @@ describe("AchievementImportDryRunService", () => {
   });
 
   it("applies PATENT rows as draft achievements with detail, contributors, and safe audit", async () => {
-    const { service, repository, prisma, auditService } = createService({
+    const { service, repository, prisma, auditService, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [
         activeUser("owner@example.org"),
@@ -698,6 +916,7 @@ describe("AchievementImportDryRunService", () => {
     );
     expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
     expect(repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.claimPaperCreateDraftJob).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       importType: "ACHIEVEMENT",
       dryRun: false,

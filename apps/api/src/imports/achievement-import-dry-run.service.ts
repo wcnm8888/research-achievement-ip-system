@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DepartmentStatus, UserStatus } from "@prisma/client";
+import { createHash } from "node:crypto";
+import { DepartmentStatus, Prisma, UserStatus } from "@prisma/client";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -39,6 +40,13 @@ import {
   AchievementImportNormalizedConflict,
   AchievementImportUserLookup,
 } from "./achievement-import-dry-run.repository";
+import {
+  AchievementImportJobRepository,
+  PaperImportJobClaimInput,
+  PaperImportJobClaimResult,
+  PaperImportJobExistingClaim,
+  PaperImportJobTransactionClient,
+} from "./achievement-import-job.repository";
 import {
   appendColumnValidationIssues,
   buildImportDryRunFileMetadata,
@@ -284,6 +292,17 @@ export type AchievementImportApplySummary = {
   auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT";
 };
 
+export type AchievementImportApplyJobDisposition =
+  | "EXECUTED"
+  | "REPLAYED_SUCCESS"
+  | "IMPORT_IN_PROGRESS";
+
+export type AchievementImportApplyJobSummary = {
+  disposition: AchievementImportApplyJobDisposition;
+  jobId: string;
+  runId: string | null;
+};
+
 export type AchievementImportApplyResult = {
   importType: typeof achievementImportType;
   dryRun: false;
@@ -292,6 +311,7 @@ export type AchievementImportApplyResult = {
   summary: AchievementImportApplySummary;
   errors: AchievementImportApplyErrorSummary[];
   rows: AchievementImportApplyRow[];
+  job?: AchievementImportApplyJobSummary;
 };
 
 type AchievementImportPlan = {
@@ -355,6 +375,8 @@ export class AchievementImportDryRunService {
   constructor(
     @Inject(AchievementImportDryRunRepository)
     private readonly repository: AchievementImportDryRunRepository,
+    @Inject(AchievementImportJobRepository)
+    private readonly importJobRepository: AchievementImportJobRepository,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(AuditService)
@@ -387,133 +409,95 @@ export class AchievementImportDryRunService {
     }
 
     const plan = await this.buildAchievementImportPlan(file);
-    assertPlanCanApply(plan);
+    if (!isPaperOnlyPlan(plan)) {
+      assertPlanCanApply(plan);
+      return this.applyAchievementPlanWithoutJob(context, plan);
+    }
 
-    const rowsToCreate = plan.resolvedRows;
+    const idempotency = buildPaperImportIdempotency(context, file);
+    const claim = await this.importJobRepository.claimPaperCreateDraftJob({
+      ...idempotency,
+      fileSizeBytes: file.size,
+      operatorUserId: context.userId,
+    });
+    if (claim.disposition !== "RUNNER") {
+      const existingResult = toExistingPaperImportJobApplyResult(file, claim);
+      if (claim.disposition === "REJECTED" || claim.disposition === "FAILED") {
+        throw new AchievementImportApplyRejectedError(
+          claim.disposition === "FAILED"
+            ? "Paper import job is failed and retry is not enabled."
+            : "Paper import apply was already rejected.",
+          existingResult,
+        );
+      }
+
+      return existingResult;
+    }
 
     try {
-      const appliedRows = await this.prisma.$transaction(async (tx) => {
-        const importClient = tx as AchievementImportApplyTransactionClient;
-        const auditClient = tx as AuditTransactionClient;
-
-        const [
-          departments,
-          users,
-          doiConflicts,
-          applicationNoConflicts,
-          patentNoConflicts,
-          registrationNoConflicts,
-        ] = await Promise.all([
-          this.repository.findApplyDepartmentsByCodesInTransaction(
-            importClient,
-            collectDepartmentCodesFromResolvedRows(rowsToCreate),
-          ),
-          this.repository.findApplyUsersByEmailsInTransaction(
-            importClient,
-            collectEmailsFromResolvedRows(rowsToCreate),
-          ),
-          this.repository.findApplyPaperDoiConflictsInTransaction(
-            importClient,
-            collectDoiNormalizedFromResolvedRows(rowsToCreate),
-          ),
-          this.repository.findApplyPatentApplicationConflictsInTransaction(
-            importClient,
-            collectApplicationNoNormalizedFromResolvedRows(rowsToCreate),
-          ),
-          this.repository.findApplyPatentNoConflictsInTransaction(
-            importClient,
-            collectPatentNoNormalizedFromResolvedRows(rowsToCreate),
-          ),
-          this.repository.findApplySoftwareRegistrationConflictsInTransaction(
-            importClient,
-            collectRegistrationNoNormalizedFromResolvedRows(rowsToCreate),
-          ),
-        ]);
-
-        const blockingErrors = toTransactionRecheckErrors(
-          rowsToCreate,
-          departments,
-          users,
-          [
-            ...doiConflicts,
-            ...applicationNoConflicts,
-            ...patentNoConflicts,
-            ...registrationNoConflicts,
-          ],
+      assertPlanCanApply(plan);
+    } catch (error) {
+      if (error instanceof AchievementImportApplyRejectedError) {
+        await this.importJobRepository.markRejected(
+          toRejectedPaperImportJobInput(claim, error.result),
         );
-        if (blockingErrors.length > 0) {
-          throw new AchievementImportApplyRejectedError(
-            "Achievement import apply failed transaction-time revalidation.",
-            buildRejectedApplyResult(plan, blockingErrors),
-          );
-        }
+      }
 
-        const departmentByCode = new Map(departments.map((department) => [department.code, department]));
-        const userByEmail = new Map(users.map((user) => [user.email, user]));
-        const resultRows: AchievementImportApplyRow[] = [];
+      throw error;
+    }
 
-        for (const row of rowsToCreate) {
-          const department = departmentByCode.get(row.parsed.departmentCode!);
-          const owner = userByEmail.get(row.parsed.ownerEmail!);
-          if (!department || !owner) {
-            throw new Error("Achievement import apply invariant failed after revalidation.");
-          }
+    try {
+      const appliedRows = await this.executeAchievementApplyTransaction(
+        context,
+        plan,
+        claim,
+      );
 
-          const contributors = toContributorInputs(row, userByEmail);
-          const rowType = toApplySupportedType(row.parsed.type);
-          const commonInput = {
-            title: row.parsed.title!,
-            secretLevel: row.parsed.secretLevel as SecretLevelCode,
-            departmentId: department.id,
-            ownerUserId: owner.id,
-            createdById: context.userId,
-            updatedById: context.userId,
-            contributors,
-          };
-          const created =
-            rowType === AchievementTypeCode.paper
-              ? await this.repository.createPaperDraftInTransaction(importClient, {
-                  ...commonInput,
-                  type: AchievementTypeCode.paper,
-                  paperDetail: row.paperDetail,
-                })
-              : rowType === AchievementTypeCode.patent
-                ? await this.repository.createPatentDraftInTransaction(importClient, {
-                    ...commonInput,
-                    type: AchievementTypeCode.patent,
-                    patentDetail: row.patentDetail,
-                  })
-                : await this.repository.createSoftwareCopyrightDraftInTransaction(
-                    importClient,
-                    {
-                      ...commonInput,
-                      type: AchievementTypeCode.softwareCopyright,
-                      softwareCopyrightDetail: row.softwareCopyrightDetail,
-                    },
-                  );
-
-          assertCreatedAchievementIsExpectedDraft(created, rowType);
-
-          await this.auditService.recordEventInTransaction(
-            auditClient,
-            toAchievementImportCreateAuditEvent(context, created, row, plan),
-          );
-
-          resultRows.push({
-            rowNumber: row.rowNumber,
-            status: "CREATED",
-            createdAchievementId: created.id,
-            type: rowType,
-            achievementStatus: AchievementStatusCode.draft,
-            departmentId: created.departmentId,
-            ownerUserId: created.ownerUserId,
-            contributorCount: created.contributors.length,
-            auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
-          });
-        }
-
-        return resultRows;
+      return withJobSummary(buildSuccessfulApplyResult(plan, appliedRows), {
+        disposition: "EXECUTED",
+        jobId: claim.jobId,
+        runId: claim.runId,
       });
+    } catch (error) {
+      if (error instanceof AchievementImportApplyRejectedError) {
+        await this.importJobRepository.markRejected(
+          toRejectedPaperImportJobInput(claim, error.result),
+        );
+        throw error;
+      }
+
+      if (this.repository.isPrismaUniqueConflict(error)) {
+        const rejected = new AchievementImportApplyRejectedError(
+          "Achievement import apply encountered a uniqueness conflict.",
+          buildRejectedApplyResult(plan, [
+            toUniqueConflictApplyError(this.repository.getPrismaUniqueConflictTarget(error)),
+          ]),
+        );
+        await this.importJobRepository.markRejected(
+          toRejectedPaperImportJobInput(claim, rejected.result),
+        );
+        throw rejected;
+      }
+
+      await this.importJobRepository.markFailed({
+        jobId: claim.jobId,
+        runId: claim.runId,
+        failureCode: "UNEXPECTED_EXCEPTION",
+        failureStage: "TRANSACTION",
+      });
+
+      throw error instanceof Error
+        ? error
+        : new Error("Unknown achievement import apply error.");
+    }
+  }
+
+  private async applyAchievementPlanWithoutJob(
+    context: UserContext,
+    plan: AchievementImportPlan,
+  ): Promise<AchievementImportApplyResult> {
+    try {
+      const appliedRows = await this.executeAchievementApplyTransaction(context, plan);
 
       return buildSuccessfulApplyResult(plan, appliedRows);
     } catch (error) {
@@ -534,6 +518,147 @@ export class AchievementImportDryRunService {
         ? error
         : new Error("Unknown achievement import apply error.");
     }
+  }
+
+  private async executeAchievementApplyTransaction(
+    context: UserContext,
+    plan: AchievementImportPlan,
+    claim?: PaperImportJobClaimResult & { disposition: "RUNNER" },
+  ): Promise<AchievementImportApplyRow[]> {
+    const rowsToCreate = plan.resolvedRows;
+
+    return this.prisma.$transaction(async (tx) => {
+      const importClient = tx as AchievementImportApplyTransactionClient;
+      const auditClient = tx as AuditTransactionClient;
+      const importJobClient = tx as PaperImportJobTransactionClient;
+
+      const [
+        departments,
+        users,
+        doiConflicts,
+        applicationNoConflicts,
+        patentNoConflicts,
+        registrationNoConflicts,
+      ] = await Promise.all([
+        this.repository.findApplyDepartmentsByCodesInTransaction(
+          importClient,
+          collectDepartmentCodesFromResolvedRows(rowsToCreate),
+        ),
+        this.repository.findApplyUsersByEmailsInTransaction(
+          importClient,
+          collectEmailsFromResolvedRows(rowsToCreate),
+        ),
+        this.repository.findApplyPaperDoiConflictsInTransaction(
+          importClient,
+          collectDoiNormalizedFromResolvedRows(rowsToCreate),
+        ),
+        this.repository.findApplyPatentApplicationConflictsInTransaction(
+          importClient,
+          collectApplicationNoNormalizedFromResolvedRows(rowsToCreate),
+        ),
+        this.repository.findApplyPatentNoConflictsInTransaction(
+          importClient,
+          collectPatentNoNormalizedFromResolvedRows(rowsToCreate),
+        ),
+        this.repository.findApplySoftwareRegistrationConflictsInTransaction(
+          importClient,
+          collectRegistrationNoNormalizedFromResolvedRows(rowsToCreate),
+        ),
+      ]);
+
+      const blockingErrors = toTransactionRecheckErrors(
+        rowsToCreate,
+        departments,
+        users,
+        [
+          ...doiConflicts,
+          ...applicationNoConflicts,
+          ...patentNoConflicts,
+          ...registrationNoConflicts,
+        ],
+      );
+      if (blockingErrors.length > 0) {
+        throw new AchievementImportApplyRejectedError(
+          "Achievement import apply failed transaction-time revalidation.",
+          buildRejectedApplyResult(plan, blockingErrors),
+        );
+      }
+
+      const departmentByCode = new Map(departments.map((department) => [department.code, department]));
+      const userByEmail = new Map(users.map((user) => [user.email, user]));
+      const resultRows: AchievementImportApplyRow[] = [];
+      const auditLogIds: string[] = [];
+
+      for (const row of rowsToCreate) {
+        const department = departmentByCode.get(row.parsed.departmentCode!);
+        const owner = userByEmail.get(row.parsed.ownerEmail!);
+        if (!department || !owner) {
+          throw new Error("Achievement import apply invariant failed after revalidation.");
+        }
+
+        const contributors = toContributorInputs(row, userByEmail);
+        const rowType = toApplySupportedType(row.parsed.type);
+        const commonInput = {
+          title: row.parsed.title!,
+          secretLevel: row.parsed.secretLevel as SecretLevelCode,
+          departmentId: department.id,
+          ownerUserId: owner.id,
+          createdById: context.userId,
+          updatedById: context.userId,
+          contributors,
+        };
+        const created =
+          rowType === AchievementTypeCode.paper
+            ? await this.repository.createPaperDraftInTransaction(importClient, {
+                ...commonInput,
+                type: AchievementTypeCode.paper,
+                paperDetail: row.paperDetail,
+              })
+            : rowType === AchievementTypeCode.patent
+              ? await this.repository.createPatentDraftInTransaction(importClient, {
+                  ...commonInput,
+                  type: AchievementTypeCode.patent,
+                  patentDetail: row.patentDetail,
+                })
+              : await this.repository.createSoftwareCopyrightDraftInTransaction(
+                  importClient,
+                  {
+                    ...commonInput,
+                    type: AchievementTypeCode.softwareCopyright,
+                    softwareCopyrightDetail: row.softwareCopyrightDetail,
+                  },
+                );
+
+        assertCreatedAchievementIsExpectedDraft(created, rowType);
+
+        const auditLog = await this.auditService.recordEventInTransaction(
+          auditClient,
+          toAchievementImportCreateAuditEvent(context, created, row, plan),
+        );
+        auditLogIds.push(auditLog.id);
+
+        resultRows.push({
+          rowNumber: row.rowNumber,
+          status: "CREATED",
+          createdAchievementId: created.id,
+          type: rowType,
+          achievementStatus: AchievementStatusCode.draft,
+          departmentId: created.departmentId,
+          ownerUserId: created.ownerUserId,
+          contributorCount: created.contributors.length,
+          auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+        });
+      }
+
+      if (claim) {
+        await this.importJobRepository.markSucceededInTransaction(
+          importJobClient,
+          toSuccessfulPaperImportJobInput(claim, plan, resultRows, auditLogIds),
+        );
+      }
+
+      return resultRows;
+    });
   }
 
   private async buildAchievementImportPlan(
@@ -726,6 +851,301 @@ const buildRejectedApplyResult = (
   errors,
   rows: [],
 });
+
+type StoredPaperImportSafeError = {
+  rowNumber: number | null;
+  field: string;
+  code: string;
+};
+
+type StoredPaperImportSafeSummary = {
+  importType: typeof achievementImportType;
+  mode: AchievementImportApplyMode;
+  achievementType: typeof AchievementTypeCode.paper;
+  operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT";
+  totalRows: number;
+  acceptedRowCount: number;
+  createdAchievementsCount: number;
+  createdPaperDetailsCount: number;
+  createdContributorsCount: number;
+  auditCount: number;
+  warningCount: number;
+  errorCount: number;
+  errors: StoredPaperImportSafeError[];
+};
+
+const buildPaperImportIdempotency = (
+  context: UserContext,
+  file: AchievementImportDryRunFile,
+): Omit<PaperImportJobClaimInput, "fileSizeBytes" | "operatorUserId"> => {
+  const targetEnvironment = toSafeTargetEnvironment(process.env.NODE_ENV);
+  const scopeType = "GLOBAL_OPERATOR_SCOPE";
+  const scopeHash = sha256Hex(
+    JSON.stringify({
+      operatorUserId: context.userId,
+      operatorDepartmentId: context.departmentId,
+      scopeType,
+    }),
+  );
+  const fileFingerprint = sha256Hex(file.buffer);
+  const keyMaterial = {
+    family: "ACHIEVEMENT",
+    mode: "CREATE_DRAFT_ONLY",
+    achievementType: "PAPER",
+    fileFingerprint,
+    targetEnvironment,
+    scopeType,
+    scopeHash,
+  };
+
+  return {
+    idempotencyKeyHash: sha256Hex(JSON.stringify(keyMaterial)),
+    targetEnvironment,
+    scopeType,
+    scopeHash,
+    fileFingerprint,
+    requestFingerprint: sha256Hex(JSON.stringify(keyMaterial)),
+  };
+};
+
+const toSafeTargetEnvironment = (value: string | undefined): string => {
+  const normalized = (value || "development")
+    .replace(/[^A-Za-z0-9_-]/g, "_")
+    .slice(0, 64);
+
+  return normalized || "development";
+};
+
+const sha256Hex = (value: string | Buffer): string =>
+  createHash("sha256").update(value).digest("hex");
+
+const toExistingPaperImportJobApplyResult = (
+  file: AchievementImportDryRunFile,
+  claim: PaperImportJobExistingClaim,
+): AchievementImportApplyResult => {
+  const safeSummary = toStoredPaperImportSafeSummary(claim.safeSummary);
+  const baseSummary = safeSummary
+    ? toApplySummaryFromStoredPaperSafeSummary(safeSummary)
+    : emptyApplySummary();
+  const errors =
+    claim.disposition === "REJECTED" && safeSummary
+      ? safeSummary.errors.map(toStoredSafeErrorResult)
+      : claim.disposition === "FAILED"
+        ? [
+            {
+              rowNumber: null,
+              field: "importJob",
+              code: "IMPORT_JOB_FAILED",
+              message: "Import job failed and automatic retry is not enabled.",
+            },
+          ]
+        : [];
+
+  return {
+    importType: achievementImportType,
+    dryRun: false,
+    mode: "CREATE_DRAFT_ONLY",
+    file: buildImportDryRunFileMetadata(file, "achievements.csv"),
+    summary: baseSummary,
+    errors,
+    rows: [],
+    job: {
+      disposition:
+        claim.disposition === "REPLAYED_SUCCESS"
+          ? "REPLAYED_SUCCESS"
+          : "IMPORT_IN_PROGRESS",
+      jobId: claim.jobId,
+      runId: claim.latestRunId,
+    },
+  };
+};
+
+const toSuccessfulPaperImportJobInput = (
+  claim: PaperImportJobClaimResult & { disposition: "RUNNER" },
+  plan: AchievementImportPlan,
+  rows: readonly AchievementImportApplyRow[],
+  auditLogIds: readonly string[],
+) => {
+  const safeSummary: StoredPaperImportSafeSummary = {
+    importType: achievementImportType,
+    mode: "CREATE_DRAFT_ONLY",
+    achievementType: AchievementTypeCode.paper,
+    operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+    totalRows: plan.summary.totalRows,
+    acceptedRowCount: plan.summary.createDraftCandidates,
+    createdAchievementsCount: rows.length,
+    createdPaperDetailsCount: rows.filter((row) => row.type === AchievementTypeCode.paper).length,
+    createdContributorsCount: rows.reduce(
+      (count, row) => count + row.contributorCount,
+      0,
+    ),
+    auditCount: auditLogIds.length,
+    warningCount: 0,
+    errorCount: 0,
+    errors: [],
+  };
+
+  return {
+    jobId: claim.jobId,
+    runId: claim.runId,
+    acceptedRowCount: safeSummary.acceptedRowCount,
+    createdAchievementsCount: safeSummary.createdAchievementsCount,
+    createdPaperDetailsCount: safeSummary.createdPaperDetailsCount,
+    createdContributorsCount: safeSummary.createdContributorsCount,
+    auditCount: safeSummary.auditCount,
+    warningCount: safeSummary.warningCount,
+    errorCount: safeSummary.errorCount,
+    safeErrorCodes: [],
+    safeSummary: safeSummary as unknown as Prisma.InputJsonValue,
+    auditLogIds: [...auditLogIds],
+  };
+};
+
+const toRejectedPaperImportJobInput = (
+  claim: PaperImportJobClaimResult & { disposition: "RUNNER" },
+  result: AchievementImportApplyResult,
+) => {
+  const safeErrors = result.errors.map(toStoredSafeError);
+  const safeSummary: StoredPaperImportSafeSummary = {
+    importType: achievementImportType,
+    mode: "CREATE_DRAFT_ONLY",
+    achievementType: AchievementTypeCode.paper,
+    operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+    totalRows: result.summary.totalRows,
+    acceptedRowCount: 0,
+    createdAchievementsCount: 0,
+    createdPaperDetailsCount: 0,
+    createdContributorsCount: 0,
+    auditCount: 0,
+    warningCount: result.summary.warningCount,
+    errorCount: result.summary.errorCount,
+    errors: safeErrors,
+  };
+
+  return {
+    jobId: claim.jobId,
+    runId: claim.runId,
+    acceptedRowCount: 0,
+    warningCount: result.summary.warningCount,
+    errorCount: result.summary.errorCount,
+    safeErrorCodes: [...new Set(safeErrors.map((error) => error.code))],
+    safeSummary: safeSummary as unknown as Prisma.InputJsonValue,
+  };
+};
+
+const withJobSummary = (
+  result: AchievementImportApplyResult,
+  job: AchievementImportApplyJobSummary,
+): AchievementImportApplyResult => ({
+  ...result,
+  job,
+});
+
+const toStoredSafeError = (
+  error: AchievementImportApplyErrorSummary,
+): StoredPaperImportSafeError => ({
+  rowNumber: error.rowNumber,
+  field: error.field,
+  code: error.code,
+});
+
+const toStoredSafeErrorResult = (
+  error: StoredPaperImportSafeError,
+): AchievementImportApplyErrorSummary => ({
+  ...error,
+  message: `Stored paper import rejection code: ${error.code}.`,
+});
+
+const toStoredPaperImportSafeSummary = (
+  value: Prisma.JsonValue | null,
+): StoredPaperImportSafeSummary | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const summary = value as Partial<StoredPaperImportSafeSummary>;
+  if (
+    summary.importType !== achievementImportType ||
+    summary.mode !== "CREATE_DRAFT_ONLY" ||
+    summary.achievementType !== AchievementTypeCode.paper ||
+    summary.operation !== "ACHIEVEMENT_IMPORT_CREATE_DRAFT"
+  ) {
+    return null;
+  }
+
+  return {
+    importType: achievementImportType,
+    mode: "CREATE_DRAFT_ONLY",
+    achievementType: AchievementTypeCode.paper,
+    operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+    totalRows: safeNumber(summary.totalRows),
+    acceptedRowCount: safeNumber(summary.acceptedRowCount),
+    createdAchievementsCount: safeNumber(summary.createdAchievementsCount),
+    createdPaperDetailsCount: safeNumber(summary.createdPaperDetailsCount),
+    createdContributorsCount: safeNumber(summary.createdContributorsCount),
+    auditCount: safeNumber(summary.auditCount),
+    warningCount: safeNumber(summary.warningCount),
+    errorCount: safeNumber(summary.errorCount),
+    errors: Array.isArray(summary.errors)
+      ? summary.errors.map(toStoredSafeErrorFromJson)
+      : [],
+  };
+};
+
+const toStoredSafeErrorFromJson = (
+  value: unknown,
+): StoredPaperImportSafeError => {
+  const error =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Partial<StoredPaperImportSafeError>)
+      : {};
+
+  return {
+    rowNumber:
+      typeof error.rowNumber === "number" || error.rowNumber === null
+        ? error.rowNumber
+        : null,
+    field: typeof error.field === "string" ? error.field : "importJob",
+    code: typeof error.code === "string" ? error.code : "UNKNOWN",
+  };
+};
+
+const toApplySummaryFromStoredPaperSafeSummary = (
+  summary: StoredPaperImportSafeSummary,
+): AchievementImportApplySummary => ({
+  totalRows: summary.totalRows,
+  createdAchievementsCount: summary.createdAchievementsCount,
+  createdPaperDetailsCount: summary.createdPaperDetailsCount,
+  createdPatentDetailsCount: 0,
+  createdSoftwareCopyrightDetailsCount: 0,
+  createdContributorsCount: summary.createdContributorsCount,
+  skippedRows: summary.warningCount,
+  failedRows: summary.errorCount,
+  errorCount: summary.errorCount,
+  warningCount: summary.warningCount,
+  auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+});
+
+const emptyApplySummary = (): AchievementImportApplySummary => ({
+  totalRows: 0,
+  createdAchievementsCount: 0,
+  createdPaperDetailsCount: 0,
+  createdPatentDetailsCount: 0,
+  createdSoftwareCopyrightDetailsCount: 0,
+  createdContributorsCount: 0,
+  skippedRows: 0,
+  failedRows: 0,
+  errorCount: 0,
+  warningCount: 0,
+  auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+});
+
+const safeNumber = (value: unknown): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : 0;
+
+const isPaperOnlyPlan = (plan: AchievementImportPlan): boolean =>
+  plan.rows.length > 0 &&
+  plan.rows.every((row) => row.parsed.type === AchievementTypeCode.paper);
 
 const toApplyErrorSummaries = (
   rows: readonly AchievementImportDryRunRow[],

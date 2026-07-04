@@ -1,5 +1,45 @@
 # Progress
 
+## 2026-07-04 Step 72F - Paper achievement import job idempotency backend wiring
+
+- Status: DONE.
+- Scope completed:
+  - Added `apps/api/src/imports/achievement-import-job.repository.ts`.
+  - Added `apps/api/src/imports/achievement-import-job.repository.spec.ts`.
+  - Updated `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - Updated `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - Updated `apps/api/src/imports/imports.module.ts`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/evidence.md`.
+- Key outcome:
+  - Achievement `PAPER` `CREATE_DRAFT_ONLY` apply now computes server-side idempotency from family `ACHIEVEMENT`, mode `CREATE_DRAFT_ONLY`, achievement type `PAPER`, SHA-256 file fingerprint, safe target environment discriminator, scope type, and scope hash.
+  - First same-key PAPER apply creates `ImportJob` + `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` without opening the business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` without opening the business transaction.
+  - Same-key `REJECTED` returns stored safe rejection through the existing rejected error path.
+  - Same-key `FAILED` blocks automatic retry.
+  - Successful PAPER apply keeps achievement creation, `PaperDetail`, contributors, audit writes, `ImportRun` success summary, and `ImportJob` success summary in one Prisma transaction.
+  - Validation-blocked PAPER apply stores safe `REJECTED` summary without writing achievement/detail/contributor/audit rows.
+  - Persisted safe summaries store only safe counts, operation/status/code fields, and do not store raw CSV, raw/normalized DOI, title, abstract, owner/contributor email/name, raw path, credential/session/token/cookie/password/connection string/env/storage/mail payload values.
+  - `SOFTWARE_COPYRIGHT` and `PATENT` apply behavior was left on the existing non-job path.
+- Explicitly not done:
+  - No Web changes.
+  - No `SOFTWARE_COPYRIGHT` import job/idempotency wiring.
+  - No `PATENT` import job/idempotency wiring.
+  - No user/account import idempotency wiring.
+  - No schema or migration changes.
+  - No apply API execution.
+  - No real business data writes.
+  - No Docker/browser execution.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import`: PASS, 4 files / 38 tests.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import department-import imports.app-module`: PASS, 9 files / 74 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS.
+
 ## 2026-07-04 Step 72E-Resume - Department import job idempotency Docker local acceptance
 
 - Status: DONE.

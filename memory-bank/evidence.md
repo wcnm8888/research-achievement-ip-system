@@ -1,5 +1,57 @@
 # Evidence
 
+## 2026-07-04 Step 72F - Paper achievement import job idempotency evidence
+
+- Goal:
+  - Add backend-only `ImportJob` / `ImportRun` history and idempotency behavior for Achievement `PAPER` `CREATE_DRAFT_ONLY` apply without Web changes, `SOFTWARE_COPYRIGHT` / `PATENT` / user-account wiring, schema/migration changes, apply API execution, Docker/browser, production/VPS access, or real-data writes.
+- Initial state:
+  - `git log -1 --oneline`: `547cf23 test: complete department import job acceptance`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/import-job-history-idempotency-plan.md`.
+  - Targeted Step 72D / 72E sections from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - `apps/api/src/imports/department-import-job.repository.ts`.
+  - Department import job repository/service tests.
+  - Achievement import dry-run/apply service, repository, controller, AppModule route tests, and Prisma `ImportJob` / `ImportRun` schema.
+- Implemented files:
+  - `apps/api/src/imports/achievement-import-job.repository.ts`.
+  - `apps/api/src/imports/achievement-import-job.repository.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - `apps/api/src/imports/imports.module.ts`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - PAPER apply derives idempotency server-side using `ACHIEVEMENT`, `CREATE_DRAFT_ONLY`, `PAPER`, SHA-256 file fingerprint, safe target environment discriminator, scope type, and scope hash.
+  - First PAPER same-key claim creates `ImportJob` and `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` with stored safe counts and no business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` with no business transaction.
+  - Same-key `REJECTED` and `FAILED` are returned through the existing rejected error path; `FAILED` remains non-retryable.
+  - PAPER success path updates achievement row, `PaperDetail`, contributors, audit rows, `ImportRun` success summary, and `ImportJob` success summary inside the same Prisma transaction.
+  - PAPER validation warning/error rejection stores `REJECTED` safe summary and writes no achievement/detail/contributor/audit rows.
+  - `SOFTWARE_COPYRIGHT` and `PATENT` apply paths explicitly remain outside the PAPER import job claim.
+  - Safe summary tests assert persisted summaries exclude raw title, abstract, owner/contributor email, contributor CSV fragments, DOI fragments, credential/session/token strings, and only contain safe counts/codes/status/operation values.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import`: PASS, 4 files / 38 tests.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import department-import imports.app-module`: PASS, 9 files / 74 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; no complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No Web files were changed.
+  - No `SOFTWARE_COPYRIGHT`, `PATENT`, or user/account import job/idempotency behavior was added.
+  - No schema or migration was added.
+  - No apply API was executed.
+  - No real business data was written.
+  - No Docker/browser execution occurred.
+  - No `.env` or `.env.production` content was read or output.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72E-Resume - Department import job idempotency Docker local acceptance evidence
 
 - Goal:
