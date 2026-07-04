@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ApiError, AuthClient, AuthUser } from "./api-client";
 import {
   getBusinessContextId,
+  getDemoAuthUser,
   getVisibleNavItems,
   loginAndRefreshCurrentUser,
   logoutAndClearCurrentUser,
@@ -123,6 +124,19 @@ describe("production auth mode helpers", () => {
     expect(
       getVisibleNavItems(navItems, null).some((item) => item.key === departmentNavigationKey),
     ).toBe(false);
+  });
+
+  it("derives a frontend-only permission context from demo user presets", () => {
+    expect(getDemoAuthUser("40000000-0000-4000-8000-000000000003")).toMatchObject({
+      id: "40000000-0000-4000-8000-000000000003",
+      roleCodes: ["SYSTEM_ADMIN"],
+      permissionCodes: ["system:config"],
+    });
+    expect(getDemoAuthUser("40000000-0000-4000-8000-000000000001")).toMatchObject({
+      roleCodes: ["RESEARCHER"],
+      permissionCodes: ["achievement:create", "achievement:update_own"],
+    });
+    expect(getDemoAuthUser(null)).toBeNull();
   });
 });
 

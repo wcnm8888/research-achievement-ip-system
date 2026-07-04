@@ -1,5 +1,73 @@
 # Evidence
 
+## 2026-07-04 Step 73D - Import job history Web local browser acceptance evidence
+
+- Goal:
+  - Browser-accept the Step 73C Web read-only import history entries for Department, User account, and Achievement pages, recording permission, state, network, and privacy/safety results.
+- Initial state:
+  - `git log -1 --oneline`: `2bbb638 feat: add import job history web entries`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - Step 73C sections in `memory-bank/import-job-history-database-model-plan.md` and `memory-bank/progress.md`.
+  - `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - `apps/web/src/DepartmentManagement.tsx`.
+  - `apps/web/src/AccountManagement.tsx`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/api/src/main.ts`, `apps/web/package.json`, `apps/api/package.json`, and `apps/web/vite.config.ts`.
+- Local service setup:
+  - Port checks showed no existing API service on 3000 and no existing Web service on 5173.
+  - Started local read-only API stub on `http://127.0.0.1:3000/api/...`.
+  - Started Vite Web on `http://127.0.0.1:5173/`.
+  - Browser routes fulfilled deterministic read-only acceptance data for import-history states and basic non-target GETs needed by the default Workbench page.
+  - `.env`, `.env.production`, `DATABASE_URL`, production/VPS, production DB, Docker, and real import APIs were not used.
+- Small Web-only fix made during acceptance:
+  - Finding: dev/demo mode selected a demo user id but still passed `authUser = null`, so `system:config` Web entries were not reachable in the browser even for the system-admin demo preset.
+  - Fix: `apps/web/src/App.tsx` now derives a frontend-only demo permission context from the selected preset in non-production mode.
+  - Production mode continues to use session `authUser` only.
+  - Test added in `apps/web/src/App.test.tsx`.
+- Browser acceptance steps and results:
+  - URL: `http://127.0.0.1:5173/`.
+  - System-admin demo user:
+    - Admin nav exposed 10 menu items, including account and department management.
+    - Department import page displayed `Department import history`.
+    - Department history showed loading state and then empty state.
+    - Department list state displayed `DEPARTMENT`, `CREATE_ONLY`, created counts, safe error code, createdAt, and completedAt.
+    - Department detail drawer displayed safe summary, run status, `auditCount`, and replay/in-flight/rejected/failed explanations.
+    - User account import page displayed `User account import history`.
+    - User account history displayed error state, then list state with `USER_ACCOUNT` + `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+    - Achievement import page displayed `Achievement import history`.
+    - Achievement history displayed `ACHIEVEMENT` + `CREATE_DRAFT_ONLY`.
+    - Selecting `PATENT` triggered an import-history request with `achievementType=PATENT` and displayed PATENT rows.
+  - Researcher demo user:
+    - Researcher nav exposed fewer menu items than admin and hid system-config management pages.
+    - Achievement page did not display an import history panel.
+    - The import-history request count did not increase after switching to researcher.
+- Network result:
+  - Import-history requests observed:
+    - `GET /api/import-jobs?family=DEPARTMENT&mode=CREATE_ONLY&page=1&pageSize=10`.
+    - `GET /api/import-jobs/:id` for detail drawer rows.
+    - `GET /api/import-jobs?family=USER_ACCOUNT&mode=CREATE_ONLY_PENDING_NO_CREDENTIAL&page=1&pageSize=10`.
+    - `GET /api/import-jobs?family=ACHIEVEMENT&mode=CREATE_DRAFT_ONLY&page=1&pageSize=10`.
+    - `GET /api/import-jobs?family=ACHIEVEMENT&mode=CREATE_DRAFT_ONLY&achievementType=PATENT&page=1&pageSize=10`.
+  - All import-history requests were GET.
+  - No import-history URL contained apply, dry-run, retry, delete, cleanup, rollback, or download.
+- Safety/privacy result:
+  - History panel/drawer controls were only `Refresh` and `Details`.
+  - History panel/drawer text scan passed for no retry/delete/cleanup/rollback/download controls, no raw CSV, no raw audit IDs, no email/employeeNo/DOI/registration/patent-number/title/personnel-name values, and no credential/session/token/cookie/password/connection-string values.
+- Verification:
+  - Browser acceptance script: PASS, 22 assertions.
+  - `corepack pnpm --filter @research-ip/web test -- App api-client DepartmentManagement AccountManagement Achievements ImportJobHistory`: PASS, 7 files / 135 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS; Vite reported only the existing large chunk warning.
+  - Local browser session was closed.
+  - Local API stub and Vite service were stopped after acceptance.
+- Boundary:
+  - No backend code, Prisma schema, migration, package, lockfile, production config, Docker, production/VPS, production DB, real import apply, retry, delete, cleanup, rollback, CSV download, or source CSV access was performed.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-04 Step 73C - Import job history Web read-only entries evidence
 
 - Goal:

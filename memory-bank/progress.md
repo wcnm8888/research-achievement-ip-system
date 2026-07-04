@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-07-04 Step 73D - Import job history Web local browser acceptance
+
+- Status: DONE_WITH_SMALL_WEB_FIX.
+- Scope completed:
+  - Ran local browser acceptance against Vite Web at `http://127.0.0.1:5173/`.
+  - Used a local read-only API stub on `http://127.0.0.1:3000/api/...` plus Playwright route fulfillment for deterministic import-history states; no database connection or `.env` content was used.
+  - Verified Department, User account, and Achievement import history panels in browser.
+  - Verified `system:config` visibility and non-`system:config` hidden/no-request behavior.
+  - Verified loading, empty, list, detail drawer, error, and Achievement `achievementType=PATENT` filter behavior.
+  - Verified Network calls for import history were only `GET /api/import-jobs` and `GET /api/import-jobs/:id`.
+- Small Web-only fix:
+  - Updated `apps/web/src/App.tsx` so development/demo mode derives a frontend-only permission context from the selected demo preset.
+  - This makes the existing system-admin demo user expose `system:config` Web entries during local browser acceptance while keeping researcher users outside those entries.
+  - Production auth behavior remains session-backed and unchanged.
+- Safety result:
+  - History panel and drawer controls were limited to `Refresh` and `Details`.
+  - No retry, delete, cleanup, rollback, download, raw CSV, raw audit ID, credential/session/token/cookie/password/connection-string text, or personal/business identifier text appeared in the history panel/drawer.
+- Verification:
+  - Browser acceptance: PASS, 22 assertions.
+  - `corepack pnpm --filter @research-ip/web test -- App api-client DepartmentManagement AccountManagement Achievements ImportJobHistory`: PASS, 7 files / 135 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS; Vite reported only the existing large chunk warning.
+
 ## 2026-07-04 Step 73C - Import job history Web read-only entries
 
 - Status: DONE.

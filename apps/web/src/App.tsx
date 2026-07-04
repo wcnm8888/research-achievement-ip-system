@@ -135,6 +135,31 @@ export const getVisibleNavItems = (
       hasSystemConfigPermission(authUser),
   );
 
+export const getDemoAuthUser = (demoUserId: string | null): AuthUser | null => {
+  const preset = findDemoUserPreset(demoUserId);
+
+  if (!preset) {
+    return null;
+  }
+
+  const permissionCodes =
+    preset.role === "SYSTEM_ADMIN"
+      ? ["system:config"]
+      : preset.role === "RESEARCHER"
+        ? ["achievement:create", "achievement:update_own"]
+        : ["achievement:read_department", "fee:read_department"];
+
+  return {
+    id: preset.userId,
+    email: "",
+    name: preset.label,
+    departmentId: "",
+    roleCodes: [preset.role],
+    permissionCodes,
+    scopedDepartmentIds: [],
+  };
+};
+
 export const mapAuthCheckErrorToStatus = (error: unknown): AuthStatus =>
   isApiError(error) && error.kind === "unauthorized" ? "anonymous" : "error";
 
@@ -176,12 +201,17 @@ export function App() {
   const [demoUserId, setDemoUserId] = useState<string | null>(() => readStoredDemoUserId());
   const [customUserId, setCustomUserId] = useState("");
   const activeUser = useMemo(() => findDemoUserPreset(demoUserId), [demoUserId]);
+  const demoAuthUser = useMemo(() => getDemoAuthUser(demoUserId), [demoUserId]);
+  const effectiveAuthUser = productionAuthMode ? authUser : demoAuthUser;
   const businessContextId = getBusinessContextId({
     productionAuthMode,
     demoUserId,
     authUser,
   });
-  const visibleNavItems = useMemo(() => getVisibleNavItems(navItems, authUser), [authUser]);
+  const visibleNavItems = useMemo(
+    () => getVisibleNavItems(navItems, effectiveAuthUser),
+    [effectiveAuthUser],
+  );
 
   useEffect(() => {
     if (!visibleNavItems.some((item) => item.key === activeKey)) {
@@ -337,11 +367,11 @@ export function App() {
             {activeKey === "workbench" ? (
               <Workbench demoUserId={businessContextId} onNavigate={setActiveKey} />
             ) : activeKey === "achievements" ? (
-              <Achievements demoUserId={businessContextId} authUser={authUser} />
+              <Achievements demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "workflow" ? (
-              <WorkflowTasks demoUserId={businessContextId} authUser={authUser} />
+              <WorkflowTasks demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "fees" ? (
-              <Fees demoUserId={businessContextId} authUser={authUser} />
+              <Fees demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "search" ? (
               <Search demoUserId={businessContextId} />
             ) : activeKey === "dashboard" ? (
@@ -349,11 +379,11 @@ export function App() {
             ) : activeKey === "audit" ? (
               <AuditLogs demoUserId={businessContextId} />
             ) : activeKey === "settings" ? (
-              <SettingsApiIntegrations demoUserId={businessContextId} authUser={authUser} />
+              <SettingsApiIntegrations demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "account-management" ? (
-              <AccountManagement demoUserId={businessContextId} authUser={authUser} />
+              <AccountManagement demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "department-management" ? (
-              <DepartmentManagement demoUserId={businessContextId} authUser={authUser} />
+              <DepartmentManagement demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : (
               <BoundaryPage
                 item={navItems.find((item) => item.key === activeKey) ?? fallbackNavItem}

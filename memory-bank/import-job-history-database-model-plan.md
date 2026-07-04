@@ -909,3 +909,56 @@ Step 73B provides the safe backend read DTO surface needed by Step 73C Web imple
 - `git diff --check`: PASS.
 
 Step 73C completes the Web implementation slice for the three local import pages. Step 73D should run local browser acceptance for permission visibility, empty/list/detail behavior, achievementType filtering, and absence of forbidden controls or sensitive values.
+
+## Step 73D Web Local Browser Acceptance Addendum
+
+- Date: 2026-07-04.
+- Ran local browser acceptance for Step 73C Web read-only import history entries.
+- Local setup:
+  - Web: `http://127.0.0.1:5173/`.
+  - API shape: local read-only `/api` stub on port `3000` plus Playwright route fulfillment for deterministic import-history responses.
+  - No `.env`, `.env.production`, `DATABASE_URL`, production/VPS, production DB, Docker, or real import apply path was used.
+
+### Step 73D Acceptance Result
+
+- Department page:
+  - `system:config` user sees `Department import history`.
+  - Verified loading, empty, list, and detail drawer states.
+  - Verified fixed filters `DEPARTMENT` + `CREATE_ONLY`.
+- User account page:
+  - `system:config` user sees `User account import history`.
+  - Verified error state and list state.
+  - Verified fixed filters `USER_ACCOUNT` + `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+- Achievement page:
+  - `system:config` user sees `Achievement import history`.
+  - Verified fixed filters `ACHIEVEMENT` + `CREATE_DRAFT_ONLY`.
+  - Verified `achievementType=PATENT` filter changes the list request and displayed rows.
+- Permission:
+  - Researcher demo user did not see history panels.
+  - Switching to researcher did not trigger additional `/api/import-jobs` requests.
+- Detail explanations:
+  - Verified replay, in-flight, rejected, and failed explanations in the detail drawer.
+- Network:
+  - Import-history calls were GET-only:
+    - `GET /api/import-jobs`;
+    - `GET /api/import-jobs/:id`.
+  - No import-history write endpoints or forbidden action URLs were called.
+- Safety:
+  - History controls were only `Refresh` and `Details`.
+  - History panel/drawer scan passed for no forbidden controls, raw CSV, raw audit IDs, personal/business identifiers, or credential/session/token/cookie/password/connection-string values.
+
+### Step 73D Small Web Fix
+
+- Acceptance found that non-production demo mode selected a demo user id but did not derive an `authUser` permission context.
+- Fixed `apps/web/src/App.tsx` to derive a frontend-only permission context from demo presets in non-production mode.
+- Production auth remains session-backed and unchanged.
+- Added App helper coverage for the derived demo permission context.
+
+### Step 73D Verification
+
+- Browser acceptance script: PASS, 22 assertions.
+- `corepack pnpm --filter @research-ip/web test -- App api-client DepartmentManagement AccountManagement Achievements ImportJobHistory`: PASS, 7 files / 135 tests.
+- `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- `corepack pnpm --filter @research-ip/web build`: PASS, with only the existing Vite large chunk warning.
+
+Step 73D completes local browser acceptance for the three Web read-only import history entries and records the small dev-mode permission-context fix needed to make those entries reachable in local browser testing.
