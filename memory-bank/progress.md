@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-07-04 Step 70F - Patent import Web local production-like acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added local production-like Web acceptance helpers for Step 70F:
+    - `memory-bank/step70f-db-helper.mjs`.
+    - `memory-bank/step70f-browser-acceptance.js`.
+    - `memory-bank/step70f-web-acceptance.mjs`.
+  - Used local Docker production-like Web/API/Postgres with synthetic `S70F_*` data only.
+  - Verified system-config user can complete all-`PATENT` dry-run, eligibility, confirmation, `CREATE_DRAFT_ONLY` apply, safe result display, and list refresh.
+  - Verified successful apply creates 2 `DRAFT` `PATENT` achievements, 2 `PatentDetail` rows, 4 contributors, and 2 `ACHIEVEMENT_IMPORT_CREATE_DRAFT` audit rows.
+  - Verified repeated exact apply returns safe `DB_CONFLICT` and creates no additional achievement/detail/contributor/audit rows.
+  - Verified missing application number, grant-only, no identifier, mixed `PAPER` + `SOFTWARE_COPYRIGHT` + `PATENT`, dry-run warning/`DB_CONFLICT`, and dry-run error disable or safely reject apply.
+  - Verified limited user cannot see apply UI and direct apply returns HTTP 403.
+  - Verified `nextFeeDate` and `feeAmount` persisted counts stayed 0.
+  - Verified workflow instance/task/action, attachment, fee record, fee review history, reminder task, notification, search log, resource access grant, and import job deltas stayed 0.
+  - Added local acceptance addendum to `memory-bank/patent-import-web-entry-design.md`.
+- Environment note:
+  - Local Docker production-like services were built/started with `docker compose -f docker-compose.production.yml up -d --build postgres api web`.
+  - No Docker orphan cleanup was run.
+- Explicitly not done:
+  - No business runtime source changes.
+  - No backend/API implementation changes.
+  - No Prisma schema/migration change.
+  - No package/lockfile/config change.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No workflow, attachment/storage, fee, fee review history, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation outside local synthetic acceptance rows.
+- Verification:
+  - `node memory-bank/step70f-web-acceptance.mjs`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files / 63 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 70E - Patent import Web entry implementation
 
 - Status: DONE.

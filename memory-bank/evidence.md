@@ -1,5 +1,57 @@
 # Evidence
 
+## 2026-07-04 Step 70F - Patent import Web local acceptance evidence
+
+- Goal:
+  - Validate Web-side all-`PATENT` achievement import apply in local Docker production-like Web/API/Postgres with synthetic `S70F_*` data only.
+- Initial state:
+  - `git log -1 --oneline`: `ff09b20 feat: add patent import web entry`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/patent-import-web-entry-design.md`.
+  - `memory-bank/step68f-web-acceptance.mjs`.
+  - `memory-bank/step68f-browser-acceptance.js`.
+  - `memory-bank/step68f-db-helper.mjs`.
+  - `memory-bank/step69g-web-acceptance.mjs`.
+  - `memory-bank/step69g-browser-acceptance.js`.
+  - `memory-bank/step69g-db-helper.mjs`.
+  - `memory-bank/step70c-patent-import-acceptance.mjs`.
+  - Step 70E snippets from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Implemented files:
+  - `memory-bank/step70f-db-helper.mjs`.
+  - `memory-bank/step70f-browser-acceptance.js`.
+  - `memory-bank/step70f-web-acceptance.mjs`.
+  - `memory-bank/patent-import-web-entry-design.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Local production-like acceptance evidence:
+  - `node memory-bank/step70f-web-acceptance.mjs`: PASS.
+  - Web health status: HTTP 200.
+  - API health status: HTTP 200.
+  - Auth harness: local proxy `/api/auth/me`; no credential/session/cookie value output.
+  - System-config user all-`PATENT` dry-run enabled apply.
+  - Confirmation copy was observed for `CREATE_DRAFT_ONLY`, `PATENT`, `PatentDetail`, `applicationNoNormalized`, optional `grantNoNormalized`, `nextFeeDate` / `feeAmount` exclusion, and no fee/reminder/workflow/attachment/search/resource grant/import job boundaries.
+  - Successful apply created 2 achievements, 2 patent details, 4 contributors, and 2 audit operation rows.
+  - Successful imported rows were 2 `DRAFT` `PATENT` achievements.
+  - Normalized application persisted count was 2 and normalized grant persisted count was 1.
+  - `nextFeeDate` persisted count was 0 and `feeAmount` persisted count was 0.
+  - List refresh was verified by seeing the newly imported synthetic patent title.
+  - Safe success panel redaction passed for patent identifiers, owner/contributor person fields, CSV body, `nextFeeDate`, and `feeAmount`.
+  - Repeated exact apply returned safe `DB_CONFLICT`; achievement count stayed 2 and audit operation count stayed 2.
+  - Safe error panel redaction passed for patent identifiers, owner/contributor person fields, CSV body, `nextFeeDate`, and `feeAmount`.
+  - Missing application number, grant-only, no identifier, mixed three-type batch, dry-run warning/`DB_CONFLICT`, and dry-run error disabled apply.
+  - Limited user apply UI was hidden and direct apply returned HTTP 403.
+  - Forbidden side-effect deltas: workflow instances 0, workflow tasks 0, workflow actions 0, attachments 0, fee records 0, fee review history rows 0, reminder tasks 0, notifications 0, search logs 0, resource access grants 0, and import jobs 0.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files and 63 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; no complete URL, credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No business runtime source, backend/API implementation, Prisma schema/migration, package/lockfile/config, production/VPS, production DB/config, real-data import, credential/session/token/cookie/password/secret/private-key handling, Docker orphan cleanup, local artifact cleanup, deletion, reset, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 70E - Patent import Web entry evidence
 
 - Goal:

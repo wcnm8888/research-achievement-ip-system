@@ -1,5 +1,26 @@
 # Patent Import Web Entry Design
 
+## Step 70F Local Web Acceptance Addendum
+
+- Date: 2026-07-04.
+- Added local production-like Web acceptance helpers:
+  - `memory-bank/step70f-db-helper.mjs`;
+  - `memory-bank/step70f-browser-acceptance.js`;
+  - `memory-bank/step70f-web-acceptance.mjs`.
+- Used local Docker production-like Web/API/Postgres with synthetic `S70F_*` data only.
+- Verified system-config user can complete all-`PATENT` dry-run, apply eligibility, confirmation, `CREATE_DRAFT_ONLY` apply, safe result display, and list refresh.
+- Verified success creates 2 `DRAFT` `PATENT` achievements, 2 `PatentDetail` rows, 4 contributors, and 2 `ACHIEVEMENT_IMPORT_CREATE_DRAFT` audit rows.
+- Verified repeated exact apply returns safe `DB_CONFLICT` and creates no additional achievement/detail/contributor/audit data.
+- Verified missing application number, grant-only, no identifier, mixed three-type batch, dry-run warning/`DB_CONFLICT`, and dry-run error keep apply disabled or safely rejected.
+- Verified limited user cannot see apply UI and direct apply returns HTTP 403.
+- Verified `nextFeeDate` and `feeAmount` persisted counts are 0.
+- Verified forbidden side-effect deltas are 0 for workflow instance/task/action, attachment, fee record, fee review history, reminder task, notification, search log, resource access grant, and import job.
+- Verification completed:
+  - `node memory-bank/step70f-web-acceptance.mjs`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files / 63 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- No backend/API, Prisma schema/migration, package/lockfile/config, production/VPS, real-data, Docker orphan cleanup, or runtime source changes were made in Step 70F.
+
 ## Step 70E Implementation Addendum
 
 - Date: 2026-07-04.
