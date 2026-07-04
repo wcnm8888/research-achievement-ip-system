@@ -1,5 +1,40 @@
 # Evidence
 
+## 2026-07-04 Step 71D - Import real-write final archive evidence
+
+- Goal:
+  - Produce a documentation-only final archive for the import real-write mainline without production execution, VPS access, Docker/browser execution, apply API execution, or database writes.
+- Initial state:
+  - `git log -1 --oneline`: `b5d5c0c docs: add import production readonly preflight runbook`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-real-write-readiness-review.md`.
+  - `memory-bank/import-real-write-local-acceptance-checklist.md`.
+  - `memory-bank/import-real-write-production-readonly-preflight-runbook.md`.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - Targeted Step 71A/71B/71C sections from `memory-bank/progress.md`.
+  - Targeted Step 71A/71B/71C sections from `memory-bank/evidence.md`.
+- Implemented files:
+  - `memory-bank/import-real-write-final-archive.md`.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Archive evidence:
+  - Summarized completed capabilities for department `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+  - Summarized the completed acceptance chain: backend tests, Web tests, local production-like API acceptance, local production-like Web acceptance, docs-only readiness review, local acceptance coverage audit, and production readonly preflight runbook.
+  - Recorded key boundaries for `system:config`, create-only/draft-only/pending-no-credential, same-file/dry-run/warning-error blocking, repeated apply no-new-data behavior, no credential/session/email, no workflow/attachment/fee/reminder/notification/search/resource grant/import job, and PATENT `nextFeeDate` / `feeAmount` non-write behavior.
+  - Recorded remaining risks and follow-up routes for read-only production preflight, real production dry-run, separately authorized production apply, import job history, durable idempotency, update/merge/reactivation, production session-cookie acceptance, and patent fee/reminder separate slice.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; 239 added lines scanned, with 0 complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, runtime/source/schema/API/Web/package/lockfile/config/script change, cleanup, deletion, reset, restore, checkout, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 71C - Import production readonly preflight runbook evidence
 
 - Goal:

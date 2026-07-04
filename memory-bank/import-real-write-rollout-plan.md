@@ -558,3 +558,24 @@ After a department create-only apply slice is implemented and accepted, the next
   - Step 71B: local import overall acceptance checklist/script review using synthetic data only.
   - Step 71C: production preflight read-only runbook.
   - Any real production write must be separately authorized.
+
+## Step 71D Import Real-Write Final Archive
+
+- Date: 2026-07-04.
+- Scope:
+  - Documentation-only final archive for the import real-write mainline.
+  - Added `memory-bank/import-real-write-final-archive.md`.
+  - No runtime/source/schema/API/Web/package/lockfile/config/script changes.
+  - No Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, `.env` / `.env.production` content reads, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked-artifact handling.
+- Final archived position:
+  - Department metadata `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` are locally implemented and locally accepted with synthetic data.
+  - The acceptance chain covers backend tests, Web tests, local production-like API acceptance, local production-like Web acceptance, Step 71A readiness review, Step 71B local acceptance coverage audit, and Step 71C production readonly preflight runbook.
+  - Production/VPS writes remain unauthorized by this archive.
+  - User/account acceptance remains not production session-cookie full acceptance.
+  - Real production apply must be separately authorized with import family, mode, exact file/fingerprint, operator, expected counts, backup evidence, dry-run evidence, and stop conditions.
+- Deferred product routes:
+  - Import job history.
+  - Durable idempotency keys.
+  - Update/merge/reactivation.
+  - Production session-cookie acceptance for user/account import.
+  - Patent fee/reminder separate slice.

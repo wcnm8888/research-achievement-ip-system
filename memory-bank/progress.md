@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-07-04 Step 71D - Import real-write final archive
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-real-write-final-archive.md`.
+  - Updated `memory-bank/import-real-write-rollout-plan.md` with the Step 71D final archive record.
+  - Reviewed Step 71A readiness review, Step 71B local acceptance checklist, Step 71C production readonly preflight runbook, rollout plan records, and targeted progress/evidence sections.
+- Key outcome:
+  - Archived completed capabilities for department `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+  - Summarized completed acceptance chain: backend tests, Web tests, local production-like API acceptance, local production-like Web acceptance, docs-only readiness review, local acceptance coverage audit, and production readonly preflight runbook.
+  - Reconfirmed key boundaries: `system:config`, create-only/draft-only/pending-no-credential, same-file/dry-run/warning-error blocking, repeated apply no-new-data behavior, no credential/session/email, no workflow/attachment/fee/reminder/notification/search/resource grant/import job, and PATENT `nextFeeDate` / `feeAmount` non-write boundary.
+  - Recorded remaining risks: no production/VPS acceptance, user/account is not production session-cookie full acceptance, real CSV quality risk, no persisted import job/durable idempotency, no update/merge/reactivation, and production write requires separate authorization.
+  - Documented follow-up routes for read-only production preflight, real production dry-run, separately authorized production apply, import job history, durable idempotency, update/merge, production session-cookie acceptance, and patent fee/reminder separate slice.
+- Explicitly not done:
+  - No runtime/source/schema/API/Web/package/lockfile/config/script changes.
+  - No Docker/browser execution.
+  - No apply API execution.
+  - No database writes.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 71C - Import production readonly preflight runbook
 
 - Status: DONE.
