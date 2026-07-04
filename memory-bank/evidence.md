@@ -15839,3 +15839,46 @@
   - No password creation/reset, `UserCredential`, session, invite/reset/lifecycle token, DirectMail, real email, or achievement real-write.
   - No database employee-number uniqueness was claimed.
   - No raw cookie, token, session value, password, secret, connection string, AccessKey, private key, or mail payload was recorded.
+
+## 2026-07-04 Step 72N - User/account import job idempotency local acceptance evidence
+
+- Canonical state checked before acceptance:
+  - `git log -1 --oneline` -> `ad6924e feat: add user import job idempotency`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff was empty.
+  - Cached diff was empty.
+- Local Docker production-like setup:
+  - Docker daemon was initially unavailable, then local Docker Desktop from `E:\Docker\DockerDesktop` was started.
+  - Existing local services were observed after Docker startup.
+  - `docker compose -f docker-compose.production.yml build api` -> passed.
+  - `docker compose -f docker-compose.production.yml up -d --no-deps api` -> passed.
+  - Docker reported existing orphan run containers; they were not cleaned.
+  - API container health reached `healthy`.
+  - `docker exec research-achievement-production-api-1 sh -lc 'corepack pnpm prisma migrate deploy'` -> passed; 9 migrations found, no pending migrations.
+- Acceptance helper:
+  - Added `memory-bank/step72n-user-import-job-acceptance.mjs`.
+  - Copied into the local API container and run with `node /app/memory-bank/step72n-user-import-job-acceptance.mjs`.
+  - Uses the built API AppModule and local Docker DB.
+  - Auth harness uses `NODE_ENV=staging` and `X-Demo-User-Id` with a synthetic no-credential actor user so the Step does not create credentials or sessions.
+- Sanitized acceptance result:
+  - Temporary API health status: 200.
+  - Success apply: status 201, disposition `EXECUTED`, user count 0 -> 2, pending activation count 2, department-scoped role count 2, `SYSTEM_ADMIN` role count 0.
+  - Success audit operation delta: 2.
+  - Success job/run: `ImportJob.status = SUCCESS`, `ImportRun.status = SUCCESS`, created users 2, created user roles 2, audit count 2.
+  - Success replay: status 201, disposition `REPLAYED_SUCCESS`, user count 2 -> 2, user role count 2 -> 2, audit delta 0, job count 1, run count 1.
+  - Rejected replay: first status 400, replay status 400, safe code `EXISTING_USER`, user count remained 1, role count remained 0, audit delta 0, job/run remained one `REJECTED` record.
+  - Running in-flight: status 201, disposition `IMPORT_IN_PROGRESS`, user count 0, role count 0, audit delta 0, job/run remained one `RUNNING` record.
+  - No credential/session/lifecycle/email boundary: target credential 0, target session 0, target lifecycle token 0, target login-capable count 0, `UserCredential` delta 0, `UserSession` delta 0, `AccountLifecycleToken` delta 0, notification delta 0, mail delivery evidence delta 0.
+  - Side-effect boundary: non-user-account import job count 0, resource grant/workflow/fee/reminder/attachment/search deltas all 0.
+  - Safe summary scan: PASS.
+- Local validation after acceptance:
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run department-import achievement-import imports.app-module` -> passed; 12 files, 114 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+- Boundaries observed:
+  - No Web change.
+  - No schema/migration change.
+  - No production/VPS/production DB access.
+  - No real business data.
+  - No credential, session, lifecycle token, invite/reset/email, password, activation, or login-capable imported account path.
+  - No Docker orphan cleanup, prune, or volume deletion.
+  - `.env` / `.env.production` contents and `DATABASE_URL` value were not read, printed, or recorded.

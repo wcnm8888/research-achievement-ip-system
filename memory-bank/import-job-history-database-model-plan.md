@@ -646,3 +646,18 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
 - Step 72N is recommended as local Docker API/DB acceptance with synthetic `S72N_*` data.
 - Web/history list remains deferred.
 - This Step did not modify runtime/source/schema/API/Web/package/lockfile/config/script files, did not add migrations, did not execute apply, did not run Docker/browser, did not write a database, and did not access production/VPS.
+
+## Step 72N User Account Acceptance Addendum
+
+- Date: 2026-07-04.
+- Verified the existing `ImportJob` / `ImportRun` schema supports User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` import history and idempotency without additional schema or migration changes.
+- Local Docker API/DB acceptance used only synthetic `S72N_*` data.
+- Verified `USER_ACCOUNT` `ImportJob` / `ImportRun` status transitions:
+  - first same-key apply: `RUNNING` claim to `SUCCESS`;
+  - same-key `SUCCESS`: replayed as `REPLAYED_SUCCESS`;
+  - validation-blocked same-key: stored and replayed `REJECTED`;
+  - DB-helper seeded in-flight same-key: returned `IMPORT_IN_PROGRESS`.
+- Verified persisted safe summaries contain safe counts/status/code/operation plus `NO_CREDENTIAL`, `PENDING_ACTIVATION`, and `DEPARTMENT` facts only.
+- Verified safe summaries do not contain raw CSV, raw/normalized email, employee number, display name, role/department names, raw path, credential/session/token/cookie/password/connection-string/env/storage/mail payload values.
+- Verified no `UserCredential`, `UserSession`, `AccountLifecycleToken`, mail/notification, workflow, attachment, fee/reminder, search, resource grant, or non-user-account import job side effects.
+- No schema/migration/model updates were made in this Step.

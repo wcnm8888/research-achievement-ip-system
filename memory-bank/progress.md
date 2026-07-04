@@ -11897,3 +11897,28 @@
   - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run imports.app-module`: PASS, 4 files / 30 tests.
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
   - Final `git diff --check` and added-lines sensitive scan recorded in `memory-bank/evidence.md`.
+
+## 2026-07-04 Step 72N - User/account import job idempotency local acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/step72n-user-import-job-acceptance.mjs`.
+  - Started local Docker Desktop because the Docker daemon was initially unavailable.
+  - Rebuilt the local API image and restarted only the local `api` service.
+  - Ran existing migrations in the local API container; there were no pending migrations.
+  - Ran local Docker API/DB acceptance with synthetic `S72N_*` data only.
+- Acceptance result:
+  - First user/account apply returned `EXECUTED`, created 2 `PENDING_ACTIVATION` users, 2 department-scoped role rows, 2 audit rows, and successful job/run rows.
+  - Same-key replay returned `REPLAYED_SUCCESS` and created no additional user, role, audit, job, or run rows.
+  - Existing-user blocked apply wrote one safe `REJECTED` job/run summary and replayed the stored rejection without business writes.
+  - DB-helper seeded `RUNNING` job returned `IMPORT_IN_PROGRESS` without business writes.
+  - Safe summary scan passed.
+  - No credential, session, lifecycle token, mail/notification, workflow, attachment, fee/reminder, search, resource grant, or non-user-account import job side effects were detected.
+- Boundaries:
+  - No Web, schema, migration, package, config, production/VPS, production DB, or real-data path.
+  - `.env` / `.env.production` contents and `DATABASE_URL` value were not read, printed, or recorded.
+  - Docker orphan cleanup/prune/volume deletion was not run.
+- Verification:
+  - `node memory-bank/step72n-user-import-job-acceptance.mjs`: PASS in local API container.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run department-import achievement-import imports.app-module`: PASS, 12 files / 114 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.

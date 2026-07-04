@@ -244,3 +244,30 @@ Do not add schema/migration in Step 72M unless a clear Step 72C bug is found and
 - The implementation did not add `UserCredential`, `UserSession`, `AccountLifecycleToken`, invite/reset/email, activation, password, update/merge/reactivation, global role scope, or `SYSTEM_ADMIN` import behavior.
 - Department and achievement job/idempotency behavior remains covered by regression tests.
 - No Web UI, schema/migration, apply API execution, Docker/browser, production/VPS, or real-data path was added.
+
+## Step 72N Acceptance Addendum
+
+- Date: 2026-07-04.
+- Added local production-like API/DB acceptance helper `memory-bank/step72n-user-import-job-acceptance.mjs`.
+- Helper scope:
+  - User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` only.
+  - Synthetic `S72N_*` data only.
+  - Temporary local Nest API harness with staging auth through `X-Demo-User-Id`.
+  - Local Docker API/Postgres environment only.
+  - No Web, schema/migration, production/VPS, production DB, or real-data path.
+- Acceptance result: PASS.
+  - First apply returned `EXECUTED`, created 2 `PENDING_ACTIVATION` users, 2 department-scoped non-`SYSTEM_ADMIN` role rows, 2 audit rows, and successful `ImportJob` / `ImportRun` records.
+  - Same-key `SUCCESS` replay returned `REPLAYED_SUCCESS` with no extra `User`, `UserRole`, audit, job, or run rows.
+  - Existing-user validation blocking stored one `REJECTED` job/run safe summary and replayed the stored safe rejection without business writes.
+  - DB-helper seeded `RUNNING` same-key claim returned `IMPORT_IN_PROGRESS` with no business writes.
+  - Safe summary scan passed for raw CSV, raw/normalized email, employee number, display name, role/department names, raw path, and credential/session/token/cookie/password/connection-string/env/storage/mail-payload terms.
+  - No-credential boundary passed: imported target credential count 0, session count 0, lifecycle token count 0, login-capable count 0, and global `UserCredential` / `UserSession` / `AccountLifecycleToken` / notification deltas 0.
+  - Non-target side-effect boundary passed for workflow, attachment, fee, reminder, search, resource grant, and non-user-account import jobs.
+- Boundary maintained:
+  - no schema/migration/model change;
+  - no Web change;
+  - no credential/session/lifecycle token/email/password/activation path;
+  - no `.env` / `.env.production` content read or printed;
+  - no `DATABASE_URL` value printed or recorded;
+  - no production/VPS access;
+  - no Docker orphan cleanup, prune, or volume deletion.
