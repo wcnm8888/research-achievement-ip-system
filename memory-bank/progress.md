@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-07-04 Step 71A - Import real-write readiness review
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-real-write-readiness-review.md`.
+  - Updated `memory-bank/import-real-write-rollout-plan.md` with the Step 71A closure record.
+  - Recorded decision D250 in `memory-bank/decisions.md`.
+  - Reviewed the requested rollout, achievement, user/account, patent boundary, progress, evidence, and decision records for Steps 65, 66, 68, 69, and 70.
+- Key outcome:
+  - Department metadata `CREATE_ONLY` has backend, Web, and local production-like acceptance closure through Step 65F with synthetic data.
+  - User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` has backend, Web, and local acceptance closure through Step 66F with synthetic data, but Step 66C/66F are not production session-cookie full acceptance.
+  - Achievement `CREATE_DRAFT_ONLY` has backend, Web, and local production-like acceptance closure for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` through Steps 68F, 69G, and 70F with synthetic data.
+  - Patent `nextFeeDate` and `feeAmount` remain dry-run preview fields only in the first patent apply slice; fee/reminder writes remain excluded.
+  - Production/VPS writes remain blocked behind backup, permission, sanitized dry-run, staging or production-like smoke, read-only health, human confirmation, post-apply count checks, and manual remediation gates.
+- Explicitly not done:
+  - No business runtime source changes.
+  - No schema/API/Web/package/lockfile/config/script changes.
+  - No Docker/browser execution.
+  - No apply API execution.
+  - No database writes.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 70F - Patent import Web local production-like acceptance
 
 - Status: DONE.

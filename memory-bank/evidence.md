@@ -1,5 +1,44 @@
 # Evidence
 
+## 2026-07-04 Step 71A - Import real-write readiness review evidence
+
+- Goal:
+  - Produce a documentation-only readiness review for the current import real-write mainline before any production/VPS write work.
+- Initial state:
+  - `git log -1 --oneline`: `40c63d1 test: add patent import web acceptance`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff was empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - `memory-bank/user-account-import-real-write-safety-plan.md`.
+  - `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - Targeted Step 65, 66, 68, 69, and 70 latest sections from `memory-bank/progress.md`.
+  - Targeted Step 65, 66, 68, 69, and 70 latest sections from `memory-bank/evidence.md`.
+  - Related latest decisions from `memory-bank/decisions.md`, including D214 and D233-D249.
+- Implemented files:
+  - `memory-bank/import-real-write-readiness-review.md`.
+  - `memory-bank/import-real-write-rollout-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Review evidence:
+  - Department metadata `CREATE_ONLY` readiness status, backend/Web/local production-like acceptance, side-effect boundary, and remaining risks were summarized.
+  - User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` readiness status, no-credential/no-session/no-invite/no-reset/no-activation boundary, non-production-session-cookie acceptance caveat, and remaining risks were summarized.
+  - Achievement `CREATE_DRAFT_ONLY` readiness status for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`, patent fee/reminder exclusion, forbidden side-effect boundary, and remaining risks were summarized.
+  - Production/VPS pre-apply gates were defined: backup, permission confirmation, sanitized dry-run, staging or production-like smoke, read-only health checks, human confirmation, post-apply count checks, and rollback/remediation boundary.
+  - Explicit prohibitions were recorded for automatic cleanup, real-data batch import, and skipping dry-run.
+  - Follow-up Step recommendations were recorded for Step 71B local synthetic checklist/script review and Step 71C production preflight read-only runbook.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; 379 added lines scanned, with 0 complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, schema/API/Web/package/lockfile/config/script change, cleanup, deletion, reset, restore, checkout, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 70F - Patent import Web local acceptance evidence
 
 - Goal:

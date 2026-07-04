@@ -1,5 +1,20 @@
 # Decisions
 
+## D250 - Step 71A import real-write readiness does not authorize production apply
+
+- Date: 2026-07-04.
+- Context: Step 71A closes the current import real-write mainline with a documentation-only readiness review after local synthetic closure for department metadata `CREATE_ONLY`, user/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`. The task prohibits runtime/source/schema/API/Web/package/lockfile/config/script changes, Docker/browser execution, apply API execution, database writes, production/VPS access, production DB/config access, `.env` / `.env.production` content reads, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Treat Step 71A as readiness documentation only, not as production rollout approval.
+  - Keep all import apply paths create-only and dry-run gated under `system:config`.
+  - Record that department and achievement local production-like acceptance used synthetic data and does not equal production/VPS acceptance.
+  - Record that user/account local Web acceptance used a no-session/no-credential harness and is not production session-cookie full acceptance.
+  - Require backup evidence, permission confirmation, sanitized real CSV dry-run, staging or production-like smoke, read-only health checks, human apply confirmation, post-apply count checks, and manual rollback/remediation boundaries before any real production apply.
+  - Prohibit automatic cleanup, real-data batch import, and skipping dry-run.
+  - Keep real production write execution as a separately authorized future Step.
+- Scope:
+  - This decision does not authorize production/VPS writes, production DB access, production configuration access, production session-cookie acceptance, real-data import, apply API execution, Docker/browser execution, schema/API/Web/runtime/package/lockfile/config/script changes, credential/session/lifecycle token creation, invite/reset/real email, workflow/attachment/storage/fee/reminder/notification/search/resource grant/import job side effects, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D249 - Patent import Web apply entry expands to homogeneous PATENT
 
 - Date: 2026-07-04.

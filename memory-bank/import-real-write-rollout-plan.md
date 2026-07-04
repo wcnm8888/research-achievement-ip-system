@@ -537,3 +537,24 @@ After a department create-only apply slice is implemented and accepted, the next
   - User/account real-write import.
   - Achievement real-write import.
   - Password changes/resets, invite/reset flow, and DirectMail/real email.
+
+## Step 71A Import Real-Write Readiness Review
+
+- Date: 2026-07-04.
+- Scope:
+  - Documentation-only closure review for the current import real-write mainline.
+  - Added `memory-bank/import-real-write-readiness-review.md`.
+  - No runtime/source/schema/API/Web/package/lockfile/config/script changes.
+  - No Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, `.env` / `.env.production` content reads, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked-artifact handling.
+- Current local closure summarized:
+  - Department metadata: `CREATE_ONLY` backend, Web, and local production-like acceptance completed through Step 65F with synthetic data.
+  - User/account: `CREATE_ONLY_PENDING_NO_CREDENTIAL` backend, Web, and local acceptance completed through Step 66F with synthetic data; Step 66F remains no-session/no-credential harness acceptance, not production session-cookie full acceptance.
+  - Achievement: `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` has backend, Web, and local production-like acceptance completed through Steps 68F, 69G, and 70F with synthetic data.
+- Production/VPS readiness position:
+  - No production rollout is authorized by this review.
+  - Required pre-apply gates include backup evidence, permission confirmation, sanitized real CSV dry-run, staging or production-like smoke, read-only health checks, human apply confirmation, post-apply count checks, and explicit rollback/remediation boundaries.
+  - Automatic cleanup, real-data batch import, and skipping dry-run remain prohibited.
+- Recommended next Steps:
+  - Step 71B: local import overall acceptance checklist/script review using synthetic data only.
+  - Step 71C: production preflight read-only runbook.
+  - Any real production write must be separately authorized.
