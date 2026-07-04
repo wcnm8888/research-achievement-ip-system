@@ -1,5 +1,49 @@
 # Evidence
 
+## 2026-07-04 Step 72C - Import job history schema and migration evidence
+
+- Goal:
+  - Implement the schema/migration-only minimum slice for import job history and idempotency without runtime import behavior, API/Web changes, apply execution, or business data writes.
+- Initial state:
+  - `git log -1 --oneline`: `b1efd69 docs: design import job database model`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - Step 72B addendum from `memory-bank/import-job-history-idempotency-plan.md`.
+  - `prisma/schema.prisma` enum/model/index/JSON/relation style.
+  - `package.json` and `apps/api/package.json` scripts.
+  - Existing migration SQL style under `prisma/migrations/`.
+- Implemented files:
+  - `prisma/schema.prisma`.
+  - `prisma/migrations/20260704120000_add_import_job_history/migration.sql`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Schema evidence:
+  - Added `ImportFamily`, `ImportMode`, `ImportJobStatus`, `ImportRunStatus`, `ImportRunTrigger`, and `ImportFailureStage`.
+  - Added `ImportJob` with `AchievementType?`, scalar nullable `latestRunId`, `Json?` safe summary fields, no `fileNameRedacted`, composite idempotency unique constraint, and query indexes.
+  - Added `ImportRun` with required `jobId` relation to `ImportJob`, `Json?` validation/apply/audit summaries, `jobId + attemptNo` uniqueness, and query indexes.
+  - Did not add `ImportJobItem`.
+- Migration evidence:
+  - Added only import enums, `import_jobs`, `import_runs`, indexes, unique constraints, and `import_runs.job_id` foreign key.
+  - Did not modify existing Department/User/Achievement/AuditLog/workflow/attachment/fee/reminder/notification/search/resource grant table structures.
+  - Did not add seed or backfill.
+- Verification:
+  - `corepack pnpm prisma:validate`: initial attempt failed with `P1012` because the shell had no `DATABASE_URL`; no `.env` or `.env.production` content was read.
+  - `corepack pnpm prisma:validate` with a one-command dummy local `DATABASE_URL`: PASS.
+  - `corepack pnpm prisma generate` with a one-command dummy local `DATABASE_URL`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; no complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No apply API was executed.
+  - No database write or migration apply was executed.
+  - No Docker/browser execution occurred.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, runtime import source/API/Web business logic change, controller/service/repository addition, package/lockfile/config/script change, seed, backfill, cleanup, deletion, reset, restore, checkout, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72B - Import job history database model plan evidence
 
 - Goal:

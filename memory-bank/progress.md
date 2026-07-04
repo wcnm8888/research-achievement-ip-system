@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-07-04 Step 72C - Import job history schema and migration minimum slice
+
+- Status: DONE.
+- Scope completed:
+  - Updated `prisma/schema.prisma` with import job history enums and models.
+  - Added `prisma/migrations/20260704120000_add_import_job_history/migration.sql`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 72C implementation addendum.
+  - Updated `memory-bank/evidence.md`.
+- Key outcome:
+  - Added enums `ImportFamily`, `ImportMode`, `ImportJobStatus`, `ImportRunStatus`, `ImportRunTrigger`, and `ImportFailureStage`.
+  - Added `ImportJob` with safe idempotency metadata, aggregate counts, `Json?` safe summary fields, `AchievementType?`, nullable scalar `latestRunId`, planned unique constraint, and query indexes.
+  - Added `ImportRun` with required `ImportJob` relation, attempt uniqueness, safe JSON summary fields, JSON audit-log id references, failure-stage fields, and query indexes.
+  - Added an additive migration that creates only import enums, `import_jobs`, `import_runs`, indexes, unique constraints, and `import_runs.job_id` foreign key.
+  - Did not add `ImportJobItem`.
+  - Did not modify existing Department/User/Achievement/AuditLog/workflow/attachment/fee/reminder/notification/search/resource grant table structures.
+- Explicitly not done:
+  - No import runtime/source/API/Web business logic.
+  - No controller/service/repository.
+  - No apply API execution.
+  - No business data writes.
+  - No Docker/browser execution.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or known untracked local artifact handling.
+- Verification:
+  - `corepack pnpm prisma:validate` initially failed because the shell had no `DATABASE_URL`; no `.env` content was read.
+  - Re-ran `corepack pnpm prisma:validate` with a one-command dummy local `DATABASE_URL`: PASS.
+  - `corepack pnpm prisma generate` with the same dummy local `DATABASE_URL`: PASS.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 72B - Import job history database model plan
 
 - Status: DONE.

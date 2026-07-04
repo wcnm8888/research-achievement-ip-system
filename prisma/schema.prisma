@@ -309,6 +309,48 @@ enum ApiCallStatus {
   SKIPPED
 }
 
+enum ImportFamily {
+  DEPARTMENT
+  USER_ACCOUNT
+  ACHIEVEMENT
+}
+
+enum ImportMode {
+  CREATE_ONLY
+  CREATE_ONLY_PENDING_NO_CREDENTIAL
+  CREATE_DRAFT_ONLY
+}
+
+enum ImportJobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  REJECTED
+}
+
+enum ImportRunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  REJECTED
+}
+
+enum ImportRunTrigger {
+  INITIAL_SUBMIT
+  RETRY_AFTER_FAILED
+  OPERATOR_REPLAY_CHECK
+}
+
+enum ImportFailureStage {
+  ACCEPTANCE
+  VALIDATION
+  TRANSACTION
+  RESPONSE
+  POST_APPLY_RECONCILIATION
+}
+
 model Department {
   id         String           @id @default(uuid()) @db.Uuid
   code       String           @unique @db.VarChar(64)
@@ -876,6 +918,73 @@ model AuditLog {
   @@index([createdAt])
   @@index([traceId])
   @@map("audit_logs")
+}
+
+model ImportJob {
+  id                    String          @id @default(uuid()) @db.Uuid
+  idempotencyKeyHash    String          @map("idempotency_key_hash") @db.VarChar(128)
+  importFamily          ImportFamily    @map("import_family")
+  mode                  ImportMode
+  achievementType       AchievementType? @map("achievement_type")
+  targetEnvironment     String          @map("target_environment") @db.VarChar(64)
+  scopeType             String          @map("scope_type") @db.VarChar(64)
+  scopeHash             String          @map("scope_hash") @db.VarChar(128)
+  fileFingerprint       String          @map("file_fingerprint") @db.VarChar(128)
+  fileSizeBytes         Int?            @map("file_size_bytes")
+  operatorUserId        String?         @map("operator_user_id") @db.Uuid
+  status                ImportJobStatus @default(PENDING)
+  latestRunId           String?         @map("latest_run_id") @db.Uuid
+  acceptedRowCount      Int             @default(0) @map("accepted_row_count")
+  createdBusinessCount  Int             @default(0) @map("created_business_count")
+  createdCompanionCount Int             @default(0) @map("created_companion_count")
+  auditCount            Int             @default(0) @map("audit_count")
+  warningCount          Int             @default(0) @map("warning_count")
+  errorCount            Int             @default(0) @map("error_count")
+  safeErrorCodes        Json?           @map("safe_error_codes")
+  safeSummary           Json?           @map("safe_summary")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  completedAt           DateTime?       @map("completed_at")
+
+  runs ImportRun[]
+
+  @@unique([targetEnvironment, scopeType, scopeHash, idempotencyKeyHash])
+  @@index([importFamily, mode, status])
+  @@index([operatorUserId, createdAt])
+  @@index([createdAt])
+  @@index([completedAt])
+  @@index([latestRunId])
+  @@map("import_jobs")
+}
+
+model ImportRun {
+  id                             String              @id @default(uuid()) @db.Uuid
+  jobId                          String              @map("job_id") @db.Uuid
+  attemptNo                      Int                 @map("attempt_no")
+  trigger                        ImportRunTrigger    @default(INITIAL_SUBMIT)
+  status                         ImportRunStatus     @default(PENDING)
+  operatorUserId                 String?             @map("operator_user_id") @db.Uuid
+  requestFingerprint             String?             @map("request_fingerprint") @db.VarChar(128)
+  validationSummary              Json?               @map("validation_summary")
+  applySummary                   Json?               @map("apply_summary")
+  failureCode                    String?             @map("failure_code") @db.VarChar(120)
+  failureStage                   ImportFailureStage? @map("failure_stage")
+  auditLogIds                    Json?               @map("audit_log_ids")
+  completedBusinessTransactionAt DateTime?           @map("completed_business_transaction_at")
+  startedAt                      DateTime?           @map("started_at")
+  finishedAt                     DateTime?           @map("finished_at")
+  createdAt                      DateTime            @default(now()) @map("created_at")
+  updatedAt                      DateTime            @updatedAt @map("updated_at")
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  @@unique([jobId, attemptNo])
+  @@index([jobId, status])
+  @@index([operatorUserId, createdAt])
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([finishedAt])
+  @@map("import_runs")
 }
 
 model ApiIntegration {

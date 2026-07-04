@@ -356,3 +356,32 @@ Reasoning:
 ## Step 72B Position
 
 Step 72B recommends a minimal additive database model: `ImportJob` as the idempotent logical request table and `ImportRun` as the attempt ledger, with `ImportJobItem` deferred. The first migration should be additive, no-backfill, no-seed, and isolated from business tables. It remains a plan only and does not authorize schema, migration, runtime, apply, database, or production work.
+
+## Step 72C Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented the schema/migration-only minimum slice.
+- Added Prisma enums:
+  - `ImportFamily`.
+  - `ImportMode`.
+  - `ImportJobStatus`.
+  - `ImportRunStatus`.
+  - `ImportRunTrigger`.
+  - `ImportFailureStage`.
+- Added `ImportJob` model:
+  - Uses `AchievementType?` for optional achievement import type.
+  - Keeps `latestRunId` as a nullable scalar without a cyclic relation.
+  - Uses `Json?` for `safeErrorCodes` and `safeSummary`.
+  - Does not add `fileNameRedacted`.
+  - Adds the planned idempotency unique constraint and query indexes.
+- Added `ImportRun` model:
+  - Requires `jobId` relation to `ImportJob`.
+  - Uses `Json?` for `validationSummary`, `applySummary`, and `auditLogIds`.
+  - Adds `jobId + attemptNo` uniqueness and query indexes.
+- Added migration `prisma/migrations/20260704120000_add_import_job_history/migration.sql`.
+- Migration is additive:
+  - Creates only import enums, `import_jobs`, `import_runs`, indexes, unique constraints, and the `import_runs.job_id` foreign key to `import_jobs`.
+  - Does not modify existing business tables.
+  - Does not add `ImportJobItem`.
+  - Does not add seed or backfill.
+- No runtime import apply behavior, controller, service, repository, API route, Web UI, apply execution, business data write, Docker/browser run, production/VPS access, or production DB access was added.
