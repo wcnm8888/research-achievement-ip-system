@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-07-04 Step 70E - Patent import Web entry evidence
+
+- Goal:
+  - Implement Web-side `PATENT` support for achievement import apply while preserving the existing all-`PAPER` and all-`SOFTWARE_COPYRIGHT` behavior.
+- Initial state:
+  - `git log -1 --oneline`: `f463a5c docs: design patent import web entry`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/patent-import-web-entry-design.md`.
+  - Step 70D snippet from `memory-bank/progress.md`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/api-client.test.ts`.
+  - `apps/web/src/types.ts`.
+- Implemented files:
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/api-client.test.ts`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `memory-bank/patent-import-web-entry-design.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - Web apply result typing supports `PATENT` rows and `createdPatentDetailsCount`.
+  - Web apply success display supports safe patent detail count and audit event count.
+  - Web eligibility allows only homogeneous all-`PATENT` batches when every row has normalized application number.
+  - Web eligibility rejects grant-only patent rows, missing application number, mixed achievement types, dry-run warnings/errors, `DB_CONFLICT`, stale fingerprint, and in-flight requests before confirmation.
+  - PATENT confirmation copy states `CREATE_DRAFT_ONLY`, DRAFT-only patent achievements, `PatentDetail`, contributors, safe audit evidence, `applicationNoNormalized`, optional `grantNoNormalized`, no `nextFeeDate` / `feeAmount` import or write, and no fee/reminder/workflow/attachment/notification/search/resource grant/import job side effects.
+  - Safe success/error views do not render raw or normalized patent identifiers, title, owner/contributor person fields, `nextFeeDate`, `feeAmount`, CSV content, created IDs, credential/session/token/cookie/password/secret/private-key material, AccessKey, or connection string material.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files and 63 tests passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; no complete URL, credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No backend/API implementation, Prisma schema/migration change, package/lockfile/config change, Docker/browser/local production-like acceptance, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, local artifact cleanup, deletion, reset, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 70D - Patent import Web entry design evidence
 
 - Goal:

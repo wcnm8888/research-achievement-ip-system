@@ -891,7 +891,7 @@ export type AchievementImportApplyRow = {
   rowNumber: number;
   status: "CREATED";
   createdAchievementId: string;
-  type: "PAPER" | "SOFTWARE_COPYRIGHT";
+  type: "PAPER" | "SOFTWARE_COPYRIGHT" | "PATENT";
   achievementStatus: "DRAFT";
   departmentId: string;
   ownerUserId: string;
@@ -908,8 +908,10 @@ export type AchievementImportApplyResult = {
     totalRows: number;
     createdAchievementsCount: number;
     createdPaperDetailsCount: number;
+    createdPatentDetailsCount: number;
     createdSoftwareCopyrightDetailsCount: number;
     createdContributorsCount: number;
+    createdAuditEventsCount?: number;
     skippedRows: number;
     failedRows: number;
     errorCount: number;

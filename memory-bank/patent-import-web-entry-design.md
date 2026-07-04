@@ -1,5 +1,40 @@
 # Patent Import Web Entry Design
 
+## Step 70E Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented the planned Web-only minimal slice.
+- `AchievementImportApplyRow.type` now accepts `PAPER`, `SOFTWARE_COPYRIGHT`, or `PATENT`.
+- `AchievementImportApplyResult.summary` now includes `createdPatentDetailsCount`.
+- `AchievementImportApplyResult.summary.createdAuditEventsCount` is accepted as an optional Web field; when the backend does not return it, the success view falls back to the created row count because the backend contract creates one safe audit event per created row.
+- Web apply eligibility now returns `applyType: "PAPER" | "SOFTWARE_COPYRIGHT" | "PATENT" | null`.
+- Web apply allows:
+  - all-`PAPER` rows with normalized DOI on every row;
+  - all-`SOFTWARE_COPYRIGHT` rows with normalized registration number on every row;
+  - all-`PATENT` rows with normalized application number on every row.
+- Web apply still blocks:
+  - mixed achievement-type batches;
+  - missing paper DOI;
+  - missing software registration number;
+  - missing patent application number;
+  - patent grant-only rows;
+  - dry-run errors, warnings, or `DB_CONFLICT`;
+  - non-`CREATE_DRAFT` candidates;
+  - stale fingerprint;
+  - in-flight requests.
+- Confirmation copy is type-aware for `PATENT` and states `CREATE_DRAFT_ONLY`, `DRAFT` only, `PatentDetail` rows, contributors, safe audit evidence, `applicationNoNormalized` duplicate boundary, optional `grantNoNormalized` second conflict boundary only with application number, no approval submission, no workflow, no attachment/storage, no fee/reminder, no notification/search/resource grant, no import job, and no `nextFeeDate` / `feeAmount` import or write.
+- Success display is type-aware and shows only safe counts, including created achievements, patent details, contributors, audit event count, mode, audit operation, and boundary tags.
+- Error display remains code/count based and does not render backend row messages.
+- Verification completed:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files / 63 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Still not implemented:
+  - backend/API changes;
+  - Prisma schema/migration changes;
+  - package/lockfile/config changes;
+  - Docker/browser/local production-like acceptance;
+  - workflow, attachment/storage, fee, fee review history, reminder, notification, search, resource grant, import job, or achievement state-machine side effects.
+
 ## Step 70D Scope
 
 - Date: 2026-07-04.

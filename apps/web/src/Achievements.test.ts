@@ -315,6 +315,60 @@ const eligibleSoftwareCopyrightImportDryRunResult: AchievementImportDryRunResult
   ],
 };
 
+const eligiblePatentImportDryRunResult: AchievementImportDryRunResult = {
+  ...eligibleAchievementImportDryRunResult,
+  file: {
+    name: "patent-achievements.csv",
+    size: 192,
+    mimeType: "text/csv",
+    encoding: "utf-8",
+  },
+  columns: {
+    required: ["type", "title", "departmentCode", "contributors"],
+    optional: ["ownerEmail", "ownerEmployeeNo", "status", "applicationNo", "patentNo"],
+    received: [
+      "type",
+      "title",
+      "departmentCode",
+      "contributors",
+      "applicationNo",
+      "patentNo",
+    ],
+  },
+  rows: [
+    {
+      ...eligibleAchievementImportDryRunResult.rows[0]!,
+      parsed: {
+        ...eligibleAchievementImportDryRunResult.rows[0]!.parsed,
+        type: "PATENT",
+        title: "Eligible Patent",
+        contributors: [
+          {
+            name: null,
+            contributorType: "INVENTOR",
+            contributorRole: "PRIMARY_INVENTOR",
+            userEmail: null,
+            organization: "Synthetic Lab",
+            sortOrder: 1,
+          },
+        ],
+        identifiers: {
+          doi: null,
+          applicationNo: "APP-S70E-001",
+          patentNo: "GRANT-S70E-001",
+          registrationNo: null,
+        },
+        normalizedIdentifiers: {
+          doi: null,
+          applicationNo: "APPS70E001",
+          patentNo: "GRANTS70E001",
+          registrationNo: null,
+        },
+      },
+    },
+  ],
+};
+
 const achievementImportApplyResult: AchievementImportApplyResult = {
   importType: "ACHIEVEMENT",
   dryRun: false,
@@ -329,6 +383,7 @@ const achievementImportApplyResult: AchievementImportApplyResult = {
     totalRows: 1,
     createdAchievementsCount: 1,
     createdPaperDetailsCount: 1,
+    createdPatentDetailsCount: 0,
     createdSoftwareCopyrightDetailsCount: 0,
     createdContributorsCount: 1,
     skippedRows: 0,
@@ -374,6 +429,29 @@ const softwareCopyrightImportApplyResult: AchievementImportApplyResult = {
   ],
 };
 
+const patentImportApplyResult: AchievementImportApplyResult = {
+  ...achievementImportApplyResult,
+  file: {
+    name: "patent-achievements.csv",
+    size: 192,
+    mimeType: "text/csv",
+    encoding: "utf-8",
+  },
+  summary: {
+    ...achievementImportApplyResult.summary,
+    createdPaperDetailsCount: 0,
+    createdPatentDetailsCount: 1,
+    createdSoftwareCopyrightDetailsCount: 0,
+    createdAuditEventsCount: 1,
+  },
+  rows: [
+    {
+      ...achievementImportApplyResult.rows[0]!,
+      type: "PATENT",
+    },
+  ],
+};
+
 const createEligibleAchievementImportFile = () =>
   new File(["x".repeat(128)], "paper-achievements.csv", {
     type: "text/csv",
@@ -384,6 +462,12 @@ const createEligibleSoftwareCopyrightImportFile = () =>
   new File(["x".repeat(160)], "software-achievements.csv", {
     type: "text/csv",
     lastModified: 69000,
+  });
+
+const createEligiblePatentImportFile = () =>
+  new File(["x".repeat(192)], "patent-achievements.csv", {
+    type: "text/csv",
+    lastModified: 70000,
   });
 
 describe("buildAchievementListQuery", () => {
@@ -649,7 +733,7 @@ describe("achievement import dry-run UI", () => {
     ).toContain("changed");
   });
 
-  it("enables SOFTWARE_COPYRIGHT apply and keeps PAPER eligibility unchanged", () => {
+  it("enables SOFTWARE_COPYRIGHT and PATENT apply while keeping PAPER eligibility unchanged", () => {
     const paperFile = createEligibleAchievementImportFile();
     const paperFingerprint = buildAchievementImportFileFingerprint(
       paperFile,
@@ -659,6 +743,11 @@ describe("achievement import dry-run UI", () => {
     const softwareFingerprint = buildAchievementImportFileFingerprint(
       softwareFile,
       eligibleSoftwareCopyrightImportDryRunResult,
+    );
+    const patentFile = createEligiblePatentImportFile();
+    const patentFingerprint = buildAchievementImportFileFingerprint(
+      patentFile,
+      eligiblePatentImportDryRunResult,
     );
     const authUser = createAuthUser({ permissionCodes: ["system:config"] });
 
@@ -690,6 +779,21 @@ describe("achievement import dry-run UI", () => {
       eligible: true,
       reason: "Ready to create DRAFT SOFTWARE_COPYRIGHT achievements.",
       applyType: "SOFTWARE_COPYRIGHT",
+    });
+
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file: patentFile,
+        result: eligiblePatentImportDryRunResult,
+        fingerprint: patentFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }),
+    ).toEqual({
+      eligible: true,
+      reason: "Ready to create DRAFT PATENT achievements.",
+      applyType: "PATENT",
     });
   });
 
@@ -759,6 +863,37 @@ describe("achievement import dry-run UI", () => {
       }).reason,
     ).toContain("PATENT");
 
+    const grantOnlyPatentResult: AchievementImportDryRunResult = {
+      ...eligiblePatentImportDryRunResult,
+      rows: [
+        {
+          ...eligiblePatentImportDryRunResult.rows[0]!,
+          parsed: {
+            ...eligiblePatentImportDryRunResult.rows[0]!.parsed,
+            normalizedIdentifiers: {
+              ...eligiblePatentImportDryRunResult.rows[0]!.parsed.normalizedIdentifiers,
+              applicationNo: null,
+            },
+          },
+        },
+      ],
+    };
+    const patentFile = createEligiblePatentImportFile();
+    const grantOnlyFingerprint = buildAchievementImportFileFingerprint(
+      patentFile,
+      grantOnlyPatentResult,
+    );
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file: patentFile,
+        result: grantOnlyPatentResult,
+        fingerprint: grantOnlyFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("grant-only");
+
     const mixedResult: AchievementImportDryRunResult = {
       ...eligibleAchievementImportDryRunResult,
       summary: {
@@ -785,7 +920,38 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("Mixed PAPER and SOFTWARE_COPYRIGHT");
+    ).toContain("Mixed achievement type");
+
+    const paperPatentMixedResult: AchievementImportDryRunResult = {
+      ...eligibleAchievementImportDryRunResult,
+      summary: {
+        ...eligibleAchievementImportDryRunResult.summary,
+        totalRows: 2,
+        validRows: 2,
+        createDraftCandidates: 2,
+      },
+      rows: [
+        eligibleRow,
+        {
+          ...eligiblePatentImportDryRunResult.rows[0]!,
+          rowNumber: 3,
+        },
+      ],
+    };
+    const paperPatentFingerprint = buildAchievementImportFileFingerprint(
+      file,
+      paperPatentMixedResult,
+    );
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file,
+        result: paperPatentMixedResult,
+        fingerprint: paperPatentFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("Mixed achievement type");
 
     const missingDoiResult: AchievementImportDryRunResult = {
       ...eligibleAchievementImportDryRunResult,
@@ -847,6 +1013,37 @@ describe("achievement import dry-run UI", () => {
         applySubmitting: false,
       }).reason,
     ).toContain("normalized software registration number");
+
+    const missingApplicationResult: AchievementImportDryRunResult = {
+      ...eligiblePatentImportDryRunResult,
+      rows: [
+        {
+          ...eligiblePatentImportDryRunResult.rows[0]!,
+          parsed: {
+            ...eligiblePatentImportDryRunResult.rows[0]!.parsed,
+            normalizedIdentifiers: {
+              ...eligiblePatentImportDryRunResult.rows[0]!.parsed.normalizedIdentifiers,
+              applicationNo: null,
+              patentNo: null,
+            },
+          },
+        },
+      ],
+    };
+    const missingApplicationFingerprint = buildAchievementImportFileFingerprint(
+      patentFile,
+      missingApplicationResult,
+    );
+    expect(
+      getAchievementImportApplyEligibility({
+        authUser,
+        file: patentFile,
+        result: missingApplicationResult,
+        fingerprint: missingApplicationFingerprint,
+        dryRunLoading: false,
+        applySubmitting: false,
+      }).reason,
+    ).toContain("normalized application number");
 
     expect(
       getAchievementImportApplyEligibility({
@@ -926,6 +1123,33 @@ describe("achievement import dry-run UI", () => {
     expect(confirmationHtml).toContain("re-read and validate");
   });
 
+  it("renders PATENT confirmation copy with application boundary and fee reminder exclusions", () => {
+    const confirmationHtml = renderToStaticMarkup(
+      createElement(AchievementImportApplyConfirmation, {
+        applyType: "PATENT",
+      }),
+    );
+
+    expect(confirmationHtml).toContain("CREATE_DRAFT_ONLY");
+    expect(confirmationHtml).toContain("DRAFT PATENT");
+    expect(confirmationHtml).toContain("PatentDetail rows");
+    expect(confirmationHtml).toContain("safe audit evidence");
+    expect(confirmationHtml).toContain("applicationNoNormalized");
+    expect(confirmationHtml).toContain("grantNoNormalized");
+    expect(confirmationHtml).toContain("nextFeeDate");
+    expect(confirmationHtml).toContain("feeAmount");
+    expect(confirmationHtml).toContain("not imported");
+    expect(confirmationHtml).toContain("workflow");
+    expect(confirmationHtml).toContain("attachment/storage");
+    expect(confirmationHtml).toContain("fee");
+    expect(confirmationHtml).toContain("reminder");
+    expect(confirmationHtml).toContain("notification");
+    expect(confirmationHtml).toContain("search");
+    expect(confirmationHtml).toContain("resource grant");
+    expect(confirmationHtml).toContain("import job");
+    expect(confirmationHtml).toContain("re-read and validate");
+  });
+
   it("renders safe apply success and rejection summaries without raw row values", () => {
     const successHtml = renderToStaticMarkup(
       createElement(AchievementImportApplyResultView, {
@@ -961,6 +1185,7 @@ describe("achievement import dry-run UI", () => {
     expect(successHtml).toContain("Created paper details");
     expect(successHtml).not.toContain("Created software copyright details");
     expect(successHtml).toContain("Created contributors");
+    expect(successHtml).toContain("Created audit events");
     expect(successHtml).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
     expect(successHtml).toContain("DRAFT only");
     expect(successHtml).toContain("No workflow");
@@ -1004,6 +1229,39 @@ describe("achievement import dry-run UI", () => {
     expect(html).not.toContain("Eligible Software");
     expect(html).not.toContain("owner@example.org");
     expect(html).not.toContain("Contributor");
+    expect(html).not.toContain("70000000-0000-4000-8000-000000000001");
+  });
+
+  it("renders safe PATENT apply success without identifiers, fee fields, or person fields", () => {
+    const html = renderToStaticMarkup(
+      createElement(AchievementImportApplyResultView, {
+        result: patentImportApplyResult,
+      }),
+    );
+
+    expect(html).toContain("Draft-only PATENT import applied");
+    expect(html).toContain("Created achievements");
+    expect(html).toContain("Created patent details");
+    expect(html).not.toContain("Created paper details");
+    expect(html).not.toContain("Created software copyright details");
+    expect(html).toContain("Created contributors");
+    expect(html).toContain("Created audit events");
+    expect(html).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
+    expect(html).toContain("DRAFT only");
+    expect(html).toContain("No workflow");
+    expect(html).toContain("No attachment/storage");
+    expect(html).toContain("No fee/reminder");
+    expect(html).toContain("No notification/search/resource grant");
+    expect(html).toContain("No import job");
+    expect(html).not.toContain("APP-S70E-001");
+    expect(html).not.toContain("APPS70E001");
+    expect(html).not.toContain("GRANT-S70E-001");
+    expect(html).not.toContain("GRANTS70E001");
+    expect(html).not.toContain("Eligible Patent");
+    expect(html).not.toContain("owner@example.org");
+    expect(html).not.toContain("Contributor");
+    expect(html).not.toContain("nextFeeDate");
+    expect(html).not.toContain("feeAmount");
     expect(html).not.toContain("70000000-0000-4000-8000-000000000001");
   });
 });

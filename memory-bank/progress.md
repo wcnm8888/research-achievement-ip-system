@@ -1,5 +1,31 @@
 # Progress
 
+## 2026-07-04 Step 70E - Patent import Web entry implementation
+
+- Status: DONE.
+- Scope completed:
+  - Extended Web achievement import apply from homogeneous all-`PAPER` or all-`SOFTWARE_COPYRIGHT` to homogeneous all-`PAPER`, all-`SOFTWARE_COPYRIGHT`, or all-`PATENT`.
+  - Added Web apply result typing for `PATENT` rows and `createdPatentDetailsCount`.
+  - Added optional Web typing/display support for `createdAuditEventsCount`, falling back to created row count when the backend summary does not include that field.
+  - Added `PATENT` apply eligibility with required normalized application number on every row.
+  - Kept grant-only patent rows disabled before confirmation.
+  - Kept mixed achievement-type batches disabled before confirmation.
+  - Preserved existing all-`PAPER` and all-`SOFTWARE_COPYRIGHT` eligibility, confirmation, and success display behavior.
+  - Added PATENT confirmation copy for `CREATE_DRAFT_ONLY`, DRAFT-only patent achievements, `PatentDetail`, contributors, safe audit, application-number duplicate boundary, optional grant-number conflict boundary, and no fee/reminder/workflow/attachment/notification/search/resource grant/import job side effects.
+  - Added Web tests for PATENT eligibility, missing application number, grant-only rejection, mixed batches, confirmation copy, safe success display, and existing PAPER/SOFTWARE_COPYRIGHT preservation.
+  - Added implementation addendum to `memory-bank/patent-import-web-entry-design.md`.
+- Explicitly not done:
+  - No backend/API implementation.
+  - No Prisma schema/migration change.
+  - No package/lockfile/config change.
+  - No Docker/browser/local production-like acceptance.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No workflow, attachment/storage, fee, fee review history, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Achievements api-client`: PASS, 2 files / 63 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 70D - Patent import Web entry design
 
 - Status: DONE.

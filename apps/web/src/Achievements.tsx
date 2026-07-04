@@ -72,7 +72,7 @@ type AchievementImportFileFingerprint = {
   resultEncoding: string;
 };
 
-type AchievementImportApplyEligibleType = "PAPER" | "SOFTWARE_COPYRIGHT";
+type AchievementImportApplyEligibleType = "PAPER" | "SOFTWARE_COPYRIGHT" | "PATENT";
 
 type AchievementImportApplyEligibility = {
   eligible: boolean;
@@ -621,14 +621,8 @@ export function AchievementImportApplyConfirmation({
   applyType: AchievementImportApplyEligibleType | null;
 }) {
   const typeLabel = formatAchievementImportApplyType(applyType);
-  const detailLabel =
-    applyType === "SOFTWARE_COPYRIGHT"
-      ? "software copyright detail rows"
-      : "paper detail rows";
-  const boundaryLabel =
-    applyType === "SOFTWARE_COPYRIGHT"
-      ? "normalized software registration number"
-      : "normalized DOI";
+  const detailLabel = getAchievementImportApplyDetailLabel(applyType);
+  const boundaryLabel = getAchievementImportApplyBoundaryLabel(applyType);
 
   return (
     <Space direction="vertical" size={8}>
@@ -652,6 +646,22 @@ export function AchievementImportApplyConfirmation({
           Software copyright fees and reminders are intentionally not created by this
           draft-only import.
         </Typography.Paragraph>
+      ) : null}
+      {applyType === "PATENT" ? (
+        <>
+          <Typography.Paragraph>
+            PatentDetail rows, contributors, and safe audit evidence are created for
+            DRAFT PATENT achievements only.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            grantNoNormalized is only an optional second conflict boundary when
+            applicationNoNormalized is present.
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            nextFeeDate and feeAmount are not imported, written, or used to create fee
+            or reminder records by this draft-only import.
+          </Typography.Paragraph>
+        </>
       ) : null}
     </Space>
   );
@@ -712,6 +722,10 @@ export function AchievementImportApplyResultView({
   const showSoftwareCount =
     applyType === "SOFTWARE_COPYRIGHT" ||
     result.summary.createdSoftwareCopyrightDetailsCount > 0;
+  const showPatentCount =
+    applyType === "PATENT" || result.summary.createdPatentDetailsCount > 0;
+  const createdAuditEventsCount =
+    result.summary.createdAuditEventsCount ?? result.rows.length;
 
   return (
     <Alert
@@ -738,8 +752,16 @@ export function AchievementImportApplyResultView({
                 {result.summary.createdSoftwareCopyrightDetailsCount}
               </Descriptions.Item>
             ) : null}
+            {showPatentCount ? (
+              <Descriptions.Item label="Created patent details">
+                {result.summary.createdPatentDetailsCount}
+              </Descriptions.Item>
+            ) : null}
             <Descriptions.Item label="Created contributors">
               {result.summary.createdContributorsCount}
+            </Descriptions.Item>
+            <Descriptions.Item label="Created audit events">
+              {createdAuditEventsCount}
             </Descriptions.Item>
             <Descriptions.Item label="Audit operation">
               {result.summary.auditOperation}
@@ -796,6 +818,10 @@ const formatAchievementImportApplyType = (
     return "SOFTWARE_COPYRIGHT";
   }
 
+  if (applyType === "PATENT") {
+    return "PATENT";
+  }
+
   return "achievement";
 };
 
@@ -804,7 +830,37 @@ const getAchievementImportApplyConfirmButtonText = (
 ): string =>
   applyType === "SOFTWARE_COPYRIGHT"
     ? "Create DRAFT software copyright achievements"
+    : applyType === "PATENT"
+      ? "Create DRAFT patent achievements"
     : "Create DRAFT PAPER achievements";
+
+const getAchievementImportApplyDetailLabel = (
+  applyType: AchievementImportApplyEligibleType | null,
+): string => {
+  if (applyType === "SOFTWARE_COPYRIGHT") {
+    return "software copyright detail rows";
+  }
+
+  if (applyType === "PATENT") {
+    return "PatentDetail rows";
+  }
+
+  return "paper detail rows";
+};
+
+const getAchievementImportApplyBoundaryLabel = (
+  applyType: AchievementImportApplyEligibleType | null,
+): string => {
+  if (applyType === "SOFTWARE_COPYRIGHT") {
+    return "normalized software registration number";
+  }
+
+  if (applyType === "PATENT") {
+    return "applicationNoNormalized";
+  }
+
+  return "normalized DOI";
+};
 
 const getAchievementImportApplyResultType = (
   result: AchievementImportApplyResult,
@@ -819,16 +875,30 @@ const getAchievementImportApplyResultType = (
     return "SOFTWARE_COPYRIGHT";
   }
 
+  if (rowTypes.size === 1 && rowTypes.has("PATENT")) {
+    return "PATENT";
+  }
+
+  if (
+    result.summary.createdPatentDetailsCount > 0 &&
+    result.summary.createdPaperDetailsCount === 0 &&
+    result.summary.createdSoftwareCopyrightDetailsCount === 0
+  ) {
+    return "PATENT";
+  }
+
   if (
     result.summary.createdSoftwareCopyrightDetailsCount > 0 &&
-    result.summary.createdPaperDetailsCount === 0
+    result.summary.createdPaperDetailsCount === 0 &&
+    result.summary.createdPatentDetailsCount === 0
   ) {
     return "SOFTWARE_COPYRIGHT";
   }
 
   if (
     result.summary.createdPaperDetailsCount > 0 &&
-    result.summary.createdSoftwareCopyrightDetailsCount === 0
+    result.summary.createdSoftwareCopyrightDetailsCount === 0 &&
+    result.summary.createdPatentDetailsCount === 0
   ) {
     return "PAPER";
   }
@@ -965,22 +1035,15 @@ export const getAchievementImportApplyEligibility = ({
     };
   }
 
-  if (result.rows.some((row) => row.parsed.type === "PATENT")) {
-    return {
-      eligible: false,
-      reason: "PATENT apply is not enabled yet.",
-      applyType: null,
-    };
-  }
-
   const applyTypes = new Set(result.rows.map((row) => row.parsed.type));
   const hasPaper = applyTypes.has("PAPER");
   const hasSoftwareCopyright = applyTypes.has("SOFTWARE_COPYRIGHT");
+  const hasPatent = applyTypes.has("PATENT");
 
-  if (hasPaper && hasSoftwareCopyright) {
+  if (applyTypes.size !== 1) {
     return {
       eligible: false,
-      reason: "Mixed PAPER and SOFTWARE_COPYRIGHT batches must be split before apply.",
+      reason: "Mixed achievement type batches must be split before apply.",
       applyType: null,
     };
   }
@@ -1018,9 +1081,39 @@ export const getAchievementImportApplyEligibility = ({
     };
   }
 
+  if (hasPatent && applyTypes.size === 1) {
+    if (
+      result.rows.some(
+        (row) =>
+          row.parsed.normalizedIdentifiers.patentNo &&
+          !row.parsed.normalizedIdentifiers.applicationNo,
+      )
+    ) {
+      return {
+        eligible: false,
+        reason: "PATENT grant-only rows must include a normalized application number before apply.",
+        applyType: null,
+      };
+    }
+
+    if (result.rows.some((row) => !row.parsed.normalizedIdentifiers.applicationNo)) {
+      return {
+        eligible: false,
+        reason: "Every PATENT row must have a normalized application number.",
+        applyType: null,
+      };
+    }
+
+    return {
+      eligible: true,
+      reason: "Ready to create DRAFT PATENT achievements.",
+      applyType: "PATENT",
+    };
+  }
+
   return {
     eligible: false,
-    reason: "Only all-PAPER or all-SOFTWARE_COPYRIGHT batches can be applied.",
+    reason: "Only all-PAPER, all-SOFTWARE_COPYRIGHT, or all-PATENT batches can be applied.",
     applyType: null,
   };
 };
