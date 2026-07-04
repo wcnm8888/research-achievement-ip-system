@@ -1,5 +1,57 @@
 # Evidence
 
+## 2026-07-04 Step 72M - User/account import job idempotency evidence
+
+- Goal:
+  - Add backend-only `ImportJob` / `ImportRun` history and idempotency behavior for User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` apply without Web changes, schema/migration changes, apply API execution, Docker/browser, production/VPS access, real-data writes, or credential/session/lifecycle/email/password side effects.
+- Initial state:
+  - `git log -1 --oneline`: `e73d038 docs: plan user import job idempotency`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/user-account-import-job-idempotency-plan.md`.
+  - `memory-bank/user-account-import-real-write-safety-plan.md`.
+  - Targeted Step 66B / 66C / 66F sections from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - Targeted Step 72D-K sections from `memory-bank/progress.md`, `memory-bank/evidence.md`, and `memory-bank/import-job-history-database-model-plan.md`.
+  - User/account import apply service, repository, controller, AppModule route tests, Department/Achievement import job repositories, and Prisma `ImportJob` / `ImportRun` schema.
+- Implemented files:
+  - `apps/api/src/imports/user-account-import-job.repository.ts`.
+  - `apps/api/src/imports/user-account-import-job.repository.spec.ts`.
+  - `apps/api/src/imports/user-account-import-dry-run.service.ts`.
+  - `apps/api/src/imports/user-account-import-dry-run.service.spec.ts`.
+  - `apps/api/src/imports/imports.module.ts`.
+  - `memory-bank/user-account-import-job-idempotency-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - Added a User/account import job repository for same-key claim, `RUNNING` job/run creation, success replay, in-flight response, stored rejection replay, failed-job retry blocking, and success/rejection/failure status updates.
+  - User/account apply derives idempotency server-side using `USER_ACCOUNT`, `CREATE_ONLY_PENDING_NO_CREDENTIAL`, SHA-256 file fingerprint, safe target environment discriminator, scope type, and scope hash.
+  - First same-key claim creates `ImportJob` and `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` with stored safe counts and no business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` with no business transaction.
+  - Same-key `REJECTED` and `FAILED` are returned through the existing rejected error path; `FAILED` remains non-retryable.
+  - Success path updates `User`, nested `UserRole`, audit rows, `ImportRun` success summary, and `ImportJob` success summary inside the same Prisma transaction.
+  - Validation/warning rejection stores safe `REJECTED` summary and writes no user/role/audit rows.
+  - Safe summary tests assert persisted summaries exclude raw email, display name, role code, department code, session/token/password terms, and store only safe counts/codes/status/operation plus `NO_CREDENTIAL`, `PENDING_ACTIVATION`, and `DEPARTMENT`.
+  - Existing repository tests continue to assert no `UserCredential`, `UserSession`, or `AccountLifecycleToken` writes in the create path.
+  - Department and achievement job/idempotency behavior remains covered by regression tests.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run`: PASS, 3 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-job`: PASS, 1 file / 2 tests.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run department-import achievement-import imports.app-module`: PASS, 12 files / 114 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Boundary:
+  - No Web files were changed.
+  - No schema or migration was added.
+  - No apply API was executed.
+  - No real business data was written.
+  - No Docker/browser execution occurred.
+  - No `.env` or `.env.production` content was read or output.
+  - No `UserCredential`, `UserSession`, `AccountLifecycleToken`, invite/reset/email, activation, password, or login-capable side effect was added.
+  - No `DATABASE_URL` value, credential, password, token, cookie, connection string, raw CSV, raw/normalized email, employee number, display name, role/department name, raw local path, storage key, or mail payload was printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72L - User/account import job idempotency plan evidence
 
 - Goal:

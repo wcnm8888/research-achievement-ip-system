@@ -218,3 +218,29 @@ Do not add schema/migration in Step 72M unless a clear Step 72C bug is found and
 - This plan does not claim production session-cookie full acceptance.
 - This plan does not store row-level import history; `ImportJobItem` remains deferred.
 - This plan does not authorize reading `.env` / `.env.production`, accessing production/VPS, writing real business data, or using real user/account CSV data.
+
+## Step 72M Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented backend-only User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` import job history and idempotency wiring.
+- Added `apps/api/src/imports/user-account-import-job.repository.ts`.
+- Added `apps/api/src/imports/user-account-import-job.repository.spec.ts`.
+- Wired `UserAccountImportJobRepository` into `ImportsModule`.
+- User/account apply now derives idempotency server-side from:
+  - family `USER_ACCOUNT`;
+  - mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`;
+  - SHA-256 file fingerprint;
+  - safe target environment discriminator;
+  - `scopeType` and hashed operator scope.
+- User/account same-key behavior now matches the approved first-slice semantics:
+  - first same-key apply creates job/run in `RUNNING`;
+  - same-key `SUCCESS` returns `REPLAYED_SUCCESS` without business writes;
+  - same-key `RUNNING` returns `IMPORT_IN_PROGRESS` without business writes;
+  - same-key `REJECTED` returns stored safe rejection;
+  - same-key `FAILED` does not automatically retry.
+- Successful apply keeps `User` creation, nested `UserRole` creation, audit writes, `ImportRun` success summary, and `ImportJob` success summary in the same Prisma transaction.
+- Persisted safe summaries store only safe counts, safe error codes, operation code, status/mode fields, internal job/run metadata, file fingerprint hash, scope hash, audit ids, `NO_CREDENTIAL`, `PENDING_ACTIVATION`, and `DEPARTMENT` role-scope facts.
+- Persisted safe summaries do not store raw CSV content, raw email, normalized email, employee number, normalized employee number, display name, role name/code, department name/code, raw file paths, sessions, tokens, cookies, passwords, connection strings, `.env` values, storage keys, or mail payloads.
+- The implementation did not add `UserCredential`, `UserSession`, `AccountLifecycleToken`, invite/reset/email, activation, password, update/merge/reactivation, global role scope, or `SYSTEM_ADMIN` import behavior.
+- Department and achievement job/idempotency behavior remains covered by regression tests.
+- No Web UI, schema/migration, apply API execution, Docker/browser, production/VPS, or real-data path was added.

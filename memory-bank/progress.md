@@ -1,5 +1,42 @@
 # Progress
 
+## 2026-07-04 Step 72M - User/account import job idempotency backend wiring
+
+- Status: DONE.
+- Scope completed:
+  - Added `apps/api/src/imports/user-account-import-job.repository.ts`.
+  - Added `apps/api/src/imports/user-account-import-job.repository.spec.ts`.
+  - Updated `apps/api/src/imports/user-account-import-dry-run.service.ts`.
+  - Updated `apps/api/src/imports/user-account-import-dry-run.service.spec.ts`.
+  - Updated `apps/api/src/imports/imports.module.ts`.
+  - Updated `memory-bank/user-account-import-job-idempotency-plan.md`.
+  - Updated `memory-bank/evidence.md`.
+- Key outcome:
+  - User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL` apply now computes server-side idempotency from family `USER_ACCOUNT`, mode `CREATE_ONLY_PENDING_NO_CREDENTIAL`, SHA-256 file fingerprint, safe target environment discriminator, scope type, and scope hash.
+  - First same-key apply creates `ImportJob` + `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` without opening the business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` without opening the business transaction.
+  - Same-key `REJECTED` returns stored safe rejection through the existing rejected error path.
+  - Same-key `FAILED` blocks automatic retry.
+  - Successful apply keeps `User` creation, `UserRole` creation, audit writes, `ImportRun` success summary, and `ImportJob` success summary in one Prisma transaction.
+  - Validation/warning blocked apply stores safe `REJECTED` summary without writing user/role/audit rows.
+  - Persisted safe summaries store only safe counts, operation/status/code fields, `credentialMode = NO_CREDENTIAL`, `targetStatus = PENDING_ACTIVATION`, and `roleScope = DEPARTMENT`.
+  - Persisted safe summaries do not store raw CSV, raw/normalized email, employee number, display name, role name, department name, raw path, session/token/cookie/password/connection string/env/storage/mail payload values.
+  - Existing pending/no-credential semantics remain unchanged: no `UserCredential`, `UserSession`, `AccountLifecycleToken`, invite/reset/email, activation, or password path was added.
+  - Department and achievement job/idempotency regression tests still pass.
+- Explicitly not done:
+  - No Web changes.
+  - No schema or migration changes.
+  - No apply API execution.
+  - No real business data writes.
+  - No Docker/browser execution.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run`: PASS, 3 files / 30 tests.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-job`: PASS, 1 file / 2 tests.
+  - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run department-import achievement-import imports.app-module`: PASS, 12 files / 114 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+
 ## 2026-07-04 Step 72L - User/account import job idempotency plan
 
 - Status: DONE.

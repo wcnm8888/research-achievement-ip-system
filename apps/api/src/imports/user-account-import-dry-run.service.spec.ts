@@ -132,13 +132,25 @@ const createService = (input: {
   const auditService = {
     recordEventInTransaction: vi.fn().mockResolvedValue({ id: "audit-1" }),
   };
+  const importJobRepository = {
+    claimUserAccountPendingNoCredentialJob: vi.fn().mockResolvedValue({
+      disposition: "RUNNER",
+      jobId: "job-1",
+      runId: "run-1",
+    }),
+    markSucceededInTransaction: vi.fn().mockResolvedValue(undefined),
+    markRejected: vi.fn().mockResolvedValue(undefined),
+    markFailed: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
     auditService,
+    importJobRepository,
     prisma,
     repository,
     service: new UserAccountImportDryRunService(
       repository as unknown as UserAccountImportDryRunRepository,
+      importJobRepository as never,
       prisma as never,
       auditService as never,
     ),
@@ -436,7 +448,7 @@ describe("UserAccountImportDryRunService", () => {
   });
 
   it("applies CREATE_ONLY_PENDING_NO_CREDENTIAL users and department-scoped roles with audit in the same transaction", async () => {
-    const { service, repository, prisma, auditService } = createService({
+    const { service, repository, importJobRepository, prisma, auditService } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
     });
@@ -464,6 +476,11 @@ describe("UserAccountImportDryRunService", () => {
         skippedRows: 0,
         failedRows: 0,
         auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+      },
+      job: {
+        disposition: "EXECUTED",
+        jobId: "job-1",
+        runId: "run-1",
       },
     });
     expect(prisma.$transaction).toHaveBeenCalledOnce();
@@ -516,6 +533,125 @@ describe("UserAccountImportDryRunService", () => {
     expect(serializedAudit).not.toContain("tokenHash");
     expect(serializedAudit).not.toContain("invite");
     expect(serializedAudit).not.toContain("reset");
+    expect(importJobRepository.markSucceededInTransaction).toHaveBeenCalledWith(
+      prisma.tx,
+      expect.objectContaining({
+        jobId: "job-1",
+        runId: "run-1",
+        acceptedRowCount: 2,
+        createdUsersCount: 2,
+        createdUserRolesCount: 2,
+        auditCount: 2,
+        safeErrorCodes: [],
+        auditLogIds: ["audit-1", "audit-1"],
+      }),
+    );
+    const successSummaryJson = JSON.stringify(
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1].safeSummary,
+    );
+    expect(successSummaryJson).toContain("NO_CREDENTIAL");
+    expect(successSummaryJson).toContain("PENDING_ACTIVATION");
+    expect(successSummaryJson).toContain("DEPARTMENT");
+    expect(successSummaryJson).not.toContain("alice@example.org");
+    expect(successSummaryJson).not.toContain("Alice");
+    expect(successSummaryJson).not.toContain("bob@example.org");
+    expect(successSummaryJson).not.toContain("Bob");
+    expect(successSummaryJson).not.toContain("RESEARCHER");
+    expect(successSummaryJson).not.toContain("RD");
+    expect(successSummaryJson).not.toContain("session");
+    expect(successSummaryJson).not.toContain("token");
+    expect(successSummaryJson).not.toContain("password");
+  });
+
+  it("replays same-key successful user account imports without business writes", async () => {
+    const { service, repository, importJobRepository, prisma, auditService } = createService();
+    importJobRepository.claimUserAccountPendingNoCredentialJob.mockResolvedValueOnce({
+      disposition: "REPLAYED_SUCCESS",
+      jobId: "job-1",
+      latestRunId: "run-1",
+      safeSummary: {
+        importType: "USER_ACCOUNT",
+        mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+        operation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+        totalRows: 2,
+        acceptedRowCount: 2,
+        createdUsersCount: 2,
+        createdUserRolesCount: 2,
+        auditCount: 2,
+        warningCount: 0,
+        errorCount: 0,
+        credentialMode: "NO_CREDENTIAL",
+        targetStatus: "PENDING_ACTIVATION",
+        roleScope: "DEPARTMENT",
+        errors: [],
+      },
+    });
+
+    const result = await service.applyUserAccountCsv(
+      adminContext,
+      makeFile(
+        [
+          "email,displayName,employeeNo,departmentCode,roleCode",
+          "alice@example.org,Alice,e001,RD,RESEARCHER",
+        ].join("\n"),
+      ),
+      "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    );
+
+    expect(result).toMatchObject({
+      summary: {
+        totalRows: 2,
+        createdUsersCount: 2,
+        createdRolesCount: 2,
+        auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+      },
+      job: {
+        disposition: "REPLAYED_SUCCESS",
+        jobId: "job-1",
+        runId: "run-1",
+      },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("returns in-progress for same-key running user account imports without business writes", async () => {
+    const { service, repository, importJobRepository, prisma, auditService } = createService();
+    importJobRepository.claimUserAccountPendingNoCredentialJob.mockResolvedValueOnce({
+      disposition: "IMPORT_IN_PROGRESS",
+      jobId: "job-1",
+      latestRunId: "run-1",
+      safeSummary: null,
+    });
+
+    const result = await service.applyUserAccountCsv(
+      adminContext,
+      makeFile(
+        [
+          "email,displayName,departmentCode,roleCode",
+          "alice@example.org,Alice,RD,RESEARCHER",
+        ].join("\n"),
+      ),
+      "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    );
+
+    expect(result).toMatchObject({
+      summary: {
+        totalRows: 0,
+        createdUsersCount: 0,
+        createdRolesCount: 0,
+      },
+      job: {
+        disposition: "IMPORT_IN_PROGRESS",
+        jobId: "job-1",
+        runId: "run-1",
+      },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
   });
 
   it("persists employee number display and normalized values during apply", async () => {
@@ -551,7 +687,7 @@ describe("UserAccountImportDryRunService", () => {
   });
 
   it("rejects duplicate email and employee number before opening a write transaction", async () => {
-    const { service, prisma, repository, auditService } = createService({
+    const { service, importJobRepository, prisma, repository, auditService } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
     });
@@ -577,10 +713,18 @@ describe("UserAccountImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        acceptedRowCount: 0,
+        warningCount: 0,
+        errorCount: expect.any(Number),
+        safeErrorCodes: expect.arrayContaining(["DUPLICATE_IN_FILE"]),
+      }),
+    );
   });
 
   it("rejects missing departments before opening a write transaction", async () => {
-    const { service, prisma, repository } = createService({
+    const { service, importJobRepository, prisma, repository } = createService({
       roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
     });
 
@@ -600,6 +744,11 @@ describe("UserAccountImportDryRunService", () => {
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        safeErrorCodes: expect.arrayContaining(["UNKNOWN_DEPARTMENT"]),
+      }),
+    );
   });
 
   it("rejects transaction-time inactive departments without creating rows", async () => {
@@ -635,7 +784,7 @@ describe("UserAccountImportDryRunService", () => {
   });
 
   it("rejects SYSTEM_ADMIN and global scope before opening a write transaction", async () => {
-    const { service, prisma, repository } = createService({
+    const { service, importJobRepository, prisma, repository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       roles: [
         { id: ids.researcherRole, code: RoleCode.researcher },
@@ -666,10 +815,18 @@ describe("UserAccountImportDryRunService", () => {
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        safeErrorCodes: expect.arrayContaining([
+          "GLOBAL_SCOPE_NOT_ALLOWED",
+          "ROLE_NOT_IMPORTABLE",
+        ]),
+      }),
+    );
   });
 
   it("rejects dry-run warnings for existing users before opening a write transaction", async () => {
-    const { service, prisma, repository } = createService({
+    const { service, importJobRepository, prisma, repository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
       users: [
@@ -698,6 +855,21 @@ describe("UserAccountImportDryRunService", () => {
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledWith(
+      expect.objectContaining({
+        safeErrorCodes: expect.arrayContaining(["EXISTING_USER"]),
+      }),
+    );
+    const rejectedSummaryJson = JSON.stringify(
+      importJobRepository.markRejected.mock.calls[0]![0].safeSummary,
+    );
+    expect(rejectedSummaryJson).toContain("EXISTING_USER");
+    expect(rejectedSummaryJson).not.toContain("existing@example.org");
+    expect(rejectedSummaryJson).not.toContain("email");
+    expect(rejectedSummaryJson).not.toContain("employeeNo");
+    expect(rejectedSummaryJson).not.toContain("Existing");
+    expect(rejectedSummaryJson).not.toContain("RESEARCHER");
+    expect(rejectedSummaryJson).not.toContain("RD");
   });
 
   it("rejects transaction-time duplicate email rechecks without creating rows", async () => {

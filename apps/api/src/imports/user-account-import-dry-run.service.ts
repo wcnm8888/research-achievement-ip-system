@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DepartmentStatus, RoleStatus, UserStatus } from "@prisma/client";
+import { createHash } from "node:crypto";
+import { DepartmentStatus, Prisma, RoleStatus, UserStatus } from "@prisma/client";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -21,6 +22,13 @@ import {
   UserAccountImportRoleLookup,
   UserAccountImportUserLookup,
 } from "./user-account-import-dry-run.repository";
+import {
+  UserAccountImportJobClaimInput,
+  UserAccountImportJobClaimResult,
+  UserAccountImportJobExistingClaim,
+  UserAccountImportJobRepository,
+  UserAccountImportJobTransactionClient,
+} from "./user-account-import-job.repository";
 import {
   appendColumnValidationIssues,
   buildImportDryRunFileMetadata,
@@ -165,6 +173,17 @@ export type UserAccountImportApplySummary = {
   auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL";
 };
 
+export type UserAccountImportApplyJobDisposition =
+  | "EXECUTED"
+  | "REPLAYED_SUCCESS"
+  | "IMPORT_IN_PROGRESS";
+
+export type UserAccountImportApplyJobSummary = {
+  disposition: UserAccountImportApplyJobDisposition;
+  jobId: string;
+  runId: string | null;
+};
+
 export type UserAccountImportApplyResult = {
   importType: typeof userAccountImportType;
   dryRun: false;
@@ -173,6 +192,7 @@ export type UserAccountImportApplyResult = {
   summary: UserAccountImportApplySummary;
   errors: UserAccountImportApplyErrorSummary[];
   rows: UserAccountImportApplyRow[];
+  job?: UserAccountImportApplyJobSummary;
 };
 
 type UserAccountImportPlan = {
@@ -237,6 +257,8 @@ export class UserAccountImportDryRunService {
   constructor(
     @Inject(UserAccountImportDryRunRepository)
     private readonly repository: UserAccountImportDryRunRepository,
+    @Inject(UserAccountImportJobRepository)
+    private readonly importJobRepository: UserAccountImportJobRepository,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(AuditService)
@@ -268,8 +290,46 @@ export class UserAccountImportDryRunService {
       throw new InvalidUserAccountImportApplyModeError(mode ?? "(missing)");
     }
 
-    const plan = await this.buildUserAccountImportPlan(file);
-    assertPlanCanApply(plan);
+    const idempotency = buildUserAccountImportIdempotency(context, file);
+    const claim = await this.importJobRepository.claimUserAccountPendingNoCredentialJob({
+      ...idempotency,
+      fileSizeBytes: file.size,
+      operatorUserId: context.userId,
+    });
+    if (claim.disposition !== "RUNNER") {
+      const existingResult = toExistingUserAccountImportJobApplyResult(file, claim);
+      if (claim.disposition === "REJECTED" || claim.disposition === "FAILED") {
+        throw new UserAccountImportApplyRejectedError(
+          claim.disposition === "FAILED"
+            ? "User account import job is failed and retry is not enabled."
+            : "User account import apply was already rejected.",
+          existingResult,
+        );
+      }
+
+      return existingResult;
+    }
+
+    let plan: UserAccountImportPlan;
+    try {
+      plan = await this.buildUserAccountImportPlan(file);
+    } catch (error) {
+      await this.importJobRepository.markRejected(
+        toInvalidCsvRejectedImportJobInput(claim, file, error),
+      );
+      throw error;
+    }
+    try {
+      assertPlanCanApply(plan);
+    } catch (error) {
+      if (error instanceof UserAccountImportApplyRejectedError) {
+        await this.importJobRepository.markRejected(
+          toRejectedUserAccountImportJobInput(claim, error.result),
+        );
+      }
+
+      throw error;
+    }
 
     const rowsToCreate = plan.resolvedRows;
 
@@ -277,6 +337,7 @@ export class UserAccountImportDryRunService {
       const appliedRows = await this.prisma.$transaction(async (tx) => {
         const importClient = tx as UserAccountImportApplyTransactionClient;
         const auditClient = tx as AuditTransactionClient;
+        const importJobClient = tx as UserAccountImportJobTransactionClient;
 
         const [departments, roles, users, employeeNoUsers] = await Promise.all([
           this.repository.findApplyDepartmentsByCodesInTransaction(
@@ -314,6 +375,7 @@ export class UserAccountImportDryRunService {
         const departmentByCode = new Map(departments.map((department) => [department.code, department]));
         const roleByCode = new Map(roles.map((role) => [role.code, role]));
         const resultRows: UserAccountImportApplyRow[] = [];
+        const auditLogIds: string[] = [];
 
         for (const row of rowsToCreate) {
           const department = departmentByCode.get(row.parsed.departmentCode!);
@@ -342,10 +404,11 @@ export class UserAccountImportDryRunService {
 
           assertCreatedUserIsNoCredentialPending(created);
 
-          await this.auditService.recordEventInTransaction(
+          const auditLog = await this.auditService.recordEventInTransaction(
             auditClient,
             toUserAccountImportCreateAuditEvent(context, created, row, plan),
           );
+          auditLogIds.push(auditLog.id);
 
           resultRows.push({
             rowNumber: row.rowNumber,
@@ -358,23 +421,46 @@ export class UserAccountImportDryRunService {
           });
         }
 
+        await this.importJobRepository.markSucceededInTransaction(
+          importJobClient,
+          toSuccessfulUserAccountImportJobInput(claim, plan, resultRows, auditLogIds),
+        );
+
         return resultRows;
       });
 
-      return buildSuccessfulApplyResult(plan, appliedRows);
+      return withJobSummary(buildSuccessfulApplyResult(plan, appliedRows), {
+        disposition: "EXECUTED",
+        jobId: claim.jobId,
+        runId: claim.runId,
+      });
     } catch (error) {
       if (error instanceof UserAccountImportApplyRejectedError) {
+        await this.importJobRepository.markRejected(
+          toRejectedUserAccountImportJobInput(claim, error.result),
+        );
         throw error;
       }
 
       if (this.repository.isPrismaUniqueConflict(error)) {
         const target = this.repository.getPrismaUniqueConflictTarget(error);
         const conflictError = toUniqueConflictApplyError(target);
-        throw new UserAccountImportApplyRejectedError(
+        const rejected = new UserAccountImportApplyRejectedError(
           "User account import apply encountered a uniqueness conflict.",
           buildRejectedApplyResult(plan, [conflictError]),
         );
+        await this.importJobRepository.markRejected(
+          toRejectedUserAccountImportJobInput(claim, rejected.result),
+        );
+        throw rejected;
       }
+
+      await this.importJobRepository.markFailed({
+        jobId: claim.jobId,
+        runId: claim.runId,
+        failureCode: "UNEXPECTED_EXCEPTION",
+        failureStage: "TRANSACTION",
+      });
 
       throw error instanceof Error
         ? error
@@ -519,6 +605,350 @@ const buildRejectedApplyResult = (
   errors,
   rows: [],
 });
+
+type StoredUserAccountImportSafeError = {
+  rowNumber: number | null;
+  field: string;
+  code: string;
+};
+
+type StoredUserAccountImportSafeSummary = {
+  importType: typeof userAccountImportType;
+  mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL";
+  operation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL";
+  totalRows: number;
+  acceptedRowCount: number;
+  createdUsersCount: number;
+  createdUserRolesCount: number;
+  auditCount: number;
+  warningCount: number;
+  errorCount: number;
+  credentialMode: "NO_CREDENTIAL";
+  targetStatus: "PENDING_ACTIVATION";
+  roleScope: "DEPARTMENT";
+  errors: StoredUserAccountImportSafeError[];
+};
+
+const buildUserAccountImportIdempotency = (
+  context: UserContext,
+  file: UserAccountImportDryRunFile,
+): Omit<UserAccountImportJobClaimInput, "fileSizeBytes" | "operatorUserId"> => {
+  const targetEnvironment = toSafeTargetEnvironment(process.env.NODE_ENV);
+  const scopeType = "GLOBAL_OPERATOR_SCOPE";
+  const scopeHash = sha256Hex(
+    JSON.stringify({
+      operatorUserId: context.userId,
+      operatorDepartmentId: context.departmentId,
+      scopeType,
+    }),
+  );
+  const fileFingerprint = sha256Hex(file.buffer);
+  const keyMaterial = {
+    family: "USER_ACCOUNT",
+    mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    fileFingerprint,
+    targetEnvironment,
+    scopeType,
+    scopeHash,
+  };
+
+  return {
+    idempotencyKeyHash: sha256Hex(JSON.stringify(keyMaterial)),
+    targetEnvironment,
+    scopeType,
+    scopeHash,
+    fileFingerprint,
+    requestFingerprint: sha256Hex(JSON.stringify(keyMaterial)),
+  };
+};
+
+const toSafeTargetEnvironment = (value: string | undefined): string => {
+  const normalized = (value || "development")
+    .replace(/[^A-Za-z0-9_-]/g, "_")
+    .slice(0, 64);
+
+  return normalized || "development";
+};
+
+const sha256Hex = (value: string | Buffer): string =>
+  createHash("sha256").update(value).digest("hex");
+
+const toExistingUserAccountImportJobApplyResult = (
+  file: UserAccountImportDryRunFile,
+  claim: UserAccountImportJobExistingClaim,
+): UserAccountImportApplyResult => {
+  const safeSummary = toStoredUserAccountImportSafeSummary(claim.safeSummary);
+  const baseSummary = safeSummary
+    ? toApplySummaryFromStoredSafeSummary(safeSummary)
+    : emptyApplySummary();
+  const errors =
+    claim.disposition === "REJECTED" && safeSummary
+      ? safeSummary.errors.map(toStoredSafeErrorResult)
+      : claim.disposition === "FAILED"
+        ? [
+            {
+              rowNumber: null,
+              field: "importJob",
+              code: "IMPORT_JOB_FAILED",
+              message: "Import job failed and automatic retry is not enabled.",
+            },
+          ]
+        : [];
+
+  return {
+    importType: userAccountImportType,
+    dryRun: false,
+    mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    file: buildImportDryRunFileMetadata(file, "user-accounts.csv"),
+    summary: baseSummary,
+    errors,
+    rows: [],
+    job: {
+      disposition:
+        claim.disposition === "REPLAYED_SUCCESS"
+          ? "REPLAYED_SUCCESS"
+          : "IMPORT_IN_PROGRESS",
+      jobId: claim.jobId,
+      runId: claim.latestRunId,
+    },
+  };
+};
+
+const toSuccessfulUserAccountImportJobInput = (
+  claim: UserAccountImportJobClaimResult & { disposition: "RUNNER" },
+  plan: UserAccountImportPlan,
+  rows: readonly UserAccountImportApplyRow[],
+  auditLogIds: readonly string[],
+) => {
+  const createdUserRolesCount = rows.reduce(
+    (count, row) => count + row.createdUserRoleIds.length,
+    0,
+  );
+  const safeSummary: StoredUserAccountImportSafeSummary = {
+    importType: userAccountImportType,
+    mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    operation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+    totalRows: plan.summary.totalRows,
+    acceptedRowCount: plan.summary.createCandidates,
+    createdUsersCount: rows.length,
+    createdUserRolesCount,
+    auditCount: auditLogIds.length,
+    warningCount: 0,
+    errorCount: 0,
+    credentialMode: "NO_CREDENTIAL",
+    targetStatus: "PENDING_ACTIVATION",
+    roleScope: "DEPARTMENT",
+    errors: [],
+  };
+
+  return {
+    jobId: claim.jobId,
+    runId: claim.runId,
+    acceptedRowCount: safeSummary.acceptedRowCount,
+    createdUsersCount: safeSummary.createdUsersCount,
+    createdUserRolesCount: safeSummary.createdUserRolesCount,
+    auditCount: safeSummary.auditCount,
+    warningCount: safeSummary.warningCount,
+    errorCount: safeSummary.errorCount,
+    safeErrorCodes: [],
+    safeSummary: safeSummary as unknown as Prisma.InputJsonValue,
+    auditLogIds: [...auditLogIds],
+  };
+};
+
+const toRejectedUserAccountImportJobInput = (
+  claim: UserAccountImportJobClaimResult & { disposition: "RUNNER" },
+  result: UserAccountImportApplyResult,
+) => {
+  const safeErrors = result.errors.map(toStoredSafeError);
+  const safeSummary: StoredUserAccountImportSafeSummary = {
+    importType: userAccountImportType,
+    mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    operation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+    totalRows: result.summary.totalRows,
+    acceptedRowCount: 0,
+    createdUsersCount: 0,
+    createdUserRolesCount: 0,
+    auditCount: 0,
+    warningCount: result.summary.warningCount,
+    errorCount: result.summary.errorCount,
+    credentialMode: "NO_CREDENTIAL",
+    targetStatus: "PENDING_ACTIVATION",
+    roleScope: "DEPARTMENT",
+    errors: safeErrors,
+  };
+
+  return {
+    jobId: claim.jobId,
+    runId: claim.runId,
+    acceptedRowCount: 0,
+    warningCount: result.summary.warningCount,
+    errorCount: result.summary.errorCount,
+    safeErrorCodes: [...new Set(safeErrors.map((error) => error.code))],
+    safeSummary: safeSummary as unknown as Prisma.InputJsonValue,
+  };
+};
+
+const toInvalidCsvRejectedImportJobInput = (
+  claim: UserAccountImportJobClaimResult & { disposition: "RUNNER" },
+  file: UserAccountImportDryRunFile,
+  error: unknown,
+) => {
+  const code = error instanceof InvalidUserAccountImportCsvError ? "INVALID_CSV" : "VALIDATION_ERROR";
+  return toRejectedUserAccountImportJobInput(claim, {
+    importType: userAccountImportType,
+    dryRun: false,
+    mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    file: buildImportDryRunFileMetadata(file, "user-accounts.csv"),
+    summary: {
+      totalRows: 0,
+      createdUsersCount: 0,
+      createdRolesCount: 0,
+      skippedRows: 0,
+      failedRows: 1,
+      errorCount: 1,
+      warningCount: 0,
+      auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+    },
+    errors: [
+      {
+        rowNumber: null,
+        field: "file",
+        code,
+        message: "Import CSV could not be parsed for apply.",
+      },
+    ],
+    rows: [],
+  });
+};
+
+const withJobSummary = (
+  result: UserAccountImportApplyResult,
+  job: UserAccountImportApplyJobSummary,
+): UserAccountImportApplyResult => ({
+  ...result,
+  job,
+});
+
+const toStoredSafeError = (
+  error: UserAccountImportApplyErrorSummary,
+): StoredUserAccountImportSafeError => ({
+  rowNumber: error.rowNumber,
+  field: toSafeStoredErrorField(error.field),
+  code: error.code,
+});
+
+const toSafeStoredErrorField = (field: string): string => {
+  switch (field) {
+    case "email":
+    case "employeeNo":
+      return "identity";
+    case "displayName":
+      return "personProfile";
+    case "departmentCode":
+    case "scopeDepartmentCode":
+      return "departmentReference";
+    case "roleCode":
+      return "roleReference";
+    case "scopeType":
+      return "roleScope";
+    case "status":
+      return "targetStatus";
+    case "file":
+    case "importJob":
+      return field;
+    default:
+      return "validation";
+  }
+};
+
+const toStoredSafeErrorResult = (
+  error: StoredUserAccountImportSafeError,
+): UserAccountImportApplyErrorSummary => ({
+  ...error,
+  message: `Stored user account import rejection code: ${error.code}.`,
+});
+
+const toApplySummaryFromStoredSafeSummary = (
+  summary: StoredUserAccountImportSafeSummary,
+): UserAccountImportApplySummary => ({
+  totalRows: summary.totalRows,
+  createdUsersCount: summary.createdUsersCount,
+  createdRolesCount: summary.createdUserRolesCount,
+  skippedRows: summary.warningCount,
+  failedRows: summary.errorCount,
+  errorCount: summary.errorCount,
+  warningCount: summary.warningCount,
+  auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+});
+
+const emptyApplySummary = (): UserAccountImportApplySummary => ({
+  totalRows: 0,
+  createdUsersCount: 0,
+  createdRolesCount: 0,
+  skippedRows: 0,
+  failedRows: 0,
+  errorCount: 0,
+  warningCount: 0,
+  auditOperation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+});
+
+const toStoredUserAccountImportSafeSummary = (
+  value: Prisma.JsonValue | null,
+): StoredUserAccountImportSafeSummary | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const summary = value as Partial<StoredUserAccountImportSafeSummary>;
+  if (
+    summary.importType !== userAccountImportType ||
+    summary.mode !== "CREATE_ONLY_PENDING_NO_CREDENTIAL" ||
+    summary.operation !== "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL"
+  ) {
+    return null;
+  }
+
+  return {
+    importType: userAccountImportType,
+    mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    operation: "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL",
+    totalRows: safeNumber(summary.totalRows),
+    acceptedRowCount: safeNumber(summary.acceptedRowCount),
+    createdUsersCount: safeNumber(summary.createdUsersCount),
+    createdUserRolesCount: safeNumber(summary.createdUserRolesCount),
+    auditCount: safeNumber(summary.auditCount),
+    warningCount: safeNumber(summary.warningCount),
+    errorCount: safeNumber(summary.errorCount),
+    credentialMode: "NO_CREDENTIAL",
+    targetStatus: "PENDING_ACTIVATION",
+    roleScope: "DEPARTMENT",
+    errors: Array.isArray(summary.errors)
+      ? summary.errors.map(toStoredSafeErrorFromJson)
+      : [],
+  };
+};
+
+const toStoredSafeErrorFromJson = (
+  value: unknown,
+): StoredUserAccountImportSafeError => {
+  const error =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Partial<StoredUserAccountImportSafeError>)
+      : {};
+
+  return {
+    rowNumber:
+      typeof error.rowNumber === "number" || error.rowNumber === null
+        ? error.rowNumber
+        : null,
+    field: typeof error.field === "string" ? error.field : "validation",
+    code: typeof error.code === "string" ? error.code : "UNKNOWN",
+  };
+};
+
+const safeNumber = (value: unknown): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : 0;
 
 const toUniqueConflictApplyError = (
   target: readonly string[],

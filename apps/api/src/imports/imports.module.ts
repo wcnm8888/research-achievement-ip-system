@@ -14,6 +14,7 @@ import { DepartmentImportDryRunService } from "./department-import-dry-run.servi
 import { UserAccountImportDryRunController } from "./user-account-import-dry-run.controller";
 import { UserAccountImportDryRunRepository } from "./user-account-import-dry-run.repository";
 import { UserAccountImportDryRunService } from "./user-account-import-dry-run.service";
+import { UserAccountImportJobRepository } from "./user-account-import-job.repository";
 
 @Module({
   imports: [DatabaseModule, IdentityModule, AuthorizationModule, AuditModule],
@@ -31,6 +32,7 @@ import { UserAccountImportDryRunService } from "./user-account-import-dry-run.se
     DepartmentImportDryRunService,
     UserAccountImportDryRunRepository,
     UserAccountImportDryRunService,
+    UserAccountImportJobRepository,
   ],
   exports: [
     AchievementImportDryRunService,
