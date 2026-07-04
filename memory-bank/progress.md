@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-07-04 Step 70D - Patent import Web entry design
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/patent-import-web-entry-design.md`.
+  - Added a Step 70D Web entry addendum to `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - Recorded decision D249 in `memory-bank/decisions.md`.
+  - Reviewed the requested testing strategy, patent fee/reminder boundary plan, software copyright Web entry design, Step 70A through Step 70C progress snippets, and targeted Web apply code/tests/types/client files.
+- Key outcome:
+  - Web apply should expand from homogeneous all-`PAPER` or all-`SOFTWARE_COPYRIGHT` to homogeneous all-`PAPER`, all-`SOFTWARE_COPYRIGHT`, or all-`PATENT`.
+  - Mixed achievement-type batches remain disabled before confirmation.
+  - `PATENT` Web eligibility must require normalized application number on every row.
+  - Grant-only and missing-application patent rows remain disabled before confirmation.
+  - PATENT confirmation copy must state `CREATE_DRAFT_ONLY`, `DRAFT` only, patent detail rows, contributors, safe audit evidence, backend CSV revalidation, no approval submission, and no workflow/attachment/storage/fee/fee review history/reminder/notification/search/resource grant/import job side effects.
+  - `nextFeeDate` and `feeAmount` remain excluded from the first Web-enabled patent apply slice and must not appear in apply success/error UI.
+  - Step 70E should be Web-only implementation and Web Vitest coverage; Step 70F should run local production-like Web acceptance with synthetic `S70F_*` data.
+- Explicitly not done:
+  - No Web/API implementation.
+  - No apply API call.
+  - No Docker/browser operation.
+  - No database write.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, schema/migration/package/lockfile/config/script change, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No workflow, attachment/storage, fee, fee review history, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 70C - Patent import local production-like API acceptance
 
 - Status: DONE.

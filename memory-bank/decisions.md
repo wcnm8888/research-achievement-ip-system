@@ -1,5 +1,22 @@
 # Decisions
 
+## D249 - Patent import Web apply entry expands to homogeneous PATENT
+
+- Date: 2026-07-04.
+- Context: Step 70D designs the Web entry after Step 70B added backend all-`PATENT` `CREATE_DRAFT_ONLY` apply and Step 70C proved local production-like API acceptance with synthetic data. The task is documentation-only and prohibits Web/API implementation, Docker/browser execution, database writes, production/VPS access, `.env` / `.env.production` content reads, real-data import, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Expand the existing achievement import Web apply affordance from homogeneous all-`PAPER` or all-`SOFTWARE_COPYRIGHT` to homogeneous all-`PAPER`, all-`SOFTWARE_COPYRIGHT`, or all-`PATENT`.
+  - Continue requiring `system:config`, successful same-file dry-run, zero errors, zero warnings, all rows `VALID`, all rows `CREATE_DRAFT`, and `mode=CREATE_DRAFT_ONLY`.
+  - Continue requiring normalized DOI for all-`PAPER` apply and normalized software registration number for all-`SOFTWARE_COPYRIGHT` apply.
+  - Require normalized application number for every all-`PATENT` apply row.
+  - Reject grant-only patent rows before confirmation.
+  - Disable mixed achievement-type batches before confirmation.
+  - Confirmation and result UI must state DRAFT-only, create-only, backend CSV revalidation, patent detail rows for patent apply, and no approval submission or workflow/attachment/storage/fee/fee-review-history/reminder/notification/search/resource-grant/import-job side effects.
+  - `nextFeeDate` and `feeAmount` must not be described as imported fee/reminder data and must not appear in apply success/error UI.
+  - Safe result/error UI must not render raw or normalized patent identifiers, title, owner/contributor email/name, CSV content, cookie, session, token, credential, secret, or connection-string material.
+- Scope:
+  - This decision does not authorize runtime implementation in Step 70D, apply API calls, Docker/browser acceptance, production/VPS access, production DB/config access, real-data import, schema/migration/package/lockfile/config changes, workflow/attachment/storage/fee/fee-review-history/reminder/notification/search/resource grant/import job creation, state-machine transitions, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+
 ## D248 - Patent import first apply slice requires application number and excludes fee reminders
 
 - Date: 2026-07-04.

@@ -1,5 +1,21 @@
 # Patent Import Fee Reminder Boundary Plan
 
+## Step 70D Web Entry Design Addendum
+
+- Date: 2026-07-04.
+- Added `memory-bank/patent-import-web-entry-design.md` as the Web-side design for enabling homogeneous all-`PATENT` apply after Step 70B backend implementation and Step 70C local API acceptance.
+- Web apply may be expanded to homogeneous batches only:
+  - all-`PAPER`;
+  - all-`SOFTWARE_COPYRIGHT`;
+  - all-`PATENT`.
+- Mixed achievement-type batches must stay disabled before confirmation.
+- `PATENT` Web eligibility must require normalized application number on every patent row.
+- Grant-only patent rows remain disabled before confirmation.
+- The patent Web confirmation must state `CREATE_DRAFT_ONLY`, `DRAFT` only, patent detail rows, contributors, safe audit evidence, backend CSV revalidation, no approval submission, and no workflow/attachment/storage/fee/fee review history/reminder/notification/search/resource grant/import job side effects.
+- `nextFeeDate` and `feeAmount` remain excluded from the first Web-enabled patent apply slice; Web confirmation and success copy must not imply fee or reminder import.
+- Safe success/error UI must not render raw or normalized patent identifiers, title, owner/contributor person fields, `nextFeeDate`, `feeAmount`, CSV body, credentials, sessions, tokens, secrets, or connection strings.
+- Step 70E should be Web-only implementation and tests; Step 70F should be local production-like Web acceptance with synthetic `S70F_*` data.
+
 ## Step 70B Implementation Addendum
 
 - Date: 2026-07-04.

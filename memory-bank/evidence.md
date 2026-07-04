@@ -1,5 +1,45 @@
 # Evidence
 
+## 2026-07-04 Step 70D - Patent import Web entry design evidence
+
+- Goal:
+  - Design the Web apply entry expansion for homogeneous all-`PATENT` `CREATE_DRAFT_ONLY` import without implementing runtime code.
+- Initial state:
+  - `git log -1 --oneline`: `b0c7dcc test: add patent import acceptance`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - `memory-bank/achievement-import-software-web-entry-design.md`.
+  - Step 70A through Step 70C snippets from `memory-bank/progress.md`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/api-client.ts`.
+- Implemented files:
+  - `memory-bank/patent-import-web-entry-design.md`.
+  - `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - `memory-bank/decisions.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Planning evidence:
+  - Web apply should allow homogeneous all-`PAPER`, all-`SOFTWARE_COPYRIGHT`, or all-`PATENT` batches.
+  - Mixed achievement-type batches stay disabled before confirmation.
+  - `PATENT` Web eligibility requires normalized application number on every row.
+  - Grant-only patent rows stay disabled before confirmation.
+  - PATENT confirmation copy must state `CREATE_DRAFT_ONLY`, `DRAFT` only, patent detail rows, contributors, safe audit evidence, backend CSV revalidation, no approval submission, and no workflow/attachment/storage/fee/fee review history/reminder/notification/search/resource grant/import job side effects.
+  - `nextFeeDate` and `feeAmount` remain excluded from the first Web-enabled patent apply slice and must not appear in success/error UI.
+  - Step 70E is scoped to Web-only implementation and Web Vitest coverage.
+  - Step 70F is scoped to local production-like Web acceptance with synthetic `S70F_*` data.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; no credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Web/API implementation, apply API call, Docker/browser operation, database write, production/VPS access, production DB/config access, real-data import, schema/migration/package/lockfile/config change, credential/session/token/cookie/password/secret/private-key handling, local artifact cleanup, deletion, reset, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 70C - Patent import local API acceptance evidence
 
 - Goal:
