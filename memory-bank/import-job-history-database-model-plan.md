@@ -790,3 +790,85 @@ The Web history entry must not provide:
 ### Step 73A Position
 
 Step 73A recommends a family-local first Web history entry, with a later optional settings/system configuration overview. The first Web slice should be strictly read-only, `system:config`-guarded, backed by whitelisted safe DTOs, and limited to aggregate counts, statuses, safe machine codes, timestamps, and safe run explanations. It does not authorize Web code, backend API code, schema/migration work, production access, retry, delete, cleanup, rollback, or CSV download behavior.
+
+## Step 73B Backend Read-Only API Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented backend read-only import job history APIs:
+  - `GET /import-jobs`;
+  - `GET /import-jobs/:id`.
+- Added files:
+  - `apps/api/src/imports/import-job-history-read.controller.ts`;
+  - `apps/api/src/imports/import-job-history-read.service.ts`;
+  - `apps/api/src/imports/import-job-history-read.repository.ts`;
+  - matching targeted specs for controller, service, and repository.
+- Wired `ImportJobHistoryReadController`, `ImportJobHistoryReadService`, and `ImportJobHistoryReadRepository` into `ImportsModule`.
+
+### API Behavior
+
+- `GET /import-jobs` supports:
+  - `family`;
+  - `mode`;
+  - `achievementType`;
+  - `status`;
+  - `createdFrom`;
+  - `createdTo`;
+  - `page`;
+  - `pageSize`.
+- Default sort is `createdAt desc`, then `id desc`.
+- Default pagination is `page = 1`, `pageSize = 20`; `pageSize` is capped at `100` by validation.
+- Invalid enum, date, page, or pageSize query values return `400`.
+- `GET /import-jobs/:id` parses UUID v4 ids and returns `404` when the job does not exist.
+
+### DTO And Select Boundary
+
+- Repository list/detail queries use Prisma `select` allowlists.
+- List DTO returns:
+  - `id`;
+  - `family`;
+  - `mode`;
+  - `achievementType`;
+  - `status`;
+  - `acceptedRowCount`;
+  - `createdBusinessCount`;
+  - `createdCompanionCount`;
+  - `auditCount`;
+  - `safeErrorCodes`;
+  - `createdAt`;
+  - `completedAt`;
+  - latest-run safe status metadata.
+- Detail DTO adds:
+  - sanitized `safeSummary`;
+  - sanitized run `validationSummary` and `applySummary`;
+  - run `attemptNo`, `trigger`, `status`, `failureCode`, `failureStage`, `startedAt`, `finishedAt`, `completedBusinessTransactionAt`;
+  - `auditCount` number only.
+- Detail repository reads `auditLogIds` only to count them and strips raw ids before returning data to the service.
+- DTOs do not expose:
+  - `idempotencyKeyHash`;
+  - `scopeHash`;
+  - `requestFingerprint`;
+  - `fileFingerprint`;
+  - `operatorUserId`;
+  - raw audit ids;
+  - raw Prisma records.
+
+### Safe Summary Sanitizer
+
+- Service sanitizes `ImportJob.safeSummary`, `ImportRun.validationSummary`, and `ImportRun.applySummary`.
+- Only approved safe JSON keys are retained.
+- Unsafe string values, non-allowlisted keys, raw identifier-like values, messages, raw CSV, person fields, credential/session/token/cookie/password/connection-string content, and arbitrary request metadata are removed.
+
+### Permission And Non-Goals
+
+- Both endpoints continue to require `system:config` through `UserContextGuard`, `PermissionGuard`, and `RequirePermissions(PermissionCode.systemConfig)`.
+- No new permission code was added.
+- No access was expanded to department admins, lifecycle/invite/reset users, audit-only users, achievement-state users, or other support roles without `system:config`.
+- No Web UI, Prisma schema, migration, apply execution, production/VPS access, retry, delete, cleanup, rollback, CSV download, or write endpoint was added.
+
+### Verification
+
+- `corepack pnpm --filter @research-ip/api test -- import-job-history-read`: PASS, 3 files / 12 tests.
+- `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- `git diff --check`: PASS.
+
+Step 73B provides the safe backend read DTO surface needed by Step 73C Web implementation. Step 73C should consume these DTOs without adding write controls. Step 73D should perform local browser acceptance for permission boundaries, empty/list/detail states, no forbidden controls, and no sensitive strings.

@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-07-04 Step 73B - Import job history backend read-only API
+
+- Status: DONE.
+- Scope completed:
+  - Added `apps/api/src/imports/import-job-history-read.controller.ts`.
+  - Added `apps/api/src/imports/import-job-history-read.service.ts`.
+  - Added `apps/api/src/imports/import-job-history-read.repository.ts`.
+  - Added targeted controller, service, and repository specs for import job history read APIs.
+  - Updated `apps/api/src/imports/imports.module.ts` to register the read-only controller/service/repository.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 73B implementation addendum.
+  - Updated `memory-bank/evidence.md` with Step 73B evidence.
+- Key outcome:
+  - Implemented `GET /import-jobs` with `family`, `mode`, `achievementType`, `status`, `createdFrom`, `createdTo`, `page`, and `pageSize` query validation.
+  - Implemented `GET /import-jobs/:id` with UUID parsing and 404 for missing jobs.
+  - Kept both endpoints under `UserContextGuard`, `PermissionGuard`, and `RequirePermissions(PermissionCode.systemConfig)`.
+  - Used Prisma `select` allowlists instead of returning raw `ImportJob` / `ImportRun` records.
+  - List DTO exposes only safe aggregate/status fields plus latest-run safe status metadata.
+  - Detail DTO exposes sanitized `safeSummary`, sanitized run summaries, and `auditCount` number only; raw `auditLogIds` are not returned.
+  - Safe summary sanitizer removes non-allowlisted JSON keys and unsafe string values.
+- Explicitly not done:
+  - No Web changes.
+  - No Prisma schema or migration changes.
+  - No import apply execution.
+  - No retry, delete, cleanup, rollback, CSV download, or write endpoint.
+  - No Web/browser/build run because this Step only implemented backend read-only API.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- import-job-history-read`: PASS, 3 files / 12 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - Manual diff review: PASS; no raw CSV, no personal identifier examples, no credential/session/token/cookie/password/connection-string values, and no write operation endpoint.
+
 ## 2026-07-04 Step 73A - Import job Web read-only history entry plan
 
 - Status: DONE.

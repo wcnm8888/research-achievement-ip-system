@@ -11,6 +11,9 @@ import { DepartmentImportJobRepository } from "./department-import-job.repositor
 import { DepartmentImportDryRunController } from "./department-import-dry-run.controller";
 import { DepartmentImportDryRunRepository } from "./department-import-dry-run.repository";
 import { DepartmentImportDryRunService } from "./department-import-dry-run.service";
+import { ImportJobHistoryReadController } from "./import-job-history-read.controller";
+import { ImportJobHistoryReadRepository } from "./import-job-history-read.repository";
+import { ImportJobHistoryReadService } from "./import-job-history-read.service";
 import { UserAccountImportDryRunController } from "./user-account-import-dry-run.controller";
 import { UserAccountImportDryRunRepository } from "./user-account-import-dry-run.repository";
 import { UserAccountImportDryRunService } from "./user-account-import-dry-run.service";
@@ -21,6 +24,7 @@ import { UserAccountImportJobRepository } from "./user-account-import-job.reposi
   controllers: [
     AchievementImportDryRunController,
     DepartmentImportDryRunController,
+    ImportJobHistoryReadController,
     UserAccountImportDryRunController,
   ],
   providers: [
@@ -30,6 +34,8 @@ import { UserAccountImportJobRepository } from "./user-account-import-job.reposi
     DepartmentImportJobRepository,
     DepartmentImportDryRunRepository,
     DepartmentImportDryRunService,
+    ImportJobHistoryReadRepository,
+    ImportJobHistoryReadService,
     UserAccountImportDryRunRepository,
     UserAccountImportDryRunService,
     UserAccountImportJobRepository,

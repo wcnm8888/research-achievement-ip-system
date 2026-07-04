@@ -1,5 +1,60 @@
 # Evidence
 
+## 2026-07-04 Step 73B - Import job history backend read-only API evidence
+
+- Goal:
+  - Implement backend read-only `ImportJob` / `ImportRun` history query APIs that provide safe DTOs for the later Step 73C Web entry, without Web changes, schema/migration changes, production/VPS access, or import apply execution.
+- Initial state:
+  - `git log -1 --oneline`: `6a71b0a docs: design import job web history entry`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - Step 73A and Backend Read API constraints from `memory-bank/import-job-history-database-model-plan.md`.
+  - Latest Step 73A section from `memory-bank/progress.md`.
+  - Prisma `ImportJob`, `ImportRun`, and import enum definitions from `prisma/schema.prisma`.
+  - `apps/api/src/imports/imports.module.ts`.
+  - Existing import dry-run controllers and controller specs for `system:config` guard patterns.
+  - Existing import job repositories for persisted job/run field semantics.
+  - `RequirePermissions` decorator and `PermissionCode.systemConfig`.
+- Implemented files:
+  - `apps/api/src/imports/import-job-history-read.controller.ts`.
+  - `apps/api/src/imports/import-job-history-read.controller.spec.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.spec.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.spec.ts`.
+  - `apps/api/src/imports/imports.module.ts`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - Added `GET /import-jobs` and `GET /import-jobs/:id` as read-only routes.
+  - Both routes use `UserContextGuard`, `PermissionGuard`, and `RequirePermissions(PermissionCode.systemConfig)`.
+  - Query validation rejects invalid `family`, `mode`, `achievementType`, `status`, dates, page, and excessive `pageSize`.
+  - Repository uses Prisma `select` allowlists for list/detail queries and does not select `idempotencyKeyHash`, `scopeHash`, `fileFingerprint`, `requestFingerprint`, or `operatorUserId`.
+  - Detail repository selects `auditLogIds` only to derive `auditCount`, then strips raw audit IDs before returning records to the service.
+  - Service DTOs expose only safe aggregate/status fields, sanitized safe summaries, safe run metadata, and `auditCount` number.
+  - Safe summary sanitizer removes non-allowlisted JSON keys and unsafe string values, including raw identifier-like strings with spaces or email-style characters.
+  - There are no create/update/delete/retry/cleanup/rollback routes.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- import-job-history-read`: PASS, 3 files / 12 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; backend API and docs files only.
+  - `git diff --cached --stat`: PASS after staging.
+  - `git status --short`: PASS before commit; tracked changes limited to Step 73B files and docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, Web files, Prisma schema, migration, package, lockfile, config, or script changes.
+- Boundary:
+  - No Web files were changed.
+  - No Prisma schema or migration was changed.
+  - No build, Web/browser, Docker, or production command was run.
+  - No apply API was executed.
+  - No `.env` or `.env.production` content was read or output.
+  - No `DATABASE_URL` value, credential, password, token, cookie, connection string, raw CSV, email, employee number, DOI, registration number, patent number, title, personnel name, file path, storage key, or mail payload was printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 73A - Import job Web read-only history entry evidence
 
 - Goal:
