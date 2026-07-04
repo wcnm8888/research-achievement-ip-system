@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-07-04 Step 72E-Resume - Department import job idempotency Docker local acceptance
+
+- Status: DONE.
+- Scope completed:
+  - Rebuilt the local API image with `Dockerfile.api`.
+  - Updated/restarted the local API container only.
+  - Applied existing Prisma migrations to the local Docker Postgres database from the API container.
+  - Ran the committed `memory-bank/step72e-department-import-job-acceptance.mjs` helper inside the local API container using the container-provided local DB environment.
+- Acceptance result:
+  - Success path: PASS, first apply returned `EXECUTED`, created 2 department rows, wrote 2 audit rows, and persisted `ImportJob.status = SUCCESS` plus `ImportRun.status = SUCCESS`.
+  - `SUCCESS` replay: PASS, returned `REPLAYED_SUCCESS`, created no additional department/audit/job/run rows, and returned the stored safe counts.
+  - `REJECTED` replay: PASS, first and replayed apply returned safe `EXISTING_CODE` rejection, created no partial department/audit rows, and kept one rejected job/run.
+  - `RUNNING` in-flight: PASS, returned `IMPORT_IN_PROGRESS`, created no department/audit rows, and kept one running job/run.
+  - Safe summary scan: PASS.
+  - Side-effect boundary: PASS.
+- Verification:
+  - `docker build -f Dockerfile.api -t research-achievement-production-api .`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d --no-deps api`: PASS; Docker reported existing orphan containers but no orphan cleanup was run.
+  - Local API container health check after update: PASS.
+  - `docker exec research-achievement-production-api-1 sh -lc 'corepack pnpm prisma migrate deploy'`: PASS; applied existing import job history migration.
+  - `docker exec research-achievement-production-api-1 sh -lc 'node /app/memory-bank/step72e-department-import-job-acceptance.mjs'`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- department-import imports.app-module`: PASS, 5 files / 36 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Explicitly not done:
+  - No Web changes.
+  - No user/account import or achievement import wiring.
+  - No schema, migration, package, lockfile, config, or script changes.
+  - No `.env` or `.env.production` content read or printed.
+  - No `DATABASE_URL` value printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, prune, volume deletion, password/account creation outside the helper's local synthetic no-credential actor row, file deletion, reset, restore, checkout, or known unrelated untracked local artifact handling.
+
 ## 2026-07-04 Step 72E - Department import job idempotency local acceptance
 
 - Status: BLOCKED_ON_LOCAL_DB_ENV.

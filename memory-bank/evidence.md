@@ -1,5 +1,79 @@
 # Evidence
 
+## 2026-07-04 Step 72E-Resume - Department import job idempotency Docker local acceptance evidence
+
+- Goal:
+  - Complete the Step 72E local API/DB acceptance that was previously blocked by missing host `DATABASE_URL`, using the existing local Docker API/Postgres environment.
+- Initial state:
+  - `git log -1 --oneline`: `ac95e89 test: add department import job acceptance`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - `memory-bank/step72e-department-import-job-acceptance.mjs` existed.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Docker preflight:
+  - Local containers were present: local API, local Postgres, and local Web containers.
+  - Local API and Postgres containers were healthy before the final acceptance path.
+  - The API container had a DB environment value available; its value was not printed or recorded.
+  - The pre-existing API container did not contain the Step 72D compiled import-job repository, so the local API image/container had to be updated before acceptance.
+- Docker operations:
+  - `docker build -f Dockerfile.api -t research-achievement-production-api .`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d --no-deps api`: PASS.
+  - Compose reported existing orphan containers; no `--remove-orphans`, prune, volume deletion, or cleanup command was run.
+  - API health after update: PASS.
+  - New API container contained `apps/api/dist/imports/department-import-job.repository.js`.
+  - DB environment presence in the container was checked as a boolean only; no value was printed.
+- Migration:
+  - `docker exec research-achievement-production-api-1 sh -lc 'corepack pnpm prisma migrate deploy'`: PASS.
+  - Existing migration `20260704120000_add_import_job_history` was applied to the local Docker Postgres database.
+  - No new migration was created.
+- Acceptance helper:
+  - The committed helper was copied into `/app/memory-bank/` inside the local API container solely to run it in the container's local DB environment.
+  - `docker exec research-achievement-production-api-1 sh -lc 'node /app/memory-bank/step72e-department-import-job-acceptance.mjs'`: PASS.
+  - Sanitized acceptance output:
+    - `success.status`: `201`.
+    - `success.disposition`: `EXECUTED`.
+    - `success.departmentCountBefore`: `0`.
+    - `success.departmentCountAfter`: `2`.
+    - `success.auditOperationDelta`: `2`.
+    - `success.importJobStatus`: `SUCCESS`.
+    - `success.importRunStatus`: `SUCCESS`.
+    - `success.createdDepartmentsCount`: `2`.
+    - `success.auditCount`: `2`.
+    - `successReplay.disposition`: `REPLAYED_SUCCESS`.
+    - `successReplay.departmentCountBefore`: `2`.
+    - `successReplay.departmentCountAfter`: `2`.
+    - `successReplay.auditOperationDelta`: `0`.
+    - `successReplay.importJobCount`: `1`.
+    - `successReplay.importRunCount`: `1`.
+    - `rejectedReplay.firstStatus`: `400`.
+    - `rejectedReplay.replayStatus`: `400`.
+    - `rejectedReplay.errorCodes`: `EXISTING_CODE`.
+    - `rejectedReplay.newDepartmentCountAfter`: `0`.
+    - `rejectedReplay.importJobStatus`: `REJECTED`.
+    - `rejectedReplay.importRunStatus`: `REJECTED`.
+    - `rejectedReplay.importJobCount`: `1`.
+    - `rejectedReplay.importRunCount`: `1`.
+    - `runningClaim.status`: `201`.
+    - `runningClaim.disposition`: `IMPORT_IN_PROGRESS`.
+    - `runningClaim.departmentCountBefore`: `0`.
+    - `runningClaim.departmentCountAfter`: `0`.
+    - `runningClaim.auditOperationDelta`: `0`.
+    - `runningClaim.importJobCount`: `1`.
+    - `runningClaim.importRunCount`: `1`.
+    - `safeSummaryScan`: `PASS`.
+    - `sideEffectBoundary`: `PASS`.
+- Regression verification:
+  - `corepack pnpm --filter @research-ip/api test -- department-import imports.app-module`: PASS, 5 files / 36 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Boundary:
+  - No Web files were changed.
+  - No user/account import or achievement import behavior was changed.
+  - No runtime/source/schema/API/Web/package/lockfile/config/script file was modified.
+  - No new migration was created.
+  - No `.env` or `.env.production` content was read or printed.
+  - No `DATABASE_URL` value, credential, password, token, cookie, or connection string was printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, prune, volume deletion, password change, file deletion, reset, restore, checkout, drop, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72E - Department import job idempotency local acceptance evidence
 
 - Goal:

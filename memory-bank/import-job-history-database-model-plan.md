@@ -437,3 +437,26 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
 - Regression gates during this Step:
   - `corepack pnpm --filter @research-ip/api test -- department-import imports.app-module`: PASS.
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+
+## Step 72E-Resume Acceptance Addendum
+
+- Date: 2026-07-04.
+- Completed the previously blocked Department import job/idempotency local API/DB acceptance using the existing local Docker API/Postgres environment.
+- Local Docker actions:
+  - rebuilt the local API image;
+  - updated/restarted the local API container;
+  - applied existing Prisma migrations to local Docker Postgres;
+  - copied and ran the committed Step 72E helper inside the API container.
+- Acceptance result: PASS.
+  - First Department `CREATE_ONLY` apply returned `EXECUTED`, created 2 department rows, wrote 2 audit rows, and persisted successful `ImportJob` / `ImportRun` records.
+  - Same-key `SUCCESS` replay returned `REPLAYED_SUCCESS` with no extra department, audit, job, or run rows.
+  - Validation-blocked `REJECTED` replay returned stored safe `EXISTING_CODE` rejection with no partial department/audit writes and no extra job/run rows.
+  - DB-helper seeded `RUNNING` same-key claim returned `IMPORT_IN_PROGRESS` with no business writes.
+  - Safe summary scan passed.
+  - Non-target side-effect boundary passed.
+- Boundary maintained:
+  - no Web, user/account import, achievement import, schema, new migration, runtime source, package, lockfile, config, or script changes;
+  - no `.env` / `.env.production` content read or printed;
+  - no `DATABASE_URL` value printed or recorded;
+  - no production/VPS access;
+  - no Docker orphan cleanup, prune, or volume deletion.
