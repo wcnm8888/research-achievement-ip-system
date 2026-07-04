@@ -1,5 +1,84 @@
 # Evidence
 
+## 2026-07-04 Step 72G - Paper import job idempotency local acceptance evidence
+
+- Goal:
+  - Run local production-like API/DB acceptance for Achievement `PAPER` `CREATE_DRAFT_ONLY` import job history and idempotency with synthetic `S72G_*` data only.
+- Initial state:
+  - `git log -1 --oneline`: `6114993 feat: add paper import job idempotency`.
+  - `git status --short` showed existing untracked local artifacts plus the new Step 72G helper after creation: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, `local-prod-preview-proxy.cjs`, and `memory-bank/step72g-paper-import-job-acceptance.mjs`.
+  - Tracked diff and cached diff were empty at Step start before the helper/documentation changes.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Implemented file:
+  - `memory-bank/step72g-paper-import-job-acceptance.mjs`.
+- Helper scope:
+  - Achievement `PAPER` `CREATE_DRAFT_ONLY` only.
+  - Synthetic `S72G_*` data only.
+  - Temporary local Nest API harness with staging auth through `X-Demo-User-Id`.
+  - Runs against the local Docker API container environment without printing the DB connection value.
+  - No Web, `SOFTWARE_COPYRIGHT`, `PATENT`, user/account import, schema/migration, production/VPS, or real-data path.
+- Docker preflight and migration:
+  - Local API container was healthy before the final acceptance run.
+  - Container contained `apps/api/dist/imports/achievement-import-job.repository.js`.
+  - DB environment presence in the container was checked as a boolean only; no value was printed.
+  - `docker exec research-achievement-production-api-1 sh -lc 'corepack pnpm prisma migrate deploy'`: PASS, no pending migrations.
+- Acceptance helper:
+  - The helper was copied into `/app/memory-bank/` inside the local API container solely to run it in the container's local DB environment.
+  - `docker exec research-achievement-production-api-1 sh -lc 'node /app/memory-bank/step72g-paper-import-job-acceptance.mjs'`: PASS.
+  - Sanitized acceptance output:
+    - `success.status`: `201`.
+    - `success.disposition`: `EXECUTED`.
+    - `success.achievementCountBefore`: `0`.
+    - `success.achievementCountAfter`: `2`.
+    - `success.paperDetailCountAfter`: `2`.
+    - `success.contributorCountAfter`: `2`.
+    - `success.auditOperationDelta`: `2`.
+    - `success.importJobStatus`: `SUCCESS`.
+    - `success.importRunStatus`: `SUCCESS`.
+    - `success.createdAchievementsCount`: `2`.
+    - `success.createdCompanionCount`: `4`.
+    - `success.auditCount`: `2`.
+    - `successReplay.disposition`: `REPLAYED_SUCCESS`.
+    - `successReplay.achievementCountBefore`: `2`.
+    - `successReplay.achievementCountAfter`: `2`.
+    - `successReplay.paperDetailCountBefore`: `2`.
+    - `successReplay.paperDetailCountAfter`: `2`.
+    - `successReplay.contributorCountBefore`: `2`.
+    - `successReplay.contributorCountAfter`: `2`.
+    - `successReplay.auditOperationDelta`: `0`.
+    - `successReplay.importJobCount`: `1`.
+    - `successReplay.importRunCount`: `1`.
+    - `rejectedReplay.firstStatus`: `400`.
+    - `rejectedReplay.replayStatus`: `400`.
+    - `rejectedReplay.errorCodes`: `REQUIRED`.
+    - `rejectedReplay.achievementCountAfter`: `0`.
+    - `rejectedReplay.auditOperationDelta`: `0`.
+    - `rejectedReplay.importJobStatus`: `REJECTED`.
+    - `rejectedReplay.importRunStatus`: `REJECTED`.
+    - `rejectedReplay.importJobCount`: `1`.
+    - `rejectedReplay.importRunCount`: `1`.
+    - `runningClaim.status`: `201`.
+    - `runningClaim.disposition`: `IMPORT_IN_PROGRESS`.
+    - `runningClaim.achievementCountBefore`: `0`.
+    - `runningClaim.achievementCountAfter`: `0`.
+    - `runningClaim.auditOperationDelta`: `0`.
+    - `runningClaim.importJobCount`: `1`.
+    - `runningClaim.importRunCount`: `1`.
+    - `safeSummaryScan`: `PASS`.
+    - `sideEffectBoundary`: `PASS`.
+    - `nonPaperImportJobCountSinceStart`: `0`.
+- Regression verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import department-import imports.app-module`: PASS, 9 files / 74 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Boundary:
+  - No Web files were changed.
+  - No `SOFTWARE_COPYRIGHT`, `PATENT`, or user/account import behavior was changed.
+  - No runtime/source/schema/API/Web/package/lockfile/config/script file was modified, except adding the memory-bank acceptance helper and documentation.
+  - No new schema or migration was created.
+  - No `.env` or `.env.production` content was read or printed.
+  - No `DATABASE_URL` value, credential, password, token, cookie, connection string, raw CSV, DOI, normalized DOI, title, abstract, contributor/owner email/name, raw local path, storage key, or mail payload was printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, prune, volume deletion, file deletion, reset, restore, checkout, drop, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72F - Paper achievement import job idempotency evidence
 
 - Goal:
