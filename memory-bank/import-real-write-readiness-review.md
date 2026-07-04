@@ -277,3 +277,23 @@ The following remain prohibited unless separately authorized in a later Step:
 - Step 71B: local import overall acceptance checklist and script review, using synthetic data only. This can review existing helper coverage and identify gaps without production access or real data.
 - Step 71C: production preflight read-only runbook. This should define read-only commands/checklists for backup evidence, permission confirmation, migration status, dry-run review, and count baselines.
 - Real production write execution must be a separately authorized Step. It is not part of Step 71A, 71B, or 71C by default.
+
+## Step 71B Addendum - Local Acceptance Coverage Checklist
+
+- Date: 2026-07-04.
+- Added `memory-bank/import-real-write-local-acceptance-checklist.md`.
+- Reviewed existing local acceptance helpers and evidence for:
+  - Department metadata Step 65C API and Step 65F Web acceptance.
+  - User/account Step 66C API and Step 66F Web acceptance.
+  - Achievement `PAPER` Step 68C API and Step 68F Web acceptance.
+  - Achievement `SOFTWARE_COPYRIGHT` Step 69C API and Step 69G Web acceptance.
+  - Achievement `PATENT` Step 70C API and Step 70F Web acceptance.
+- Conclusion:
+  - Existing local acceptance evidence is sufficient as a local synthetic baseline for the current readiness review.
+  - It remains Step-specific helper coverage, not a unified rerunnable aggregate suite.
+  - User/account Web acceptance remains no-session/no-credential harness acceptance, not production session-cookie full acceptance.
+  - No production/VPS acceptance, real-data import, Docker/browser rerun, apply API execution, or database write was performed in Step 71B.
+- Notable optional follow-ups:
+  - Add a synthetic aggregate local acceptance plan if future work needs a single end-to-end rerun.
+  - Add explicit user/account missing required email/display-name local helper cases if local-helper parity with focused API tests is required.
+  - Add broad no-unrelated-table delta checks for department import if future aggregate smoke wants the same side-effect matrix across all import families.

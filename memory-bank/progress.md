@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-07-04 Step 71B - Import local acceptance coverage checklist
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-real-write-local-acceptance-checklist.md`.
+  - Updated `memory-bank/import-real-write-readiness-review.md` with the Step 71B addendum.
+  - Reviewed `memory-bank/testing-strategy.md`, the Step 71A readiness review, targeted progress/evidence sections, and the existing Step 65C/65F/66C/66F/68C/68F/69C/69G/70C/70F local acceptance helpers.
+- Key outcome:
+  - Department metadata local acceptance covers Step 65C API and Step 65F Web with synthetic data, success, repeated apply no-new-data effect, limited-user 403, rollback/error paths, safe evidence, and local-only boundary.
+  - User/account local acceptance covers Step 66C API and Step 66F Web with synthetic data, success, repeated apply no-new-user effect, limited-user 403, warning/error paths, credential/session/lifecycle/mail side-effect absence, safe evidence, and no-session/no-credential harness boundary.
+  - Achievement local acceptance covers `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` API/Web paths with synthetic data, success, repeated apply no-new-data effect, limited-user 403, missing identifier/error paths, mixed/unsupported type behavior where applicable, forbidden side-effect deltas, and safe result/error display checks.
+  - No blocker-level local acceptance gap was found for the docs-only readiness baseline.
+  - Optional future gaps were documented: unified aggregate rerun plan, user/account missing required email/display-name local helper cases, and broad department no-unrelated-table delta checks.
+- Explicitly not done:
+  - No runtime/source/schema/API/Web/package/lockfile/config/script changes.
+  - No Docker/browser execution.
+  - No apply API execution.
+  - No database writes.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 71A - Import real-write readiness review
 
 - Status: DONE.

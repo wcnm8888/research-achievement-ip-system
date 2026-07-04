@@ -1,5 +1,39 @@
 # Evidence
 
+## 2026-07-04 Step 71B - Import local acceptance coverage checklist evidence
+
+- Goal:
+  - Audit existing import real-write local acceptance helpers and evidence to produce a local coverage checklist without rerunning Docker/browser/apply flows.
+- Initial state:
+  - `git log -1 --oneline`: `948f7e3 docs: review import real-write readiness`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-real-write-readiness-review.md`.
+  - `memory-bank/testing-strategy.md`.
+  - Targeted Step 65C/65F/66C/66F/68C/68F/69C/69G/70C/70F sections from `memory-bank/progress.md`.
+  - Targeted Step 65C/65F/66C/66F/68C/68F/69C/69G/70C/70F sections from `memory-bank/evidence.md`.
+  - Existing helper files for the same Steps under `memory-bank/`.
+- Implemented files:
+  - `memory-bank/import-real-write-local-acceptance-checklist.md`.
+  - `memory-bank/import-real-write-readiness-review.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Review evidence:
+  - Department metadata Step 65C/65F coverage was summarized for synthetic data, success, repeat apply, limited-user 403, rollback/error paths, safe evidence, and local-only boundary.
+  - User/account Step 66C/66F coverage was summarized for synthetic data, success, repeat apply, limited-user 403, warning/error paths, credential/session/lifecycle/mail side-effect absence, safe evidence, and no-session/no-credential harness boundary.
+  - Achievement Step 68C/68F/69C/69G/70C/70F coverage was summarized for success, repeat apply, missing identifiers, mixed/unsupported type handling where applicable, limited-user 403, forbidden side-effect deltas, and safe result/error redaction.
+  - Optional future gaps were documented; no blocker-level local acceptance gap was found for the docs-only readiness baseline.
+- Verification:
+  - Docs-only Step; typecheck/test/build were not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; 186 added lines scanned, with 0 complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Docker/browser execution, apply API execution, database write, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, runtime/source/schema/API/Web/package/lockfile/config/script change, cleanup, deletion, reset, restore, checkout, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 71A - Import real-write readiness review evidence
 
 - Goal:
