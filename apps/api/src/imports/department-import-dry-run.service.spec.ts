@@ -6,6 +6,7 @@ import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
 import { UserContext } from "../identity/user-context";
+import { DepartmentImportJobRepository } from "./department-import-job.repository";
 import { DepartmentImportDryRunRepository } from "./department-import-dry-run.repository";
 import {
   DepartmentImportApplyRejectedError,
@@ -73,13 +74,25 @@ const createService = (
   const auditService = {
     recordEventInTransaction: vi.fn().mockResolvedValue({ id: "audit-1" }),
   };
+  const importJobRepository = {
+    claimDepartmentCreateOnlyJob: vi.fn().mockResolvedValue({
+      disposition: "RUNNER",
+      jobId: "90000000-0000-4000-8000-000000000001",
+      runId: "90000000-0000-4000-8000-000000000101",
+    }),
+    markSucceededInTransaction: vi.fn().mockResolvedValue(undefined),
+    markRejected: vi.fn().mockResolvedValue(undefined),
+    markFailed: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
     auditService,
+    importJobRepository,
     prisma,
     repository,
     service: new DepartmentImportDryRunService(
       repository as unknown as DepartmentImportDryRunRepository,
+      importJobRepository as unknown as DepartmentImportJobRepository,
       prisma as never,
       auditService as never,
     ),
@@ -268,7 +281,7 @@ describe("DepartmentImportDryRunService", () => {
   });
 
   it("applies create-only department tree in parent-before-child order with audit in the same transaction", async () => {
-    const { service, repository, prisma, auditService } = createService();
+    const { service, repository, prisma, auditService, importJobRepository } = createService();
 
     const result = await service.applyDepartmentCsv(
       adminContext,
@@ -321,10 +334,99 @@ describe("DepartmentImportDryRunService", () => {
         }),
       }),
     );
+    expect(importJobRepository.markSucceededInTransaction).toHaveBeenCalledWith(
+      prisma.tx,
+      expect.objectContaining({
+        jobId: "90000000-0000-4000-8000-000000000001",
+        runId: "90000000-0000-4000-8000-000000000101",
+        acceptedRowCount: 2,
+        createdDepartmentsCount: 2,
+        auditCount: 2,
+        safeErrorCodes: [],
+      }),
+    );
+    const successSummary = JSON.stringify(
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1],
+    );
+    expect(successSummary).not.toContain("Root Department");
+    expect(successSummary).not.toContain("Child Department");
+    expect(successSummary).not.toContain("code,name");
+    expect(successSummary).not.toContain("credential");
+    expect(successSummary).not.toContain("session");
+    expect(successSummary).not.toContain("token");
+  });
+
+  it("returns a safe replay result for a same-key successful job without opening the business transaction", async () => {
+    const { service, repository, prisma, importJobRepository } = createService();
+    importJobRepository.claimDepartmentCreateOnlyJob.mockResolvedValueOnce({
+      disposition: "REPLAYED_SUCCESS",
+      jobId: "90000000-0000-4000-8000-000000000001",
+      latestRunId: "90000000-0000-4000-8000-000000000101",
+      safeSummary: {
+        importType: "DEPARTMENT_METADATA",
+        mode: "CREATE_ONLY",
+        operation: "DEPARTMENT_IMPORT_CREATE",
+        totalRows: 2,
+        acceptedRowCount: 2,
+        createdDepartmentsCount: 2,
+        auditCount: 2,
+        warningCount: 0,
+        errorCount: 0,
+        errors: [],
+      },
+    });
+
+    const result = await service.applyDepartmentCsv(
+      adminContext,
+      makeFile("code,name\nAI_RESEARCH,AI Research\n"),
+      "CREATE_ONLY",
+    );
+
+    expect(result.job).toEqual({
+      disposition: "REPLAYED_SUCCESS",
+      jobId: "90000000-0000-4000-8000-000000000001",
+      runId: "90000000-0000-4000-8000-000000000101",
+    });
+    expect(result.summary).toMatchObject({
+      totalRows: 2,
+      createdRows: 2,
+      errorCount: 0,
+      warningCount: 0,
+    });
+    expect(result.rows).toEqual([]);
+    expect(repository.findDepartmentsByCodes).not.toHaveBeenCalled();
+    expect(repository.createDepartmentInTransaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("returns in-progress for a same-key running job without opening the business transaction", async () => {
+    const { service, repository, prisma, importJobRepository } = createService();
+    importJobRepository.claimDepartmentCreateOnlyJob.mockResolvedValueOnce({
+      disposition: "IMPORT_IN_PROGRESS",
+      jobId: "90000000-0000-4000-8000-000000000001",
+      latestRunId: "90000000-0000-4000-8000-000000000101",
+      safeSummary: null,
+    });
+
+    const result = await service.applyDepartmentCsv(
+      adminContext,
+      makeFile("code,name\nAI_RESEARCH,AI Research\n"),
+      "CREATE_ONLY",
+    );
+
+    expect(result.job).toEqual({
+      disposition: "IMPORT_IN_PROGRESS",
+      jobId: "90000000-0000-4000-8000-000000000001",
+      runId: "90000000-0000-4000-8000-000000000101",
+    });
+    expect(result.summary.createdRows).toBe(0);
+    expect(repository.findDepartmentsByCodes).not.toHaveBeenCalled();
+    expect(repository.createDepartmentInTransaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it("rejects duplicate codes before opening a write transaction", async () => {
-    const { service, prisma, repository, auditService } = createService();
+    const { service, prisma, repository, auditService, importJobRepository } = createService();
 
     await expect(
       service.applyDepartmentCsv(
@@ -337,6 +439,14 @@ describe("DepartmentImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createDepartmentInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledOnce();
+    const rejectedSummary = JSON.stringify(
+      importJobRepository.markRejected.mock.calls[0]![0],
+    );
+    expect(rejectedSummary).toContain("DUPLICATE_IN_FILE");
+    expect(rejectedSummary).not.toContain("First");
+    expect(rejectedSummary).not.toContain("Second");
+    expect(rejectedSummary).not.toContain("code,name");
   });
 
   it("rejects missing parents before opening a write transaction", async () => {
@@ -370,7 +480,7 @@ describe("DepartmentImportDryRunService", () => {
   });
 
   it("rejects transaction-time duplicate code rechecks without creating rows", async () => {
-    const { service, repository, auditService } = createService();
+    const { service, repository, auditService, importJobRepository } = createService();
     repository.findApplyDepartmentsByCodesInTransaction.mockResolvedValueOnce([
       {
         id: ids.root,
@@ -391,6 +501,7 @@ describe("DepartmentImportDryRunService", () => {
 
     expect(repository.createDepartmentInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markRejected).toHaveBeenCalledOnce();
   });
 
   it("rejects transaction-time missing parent rechecks without creating rows", async () => {
@@ -414,7 +525,7 @@ describe("DepartmentImportDryRunService", () => {
   });
 
   it("keeps create and audit work inside one transaction for rollback on partial failure", async () => {
-    const { service, repository, prisma } = createService();
+    const { service, repository, prisma, importJobRepository } = createService();
     repository.createDepartmentInTransaction.mockRejectedValueOnce(new Error("insert failed"));
 
     await expect(
@@ -429,6 +540,13 @@ describe("DepartmentImportDryRunService", () => {
     expect(repository.createDepartmentInTransaction).toHaveBeenCalledWith(
       prisma.tx,
       { code: "AI_RESEARCH", name: "AI Research", parentId: null },
+    );
+    expect(importJobRepository.markFailed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobId: "90000000-0000-4000-8000-000000000001",
+        runId: "90000000-0000-4000-8000-000000000101",
+        failureCode: "UNEXPECTED_EXCEPTION",
+      }),
     );
   });
 });

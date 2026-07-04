@@ -1,5 +1,40 @@
 # Progress
 
+## 2026-07-04 Step 72D - Department import job history idempotency backend wiring
+
+- Status: DONE.
+- Scope completed:
+  - Added `apps/api/src/imports/department-import-job.repository.ts`.
+  - Added `apps/api/src/imports/department-import-job.repository.spec.ts`.
+  - Updated Department metadata `CREATE_ONLY` apply service wiring and tests.
+  - Updated `apps/api/src/imports/imports.module.ts` provider wiring.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with Step 72D implementation addendum.
+  - Updated `memory-bank/evidence.md`.
+- Key outcome:
+  - Department apply now computes server-side idempotency from family, mode, file fingerprint hash, safe target environment discriminator, scope type, and scope hash.
+  - First same-key apply creates `ImportJob` + `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` without opening the business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` without opening the business transaction.
+  - Same-key `REJECTED` returns stored safe rejection through the existing rejected error path.
+  - Same-key `FAILED` blocks automatic retry.
+  - Successful Department apply keeps department creates, audit writes, `ImportRun` success summary, and `ImportJob` success summary in one Prisma transaction.
+  - Validation-blocked apply stores safe `REJECTED` summary without writing department or audit rows.
+  - Safe stored summaries exclude raw CSV, department name, raw file path, credential/session/token/cookie/password/connection string/env/storage/mail payload values.
+- Explicitly not done:
+  - No Web changes.
+  - No user/account import idempotency wiring.
+  - No achievement import idempotency wiring.
+  - No schema or migration changes.
+  - No controller/service/repository outside the backend import job helper and Department apply path.
+  - No apply API execution.
+  - No business data writes.
+  - No Docker/browser execution.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or known untracked local artifact handling.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- department-import imports.app-module`: PASS, 5 files / 36 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`, `git diff --cached --check`, and staged added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 72C - Import job history schema and migration minimum slice
 
 - Status: DONE.

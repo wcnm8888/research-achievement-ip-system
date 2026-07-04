@@ -385,3 +385,28 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
   - Does not add `ImportJobItem`.
   - Does not add seed or backfill.
 - No runtime import apply behavior, controller, service, repository, API route, Web UI, apply execution, business data write, Docker/browser run, production/VPS access, or production DB access was added.
+
+## Step 72D Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented backend-only Department metadata `CREATE_ONLY` import job history and idempotency wiring.
+- Added a Department import job repository for:
+  - server-side same-key claim;
+  - `RUNNING` job/run creation;
+  - same-key success replay;
+  - same-key in-flight response;
+  - stored rejection replay;
+  - failed-job retry blocking;
+  - success, rejection, and failure status updates.
+- Department apply now derives idempotency server-side from:
+  - family `DEPARTMENT`;
+  - mode `CREATE_ONLY`;
+  - SHA-256 file fingerprint;
+  - safe target environment discriminator;
+  - `scopeType` and hashed scope.
+- Department apply success keeps department creation, audit writes, `ImportRun` success summary, and `ImportJob` success summary in the same Prisma transaction.
+- Persisted import summaries store only safe counts, safe error codes, operation code, internal job/run ids, file fingerprint hash, scope hash, status, and audit ids.
+- Persisted import summaries do not store raw CSV content, department names, raw file paths, credentials, sessions, tokens, cookies, passwords, connection strings, `.env` values, storage keys, or mail payloads.
+- Validation-blocked apply marks job/run `REJECTED` and stores a safe validation summary without writing department or audit rows.
+- Same-key `SUCCESS`, `RUNNING`, `REJECTED`, and `FAILED` claims short-circuit before the business write transaction.
+- No user/account import, achievement import, Web UI, schema/migration, apply API execution, Docker/browser, production/VPS, or real-data path was added.

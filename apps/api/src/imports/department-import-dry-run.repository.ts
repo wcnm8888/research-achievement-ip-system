@@ -34,7 +34,7 @@ export type DepartmentImportCreatedDepartment = {
 
 export type DepartmentImportApplyTransactionClient = Pick<
   Prisma.TransactionClient,
-  "department"
+  "department" | "importJob" | "importRun"
 >;
 
 @Injectable()

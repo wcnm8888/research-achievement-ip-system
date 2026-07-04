@@ -6,6 +6,7 @@ import { IdentityModule } from "../identity/identity.module";
 import { AchievementImportDryRunController } from "./achievement-import-dry-run.controller";
 import { AchievementImportDryRunRepository } from "./achievement-import-dry-run.repository";
 import { AchievementImportDryRunService } from "./achievement-import-dry-run.service";
+import { DepartmentImportJobRepository } from "./department-import-job.repository";
 import { DepartmentImportDryRunController } from "./department-import-dry-run.controller";
 import { DepartmentImportDryRunRepository } from "./department-import-dry-run.repository";
 import { DepartmentImportDryRunService } from "./department-import-dry-run.service";
@@ -23,6 +24,7 @@ import { UserAccountImportDryRunService } from "./user-account-import-dry-run.se
   providers: [
     AchievementImportDryRunRepository,
     AchievementImportDryRunService,
+    DepartmentImportJobRepository,
     DepartmentImportDryRunRepository,
     DepartmentImportDryRunService,
     UserAccountImportDryRunRepository,

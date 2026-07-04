@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { createHash } from "node:crypto";
 import { DepartmentStatus } from "@prisma/client";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
@@ -14,6 +15,13 @@ import {
   DepartmentImportCreatedDepartment,
   DepartmentImportDryRunRepository,
 } from "./department-import-dry-run.repository";
+import {
+  DepartmentImportJobClaimInput,
+  DepartmentImportJobExistingClaim,
+  DepartmentImportJobClaimResult,
+  DepartmentImportJobRepository,
+  DepartmentImportJobTransactionClient,
+} from "./department-import-job.repository";
 import {
   appendColumnValidationIssues,
   buildImportDryRunFileMetadata,
@@ -109,6 +117,17 @@ export type DepartmentImportApplySummary = {
   warningCount: number;
 };
 
+export type DepartmentImportApplyJobDisposition =
+  | "EXECUTED"
+  | "REPLAYED_SUCCESS"
+  | "IMPORT_IN_PROGRESS";
+
+export type DepartmentImportApplyJobSummary = {
+  disposition: DepartmentImportApplyJobDisposition;
+  jobId: string;
+  runId: string | null;
+};
+
 export type DepartmentImportApplyResult = {
   importType: typeof departmentImportType;
   dryRun: false;
@@ -117,6 +136,7 @@ export type DepartmentImportApplyResult = {
   summary: DepartmentImportApplySummary;
   errors: DepartmentImportApplyErrorSummary[];
   rows: DepartmentImportApplyRow[];
+  job?: DepartmentImportApplyJobSummary;
 };
 
 type DepartmentImportPlan = {
@@ -163,6 +183,8 @@ export class DepartmentImportDryRunService {
   constructor(
     @Inject(DepartmentImportDryRunRepository)
     private readonly repository: DepartmentImportDryRunRepository,
+    @Inject(DepartmentImportJobRepository)
+    private readonly importJobRepository: DepartmentImportJobRepository,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(AuditService)
@@ -194,8 +216,46 @@ export class DepartmentImportDryRunService {
       throw new InvalidDepartmentImportApplyModeError(mode ?? "(missing)");
     }
 
-    const plan = await this.buildDepartmentImportPlan(file);
-    assertPlanCanApply(plan);
+    const idempotency = buildDepartmentImportIdempotency(context, file);
+    const claim = await this.importJobRepository.claimDepartmentCreateOnlyJob({
+      ...idempotency,
+      fileSizeBytes: file.size,
+      operatorUserId: context.userId,
+    });
+    if (claim.disposition !== "RUNNER") {
+      const existingResult = toExistingImportJobApplyResult(file, claim);
+      if (claim.disposition === "REJECTED" || claim.disposition === "FAILED") {
+        throw new DepartmentImportApplyRejectedError(
+          claim.disposition === "FAILED"
+            ? "Department import job is failed and retry is not enabled."
+            : "Department import apply was already rejected.",
+          existingResult,
+        );
+      }
+
+      return existingResult;
+    }
+
+    let plan: DepartmentImportPlan;
+    try {
+      plan = await this.buildDepartmentImportPlan(file);
+    } catch (error) {
+      await this.importJobRepository.markRejected(
+        toInvalidCsvRejectedImportJobInput(claim, file, error),
+      );
+      throw error;
+    }
+    try {
+      assertPlanCanApply(plan);
+    } catch (error) {
+      if (error instanceof DepartmentImportApplyRejectedError) {
+        await this.importJobRepository.markRejected(
+          toRejectedImportJobInput(claim, error.result),
+        );
+      }
+
+      throw error;
+    }
 
     const orderedRows = orderRowsForCreate(plan.rows);
 
@@ -203,6 +263,7 @@ export class DepartmentImportDryRunService {
       const createdRows = await this.prisma.$transaction(async (tx) => {
         const departmentClient = tx as DepartmentImportApplyTransactionClient;
         const auditClient = tx as AuditTransactionClient;
+        const importJobClient = tx as DepartmentImportJobTransactionClient;
         const codes = orderedRows.map((row) => row.parsed.code!);
         const existingCodes =
           await this.repository.findApplyDepartmentsByCodesInTransaction(
@@ -251,6 +312,7 @@ export class DepartmentImportDryRunService {
 
         const createdByCode = new Map<string, DepartmentImportCreatedDepartment>();
         const appliedRows: DepartmentImportApplyRow[] = [];
+        const auditLogIds: string[] = [];
 
         for (const row of orderedRows) {
           const parentId = resolveParentId(row, parentByCode, createdByCode);
@@ -263,10 +325,11 @@ export class DepartmentImportDryRunService {
             },
           );
 
-          await this.auditService.recordEventInTransaction(
+          const auditLog = await this.auditService.recordEventInTransaction(
             auditClient,
             toDepartmentImportCreateAuditEvent(context, created, row, plan),
           );
+          auditLogIds.push(auditLog.id);
 
           createdByCode.set(created.code, created);
           appliedRows.push({
@@ -277,17 +340,29 @@ export class DepartmentImportDryRunService {
           });
         }
 
+        await this.importJobRepository.markSucceededInTransaction(
+          importJobClient,
+          toSuccessfulImportJobInput(claim, plan, appliedRows, auditLogIds),
+        );
+
         return appliedRows;
       });
 
-      return buildSuccessfulApplyResult(plan, createdRows);
+      return withJobSummary(buildSuccessfulApplyResult(plan, createdRows), {
+        disposition: "EXECUTED",
+        jobId: claim.jobId,
+        runId: claim.runId,
+      });
     } catch (error) {
       if (error instanceof DepartmentImportApplyRejectedError) {
+        await this.importJobRepository.markRejected(
+          toRejectedImportJobInput(claim, error.result),
+        );
         throw error;
       }
 
       if (this.repository.isPrismaUniqueConflict(error)) {
-        throw new DepartmentImportApplyRejectedError(
+        const rejected = new DepartmentImportApplyRejectedError(
           "Department import apply encountered a uniqueness conflict.",
           buildRejectedApplyResult(plan, [
             {
@@ -298,7 +373,18 @@ export class DepartmentImportDryRunService {
             },
           ]),
         );
+        await this.importJobRepository.markRejected(
+          toRejectedImportJobInput(claim, rejected.result),
+        );
+        throw rejected;
       }
+
+      await this.importJobRepository.markFailed({
+        jobId: claim.jobId,
+        runId: claim.runId,
+        failureCode: "UNEXPECTED_EXCEPTION",
+        failureStage: "TRANSACTION",
+      });
 
       throw error instanceof Error
         ? error
@@ -396,6 +482,305 @@ const buildRejectedApplyResult = (
   errors,
   rows: [],
 });
+
+type StoredDepartmentImportSafeError = {
+  rowNumber: number | null;
+  field: string;
+  code: string;
+};
+
+type StoredDepartmentImportSafeSummary = {
+  importType: typeof departmentImportType;
+  mode: DepartmentImportApplyMode;
+  operation: "DEPARTMENT_IMPORT_CREATE";
+  totalRows: number;
+  acceptedRowCount: number;
+  createdDepartmentsCount: number;
+  auditCount: number;
+  warningCount: number;
+  errorCount: number;
+  errors: StoredDepartmentImportSafeError[];
+};
+
+const buildDepartmentImportIdempotency = (
+  context: UserContext,
+  file: DepartmentImportDryRunFile,
+): Omit<DepartmentImportJobClaimInput, "fileSizeBytes" | "operatorUserId"> => {
+  const targetEnvironment = toSafeTargetEnvironment(process.env.NODE_ENV);
+  const scopeType = "GLOBAL_OPERATOR_SCOPE";
+  const scopeHash = sha256Hex(
+    JSON.stringify({
+      operatorUserId: context.userId,
+      operatorDepartmentId: context.departmentId,
+      scopeType,
+    }),
+  );
+  const fileFingerprint = sha256Hex(file.buffer);
+  const keyMaterial = {
+    family: "DEPARTMENT",
+    mode: "CREATE_ONLY",
+    fileFingerprint,
+    targetEnvironment,
+    scopeType,
+    scopeHash,
+  };
+
+  return {
+    idempotencyKeyHash: sha256Hex(JSON.stringify(keyMaterial)),
+    targetEnvironment,
+    scopeType,
+    scopeHash,
+    fileFingerprint,
+    requestFingerprint: sha256Hex(JSON.stringify(keyMaterial)),
+  };
+};
+
+const toSafeTargetEnvironment = (value: string | undefined): string => {
+  const normalized = (value || "development")
+    .replace(/[^A-Za-z0-9_-]/g, "_")
+    .slice(0, 64);
+
+  return normalized || "development";
+};
+
+const sha256Hex = (value: string | Buffer): string =>
+  createHash("sha256").update(value).digest("hex");
+
+const toExistingImportJobApplyResult = (
+  file: DepartmentImportDryRunFile,
+  claim: DepartmentImportJobExistingClaim,
+): DepartmentImportApplyResult => {
+  const safeSummary = toStoredDepartmentImportSafeSummary(claim.safeSummary);
+  const baseSummary = safeSummary
+    ? toApplySummaryFromStoredSafeSummary(safeSummary)
+    : emptyApplySummary();
+  const errors =
+    claim.disposition === "REJECTED" && safeSummary
+      ? safeSummary.errors.map(toStoredSafeErrorResult)
+      : claim.disposition === "FAILED"
+        ? [
+            {
+              rowNumber: null,
+              field: "importJob",
+              code: "IMPORT_JOB_FAILED",
+              message: "Import job failed and automatic retry is not enabled.",
+            },
+          ]
+        : [];
+
+  return {
+    importType: departmentImportType,
+    dryRun: false,
+    mode: "CREATE_ONLY",
+    file: buildImportDryRunFileMetadata(file, "departments.csv"),
+    summary: baseSummary,
+    errors,
+    rows: [],
+    job: {
+      disposition:
+        claim.disposition === "REPLAYED_SUCCESS"
+          ? "REPLAYED_SUCCESS"
+          : "IMPORT_IN_PROGRESS",
+      jobId: claim.jobId,
+      runId: claim.latestRunId,
+    },
+  };
+};
+
+const toSuccessfulImportJobInput = (
+  claim: DepartmentImportJobClaimResult & { disposition: "RUNNER" },
+  plan: DepartmentImportPlan,
+  rows: DepartmentImportApplyRow[],
+  auditLogIds: string[],
+) => {
+  const safeSummary: StoredDepartmentImportSafeSummary = {
+    importType: departmentImportType,
+    mode: "CREATE_ONLY",
+    operation: "DEPARTMENT_IMPORT_CREATE",
+    totalRows: plan.summary.totalRows,
+    acceptedRowCount: plan.summary.createCandidates,
+    createdDepartmentsCount: rows.length,
+    auditCount: auditLogIds.length,
+    warningCount: 0,
+    errorCount: 0,
+    errors: [],
+  };
+
+  return {
+    jobId: claim.jobId,
+    runId: claim.runId,
+    acceptedRowCount: safeSummary.acceptedRowCount,
+    createdDepartmentsCount: safeSummary.createdDepartmentsCount,
+    auditCount: safeSummary.auditCount,
+    warningCount: safeSummary.warningCount,
+    errorCount: safeSummary.errorCount,
+    safeErrorCodes: [],
+    safeSummary,
+    auditLogIds,
+  };
+};
+
+const toRejectedImportJobInput = (
+  claim: DepartmentImportJobClaimResult & { disposition: "RUNNER" },
+  result: DepartmentImportApplyResult,
+) => {
+  const safeErrors = result.errors.map(toStoredSafeError);
+  const safeSummary: StoredDepartmentImportSafeSummary = {
+    importType: departmentImportType,
+    mode: "CREATE_ONLY",
+    operation: "DEPARTMENT_IMPORT_CREATE",
+    totalRows: result.summary.totalRows,
+    acceptedRowCount: 0,
+    createdDepartmentsCount: 0,
+    auditCount: 0,
+    warningCount: result.summary.warningCount,
+    errorCount: result.summary.errorCount,
+    errors: safeErrors,
+  };
+
+  return {
+    jobId: claim.jobId,
+    runId: claim.runId,
+    acceptedRowCount: 0,
+    warningCount: result.summary.warningCount,
+    errorCount: result.summary.errorCount,
+    safeErrorCodes: [...new Set(safeErrors.map((error) => error.code))],
+    safeSummary,
+  };
+};
+
+const toInvalidCsvRejectedImportJobInput = (
+  claim: DepartmentImportJobClaimResult & { disposition: "RUNNER" },
+  file: DepartmentImportDryRunFile,
+  error: unknown,
+) => {
+  const code = error instanceof InvalidImportCsvError ? "INVALID_CSV" : "VALIDATION_ERROR";
+  return toRejectedImportJobInput(
+    claim,
+    {
+      importType: departmentImportType,
+      dryRun: false,
+      mode: "CREATE_ONLY",
+      file: buildImportDryRunFileMetadata(file, "departments.csv"),
+      summary: {
+        totalRows: 0,
+        createdRows: 0,
+        skippedRows: 0,
+        failedRows: 1,
+        errorCount: 1,
+        warningCount: 0,
+      },
+      errors: [
+        {
+          rowNumber: null,
+          field: "file",
+          code,
+          message: "Import CSV could not be parsed for apply.",
+        },
+      ],
+      rows: [],
+    },
+  );
+};
+
+const withJobSummary = (
+  result: DepartmentImportApplyResult,
+  job: DepartmentImportApplyJobSummary,
+): DepartmentImportApplyResult => ({
+  ...result,
+  job,
+});
+
+const toStoredSafeError = (
+  error: DepartmentImportApplyErrorSummary,
+): StoredDepartmentImportSafeError => ({
+  rowNumber: error.rowNumber,
+  field: error.field,
+  code: error.code,
+});
+
+const toStoredSafeErrorResult = (
+  error: StoredDepartmentImportSafeError,
+): DepartmentImportApplyErrorSummary => ({
+  ...error,
+  message: `Stored department import rejection code: ${error.code}.`,
+});
+
+const toApplySummaryFromStoredSafeSummary = (
+  summary: StoredDepartmentImportSafeSummary,
+): DepartmentImportApplySummary => ({
+  totalRows: summary.totalRows,
+  createdRows: summary.createdDepartmentsCount,
+  skippedRows: summary.warningCount,
+  failedRows: summary.errorCount,
+  errorCount: summary.errorCount,
+  warningCount: summary.warningCount,
+});
+
+const emptyApplySummary = (): DepartmentImportApplySummary => ({
+  totalRows: 0,
+  createdRows: 0,
+  skippedRows: 0,
+  failedRows: 0,
+  errorCount: 0,
+  warningCount: 0,
+});
+
+const toStoredDepartmentImportSafeSummary = (
+  value: unknown,
+): StoredDepartmentImportSafeSummary | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const summary = value as Partial<StoredDepartmentImportSafeSummary>;
+  if (
+    summary.importType !== departmentImportType ||
+    summary.mode !== "CREATE_ONLY" ||
+    typeof summary.totalRows !== "number" ||
+    typeof summary.createdDepartmentsCount !== "number" ||
+    typeof summary.auditCount !== "number" ||
+    typeof summary.warningCount !== "number" ||
+    typeof summary.errorCount !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    importType: departmentImportType,
+    mode: "CREATE_ONLY",
+    operation: "DEPARTMENT_IMPORT_CREATE",
+    totalRows: summary.totalRows,
+    acceptedRowCount:
+      typeof summary.acceptedRowCount === "number" ? summary.acceptedRowCount : 0,
+    createdDepartmentsCount: summary.createdDepartmentsCount,
+    auditCount: summary.auditCount,
+    warningCount: summary.warningCount,
+    errorCount: summary.errorCount,
+    errors: Array.isArray(summary.errors)
+      ? summary.errors
+          .filter(isStoredSafeError)
+          .map((error) => ({
+            rowNumber: error.rowNumber,
+            field: error.field,
+            code: error.code,
+          }))
+      : [],
+  };
+};
+
+const isStoredSafeError = (value: unknown): value is StoredDepartmentImportSafeError => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const error = value as Partial<StoredDepartmentImportSafeError>;
+  return (
+    (typeof error.rowNumber === "number" || error.rowNumber === null) &&
+    typeof error.field === "string" &&
+    typeof error.code === "string"
+  );
+};
 
 const toApplyErrorSummaries = (
   rows: readonly DepartmentImportDryRunRow[],

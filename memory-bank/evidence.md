@@ -1,5 +1,60 @@
 # Evidence
 
+## 2026-07-04 Step 72D - Department import job history idempotency evidence
+
+- Goal:
+  - Add backend-only Department metadata `CREATE_ONLY` ImportJob / ImportRun history and idempotency behavior without Web changes, user/account or achievement wiring, apply API execution, Docker/browser, production/VPS access, or business data writes.
+- Initial state:
+  - `git log -1 --oneline`: `4856d14 feat: add import job history schema`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - Step 72B addendum from `memory-bank/import-job-history-idempotency-plan.md`.
+  - `memory-bank/import-real-write-final-archive.md`.
+  - `prisma/schema.prisma` `ImportJob` / `ImportRun` section.
+  - Department import apply service, repository, controller, module, and tests under `apps/api/src/imports/`.
+  - Existing audit transaction service/repository patterns.
+- Implemented files:
+  - `apps/api/src/imports/department-import-job.repository.ts`.
+  - `apps/api/src/imports/department-import-job.repository.spec.ts`.
+  - `apps/api/src/imports/department-import-dry-run.repository.ts`.
+  - `apps/api/src/imports/department-import-dry-run.service.ts`.
+  - `apps/api/src/imports/department-import-dry-run.service.spec.ts`.
+  - `apps/api/src/imports/imports.module.ts`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - Department apply computes server-side idempotency using `DEPARTMENT`, `CREATE_ONLY`, SHA-256 file fingerprint, safe target environment discriminator, scope type, and scope hash.
+  - First same-key claim creates `ImportJob` and `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` without re-parsing or opening the business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` without re-parsing or opening the business transaction.
+  - Same-key `REJECTED` returns stored safe rejection through the existing rejected error path.
+  - Same-key `FAILED` blocks automatic retry.
+  - Success path updates department rows, audit rows, `ImportRun` success summary, and `ImportJob` success summary inside the same Prisma transaction.
+  - Validation warning/error rejection stores `REJECTED` safe summary and writes no department or audit rows.
+  - Repository-level unique-conflict simulation covers concurrent same-key claim behavior: one runner, duplicate claim reads existing job and creates no second run.
+  - Stored safe summaries are tested not to include raw CSV, department name, credential, session, or token strings.
+- Verification:
+  - Initial focused `corepack pnpm --filter @research-ip/api test -- department-import` failed before updating service mocks for the new import job repository; no source rollback or cleanup occurred.
+  - `corepack pnpm --filter @research-ip/api test -- department-import`: PASS after updating mocks, 3 files / 28 tests.
+  - `corepack pnpm --filter @research-ip/api test -- department-import imports.app-module`: PASS, 5 files / 36 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Staged added-lines sensitive-value scan: PASS; no complete URL, connection-string value, private-key value, AccessKey value, bearer-token value, cookie/session value, password value, or secret/token/API-key value matches.
+- Boundary:
+  - No Web files were changed.
+  - No user/account import or achievement import behavior was changed.
+  - No schema or migration was added in Step 72D.
+  - No apply API was executed.
+  - No business data was written.
+  - No Docker/browser execution occurred.
+  - No `.env` or `.env.production` contents were read or output.
+  - No production/VPS access, production DB/config access, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72C - Import job history schema and migration evidence
 
 - Goal:
