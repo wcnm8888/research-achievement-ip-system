@@ -1,5 +1,23 @@
 # Achievement Import Real-Write Safety Plan
 
+## Step 70A Patent Boundary Addendum
+
+- Date: 2026-07-04.
+- Added `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+- `PATENT` remains suitable only as a separate backend-first safety slice after `PAPER` and `SOFTWARE_COPYRIGHT` local closure.
+- The first patent apply slice should keep the established import-write invariant:
+  - `CREATE_DRAFT_ONLY`;
+  - `DRAFT` only;
+  - create-only;
+  - all-or-nothing transaction;
+  - no partial success;
+  - server-side CSV re-parse/revalidate;
+  - transaction-time owner, department, contributor, and normalized identifier rechecks;
+  - safe audit evidence only.
+- First-slice patent duplicate boundary should require `applicationNoNormalized`; `grantNoNormalized` may be optional only when application number is present. Grant-only rows and rows without normalized patent identifiers should be rejected.
+- `nextFeeDate` and `feeAmount` should remain dry-run preview fields only for the first patent apply slice. Do not write them to `PatentDetail`, do not create `FeeRecord` / `FeeReviewHistory` / `ReminderTask`, and do not include them in audit `newValue`.
+- Web expansion remains deferred until backend API acceptance for `PATENT` passes with synthetic data and proves forbidden side-effect deltas stay 0.
+
 ## Step 69A Next-Type Planning Addendum
 
 - Date: 2026-07-02.

@@ -1,5 +1,21 @@
 # Decisions
 
+## D248 - Patent import first apply slice requires application number and excludes fee reminders
+
+- Date: 2026-07-04.
+- Context: Step 70A designs the first safe `PATENT` achievement import apply slice after `PAPER` and `SOFTWARE_COPYRIGHT` local closure. The task is documentation-only and prohibits API/Web implementation, apply API execution, Docker/browser operation, database writes, production/VPS access, `.env` / `.env.production` content reads, real-data import, schema/migration/package/lockfile/config/script changes, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Keep first `PATENT` apply backend-only, `CREATE_DRAFT_ONLY`, `DRAFT` only, create-only, all-or-nothing, and no partial success.
+  - Allow only `Achievement(type=PATENT, status=DRAFT)`, `PatentDetail`, `AchievementContributor`, and safe audit evidence.
+  - Require `applicationNoNormalized` for every patent apply row.
+  - Allow `grantNoNormalized` only as an optional additional conflict boundary when application number is also present.
+  - Reject grant-only patent rows and rows with neither normalized patent identifier in the first slice.
+  - Treat `nextFeeDate` and `feeAmount` as dry-run preview fields only in the first patent apply slice; do not write them to `PatentDetail` and do not record them in audit `newValue`.
+  - Do not create `FeeRecord`, `FeeReviewHistory`, `ReminderTask`, workflow instance/task/action, attachment/storage, notification, search log/index, resource grant, import job, or state-machine side effects.
+  - Defer `PATENT` Web apply expansion until backend API tests and local API acceptance prove duplicate safety and forbidden fee/reminder side-effect deltas.
+- Scope:
+  - This decision does not authorize runtime implementation, apply API execution, Web changes, Docker/browser acceptance, database writes, production/VPS access, production DB/config access, real-data import, Prisma schema/migration changes, package/lockfile/config changes, fee/reminder/notification/search/resource grant/import job creation, state-machine transitions, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+
 ## D247 - Achievement import Web apply entry expands to homogeneous SOFTWARE_COPYRIGHT
 
 - Date: 2026-07-04.

@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-07-04 Step 70A - Patent import fee reminder boundary plan
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - Updated `memory-bank/achievement-import-next-type-safety-plan.md` and `memory-bank/achievement-import-real-write-safety-plan.md` with Step 70A addenda.
+  - Recorded decision D248 in `memory-bank/decisions.md`.
+  - Reviewed only the requested testing strategy, prior achievement import safety plans, Step 68A through Step 69G progress snippets, achievement import dry-run service/repository, and targeted Prisma model snippets for patent, fee, reminder, notification, workflow, search, and resource access grant boundaries.
+- Key outcome:
+  - The first `PATENT` apply slice should remain backend-only `CREATE_DRAFT_ONLY`, `DRAFT` only, create-only, all-or-nothing, and no partial success.
+  - Allowed data effects should be limited to `Achievement(type=PATENT, status=DRAFT)`, `PatentDetail`, `AchievementContributor`, and safe audit evidence.
+  - The first-slice durable duplicate boundary should require `applicationNoNormalized`; `grantNoNormalized` may be optional only when application number is present.
+  - Grant-only rows and rows with neither normalized patent identifier should be rejected in Step 70B.
+  - `nextFeeDate` and `feeAmount` should remain dry-run preview fields only in the first patent apply slice; do not write them to `PatentDetail`, do not create `FeeRecord` / `FeeReviewHistory` / `ReminderTask`, and do not include them in audit `newValue`.
+  - `PATENT` Web expansion should wait until backend API tests and local API acceptance prove duplicate safety and forbidden fee/reminder/workflow side-effect deltas.
+- Explicitly not done:
+  - No API/Web implementation.
+  - No apply API call.
+  - No Docker/browser operation.
+  - No database write.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, schema/migration/package/lockfile/config/script change, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `PATENT` apply support was added.
+  - No workflow, attachment/storage, fee, fee review history, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 69G - Achievement SOFTWARE_COPYRIGHT import Web local acceptance
 
 - Status: DONE.

@@ -1,5 +1,44 @@
 # Evidence
 
+## 2026-07-04 Step 70A - Patent import fee reminder boundary evidence
+
+- Goal:
+  - Design the first safe `PATENT` achievement import apply slice and explicitly separate patent detail import from fee, reminder, workflow, attachment, notification, search, and authorization side effects.
+- Initial state:
+  - `git log -1 --oneline`: `346b088 test: add software copyright import web acceptance`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - Step 68A through Step 69G snippets from `memory-bank/progress.md`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.ts`.
+  - Targeted Prisma schema snippets for `PatentDetail`, `FeeRecord`, `FeeReviewHistory`, `ReminderTask`, `Notification`, `WorkflowInstance`, `WorkflowTask`, `WorkflowAction`, `SearchLog`, and `ResourceAccessGrant`.
+- Implemented files:
+  - `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - `memory-bank/achievement-import-real-write-safety-plan.md`.
+  - `memory-bank/decisions.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Planning evidence:
+  - First `PATENT` apply slice remains backend-only `CREATE_DRAFT_ONLY`, `DRAFT` only, create-only, all-or-nothing, and no partial success.
+  - Allowed data effects are limited to `Achievement(type=PATENT, status=DRAFT)`, `PatentDetail`, `AchievementContributor`, and safe audit evidence.
+  - Duplicate boundary requires `applicationNoNormalized`; `grantNoNormalized` is optional only when application number is present.
+  - Grant-only rows and rows without normalized patent identifiers are rejected in the first slice.
+  - `nextFeeDate` and `feeAmount` remain dry-run preview fields only for the first patent apply slice and are excluded from `PatentDetail` writes and audit `newValue`.
+  - Step 70B must not create fee records, fee review history, reminder tasks, workflow rows, attachments/storage, notifications, search logs/indexes, resource access grants, import jobs, or state-machine side effects.
+  - `PATENT` Web expansion is deferred until backend API tests and local API acceptance prove duplicate safety and forbidden side-effect deltas.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; no credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No API/Web implementation, apply API execution, Docker/browser operation, database write, production/VPS access, production DB/config access, real-data import, credential/session/token/cookie/password/secret/private-key handling, local artifact cleanup, deletion, reset, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 69G - Achievement SOFTWARE_COPYRIGHT import Web local acceptance evidence
 
 - Goal:

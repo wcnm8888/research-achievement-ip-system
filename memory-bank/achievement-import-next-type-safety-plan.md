@@ -1,5 +1,23 @@
 # Achievement Import Next Type Safety Plan
 
+## Step 70A Patent Boundary Addendum
+
+- Date: 2026-07-04.
+- Added `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+- Decision: the first `PATENT` apply slice should remain backend-only `CREATE_DRAFT_ONLY`, `DRAFT` only, create-only, all-or-nothing, and no partial success.
+- Allowed first-slice data effects should be limited to `Achievement(type=PATENT, status=DRAFT)`, `PatentDetail`, `AchievementContributor`, and safe audit evidence.
+- Durable duplicate boundary:
+  - require `applicationNoNormalized` for every `PATENT` apply row;
+  - allow `grantNoNormalized` only as an optional second conflict boundary when application number is also present;
+  - reject grant-only rows in the first slice;
+  - reject rows with neither normalized patent identifier.
+- Fee/reminder boundary:
+  - dry-run may continue to preview `nextFeeDate` and `feeAmount`;
+  - first patent apply should not write `nextFeeDate` or `feeAmount` into `PatentDetail`;
+  - first patent apply must not create `FeeRecord`, `FeeReviewHistory`, `ReminderTask`, `Notification`, or fee/reminder audit values.
+- Still forbidden: workflow instance/task/action, attachment/storage, fee record, fee review history, reminder task, notification, search log/index, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Web expansion for `PATENT` should wait until backend API tests and local API acceptance prove duplicate safety and forbidden fee/reminder side-effect deltas.
+
 ## Step 69B Implementation Addendum
 
 - Date: 2026-07-02.
