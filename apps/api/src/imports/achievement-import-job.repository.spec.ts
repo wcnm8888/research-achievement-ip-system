@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AchievementImportJobRepository } from "./achievement-import-job.repository";
 
 const claimInput = {
+  achievementType: "PAPER" as const,
   idempotencyKeyHash: "hash-key",
   targetEnvironment: "test",
   scopeType: "GLOBAL_OPERATOR_SCOPE",
@@ -32,7 +33,7 @@ describe("AchievementImportJobRepository", () => {
     };
     const repository = new AchievementImportJobRepository(prisma as never);
 
-    const result = await repository.claimPaperCreateDraftJob(claimInput);
+    const result = await repository.claimAchievementCreateDraftJob(claimInput);
 
     expect(result).toEqual({
       disposition: "RUNNER",
@@ -55,6 +56,45 @@ describe("AchievementImportJobRepository", () => {
       select: { id: true },
     });
     expect(prisma.importJob.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("creates a running ACHIEVEMENT SOFTWARE_COPYRIGHT job for a first same-key claim", async () => {
+    const tx = {
+      importJob: {
+        create: vi.fn().mockResolvedValue({ id: "job-1" }),
+        update: vi.fn().mockResolvedValue({ id: "job-1" }),
+      },
+      importRun: {
+        create: vi.fn().mockResolvedValue({ id: "run-1" }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+      importJob: {
+        findFirst: vi.fn(),
+      },
+    };
+    const repository = new AchievementImportJobRepository(prisma as never);
+
+    const result = await repository.claimAchievementCreateDraftJob({
+      ...claimInput,
+      achievementType: "SOFTWARE_COPYRIGHT",
+    });
+
+    expect(result).toEqual({
+      disposition: "RUNNER",
+      jobId: "job-1",
+      runId: "run-1",
+    });
+    expect(tx.importJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        importFamily: "ACHIEVEMENT",
+        mode: "CREATE_DRAFT_ONLY",
+        achievementType: "SOFTWARE_COPYRIGHT",
+        status: "RUNNING",
+      }),
+      select: { id: true },
+    });
   });
 
   it("resolves a same-key unique conflict as in-progress without creating another run", async () => {
@@ -80,7 +120,7 @@ describe("AchievementImportJobRepository", () => {
     };
     const repository = new AchievementImportJobRepository(prisma as never);
 
-    const result = await repository.claimPaperCreateDraftJob(claimInput);
+    const result = await repository.claimAchievementCreateDraftJob(claimInput);
 
     expect(result).toEqual({
       disposition: "IMPORT_IN_PROGRESS",

@@ -1,5 +1,52 @@
 # Evidence
 
+## 2026-07-04 Step 72H - Software copyright achievement import job idempotency evidence
+
+- Goal:
+  - Add backend-only `ImportJob` / `ImportRun` history and idempotency behavior for Achievement `SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` apply without Web changes, `PATENT` / user-account wiring, schema/migration changes, apply API execution, Docker/browser, production/VPS access, or real-data writes.
+- Initial state:
+  - `git log -1 --oneline`: `74e1602 test: add paper import job acceptance`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - Tracked diff and cached diff were empty at Step start.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - Targeted Step 72F / 72G sections from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - `apps/api/src/imports/achievement-import-job.repository.ts`.
+  - Achievement import dry-run/apply service, repository, controller, AppModule route tests, SoftwareCopyrightDetail create path, and Prisma `ImportJob` / `ImportRun` schema.
+- Implemented files:
+  - `apps/api/src/imports/achievement-import-job.repository.ts`.
+  - `apps/api/src/imports/achievement-import-job.repository.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - Achievement job claim now accepts an achievement import type and creates `ImportJob.achievementType` as `PAPER` or `SOFTWARE_COPYRIGHT`.
+  - `SOFTWARE_COPYRIGHT` apply derives idempotency server-side using `ACHIEVEMENT`, `CREATE_DRAFT_ONLY`, `SOFTWARE_COPYRIGHT`, SHA-256 file fingerprint, safe target environment discriminator, scope type, and scope hash.
+  - First `SOFTWARE_COPYRIGHT` same-key claim creates `ImportJob` and `ImportRun` in `RUNNING`.
+  - Same-key `SUCCESS` returns safe `REPLAYED_SUCCESS` with stored safe counts and no business transaction.
+  - Same-key `RUNNING` returns `IMPORT_IN_PROGRESS` with no business transaction.
+  - Same-key `REJECTED` and `FAILED` are returned through the existing rejected error path; `FAILED` remains non-retryable.
+  - `SOFTWARE_COPYRIGHT` success path updates achievement row, `SoftwareCopyrightDetail`, contributors, audit rows, `ImportRun` success summary, and `ImportJob` success summary inside the same Prisma transaction.
+  - `SOFTWARE_COPYRIGHT` validation warning/error rejection stores `REJECTED` safe summary and writes no achievement/detail/contributor/audit rows.
+  - `PATENT` apply path explicitly remains outside import job claim in this Step.
+  - Safe summary tests assert persisted summaries exclude raw title, owner/contributor email, contributor CSV fragments, registration number fragments, run environment, credential/session/token strings, and only contain safe counts/codes/status/operation values.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import`: PASS, 4 files / 42 tests.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import department-import imports.app-module`: PASS, 9 files / 78 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Boundary:
+  - No Web files were changed.
+  - No `PATENT` or user/account import job/idempotency behavior was added.
+  - No schema or migration was added.
+  - No apply API was executed.
+  - No real business data was written.
+  - No Docker/browser execution occurred.
+  - No `.env` or `.env.production` content was read or output.
+  - No production/VPS access, production DB/config access, real-data import, Docker orphan cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72G - Paper import job idempotency local acceptance evidence
 
 - Goal:

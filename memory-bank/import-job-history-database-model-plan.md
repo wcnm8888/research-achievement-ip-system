@@ -513,3 +513,27 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
   - no `DATABASE_URL` value printed or recorded;
   - no production/VPS access;
   - no Docker orphan cleanup, prune, or volume deletion.
+
+## Step 72H Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented backend-only Achievement `SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` import job history and idempotency wiring.
+- Generalized the Achievement import job repository from PAPER-only claim naming to create-draft achievement job claim naming.
+- Achievement job claim now supports:
+  - `PAPER`;
+  - `SOFTWARE_COPYRIGHT`.
+- `SOFTWARE_COPYRIGHT` apply now derives idempotency server-side from:
+  - family `ACHIEVEMENT`;
+  - mode `CREATE_DRAFT_ONLY`;
+  - achievement type `SOFTWARE_COPYRIGHT`;
+  - SHA-256 file fingerprint;
+  - safe target environment discriminator;
+  - `scopeType` and hashed scope.
+- `SOFTWARE_COPYRIGHT` apply success keeps achievement creation, `SoftwareCopyrightDetail`, contributors, audit writes, `ImportRun` success summary, and `ImportJob` success summary in the same Prisma transaction.
+- Persisted `SOFTWARE_COPYRIGHT` import summaries store only safe counts, safe error codes, operation code, status/type/mode fields, internal job/run metadata, file fingerprint hash, scope hash, and audit ids.
+- Persisted `SOFTWARE_COPYRIGHT` import summaries do not store raw CSV content, raw registration number, normalized registration number, title, owner/contributor names or emails, raw file paths, credentials, sessions, tokens, cookies, passwords, connection strings, `.env` values, storage keys, run environment values, or mail payloads.
+- Validation-blocked `SOFTWARE_COPYRIGHT` apply marks job/run `REJECTED` and stores a safe validation summary without writing achievement/detail/contributor/audit rows.
+- Same-key `SOFTWARE_COPYRIGHT` `SUCCESS`, `RUNNING`, `REJECTED`, and `FAILED` claims short-circuit before the business write transaction.
+- PAPER job/idempotency behavior remains covered by regression tests.
+- `PATENT` apply path explicitly remains outside import job/idempotency wiring in this Step.
+- No user/account import, Web UI, schema/migration, apply API execution, Docker/browser, production/VPS, or real-data path was added.

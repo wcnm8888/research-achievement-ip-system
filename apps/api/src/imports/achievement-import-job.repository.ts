@@ -1,6 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
 import {
-  AchievementType,
   ImportFamily,
   ImportJobStatus,
   ImportMode,
@@ -10,7 +9,8 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service";
 
-export type PaperImportJobClaimInput = {
+export type AchievementImportJobClaimInput = {
+  achievementType: "PAPER" | "SOFTWARE_COPYRIGHT";
   idempotencyKeyHash: string;
   targetEnvironment: string;
   scopeType: string;
@@ -21,34 +21,35 @@ export type PaperImportJobClaimInput = {
   requestFingerprint: string;
 };
 
-export type PaperImportJobRunnerClaim = {
+export type AchievementImportJobRunnerClaim = {
   disposition: "RUNNER";
   jobId: string;
   runId: string;
 };
 
-export type PaperImportJobExistingClaim = {
+export type AchievementImportJobExistingClaim = {
   disposition: "REPLAYED_SUCCESS" | "IMPORT_IN_PROGRESS" | "REJECTED" | "FAILED";
   jobId: string;
   latestRunId: string | null;
   safeSummary: Prisma.JsonValue | null;
 };
 
-export type PaperImportJobClaimResult =
-  | PaperImportJobRunnerClaim
-  | PaperImportJobExistingClaim;
+export type AchievementImportJobClaimResult =
+  | AchievementImportJobRunnerClaim
+  | AchievementImportJobExistingClaim;
 
-export type PaperImportJobTransactionClient = Pick<
+export type AchievementImportJobTransactionClient = Pick<
   Prisma.TransactionClient,
   "importJob" | "importRun"
 >;
 
-export type PaperImportJobSuccessInput = {
+export type AchievementImportJobSuccessInput = {
   jobId: string;
   runId: string;
   acceptedRowCount: number;
   createdAchievementsCount: number;
   createdPaperDetailsCount: number;
+  createdSoftwareCopyrightDetailsCount: number;
   createdContributorsCount: number;
   auditCount: number;
   warningCount: number;
@@ -58,7 +59,7 @@ export type PaperImportJobSuccessInput = {
   auditLogIds: string[];
 };
 
-export type PaperImportJobRejectedInput = {
+export type AchievementImportJobRejectedInput = {
   jobId: string;
   runId: string;
   acceptedRowCount: number;
@@ -68,7 +69,7 @@ export type PaperImportJobRejectedInput = {
   safeSummary: Prisma.InputJsonValue;
 };
 
-export type PaperImportJobFailedInput = {
+export type AchievementImportJobFailedInput = {
   jobId: string;
   runId: string;
   failureCode: string;
@@ -79,18 +80,18 @@ export type PaperImportJobFailedInput = {
 export class AchievementImportJobRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async claimPaperCreateDraftJob(
-    input: PaperImportJobClaimInput,
-  ): Promise<PaperImportJobClaimResult> {
+  async claimAchievementCreateDraftJob(
+    input: AchievementImportJobClaimInput,
+  ): Promise<AchievementImportJobClaimResult> {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const client = tx as PaperImportJobTransactionClient;
+        const client = tx as AchievementImportJobTransactionClient;
         const job = await client.importJob.create({
           data: {
             idempotencyKeyHash: input.idempotencyKeyHash,
             importFamily: ImportFamily.ACHIEVEMENT,
             mode: ImportMode.CREATE_DRAFT_ONLY,
-            achievementType: AchievementType.PAPER,
+            achievementType: input.achievementType,
             targetEnvironment: input.targetEnvironment,
             scopeType: input.scopeType,
             scopeHash: input.scopeHash,
@@ -136,8 +137,8 @@ export class AchievementImportJobRepository {
   }
 
   async markSucceededInTransaction(
-    client: PaperImportJobTransactionClient,
-    input: PaperImportJobSuccessInput,
+    client: AchievementImportJobTransactionClient,
+    input: AchievementImportJobSuccessInput,
   ): Promise<void> {
     const now = new Date();
     await client.importRun.update({
@@ -159,7 +160,9 @@ export class AchievementImportJobRepository {
         acceptedRowCount: input.acceptedRowCount,
         createdBusinessCount: input.createdAchievementsCount,
         createdCompanionCount:
-          input.createdPaperDetailsCount + input.createdContributorsCount,
+          input.createdPaperDetailsCount +
+          input.createdSoftwareCopyrightDetailsCount +
+          input.createdContributorsCount,
         auditCount: input.auditCount,
         warningCount: input.warningCount,
         errorCount: input.errorCount,
@@ -171,10 +174,10 @@ export class AchievementImportJobRepository {
     });
   }
 
-  async markRejected(input: PaperImportJobRejectedInput): Promise<void> {
+  async markRejected(input: AchievementImportJobRejectedInput): Promise<void> {
     const now = new Date();
     await this.prisma.$transaction(async (tx) => {
-      const client = tx as PaperImportJobTransactionClient;
+      const client = tx as AchievementImportJobTransactionClient;
       await client.importRun.update({
         where: { id: input.runId },
         data: {
@@ -206,10 +209,10 @@ export class AchievementImportJobRepository {
     });
   }
 
-  async markFailed(input: PaperImportJobFailedInput): Promise<void> {
+  async markFailed(input: AchievementImportJobFailedInput): Promise<void> {
     const now = new Date();
     await this.prisma.$transaction(async (tx) => {
-      const client = tx as PaperImportJobTransactionClient;
+      const client = tx as AchievementImportJobTransactionClient;
       await client.importRun.update({
         where: { id: input.runId },
         data: {
@@ -234,8 +237,8 @@ export class AchievementImportJobRepository {
   }
 
   private async findExistingClaim(
-    input: PaperImportJobClaimInput,
-  ): Promise<PaperImportJobExistingClaim> {
+    input: AchievementImportJobClaimInput,
+  ): Promise<AchievementImportJobExistingClaim> {
     const job = await this.prisma.importJob.findFirst({
       where: {
         targetEnvironment: input.targetEnvironment,
@@ -266,7 +269,7 @@ export class AchievementImportJobRepository {
 
 const toClaimDisposition = (
   status: ImportJobStatus,
-): PaperImportJobExistingClaim["disposition"] => {
+): AchievementImportJobExistingClaim["disposition"] => {
   switch (status) {
     case ImportJobStatus.SUCCESS:
       return "REPLAYED_SUCCESS";
