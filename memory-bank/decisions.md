@@ -1,5 +1,21 @@
 # Decisions
 
+## D253 - Import job Web history starts as family-local read-only entries
+
+- Date: 2026-07-04.
+- Context: Step 73A designs the Web read-only entry strategy for existing `ImportJob` / `ImportRun` history after Step 72 added backend job/run behavior for department, achievement, and user/account import apply paths. The current task is documentation-only and prohibits Web code, backend API code, Prisma schema/migration changes, production/VPS access, production DB/config access, `.env` / `.env.production` reads, apply API execution, Docker/browser execution, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Start with family-local read-only entries: Department import history inside the department import page, User/account import history inside the user import page, and Achievement import history inside the achievement import page.
+  - Add a settings/system configuration overview only later as a secondary read-only cross-family index, not as the sole first entry.
+  - List views may show only safe aggregate/status fields: `family`, `mode`, nullable `achievementType`, job status, created counts, safe error codes, `createdAt`, and `completedAt`.
+  - Detail views may show only sanitized safe summaries, run status metadata, audit count, and plain-language explanations for replay, in-flight, rejected, and failed states.
+  - Keep every read-only history entry under `system:config`; do not widen the permission boundary.
+  - Do not expose raw CSV, original CSV download, email, employee number, DOI, software registration number, patent number, achievement title/name, personnel names, credentials, sessions, tokens, cookies, passwords, connection strings, `.env` values, raw request details, file paths, or raw exception values.
+  - Do not provide retry, delete, cleanup, rollback, CSV download, or raw audit-id browsing in the first Web history slice.
+  - Recommend Step 73B for backend read-only API design/implementation, Step 73C for Web implementation, and Step 73D for local browser acceptance.
+- Scope:
+  - This decision does not authorize Web implementation, backend API implementation, schema/migration changes, production/VPS writes, production DB access, real-data import, apply API execution, Docker/browser execution, credential/session/lifecycle token creation, invite/reset/real email, workflow/attachment/storage/fee/reminder/notification/search/resource grant side effects, retry/delete/cleanup/rollback/download behavior, update/merge/reactivation, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D252 - Import job history database model starts with ImportJob and ImportRun only
 
 - Date: 2026-07-04.

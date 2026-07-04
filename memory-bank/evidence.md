@@ -1,5 +1,49 @@
 # Evidence
 
+## 2026-07-04 Step 73A - Import job Web read-only history entry evidence
+
+- Goal:
+  - Produce a docs-only design for `ImportJob` / `ImportRun` Web read-only history entries, without Web code, backend API code, Prisma schema/migration changes, production/VPS access, or data writes.
+- Initial state:
+  - `git log -1 --oneline`: `68d9c20 test: add user import job acceptance`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - Targeted Step 72 sections from `memory-bank/import-job-history-database-model-plan.md`, `memory-bank/import-job-history-idempotency-plan.md`, `memory-bank/user-account-import-job-idempotency-plan.md`, and `memory-bank/import-real-write-final-archive.md`.
+  - Prisma `ImportFamily`, `ImportMode`, `ImportJobStatus`, `ImportRunStatus`, `ImportFailureStage`, `ImportJob`, and `ImportRun` definitions from `prisma/schema.prisma`.
+  - Existing Web import entry locations in `apps/web/src/DepartmentManagement.tsx`, `apps/web/src/AccountManagement.tsx`, `apps/web/src/Achievements.tsx`, and navigation context in `apps/web/src/App.tsx`.
+  - Existing `system:config` permission usage in Web and backend controllers.
+- Implemented files:
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Plan evidence:
+  - Recommended first Web entry combination: family-local read-only history on Department import, User/account import, and Achievement import pages.
+  - Recommended a later settings/system configuration overview only as a secondary cross-family read-only index.
+  - Defined list fields as safe aggregate/status fields only: `family`, `mode`, `achievementType`, `status`, created counts, safe error codes, `createdAt`, and `completedAt`.
+  - Defined detail fields as sanitized safe summaries, run status metadata, audit count, and plain-language replay / in-flight / rejected / failed explanations.
+  - Kept `system:config` as the only permission boundary and explicitly did not expand access to department admins, lifecycle/invite/reset users, audit-only users, achievement-state users, or other support roles.
+  - Prohibited raw CSV, original CSV download, email, employee number, DOI, software registration, patent numbers, achievement title/name, personnel names, credential/session/token/cookie/password/connection-string material, retry, delete, cleanup, rollback, and raw audit-id browsing in the first Web slice.
+  - Recommended 73B backend read-only API, 73C Web implementation, and 73D local browser acceptance.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only changes.
+  - `git status --short`: PASS; tracked changes limited to docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, schema, migration, package, lockfile, config, or script changes.
+- Boundary:
+  - No Web files were changed.
+  - No backend API files were changed.
+  - No Prisma schema or migration was changed.
+  - No typecheck/test/build was run because this was docs-only and changed no runtime/source/schema/API/Web/package/lockfile/config/script behavior.
+  - No apply API was executed.
+  - No Docker/browser execution occurred.
+  - No `.env` or `.env.production` content was read or output.
+  - No `DATABASE_URL` value, credential, password, token, cookie, connection string, raw CSV, email, employee number, DOI, registration number, patent number, title, personnel name, file path, storage key, or mail payload was printed or recorded.
+  - No production/VPS access, production DB/config access, real-data import, cleanup, deletion, reset, restore, checkout, drop, prune, seed, backfill, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 72M - User/account import job idempotency evidence
 
 - Goal:

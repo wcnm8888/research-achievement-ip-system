@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-07-04 Step 73A - Import job Web read-only history entry plan
+
+- Status: DONE.
+- Scope completed:
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 73A Web read-only history entry plan.
+  - Updated `memory-bank/decisions.md` with the entry-combination decision.
+  - Updated `memory-bank/evidence.md` with docs-only evidence.
+- Key outcome:
+  - Recommended three family-local read-only Web entries first: Department import history inside `DepartmentManagement`, User/account import history inside `AccountManagement`, and Achievement import history inside `Achievements`.
+  - Recommended a later settings/system configuration overview only as a secondary read-only cross-family index.
+  - Defined safe list fields: `family`, `mode`, `achievementType`, `status`, created counts, safe error codes, `createdAt`, and `completedAt`.
+  - Defined safe detail fields: sanitized safe summary, run status, audit count, and user-understandable replay / in-flight / rejected / failed explanations.
+  - Kept every entry and future read API under `system:config` without widening the permission boundary.
+  - Reconfirmed privacy boundaries: no raw CSV, no business identifiers, no person fields, no credential/session/token/cookie/password/connection-string material, no retry/delete/cleanup/rollback, and no original CSV download.
+  - Recommended Step 73B backend read-only API, Step 73C Web implementation, and Step 73D local browser acceptance.
+- Explicitly not done:
+  - No Web UI implementation.
+  - No backend API implementation.
+  - No Prisma schema or migration changes.
+  - No typecheck/test/build because this Step changed documentation only.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, apply API execution, Docker/browser execution, cleanup, deletion, reset, restore, checkout, drop, prune, or known untracked local artifact handling.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git status --short`: PASS; only tracked docs changed plus existing untracked local artifacts.
+  - Manual diff review: PASS; no raw CSV, no personal identifier examples, no credential/session/token/cookie/password/connection-string values, and no runtime/code/schema changes.
+
 ## 2026-07-04 Step 72M - User/account import job idempotency backend wiring
 
 - Status: DONE.

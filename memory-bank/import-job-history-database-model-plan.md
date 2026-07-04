@@ -661,3 +661,132 @@ Step 72B recommends a minimal additive database model: `ImportJob` as the idempo
 - Verified safe summaries do not contain raw CSV, raw/normalized email, employee number, display name, role/department names, raw path, credential/session/token/cookie/password/connection-string/env/storage/mail payload values.
 - Verified no `UserCredential`, `UserSession`, `AccountLifecycleToken`, mail/notification, workflow, attachment, fee/reminder, search, resource grant, or non-user-account import job side effects.
 - No schema/migration/model updates were made in this Step.
+
+## Step 73A Web Read-Only History Entry Plan
+
+- Date: 2026-07-04.
+- Scope: documentation-only Web read-only entry design for `ImportJob` / `ImportRun` history.
+- Non-scope: no Web implementation, no backend API implementation, no Prisma schema or migration changes, no apply API execution, no production/VPS/production DB access, and no retry/delete/cleanup/rollback behavior.
+
+### Entry Location Options
+
+Department import page:
+
+- Add a small read-only "Import history" section near the existing Department CSV dry-run/apply card inside `DepartmentManagement`.
+- Filter by `family = DEPARTMENT` and `mode = CREATE_ONLY`.
+- Reason: this is the operator's task-local recovery path after department apply, replay, rejected validation, or in-flight response. It avoids sending operators to a global screen when they only need department import evidence.
+
+User import page:
+
+- Add the same read-only history section near the existing User account CSV dry-run/apply card inside `AccountManagement`.
+- Filter by `family = USER_ACCOUNT` and `mode = CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+- Reason: user import has the strongest privacy boundary. Keeping the entry inside account management preserves the current `system:config` account-admin context and keeps the copy focused on pending/no-credential semantics.
+
+Achievement import page:
+
+- Add the same read-only history section near the existing Achievement CSV dry-run/apply card inside `Achievements`.
+- Filter by `family = ACHIEVEMENT`, `mode = CREATE_DRAFT_ONLY`, and optionally `achievementType = PAPER | SOFTWARE_COPYRIGHT | PATENT`.
+- Reason: achievement import history needs the achievement type visible for explainability, but must not expose row identifiers or achievement names. A task-local section can reuse existing achievement import copy and safe status language.
+
+Unified settings/system configuration entry:
+
+- Add a read-only "Import history" overview under the existing settings/system configuration boundary only after the family-local entries exist.
+- The overview should default to the most recent safe records across all import families and support filters by `family`, `mode`, `achievementType`, `status`, and time range.
+- It must not become a control center: no retry, delete, cleanup, rollback, CSV download, or raw-detail actions.
+- Reason: support staff may need cross-family visibility, but a global entry first would increase privacy review scope and navigation ambiguity.
+
+Recommended final entry combination:
+
+- Step 73C should implement family-local read-only entries on all three import pages first.
+- A later settings/system configuration overview is recommended only as a read-only secondary index, not as the sole entry.
+- This combination keeps operator recovery close to the import task, avoids widening the initial Web privacy surface, and still leaves a path for support-wide history browsing once the backend read API and safe response DTOs are accepted.
+
+### List Display Fields
+
+The list should render only safe `ImportJob` aggregate fields plus latest-run status metadata:
+
+- `family`: display `DEPARTMENT`, `USER_ACCOUNT`, or `ACHIEVEMENT`.
+- `mode`: display `CREATE_ONLY`, `CREATE_ONLY_PENDING_NO_CREDENTIAL`, or `CREATE_DRAFT_ONLY`.
+- `achievementType`: display only the enum for achievement jobs; show empty or `N/A` for department and user/account jobs.
+- `status`: display `PENDING`, `RUNNING`, `SUCCESS`, `FAILED`, or `REJECTED`.
+- Created counts:
+  - `acceptedRowCount`;
+  - `createdBusinessCount`;
+  - `createdCompanionCount`;
+  - `auditCount`.
+- Safe error code: display only machine codes from `safeErrorCodes` or latest run `failureCode`, capped to a small number with a count overflow indicator.
+- `createdAt`.
+- `completedAt`.
+
+The list must not include operator display names, file names, file paths, raw identifiers, CSV excerpts, row values, or business-object names.
+
+### Detail Display Fields
+
+The detail drawer/page should show:
+
+- Safe summary:
+  - `ImportJob.safeSummary` after response DTO sanitization;
+  - latest or selected `ImportRun.validationSummary` / `applySummary` after response DTO sanitization;
+  - counts and safe booleans only.
+- Run status:
+  - `attemptNo`;
+  - `trigger`;
+  - `status`;
+  - `failureCode`;
+  - `failureStage`;
+  - `startedAt`;
+  - `finishedAt`;
+  - `completedBusinessTransactionAt`.
+- Audit count:
+  - show `ImportJob.auditCount` and a count derived from `ImportRun.auditLogIds` length if the backend exposes it as a number;
+  - do not show audit IDs in the first Web slice.
+- User-understandable status explanations:
+  - Replay: "This import request already completed successfully. The stored safe counts are shown; no new write was started for this same request."
+  - In-flight: "This import request is already running or was claimed recently. No second write was started. Check again later or ask an administrator to inspect backend health."
+  - Rejected: "This import request was blocked by validation or safety rules. The safe reason codes are shown; no business write was performed."
+  - Failed: "This import attempt failed after being claimed. Automatic retry is not available from this page."
+
+### Permission
+
+- Continue to require `system:config` for every read-only history API and every Web entry.
+- Do not add a broader import-history permission in Step 73A through 73D.
+- Frontend visibility remains an affordance only; backend guards remain authoritative.
+- This does not expand access to department admins, lifecycle/invite/reset users, audit-only users, achievement-state users, or support roles without `system:config`.
+
+### Privacy And Safety Boundary
+
+The Web history entry and backend read DTOs must not display or return:
+
+- raw CSV content, CSV excerpts, imported row values, or the original CSV download;
+- email, employee number, DOI, software registration number, patent application number, patent grant number, achievement name/title, personnel names, owner names, contributor names, role names, department names, organization text, or file paths;
+- credential, credential hash, session id/hash, lifecycle token, API token, cookie, password, password hash, private key, storage key, mail payload, connection string, `.env` value, raw request header, raw user agent, raw IP address, or raw exception text containing values.
+
+The Web history entry must not provide:
+
+- retry;
+- delete;
+- cleanup;
+- rollback;
+- CSV download;
+- raw audit id browsing in the first slice;
+- links that reveal business-object detail from imported row identities.
+
+### Backend Read API Constraints For 73B
+
+- 73B should design or implement read-only endpoints only.
+- Suggested shape:
+  - `GET /api/import-jobs` with filters for `family`, `mode`, `achievementType`, `status`, `createdFrom`, `createdTo`, pagination, and sort by `createdAt`.
+  - `GET /api/import-jobs/:id` returning one safe job plus safe run summaries.
+- The API must whitelist response fields instead of returning Prisma records directly.
+- The API must enforce `system:config` with existing user context and permission guards.
+- The API must not expose idempotency key hash, scope hash, request fingerprint, file fingerprint, operator user id, raw audit ids, or any JSON key/value that fails the safe-summary allowlist.
+
+### Step Split Recommendation
+
+- 73B: backend read-only API query design or implementation. Prefer implementation only if response DTO sanitization, filters, pagination, and tests fit the Step scope.
+- 73C: Web implementation for the three family-local read-only entries using 73B safe DTOs.
+- 73D: local browser acceptance for permissions, empty state, list/detail display, no forbidden controls, no sensitive strings, and responsive layout.
+
+### Step 73A Position
+
+Step 73A recommends a family-local first Web history entry, with a later optional settings/system configuration overview. The first Web slice should be strictly read-only, `system:config`-guarded, backed by whitelisted safe DTOs, and limited to aggregate counts, statuses, safe machine codes, timestamps, and safe run explanations. It does not authorize Web code, backend API code, schema/migration work, production access, retry, delete, cleanup, rollback, or CSV download behavior.
