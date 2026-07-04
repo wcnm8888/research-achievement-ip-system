@@ -1,5 +1,53 @@
 # Evidence
 
+## 2026-07-04 Step 70B - Patent import backend apply evidence
+
+- Goal:
+  - Implement backend-only all-`PATENT` `CREATE_DRAFT_ONLY` support in the existing achievement import apply path while preserving fee/reminder/workflow side-effect boundaries.
+- Initial state:
+  - `git log -1 --oneline`: `ed2f8c9 docs: plan patent import fee reminder boundary`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - Step 70A snippet from `memory-bank/progress.md`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.controller.spec.ts`.
+  - `apps/api/src/imports/imports.app-module.spec.ts`.
+  - Targeted Prisma schema snippets for `PatentDetail`, `FeeRecord`, `FeeReviewHistory`, `ReminderTask`, `Notification`, `WorkflowInstance`, `WorkflowTask`, `WorkflowAction`, `SearchLog`, and `ResourceAccessGrant`.
+- Implemented files:
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.repository.spec.ts`.
+  - `memory-bank/patent-import-fee-reminder-boundary-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Implementation evidence:
+  - Apply supports homogeneous all-`PATENT` batches in addition to existing all-`PAPER` and all-`SOFTWARE_COPYRIGHT` batches.
+  - Mixed-type batches reject before transaction.
+  - Patent apply requires `applicationNoNormalized`.
+  - Grant-only and no-identifier patent rows reject before writes.
+  - Transaction-time rechecks include active department, active owner, owner department match, active contributor users, patent application-number conflict absence, and optional grant-number conflict absence.
+  - Prisma unique conflicts on `application_no_normalized` and `grant_no_normalized` map to safe `DB_CONFLICT`.
+  - Successful patent apply writes only draft achievement, patent detail, contributors, and audit evidence.
+  - The import-specific patent detail create mapper excludes `nextFeeDate` and `feeAmount`.
+  - Audit evidence excludes title, owner/contributor email/name, raw/normalized patent application number, raw/normalized grant number, `nextFeeDate`, and `feeAmount`.
+  - Repository tests assert no attachment, fee record, fee review history, reminder task, notification, search log, workflow, resource grant, import job, or audit-log direct writes from the patent repository method.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files and 143 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS, with Git line-ending conversion warnings only.
+  - Added-lines sensitive-value scan: PASS; no credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Web implementation, Docker/browser/local production-like acceptance, production/VPS access, production DB/config access, real-data import, Prisma schema/migration change, package/lockfile/config change, credential/session/token/cookie/password/secret/private-key handling, local artifact cleanup, deletion, reset, drop, prune, or staging of known unrelated untracked local artifacts occurred.
+
 ## 2026-07-04 Step 70A - Patent import fee reminder boundary evidence
 
 - Goal:

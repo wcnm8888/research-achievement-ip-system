@@ -24,6 +24,7 @@ import {
 import {
   CreateAchievementContributorDraftInput,
   CreatePaperDetailDraftInput,
+  CreatePatentDetailDraftInput,
   CreateSoftwareCopyrightDetailDraftInput,
 } from "../achievements/domain/achievement-repository.types";
 import { PrismaService } from "../database/prisma.service";
@@ -258,7 +259,10 @@ export type AchievementImportApplyRow = {
   rowNumber: number;
   status: "CREATED";
   createdAchievementId: string;
-  type: typeof AchievementTypeCode.paper | typeof AchievementTypeCode.softwareCopyright;
+  type:
+    | typeof AchievementTypeCode.paper
+    | typeof AchievementTypeCode.patent
+    | typeof AchievementTypeCode.softwareCopyright;
   achievementStatus: typeof AchievementStatusCode.draft;
   departmentId: string;
   ownerUserId: string;
@@ -270,6 +274,7 @@ export type AchievementImportApplySummary = {
   totalRows: number;
   createdAchievementsCount: number;
   createdPaperDetailsCount: number;
+  createdPatentDetailsCount: number;
   createdSoftwareCopyrightDetailsCount: number;
   createdContributorsCount: number;
   skippedRows: number;
@@ -305,6 +310,7 @@ type AchievementImportResolvedPlanRow = {
     ownerUserId: string | null;
   };
   paperDetail: CreatePaperDetailDraftInput;
+  patentDetail: CreatePatentDetailDraftInput;
   softwareCopyrightDetail: CreateSoftwareCopyrightDetailDraftInput;
 };
 
@@ -394,6 +400,8 @@ export class AchievementImportDryRunService {
           departments,
           users,
           doiConflicts,
+          applicationNoConflicts,
+          patentNoConflicts,
           registrationNoConflicts,
         ] = await Promise.all([
           this.repository.findApplyDepartmentsByCodesInTransaction(
@@ -408,6 +416,14 @@ export class AchievementImportDryRunService {
             importClient,
             collectDoiNormalizedFromResolvedRows(rowsToCreate),
           ),
+          this.repository.findApplyPatentApplicationConflictsInTransaction(
+            importClient,
+            collectApplicationNoNormalizedFromResolvedRows(rowsToCreate),
+          ),
+          this.repository.findApplyPatentNoConflictsInTransaction(
+            importClient,
+            collectPatentNoNormalizedFromResolvedRows(rowsToCreate),
+          ),
           this.repository.findApplySoftwareRegistrationConflictsInTransaction(
             importClient,
             collectRegistrationNoNormalizedFromResolvedRows(rowsToCreate),
@@ -418,7 +434,12 @@ export class AchievementImportDryRunService {
           rowsToCreate,
           departments,
           users,
-          [...doiConflicts, ...registrationNoConflicts],
+          [
+            ...doiConflicts,
+            ...applicationNoConflicts,
+            ...patentNoConflicts,
+            ...registrationNoConflicts,
+          ],
         );
         if (blockingErrors.length > 0) {
           throw new AchievementImportApplyRejectedError(
@@ -440,36 +461,36 @@ export class AchievementImportDryRunService {
 
           const contributors = toContributorInputs(row, userByEmail);
           const rowType = toApplySupportedType(row.parsed.type);
+          const commonInput = {
+            title: row.parsed.title!,
+            secretLevel: row.parsed.secretLevel as SecretLevelCode,
+            departmentId: department.id,
+            ownerUserId: owner.id,
+            createdById: context.userId,
+            updatedById: context.userId,
+            contributors,
+          };
           const created =
             rowType === AchievementTypeCode.paper
-              ? await this.repository.createPaperDraftInTransaction(
-                  importClient,
-                  {
-                    type: AchievementTypeCode.paper,
-                    title: row.parsed.title!,
-                    secretLevel: row.parsed.secretLevel as SecretLevelCode,
-                    departmentId: department.id,
-                    ownerUserId: owner.id,
-                    createdById: context.userId,
-                    updatedById: context.userId,
-                    paperDetail: row.paperDetail,
-                    contributors,
-                  },
-                )
-              : await this.repository.createSoftwareCopyrightDraftInTransaction(
-                  importClient,
-                  {
-                    type: AchievementTypeCode.softwareCopyright,
-                    title: row.parsed.title!,
-                    secretLevel: row.parsed.secretLevel as SecretLevelCode,
-                    departmentId: department.id,
-                    ownerUserId: owner.id,
-                    createdById: context.userId,
-                    updatedById: context.userId,
-                    softwareCopyrightDetail: row.softwareCopyrightDetail,
-                    contributors,
-                  },
-                );
+              ? await this.repository.createPaperDraftInTransaction(importClient, {
+                  ...commonInput,
+                  type: AchievementTypeCode.paper,
+                  paperDetail: row.paperDetail,
+                })
+              : rowType === AchievementTypeCode.patent
+                ? await this.repository.createPatentDraftInTransaction(importClient, {
+                    ...commonInput,
+                    type: AchievementTypeCode.patent,
+                    patentDetail: row.patentDetail,
+                  })
+                : await this.repository.createSoftwareCopyrightDraftInTransaction(
+                    importClient,
+                    {
+                      ...commonInput,
+                      type: AchievementTypeCode.softwareCopyright,
+                      softwareCopyrightDetail: row.softwareCopyrightDetail,
+                    },
+                  );
 
           assertCreatedAchievementIsExpectedDraft(created, rowType);
 
@@ -582,7 +603,7 @@ const assertPlanCanApply = (plan: AchievementImportPlan): void => {
         rowNumber: row.rowNumber,
         field: "type",
         code: "UNSUPPORTED_TYPE",
-        message: "Apply supports only PAPER or SOFTWARE_COPYRIGHT rows in this slice.",
+        message: "Apply supports only PAPER, PATENT, or SOFTWARE_COPYRIGHT rows in this slice.",
       });
       return errors;
     }
@@ -609,6 +630,17 @@ const assertPlanCanApply = (plan: AchievementImportPlan): void => {
       });
     }
 
+    if (row.parsed.type === AchievementTypeCode.patent) {
+      if (!row.parsed.normalizedIdentifiers.applicationNo) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          field: "applicationNo",
+          code: "REQUIRED",
+          message: "Apply requires a normalized application number for PATENT rows.",
+        });
+      }
+    }
+
     return errors;
   });
   const mixedTypeErrors =
@@ -619,7 +651,7 @@ const assertPlanCanApply = (plan: AchievementImportPlan): void => {
             field: "type",
             code: "MIXED_TYPE_BATCH",
             message:
-              "Apply supports either all-PAPER or all-SOFTWARE_COPYRIGHT rows in one batch.",
+              "Apply supports all-PAPER, all-PATENT, or all-SOFTWARE_COPYRIGHT rows in one batch.",
           },
         ]
       : [];
@@ -652,6 +684,7 @@ const buildSuccessfulApplyResult = (
     totalRows: plan.summary.totalRows,
     createdAchievementsCount: rows.length,
     createdPaperDetailsCount: rows.filter((row) => row.type === AchievementTypeCode.paper).length,
+    createdPatentDetailsCount: rows.filter((row) => row.type === AchievementTypeCode.patent).length,
     createdSoftwareCopyrightDetailsCount: rows.filter(
       (row) => row.type === AchievementTypeCode.softwareCopyright,
     ).length,
@@ -681,6 +714,7 @@ const buildRejectedApplyResult = (
     totalRows: plan.summary.totalRows,
     createdAchievementsCount: 0,
     createdPaperDetailsCount: 0,
+    createdPatentDetailsCount: 0,
     createdSoftwareCopyrightDetailsCount: 0,
     createdContributorsCount: 0,
     skippedRows: plan.summary.warningRows,
@@ -725,6 +759,16 @@ const toResolvedPlanRow = (row: WorkingRow): AchievementImportResolvedPlanRow =>
     impactFactor: normalizeCell(row.valuesByHeader.get("impactFactor")),
     partition: normalizeCell(row.valuesByHeader.get("partition")),
     abstract: normalizeCell(row.valuesByHeader.get("abstract")),
+  },
+  patentDetail: {
+    applicationNo: row.parsed.identifiers.applicationNo,
+    applicationNoNormalized: row.parsed.normalizedIdentifiers.applicationNo,
+    grantNo: row.parsed.identifiers.patentNo,
+    grantNoNormalized: row.parsed.normalizedIdentifiers.patentNo,
+    patentType: normalizeEnumCell(row.valuesByHeader.get("patentType")) as PatentTypeCode | null,
+    filingDate: parseOptionalIsoDate(row.valuesByHeader.get("filingDate")),
+    grantDate: parseOptionalIsoDate(row.valuesByHeader.get("grantDate")),
+    legalStatus: normalizeEnumCell(row.valuesByHeader.get("legalStatus")) as PatentLegalStatusCode | null,
   },
   softwareCopyrightDetail: {
     registrationNo: row.parsed.identifiers.registrationNo,
@@ -833,12 +877,42 @@ const toTransactionRecheckErrors = (
       }
     }
 
+    if (row.parsed.type === AchievementTypeCode.patent) {
+      const normalizedApplicationNo = row.parsed.normalizedIdentifiers.applicationNo;
+      const normalizedPatentNo = row.parsed.normalizedIdentifiers.patentNo;
+      if (!normalizedApplicationNo) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          field: "applicationNo",
+          code: "REQUIRED",
+          message: "Apply requires a normalized application number for PATENT rows.",
+        });
+      } else if (conflictKeys.has(toConflictKey("applicationNo", normalizedApplicationNo))) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          field: "applicationNo",
+          code: "DB_CONFLICT",
+          message:
+            "applicationNo already exists and cannot be imported as a new draft.",
+        });
+      }
+
+      if (normalizedPatentNo && conflictKeys.has(toConflictKey("patentNo", normalizedPatentNo))) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          field: "patentNo",
+          code: "DB_CONFLICT",
+          message: "patentNo already exists and cannot be imported as a new draft.",
+        });
+      }
+    }
+
     if (!isApplySupportedType(row.parsed.type)) {
       errors.push({
         rowNumber: row.rowNumber,
         field: "type",
         code: "UNSUPPORTED_TYPE",
-        message: "Apply supports only PAPER or SOFTWARE_COPYRIGHT rows in this slice.",
+        message: "Apply supports only PAPER, PATENT, or SOFTWARE_COPYRIGHT rows in this slice.",
       });
     }
 
@@ -875,6 +949,8 @@ const assertCreatedAchievementIsExpectedDraft = (
   const hasExpectedDetail =
     expectedType === AchievementTypeCode.paper
       ? Boolean(achievement.paperDetail)
+      : expectedType === AchievementTypeCode.patent
+        ? Boolean(achievement.patentDetail)
       : expectedType === AchievementTypeCode.softwareCopyright
         ? Boolean(achievement.softwareCopyrightDetail)
         : false;
@@ -919,7 +995,14 @@ const toAchievementImportCreateAuditEvent = (
     ownerUserId: achievement.ownerUserId,
     contributorCount: achievement.contributors.length,
     identifierFieldsPresent:
-      row.parsed.type === AchievementTypeCode.paper ? ["doi"] : ["registrationNo"],
+      row.parsed.type === AchievementTypeCode.paper
+        ? ["doi"]
+        : row.parsed.type === AchievementTypeCode.patent
+          ? [
+              "applicationNo",
+              ...(row.parsed.normalizedIdentifiers.patentNo ? ["grantNo"] : []),
+            ]
+          : ["registrationNo"],
     totalRows: plan.summary.totalRows,
     createdAchievementsCount: plan.summary.createDraftCandidates,
   },
@@ -951,6 +1034,24 @@ const toUniqueConflictApplyError = (
       field: "registrationNo",
       code: "DB_CONFLICT",
       message: "registrationNo already exists and cannot be imported as a new draft.",
+    };
+  }
+
+  if (normalizedTargets.some((field) => field.includes("applicationnonormalized"))) {
+    return {
+      rowNumber: null,
+      field: "applicationNo",
+      code: "DB_CONFLICT",
+      message: "applicationNo already exists and cannot be imported as a new draft.",
+    };
+  }
+
+  if (normalizedTargets.some((field) => field.includes("grantnonormalized"))) {
+    return {
+      rowNumber: null,
+      field: "patentNo",
+      code: "DB_CONFLICT",
+      message: "patentNo already exists and cannot be imported as a new draft.",
     };
   }
 
@@ -995,6 +1096,28 @@ const collectDoiNormalizedFromResolvedRows = (
     ),
   ];
 
+const collectApplicationNoNormalizedFromResolvedRows = (
+  rows: readonly AchievementImportResolvedPlanRow[],
+): string[] =>
+  [
+    ...new Set(
+      rows
+        .map((row) => row.parsed.normalizedIdentifiers.applicationNo)
+        .filter((applicationNo): applicationNo is string => Boolean(applicationNo)),
+    ),
+  ];
+
+const collectPatentNoNormalizedFromResolvedRows = (
+  rows: readonly AchievementImportResolvedPlanRow[],
+): string[] =>
+  [
+    ...new Set(
+      rows
+        .map((row) => row.parsed.normalizedIdentifiers.patentNo)
+        .filter((patentNo): patentNo is string => Boolean(patentNo)),
+    ),
+  ];
+
 const collectRegistrationNoNormalizedFromResolvedRows = (
   rows: readonly AchievementImportResolvedPlanRow[],
 ): string[] =>
@@ -1008,13 +1131,20 @@ const collectRegistrationNoNormalizedFromResolvedRows = (
 
 const isApplySupportedType = (
   type: string | null,
-): type is typeof AchievementTypeCode.paper | typeof AchievementTypeCode.softwareCopyright =>
+): type is
+  | typeof AchievementTypeCode.paper
+  | typeof AchievementTypeCode.patent
+  | typeof AchievementTypeCode.softwareCopyright =>
   type === AchievementTypeCode.paper ||
+  type === AchievementTypeCode.patent ||
   type === AchievementTypeCode.softwareCopyright;
 
 const toApplySupportedType = (
   type: string | null,
-): typeof AchievementTypeCode.paper | typeof AchievementTypeCode.softwareCopyright => {
+):
+  | typeof AchievementTypeCode.paper
+  | typeof AchievementTypeCode.patent
+  | typeof AchievementTypeCode.softwareCopyright => {
   if (isApplySupportedType(type)) {
     return type;
   }

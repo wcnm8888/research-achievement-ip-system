@@ -1,5 +1,42 @@
 # Patent Import Fee Reminder Boundary Plan
 
+## Step 70B Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented backend-only all-`PATENT` `CREATE_DRAFT_ONLY` apply support in the existing `POST /api/achievements/import/apply` service path.
+- Preserved existing all-`PAPER` and all-`SOFTWARE_COPYRIGHT` apply behavior.
+- Apply now allows homogeneous batches only:
+  - all-`PAPER`;
+  - all-`PATENT`;
+  - all-`SOFTWARE_COPYRIGHT`.
+- Mixed-type batches continue to reject before opening a transaction.
+- `PATENT` apply requires `applicationNoNormalized` for every row.
+- `grantNoNormalized` is treated only as an optional second conflict boundary when application number is present.
+- Grant-only and no-identifier patent rows reject before writes.
+- Transaction-time rechecks cover active non-archived department, active non-archived owner, owner department match, active non-archived contributor users, patent application-number conflicts, optional grant-number conflicts, and final Prisma unique conflict mapping to safe `DB_CONFLICT`.
+- The patent transaction writes only:
+  - `Achievement(type=PATENT, status=DRAFT)`;
+  - `PatentDetail`;
+  - `AchievementContributor`;
+  - safe audit evidence.
+- The import-specific patent detail mapper writes only allowed first-slice fields:
+  - `applicationNo`;
+  - `applicationNoNormalized`;
+  - `grantNo`;
+  - `grantNoNormalized`;
+  - `patentType`;
+  - `filingDate`;
+  - `grantDate`;
+  - `legalStatus`.
+- `nextFeeDate` and `feeAmount` remain dry-run preview fields only in this slice and are not included in `PatentDetail` create data or audit `newValue`.
+- Focused API tests and API typecheck passed.
+- Still deferred:
+  - Web expansion;
+  - Docker/browser/local production-like acceptance;
+  - production/VPS access;
+  - real-data import;
+  - workflow, attachment/storage, fee, fee review history, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+
 ## Step 70A Scope
 
 - Date: 2026-07-04.

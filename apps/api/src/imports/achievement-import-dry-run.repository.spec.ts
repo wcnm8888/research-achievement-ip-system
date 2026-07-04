@@ -157,6 +157,7 @@ describe("AchievementImportDryRunRepository", () => {
       updatedById: "admin-id",
       version: 1,
       paperDetail: { achievementId: "achievement-id", doiNormalized: "10.1000/a" },
+      patentDetail: null,
       softwareCopyrightDetail: null,
       contributors: [{ id: "contributor-row-id" }],
     };
@@ -199,6 +200,10 @@ describe("AchievementImportDryRunRepository", () => {
         update: vi.fn(),
       },
       patentDetail: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([{ applicationNoNormalized: "APP001" }])
+          .mockResolvedValueOnce([{ grantNoNormalized: "CN001" }]),
         create: vi.fn(),
       },
       softwareCopyrightDetail: {
@@ -256,6 +261,12 @@ describe("AchievementImportDryRunRepository", () => {
     await expect(
       repository.findApplySoftwareRegistrationConflictsInTransaction(tx as never, ["SW001"]),
     ).resolves.toEqual([{ field: "registrationNo", normalizedValue: "SW001" }]);
+    await expect(
+      repository.findApplyPatentApplicationConflictsInTransaction(tx as never, ["APP001"]),
+    ).resolves.toEqual([{ field: "applicationNo", normalizedValue: "APP001" }]);
+    await expect(
+      repository.findApplyPatentNoConflictsInTransaction(tx as never, ["CN001"]),
+    ).resolves.toEqual([{ field: "patentNo", normalizedValue: "CN001" }]);
 
     await expect(
       repository.createPaperDraftInTransaction(tx as never, {
@@ -316,6 +327,7 @@ describe("AchievementImportDryRunRepository", () => {
       select: expect.objectContaining({
         id: true,
         paperDetail: expect.any(Object),
+        patentDetail: expect.any(Object),
         contributors: expect.any(Object),
       }),
     });
@@ -342,6 +354,7 @@ describe("AchievementImportDryRunRepository", () => {
       updatedById: "admin-id",
       version: 1,
       paperDetail: null,
+      patentDetail: null,
       softwareCopyrightDetail: {
         achievementId: "achievement-id",
         registrationNoNormalized: "SW001",
@@ -456,6 +469,7 @@ describe("AchievementImportDryRunRepository", () => {
       where: { id: "achievement-id" },
       select: expect.objectContaining({
         id: true,
+        patentDetail: expect.any(Object),
         softwareCopyrightDetail: expect.any(Object),
         contributors: expect.any(Object),
       }),
@@ -468,6 +482,179 @@ describe("AchievementImportDryRunRepository", () => {
     expect(tx.workflowTask.create).not.toHaveBeenCalled();
     expect(tx.workflowAction.create).not.toHaveBeenCalled();
     expect(tx.resourceAccessGrant.create).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("writes only PATENT draft import data through the provided transaction client", async () => {
+    const createdAchievement = {
+      id: "achievement-id",
+      type: "PATENT",
+      status: "DRAFT",
+      secretLevel: "INTERNAL",
+      departmentId: "department-id",
+      ownerUserId: "owner-id",
+      createdById: "admin-id",
+      updatedById: "admin-id",
+      version: 1,
+      paperDetail: null,
+      patentDetail: {
+        achievementId: "achievement-id",
+        applicationNoNormalized: "APP001",
+        grantNoNormalized: "CN001",
+      },
+      softwareCopyrightDetail: null,
+      contributors: [{ id: "contributor-row-id" }],
+    };
+    const tx = {
+      paperDetail: {
+        create: vi.fn(),
+      },
+      patentDetail: {
+        create: vi.fn(),
+      },
+      softwareCopyrightDetail: {
+        create: vi.fn(),
+      },
+      achievement: {
+        create: vi.fn().mockResolvedValue({ id: "achievement-id" }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(createdAchievement),
+        update: vi.fn(),
+        upsert: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      achievementContributor: {
+        createMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      attachment: {
+        create: vi.fn(),
+      },
+      feeRecord: {
+        create: vi.fn(),
+      },
+      feeReviewHistory: {
+        create: vi.fn(),
+      },
+      reminderTask: {
+        create: vi.fn(),
+      },
+      notification: {
+        create: vi.fn(),
+      },
+      searchLog: {
+        create: vi.fn(),
+      },
+      workflowInstance: {
+        create: vi.fn(),
+      },
+      workflowTask: {
+        create: vi.fn(),
+      },
+      workflowAction: {
+        create: vi.fn(),
+      },
+      resourceAccessGrant: {
+        create: vi.fn(),
+      },
+      importJob: {
+        create: vi.fn(),
+      },
+      auditLog: {
+        create: vi.fn(),
+      },
+    };
+    const repository = new AchievementImportDryRunRepository({} as PrismaService);
+
+    await expect(
+      repository.createPatentDraftInTransaction(tx as never, {
+        type: "PATENT",
+        title: "Patent draft",
+        secretLevel: "INTERNAL",
+        departmentId: "department-id",
+        ownerUserId: "owner-id",
+        createdById: "admin-id",
+        updatedById: "admin-id",
+        patentDetail: {
+          applicationNo: "APP-001",
+          applicationNoNormalized: "APP001",
+          grantNo: "CN-001",
+          grantNoNormalized: "CN001",
+          patentType: "INVENTION",
+          filingDate: "2026-01-02",
+          grantDate: "2026-02-03",
+          legalStatus: "GRANTED",
+        },
+        contributors: [
+          {
+            name: "Inventor",
+            userId: "owner-id",
+            contributorType: "INVENTOR",
+            contributorRole: "PRIMARY_INVENTOR",
+            sortOrder: 1,
+          },
+        ],
+      }),
+    ).resolves.toEqual(createdAchievement);
+
+    expect(tx.achievement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "PATENT",
+        status: "DRAFT",
+        title: "Patent draft",
+        departmentId: "department-id",
+        ownerUserId: "owner-id",
+      }),
+      select: { id: true },
+    });
+    expect(tx.patentDetail.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        achievementId: "achievement-id",
+        applicationNo: "APP-001",
+        applicationNoNormalized: "APP001",
+        grantNo: "CN-001",
+        grantNoNormalized: "CN001",
+        patentType: "INVENTION",
+        filingDate: "2026-01-02",
+        grantDate: "2026-02-03",
+        legalStatus: "GRANTED",
+      }),
+    });
+    expect(tx.patentDetail.create.mock.calls[0]![0].data).not.toHaveProperty("nextFeeDate");
+    expect(tx.patentDetail.create.mock.calls[0]![0].data).not.toHaveProperty("feeAmount");
+    expect(tx.achievementContributor.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          achievementId: "achievement-id",
+          name: "Inventor",
+          userId: "owner-id",
+          contributorType: "INVENTOR",
+          contributorRole: "PRIMARY_INVENTOR",
+          sortOrder: 1,
+        }),
+      ],
+    });
+    expect(tx.achievement.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: "achievement-id" },
+      select: expect.objectContaining({
+        id: true,
+        patentDetail: expect.any(Object),
+        contributors: expect.any(Object),
+      }),
+    });
+    expect(tx.paperDetail.create).not.toHaveBeenCalled();
+    expect(tx.softwareCopyrightDetail.create).not.toHaveBeenCalled();
+    expect(tx.attachment.create).not.toHaveBeenCalled();
+    expect(tx.feeRecord.create).not.toHaveBeenCalled();
+    expect(tx.feeReviewHistory.create).not.toHaveBeenCalled();
+    expect(tx.reminderTask.create).not.toHaveBeenCalled();
+    expect(tx.notification.create).not.toHaveBeenCalled();
+    expect(tx.searchLog.create).not.toHaveBeenCalled();
+    expect(tx.workflowInstance.create).not.toHaveBeenCalled();
+    expect(tx.workflowTask.create).not.toHaveBeenCalled();
+    expect(tx.workflowAction.create).not.toHaveBeenCalled();
+    expect(tx.resourceAccessGrant.create).not.toHaveBeenCalled();
+    expect(tx.importJob.create).not.toHaveBeenCalled();
     expect(tx.auditLog.create).not.toHaveBeenCalled();
   });
 

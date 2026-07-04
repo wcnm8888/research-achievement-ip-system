@@ -70,6 +70,14 @@ const createService = (input: {
   }>;
   applyUsers?: ReturnType<typeof activeUser>[];
   applyDoiConflicts?: Array<{ field: "doi"; normalizedValue: string }>;
+  applyApplicationConflicts?: Array<{
+    field: "applicationNo";
+    normalizedValue: string;
+  }>;
+  applyPatentNoConflicts?: Array<{
+    field: "patentNo";
+    normalizedValue: string;
+  }>;
   applyRegistrationConflicts?: Array<{
     field: "registrationNo";
     normalizedValue: string;
@@ -91,6 +99,26 @@ const createService = (input: {
       achievementId: "30000000-0000-4000-8000-000000000001",
       doiNormalized: "10.1000/example",
     },
+    patentDetail: null,
+    softwareCopyrightDetail: null,
+    contributors: [{ id: "70000000-0000-4000-8000-000000000001" }],
+  };
+  const createdPatentAchievement = {
+    id: "30000000-0000-4000-8000-000000000003",
+    type: "PATENT",
+    status: "DRAFT",
+    secretLevel: "INTERNAL",
+    departmentId: ids.department,
+    ownerUserId: ids.owner,
+    createdById: ids.admin,
+    updatedById: ids.admin,
+    version: 1,
+    paperDetail: null,
+    patentDetail: {
+      achievementId: "30000000-0000-4000-8000-000000000003",
+      applicationNoNormalized: "APP001",
+      grantNoNormalized: "CN001",
+    },
     softwareCopyrightDetail: null,
     contributors: [{ id: "70000000-0000-4000-8000-000000000001" }],
   };
@@ -105,6 +133,7 @@ const createService = (input: {
     updatedById: ids.admin,
     version: 1,
     paperDetail: null,
+    patentDetail: null,
     softwareCopyrightDetail: {
       achievementId: "30000000-0000-4000-8000-000000000002",
       registrationNoNormalized: "SW001",
@@ -129,6 +158,12 @@ const createService = (input: {
     findApplyPaperDoiConflictsInTransaction: vi.fn().mockResolvedValue(
       input.applyDoiConflicts ?? [],
     ),
+    findApplyPatentApplicationConflictsInTransaction: vi.fn().mockResolvedValue(
+      input.applyApplicationConflicts ?? [],
+    ),
+    findApplyPatentNoConflictsInTransaction: vi.fn().mockResolvedValue(
+      input.applyPatentNoConflicts ?? [],
+    ),
     findApplySoftwareRegistrationConflictsInTransaction: vi.fn().mockResolvedValue(
       input.applyRegistrationConflicts ?? [],
     ),
@@ -137,6 +172,12 @@ const createService = (input: {
         throw input.createError;
       }
       return Promise.resolve(createdAchievement);
+    }),
+    createPatentDraftInTransaction: vi.fn().mockImplementation(() => {
+      if (input.createError) {
+        throw input.createError;
+      }
+      return Promise.resolve(createdPatentAchievement);
     }),
     createSoftwareCopyrightDraftInTransaction: vi.fn().mockImplementation(() => {
       if (input.createError) {
@@ -596,6 +637,119 @@ describe("AchievementImportDryRunService", () => {
     expect(auditJson).not.toContain("Hidden runtime");
   });
 
+  it("applies PATENT rows as draft achievements with detail, contributors, and safe audit", async () => {
+    const { service, repository, prisma, auditService } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [
+        activeUser("owner@example.org"),
+        activeUser("inventor@example.org", { id: ids.contributor }),
+      ],
+    });
+
+    const result = await service.applyAchievementCsv(
+      adminContext,
+      makeFile(
+        [
+          "type,title,ownerEmail,departmentCode,contributors,status,applicationNo,grantNo,patentType,filingDate,grantDate,nextFeeDate,feeAmount,legalStatus",
+          "PATENT,Patent A,owner@example.org,RD,Inventor|INVENTOR|PRIMARY_INVENTOR|inventor@example.org|Lab,DRAFT,APP-001,CN-001,INVENTION,2026-01-02,2026-02-03,2027-02-03,1200.50,GRANTED",
+        ].join("\n"),
+      ),
+      "CREATE_DRAFT_ONLY",
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(repository.findApplyPatentApplicationConflictsInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      ["APP001"],
+    );
+    expect(repository.findApplyPatentNoConflictsInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      ["CN001"],
+    );
+    expect(repository.createPatentDraftInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        type: "PATENT",
+        title: "Patent A",
+        departmentId: ids.department,
+        ownerUserId: ids.owner,
+        createdById: ids.admin,
+        updatedById: ids.admin,
+        patentDetail: {
+          applicationNo: "APP-001",
+          applicationNoNormalized: "APP001",
+          grantNo: "CN-001",
+          grantNoNormalized: "CN001",
+          patentType: "INVENTION",
+          filingDate: new Date("2026-01-02T00:00:00.000Z"),
+          grantDate: new Date("2026-02-03T00:00:00.000Z"),
+          legalStatus: "GRANTED",
+        },
+        contributors: [
+          expect.objectContaining({
+            name: "Inventor",
+            userId: ids.contributor,
+            contributorType: "INVENTOR",
+            contributorRole: "PRIMARY_INVENTOR",
+            sortOrder: 1,
+          }),
+        ],
+      }),
+    );
+    expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      importType: "ACHIEVEMENT",
+      dryRun: false,
+      mode: "CREATE_DRAFT_ONLY",
+      summary: {
+        totalRows: 1,
+        createdAchievementsCount: 1,
+        createdPaperDetailsCount: 0,
+        createdPatentDetailsCount: 1,
+        createdSoftwareCopyrightDetailsCount: 0,
+        createdContributorsCount: 1,
+        auditOperation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+      },
+      rows: [
+        expect.objectContaining({
+          type: "PATENT",
+          achievementStatus: "DRAFT",
+        }),
+      ],
+    });
+    const auditInput = auditService.recordEventInTransaction.mock.calls[0]![1];
+    const auditJson = JSON.stringify(auditInput);
+    expect(auditInput).toMatchObject({
+      action: "CREATE",
+      target: {
+        type: "ACHIEVEMENT",
+        id: "30000000-0000-4000-8000-000000000003",
+        departmentId: ids.department,
+        secretLevel: "INTERNAL",
+      },
+      oldValue: null,
+      newValue: expect.objectContaining({
+        operation: "ACHIEVEMENT_IMPORT_CREATE_DRAFT",
+        mode: "CREATE_DRAFT_ONLY",
+        rowNumber: 2,
+        type: "PATENT",
+        status: "DRAFT",
+        identifierFieldsPresent: ["applicationNo", "grantNo"],
+      }),
+    });
+    expect(auditJson).not.toContain("Patent A");
+    expect(auditJson).not.toContain("owner@example.org");
+    expect(auditJson).not.toContain("inventor@example.org");
+    expect(auditJson).not.toContain("Inventor");
+    expect(auditJson).not.toContain("APP-001");
+    expect(auditJson).not.toContain("APP001");
+    expect(auditJson).not.toContain("CN-001");
+    expect(auditJson).not.toContain("CN001");
+    expect(auditJson).not.toContain("2027-02-03");
+    expect(auditJson).not.toContain("1200.50");
+  });
+
   it("rejects unsupported apply mode before parsing or writing", async () => {
     const { service, repository, prisma } = createService();
 
@@ -609,7 +763,7 @@ describe("AchievementImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("rejects PATENT rows for the software copyright apply slice", async () => {
+  it("rejects PATENT rows without application number during apply", async () => {
     const { service, repository, prisma } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [
@@ -631,17 +785,18 @@ describe("AchievementImportDryRunService", () => {
     ).rejects.toMatchObject({
       result: expect.objectContaining({
         errors: expect.arrayContaining([
-          expect.objectContaining({ field: "type", code: "UNSUPPORTED_TYPE" }),
+          expect.objectContaining({ field: "applicationNo", code: "REQUIRED" }),
         ]),
       }),
     });
 
     expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
     expect(repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("rejects mixed PAPER and SOFTWARE_COPYRIGHT batches before opening a transaction", async () => {
+  it("rejects mixed PAPER, PATENT, and SOFTWARE_COPYRIGHT batches before opening a transaction", async () => {
     const { service, repository, prisma } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
@@ -652,9 +807,10 @@ describe("AchievementImportDryRunService", () => {
         adminContext,
         makeFile(
           [
-            "type,title,ownerEmail,departmentCode,contributors,doi,softwareRegistrationNo",
-            "PAPER,Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/new,",
-            "SOFTWARE_COPYRIGHT,Software,owner@example.org,RD,B|COPYRIGHT_OWNER||owner@example.org|Lab,,SW-001",
+            "type,title,ownerEmail,departmentCode,contributors,doi,applicationNo,softwareRegistrationNo",
+            "PAPER,Paper,owner@example.org,RD,A|AUTHOR||owner@example.org|Lab,10.1000/new,,",
+            "PATENT,Patent,owner@example.org,RD,B|INVENTOR||owner@example.org|Lab,,APP-001,",
+            "SOFTWARE_COPYRIGHT,Software,owner@example.org,RD,C|COPYRIGHT_OWNER||owner@example.org|Lab,,,SW-001",
           ].join("\n"),
         ),
       ),
@@ -667,6 +823,7 @@ describe("AchievementImportDryRunService", () => {
     });
 
     expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
+    expect(repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
     expect(repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
@@ -712,6 +869,30 @@ describe("AchievementImportDryRunService", () => {
       result: expect.objectContaining({
         errors: expect.arrayContaining([
           expect.objectContaining({ field: "registrationNo", code: "REQUIRED" }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing patent application number during apply even when dry-run can preview the row", async () => {
+    const { service, prisma } = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+    });
+
+    await expect(
+      service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors\nPATENT,Patent,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "applicationNo", code: "REQUIRED" }),
         ]),
       }),
     });
@@ -853,6 +1034,52 @@ describe("AchievementImportDryRunService", () => {
 
     expect(softwareRace.repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
 
+    const patentApplicationRace = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      applyApplicationConflicts: [{ field: "applicationNo", normalizedValue: "APP001" }],
+    });
+
+    await expect(
+      patentApplicationRace.service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,applicationNo,grantNo\nPATENT,Patent,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,APP-001,CN-001\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "applicationNo", code: "DB_CONFLICT" }),
+        ]),
+      }),
+    });
+
+    expect(patentApplicationRace.repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
+
+    const patentNoRace = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      applyPatentNoConflicts: [{ field: "patentNo", normalizedValue: "CN001" }],
+    });
+
+    await expect(
+      patentNoRace.service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,applicationNo,grantNo\nPATENT,Patent,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,APP-001,CN-001\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ field: "patentNo", code: "DB_CONFLICT" }),
+        ]),
+      }),
+    });
+
+    expect(patentNoRace.repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
+
     const unique = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
@@ -888,6 +1115,44 @@ describe("AchievementImportDryRunService", () => {
     ).rejects.toMatchObject({
       result: expect.objectContaining({
         errors: [expect.objectContaining({ field: "registrationNo", code: "DB_CONFLICT" })],
+      }),
+    });
+
+    const patentApplicationUnique = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      createError: { code: "P2002", meta: { target: ["application_no_normalized"] } },
+    });
+
+    await expect(
+      patentApplicationUnique.service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,applicationNo\nPATENT,Patent,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,APP-001\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: [expect.objectContaining({ field: "applicationNo", code: "DB_CONFLICT" })],
+      }),
+    });
+
+    const patentNoUnique = createService({
+      departments: [{ id: ids.department, code: "RD" }],
+      users: [activeUser("owner@example.org")],
+      createError: { code: "P2002", meta: { target: ["grant_no_normalized"] } },
+    });
+
+    await expect(
+      patentNoUnique.service.applyAchievementCsv(
+        adminContext,
+        makeFile(
+          "type,title,ownerEmail,departmentCode,contributors,applicationNo,grantNo\nPATENT,Patent,owner@example.org,RD,A|INVENTOR||owner@example.org|Lab,APP-001,CN-001\n",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      result: expect.objectContaining({
+        errors: [expect.objectContaining({ field: "patentNo", code: "DB_CONFLICT" })],
       }),
     });
   });

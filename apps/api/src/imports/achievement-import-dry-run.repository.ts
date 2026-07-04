@@ -8,6 +8,7 @@ import {
 import {
   CreateAchievementContributorDraftInput,
   CreatePaperDetailDraftInput,
+  CreatePatentDetailDraftInput,
   CreateSoftwareCopyrightDetailDraftInput,
 } from "../achievements/domain/achievement-repository.types";
 import {
@@ -74,6 +75,18 @@ export type AchievementImportCreateSoftwareCopyrightDraftInput = {
   contributors: readonly CreateAchievementContributorDraftInput[];
 };
 
+export type AchievementImportCreatePatentDraftInput = {
+  type: typeof AchievementTypeCode.patent;
+  title: string;
+  secretLevel: SecretLevelCode;
+  departmentId: string;
+  ownerUserId: string;
+  createdById: string;
+  updatedById: string;
+  patentDetail: CreatePatentDetailDraftInput;
+  contributors: readonly CreateAchievementContributorDraftInput[];
+};
+
 export type AchievementImportCreatedDraft = {
   id: string;
   type: string;
@@ -85,6 +98,11 @@ export type AchievementImportCreatedDraft = {
   updatedById: string | null;
   version: number;
   paperDetail: { achievementId: string; doiNormalized: string | null } | null;
+  patentDetail: {
+    achievementId: string;
+    applicationNoNormalized: string | null;
+    grantNoNormalized: string | null;
+  } | null;
   softwareCopyrightDetail: {
     achievementId: string;
     registrationNoNormalized: string | null;
@@ -98,6 +116,7 @@ export type AchievementImportApplyTransactionClient = Pick<
   | "user"
   | "achievement"
   | "paperDetail"
+  | "patentDetail"
   | "softwareCopyrightDetail"
   | "achievementContributor"
 >;
@@ -262,6 +281,52 @@ export class AchievementImportDryRunRepository {
       }));
   }
 
+  async findApplyPatentApplicationConflictsInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    applicationNoNormalizedValues: readonly string[],
+  ): Promise<AchievementImportNormalizedConflict[]> {
+    const uniqueValues = [...new Set(applicationNoNormalizedValues.filter(Boolean))];
+    if (uniqueValues.length === 0) {
+      return [];
+    }
+
+    const rows = await client.patentDetail.findMany({
+      where: { applicationNoNormalized: { in: uniqueValues } },
+      select: { applicationNoNormalized: true },
+    });
+
+    return rows
+      .map((row) => row.applicationNoNormalized)
+      .filter((value): value is string => Boolean(value))
+      .map((normalizedValue) => ({
+        field: "applicationNo",
+        normalizedValue,
+      }));
+  }
+
+  async findApplyPatentNoConflictsInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    patentNoNormalizedValues: readonly string[],
+  ): Promise<AchievementImportNormalizedConflict[]> {
+    const uniqueValues = [...new Set(patentNoNormalizedValues.filter(Boolean))];
+    if (uniqueValues.length === 0) {
+      return [];
+    }
+
+    const rows = await client.patentDetail.findMany({
+      where: { grantNoNormalized: { in: uniqueValues } },
+      select: { grantNoNormalized: true },
+    });
+
+    return rows
+      .map((row) => row.grantNoNormalized)
+      .filter((value): value is string => Boolean(value))
+      .map((normalizedValue) => ({
+        field: "patentNo",
+        normalizedValue,
+      }));
+  }
+
   async createPaperDraftInTransaction(
     client: AchievementImportApplyTransactionClient,
     input: AchievementImportCreatePaperDraftInput,
@@ -301,6 +366,13 @@ export class AchievementImportDryRunRepository {
           select: {
             achievementId: true,
             doiNormalized: true,
+          },
+        },
+        patentDetail: {
+          select: {
+            achievementId: true,
+            applicationNoNormalized: true,
+            grantNoNormalized: true,
           },
         },
         softwareCopyrightDetail: {
@@ -359,6 +431,75 @@ export class AchievementImportDryRunRepository {
           select: {
             achievementId: true,
             doiNormalized: true,
+          },
+        },
+        patentDetail: {
+          select: {
+            achievementId: true,
+            applicationNoNormalized: true,
+            grantNoNormalized: true,
+          },
+        },
+        softwareCopyrightDetail: {
+          select: {
+            achievementId: true,
+            registrationNoNormalized: true,
+          },
+        },
+        contributors: {
+          select: { id: true },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+    });
+  }
+
+  async createPatentDraftInTransaction(
+    client: AchievementImportApplyTransactionClient,
+    input: AchievementImportCreatePatentDraftInput,
+  ): Promise<AchievementImportCreatedDraft> {
+    const created = await client.achievement.create({
+      data: toAchievementCreateData({
+        ...input,
+        type: AchievementTypeCode.patent,
+        patentDetail: input.patentDetail,
+      }),
+      select: { id: true },
+    });
+
+    await client.patentDetail.create({
+      data: toPatentImportDetailCreateData(created.id, input.patentDetail),
+    });
+
+    if (input.contributors.length > 0) {
+      await client.achievementContributor.createMany({
+        data: toContributorCreateManyData(created.id, input.contributors),
+      });
+    }
+
+    return client.achievement.findUniqueOrThrow({
+      where: { id: created.id },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        secretLevel: true,
+        departmentId: true,
+        ownerUserId: true,
+        createdById: true,
+        updatedById: true,
+        version: true,
+        paperDetail: {
+          select: {
+            achievementId: true,
+            doiNormalized: true,
+          },
+        },
+        patentDetail: {
+          select: {
+            achievementId: true,
+            applicationNoNormalized: true,
+            grantNoNormalized: true,
           },
         },
         softwareCopyrightDetail: {
@@ -491,3 +632,18 @@ const isPrismaKnownRequestError = (error: unknown): error is { code: string } =>
 
   return typeof (error as { code?: unknown }).code === "string";
 };
+
+const toPatentImportDetailCreateData = (
+  achievementId: string,
+  detail: CreatePatentDetailDraftInput,
+): Prisma.PatentDetailUncheckedCreateInput => ({
+  achievementId,
+  applicationNo: detail.applicationNo ?? null,
+  applicationNoNormalized: detail.applicationNoNormalized ?? null,
+  grantNo: detail.grantNo ?? null,
+  grantNoNormalized: detail.grantNoNormalized ?? null,
+  patentType: detail.patentType ?? null,
+  filingDate: detail.filingDate ?? null,
+  grantDate: detail.grantDate ?? null,
+  legalStatus: detail.legalStatus ?? undefined,
+});

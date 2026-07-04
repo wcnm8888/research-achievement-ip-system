@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-07-04 Step 70B - Patent import CREATE_DRAFT_ONLY backend apply
+
+- Status: DONE.
+- Scope completed:
+  - Extended the existing backend-only `POST /api/achievements/import/apply` path to support homogeneous all-`PATENT` `CREATE_DRAFT_ONLY` batches.
+  - Preserved existing all-`PAPER` and all-`SOFTWARE_COPYRIGHT` apply behavior.
+  - Kept mixed-type batches rejected before writes.
+  - Required `applicationNoNormalized` for every patent apply row.
+  - Kept `grantNoNormalized` as optional second conflict boundary only when application number is present.
+  - Rejected grant-only and no-identifier patent rows before writes.
+  - Added transaction-time patent application-number and optional grant-number conflict rechecks.
+  - Added transaction-scoped patent draft creation for `Achievement`, `PatentDetail`, contributors, and safe audit evidence.
+  - Added import-specific patent detail create mapping so `nextFeeDate` and `feeAmount` are not written in this first slice.
+  - Added focused service and repository tests for patent success, missing application number, grant-only rejection, mixed batches, transaction-time identifier conflicts, Prisma unique conflict mapping, safe audit redaction, and forbidden side-effect boundaries.
+- Explicitly not done:
+  - No Web implementation.
+  - No Docker/browser/local production-like acceptance.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, Prisma schema/migration/package/lockfile/config/script change, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No workflow, attachment/storage, fee, fee review history, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import imports.app-module achievement`: PASS, 11 files / 143 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-04 Step 70A - Patent import fee reminder boundary plan
 
 - Status: DONE.
