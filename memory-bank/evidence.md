@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-07-04 Step 74A - Settings/system import history overview design evidence
+
+- Goal:
+  - Produce a docs-only design for a settings/system unified read-only import history overview.
+- Initial state:
+  - `git log -1 --oneline`: `fa958b1 docs: archive import job history delivery`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `memory-bank/import-job-history-final-archive.md`.
+  - Step 73A through Step 73E sections from `memory-bank/import-job-history-database-model-plan.md`.
+  - Latest Step 73E section from `memory-bank/progress.md`.
+  - Settings/system navigation boundary in `apps/web/src/App.tsx`.
+  - Existing settings/system page shape in `apps/web/src/SettingsApiIntegrations.tsx`.
+  - Legacy settings boundary notes in `apps/web/src/SettingsBoundary.tsx`.
+  - Existing family-local history panel in `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - Import history client/type definitions in `apps/web/src/api-client.ts` and `apps/web/src/types.ts`.
+- Documentation updated:
+  - Added `memory-bank/import-job-history-settings-overview-plan.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Design evidence:
+  - The overview is positioned inside the existing settings/system configuration boundary as a secondary read-only cross-family index after the Department, User account, and Achievement page-local entries.
+  - The overview does not replace the local entries and does not become a retry/delete/cleanup/rollback/download control center.
+  - The filter contract covers `family`, `mode`, `achievementType`, `status`, `createdFrom`, `createdTo`, `page`, and `pageSize`.
+  - Default ordering is `createdAt desc`.
+  - List display is limited to Step 73B / 73C safe DTO fields: aggregate counts, status, timestamps, latest run metadata, and safe machine error codes.
+  - Detail display is limited to sanitized safe summary, sanitized run summaries, run status, `auditCount`, and replay/in-flight/rejected/failed explanations.
+  - Permission remains `system:config`; no `import-history` permission is introduced.
+  - Backend guard remains authoritative.
+  - Prohibited display/action boundaries include raw CSV, email, employee number, DOI, registration or patent numbers, title, personnel names, credential/session/token/cookie/password/connection-string values, raw audit IDs, retry/delete/cleanup/rollback/download, and business-object detail links inferred from import row identifiers.
+  - Follow-up split is Step 74B Web implementation, Step 74C local browser acceptance, and a separate production-readiness read-only preflight runbook.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 74A docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No API, Web, Docker, browser, database, production/VPS, import apply, retry, delete, cleanup, rollback, schema, migration, package, lockfile, or config work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-04 Step 73E - Import job history final archive evidence
 
 - Goal:

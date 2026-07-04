@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-07-04 Step 74A - Settings/system import history overview design
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/import-job-history-settings-overview-plan.md` for the settings/system unified read-only import history overview design.
+  - Positioned the overview inside the existing settings/system configuration boundary as a secondary read-only index after the Department, User account, and Achievement page-local history entries.
+  - Specified required filters: `family`, `mode`, `achievementType`, `status`, `createdFrom`, `createdTo`, `page`, and `pageSize`.
+  - Specified default ordering as `createdAt desc`.
+  - Reconfirmed reuse of Step 73B / 73C safe DTO fields for list and detail display.
+  - Reconfirmed `system:config` only; no new `import-history` permission.
+  - Reconfirmed backend guards as authoritative.
+  - Recorded forbidden displays and actions, including raw CSV, personal/business identifiers, credential/session/token/cookie/password/connection-string values, raw audit IDs, retry/delete/cleanup/rollback/download, and object detail links inferred from import rows.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 74A addendum.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No import apply, retry, delete, cleanup, rollback, download, or business-object drilldown.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; docs-only files changed.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes limited to Step 74A docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-04 Step 73E - Import job history and idempotency final archive
 
 - Status: DONE.

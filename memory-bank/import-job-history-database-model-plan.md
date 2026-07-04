@@ -1005,3 +1005,55 @@ Step 73D completes local browser acceptance for the three Web read-only import h
   - Real-environment acceptance requires separate explicit authorization and safe, de-identified evidence handling.
 
 Step 73E closes the local import job history and idempotency delivery mainline as documentation-only. It does not authorize runtime/API/Web/schema/migration/package/lockfile/config changes, production/VPS access, production DB access, import apply, retry, cleanup, delete, rollback, or real-data import.
+
+## Step 74A Settings/System Unified Read-Only Overview Plan
+
+- Date: 2026-07-04.
+- Scope: documentation-only design for a settings/system unified read-only import history overview.
+- Added detailed plan:
+  - `memory-bank/import-job-history-settings-overview-plan.md`.
+- Non-scope: no Web implementation, no backend API implementation, no Prisma schema or migration changes, no package or lockfile changes, no service startup, no browser run, no database access, no production/VPS access, no import apply execution, and no retry/delete/cleanup/rollback/download behavior.
+
+### Entry Position
+
+- The overview belongs inside the existing settings/system configuration boundary.
+- It is a secondary read-only index after the three family-local import history entries already accepted on Department, User account, and Achievement import pages.
+- It does not replace the Department, User account, or Achievement page-local entries.
+- It is for cross-family support visibility only and must not become an import control center.
+
+### Filters And Ordering
+
+- The list must support:
+  - `family`;
+  - `mode`;
+  - `achievementType`;
+  - `status`;
+  - `createdFrom`;
+  - `createdTo`;
+  - `page`;
+  - `pageSize`.
+- Default ordering is `createdAt desc`.
+- The first load should show the latest safe records across all import families unless the user narrows filters.
+
+### Safe Display Contract
+
+- Reuse the Step 73B / 73C safe DTO fields.
+- List display should stay limited to family, mode, achievement type enum, status, aggregate counts, latest run status metadata, safe machine error codes, and timestamps.
+- Detail display should show sanitized `safeSummary`, sanitized run summaries, run status rows, `auditCount`, and replay/in-flight/rejected/failed explanations.
+- Opaque `ImportJob.id` may be used internally for row keys and detail requests, but should not be displayed, copied, linked as a shareable route, or treated as a business identifier.
+
+### Permission And Prohibitions
+
+- Continue to require `system:config`.
+- Do not add an `import-history` permission.
+- Backend guards remain authoritative; frontend visibility is only an affordance.
+- Do not display raw CSV, email, employee number, DOI, registration number, patent number, achievement title, personnel names, credential/session/token/cookie/password/connection-string values, or raw audit IDs.
+- Do not provide retry, delete, cleanup, rollback, source CSV download, export/download, raw JSON copy, raw audit ID browsing, or links to business-object details inferred from imported row identifiers.
+
+### Follow-Up Split
+
+- Step 74B: Web settings/system overview implementation, keeping the three local entries intact.
+- Step 74C: local browser acceptance for permissions, filters, list/detail safe display, GET-only behavior, and absence of forbidden controls or strings.
+- Production readiness remains a separate read-only preflight runbook and must not be merged into Step 74A.
+
+Step 74A approves only the documentation design for the settings/system unified read-only import history overview. It does not authorize runtime/API/Web/schema/migration/package/lockfile/config changes, production/VPS access, production DB access, import apply, retry, cleanup, delete, rollback, download, or business-object drilldown behavior.
