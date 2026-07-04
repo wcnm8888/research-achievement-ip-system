@@ -1,5 +1,43 @@
 # Evidence
 
+## 2026-07-04 Step 69E - Achievement SOFTWARE_COPYRIGHT import Web entry design evidence
+
+- Goal:
+  - Design the Web apply expansion from `PAPER` to `SOFTWARE_COPYRIGHT` after backend apply and local production-like API acceptance passed.
+- Initial state:
+  - `git log -1 --oneline`: `4cca1c4 fix: move local api port off reserved range`.
+  - Tracked diff was empty.
+  - Existing known untracked local artifacts were present and left untouched: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+- Context read:
+  - `memory-bank/testing-strategy.md`.
+  - `memory-bank/achievement-import-next-type-safety-plan.md`.
+  - `memory-bank/achievement-import-apply-web-entry-design.md`.
+  - Step 69A through Step 69D snippets from `memory-bank/progress.md`.
+  - `apps/web/src/Achievements.tsx`.
+  - `apps/web/src/Achievements.test.ts`.
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/api-client.ts`.
+- Implemented files:
+  - `memory-bank/achievement-import-software-web-entry-design.md`.
+  - `memory-bank/decisions.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Design evidence:
+  - Web apply should support homogeneous all-`PAPER` or all-`SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` batches.
+  - Mixed `PAPER` + `SOFTWARE_COPYRIGHT` batches remain disabled in Web before confirmation.
+  - `PATENT` remains disabled until fee/reminder boundaries and patent identifier semantics are separately planned.
+  - `SOFTWARE_COPYRIGHT` Web eligibility must require `parsed.normalizedIdentifiers.registrationNo`.
+  - Confirmation copy must state DRAFT-only, create-only, backend CSV revalidation, normalized registration duplicate boundary, and no workflow/attachment/storage/fee/reminder/notification/search/resource-grant/import-job side effects.
+  - Safe result/error display must not render raw or normalized registration number, title, owner email, contributor email/name, CSV body, cookie, session, token, credential, or connection-string material.
+  - Future local production-like Web acceptance should use Web `http://127.0.0.1:18081/` and API `http://127.0.0.1:14001/api`.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check`: PASS.
+  - Added-lines sensitive-value scan: PASS; no credential value, connection string value, private key value, AccessKey value, bearer token value, cookie value, password value, or secret value found.
+- Boundary:
+  - No `.env` or `.env.production` contents were read or output.
+  - No Web/API implementation, Docker/browser operation, database write, production/VPS access, production DB/config access, real-data import, schema/migration/package/lockfile/config change, credential/session/token/cookie/password/secret/private-key handling, local artifact cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts occurred.
+
 ## 2026-07-02 Step 69D - Local production-like API host port fix evidence
 
 - Goal:

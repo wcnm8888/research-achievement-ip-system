@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-07-04 Step 69E - Achievement SOFTWARE_COPYRIGHT import Web entry design
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/achievement-import-software-web-entry-design.md`.
+  - Recorded decision D247 in `memory-bank/decisions.md`.
+  - Designed the Web apply expansion from `PAPER`-only to homogeneous all-`PAPER` or all-`SOFTWARE_COPYRIGHT` batches.
+  - Kept mixed `PAPER` + `SOFTWARE_COPYRIGHT` batches disabled and `PATENT` disabled.
+  - Required normalized DOI for `PAPER` and normalized software registration number for `SOFTWARE_COPYRIGHT`.
+  - Defined type contract updates, eligibility rules, blocking reason priority, confirmation copy, safe success/error display, Web Vitest coverage, and local production-like Web acceptance recommendations using `http://127.0.0.1:14001/api`.
+- Explicitly not done:
+  - No Web/API runtime implementation.
+  - No Docker/browser operation.
+  - No database write.
+  - No production/VPS access, production DB/config access, `.env` / `.env.production` content read, real-data import, schema/migration/package/lockfile/config/script change, cleanup, deletion, reset, drop, prune, or known untracked local artifact handling.
+  - No `PATENT` apply support.
+  - No workflow, attachment/storage, fee, reminder, notification, search, resource grant, import job, submit, approve, reject, archive, void, update, upsert, merge, delete, or existing achievement mutation.
+- Verification:
+  - Documentation-only Step; typecheck/test/build not run because no runtime source, API, Web, schema, migration, package, lockfile, configuration, or script code changed.
+  - `git diff --check` and added-lines sensitive-value scan recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-02 Step 69D - Local production-like API host port fix
 
 - Status: DONE.

@@ -1,5 +1,21 @@
 # Decisions
 
+## D247 - Achievement import Web apply entry expands to homogeneous SOFTWARE_COPYRIGHT
+
+- Date: 2026-07-04.
+- Context: Step 69E designs the Web expansion after Step 69B/69C verified backend `SOFTWARE_COPYRIGHT` `CREATE_DRAFT_ONLY` apply and Step 69D moved local production-like API to `127.0.0.1:14001`. The task is documentation-only and prohibits Web/API implementation, Docker/browser execution, database writes, production/VPS access, `.env` / `.env.production` content reads, cleanup, deletion, reset, drop, prune, and known untracked-artifact handling.
+- Decision:
+  - Expand the existing achievement import Web apply affordance from `PAPER`-only to homogeneous all-`PAPER` or all-`SOFTWARE_COPYRIGHT` batches.
+  - Continue to require `system:config`, successful same-file dry-run, zero errors, zero warnings, all rows `VALID`, all rows `CREATE_DRAFT`, and `mode=CREATE_DRAFT_ONLY`.
+  - Continue requiring normalized DOI for all-`PAPER` apply.
+  - Require normalized software registration number for all-`SOFTWARE_COPYRIGHT` apply.
+  - Disable mixed `PAPER` + `SOFTWARE_COPYRIGHT` batches in Web before confirmation.
+  - Keep `PATENT` disabled until fee/reminder boundaries and patent identifier semantics are separately planned.
+  - Confirmation and result UI must state DRAFT-only, create-only, backend CSV revalidation, and no workflow/attachment/storage/fee/reminder/notification/search/resource-grant/import-job side effects.
+  - Safe result/error UI must not render raw or normalized software registration number, title, owner email, contributor email/name, CSV content, cookie, session, token, credential, or connection-string material.
+- Scope:
+  - This decision does not authorize runtime implementation in Step 69E, API calls, Docker/browser acceptance, production/VPS access, production DB/config access, real-data import, `PATENT` apply, schema/migration/package/lockfile/config changes, workflow/attachment/storage/fee/reminder/notification/search/resource grant/import job creation, state-machine transitions, cleanup, deletion, reset, drop, prune, or staging of known untracked local artifacts.
+
 ## D246 - Achievement import second apply type should be SOFTWARE_COPYRIGHT
 
 - Date: 2026-07-02.
