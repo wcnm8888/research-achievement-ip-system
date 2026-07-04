@@ -25,6 +25,7 @@ import {
   type AuthUser,
 } from "./api-client";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { ImportJobHistoryPanel, type ImportJobHistoryFilters } from "./ImportJobHistoryPanel";
 import {
   ImportDryRunPanelShell,
   ImportDryRunResultShell,
@@ -146,6 +147,10 @@ const userAccountImportApplyMode: UserAccountImportApplyMode =
   "CREATE_ONLY_PENDING_NO_CREDENTIAL";
 const userAccountImportApplyAuditOperation =
   "USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL";
+export const userAccountImportHistoryFilters: ImportJobHistoryFilters = {
+  family: "USER_ACCOUNT",
+  mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+};
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
   loading: false,
@@ -617,6 +622,12 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
         onOpenApplyConfirm={openImportApplyConfirm}
         onCloseApplyConfirm={closeImportApplyConfirm}
         onConfirmApply={handleUserImportApply}
+      />
+
+      <ImportJobHistoryPanel
+        apiClient={apiClient}
+        title="User account import history"
+        filters={userAccountImportHistoryFilters}
       />
 
       <Card className="shell-card" title="Account lifecycle">

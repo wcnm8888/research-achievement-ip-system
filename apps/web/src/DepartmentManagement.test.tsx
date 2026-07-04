@@ -14,6 +14,7 @@ import {
   DepartmentImportDryRunPanel,
   DepartmentImportDryRunResultView,
   DepartmentManagement,
+  departmentImportHistoryFilters,
   dryRunDepartmentImport,
   executeDepartmentOperation,
   fetchDepartmentDetail,
@@ -202,6 +203,7 @@ describe("department management permission boundary", () => {
     expect(html).toContain("当前账号无权访问部门维护");
     expect(html).toContain("不会请求 /departments");
     expect(html).not.toContain("/imports/departments/dry-run");
+    expect(html).not.toContain("Department import history");
     expect(fetchMock).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();
@@ -222,6 +224,12 @@ describe("department management permission boundary", () => {
     expect(html).toContain("CSV-only");
     expect(html).toContain("before optional CREATE_ONLY apply");
     expect(html).toContain("POST /imports/departments/dry-run");
+    expect(html).toContain("Department import history");
+    expect(html).toContain("Read-only history");
+    expect(departmentImportHistoryFilters).toEqual({
+      family: "DEPARTMENT",
+      mode: "CREATE_ONLY",
+    });
   });
 });
 

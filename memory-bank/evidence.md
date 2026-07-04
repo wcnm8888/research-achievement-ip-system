@@ -1,5 +1,56 @@
 # Evidence
 
+## 2026-07-04 Step 73C - Import job history Web read-only entries evidence
+
+- Goal:
+  - Implement Web read-only import job history entries on Department, User account, and Achievement import pages using the Step 73B backend read APIs, without backend/schema/migration/production changes or write controls.
+- Initial state:
+  - `git log -1 --oneline`: `92a12bc feat: add import job history read api`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+- Context read:
+  - Step 73A and Step 73B sections from `memory-bank/import-job-history-database-model-plan.md`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/DepartmentManagement.tsx` and targeted tests.
+  - `apps/web/src/AccountManagement.tsx` and targeted tests.
+  - `apps/web/src/Achievements.tsx` and `apps/web/src/Achievements.test.ts`.
+- Implemented files:
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - `apps/web/src/DepartmentManagement.tsx`.
+  - `apps/web/src/AccountManagement.tsx`.
+  - `apps/web/src/Achievements.tsx`.
+  - Targeted tests for the API client, history panel, and three pages.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+- Implementation evidence:
+  - API client calls `GET /import-jobs` and `GET /import-jobs/:id`; the client base composes these into `/api/import-jobs` URLs.
+  - Department history filters are fixed to `DEPARTMENT` + `CREATE_ONLY`.
+  - User account history filters are fixed to `USER_ACCOUNT` + `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Achievement history filters are fixed to `ACHIEVEMENT` + `CREATE_DRAFT_ONLY`, with optional `achievementType` selection.
+  - Panel list renders family, mode, achievementType, status, created counts, safe error codes, createdAt, and completedAt.
+  - Detail renders safe summary rows, run status metadata, and `auditCount` only.
+  - Detail explanations cover replay, in-flight, rejected, and failed states.
+  - Frontend entries remain inside existing `system:config` visibility boundaries; unauthorized pages do not render the panel and therefore do not request import-jobs.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client DepartmentManagement AccountManagement Achievements ImportJobHistory`: PASS, 5 files / 125 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS; Vite reported only the existing large chunk warning.
+  - `git diff --check`: PASS.
+  - `git diff --cached --stat`: empty before staging.
+  - `git status --short`: tracked changes limited to Step 73C Web/docs files plus the new Step 73C panel/test files and existing untracked local artifacts.
+  - Manual diff review: PASS; no backend, Prisma schema, migration, production config, `.env`, package, lockfile, raw CSV, source CSV download, raw audit IDs, or import-history write API/control was added.
+- Boundary:
+  - No backend API, Prisma schema, migration, Docker, production/VPS, production DB, deploy, seed, backfill, cleanup, deletion, reset, restore, checkout, prune, or apply/import execution occurred.
+  - No `.env` or `.env.production` content was read or output.
+  - No credential, session, token, cookie, password, connection string, raw CSV, email value, employee number, DOI value, registration number, patent number, title value, personnel name, raw audit ID, or source CSV content was added to Web history UI/docs.
+  - The Web history UI does not provide retry, delete, cleanup, rollback, or download controls.
+
 ## 2026-07-04 Step 73B - Import job history backend read-only API evidence
 
 - Goal:

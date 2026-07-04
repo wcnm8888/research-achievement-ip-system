@@ -1,5 +1,31 @@
 # Progress
 
+## 2026-07-04 Step 73C - Import job history Web read-only entries
+
+- Status: DONE.
+- Scope completed:
+  - Added Web import job history DTO/query types in `apps/web/src/types.ts`.
+  - Added `listImportJobHistory` and `getImportJobHistoryDetail` to `apps/web/src/api-client.ts`; paths use `/import-jobs` and are composed by the client base into `/api/import-jobs`.
+  - Added reusable `apps/web/src/ImportJobHistoryPanel.tsx` with loading, empty, error, list, and detail states.
+  - Added family-local entries on:
+    - `DepartmentManagement`: `DEPARTMENT` + `CREATE_ONLY`;
+    - `AccountManagement`: `USER_ACCOUNT` + `CREATE_ONLY_PENDING_NO_CREDENTIAL`;
+    - `Achievements`: `ACHIEVEMENT` + `CREATE_DRAFT_ONLY`, with optional `achievementType` filter.
+  - Added targeted Web tests, including API URL checks, permission visibility, fixed filters, panel states, detail audit-count-only display, and forbidden-control wording checks.
+- Key outcome:
+  - Web now exposes read-only import history next to the three existing import flows.
+  - Entries remain visible only in the existing `system:config` import/admin boundaries; backend guards remain authoritative.
+  - Detail view displays safe aggregate summary, run status metadata, audit counts, and replay/in-flight/rejected/failed explanations.
+  - The UI provides no import-history write controls or source CSV download path.
+- Explicitly not done:
+  - No backend, Prisma schema, migration, production/VPS, production DB, retry, delete, cleanup, rollback, or CSV download work.
+  - No settings/system overview entry; this Step only adds the three task-local entries.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client DepartmentManagement AccountManagement Achievements ImportJobHistory`: PASS, 5 files / 125 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web build`: PASS; Vite reported only the existing large chunk warning.
+  - `git diff --check`: PASS.
+
 ## 2026-07-04 Step 73B - Import job history backend read-only API
 
 - Status: DONE.

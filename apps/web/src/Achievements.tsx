@@ -25,6 +25,7 @@ import {
   type AuthUser,
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { ImportJobHistoryPanel, type ImportJobHistoryFilters } from "./ImportJobHistoryPanel";
 import {
   ImportDryRunPanelShell,
   ImportDryRunResultShell,
@@ -125,6 +126,11 @@ const secretLevelLabels: Record<AchievementListItem["secretLevel"], string> = {
   INTERNAL: "内部",
   SECRET: "秘密",
   CONFIDENTIAL: "机密",
+};
+
+export const achievementImportHistoryFilters: ImportJobHistoryFilters = {
+  family: "ACHIEVEMENT",
+  mode: "CREATE_DRAFT_ONLY",
 };
 
 export function Achievements({ demoUserId, authUser }: AchievementsProps) {
@@ -328,22 +334,30 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
       <PermissionHint description="最终读取权限以后端策略为准。前端只负责传递 X-Demo-User-Id、展示后端返回的列表和脱敏状态，不在浏览器端承担最终鉴权。" />
 
       {canUseImportDryRun ? (
-        <AchievementImportDryRunPanel
-          file={importFile}
-          loading={importLoading}
-          error={importError}
-          result={importResult}
-          applyEligibility={applyEligibility}
-          applySubmitting={applySubmitting}
-          applyConfirmOpen={applyConfirmOpen}
-          applyError={applyError}
-          applyResult={applyResult}
-          onFileChange={handleImportFileChange}
-          onRunDryRun={runImportDryRun}
-          onOpenApplyConfirm={openApplyConfirm}
-          onCancelApplyConfirm={() => setApplyConfirmOpen(false)}
-          onConfirmApply={confirmApplyImport}
-        />
+        <>
+          <AchievementImportDryRunPanel
+            file={importFile}
+            loading={importLoading}
+            error={importError}
+            result={importResult}
+            applyEligibility={applyEligibility}
+            applySubmitting={applySubmitting}
+            applyConfirmOpen={applyConfirmOpen}
+            applyError={applyError}
+            applyResult={applyResult}
+            onFileChange={handleImportFileChange}
+            onRunDryRun={runImportDryRun}
+            onOpenApplyConfirm={openApplyConfirm}
+            onCancelApplyConfirm={() => setApplyConfirmOpen(false)}
+            onConfirmApply={confirmApplyImport}
+          />
+          <ImportJobHistoryPanel
+            apiClient={apiClient}
+            title="Achievement import history"
+            filters={achievementImportHistoryFilters}
+            achievementTypeFilter
+          />
+        </>
       ) : null}
 
       <Card className="shell-card">

@@ -922,6 +922,77 @@ export type AchievementImportApplyResult = {
   rows: AchievementImportApplyRow[];
 };
 
+export type ImportJobHistoryFamily = "DEPARTMENT" | "USER_ACCOUNT" | "ACHIEVEMENT";
+
+export type ImportJobHistoryMode =
+  | DepartmentImportApplyMode
+  | UserAccountImportApplyMode
+  | AchievementImportApplyMode;
+
+export type ImportJobHistoryStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "SUCCESS"
+  | "FAILED"
+  | "REJECTED";
+
+export type ImportRunHistoryStatus = ImportJobHistoryStatus;
+
+export type ImportRunHistoryTrigger = "INITIAL" | "REPLAY" | string;
+
+export type ImportRunHistorySummary = {
+  attemptNo: number;
+  trigger: ImportRunHistoryTrigger;
+  status: ImportRunHistoryStatus | string;
+  failureCode?: string | null;
+  failureStage?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  completedBusinessTransactionAt?: string | null;
+  validationSummary?: unknown;
+  applySummary?: unknown;
+  auditCount: number;
+};
+
+export type ImportJobHistoryListItem = {
+  id: string;
+  family: ImportJobHistoryFamily;
+  mode: ImportJobHistoryMode | string;
+  achievementType?: AchievementTypeCode | null;
+  status: ImportJobHistoryStatus | string;
+  acceptedRowCount: number;
+  createdBusinessCount: number;
+  createdCompanionCount: number;
+  auditCount: number;
+  safeErrorCodes: string[];
+  createdAt: string;
+  completedAt?: string | null;
+  latestRun?: ImportRunHistorySummary | null;
+};
+
+export type ImportJobHistoryListResponse = {
+  items: ImportJobHistoryListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type ImportJobHistoryDetail = ImportJobHistoryListItem & {
+  safeSummary?: unknown;
+  runs: ImportRunHistorySummary[];
+};
+
+export type ImportJobHistoryListQuery = {
+  family?: ImportJobHistoryFamily;
+  mode?: ImportJobHistoryMode | string;
+  achievementType?: AchievementTypeCode;
+  status?: ImportJobHistoryStatus;
+  createdFrom?: string;
+  createdTo?: string;
+  page?: number;
+  pageSize?: number;
+};
+
 export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED" | "PENDING_ACTIVATION";
 
 export type AccountCredentialStatus = "ACTIVE" | "DISABLED";

@@ -8,6 +8,8 @@ import {
   AchievementImportApplyResultView,
   AchievementImportDryRunPanel,
   AchievementImportDryRunResultView,
+  Achievements,
+  achievementImportHistoryFilters,
   applyAchievementImport,
   buildAchievementImportFileFingerprint,
   buildAchievementListQuery,
@@ -563,6 +565,31 @@ describe("achievement import dry-run UI", () => {
     ).toBe(true);
     expect(hasAchievementImportDryRunPermission(createAuthUser())).toBe(false);
     expect(hasAchievementImportDryRunPermission(undefined)).toBe(false);
+  });
+
+  it("shows achievement import history only inside the system config import boundary", () => {
+    const adminHtml = renderToStaticMarkup(
+      createElement(Achievements, {
+        demoUserId: "admin-user-id",
+        authUser: createAuthUser({ permissionCodes: ["system:config"] }),
+      }),
+    );
+    const researcherHtml = renderToStaticMarkup(
+      createElement(Achievements, {
+        demoUserId: "researcher-id",
+        authUser: createAuthUser(),
+      }),
+    );
+
+    expect(adminHtml).toContain("Achievement CSV dry-run");
+    expect(adminHtml).toContain("Achievement import history");
+    expect(adminHtml).toContain("All achievement types");
+    expect(achievementImportHistoryFilters).toEqual({
+      family: "ACHIEVEMENT",
+      mode: "CREATE_DRAFT_ONLY",
+    });
+    expect(researcherHtml).not.toContain("Achievement CSV dry-run");
+    expect(researcherHtml).not.toContain("Achievement import history");
   });
 
   it("validates CSV-only file selection before dry-run submission", () => {

@@ -26,6 +26,7 @@ import {
   hasSystemConfigPermission,
   mapUserAccountImportApplyErrorToDisplay,
   shouldLoadAccountDepartmentOptions,
+  userAccountImportHistoryFilters,
   UserAccountImportApplyConfirmContent,
   UserAccountImportDryRunPanel,
   UserAccountImportDryRunResultView,
@@ -316,6 +317,7 @@ describe("account management permission helpers", () => {
     );
 
     expect(html).toContain("当前账号无权访问账号管理");
+    expect(html).not.toContain("User account import history");
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
@@ -334,8 +336,14 @@ describe("account management permission helpers", () => {
     expect(adminHtml).toContain("User account CSV dry-run");
     expect(adminHtml).toContain("POST /users/import/dry-run");
     expect(adminHtml).toContain("Password, passwordHash, token, cookie, secret");
+    expect(adminHtml).toContain("User account import history");
+    expect(userAccountImportHistoryFilters).toEqual({
+      family: "USER_ACCOUNT",
+      mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    });
     expect(auditorHtml).not.toContain("User account CSV dry-run");
     expect(auditorHtml).not.toContain("/users/import/dry-run");
+    expect(auditorHtml).not.toContain("User account import history");
   });
 });
 

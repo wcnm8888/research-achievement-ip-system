@@ -872,3 +872,40 @@ Step 73A recommends a family-local first Web history entry, with a later optiona
 - `git diff --check`: PASS.
 
 Step 73B provides the safe backend read DTO surface needed by Step 73C Web implementation. Step 73C should consume these DTOs without adding write controls. Step 73D should perform local browser acceptance for permission boundaries, empty/list/detail states, no forbidden controls, and no sensitive strings.
+
+## Step 73C Web Read-Only Entry Implementation Addendum
+
+- Date: 2026-07-04.
+- Implemented family-local Web read-only import history entries:
+  - Department import page: `family = DEPARTMENT`, `mode = CREATE_ONLY`.
+  - User account import page: `family = USER_ACCOUNT`, `mode = CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Achievement import page: `family = ACHIEVEMENT`, `mode = CREATE_DRAFT_ONLY`, with optional `achievementType` filter.
+- Added reusable Web panel:
+  - `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - Loading, empty, error, list, and detail states.
+  - Detail drawer renders safe summary rows, run status metadata, audit count, and replay/in-flight/rejected/failed explanations.
+- Added Web client/types:
+  - `ImportJobHistoryListResponse`;
+  - `ImportJobHistoryListItem`;
+  - `ImportJobHistoryDetail`;
+  - `ImportRunHistorySummary`;
+  - `ImportJobHistoryListQuery`.
+  - API client methods call `/import-jobs` and `/import-jobs/:id`, relying on the existing Web API base to produce `/api/import-jobs`.
+
+### Step 73C Permission And Safety Boundary
+
+- Web entries remain inside existing `system:config` visibility boundaries.
+- Backend guards remain authoritative.
+- Unauthorized Web states do not render the history panel and therefore do not request import-jobs.
+- The Web entry does not provide retry, delete, cleanup, rollback, or source CSV download controls.
+- Detail display keeps audit evidence to `auditCount` and does not display raw audit IDs.
+- The Web panel is defensive about safe summary rendering and filters obviously unsafe summary keys/values before display.
+
+### Step 73C Verification
+
+- `corepack pnpm --filter @research-ip/web test -- api-client DepartmentManagement AccountManagement Achievements ImportJobHistory`: PASS, 5 files / 125 tests.
+- `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- `corepack pnpm --filter @research-ip/web build`: PASS, with only the existing Vite large chunk warning.
+- `git diff --check`: PASS.
+
+Step 73C completes the Web implementation slice for the three local import pages. Step 73D should run local browser acceptance for permission visibility, empty/list/detail behavior, achievementType filtering, and absence of forbidden controls or sensitive values.

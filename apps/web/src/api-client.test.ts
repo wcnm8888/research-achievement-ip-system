@@ -348,6 +348,82 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
   });
 
+  it("lists import job history through the /api import-jobs read endpoint", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.listImportJobHistory({
+        family: "ACHIEVEMENT",
+        mode: "CREATE_DRAFT_ONLY",
+        achievementType: "PAPER",
+        page: 1,
+        pageSize: 10,
+      }),
+    ).resolves.toEqual({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe(
+      "http://localhost/api/import-jobs?family=ACHIEVEMENT&mode=CREATE_DRAFT_ONLY&achievementType=PAPER&page=1&pageSize=10",
+    );
+    expect(init.method).toBe("GET");
+    expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
+  it("loads import job history detail through the /api import-jobs read endpoint", async () => {
+    const importJobId = "10000000-0000-4000-8000-000000000073";
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        id: importJobId,
+        family: "DEPARTMENT",
+        mode: "CREATE_ONLY",
+        achievementType: null,
+        status: "SUCCESS",
+        acceptedRowCount: 1,
+        createdBusinessCount: 1,
+        createdCompanionCount: 0,
+        auditCount: 1,
+        safeErrorCodes: [],
+        createdAt: "2026-07-04T00:00:00.000Z",
+        completedAt: "2026-07-04T00:00:01.000Z",
+        safeSummary: { totalRows: 1 },
+        runs: [],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(client.getImportJobHistoryDetail(importJobId)).resolves.toMatchObject({
+      id: importJobId,
+      family: "DEPARTMENT",
+      mode: "CREATE_ONLY",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe(`http://localhost/api/import-jobs/${importJobId}`);
+    expect(init.method).toBe("GET");
+    expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
   it("sends user account import dry-run as multipart form data", async () => {
     const fetchMock = vi.fn(async () =>
       Response.json({

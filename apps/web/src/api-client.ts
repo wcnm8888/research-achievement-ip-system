@@ -30,6 +30,9 @@ import type {
   ApproveFeeReviewInput,
   FeeReviewHistoryEntry,
   FeeStateRecord,
+  ImportJobHistoryDetail,
+  ImportJobHistoryListQuery,
+  ImportJobHistoryListResponse,
   InviteAcceptInput,
   InviteAcceptResponse,
   InviteIssueResponse,
@@ -119,6 +122,10 @@ export type AccountManagementApiClient = ApiClient & {
   applyAchievementImport(
     input: AchievementImportApplyInput,
   ): Promise<AchievementImportApplyResult>;
+  listImportJobHistory(
+    query?: ImportJobHistoryListQuery,
+  ): Promise<ImportJobHistoryListResponse>;
+  getImportJobHistoryDetail(importJobId: string): Promise<ImportJobHistoryDetail>;
   listAccountUsers(query?: ListAccountUsersQuery): Promise<AccountUserListResponse>;
   getAccountUser(userId: string): Promise<AccountUserDetail>;
   createAccountUser(payload: CreateAccountUserInput): Promise<AccountUserDetail>;
@@ -413,6 +420,24 @@ export const createApiClient = (
       options,
     );
     return response as AchievementImportApplyResult;
+  },
+  async listImportJobHistory(query?: ImportJobHistoryListQuery) {
+    const response = await request(
+      "/import-jobs",
+      demoUserId,
+      { method: "GET", query },
+      options,
+    );
+    return response as ImportJobHistoryListResponse;
+  },
+  async getImportJobHistoryDetail(importJobId: string) {
+    const response = await request(
+      `/import-jobs/${importJobId}`,
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as ImportJobHistoryDetail;
   },
   async listAccountUsers(query?: ListAccountUsersQuery) {
     const response = await request(

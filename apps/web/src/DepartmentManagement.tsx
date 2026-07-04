@@ -29,6 +29,7 @@ import {
 } from "./api-client";
 import { hasSystemConfigPermission } from "./AccountManagement";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { ImportJobHistoryPanel, type ImportJobHistoryFilters } from "./ImportJobHistoryPanel";
 import {
   ImportDryRunPanelShell,
   ImportDryRunResultShell,
@@ -116,6 +117,10 @@ type DepartmentManagementProps = {
 const defaultPageSize = 20;
 const departmentImportApplyMode: DepartmentImportApplyMode = "CREATE_ONLY";
 const departmentImportApplyAuditOperation = "DEPARTMENT_IMPORT_CREATE";
+export const departmentImportHistoryFilters: ImportJobHistoryFilters = {
+  family: "DEPARTMENT",
+  mode: "CREATE_ONLY",
+};
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
   loading: false,
@@ -553,6 +558,12 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
         onOpenApplyConfirm={openImportApplyConfirm}
         onCloseApplyConfirm={closeImportApplyConfirm}
         onConfirmApply={handleImportApply}
+      />
+
+      <ImportJobHistoryPanel
+        apiClient={apiClient}
+        title="Department import history"
+        filters={departmentImportHistoryFilters}
       />
 
       <Card className="shell-card">
