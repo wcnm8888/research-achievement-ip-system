@@ -142,12 +142,7 @@ export const getDemoAuthUser = (demoUserId: string | null): AuthUser | null => {
     return null;
   }
 
-  const permissionCodes =
-    preset.role === "SYSTEM_ADMIN"
-      ? ["system:config"]
-      : preset.role === "RESEARCHER"
-        ? ["achievement:create", "achievement:update_own"]
-        : ["achievement:read_department", "fee:read_department"];
+  const permissionCodes = getDemoPermissionCodes(preset.role);
 
   return {
     id: preset.userId,
@@ -158,6 +153,45 @@ export const getDemoAuthUser = (demoUserId: string | null): AuthUser | null => {
     permissionCodes,
     scopedDepartmentIds: [],
   };
+};
+
+export const getDemoPermissionCodes = (role: string): string[] => {
+  if (role === "SYSTEM_ADMIN") {
+    return [
+      "achievement:archive",
+      "achievement:read_department",
+      "fee:read_department",
+      "fee:review_department",
+      "system:config",
+      "account:invite",
+      "account:reset_password",
+      "audit:read_masked",
+    ];
+  }
+
+  if (role === "RESEARCHER") {
+    return [
+      "achievement:create",
+      "achievement:read_own",
+      "achievement:submit",
+      "achievement:update_own",
+      "attachment:read_metadata",
+    ];
+  }
+
+  if (role === "RESEARCH_SECRETARY") {
+    return [
+      "achievement:read_department",
+      "achievement:review_department",
+      "fee:manage_department",
+      "fee:read_department",
+      "reminder:read_department",
+      "department:read_department",
+      "attachment:read_metadata",
+    ];
+  }
+
+  return [];
 };
 
 export const mapAuthCheckErrorToStatus = (error: unknown): AuthStatus =>

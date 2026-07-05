@@ -17936,3 +17936,54 @@
   - No real external system call, real email/SMS, real HR/SSO, real DOI/literature/patent platform, real finance/payment/invoice/reconciliation, BI, mobile, load test, disaster recovery, or production monitoring operation.
   - No business code, Prisma schema, migration, package, lockfile, deployment config, or untracked local artifact was modified.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact handling.
+
+## 2026-07-05 Step 90 - Phase-one demo role precondition repair evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `99c7d70 docs: add phase one demo dry-run report`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Context reviewed:
+  - `memory-bank/phase-one-demo-dry-run-report.md`.
+  - `memory-bank/phase-one-demo-acceptance-script.md`.
+  - `memory-bank/phase-one-demo-checklist.md`.
+  - `apps/web/src/demo-users.ts`.
+  - `apps/web/src/App.tsx`.
+  - `apps/web/src/WorkflowTasks.tsx`.
+  - `apps/web/src/Fees.tsx`.
+  - `apps/web/src/AccountManagement.tsx`.
+  - `prisma/seed.cjs`.
+  - `prisma/seed-foundation.cjs`.
+  - Targeted read-only checks in `apps/api/src/identity/dev-identity.adapter.ts` to confirm `X-Demo-User-Id` is a local dev identity lookup and must not be treated as HR/SSO.
+- Local code evidence:
+  - Updated `apps/web/src/App.tsx` with `getDemoPermissionCodes`.
+  - `RESEARCH_SECRETARY` local projection now includes `achievement:review_department`.
+  - `SYSTEM_ADMIN` local projection now includes `achievement:archive`, `fee:review_department`, `system:config`, `account:invite`, and `account:reset_password`.
+  - Updated `apps/web/src/App.test.tsx` to assert the phase-one walkthrough permissions stay visible for the relevant local demo personas.
+- Local documentation evidence:
+  - Updated `memory-bank/phase-one-demo-acceptance-script.md` with fixed local demo contexts and side-nav paths.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with role-switch and screenshot checks.
+  - Updated `memory-bank/phase-one-demo-dry-run-report.md` to mark the three Step 89 blockers as `PASS with caveat`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Step 89 blocker status:
+  - Achievement review/archive role precondition: `BLOCKED` -> `PASS with caveat`.
+  - Fee reviewer demo context: `BLOCKED` -> `PASS with caveat`.
+  - Account lifecycle invite/reset visibility: `BLOCKED` -> `PASS with caveat`.
+  - Final local demo precondition classification: PASS 0, PASS with caveat 9, BLOCKED 0.
+- Verification:
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; unstaged diff was limited to Step 90 allowed files before staging.
+  - `git diff --cached --stat`: PASS before staging.
+  - `corepack pnpm --filter @research-ip/web test -- demo App WorkflowTasks Fees AccountManagement`: PASS, 5 files / 129 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook execution.
+  - No real external system call, real email/SMS, real HR/SSO, real DOI/literature/patent platform, real finance/payment/invoice/reconciliation, BI, mobile, load test, disaster recovery, or production monitoring operation.
+  - No real account password, token, cookie, session, connection string, provider credential, or secret was read, written, displayed, or documented.
+  - No Prisma schema, migration, seed, package, lockfile, deployment config, or untracked local artifact was modified.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact handling.

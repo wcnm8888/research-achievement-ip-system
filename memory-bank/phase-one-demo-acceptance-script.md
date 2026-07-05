@@ -24,7 +24,17 @@ Use the local demo user selector or the existing local demo context. `apps/web/s
 - secretary: `RESEARCH_SECRETARY`
 - admin: `SYSTEM_ADMIN`
 
-Suggested order: start as researcher, switch to secretary for review and department-scoped operations, then switch to admin only for account management or system settings. These are local/demo personas only, not production identities or real HR/SSO accounts.
+Step 90 fixed local frontend permission projection for the walkthrough. Use these deterministic local/demo contexts:
+
+| Demo need | Local selector label / role | User id | Local permission purpose | Caveat |
+| --- | --- | --- | --- | --- |
+| Researcher | researcher / `RESEARCHER` | `40000000-0000-4000-8000-000000000001` | Create/update/submit own achievement draft and show owner-scoped records. | Local demo user only. |
+| Achievement reviewer | secretary / `RESEARCH_SECRETARY` | `40000000-0000-4000-8000-000000000002` | View department achievements and process achievement workflow tasks with `achievement:review_department`. | Local demo user only. |
+| Archive-capable user | admin / `SYSTEM_ADMIN` | `40000000-0000-4000-8000-000000000003` | Archive approved/pending-archive achievements with `achievement:archive`. | Local demo admin projection; backend remains final authority. |
+| Fee reviewer | admin / `SYSTEM_ADMIN` | `40000000-0000-4000-8000-000000000003` | Run local fee review UI/actions with `fee:review_department`. | This is the local demo fee-review-capable context, not a production finance reviewer. Do not call it a real HR/SSO or production `FINANCE_REVIEWER` account. |
+| Account lifecycle admin | admin / `SYSTEM_ADMIN` | `40000000-0000-4000-8000-000000000003` | Open Account Management and trigger invite/resend/reset UI with `system:config`, `account:invite`, and `account:reset_password`. | Local/simulated delivery only; never show raw token/link/password/session. |
+
+Suggested order: start as researcher, switch to secretary for achievement review, switch to admin for archive, fee review if no dedicated seeded fee reviewer exists, account lifecycle, settings, and import history. These are local/demo personas only, not production identities or real HR/SSO accounts.
 
 ## 3. Total Demo Route
 
@@ -52,12 +62,12 @@ Steps:
 
 1. Open the web app in local/demo environment.
 2. Select or confirm the researcher persona.
-3. Open Achievements or Dashboard.
-4. Switch to secretary or admin only when the later path requires that role.
+3. Click side nav -> Achievements or side nav -> Dashboard.
+4. Switch to secretary or admin only at the role-switch points listed in the later path.
 
 Expected visible result: UI reflects the chosen persona; visible data and actions change by role/permission.
 
-Evidence: screenshot the active role/user context and page state after switching persona. Do not capture credentials, cookies, sessions, local storage secrets, or raw tokens.
+Evidence: screenshot the active role/user context banner plus the side-nav page state after each switch. Do not capture credentials, cookies, sessions, local storage secrets, or raw tokens.
 
 Risk boundary: not production login acceptance; not real HR/SSO validation.
 
@@ -69,17 +79,19 @@ Prerequisites: researcher can create/view personal achievements; secretary/revie
 
 Steps:
 
-1. As researcher, open Achievements.
+1. As researcher (`40000000-0000-4000-8000-000000000001`), click side nav -> Achievements.
 2. Create or open a draft achievement.
 3. Submit it for review.
-4. Switch to secretary/reviewer context.
-5. Open Workflow Tasks or the achievement review area.
+4. Switch to secretary / `RESEARCH_SECRETARY` (`40000000-0000-4000-8000-000000000002`).
+5. Click side nav -> Workflow Tasks; filter target type `Achievement` where useful.
 6. Approve the item for the acceptance route.
-7. Archive the approved achievement where the role allows it.
+7. Switch to admin / `SYSTEM_ADMIN` (`40000000-0000-4000-8000-000000000003`).
+8. Click side nav -> Achievements; filter/open the approved or `PENDING_ARCHIVE` achievement detail.
+9. Archive the achievement where the role allows it.
 
 Expected visible result: achievement status changes through the lifecycle; workflow result is visible; archived achievement can be used for conversion MVP.
 
-Evidence: screenshots of achievement detail before/after transition and Workflow Tasks result.
+Evidence: screenshots of the researcher submit state, secretary Workflow Tasks approve result, admin archive action/result, and final archived achievement detail.
 
 Risk boundary: local/demo workflow acceptance only; not production permission validation or configurable workflow designer completion.
 
@@ -110,15 +122,16 @@ Prerequisites: local fee record exists; reviewer persona has fee review permissi
 
 Steps:
 
-1. Open Fees.
-2. Select a fee record with review action available.
-3. Open Workflow Tasks and filter by fee target where useful.
-4. Approve or reject the local fee review task.
-5. Return to fee detail/history.
+1. Switch to admin / `SYSTEM_ADMIN` (`40000000-0000-4000-8000-000000000003`) as the local fee-review-capable demo context.
+2. Click side nav -> Fees.
+3. Select a fee record with review action available.
+4. In the fee detail drawer, use the Fee review workflow task section; or click side nav -> Workflow Tasks and filter target type `Fee record`.
+5. Approve or reject the local fee review task.
+6. Return to Fees detail/history.
 
 Expected visible result: fee review action routes to the fee review path; fee status/history/task state update visibly; attachment metadata and audit/history remain connected where available.
 
-Evidence: screenshots of fee detail before/after review and Workflow Tasks fee target/action.
+Evidence: screenshots of the active admin local demo context, fee detail before/after review, fee review workflow task/action, and fee review history.
 
 Risk boundary: not real payment, finance-system integration, invoice, voucher settlement, or reconciliation.
 
@@ -149,16 +162,19 @@ Prerequisites: admin/account-management demo role is available; a pending activa
 
 Steps:
 
-1. Open Account Management.
-2. Select or create/import a `PENDING_ACTIVATION` demo account without credentials.
-3. Use invite or resend invite action.
-4. Confirm list/detail shows safe simulated delivery summary: purpose, status, adapter, masked email, token status, target user id, and timestamp.
-5. If showing activation, use only the local demo invite-accept path and never record or screenshot raw token/link values.
-6. Refresh account detail and show status/login capability summary.
+1. Switch to admin / `SYSTEM_ADMIN` (`40000000-0000-4000-8000-000000000003`).
+2. Click side nav -> Account Management.
+3. In Account lifecycle, confirm `account:invite` and `account:reset_password` are enabled.
+4. Select or create/import a `PENDING_ACTIVATION` demo account without credentials.
+5. Use Invite user or Resend invite.
+6. Confirm list/detail shows safe simulated delivery summary: purpose, status, adapter, masked email, token status, target user id, and timestamp.
+7. For reset evidence, open an `ACTIVE` local demo account and use Issue reset or show the enabled reset action state.
+8. If showing activation, use only the local demo invite-accept path and never record or screenshot raw token/link values.
+9. Refresh account detail and show status/login capability summary.
 
 Expected visible result: account list/detail shows latest simulated lifecycle delivery; activated demo account shows `ACTIVE` account and credential/login capability where applicable.
 
-Evidence: screenshots of account detail safe delivery summary and status/login capability. Do not capture raw token, token hash, password, password hash, cookie, session token, connection string, or provider secret.
+Evidence: screenshots of Account lifecycle permission tags/buttons, invite/resend/reset action result, account detail safe delivery summary, and status/login capability. Do not capture raw token, token hash, password, password hash, cookie, session token, connection string, or provider secret.
 
 Risk boundary: not real email, SMS, HR, SSO, production identity, or production invite acceptance.
 
@@ -170,12 +186,14 @@ Prerequisites: admin/system configuration demo role is available; local API inte
 
 Steps:
 
-1. Open Settings -> API integrations.
-2. Confirm or create local metadata for a provider.
-3. In the mock demo center, select DOI lookup, patent status sync, finance reconcile, or HR sync.
-4. Run Success, Failure, and Degraded modes.
-5. Review synthetic result summary and recent safe call-log table.
-6. Disable or omit integration metadata to show unavailable/degraded behavior if useful.
+1. Switch to admin / `SYSTEM_ADMIN` (`40000000-0000-4000-8000-000000000003`).
+2. Click side nav -> Settings.
+3. Open the API integrations section.
+4. Confirm or create local metadata for a provider.
+5. In the mock demo center, select DOI lookup, patent status sync, finance reconcile, or HR sync.
+6. Run Success, Failure, and Degraded modes.
+7. Review synthetic result summary and recent safe call-log table.
+8. Disable or omit integration metadata to show unavailable/degraded behavior if useful.
 
 Expected visible result: mock result summary and recent safe call logs are visible; no raw external payload or credential appears.
 
@@ -191,7 +209,7 @@ Prerequisites: demo data exists for achievements, fees, workflow tasks, conversi
 
 Steps:
 
-1. Open Dashboard.
+1. Click side nav -> Dashboard.
 2. Show achievement scale/type/status buckets.
 3. Show department achievement ranking.
 4. Show fee risk summary.
@@ -213,8 +231,8 @@ Prerequisites: local/demo ImportJob records exist; user has permission to view i
 
 Steps:
 
-1. Open import history or the settings overview link.
-2. Open the ImportJob list.
+1. Click side nav -> Settings for the global Import history overview, or side nav -> Account Management for User account import history.
+2. Open the ImportJob list/overview.
 3. Select an ImportJob detail where available.
 4. Show aggregate status/counts and run metadata.
 5. Explain that row-level item exposure is intentionally limited by the current safety boundary.

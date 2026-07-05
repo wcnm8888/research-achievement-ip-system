@@ -6,15 +6,17 @@ Scope: Step 89 report-only dry run against `memory-bank/phase-one-demo-acceptanc
 
 ## 1. Executive Recommendation
 
-Do not enter the formal phase-one demo yet.
+Step 90 update: the three Step 89 formal-demo blockers have been converted from `BLOCKED` to `PASS with caveat` for local/demo preconditions.
 
-The script and checklist have strong local/demo boundary wording, and no mock/local/synthetic path is currently described as production acceptance. However, the dry run found three blocking evidence gaps before the route should be presented live:
+The script, checklist, and local frontend demo permission projection now identify deterministic local/demo contexts for achievement review/archive, fee review, and account lifecycle invite/reset actions. This does not create production acceptance and does not prove live evidence by itself. Formal demo PASS still requires visible local/demo UI evidence and safe screenshots captured during the walkthrough.
 
-1. The achievement submit/review/archive loop names researcher, secretary, and admin personas, but the local Web demo permission projection does not grant the visible review/archive actions to those presets.
-2. The fee online review loop requires `fee:review_department`, but the named local demo personas in the script do not identify a concrete fee reviewer context.
-3. The account lifecycle loop requires invite/resend/reset actions, but the local admin demo projection exposes `system:config` without `account:invite` or `account:reset_password`, so the lifecycle action buttons may not be visible from the documented preset.
+Resolved preconditions:
 
-These are demo-readiness blockers, not production blockers. They should be resolved by documenting exact local demo user IDs/roles that have the required permissions, or by updating the demo script/checklist after a local preflight confirms the correct visible actions. Do not work around them with production login, `.env` content, real tokens, production DB, or external systems.
+1. Achievement submit/review/archive now has a fixed role path: researcher `40000000-0000-4000-8000-000000000001` submits, secretary `40000000-0000-4000-8000-000000000002` reviews, and admin `40000000-0000-4000-8000-000000000003` archives.
+2. Fee online review now has a fixed local demo context: admin `40000000-0000-4000-8000-000000000003` is the local fee-review-capable context with `fee:review_department`. It must not be described as a production finance reviewer or real HR/SSO identity.
+3. Account lifecycle now has a fixed local demo context: admin `40000000-0000-4000-8000-000000000003` has `system:config`, `account:invite`, and `account:reset_password` in the local frontend projection.
+
+Do not work around any remaining data gap with production login, `.env` content, real tokens, production DB, or external systems.
 
 ## 2. Sources Reviewed
 
@@ -62,12 +64,12 @@ This is not a production-risk issue, but it is a live-review usability risk.
 
 | Loop | Route completeness | Prerequisites clear? | Visible result screenshotable? | Dry-run status | Gap / required action |
 | --- | --- | --- | --- | --- | --- |
-| Local demo user context | Complete. | Mostly. It names researcher, secretary, admin and storage key. | Yes: user panel/banner and changed page state. | PASS with caveat | Add the exact preset/user IDs to the presenter notes so role switching is deterministic. |
-| Achievement registration/review/archive | Narratively complete. | Not yet sufficient. Review/archive roles are described, but local Web demo permission projection does not grant reviewer/archive UI actions to the named presets. | Yes if actions are visible and status changes occur. | BLOCKED | Preflight and document the exact local reviewer/archive-capable context, or adjust demo permissions/docs. Do not claim this loop complete from verbal explanation only. |
+| Local demo user context | Complete. | Yes: Step 90 names fixed researcher, secretary, and admin user IDs and storage key. | Yes: user panel/banner and changed page state. | PASS with caveat | Capture the exact preset/user IDs in presenter evidence so role switching is deterministic. |
+| Achievement registration/review/archive | Complete with Step 90 role path. | Yes: researcher submits, secretary reviews, admin archives. | Yes if actions are visible and status changes occur. | PASS with caveat | Caveat: this is local/demo permission projection plus backend policy validation, not production permission acceptance. Capture researcher submit, secretary task result, admin archive, and final archived detail screenshots. |
 | Attachment and audit basics | Complete enough. | Clear if a record with attachment metadata/history exists. | Yes: safe metadata and masked history fields. | PASS with caveat | Preselect one safe achievement or fee record with metadata and masked history. Avoid raw audit exports and raw payloads. |
-| Fee online review loop | Complete in product terms. | Not sufficient for presenter execution: requires `fee:review_department`, but the script does not name a concrete local fee reviewer user/context. | Yes if the fee task/action is reachable. | BLOCKED | Name the local `FINANCE_REVIEWER` or other department-scoped reviewer ID, or preflight a safe custom demo context. Do not use production credentials. |
-| Achievement conversion MVP | Complete. | Clear if an archived achievement exists and is readable. | Yes: conversion ledger and Dashboard conversion metrics. | PASS with caveat | Preselect an archived local achievement; if the core achievement archive loop remains blocked, use an existing archived local record and label it clearly. |
-| Account activation and simulated notification | Complete in narrative. | Not sufficient for local Web preset execution: lifecycle actions require `account:invite` / `account:reset_password`, while the local admin projection checked in `App.tsx` only exposes `system:config`. | Yes if action buttons are visible; safe delivery summary is screenshotable. | BLOCKED | Preflight the exact local account-management context that exposes invite/resend/reset buttons, or limit demo to existing safe lifecycle summary and mark action trigger as not demonstrated. Never screenshot raw token/link/password/session. |
+| Fee online review loop | Complete in product terms. | Yes for local demo: admin `SYSTEM_ADMIN` is the fee-review-capable context with `fee:review_department`. | Yes if the fee task/action is reachable. | PASS with caveat | Caveat: do not describe this as production `FINANCE_REVIEWER` acceptance. Capture active admin context, fee review action/task, before/after detail, and history screenshots. |
+| Achievement conversion MVP | Complete. | Clear if an archived achievement exists and is readable. | Yes: conversion ledger and Dashboard conversion metrics. | PASS with caveat | Preselect an archived local achievement; if creating one during the walkthrough, use the Step 90 researcher -> secretary -> admin path and label it local/demo. |
+| Account activation and simulated notification | Complete with Step 90 admin context. | Yes: admin has `system:config`, `account:invite`, and `account:reset_password` in the local frontend projection. | Yes if action buttons are visible; safe delivery summary is screenshotable. | PASS with caveat | Caveat: local/simulated delivery only. Capture lifecycle permission tags/buttons, action result, safe delivery summary, and account status/login capability. Never screenshot raw token/link/password/session. |
 | External interface mock demo center | Complete. | Clear: admin/system config role, local metadata, no real credentials. | Yes: mock controls, synthetic result, safe call-log table. | PASS with caveat | Ensure local metadata exists or use missing/disabled state intentionally. Say "mock/adapter" every time; never "real integration". |
 | Dashboard fixed scoring summary | Complete. | Clear if demo aggregate data exists. | Yes: ranking, fee risk, workflow efficiency, conversion funnel, mock overview. | PASS with caveat | Preflight data volume. Zero/unchanged counts are acceptable only if called out as a caveat. |
 | Import history / ImportJob aggregate | Complete enough. | Clear if local ImportJob records exist and `system:config` can view the overview. | Yes: list/detail aggregate summary. | PASS with caveat | Preselect one local ImportJob. If list is empty, this loop becomes BLOCKED for evidence capture. |
@@ -109,24 +111,24 @@ Token caveat: the local invite-accept flow may generate a local activation token
 
 | Decision | Count | Loops |
 | --- | ---: | --- |
-| PASS | 0 | None, because this was report-only and no live UI evidence was captured. |
-| PASS with caveat | 6 | Local demo context; attachment/audit basics; achievement conversion MVP; external mock demo center; Dashboard fixed scoring summary; ImportJob aggregate history. |
-| BLOCKED | 3 | Achievement registration/review/archive; fee online review loop; account activation/simulated notification action trigger. |
+| PASS | 0 | None, because this remains local/demo preflight documentation plus code-level projection verification, not live captured UI evidence. |
+| PASS with caveat | 9 | Local demo context; achievement registration/review/archive; attachment/audit basics; fee online review loop; achievement conversion MVP; account activation/simulated notification action trigger; external mock demo center; Dashboard fixed scoring summary; ImportJob aggregate history. |
+| BLOCKED | 0 | None after Step 90 local demo role/precondition fixes. |
 
 Formal-demo rule:
 
 - PASS requires visible local/demo evidence, not verbal claims.
 - PASS with caveat is acceptable only when the caveat is stated before the reviewer sees the screen.
-- BLOCKED means do not present that loop as completed. Either resolve the blocker before the formal demo or explicitly omit the loop from the acceptance claim.
+- BLOCKED means do not present that loop as completed. If any documented local action is not visible during preflight, downgrade that loop back to BLOCKED and omit it from the acceptance claim.
 
 ## 8. Highest-Risk Review-Room Items
 
-1. Role/action mismatch blocks the live achievement workflow.
-   - Avoidance: preflight the exact local user for create, review, and archive; keep user IDs/roles in presenter notes; capture the status transition screenshots before the formal session.
-2. Fee review action is invisible because no documented local persona has `fee:review_department`.
-   - Avoidance: identify a local department-scoped fee reviewer or finance reviewer context before the demo; otherwise mark the fee review action as BLOCKED.
-3. Account lifecycle actions are hidden by frontend permission projection.
-   - Avoidance: confirm invite/resend/reset buttons are visible from the selected local account-management context; if not, show only existing safe lifecycle summary and record the action trigger as not demonstrated.
+1. Role/action mismatch could still reappear if the wrong local persona is selected.
+   - Avoidance: use researcher `40000000-0000-4000-8000-000000000001` for submit, secretary `40000000-0000-4000-8000-000000000002` for review, and admin `40000000-0000-4000-8000-000000000003` for archive; capture the context banner before each action.
+2. Fee review can be overstated as production finance acceptance.
+   - Avoidance: use admin `40000000-0000-4000-8000-000000000003` only as the local fee-review-capable context and explicitly state that this is not production `FINANCE_REVIEWER` acceptance or real finance integration.
+3. Account lifecycle evidence can expose unsafe values if the presenter captures raw links or tokens.
+   - Avoidance: capture only Account lifecycle permission state, safe delivery summary, masked email, token status, timestamps, and account status/login capability.
 4. Presenter overstates mock/synthetic evidence as real integration.
    - Avoidance: use the exact phrase "local mock/adapter demo only" on DOI, patent, finance, HR, email, SMS, and lifecycle delivery steps.
 5. Evidence screenshot exposes unsafe values or cannot show a non-empty aggregate.
@@ -134,6 +136,6 @@ Formal-demo rule:
 
 ## 9. Final Dry-Run Statement
 
-The phase-one demo route is coherent but not yet ready for formal presentation. The current script/checklist should be treated as a strong outline with three unresolved demo execution blockers. Formal demo should proceed only after a local preflight confirms the exact role contexts and evidence screens for achievement review/archive, fee review, and account lifecycle action triggering.
+Step 90 removes the three Step 89 formal-demo blockers at the local demo precondition level. The phase-one demo route is ready for a local formal walkthrough with caveats, provided the presenter captures visible local/demo evidence at the documented screenshot points and states all non-production boundaries before each affected loop.
 
 This dry run did not perform production/VPS/production DB operations, did not read `.env` or `.env.production`, did not call real external systems, and did not send real email or SMS.

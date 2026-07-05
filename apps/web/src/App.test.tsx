@@ -3,6 +3,7 @@ import type { ApiError, AuthClient, AuthUser } from "./api-client";
 import {
   getBusinessContextId,
   getDemoAuthUser,
+  getDemoPermissionCodes,
   getVisibleNavItems,
   loginAndRefreshCurrentUser,
   logoutAndClearCurrentUser,
@@ -130,13 +131,44 @@ describe("production auth mode helpers", () => {
     expect(getDemoAuthUser("40000000-0000-4000-8000-000000000003")).toMatchObject({
       id: "40000000-0000-4000-8000-000000000003",
       roleCodes: ["SYSTEM_ADMIN"],
-      permissionCodes: ["system:config"],
+      permissionCodes: expect.arrayContaining([
+        "achievement:archive",
+        "fee:review_department",
+        "system:config",
+        "account:invite",
+        "account:reset_password",
+      ]),
     });
     expect(getDemoAuthUser("40000000-0000-4000-8000-000000000001")).toMatchObject({
       roleCodes: ["RESEARCHER"],
-      permissionCodes: ["achievement:create", "achievement:update_own"],
+      permissionCodes: expect.arrayContaining([
+        "achievement:create",
+        "achievement:submit",
+        "achievement:update_own",
+      ]),
     });
     expect(getDemoAuthUser(null)).toBeNull();
+  });
+
+  it("keeps phase-one demo role projections aligned with visible walkthrough actions", () => {
+    expect(getDemoPermissionCodes("RESEARCH_SECRETARY")).toEqual(
+      expect.arrayContaining([
+        "achievement:read_department",
+        "achievement:review_department",
+        "fee:manage_department",
+        "fee:read_department",
+      ]),
+    );
+    expect(getDemoPermissionCodes("SYSTEM_ADMIN")).toEqual(
+      expect.arrayContaining([
+        "achievement:archive",
+        "fee:review_department",
+        "system:config",
+        "account:invite",
+        "account:reset_password",
+      ]),
+    );
+    expect(getDemoPermissionCodes("FINANCE_REVIEWER")).toEqual([]);
   });
 });
 

@@ -11,29 +11,37 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Confirm no real external provider call is planned.
 - [ ] Confirm no `.env` / `.env.production` content will be read or shown.
 - [ ] Confirm no password, token, cookie, session, `DATABASE_URL`, connection string, secret, or API key will be recorded.
+- [ ] Confirm local demo persona storage key is `research-ip.demo-user-id`.
+- [ ] Confirm researcher context: `RESEARCHER` / `40000000-0000-4000-8000-000000000001`.
+- [ ] Confirm achievement reviewer context: `RESEARCH_SECRETARY` / `40000000-0000-4000-8000-000000000002`.
+- [ ] Confirm archive-capable, fee-review-capable, and account lifecycle admin context: `SYSTEM_ADMIN` / `40000000-0000-4000-8000-000000000003`.
+- [ ] Confirm local admin fee review is described only as a local demo fee-review-capable context, not as a production finance reviewer or real HR/SSO identity.
 
 ## Must-See Pages
 
 - [ ] Local demo user/context selector or active user indicator.
-- [ ] Achievements list/detail.
-- [ ] Workflow Tasks.
+- [ ] Side nav -> Achievements list/detail.
+- [ ] Side nav -> Workflow Tasks.
 - [ ] Attachment metadata area.
-- [ ] Audit Logs or record history.
-- [ ] Fees list/detail.
+- [ ] Side nav -> Audit Logs or record history.
+- [ ] Side nav -> Fees list/detail.
 - [ ] Achievement conversion ledger panel.
-- [ ] Account Management list/detail.
-- [ ] Settings -> API integrations mock demo center.
-- [ ] Dashboard fixed scoring summary.
-- [ ] Import history / ImportJob list/detail.
+- [ ] Side nav -> Account Management list/detail.
+- [ ] Side nav -> Settings -> API integrations mock demo center.
+- [ ] Side nav -> Dashboard fixed scoring summary.
+- [ ] Side nav -> Settings import history and/or Account Management user account import history.
 
 ## Must-Do Actions
 
-- [ ] Switch local demo persona between researcher, secretary, and admin where needed.
-- [ ] Submit/review/archive an achievement, or show an existing completed local path.
+- [ ] Switch local demo persona from researcher to secretary to admin at the documented role-switch points.
+- [ ] As researcher, submit an achievement from side nav -> Achievements.
+- [ ] As secretary, approve or reject the achievement from side nav -> Workflow Tasks.
+- [ ] As admin, archive the approved or `PENDING_ARCHIVE` achievement from side nav -> Achievements.
 - [ ] Show attachment metadata and audit/history for a record.
-- [ ] Approve or reject one local/demo fee review task.
+- [ ] As admin local fee-review-capable context, approve or reject one local/demo fee review task from side nav -> Fees or side nav -> Workflow Tasks.
 - [ ] Add or update one achievement conversion MVP ledger record.
-- [ ] Trigger one account lifecycle simulated delivery action.
+- [ ] As admin, open side nav -> Account Management and confirm `account:invite` and `account:reset_password` are enabled.
+- [ ] Trigger one account lifecycle simulated delivery action: Invite user, Resend invite, or Issue reset.
 - [ ] Run one external mock scenario in success mode.
 - [ ] Run one external mock scenario in failure or degraded mode.
 - [ ] Open Dashboard and verify fixed scoring sections.
@@ -41,14 +49,14 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 
 ## Must-Capture Evidence
 
-- [ ] Active local/demo user context.
+- [ ] Active local/demo user context for researcher, secretary, and admin.
 - [ ] Achievement lifecycle status/result.
 - [ ] Workflow task result.
 - [ ] Attachment metadata safe summary.
 - [ ] Audit/history safe summary.
-- [ ] Fee review before/after state.
+- [ ] Fee review before/after state plus visible fee-review-capable context.
 - [ ] Conversion ledger record and Dashboard conversion metrics.
-- [ ] Account lifecycle safe delivery summary with no raw token/link.
+- [ ] Account lifecycle permission state and safe delivery summary with no raw token/link.
 - [ ] External mock result and safe call-log summary.
 - [ ] Dashboard department ranking, fee risk, workflow efficiency, conversion funnel, and mock integration overview.
 - [ ] ImportJob aggregate summary.
@@ -56,6 +64,9 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 ## Common Failure Points
 
 - [ ] Wrong persona selected for the action.
+- [ ] Secretary used for archive even though the documented local archive-capable context is admin.
+- [ ] Fee review described as production `FINANCE_REVIEWER` acceptance instead of local admin fee-review-capable demo context.
+- [ ] Admin projection missing `account:invite` or `account:reset_password`, making lifecycle buttons unavailable.
 - [ ] Missing local/demo data for the target flow.
 - [ ] Integration metadata missing or disabled.
 - [ ] Dashboard aggregate does not visibly change because existing data already contains the result.

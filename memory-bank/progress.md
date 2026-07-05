@@ -13245,3 +13245,39 @@
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 - Verification:
   - Docs-only validation commands were run for diff whitespace/stat/status.
+
+## 2026-07-05 Step 90 - Phase-one demo role precondition repair
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `99c7d70 docs: add phase one demo dry-run report`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Updated local Web demo permission projection in `apps/web/src/App.tsx` so documented local personas expose the actions needed for the phase-one walkthrough:
+    - `RESEARCHER`: create/read-own/submit/update-own achievement and attachment metadata projection.
+    - `RESEARCH_SECRETARY`: department achievement read/review plus fee manage/read and department/reminder metadata projection.
+    - `SYSTEM_ADMIN`: achievement archive, fee read/review, system config, account invite/reset, and masked audit projection.
+  - Added focused `App.test.tsx` coverage to prevent regression of the Step 90 demo role projections.
+  - Updated `memory-bank/phase-one-demo-acceptance-script.md` with deterministic local contexts for researcher, achievement reviewer, archive-capable user, fee-review-capable demo context, and account lifecycle admin.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with side-nav click paths, role-switch points, and screenshot evidence points.
+  - Updated `memory-bank/phase-one-demo-dry-run-report.md` so the three Step 89 formal-demo blockers are now `PASS with caveat` at the local demo precondition level.
+- Step 89 blocker handling:
+  - Achievement review/archive role precondition: `BLOCKED` -> `PASS with caveat`; researcher submits, secretary reviews, admin archives.
+  - Fee reviewer demo context: `BLOCKED` -> `PASS with caveat`; admin is the local fee-review-capable demo context with `fee:review_department`, not a production finance reviewer or real HR/SSO identity.
+  - Account lifecycle invite/reset visibility: `BLOCKED` -> `PASS with caveat`; admin projection now includes `system:config`, `account:invite`, and `account:reset_password`.
+- Final local demo precondition classification:
+  - PASS: 0.
+  - PASS with caveat: 9.
+  - BLOCKED: 0.
+  - Caveat: formal PASS still requires visible local/demo UI evidence captured at the documented screenshot points.
+- Explicitly not done:
+  - No Prisma schema, migration, seed, package, lockfile, production/VPS, production DB, production runbook, or real external-system work.
+  - No `.env` / `.env.production` content read.
+  - No real HR/SSO, email/SMS, DOI/literature, patent platform, finance/payment/invoice/reconciliation, BI platform, mobile, load test, disaster recovery, or production monitoring acceptance.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
+- Verification:
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `git diff --cached --check`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- demo App WorkflowTasks Fees AccountManagement`: PASS, 5 files / 129 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
