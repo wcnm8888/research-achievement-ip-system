@@ -1,5 +1,20 @@
 # Decisions
 
+## D256 - ImportJobItem schema implementation remains migration-only
+
+- Date: 2026-07-05.
+- Context: Step 77A separately authorizes only the schema/migration implementation slice for `ImportJobItem` after Step 76A/76B defined and archived the safe row-level allowlist and Step 76C/76D planned and archived the schema shape. The Step explicitly prohibits backend service/controller/repository/import writer changes, API route/DTO changes, Web changes, database access, migration apply/deploy/reset, production/VPS access, `.env` reads, import apply, seed, backfill, real data writes, retry/delete/cleanup/rollback/download/export, and handling existing untracked local artifacts.
+- Decision:
+  - Implement `ImportJobItem` only as Prisma schema plus an additive SQL migration.
+  - Keep persisted fields limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+  - Use import-item-specific enums for planned action, status, and target type.
+  - Add only relation arrays on `ImportJob` and `ImportRun`; both item relations use `onDelete: Restrict`.
+  - The migration may create enum types, the `import_job_items` table, indexes, and foreign keys only.
+  - Do not backfill, seed, alter business tables, add JSON fields, or index `targetId` in this first schema slice.
+  - Keep `targetId` out of DTOs, Web display, links, export, copyable fields, and business-object drilldown.
+- Scope:
+  - This decision does not authorize backend writer implementation, backend read DTOs, API routes, Web UI, database apply/deploy/reset, production/VPS access, production DB access, real import execution, real-data writes, seed/backfill, retry/delete/cleanup/rollback/download/export behavior, permission changes, credential reads, credential propagation, cleanup, deletion, reset, restore, checkout, drop, prune, or existing untracked local artifact handling.
+
 ## D255 - ImportJobItem schema candidate remains docs-only and non-authorizing
 
 - Date: 2026-07-05.

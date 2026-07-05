@@ -351,6 +351,28 @@ enum ImportFailureStage {
   POST_APPLY_RECONCILIATION
 }
 
+enum ImportJobItemPlannedAction {
+  CREATE
+  CREATE_PENDING_USER
+  CREATE_DRAFT
+  SKIP
+  BLOCK
+}
+
+enum ImportJobItemStatus {
+  PENDING
+  APPLIED
+  SKIPPED
+  BLOCKED
+  FAILED
+}
+
+enum ImportJobItemTargetType {
+  DEPARTMENT
+  USER
+  ACHIEVEMENT
+}
+
 model Department {
   id         String           @id @default(uuid()) @db.Uuid
   code       String           @unique @db.VarChar(64)
@@ -946,7 +968,8 @@ model ImportJob {
   updatedAt             DateTime        @updatedAt @map("updated_at")
   completedAt           DateTime?       @map("completed_at")
 
-  runs ImportRun[]
+  runs  ImportRun[]
+  items ImportJobItem[]
 
   @@unique([targetEnvironment, scopeType, scopeHash, idempotencyKeyHash])
   @@index([importFamily, mode, status])
@@ -976,7 +999,8 @@ model ImportRun {
   createdAt                      DateTime            @default(now()) @map("created_at")
   updatedAt                      DateTime            @updatedAt @map("updated_at")
 
-  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  job   ImportJob      @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  items ImportJobItem[]
 
   @@unique([jobId, attemptNo])
   @@index([jobId, status])
@@ -985,6 +1009,29 @@ model ImportRun {
   @@index([createdAt])
   @@index([finishedAt])
   @@map("import_runs")
+}
+
+model ImportJobItem {
+  jobId         String                     @map("job_id") @db.Uuid
+  runId         String                     @map("run_id") @db.Uuid
+  rowNumber     Int                        @map("row_number")
+  plannedAction ImportJobItemPlannedAction @map("planned_action")
+  status        ImportJobItemStatus        @default(PENDING)
+  safeCode      String?                    @map("safe_code") @db.VarChar(120)
+  targetType    ImportJobItemTargetType    @map("target_type")
+  targetId      String?                    @map("target_id") @db.Uuid
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  run ImportRun @relation(fields: [runId], references: [id], onDelete: Restrict)
+
+  @@id([runId, rowNumber])
+  @@index([jobId])
+  @@index([runId])
+  @@index([jobId, rowNumber])
+  @@index([status])
+  @@index([safeCode])
+  @@index([targetType])
+  @@map("import_job_items")
 }
 
 model ApiIntegration {

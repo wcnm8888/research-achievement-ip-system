@@ -1,5 +1,43 @@
 # Evidence
 
+## 2026-07-05 Step 77A - ImportJobItem schema/migration-only evidence
+
+- Goal:
+  - Implement only the `ImportJobItem` Prisma schema and additive migration, generate Prisma Client, and validate schema/typecheck without writer/API/Web or database apply work.
+- Initial state:
+  - `git log -1 --oneline`: `5234a8c docs: archive import job item schema plan`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located `ImportJobItem`, Step 76C, Step 76D, and schema/migration references before reading; large memory-bank files were not read in full.
+- Context read:
+  - `memory-bank/import-job-item-schema-plan.md`.
+  - `memory-bank/import-job-item-schema-final-archive.md`.
+  - `memory-bank/import-job-item-safe-history-final-archive.md`.
+  - Step 76A/76B/76C/76D local section from `memory-bank/import-job-history-database-model-plan.md`.
+  - `ImportJob` / `ImportRun` / import enum area from `prisma/schema.prisma`.
+  - `prisma/migrations/20260704120000_add_import_job_history/migration.sql`.
+- Implementation:
+  - Updated `prisma/schema.prisma` with `ImportJobItemPlannedAction`, `ImportJobItemStatus`, and `ImportJobItemTargetType`.
+  - Added `ImportJobItem` with only `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+  - Added `ImportJob.items` and `ImportRun.items`.
+  - Added `prisma/migrations/20260705120000_add_import_job_items/migration.sql`.
+- Verification:
+  - `corepack pnpm prisma:validate`: first no-env attempt failed with missing `DATABASE_URL` before schema validation; no `.env` was read.
+  - `corepack pnpm prisma:validate` with command-local dummy `DATABASE_URL`: PASS; schema valid.
+  - `corepack pnpm prisma generate` with command-local dummy `DATABASE_URL`: PASS; Prisma Client generated under `node_modules`.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; tracked change scope is Prisma schema, additive migration, and memory-bank docs.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; migration is additive and creates only enums/table/indexes/FKs, uses `ON DELETE RESTRICT`, contains no seed/backfill/business table change/JSON/raw CSV/person identifier/sensitive value/credential, and no API/Web/writer/DTO changes expose `targetId`.
+- Boundary:
+  - No migration apply, deploy, reset, database connection, production/VPS access, production DB access, import apply, real-data write, seed, backfill, fixture row, retry, delete, cleanup, rollback, download, or export was performed.
+  - No backend service/controller/repository/import writer, API route, DTO, Web, package, lockfile, config, or script files were changed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 76D - ImportJobItem schema plan final archive evidence
 
 - Goal:

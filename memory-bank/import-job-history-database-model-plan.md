@@ -1372,3 +1372,24 @@ Step 76C documents a future schema plan only. It does not authorize schema edits
 - Any continuation must be separately authorized as schema/migration implementation, backend writer, backend read DTO, Web plan, and acceptance.
 
 Step 76D archives the Step 76C schema plan as reference material only. It does not authorize Prisma schema edits, migration files, backend/API/Web implementation, database access, production access, import apply, or acceptance execution.
+
+## Step 77A ImportJobItem Schema/Migration-Only Implementation
+
+- Date: 2026-07-05.
+- Scope: schema/migration-only implementation for `ImportJobItem`.
+- Changed:
+  - `prisma/schema.prisma`.
+  - `prisma/migrations/20260705120000_add_import_job_items/migration.sql`.
+- Non-scope: no backend service/controller/repository/import writer changes, no API route/DTO changes, no Web changes, no database access, no migration apply/deploy/reset, no production/VPS or production DB access, no `.env` / `.env.production` content read, no import apply, no seed, no backfill, no fixture row, no real data write, no retry/delete/cleanup/rollback/download/export behavior, and no existing untracked-artifact handling.
+
+### Implemented Schema Boundary
+
+- Added `ImportJobItemPlannedAction`, `ImportJobItemStatus`, and `ImportJobItemTargetType`.
+- Added `ImportJobItem` with only the Step 76A/76C/76D allowlist fields: `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+- Added `ImportJob.items` and `ImportRun.items` relation arrays.
+- Both item relations use `onDelete: Restrict`.
+- The additive migration creates item enum types, `import_job_items`, indexes, and foreign keys only.
+- No JSON fields, raw CSV, row values, original imported values, email, employee number, `employeeNo`, DOI, registration number, patent number, title, personnel names, contributor lists, raw identifiers, normalized identifiers, credentials, or sensitive values were added.
+- `targetId` remains internal-only persistence and was not added to DTOs, Web display, or business-object drilldown.
+
+Step 77A implements only the previously planned schema/migration slice. Backend writer persistence, backend read DTOs, Web row-level planning, acceptance, migration execution, and production work remain separate future authorization boundaries.
