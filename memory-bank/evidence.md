@@ -1,5 +1,71 @@
 # Evidence
 
+## 2026-07-05 Step 78D - ImportJobItem backend read local synthetic acceptance evidence
+
+- Goal:
+  - Run local non-production synthetic backend-only acceptance for Step 78B `GET /api/import-jobs/:id/items`, proving allowlist-only response fields and preserving Step 78C Web aggregate-only boundary.
+- Initial state:
+  - `git log -1 --oneline`: `6047e01 docs: decide import job item web display boundary`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 78B, Step 78C, `GET /import-jobs/:id/items`, aggregate-only, and `targetId` references before reading; large memory-bank files were not read in full.
+- Context read:
+  - `memory-bank/import-job-item-web-display-decision.md`.
+  - `memory-bank/import-job-item-read-dto-plan.md`.
+  - Step 78B/78C sections from `memory-bank/import-job-history-database-model-plan.md`.
+  - Step 78B/78C sections from `memory-bank/progress.md`.
+  - Step 78B/78C sections from `memory-bank/evidence.md`.
+  - `apps/api/src/imports/import-job-history-read.controller.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.ts`.
+  - Existing Step 72 local acceptance helper patterns for local Docker API startup, `DATABASE_URL_NOT_SET` blocking, synthetic prefixing, and `x-demo-user-id` auth harness.
+- Helper:
+  - Added `memory-bank/step78d-import-job-item-read-acceptance.mjs`.
+  - The helper exits `BLOCKED` if the current process lacks `DATABASE_URL`.
+  - The helper starts a temporary local Nest API with `api` prefix, uses only `x-demo-user-id` local auth harness, creates only `S78D_*` synthetic data, and prints no database connection string.
+  - The helper verifies response field allowlists and recursively fails if forbidden response keys appear.
+- Local environment and acceptance:
+  - Host shell helper run returned `BLOCKED / DATABASE_URL_NOT_SET`; this was not treated as PASS.
+  - The local Docker API container initially lacked Step 78B compiled read-module files, so the local API container was rebuilt/restarted from current source.
+  - The local API container had a local DB environment variable, but its local schema lacked the `ImportJobItem` table. Local-only `prisma migrate deploy` applied migration `20260705120000_add_import_job_items`.
+  - After local rebuild and local migration deploy, the helper ran inside the local API container and returned PASS.
+  - Scope was local synthetic backend-only API/DB acceptance. This was not production, VPS, production DB, or production session-cookie acceptance.
+- Acceptance result:
+  - Temporary API health: HTTP 200.
+  - `GET /api/import-jobs/:id/items` as `system:config`: HTTP 200.
+  - Same route as non-`system:config`: HTTP 403.
+  - Missing parent job: HTTP 404.
+  - Existing parent job with no item rows: HTTP 200 with empty list and total `0`.
+  - Filters/pagination verified: `runId`, `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize`.
+  - Invalid route UUID: HTTP 400.
+  - Invalid enum: HTTP 400.
+  - Extra non-whitelisted query field: HTTP 400.
+  - Synthetic facts created by the accepted run: `2` parent jobs, `3` runs, and `4` item rows, all under `S78D_*` local synthetic scope.
+- Response allowlist:
+  - Top-level response keys verified: `items`, `page`, `pageSize`, `total`.
+  - Item keys verified: `plannedAction`, `rowNumber`, `safeCode`, `status`, `targetType`.
+  - Verified forbidden response keys absent, including `targetId`, `jobId`, `runId`, source row data, personal/source identifiers, credentials/session/token/cookie/connection-string fields, `safeSummary`, `auditLogIds`, idempotency/scope/file/request fingerprints or hashes, and operator ids.
+- Web boundary:
+  - Confirmed no Web code was changed.
+  - No Web API client method was added.
+  - No Web item table, drawer, list, debug panel, download/export/raw JSON/copy control, or business-object drilldown was added or started.
+  - Web remains aggregate-only per Step 78C.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- import-job-history-read`: PASS; 3 files / 22 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank helper and memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs/helper changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; no Web/runtime/schema/migration/package/config source change, no new migration file, no credential or connection string, no raw CSV, no real personal/source identifier values, no `targetId` in response evidence, no Web row-level display authorization, and no production/VPS acceptance claim.
+- Boundary:
+  - No production/VPS, production DB, external host, or real business dataset was accessed.
+  - No `.env` or `.env.production` contents were read, printed, copied, or recorded.
+  - No real import apply, seed, backfill, cleanup, delete, rollback, export, download, raw JSON/raw CSV access, business-object drilldown, reset, restore, checkout, clean, prune, or volume deletion was performed.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 78C - ImportJobItem Web display decision evidence
 
 - Goal:

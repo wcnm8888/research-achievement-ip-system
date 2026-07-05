@@ -1660,3 +1660,55 @@ If future Web row-level display is needed, it must start with a new Step 79A Web
 - Future Web implementation requires a new Step 79A plan first.
 
 Step 78C does not authorize Web row-level display, API client methods, backend/API changes, migration execution, database or production access, real import execution, export/download behavior, raw/source data exposure, or business-object drilldown.
+
+## Step 78D ImportJobItem Backend Read Local Synthetic Acceptance
+
+- Date: 2026-07-05.
+- Scope: local non-production synthetic backend-only acceptance for Step 78B `GET /api/import-jobs/:id/items`.
+- Changed:
+  - `memory-bank/step78d-import-job-item-read-acceptance.mjs`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Non-scope: no Web runtime/code/test changes, no backend runtime/code/test changes, no Prisma schema change, no new migration file, no package/lockfile/config source changes, no production/VPS or production DB access, no `.env` / `.env.production` content read or printed, no real import apply, no real business data, no retry/delete/cleanup/rollback/download/export behavior, no raw JSON/raw CSV access, and no business-object drilldown.
+
+### Acceptance Helper
+
+- Added `memory-bank/step78d-import-job-item-read-acceptance.mjs`.
+- The helper uses `S78D_*` synthetic records only.
+- It exits `BLOCKED` if `DATABASE_URL` is not already present in the current local process/container environment.
+- It does not read `.env` files or print database connection strings.
+- It starts a temporary local Nest API and uses the existing local `x-demo-user-id` harness.
+
+### Local Run
+
+- Host-shell run returned `BLOCKED / DATABASE_URL_NOT_SET`, as required.
+- The already-running local Docker API container was not on current Step 78B code, so it was rebuilt/restarted locally.
+- The local Docker DB lacked the `ImportJobItem` table, so local `prisma migrate deploy` applied migration `20260705120000_add_import_job_items`.
+- After rebuild and local migration deploy, the helper passed inside the local API container.
+- This is local synthetic backend-only API/DB acceptance, not production/VPS or production DB acceptance.
+
+### Verified API Semantics
+
+- `system:config` user can read items: HTTP 200.
+- Non-`system:config` user receives HTTP 403.
+- Missing parent job returns HTTP 404.
+- Existing parent with no item rows returns HTTP 200 with empty list and `total: 0`.
+- Filters/pagination work for `runId`, `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize`.
+- Invalid UUID, invalid enum, and extra query parameter return HTTP 400.
+
+### Response Boundary
+
+- Top-level response keys are only `items`, `total`, `page`, and `pageSize`.
+- Item keys are only `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+- Responses did not include `targetId`, `jobId`, `runId`, raw CSV, row values, personal/source identifiers, credential/session/token/cookie/connection-string fields, `safeSummary`, `auditLogIds`, idempotency/scope/file/request fingerprints or hashes, or operator ids.
+- Web remains aggregate-only; no Web item route, API client method, table, drawer, list, debug panel, download/export/raw JSON/copy control, or business-object drilldown was added or started.
+
+### Verification
+
+- Local synthetic helper: PASS inside local Docker API/container DB after local rebuild and local migration deploy.
+- `corepack pnpm --filter @research-ip/api test -- import-job-history-read`: PASS; 3 files / 22 tests passed.
+- `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Diff checks passed before commit.
+
+Step 78D completes local synthetic backend-only acceptance for Step 78B. It does not change the Step 78C decision: Web import history remains aggregate-only.

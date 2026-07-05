@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-07-05 Step 78D - ImportJobItem backend read local synthetic acceptance
+
+- Status: DONE.
+- Task classification:
+  - S-level local synthetic backend-only acceptance for Step 78B `ImportJobItem` safe read API.
+- Scope completed:
+  - Added `memory-bank/step78d-import-job-item-read-acceptance.mjs`.
+  - Host-shell helper run correctly returned `BLOCKED / DATABASE_URL_NOT_SET`; this was not counted as acceptance PASS.
+  - Rebuilt/restarted the local Docker API container to current code because the running local API image did not include Step 78B dist files.
+  - Applied local Docker `prisma migrate deploy` to add the missing local `ImportJobItem` table migration.
+  - Ran the helper inside the local API container using container-provided local DB environment only, without printing a connection string.
+  - Created only `S78D_*` synthetic ImportJob, ImportRun, ImportJobItem, user, role, and department records.
+  - Verified `GET /api/import-jobs/:id/items` with `system:config`: HTTP 200.
+  - Verified non-`system:config`: HTTP 403.
+  - Verified missing parent job: HTTP 404.
+  - Verified existing parent with no item rows: HTTP 200 with `items: []` and `total: 0`.
+  - Verified `runId`, `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize` filters/pagination.
+  - Verified invalid UUID, invalid enum, and extra query parameter: HTTP 400.
+  - Verified response top-level fields are only `items`, `total`, `page`, and `pageSize`.
+  - Verified item fields are only `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Verified Web remains aggregate-only; no Web code, API client method, UI, or Web route was added or started.
+- Explicitly not done:
+  - No Web runtime/code/test change.
+  - No backend runtime/code/test change beyond adding the memory-bank helper.
+  - No Prisma schema change and no new migration file.
+  - No production/VPS or production DB access.
+  - No `.env` / `.env.production` content read or printed.
+  - No real business-data import and no real person, achievement, department, or account data used.
+  - No retry, delete, cleanup, rollback, download, export, raw JSON/raw CSV access, or business-object drilldown.
+  - Existing untracked local artifacts and local synthetic residues were not cleaned or modified.
+- Verification:
+  - Local synthetic helper:
+    - Host shell: BLOCKED as expected by `DATABASE_URL_NOT_SET`.
+    - Local Docker API/container DB after rebuild and local migration deploy: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- import-job-history-read`: PASS; 3 files / 22 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Diff checks and final status are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 78C - ImportJobItem Web display decision
 
 - Status: DONE.
