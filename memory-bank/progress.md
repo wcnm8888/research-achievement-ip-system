@@ -13281,3 +13281,38 @@
   - `git diff --cached --check`: PASS.
   - `corepack pnpm --filter @research-ip/web test -- demo App WorkflowTasks Fees AccountManagement`: PASS, 5 files / 129 tests.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+
+## 2026-07-05 Step 91 - Phase-one demo local UI evidence preflight
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `dd14286 fix: align demo roles for phase one walkthrough`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/phase-one-demo-ui-preflight-report.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with Step 91 live UI preflight cautions.
+  - Ran local/demo UI preflight with localhost Web/API, a synthetic local PostgreSQL database, and Playwright-driven local Chrome screenshots saved under `.local-step91-ui-preflight/screenshots/`.
+- UI preflight classification:
+  - PASS: 0.
+  - PASS with caveat: 7.
+  - BLOCKED: 3.
+- PASS with caveat:
+  - Researcher submit worked after creating a new AI-department local demo achievement; the seeded admin-department draft was not sufficient.
+  - Secretary review task became visible and was approved.
+  - Attachment metadata and masked audit summaries were screenshotable.
+  - Account lifecycle buttons and safety wording were visible, though reset delivery failed for a no-credential account.
+  - External mock center worked after creating a non-sensitive local DOI metadata record; success/failure safe logs were visible.
+  - Dashboard fixed scoring sections were visible, with role-scope and empty-conversion caveats.
+  - Import history empty state was visible, but no aggregate detail existed.
+- BLOCKED:
+  - Admin archive path: admin Achievements list was empty, so the documented admin archive action/result was not screenshotable.
+  - Admin local fee review action: admin Fees page returned missing permission; secretary fee visibility was not a substitute.
+  - Conversion ledger: tested personas could not access a screenshotable ledger record/action.
+- Recommendation:
+  - Do not enter the formal demo claiming the full Step 90 route is ready. Either narrow the demo to the 7 caveated paths or repair the 3 blockers first.
+- Boundaries observed:
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external systems, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation, production runbook, production monitoring, or production migration operation.
+  - No raw token, cookie, session, password, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, or raw request/response was captured in the report.

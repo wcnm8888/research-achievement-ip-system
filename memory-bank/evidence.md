@@ -17987,3 +17987,51 @@
   - No real account password, token, cookie, session, connection string, provider credential, or secret was read, written, displayed, or documented.
   - No Prisma schema, migration, seed, package, lockfile, deployment config, or untracked local artifact was modified.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact handling.
+
+## 2026-07-05 Step 91 - Phase-one demo local UI evidence preflight evidence
+
+- Canonical state checked before preflight:
+  - `git log -1 --oneline` -> `dd14286 fix: align demo roles for phase one walkthrough`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed:
+  - `memory-bank/phase-one-demo-acceptance-script.md`.
+  - `memory-bank/phase-one-demo-checklist.md`.
+  - `memory-bank/phase-one-demo-dry-run-report.md`.
+  - Latest Step 90 section of `memory-bank/progress.md`.
+  - Latest Step 90 section of `memory-bank/evidence.md`.
+- Local/demo setup evidence:
+  - Local port probes for `3000`, `5173`, `4173`, and `18080` found no running app before setup.
+  - Started local synthetic PostgreSQL container `research-step91-postgres` bound to `127.0.0.1:15432`.
+  - `corepack pnpm prisma migrate deploy` with redacted local-only `DATABASE_URL`: PASS, 11 migrations applied.
+  - `corepack pnpm prisma db seed` with redacted local-only `DATABASE_URL`: PASS, seed completed.
+  - Started local API dev server; `GET http://127.0.0.1:3000/api/health` returned `{"service":"research-achievement-ip-api","status":"ok"}`.
+  - Started local Web dev server; `http://127.0.0.1:5173` returned HTTP 200.
+  - Playwright package was present; bundled Chromium executable was missing, so local Chrome executable was used. No browser download was performed.
+- UI evidence captured locally under `.local-step91-ui-preflight/screenshots/`:
+  - Researcher context, Achievements list, create form, newly created AI-department draft, submit result.
+  - Secretary Workflow Tasks list/detail, approve modal, approve result.
+  - Admin Achievements empty list blocker.
+  - Attachment metadata panels and admin masked Audit Logs.
+  - Secretary Fees/detail caveat and admin Fees permission blocker.
+  - Conversion ledger access blocker.
+  - Account Management lifecycle buttons/safety wording and reset ineligible conflict.
+  - Settings API integrations mock center, local metadata create/enable, success/failure safe logs.
+  - Secretary/admin Dashboard fixed scoring summaries.
+  - Settings and Account Management import history empty states.
+- Classification:
+  - PASS: 0.
+  - PASS with caveat: 7.
+  - BLOCKED: 3.
+- Documentation evidence:
+  - Added `memory-bank/phase-one-demo-ui-preflight-report.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation operation, production runbook, production migration, or production monitoring operation.
+  - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.

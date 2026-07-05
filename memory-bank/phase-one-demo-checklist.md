@@ -75,6 +75,15 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Presenter describes mock/adapter output as real external integration.
 - [ ] Presenter describes local/demo validation as production PASS.
 
+## Step 91 UI Preflight Notes
+
+- [ ] Before formal demo, verify the seeded or newly created draft achievement belongs to a department with an active research secretary; the seeded `Demo Research Asset Registry` draft is not sufficient because submit can fail with no active department reviewer.
+- [ ] Do not claim admin archive readiness unless the admin context can see a `PENDING_ARCHIVE` achievement and the archive action/result is screenshotable.
+- [ ] Do not claim admin fee review readiness unless the admin context can load fee data and show the local fee review action; secretary fee visibility is not a substitute for the documented admin path.
+- [ ] Do not claim conversion ledger readiness unless at least one archived achievement shows the ledger or safe create/update action for the selected persona.
+- [ ] Import history may be screenshotable as an empty state, but aggregate-detail evidence requires at least one safe local ImportJob.
+- [ ] Account lifecycle reset button visibility is not the same as successful delivery; use an eligible local account if delivery-summary evidence is required.
+
 ## PASS / BLOCKED Rules
 
 - PASS: the local/demo page/action is reproducible, expected visible result is present, evidence is captured, and boundary wording is accurate.
