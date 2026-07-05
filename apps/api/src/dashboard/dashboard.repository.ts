@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { AchievementStatusCode, AchievementTypeCode } from "../achievements/domain/achievement-domain.types";
 import { PrismaService } from "../database/prisma.service";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
@@ -43,6 +44,46 @@ export class DashboardRepository {
 
     return rows.map((row) => ({
       key: row.status as AchievementStatusCode,
+      count: row._count._all,
+    }));
+  }
+
+  async countConversions(
+    achievementPolicyWhere: Prisma.AchievementWhereInput,
+  ): Promise<number> {
+    return this.prisma.achievementConversion.count({
+      where: toConversionWhere(achievementPolicyWhere),
+    });
+  }
+
+  async sumConversionAmounts(
+    achievementPolicyWhere: Prisma.AchievementWhereInput,
+  ): Promise<{ contractTotal: string; revenueTotal: string }> {
+    const result = await this.prisma.achievementConversion.aggregate({
+      where: toConversionWhere(achievementPolicyWhere),
+      _sum: {
+        contractAmount: true,
+        revenueAmount: true,
+      },
+    });
+
+    return {
+      contractTotal: result._sum.contractAmount?.toFixed(2) ?? "0.00",
+      revenueTotal: result._sum.revenueAmount?.toFixed(2) ?? "0.00",
+    };
+  }
+
+  async groupConversionsByStatus(
+    achievementPolicyWhere: Prisma.AchievementWhereInput,
+  ): Promise<DashboardBucket<AchievementConversionStatusCode>[]> {
+    const rows = await this.prisma.achievementConversion.groupBy({
+      by: ["status"],
+      where: toConversionWhere(achievementPolicyWhere),
+      _count: { _all: true },
+    });
+
+    return rows.map((row) => ({
+      key: row.status as AchievementConversionStatusCode,
       count: row._count._all,
     }));
   }
@@ -125,4 +166,10 @@ const toActiveFeeWhere = (
   policyWhere: Prisma.FeeRecordWhereInput,
 ): Prisma.FeeRecordWhereInput => ({
   AND: [policyWhere, { archivedAt: null }],
+});
+
+const toConversionWhere = (
+  achievementPolicyWhere: Prisma.AchievementWhereInput,
+): Prisma.AchievementConversionWhereInput => ({
+  achievement: achievementPolicyWhere,
 });

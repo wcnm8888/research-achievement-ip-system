@@ -13053,3 +13053,41 @@
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS after fixing a local helper type-narrowing issue.
   - `git diff --check`: PASS.
+
+## 2026-07-05 Step 84 - Achievement conversion MVP
+
+- Status: DONE.
+- Gap analysis:
+  - No independent achievement conversion module existed before this step.
+  - Achievement registration, approval, archive, attachments, fees, reminders, search, dashboard, and audit were already separate module boundaries.
+  - Existing Achievement status machine ended at archive/void and was not changed.
+  - Dashboard had achievement/fee/task/reminder aggregations but no conversion ledger count, amount totals, or conversion funnel.
+- Scope completed:
+  - Added `AchievementConversion` local ledger schema with conversion type, counterparty name, contract total, revenue total, status, conversion date, benefit distribution summary, remarks, achievement link, department link, and creator/updater references.
+  - Added nested backend API:
+    - `GET /achievements/:achievementId/conversions`
+    - `POST /achievements/:achievementId/conversions`
+    - `PATCH /achievements/:achievementId/conversions/:conversionId`
+  - Creation is limited to department-readable archived achievements; list/update are filtered through the achievement department policy.
+  - Conversion audit target `ACHIEVEMENT_CONVERSION` records only stable masked facts and booleans; it does not record counterparty name, benefit summary text, remarks text, contract files, payment evidence, or external payloads.
+  - Dashboard summary now includes conversion record count, contract/revenue totals, and conversion status funnel, all scoped through current achievement visibility.
+  - Web achievement detail now shows an internal conversion ledger panel with create/edit form and existing-record list.
+  - Web Dashboard now shows conversion record count, contract/revenue totals, and conversion funnel distribution.
+- Explicitly not done:
+  - No real contract signing, contract file flow, legal system integration, finance integration, invoice, payment, receipt, mail/SMS, external transaction platform, custom report engine, or complex benefit-distribution engine.
+  - No production/VPS/production DB access.
+  - No production migration execution.
+  - No `.env` / `.env.production` content read.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact changes.
+- Verification:
+  - Initial `corepack pnpm prisma:validate` failed because `DATABASE_URL` was not set in the shell; `.env` was not read.
+  - `DATABASE_URL` was set to a one-off dummy local PostgreSQL URL for Prisma validation/generation only.
+  - `corepack pnpm prisma:validate`: PASS with dummy local URL.
+  - `corepack pnpm exec prisma generate`: PASS with dummy local URL.
+  - `corepack pnpm --filter @research-ip/api test -- achievement dashboard conversion`: PASS, 17 files / 193 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement Dashboard conversion`: PASS, 4 files / 74 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+- Next step:
+  - Proceed to Step 85: account activation and simulated notification loop.

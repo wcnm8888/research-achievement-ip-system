@@ -1,0 +1,196 @@
+import { describe, expect, it, vi } from "vitest";
+import { PermissionCode } from "../authorization/constants/permission-code";
+import { UserContext } from "../identity/user-context";
+import { AchievementConversionRepository } from "./achievement-conversion.repository";
+import { AchievementConversionService } from "./achievement-conversion.service";
+import { AchievementConversionStatusCode, AchievementConversionTypeCode } from "./domain/achievement-conversion-domain.types";
+import { AchievementConversionInvalidPayloadError, AchievementConversionInvalidStateError } from "./domain/achievement-conversion-service.errors";
+import { AchievementConversionRecord } from "./domain/achievement-conversion-repository.types";
+
+const ids = {
+  achievement: "30000000-0000-4000-8000-000000000001",
+  conversion: "31000000-0000-4000-8000-000000000001",
+  department: "10000000-0000-4000-8000-000000000001",
+  user: "40000000-0000-4000-8000-000000000001",
+};
+
+const context: UserContext = {
+  userId: ids.user,
+  departmentId: ids.department,
+  roleIds: [],
+  roleCodes: [],
+  permissionCodes: [PermissionCode.achievementReadDepartment],
+  roleScopes: [],
+  scopedDepartmentIds: [ids.department],
+};
+
+const makeConversion = (
+  overrides: Partial<AchievementConversionRecord> = {},
+): AchievementConversionRecord => ({
+  id: ids.conversion,
+  achievementId: ids.achievement,
+  departmentId: ids.department,
+  conversionType: AchievementConversionTypeCode.license,
+  counterpartyName: "Example Company",
+  contractAmount: "100000.00",
+  revenueAmount: "60000.00",
+  status: AchievementConversionStatusCode.signed,
+  conversionDate: new Date("2026-07-01T00:00:00.000Z"),
+  benefitDistributionSummary: "Team 60%, institute 40%",
+  remarks: "Internal ledger note",
+  createdById: ids.user,
+  updatedById: ids.user,
+  createdAt: new Date("2026-07-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-07-01T00:00:00.000Z"),
+  achievement: {
+    id: ids.achievement,
+    status: "ARCHIVED",
+  },
+  ...overrides,
+});
+
+const makeService = () => {
+  const conversion = makeConversion();
+  const repository = {
+    findAchievementParentByIdWhere: vi.fn().mockResolvedValue({
+      id: ids.achievement,
+      status: "ARCHIVED",
+      departmentId: ids.department,
+      ownerUserId: ids.user,
+      secretLevel: "INTERNAL",
+    }),
+    listByAchievementWhere: vi.fn().mockResolvedValue([conversion]),
+    findByIdWhere: vi.fn().mockResolvedValue(conversion),
+    createInTransaction: vi.fn().mockResolvedValue(conversion),
+    updateInTransaction: vi.fn().mockResolvedValue({
+      ...conversion,
+      status: AchievementConversionStatusCode.paid,
+      revenueAmount: "80000.00",
+    }),
+  };
+  const rbacPolicy = {
+    hasPermission: vi.fn().mockReturnValue({ effect: "ALLOW" }),
+  };
+  const policyQueryFactory = {
+    achievementDepartmentWhere: vi.fn().mockReturnValue({
+      departmentId: { in: [ids.department] },
+    }),
+  };
+  const auditService = {
+    recordEventInTransaction: vi.fn().mockResolvedValue({ id: "audit-id" }),
+  };
+  const prisma = {
+    $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+      callback({
+        achievementConversion: {},
+        achievement: {},
+        auditLog: {},
+      }),
+    ),
+  };
+  const service = new AchievementConversionService(
+    repository as unknown as AchievementConversionRepository,
+    rbacPolicy as never,
+    policyQueryFactory as never,
+    prisma as never,
+    auditService as never,
+  );
+
+  return { auditService, policyQueryFactory, prisma, repository, rbacPolicy, service };
+};
+
+describe("AchievementConversionService", () => {
+  it("lists conversion records through department-scoped achievement policy", async () => {
+    const { policyQueryFactory, repository, service } = makeService();
+
+    await expect(service.listByAchievement(context, ids.achievement)).resolves.toEqual([
+      makeConversion(),
+    ]);
+
+    expect(policyQueryFactory.achievementDepartmentWhere).toHaveBeenCalledWith(
+      context,
+      PermissionCode.achievementReadDepartment,
+    );
+    expect(repository.listByAchievementWhere).toHaveBeenCalledWith({
+      achievementId: ids.achievement,
+      achievementWhere: { departmentId: { in: [ids.department] } },
+    });
+  });
+
+  it("rejects create for non-archived achievements", async () => {
+    const { repository, service } = makeService();
+    repository.findAchievementParentByIdWhere.mockResolvedValueOnce({
+      id: ids.achievement,
+      status: "PENDING_ARCHIVE",
+      departmentId: ids.department,
+      ownerUserId: ids.user,
+      secretLevel: "INTERNAL",
+    });
+
+    await expect(
+      service.createConversion(context, ids.achievement, {
+        conversionType: AchievementConversionTypeCode.license,
+        counterpartyName: "Example Company",
+        contractAmount: 100000,
+        revenueAmount: 60000,
+        status: AchievementConversionStatusCode.signed,
+      }),
+    ).rejects.toBeInstanceOf(AchievementConversionInvalidStateError);
+
+    expect(repository.createInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("creates archived achievement conversion records with masked audit summary", async () => {
+    const { auditService, repository, service } = makeService();
+
+    await service.createConversion(context, ids.achievement, {
+      conversionType: AchievementConversionTypeCode.license,
+      counterpartyName: "Example Company",
+      contractAmount: 100000,
+      revenueAmount: 60000,
+      status: AchievementConversionStatusCode.signed,
+      conversionDate: "2026-07-01",
+      benefitDistributionSummary: "Team 60%, institute 40%",
+      remarks: "Internal ledger note",
+    });
+
+    expect(repository.createInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        achievementId: ids.achievement,
+        departmentId: ids.department,
+        counterpartyName: "Example Company",
+        createdById: ids.user,
+      }),
+    );
+    const auditInput = auditService.recordEventInTransaction.mock.calls[0]?.[1];
+    expect(auditInput.target.type).toBe("ACHIEVEMENT_CONVERSION");
+    expect(JSON.stringify(auditInput)).not.toContain("Example Company");
+    expect(JSON.stringify(auditInput)).not.toContain("Team 60%");
+    expect(JSON.stringify(auditInput)).not.toContain("Internal ledger note");
+    expect(auditInput.newValue).toMatchObject({
+      achievementConversionId: ids.conversion,
+      achievementId: ids.achievement,
+      contractAmountProvided: true,
+      revenueAmountProvided: true,
+      benefitDistributionSummaryProvided: true,
+      remarksProvided: true,
+    });
+  });
+
+  it("rejects updates that would make revenue exceed contract total", async () => {
+    const { repository, service } = makeService();
+    repository.findByIdWhere.mockResolvedValueOnce(makeConversion({
+      contractAmount: "100000.00",
+      revenueAmount: "60000.00",
+    }));
+
+    await expect(
+      service.updateConversion(context, ids.conversion, {
+        revenueAmount: 120000,
+      }),
+    ).rejects.toBeInstanceOf(AchievementConversionInvalidPayloadError);
+
+    expect(repository.updateInTransaction).not.toHaveBeenCalled();
+  });
+});

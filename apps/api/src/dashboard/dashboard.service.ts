@@ -41,6 +41,9 @@ export class DashboardService {
       achievementTotal,
       achievementTypeBuckets,
       achievementStatusBuckets,
+      conversionTotal,
+      conversionAmountSummary,
+      conversionStatusBuckets,
       feePayStatusBuckets,
       overdueFeeCount,
       dueSoonFeeCount,
@@ -50,6 +53,9 @@ export class DashboardService {
       this.repository.countAchievements(achievementWhere),
       this.repository.groupAchievementsByType(achievementWhere),
       this.repository.groupAchievementsByStatus(achievementWhere),
+      this.repository.countConversions(achievementWhere),
+      this.repository.sumConversionAmounts(achievementWhere),
+      this.repository.groupConversionsByStatus(achievementWhere),
       this.repository.groupFeesByPayStatus(feeWhere),
       this.repository.countOverdueFees(feeWhere, todayDateOnly),
       this.repository.countDueSoonFees(
@@ -103,6 +109,23 @@ export class DashboardService {
               count: dueSoonFeeCount,
             },
           },
+        },
+      },
+      conversion: {
+        total: {
+          key: DashboardMetricKeyCode.conversionTotal,
+          section: DashboardMetricSectionCode.conversion,
+          value: { count: conversionTotal },
+        },
+        totals: {
+          key: DashboardMetricKeyCode.conversionAmountSummary,
+          section: DashboardMetricSectionCode.conversion,
+          value: conversionAmountSummary,
+        },
+        funnel: {
+          key: DashboardMetricKeyCode.conversionStatusFunnel,
+          section: DashboardMetricSectionCode.conversion,
+          value: { buckets: conversionStatusBuckets },
         },
       },
       workflowTasks: {

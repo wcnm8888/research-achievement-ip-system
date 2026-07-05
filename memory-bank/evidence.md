@@ -17730,3 +17730,38 @@
   - No real finance, payment, mail/SMS, HR, SSO, patent-provider, or external-system call.
   - No backend schema/migration/seed/package/lockfile change.
   - No claim of production acceptance; validation is local synthetic/demo acceptance only.
+
+## 2026-07-05 Step 84 - Achievement conversion MVP evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `20e44ac feat: complete fee review workflow loop`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Gap evidence:
+  - Existing code had no `achievement-conversions` API/module and no `AchievementConversion` Prisma model.
+  - Existing Achievement status machine was not modified; conversion is a separate ledger linked to archived achievements.
+  - Existing Dashboard had no conversion count, contract/revenue total, or conversion funnel fields.
+- Local implementation evidence:
+  - Added local schema/migration files for `AchievementConversionType`, `AchievementConversionStatus`, `ResourceType.ACHIEVEMENT_CONVERSION`, and `achievement_conversions`.
+  - Added backend conversion controller/service/repository/module and root AppModule wiring.
+  - Added Dashboard repository/service/domain aggregation for conversion total, contract/revenue totals, and status funnel.
+  - Added Web achievement detail conversion ledger panel and Dashboard conversion metrics.
+  - Added API and Web tests for conversion service, Dashboard aggregation, and Web helper contracts.
+- Local validation:
+  - `corepack pnpm prisma:validate` without shell `DATABASE_URL` -> failed with Prisma P1012; this was expected in the current shell and no `.env` content was read.
+  - `$env:DATABASE_URL='postgresql://local:local@127.0.0.1:55432/local?schema=public'; corepack pnpm prisma:validate` -> passed.
+  - `$env:DATABASE_URL='postgresql://local:local@127.0.0.1:55432/local?schema=public'; corepack pnpm exec prisma generate` -> passed.
+  - `corepack pnpm --filter @research-ip/api test -- achievement dashboard conversion` -> passed; 17 files, 193 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement Dashboard conversion` -> passed; 4 files, 74 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+  - `corepack pnpm --filter @research-ip/web typecheck` -> passed.
+  - `git diff --check` -> passed; only LF-to-CRLF warnings were printed.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No production migration execution.
+  - No `.env` / `.env.production` content read.
+  - No real contract, legal, finance, payment, invoice, mail/SMS, or external transaction platform operation.
+  - No Docker, deploy, runbook, seed, production config, package, or lockfile change.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact modification.
+  - Local validation is local synthetic/demo acceptance only and is not production acceptance.

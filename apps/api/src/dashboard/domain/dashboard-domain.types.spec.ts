@@ -3,6 +3,7 @@ import {
   AchievementStatusCode,
   AchievementTypeCode,
 } from "../../achievements/domain/achievement-domain.types";
+import { AchievementConversionStatusCode } from "../../achievement-conversions/domain/achievement-conversion-domain.types";
 import { PayStatusCode } from "../../fees/domain/fee-domain.types";
 import { ReminderStatusCode } from "../../reminders/domain/reminder-domain.types";
 import { WorkflowTaskStatusCode } from "../../workflow/domain/workflow-domain.types";
@@ -49,6 +50,28 @@ const makeDashboardSummary = (): DashboardSummary => ({
       section: DashboardMetricSectionCode.achievement,
       value: {
         buckets: [{ key: AchievementStatusCode.archived, count: 1 }],
+      },
+    },
+  },
+  conversion: {
+    total: {
+      key: DashboardMetricKeyCode.conversionTotal,
+      section: DashboardMetricSectionCode.conversion,
+      value: { count: 2 },
+    },
+    totals: {
+      key: DashboardMetricKeyCode.conversionAmountSummary,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        contractTotal: "100000.00",
+        revenueTotal: "60000.00",
+      },
+    },
+    funnel: {
+      key: DashboardMetricKeyCode.conversionStatusFunnel,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        buckets: [{ key: AchievementConversionStatusCode.signed, count: 1 }],
       },
     },
   },
@@ -102,6 +125,13 @@ describe("Dashboard metric contract", () => {
       key: DashboardOverviewBucketCode.dueSoon,
       count: 2,
     });
+    expect(summary.conversion.totals.value).toEqual({
+      contractTotal: "100000.00",
+      revenueTotal: "60000.00",
+    });
+    expect(summary.conversion.funnel.value.buckets[0]?.key).toBe(
+      AchievementConversionStatusCode.signed,
+    );
     expect(summary.workflowTasks.byStatus.value.buckets[0]?.key).toBe(
       WorkflowTaskStatusCode.pending,
     );
@@ -115,6 +145,9 @@ describe("Dashboard metric contract", () => {
       "ACHIEVEMENT_TOTAL",
       "ACHIEVEMENT_TYPE_DISTRIBUTION",
       "ACHIEVEMENT_STATUS_DISTRIBUTION",
+      "CONVERSION_TOTAL",
+      "CONVERSION_AMOUNT_SUMMARY",
+      "CONVERSION_STATUS_FUNNEL",
       "FEE_PAY_STATUS_DISTRIBUTION",
       "FEE_DEADLINE_OVERVIEW",
       "WORKFLOW_TASK_STATUS_OVERVIEW",

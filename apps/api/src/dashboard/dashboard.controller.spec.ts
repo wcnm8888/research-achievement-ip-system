@@ -7,6 +7,7 @@ import {
   AchievementStatusCode,
   AchievementTypeCode,
 } from "../achievements/domain/achievement-domain.types";
+import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
@@ -85,6 +86,28 @@ const makeDashboardSummary = (): DashboardSummary => ({
       section: DashboardMetricSectionCode.achievement,
       value: {
         buckets: [{ key: AchievementStatusCode.archived, count: 1 }],
+      },
+    },
+  },
+  conversion: {
+    total: {
+      key: DashboardMetricKeyCode.conversionTotal,
+      section: DashboardMetricSectionCode.conversion,
+      value: { count: 2 },
+    },
+    totals: {
+      key: DashboardMetricKeyCode.conversionAmountSummary,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        contractTotal: "100000.00",
+        revenueTotal: "60000.00",
+      },
+    },
+    funnel: {
+      key: DashboardMetricKeyCode.conversionStatusFunnel,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        buckets: [{ key: AchievementConversionStatusCode.signed, count: 1 }],
       },
     },
   },
@@ -214,6 +237,11 @@ describe("DashboardController HTTP", () => {
         .expect(200);
 
       expect(response.body.achievement.total.value).toEqual({ count: 3 });
+      expect(response.body.conversion.total.value).toEqual({ count: 2 });
+      expect(response.body.conversion.totals.value).toEqual({
+        contractTotal: "100000.00",
+        revenueTotal: "60000.00",
+      });
       expect(response.body.fee.deadline.value.dueSoon).toEqual({
         key: DashboardOverviewBucketCode.dueSoon,
         count: 2,

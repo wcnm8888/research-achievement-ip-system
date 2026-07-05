@@ -24,6 +24,14 @@ export type DashboardSummary = {
     byType: DashboardMetric<DashboardDistribution>;
     byStatus: DashboardMetric<DashboardDistribution>;
   };
+  conversion: {
+    total: DashboardMetric<{ count: number }>;
+    totals: DashboardMetric<{
+      contractTotal: string;
+      revenueTotal: string;
+    }>;
+    funnel: DashboardMetric<DashboardDistribution>;
+  };
   fee: {
     byPayStatus: DashboardMetric<DashboardDistribution>;
     deadline: DashboardMetric<{
@@ -258,6 +266,56 @@ export type AttachmentListQuery = {
   status?: AttachmentStatusCode;
   take?: number;
 };
+
+export type AchievementConversionTypeCode =
+  | "LICENSE"
+  | "TRANSFER"
+  | "COOPERATION"
+  | "INDUSTRIALIZATION"
+  | "OTHER";
+
+export type AchievementConversionStatusCode =
+  | "LEAD_INTENT"
+  | "CONTRACTING"
+  | "SIGNED"
+  | "PAID"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type AchievementConversionRecord = {
+  id: string;
+  achievementId: string;
+  departmentId: string;
+  conversionType: AchievementConversionTypeCode;
+  counterpartyName: string;
+  contractAmount: string | null;
+  revenueAmount: string | null;
+  status: AchievementConversionStatusCode;
+  conversionDate: string | null;
+  benefitDistributionSummary: string | null;
+  remarks: string | null;
+  createdById: string | null;
+  updatedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  achievement: {
+    id: string;
+    status: AchievementStatusCode | string;
+  };
+};
+
+export type CreateAchievementConversionInput = {
+  conversionType: AchievementConversionTypeCode;
+  counterpartyName: string;
+  contractAmount?: number | null;
+  revenueAmount?: number | null;
+  status: AchievementConversionStatusCode;
+  conversionDate?: string | null;
+  benefitDistributionSummary?: string | null;
+  remarks?: string | null;
+};
+
+export type UpdateAchievementConversionInput = Partial<CreateAchievementConversionInput>;
 
 export type UploadAchievementAttachmentInput = {
   file: File;

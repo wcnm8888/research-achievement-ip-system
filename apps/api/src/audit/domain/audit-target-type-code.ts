@@ -1,5 +1,6 @@
 export const AuditTargetTypeCode = {
   achievement: "ACHIEVEMENT",
+  achievementConversion: "ACHIEVEMENT_CONVERSION",
   workflowInstance: "WORKFLOW_INSTANCE",
   workflowTask: "WORKFLOW_TASK",
   workflowAction: "WORKFLOW_ACTION",

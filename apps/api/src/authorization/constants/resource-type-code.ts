@@ -1,5 +1,6 @@
 export const ResourceTypeCode = {
   achievement: "ACHIEVEMENT",
+  achievementConversion: "ACHIEVEMENT_CONVERSION",
   attachment: "ATTACHMENT",
   feeRecord: "FEE_RECORD",
   workflowInstance: "WORKFLOW_INSTANCE",

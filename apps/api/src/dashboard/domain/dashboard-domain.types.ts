@@ -1,4 +1,7 @@
 import {
+  AchievementConversionStatusCode,
+} from "../../achievement-conversions/domain/achievement-conversion-domain.types";
+import {
   AchievementStatusCode,
   AchievementTypeCode,
 } from "../../achievements/domain/achievement-domain.types";
@@ -8,6 +11,7 @@ import { WorkflowTaskStatusCode } from "../../workflow/domain/workflow-domain.ty
 
 export const DashboardMetricSectionCode = {
   achievement: "ACHIEVEMENT",
+  conversion: "CONVERSION",
   fee: "FEE",
   workflow: "WORKFLOW",
   reminder: "REMINDER",
@@ -20,6 +24,9 @@ export const DashboardMetricKeyCode = {
   achievementTotal: "ACHIEVEMENT_TOTAL",
   achievementTypeDistribution: "ACHIEVEMENT_TYPE_DISTRIBUTION",
   achievementStatusDistribution: "ACHIEVEMENT_STATUS_DISTRIBUTION",
+  conversionTotal: "CONVERSION_TOTAL",
+  conversionAmountSummary: "CONVERSION_AMOUNT_SUMMARY",
+  conversionStatusFunnel: "CONVERSION_STATUS_FUNNEL",
   feePayStatusDistribution: "FEE_PAY_STATUS_DISTRIBUTION",
   feeDeadlineOverview: "FEE_DEADLINE_OVERVIEW",
   workflowTaskStatusOverview: "WORKFLOW_TASK_STATUS_OVERVIEW",
@@ -77,6 +84,26 @@ export type DashboardFeeDeadlineOverview = {
   dueSoon: DashboardBucket<typeof DashboardOverviewBucketCode.dueSoon>;
 };
 
+export type DashboardConversionAmountSummary = {
+  contractTotal: string;
+  revenueTotal: string;
+};
+
+export type DashboardConversionSummary = {
+  total: DashboardMetric<
+    typeof DashboardMetricKeyCode.conversionTotal,
+    DashboardCount
+  >;
+  totals: DashboardMetric<
+    typeof DashboardMetricKeyCode.conversionAmountSummary,
+    DashboardConversionAmountSummary
+  >;
+  funnel: DashboardMetric<
+    typeof DashboardMetricKeyCode.conversionStatusFunnel,
+    DashboardDistribution<AchievementConversionStatusCode>
+  >;
+};
+
 export type DashboardFeeSummary = {
   byPayStatus: DashboardMetric<
     typeof DashboardMetricKeyCode.feePayStatusDistribution,
@@ -109,6 +136,7 @@ export type DashboardSummary = {
     departmentId: string;
   };
   achievement: DashboardAchievementSummary;
+  conversion: DashboardConversionSummary;
   fee: DashboardFeeSummary;
   workflowTasks: DashboardWorkflowTaskSummary;
   reminderTasks: DashboardReminderTaskSummary;

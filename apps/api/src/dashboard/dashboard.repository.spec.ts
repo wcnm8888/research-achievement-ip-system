@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { AchievementStatusCode, AchievementTypeCode } from "../achievements/domain/achievement-domain.types";
 import { PrismaService } from "../database/prisma.service";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
@@ -13,6 +14,16 @@ const ids = {
 
 const createFakePrisma = () => ({
   achievement: {
+    count: vi.fn().mockResolvedValue(0),
+    groupBy: vi.fn().mockResolvedValue([]),
+  },
+  achievementConversion: {
+    aggregate: vi.fn().mockResolvedValue({
+      _sum: {
+        contractAmount: null,
+        revenueAmount: null,
+      },
+    }),
     count: vi.fn().mockResolvedValue(0),
     groupBy: vi.fn().mockResolvedValue([]),
   },
@@ -84,6 +95,67 @@ describe("DashboardRepository achievement aggregations", () => {
     expect(prisma.achievement.groupBy).toHaveBeenCalledWith({
       by: ["status"],
       where: { id: { in: [] } },
+      _count: { _all: true },
+    });
+  });
+});
+
+describe("DashboardRepository conversion aggregations", () => {
+  it("counts conversions through the caller-provided achievement policy where", async () => {
+    const { prisma, repository } = createRepository();
+    prisma.achievementConversion.count.mockResolvedValue(2);
+
+    await expect(
+      repository.countConversions({ departmentId: { in: [ids.department] } }),
+    ).resolves.toBe(2);
+
+    expect(prisma.achievementConversion.count).toHaveBeenCalledWith({
+      where: {
+        achievement: { departmentId: { in: [ids.department] } },
+      },
+    });
+  });
+
+  it("sums conversion amounts without selecting ledger detail fields", async () => {
+    const { prisma, repository } = createRepository();
+    const decimalLike = (value: string) => ({ toFixed: () => value });
+    prisma.achievementConversion.aggregate.mockResolvedValue({
+      _sum: {
+        contractAmount: decimalLike("120000.00"),
+        revenueAmount: decimalLike("80000.00"),
+      },
+    });
+
+    await expect(repository.sumConversionAmounts({ id: { in: [] } })).resolves.toEqual({
+      contractTotal: "120000.00",
+      revenueTotal: "80000.00",
+    });
+
+    expect(prisma.achievementConversion.aggregate).toHaveBeenCalledWith({
+      where: { achievement: { id: { in: [] } } },
+      _sum: {
+        contractAmount: true,
+        revenueAmount: true,
+      },
+    });
+    expect(prisma.achievementConversion.aggregate.mock.calls[0]![0]).not.toHaveProperty("select");
+  });
+
+  it("groups conversion funnel by status with achievement policy where", async () => {
+    const { prisma, repository } = createRepository();
+    prisma.achievementConversion.groupBy.mockResolvedValue([
+      { status: AchievementConversionStatusCode.paid, _count: { _all: 3 } },
+    ]);
+
+    await expect(
+      repository.groupConversionsByStatus({ departmentId: { in: [ids.department] } }),
+    ).resolves.toEqual([{ key: AchievementConversionStatusCode.paid, count: 3 }]);
+
+    expect(prisma.achievementConversion.groupBy).toHaveBeenCalledWith({
+      by: ["status"],
+      where: {
+        achievement: { departmentId: { in: [ids.department] } },
+      },
       _count: { _all: true },
     });
   });

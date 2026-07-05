@@ -20,6 +20,9 @@ import { isApiError, type ApiClient, type ApiError, type AuthUser } from "./api-
 import { DataState, PermissionHint } from "./components/StateBlocks";
 import type {
   AchievementContributor,
+  AchievementConversionRecord,
+  AchievementConversionStatusCode,
+  AchievementConversionTypeCode,
   AchievementDetail as AchievementDetailType,
   AttachmentDetailMetadata,
   AttachmentListQuery,
@@ -28,12 +31,14 @@ import type {
   AchievementListItem,
   AchievementStatusCode,
   AchievementTypeCode,
+  CreateAchievementConversionInput,
   ContributorRoleCode,
   ContributorTypeCode,
   PatentLegalStatusCode,
   PatentTypeCode,
   SecretLevelCode,
   SoftwareTypeCode,
+  UpdateAchievementConversionInput,
   UploadAchievementAttachmentInput,
 } from "./types";
 
@@ -151,6 +156,23 @@ const attachmentStatusLabels: Record<AttachmentStatusCode, string> = {
 const attachmentDefaultTake = 50;
 export const attachmentUploadMaxBytes = 10 * 1024 * 1024;
 
+const conversionTypeLabels: Record<AchievementConversionTypeCode, string> = {
+  LICENSE: "License",
+  TRANSFER: "Transfer",
+  COOPERATION: "Cooperation",
+  INDUSTRIALIZATION: "Industrialization",
+  OTHER: "Other",
+};
+
+const conversionStatusLabels: Record<AchievementConversionStatusCode, string> = {
+  LEAD_INTENT: "Lead / intent",
+  CONTRACTING: "Contracting",
+  SIGNED: "Signed",
+  PAID: "Paid",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
 const allowedAttachmentExtensions = new Set(["pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"]);
 const allowedAttachmentMimeTypes = new Set([
   "application/pdf",
@@ -167,6 +189,35 @@ export const fetchAchievementDetailById = (
   achievementId: string,
 ): Promise<AchievementDetailType> =>
   client.get<AchievementDetailType>(`/achievements/${achievementId}`);
+
+export const fetchAchievementConversions = (
+  client: ApiClient,
+  achievementId: string,
+): Promise<AchievementConversionRecord[]> =>
+  client.get<AchievementConversionRecord[]>(
+    `/achievements/${achievementId}/conversions`,
+  );
+
+export const createAchievementConversion = (
+  client: ApiClient,
+  achievementId: string,
+  input: CreateAchievementConversionInput,
+): Promise<AchievementConversionRecord> =>
+  client.post<AchievementConversionRecord>(
+    `/achievements/${achievementId}/conversions`,
+    input,
+  );
+
+export const updateAchievementConversion = (
+  client: ApiClient,
+  achievementId: string,
+  conversionId: string,
+  input: UpdateAchievementConversionInput,
+): Promise<AchievementConversionRecord> =>
+  client.patch<AchievementConversionRecord>(
+    `/achievements/${achievementId}/conversions/${conversionId}`,
+    input,
+  );
 
 export const fetchAchievementAttachmentMetadata = (
   client: ApiClient,
@@ -471,6 +522,11 @@ export function ReadonlyAchievementDetail({
 export const getReadonlyAchievementActions = (): AchievementAction[] => [];
 
 export const shouldLoadAttachmentMetadata = (
+  demoUserId: string | null,
+  achievementId: string | null | undefined,
+): boolean => Boolean(demoUserId?.trim() && achievementId?.trim());
+
+export const shouldLoadAchievementConversions = (
   demoUserId: string | null,
   achievementId: string | null | undefined,
 ): boolean => Boolean(demoUserId?.trim() && achievementId?.trim());
@@ -844,6 +900,15 @@ function DetailContent({
       <Divider orientation="left">贡献人</Divider>
       <Contributors contributors={detail.contributors} />
 
+      <AchievementConversionSection
+        achievementId={detail.id}
+        apiClient={apiClient}
+        authUser={authUser}
+        demoUserId={demoUserId}
+        detail={detail}
+        readonly={isReadonly}
+      />
+
       <AttachmentMetadataSection
         achievementId={detail.id}
         apiClient={apiClient}
@@ -917,6 +982,414 @@ const getDetailContentReadonlyLabels = (mode: DetailContentMode) => {
     boundaryDescription: "",
   };
 };
+
+type ConversionFormState = {
+  conversionType: AchievementConversionTypeCode;
+  counterpartyName: string;
+  contractAmount: string;
+  revenueAmount: string;
+  status: AchievementConversionStatusCode;
+  conversionDate: string;
+  benefitDistributionSummary: string;
+  remarks: string;
+};
+
+const emptyConversionForm = (): ConversionFormState => ({
+  conversionType: "LICENSE",
+  counterpartyName: "",
+  contractAmount: "",
+  revenueAmount: "",
+  status: "LEAD_INTENT",
+  conversionDate: "",
+  benefitDistributionSummary: "",
+  remarks: "",
+});
+
+function AchievementConversionSection({
+  achievementId,
+  apiClient,
+  authUser,
+  demoUserId,
+  detail,
+  readonly,
+}: {
+  achievementId: string;
+  apiClient: ApiClient;
+  authUser?: AchievementPermissionContext;
+  demoUserId: string | null;
+  detail: AchievementDetailType;
+  readonly: boolean;
+}) {
+  const [conversions, setConversions] =
+    useState<Loadable<AchievementConversionRecord[]>>(emptyLoadable);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<ConversionFormState>(emptyConversionForm);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<ApiError | null>(null);
+  const canLoad = shouldLoadAchievementConversions(demoUserId, achievementId);
+  const canManage =
+    canLoad &&
+    !readonly &&
+    detail.status === "ARCHIVED" &&
+    hasAchievementPermission(authUser, "achievement:read_department");
+
+  const loadConversions = useCallback(async () => {
+    if (!canLoad) {
+      setConversions(emptyLoadable);
+      return;
+    }
+
+    setConversions({ loading: true, data: null, error: null });
+
+    try {
+      const data = await fetchAchievementConversions(apiClient, achievementId);
+      setConversions({ loading: false, data, error: null });
+    } catch (error) {
+      setConversions({
+        loading: false,
+        data: null,
+        error: mapConversionErrorToDisplay(normalizeError(error)),
+      });
+    }
+  }, [achievementId, apiClient, canLoad]);
+
+  useEffect(() => {
+    void loadConversions();
+  }, [loadConversions]);
+
+  useEffect(() => {
+    setEditingId(null);
+    setForm(emptyConversionForm());
+    setSaveError(null);
+  }, [achievementId]);
+
+  const items = conversions.data ?? [];
+
+  const submitConversion = async () => {
+    const input = buildConversionInput(form);
+    if (!input) {
+      setSaveError({
+        kind: "bad-request",
+        message: "Counterparty, type, status, and valid non-negative amounts are required.",
+      });
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      if (editingId) {
+        await updateAchievementConversion(apiClient, achievementId, editingId, input);
+        void message.success("Conversion record updated");
+      } else {
+        await createAchievementConversion(apiClient, achievementId, input);
+        void message.success("Conversion record created");
+      }
+
+      setEditingId(null);
+      setForm(emptyConversionForm());
+      await loadConversions();
+    } catch (error) {
+      setSaveError(mapConversionErrorToDisplay(normalizeError(error)));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <Divider orientation="left">Achievement conversion ledger</Divider>
+      <Space direction="vertical" size={12} className="full-width">
+        <Alert
+          showIcon
+          type="info"
+          message="Internal structured ledger only"
+          description="This MVP records conversion status, counterparty, amounts, and benefit-distribution summary inside this system. It is not a contract signing, finance, legal, payment, invoice, or external platform integration."
+        />
+
+        <DataState
+          loading={conversions.loading}
+          error={conversions.error}
+          empty={!conversions.loading && !conversions.error && items.length === 0}
+          emptyText="No conversion records"
+          onRetry={() => void loadConversions()}
+        >
+          <div className="conversion-ledger-list">
+            {items.map((item) => (
+              <div className="conversion-ledger-card" key={item.id}>
+                <Space direction="vertical" size={8} className="full-width">
+                  <Space size={8} wrap>
+                    <Tag color={getConversionStatusTagColor(item.status)}>
+                      {conversionStatusLabels[item.status] ?? item.status}
+                    </Tag>
+                    <Tag>{conversionTypeLabels[item.conversionType] ?? item.conversionType}</Tag>
+                    <Typography.Text strong>{item.counterpartyName}</Typography.Text>
+                  </Space>
+                  <Descriptions bordered column={2} size="small">
+                    <Descriptions.Item label="Related achievement">
+                      {item.achievementId}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Date">
+                      {formatDate(item.conversionDate)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Contract total">
+                      {formatMoney(item.contractAmount)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Revenue total">
+                      {formatMoney(item.revenueAmount)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Benefit summary" span={2}>
+                      {formatValue(item.benefitDistributionSummary)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Remarks" span={2}>
+                      {formatValue(item.remarks)}
+                    </Descriptions.Item>
+                  </Descriptions>
+                  {canManage ? (
+                    <Button size="small" onClick={() => {
+                      setEditingId(item.id);
+                      setForm(toConversionForm(item));
+                      setSaveError(null);
+                    }}>
+                      Edit record
+                    </Button>
+                  ) : null}
+                </Space>
+              </div>
+            ))}
+          </div>
+        </DataState>
+
+        {canManage ? (
+          <div className="conversion-ledger-form">
+            <Space direction="vertical" size={10} className="full-width">
+              <Space size={8} wrap>
+                <Typography.Text strong>
+                  {editingId ? "Edit conversion record" : "Create conversion record"}
+                </Typography.Text>
+                {editingId ? (
+                  <Button size="small" onClick={() => {
+                    setEditingId(null);
+                    setForm(emptyConversionForm());
+                    setSaveError(null);
+                  }}>
+                    New record
+                  </Button>
+                ) : null}
+              </Space>
+              <Space size={8} wrap>
+                <Select
+                  className="conversion-ledger-select"
+                  options={Object.entries(conversionTypeLabels).map(([value, label]) => ({
+                    value,
+                    label,
+                  }))}
+                  value={form.conversionType}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      conversionType: value as AchievementConversionTypeCode,
+                    }))
+                  }
+                />
+                <Select
+                  className="conversion-ledger-select"
+                  options={Object.entries(conversionStatusLabels).map(([value, label]) => ({
+                    value,
+                    label,
+                  }))}
+                  value={form.status}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      status: value as AchievementConversionStatusCode,
+                    }))
+                  }
+                />
+                <Input
+                  className="conversion-ledger-wide-input"
+                  placeholder="Counterparty name"
+                  value={form.counterpartyName}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      counterpartyName: event.target.value,
+                    }))
+                  }
+                />
+              </Space>
+              <Space size={8} wrap>
+                <Input
+                  className="conversion-ledger-input"
+                  placeholder="Contract amount"
+                  value={form.contractAmount}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      contractAmount: event.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  className="conversion-ledger-input"
+                  placeholder="Revenue amount"
+                  value={form.revenueAmount}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      revenueAmount: event.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  className="conversion-ledger-input"
+                  placeholder="YYYY-MM-DD"
+                  value={form.conversionDate}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      conversionDate: event.target.value,
+                    }))
+                  }
+                />
+              </Space>
+              <Input.TextArea
+                maxLength={1000}
+                placeholder="Benefit distribution summary"
+                rows={2}
+                showCount
+                value={form.benefitDistributionSummary}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    benefitDistributionSummary: event.target.value,
+                  }))
+                }
+              />
+              <Input.TextArea
+                maxLength={1000}
+                placeholder="Remarks"
+                rows={2}
+                showCount
+                value={form.remarks}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    remarks: event.target.value,
+                  }))
+                }
+              />
+              {saveError ? (
+                <Alert
+                  showIcon
+                  type="error"
+                  message={saveError.message}
+                  description={saveError.detail}
+                />
+              ) : null}
+              <Button type="primary" loading={saving} onClick={() => void submitConversion()}>
+                {editingId ? "Update conversion" : "Create conversion"}
+              </Button>
+            </Space>
+          </div>
+        ) : (
+          <Alert
+            showIcon
+            type="info"
+            message="Conversion ledger is read-only for this context"
+            description="Creating or updating conversion records requires a demo user with department achievement read permission and an archived achievement."
+          />
+        )}
+      </Space>
+    </>
+  );
+}
+
+const buildConversionInput = (
+  form: ConversionFormState,
+): CreateAchievementConversionInput | null => {
+  const counterpartyName = form.counterpartyName.trim();
+  const contractAmount = parseOptionalAmount(form.contractAmount);
+  const revenueAmount = parseOptionalAmount(form.revenueAmount);
+
+  if (!counterpartyName || contractAmount === undefined || revenueAmount === undefined) {
+    return null;
+  }
+
+  return {
+    conversionType: form.conversionType,
+    counterpartyName,
+    contractAmount,
+    revenueAmount,
+    status: form.status,
+    conversionDate: form.conversionDate.trim() || null,
+    benefitDistributionSummary: form.benefitDistributionSummary.trim() || null,
+    remarks: form.remarks.trim() || null,
+  };
+};
+
+const parseOptionalAmount = (value: string): number | null | undefined => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+};
+
+const toConversionForm = (
+  conversion: AchievementConversionRecord,
+): ConversionFormState => ({
+  conversionType: conversion.conversionType,
+  counterpartyName: conversion.counterpartyName,
+  contractAmount: conversion.contractAmount ?? "",
+  revenueAmount: conversion.revenueAmount ?? "",
+  status: conversion.status,
+  conversionDate: conversion.conversionDate?.slice(0, 10) ?? "",
+  benefitDistributionSummary: conversion.benefitDistributionSummary ?? "",
+  remarks: conversion.remarks ?? "",
+});
+
+const mapConversionErrorToDisplay = (error: ApiError): ApiError => {
+  if (error.kind === "forbidden" || error.status === 403) {
+    return {
+      ...error,
+      message: "Current role cannot access the conversion ledger",
+      detail: error.detail ?? "The backend enforces department-scoped achievement permissions.",
+    };
+  }
+
+  if (error.status === 409) {
+    return {
+      ...error,
+      message: "Conversion record is not allowed for this achievement state",
+      detail: error.detail ?? "The MVP only allows creation from archived achievements.",
+    };
+  }
+
+  return error;
+};
+
+const getConversionStatusTagColor = (status: AchievementConversionStatusCode): string => {
+  if (status === "COMPLETED" || status === "PAID") {
+    return "green";
+  }
+
+  if (status === "CANCELLED") {
+    return "default";
+  }
+
+  if (status === "SIGNED") {
+    return "blue";
+  }
+
+  return "gold";
+};
+
+const formatMoney = (value: string | null | undefined): string =>
+  value ? new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format(Number(value)) : "Not returned";
 
 function AttachmentMetadataSection({
   achievementId,

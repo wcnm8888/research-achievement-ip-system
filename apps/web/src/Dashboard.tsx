@@ -16,6 +16,9 @@ type DashboardProps = {
 
 export type DashboardBasicMetrics = {
   achievementTotal: number;
+  conversionTotal: number;
+  conversionContractTotal: string;
+  conversionRevenueTotal: string;
   overdueFees: number;
   dueSoonFees: number;
   pendingWorkflowTasks: number;
@@ -146,6 +149,9 @@ export const extractDashboardBasicMetrics = (
   summary: DashboardSummary | null | undefined,
 ): DashboardBasicMetrics => ({
   achievementTotal: summary?.achievement.total.value.count ?? 0,
+  conversionTotal: summary?.conversion.total.value.count ?? 0,
+  conversionContractTotal: summary?.conversion.totals.value.contractTotal ?? "0.00",
+  conversionRevenueTotal: summary?.conversion.totals.value.revenueTotal ?? "0.00",
   overdueFees: summary?.fee.deadline.value.overdue.count ?? 0,
   dueSoonFees: summary?.fee.deadline.value.dueSoon.count ?? 0,
   pendingWorkflowTasks: countDashboardBucket(
@@ -195,6 +201,14 @@ export const buildDashboardDistributionSections = (
     items: buildDashboardDistributionItems(
       summary?.achievement.byStatus.value.buckets,
       achievementStatusLabels,
+    ),
+  },
+  {
+    title: "Conversion funnel",
+    metricKey: summary?.conversion.funnel.key ?? "CONVERSION_STATUS_FUNNEL",
+    items: buildDashboardDistributionItems(
+      summary?.conversion.funnel.value.buckets,
+      conversionStatusLabels,
     ),
   },
   {
@@ -361,6 +375,21 @@ const DashboardSummaryCard = ({
             <MetricTile title="成果总量" value={metrics.achievementTotal} />
           </Col>
           <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="Conversion records" value={metrics.conversionTotal} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile
+              title="Contract total"
+              value={formatDashboardMoney(metrics.conversionContractTotal)}
+            />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile
+              title="Revenue total"
+              value={formatDashboardMoney(metrics.conversionRevenueTotal)}
+            />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
             <MetricTile title="费用逾期" value={metrics.overdueFees} danger={metrics.overdueFees > 0} />
           </Col>
           <Col xs={24} sm={12} xl={5}>
@@ -396,7 +425,7 @@ const MetricTile = ({
   danger,
 }: {
   title: string;
-  value: number;
+  value: number | string;
   danger?: boolean;
 }) => (
   <div className="dashboard-metric-tile">
@@ -458,6 +487,22 @@ const achievementStatusLabels: Record<string, string> = {
   ARCHIVED: "已归档",
   VOIDED: "已作废",
 };
+
+const conversionStatusLabels: Record<string, string> = {
+  LEAD_INTENT: "Lead / intent",
+  CONTRACTING: "Contracting",
+  SIGNED: "Signed",
+  PAID: "Paid",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const formatDashboardMoney = (value: string): string =>
+  new Intl.NumberFormat("zh-CN", {
+    style: "currency",
+    currency: "CNY",
+    maximumFractionDigits: 2,
+  }).format(Number(value));
 
 const payStatusLabels: Record<string, string> = {
   PENDING: "待缴",

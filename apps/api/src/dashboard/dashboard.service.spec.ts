@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { PermissionCode } from "../authorization/constants/permission-code";
+import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { AchievementStatusCode, AchievementTypeCode } from "../achievements/domain/achievement-domain.types";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { UserContext } from "../identity/user-context";
@@ -32,6 +33,9 @@ type DashboardRepositoryMock = {
   countAchievements: ReturnType<typeof vi.fn>;
   groupAchievementsByType: ReturnType<typeof vi.fn>;
   groupAchievementsByStatus: ReturnType<typeof vi.fn>;
+  countConversions: ReturnType<typeof vi.fn>;
+  sumConversionAmounts: ReturnType<typeof vi.fn>;
+  groupConversionsByStatus: ReturnType<typeof vi.fn>;
   groupFeesByPayStatus: ReturnType<typeof vi.fn>;
   countOverdueFees: ReturnType<typeof vi.fn>;
   countDueSoonFees: ReturnType<typeof vi.fn>;
@@ -47,6 +51,13 @@ const createRepositoryMock = (): DashboardRepositoryMock => ({
   groupAchievementsByStatus: vi
     .fn()
     .mockResolvedValue([{ key: AchievementStatusCode.archived, count: 1 }]),
+  countConversions: vi.fn().mockResolvedValue(2),
+  sumConversionAmounts: vi
+    .fn()
+    .mockResolvedValue({ contractTotal: "100000.00", revenueTotal: "60000.00" }),
+  groupConversionsByStatus: vi
+    .fn()
+    .mockResolvedValue([{ key: AchievementConversionStatusCode.signed, count: 1 }]),
   groupFeesByPayStatus: vi
     .fn()
     .mockResolvedValue([{ key: PayStatusCode.pending, count: 4 }]),
@@ -104,6 +115,15 @@ describe("DashboardService", () => {
     expect(repository.groupAchievementsByStatus).toHaveBeenCalledWith({
       departmentId: { in: [ids.department] },
     });
+    expect(repository.countConversions).toHaveBeenCalledWith({
+      departmentId: { in: [ids.department] },
+    });
+    expect(repository.sumConversionAmounts).toHaveBeenCalledWith({
+      departmentId: { in: [ids.department] },
+    });
+    expect(repository.groupConversionsByStatus).toHaveBeenCalledWith({
+      departmentId: { in: [ids.department] },
+    });
     expect(repository.groupFeesByPayStatus).toHaveBeenCalledWith({
       departmentId: { in: [ids.department] },
     });
@@ -131,6 +151,14 @@ describe("DashboardService", () => {
       overdue: { key: DashboardOverviewBucketCode.overdue, count: 1 },
       dueSoon: { key: DashboardOverviewBucketCode.dueSoon, count: 2 },
     });
+    expect(summary.conversion.total.value.count).toBe(2);
+    expect(summary.conversion.totals.value).toEqual({
+      contractTotal: "100000.00",
+      revenueTotal: "60000.00",
+    });
+    expect(summary.conversion.funnel.value.buckets).toEqual([
+      { key: AchievementConversionStatusCode.signed, count: 1 },
+    ]);
     expect(summary.workflowTasks.byStatus.value.buckets).toEqual([
       { key: WorkflowTaskStatusCode.pending, count: 5 },
     ]);
@@ -146,6 +174,12 @@ describe("DashboardService", () => {
     repository.countAchievements.mockResolvedValue(0);
     repository.groupAchievementsByType.mockResolvedValue([]);
     repository.groupAchievementsByStatus.mockResolvedValue([]);
+    repository.countConversions.mockResolvedValue(0);
+    repository.sumConversionAmounts.mockResolvedValue({
+      contractTotal: "0.00",
+      revenueTotal: "0.00",
+    });
+    repository.groupConversionsByStatus.mockResolvedValue([]);
     repository.groupFeesByPayStatus.mockResolvedValue([]);
     repository.countOverdueFees.mockResolvedValue(0);
     repository.countDueSoonFees.mockResolvedValue(0);
@@ -157,8 +191,12 @@ describe("DashboardService", () => {
     });
 
     expect(repository.countAchievements).toHaveBeenCalledWith({ id: { in: [] } });
+    expect(repository.countConversions).toHaveBeenCalledWith({ id: { in: [] } });
     expect(repository.groupFeesByPayStatus).toHaveBeenCalledWith({ id: { in: [] } });
     expect(summary.achievement.total.value.count).toBe(0);
+    expect(summary.conversion.total.value.count).toBe(0);
+    expect(summary.conversion.totals.value.contractTotal).toBe("0.00");
+    expect(summary.conversion.funnel.value.buckets).toEqual([]);
     expect(summary.achievement.byType.value.buckets).toEqual([]);
     expect(summary.fee.deadline.value.overdue.count).toBe(0);
     expect(summary.fee.deadline.value.dueSoon.count).toBe(0);

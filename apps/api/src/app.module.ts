@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AccountManagementModule } from "./account-management/account-management.module";
+import { AchievementConversionsModule } from "./achievement-conversions/achievement-conversions.module";
 import { AchievementsModule } from "./achievements/achievements.module";
 import { AttachmentsModule } from "./attachments/attachments.module";
 import { AuthModule } from "./auth/auth.module";
@@ -25,6 +26,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     AuthorizationModule,
     AuditModule,
     AchievementsModule,
+    AchievementConversionsModule,
     WorkflowModule,
     AttachmentsModule,
     FeesModule,

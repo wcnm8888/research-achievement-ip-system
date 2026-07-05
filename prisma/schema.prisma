@@ -65,6 +65,7 @@ enum UserRoleScopeType {
 
 enum ResourceType {
   ACHIEVEMENT
+  ACHIEVEMENT_CONVERSION
   ATTACHMENT
   FEE_RECORD
   WORKFLOW_INSTANCE
@@ -103,6 +104,23 @@ enum AchievementStatus {
   PENDING_ARCHIVE
   ARCHIVED
   VOIDED
+}
+
+enum AchievementConversionType {
+  LICENSE
+  TRANSFER
+  COOPERATION
+  INDUSTRIALIZATION
+  OTHER
+}
+
+enum AchievementConversionStatus {
+  LEAD_INTENT
+  CONTRACTING
+  SIGNED
+  PAID
+  COMPLETED
+  CANCELLED
 }
 
 enum SecretLevel {
@@ -388,6 +406,7 @@ model Department {
   users          User[]
   userRoleScopes UserRole[]
   achievements   Achievement[]
+  achievementConversions AchievementConversion[]
   feeRecords     FeeRecord[]
   feeReviewHistory FeeReviewHistory[] @relation("FeeReviewHistoryDepartment")
   auditLogs      AuditLog[]    @relation("AuditDepartment")
@@ -420,6 +439,8 @@ model User {
   reminderTasks         ReminderTask[]           @relation("ReminderReceiver")
   notifications         Notification[]           @relation("NotificationReceiver")
   uploadedAttachments   Attachment[]             @relation("AttachmentUploader")
+  createdAchievementConversions AchievementConversion[] @relation("AchievementConversionCreator")
+  updatedAchievementConversions AchievementConversion[] @relation("AchievementConversionUpdater")
   reviewedFeeRecords    FeeRecord[]              @relation("FeeReviewer")
   feeReviewHistory      FeeReviewHistory[]        @relation("FeeReviewHistoryReviewer")
   auditLogs             AuditLog[]               @relation("AuditActor")
@@ -643,6 +664,7 @@ model Achievement {
   softwareCopyrightDetail SoftwareCopyrightDetail?
   contributors            AchievementContributor[]
   feeRecords              FeeRecord[]
+  conversions             AchievementConversion[]
 
   @@index([departmentId, status])
   @@index([ownerUserId, status])
@@ -732,6 +754,35 @@ model AchievementContributor {
   @@index([achievementId])
   @@index([userId])
   @@map("achievement_contributors")
+}
+
+model AchievementConversion {
+  id                         String                      @id @default(uuid()) @db.Uuid
+  achievementId              String                      @map("achievement_id") @db.Uuid
+  departmentId               String                      @map("department_id") @db.Uuid
+  conversionType             AchievementConversionType   @map("conversion_type")
+  counterpartyName           String                      @map("counterparty_name") @db.VarChar(200)
+  contractAmount             Decimal?                    @map("contract_amount") @db.Decimal(14, 2)
+  revenueAmount              Decimal?                    @map("revenue_amount") @db.Decimal(14, 2)
+  status                     AchievementConversionStatus @default(LEAD_INTENT)
+  conversionDate             DateTime?                   @map("conversion_date") @db.Date
+  benefitDistributionSummary String?                     @map("benefit_distribution_summary") @db.VarChar(1000)
+  remarks                    String?                     @db.VarChar(1000)
+  createdById                String?                     @map("created_by_id") @db.Uuid
+  updatedById                String?                     @map("updated_by_id") @db.Uuid
+  createdAt                  DateTime                    @default(now()) @map("created_at")
+  updatedAt                  DateTime                    @updatedAt @map("updated_at")
+
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Restrict)
+  department  Department  @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  createdBy   User?       @relation("AchievementConversionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy   User?       @relation("AchievementConversionUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@index([achievementId, status])
+  @@index([departmentId, status])
+  @@index([conversionType])
+  @@index([conversionDate])
+  @@map("achievement_conversions")
 }
 
 model WorkflowInstance {

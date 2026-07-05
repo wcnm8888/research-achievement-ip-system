@@ -51,6 +51,32 @@ const dashboardSummary: DashboardSummary = {
       },
     },
   },
+  conversion: {
+    total: {
+      key: "CONVERSION_TOTAL",
+      section: "CONVERSION",
+      value: { count: 6 },
+    },
+    totals: {
+      key: "CONVERSION_AMOUNT_SUMMARY",
+      section: "CONVERSION",
+      value: {
+        contractTotal: "250000.00",
+        revenueTotal: "180000.00",
+      },
+    },
+    funnel: {
+      key: "CONVERSION_STATUS_FUNNEL",
+      section: "CONVERSION",
+      value: {
+        buckets: [
+          { key: "SIGNED", count: 3 },
+          { key: "PAID", count: 2 },
+          { key: "COMPLETED", count: 1 },
+        ],
+      },
+    },
+  },
   fee: {
     byPayStatus: {
       key: "FEE_PAY_STATUS_DISTRIBUTION",
@@ -175,6 +201,9 @@ describe("dashboard summary helpers", () => {
   it("extracts Step 17 basic metrics from dashboard summary", () => {
     expect(extractDashboardBasicMetrics(dashboardSummary)).toEqual({
       achievementTotal: 42,
+      conversionTotal: 6,
+      conversionContractTotal: "250000.00",
+      conversionRevenueTotal: "180000.00",
       overdueFees: 3,
       dueSoonFees: 7,
       pendingWorkflowTasks: 5,
@@ -186,6 +215,9 @@ describe("dashboard summary helpers", () => {
     expect(countDashboardBucket(undefined, "PENDING")).toBe(0);
     expect(extractDashboardBasicMetrics(null)).toEqual({
       achievementTotal: 0,
+      conversionTotal: 0,
+      conversionContractTotal: "0.00",
+      conversionRevenueTotal: "0.00",
       overdueFees: 0,
       dueSoonFees: 0,
       pendingWorkflowTasks: 0,
@@ -207,11 +239,12 @@ describe("dashboard summary helpers", () => {
     expect(sections.map((section) => section.title)).toEqual([
       "成果类型分布",
       "成果状态分布",
+      "Conversion funnel",
       "费用缴费状态",
       "审批任务状态",
       "提醒任务状态",
     ]);
-    expect(sections).toHaveLength(5);
+    expect(sections).toHaveLength(6);
     expect(sections[0]?.items).toEqual([
       { key: "PATENT", label: "专利", count: 20, percent: 48 },
       { key: "PAPER", label: "论文", count: 12, percent: 29 },
@@ -221,9 +254,14 @@ describe("dashboard summary helpers", () => {
       { key: "ARCHIVED", label: "已归档", count: 30, percent: 71 },
       { key: "EXPERIMENTAL_STATUS", label: "EXPERIMENTAL_STATUS", count: 12, percent: 29 },
     ]);
-    expect(sections[2]?.items.map((item) => item.label)).toEqual(["待缴", "已缴"]);
-    expect(sections[3]?.items.map((item) => item.label)).toEqual(["待处理", "已通过"]);
-    expect(sections[4]?.items.map((item) => item.label)).toEqual(["待发送", "已发送"]);
+    expect(sections[2]?.items.map((item) => item.label)).toEqual([
+      "Signed",
+      "Paid",
+      "Completed",
+    ]);
+    expect(sections[3]?.items.map((item) => item.label)).toEqual(["待缴", "已缴"]);
+    expect(sections[4]?.items.map((item) => item.label)).toEqual(["待处理", "已通过"]);
+    expect(sections[5]?.items.map((item) => item.label)).toEqual(["待发送", "已发送"]);
   });
 
   it("returns empty display items for empty buckets without inventing data", () => {

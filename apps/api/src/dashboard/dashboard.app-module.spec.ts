@@ -7,6 +7,7 @@ import {
   AchievementStatusCode,
   AchievementTypeCode,
 } from "../achievements/domain/achievement-domain.types";
+import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { AppModule } from "../app.module";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
@@ -87,6 +88,28 @@ const makeDashboardSummary = (): DashboardSummary => ({
       },
     },
   },
+  conversion: {
+    total: {
+      key: DashboardMetricKeyCode.conversionTotal,
+      section: DashboardMetricSectionCode.conversion,
+      value: { count: 2 },
+    },
+    totals: {
+      key: DashboardMetricKeyCode.conversionAmountSummary,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        contractTotal: "100000.00",
+        revenueTotal: "60000.00",
+      },
+    },
+    funnel: {
+      key: DashboardMetricKeyCode.conversionStatusFunnel,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        buckets: [{ key: AchievementConversionStatusCode.signed, count: 1 }],
+      },
+    },
+  },
   fee: {
     byPayStatus: {
       key: DashboardMetricKeyCode.feePayStatusDistribution,
@@ -154,6 +177,7 @@ describe("Dashboard routes through AppModule", () => {
         .expect(200);
 
       expect(response.body.achievement.total.value.count).toBe(3);
+      expect(response.body.conversion.total.value.count).toBe(2);
       expect(service.getDashboardSummary).toHaveBeenCalledOnce();
       expect(service.getDashboardSummary).toHaveBeenCalledWith(
         expect.objectContaining<Partial<UserContext>>({

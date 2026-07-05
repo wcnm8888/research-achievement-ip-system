@@ -6,7 +6,9 @@ import {
   buildAttachmentMetadataViewModel,
   buildVoidActionPayload,
   canUploadAchievementAttachment,
+  createAchievementConversion,
   downloadAchievementAttachment,
+  fetchAchievementConversions,
   fetchAchievementAttachmentDetailMetadata,
   fetchAchievementAttachmentMetadata,
   fetchAchievementDetailById,
@@ -22,12 +24,14 @@ import {
   mapAttachmentDownloadErrorToDisplay,
   mapAttachmentMetadataErrorToDisplay,
   uploadAchievementAttachment,
+  updateAchievementConversion,
   validateAttachmentUploadFile,
   shouldLoadAttachmentDetailMetadata,
   shouldLoadAttachmentMetadata,
+  shouldLoadAchievementConversions,
   getTypeDetailFields,
 } from "./AchievementDetail";
-import type { AchievementDetail, AttachmentMetadata } from "./types";
+import type { AchievementConversionRecord, AchievementDetail, AttachmentMetadata } from "./types";
 
 const baseDetail: AchievementDetail = {
   id: "achievement-id",
@@ -169,6 +173,89 @@ describe("fetchAchievementDetailById", () => {
       baseDetail,
     );
     expect(calls).toEqual(["/achievements/achievement-id"]);
+  });
+});
+
+describe("Step 84 achievement conversion helpers", () => {
+  const conversion: AchievementConversionRecord = {
+    id: "conversion-id",
+    achievementId: "achievement-id",
+    departmentId: "department-id",
+    conversionType: "LICENSE",
+    counterpartyName: "Example Company",
+    contractAmount: "100000.00",
+    revenueAmount: "60000.00",
+    status: "SIGNED",
+    conversionDate: "2026-07-01T00:00:00.000Z",
+    benefitDistributionSummary: "Team 60%, institute 40%",
+    remarks: "Internal ledger note",
+    createdById: "user-id",
+    updatedById: "user-id",
+    createdAt: "2026-07-01T00:00:00.000Z",
+    updatedAt: "2026-07-01T00:00:00.000Z",
+    achievement: {
+      id: "achievement-id",
+      status: "ARCHIVED",
+    },
+  };
+
+  it("uses nested achievement conversion ledger endpoints only", async () => {
+    const calls: Array<{ method: string; path: string; body?: unknown }> = [];
+    const client: ApiClient = {
+      get: async <T,>(path: string) => {
+        calls.push({ method: "GET", path });
+        return [conversion] as T;
+      },
+      post: async <T,>(path: string, body?: unknown) => {
+        calls.push({ method: "POST", path, body });
+        return conversion as T;
+      },
+      patch: async <T,>(path: string, body?: unknown) => {
+        calls.push({ method: "PATCH", path, body });
+        return { ...conversion, status: "PAID" } as T;
+      },
+    };
+
+    await expect(fetchAchievementConversions(client, "achievement-id")).resolves.toEqual([
+      conversion,
+    ]);
+    await createAchievementConversion(client, "achievement-id", {
+      conversionType: "LICENSE",
+      counterpartyName: "Example Company",
+      contractAmount: 100000,
+      revenueAmount: 60000,
+      status: "SIGNED",
+      conversionDate: "2026-07-01",
+      benefitDistributionSummary: "Team 60%, institute 40%",
+      remarks: "Internal ledger note",
+    });
+    await updateAchievementConversion(client, "achievement-id", "conversion-id", {
+      status: "PAID",
+      revenueAmount: 60000,
+    });
+
+    expect(calls).toEqual([
+      {
+        method: "GET",
+        path: "/achievements/achievement-id/conversions",
+      },
+      {
+        method: "POST",
+        path: "/achievements/achievement-id/conversions",
+        body: expect.objectContaining({ status: "SIGNED" }),
+      },
+      {
+        method: "PATCH",
+        path: "/achievements/achievement-id/conversions/conversion-id",
+        body: expect.objectContaining({ status: "PAID" }),
+      },
+    ]);
+  });
+
+  it("does not load conversion records without a demo user or achievement id", () => {
+    expect(shouldLoadAchievementConversions(null, "achievement-id")).toBe(false);
+    expect(shouldLoadAchievementConversions("demo-user", "")).toBe(false);
+    expect(shouldLoadAchievementConversions("demo-user", "achievement-id")).toBe(true);
   });
 });
 
