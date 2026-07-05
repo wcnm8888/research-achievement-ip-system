@@ -13220,4 +13220,28 @@
   - No real HR/SSO, email/SMS, DOI/literature, patent platform, finance/payment/invoice/reconciliation, BI platform, mobile, large-scale load test, disaster recovery, or production monitoring acceptance.
   - No credentials, passwords, tokens, cookies, sessions, `DATABASE_URL`, connection strings, secrets, or API keys were documented.
 - Verification:
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; unstaged diff showed Step 89 docs before staging.
+  - `git diff --cached --stat`: PASS after staging Step 89 docs.
+  - `git status --short`: PASS; staged Step 89 docs plus existing untracked local artifacts only.
+
+## 2026-07-05 Step 89 - Phase-one demo dry-run evidence gap check
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/phase-one-demo-dry-run-report.md`.
+  - Reviewed the Step 88 demo acceptance script and checklist against latest Step 83-88 progress/evidence slices.
+  - Performed read-only checks of local Web route/permission surfaces for demo user context, workflow tasks, fees, account management, settings mock demo, and import history overview.
+  - Classified the demo route as 0 PASS, 6 PASS with caveat, and 3 BLOCKED for formal-demo readiness.
+- Key findings:
+  - The script/checklist correctly avoid claiming production acceptance for local/demo/synthetic or mock/adapter evidence.
+  - Three mandatory demo loops need preflight or doc correction before formal presentation: achievement review/archive role context, fee review role context, and account lifecycle invite/reset action visibility.
+  - Page names are mostly usable, but the presenter needs explicit side-nav and in-page click paths because the Web app is a single-page navigation surface.
+- Explicitly not done:
+  - No business code, Prisma schema, migration, seed, package, lockfile, production/VPS, production DB, production runbook, or real external-system work.
+  - No `.env` / `.env.production` content read.
+  - No real HR/SSO, email/SMS, DOI/literature, patent platform, finance/payment/invoice/reconciliation, BI platform, mobile, load test, disaster recovery, or production monitoring acceptance.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
+- Verification:
   - Docs-only validation commands were run for diff whitespace/stat/status.

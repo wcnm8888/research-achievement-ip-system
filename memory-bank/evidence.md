@@ -17900,3 +17900,39 @@
   - No real external system call, real email/SMS, real HR/SSO, real DOI/literature/patent platform, real finance/payment/invoice/reconciliation, BI, mobile, load test, disaster recovery, or production monitoring operation.
   - No business code, Prisma schema, migration, package, lockfile, deployment config, or untracked local artifact was modified.
   - Local/demo/synthetic acceptance remains explicitly not production acceptance.
+
+## 2026-07-05 Step 89 - Phase-one demo dry-run report evidence
+
+- Canonical state checked before documentation:
+  - `git log -1 --oneline` -> `21302b4 docs: add phase one demo acceptance script`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Context reviewed:
+  - `memory-bank/phase-one-demo-acceptance-script.md`.
+  - `memory-bank/phase-one-demo-checklist.md`.
+  - Latest Step 83-88 slices from `memory-bank/progress.md`.
+  - Latest Step 83-88 slices from `memory-bank/evidence.md`.
+  - Read-only local route/permission checks in `apps/web/src/App.tsx`, `apps/web/src/demo-users.ts`, `apps/web/src/WorkflowTasks.tsx`, `apps/web/src/Fees.tsx`, `apps/web/src/AccountManagement.tsx`, `apps/web/src/SettingsApiIntegrations.tsx`, `apps/web/src/SettingsImportJobHistoryOverview.tsx`, `prisma/seed.cjs`, and `prisma/seed-foundation.cjs`.
+- Local documentation evidence:
+  - Added `memory-bank/phase-one-demo-dry-run-report.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Verification:
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; unstaged diff was limited to Step 89 docs before staging.
+  - `git diff --cached --stat`: PASS after staging Step 89 docs.
+  - `git status --short`: PASS; staged Step 89 docs plus existing untracked local artifacts only.
+- Dry-run classification:
+  - PASS: 0.
+  - PASS with caveat: 6.
+  - BLOCKED: 3.
+  - Recommendation: do not enter formal demo until the achievement review/archive role context, fee review role context, and account lifecycle action visibility gaps are preflighted or corrected in the demo docs.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook execution.
+  - No real external system call, real email/SMS, real HR/SSO, real DOI/literature/patent platform, real finance/payment/invoice/reconciliation, BI, mobile, load test, disaster recovery, or production monitoring operation.
+  - No business code, Prisma schema, migration, package, lockfile, deployment config, or untracked local artifact was modified.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact handling.
