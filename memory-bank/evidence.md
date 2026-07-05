@@ -1,5 +1,42 @@
 # Evidence
 
+## 2026-07-05 Step 76B - ImportJobItem safe history final archive evidence
+
+- Goal:
+  - Produce a docs-only final archive for Step 76A covering the `ImportJobItem` row-level safe history privacy and field-boundary plan.
+- Initial state:
+  - `git log -1 --oneline`: `0fa5775 docs: plan import job item safe history`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `memory-bank/import-job-item-safe-history-plan.md`.
+  - Latest Step 76A section from `memory-bank/import-job-history-database-model-plan.md`.
+  - Latest D254 section from `memory-bank/decisions.md`.
+  - Latest Step 76A section from `memory-bank/progress.md`.
+  - Latest Step 76A section from `memory-bank/evidence.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-safe-history-final-archive.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Archive evidence:
+  - Archived Step 76A completion of the safe-field allowlist, forbidden-field boundary, family boundary, `targetId` internal-only rule, and Web aggregate-only boundary.
+  - Reconfirmed `ImportJobItem` remains deferred.
+  - Recorded that future work must not infer schema, migration, backend, API, Web, production, database, import apply, or acceptance authorization from Step 76A.
+  - Recorded required future Step split: schema plan, backend implementation, Web plan, and acceptance.
+  - Preserved the boundary that current accepted import history surfaces remain aggregate-only through `ImportJob`, `ImportRun`, and Web safe aggregate/status displays.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 76B docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in four memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 76B docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV content, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No runtime, API, Web, Prisma schema, migration, package, lockfile, config, service startup, browser run, database, production/VPS, production DB, migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, `targetId` display, business-object drilldown, DB write, permission modification, credential read, or credential propagation work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts in the repository were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 76A - ImportJobItem safe history privacy plan evidence
 
 - Goal:

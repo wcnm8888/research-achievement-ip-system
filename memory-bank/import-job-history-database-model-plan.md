@@ -1315,3 +1315,20 @@ Step 75C closes the production read-only preflight documentation line as referen
 - Row-level API and Web detail remain deferred until separate schema, backend, Web, and acceptance steps are explicitly authorized.
 
 Step 76A documents privacy and field boundaries only. It does not authorize schema, migration, runtime, API, Web, database, production, import apply, or row-level display work.
+
+## Step 76B ImportJobItem Safe History Final Archive
+
+- Date: 2026-07-05.
+- Scope: documentation-only final archive for the Step 76A `ImportJobItem` row-level safe history privacy and field-boundary plan.
+- Added final archive:
+  - `memory-bank/import-job-item-safe-history-final-archive.md`.
+- Non-scope: no runtime/API/Web/schema/migration/package/lockfile/config changes, no service startup, no browser run, no database access, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no import apply, no migration execution, no retry/delete/cleanup/rollback/download/export behavior, no row-level API, no row-level Web display, no `targetId` display, and no business-object drilldown.
+
+### Archived Position
+
+- Step 76A completed the safe-field allowlist, forbidden-field boundary, family boundary, `targetId` internal-only rule, and Web aggregate-only boundary.
+- `ImportJobItem` remains deferred.
+- Step 76A must not be interpreted as schema, migration, backend, API, Web, production, database, import apply, or acceptance authorization.
+- Any continuation must be split into separately authorized schema plan, backend implementation, Web plan, and acceptance Steps.
+
+Step 76B archives the Step 76A plan as privacy and field-boundary reference material only. It does not authorize or imply `ImportJobItem` implementation.

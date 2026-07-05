@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-07-05 Step 76B - ImportJobItem safe history final archive
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only archive task; no schema, migration, runtime, API, Web, database, or operational execution.
+- Scope completed:
+  - Added `memory-bank/import-job-item-safe-history-final-archive.md`.
+  - Archived Step 76A completion of the `ImportJobItem` row-level safe history privacy and field-boundary plan.
+  - Recorded the Step 76A safe-field allowlist: `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and optional internal-only `targetId`.
+  - Archived the forbidden-field boundary for raw CSV, row values, email, employee number, DOI, software registration number, patent number, title, personnel names, contributor/owner names, raw/normalized identifiers, credentials, tokens, cookies, passwords, connection strings, storage keys, mail payloads, request headers, user agents, IP addresses, and raw exception values.
+  - Archived family boundaries for Department `CREATE_ONLY`, User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and Achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+  - Reconfirmed `targetId` is internal-only and must not be displayed in Web, copied as a business field, or used for business-object drilldown.
+  - Reconfirmed current Web import history remains aggregate-only and row-level details remain deferred.
+  - Reconfirmed `ImportJobItem` remains deferred.
+  - Recorded that future work must not infer schema or migration authorization from Step 76A.
+  - Recorded required future Step split: schema plan, backend implementation, Web plan, and acceptance.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 76B archive addendum.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No database, production/VPS, or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No schema plan, migration, backend implementation, Web implementation, migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, `targetId` display, or business-object drilldown.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 76B docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in four memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 76B docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV content, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-05 Step 76A - ImportJobItem safe history privacy plan
 
 - Status: DONE.
