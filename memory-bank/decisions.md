@@ -1,5 +1,44 @@
 # Decisions
 
+## D265 - ImportJobItem production preflight is read-only and non-authorizing
+
+- Date: 2026-07-05.
+- Context: Step 79A adds a docs-only production read-only preflight plan for
+  `ImportJobItem` row-level safe history after Step 77A-D delivered
+  `ImportJobItem` schema/writers, Step 78B delivered backend-only
+  `GET /api/import-jobs/:id/items`, Step 78C kept Web aggregate-only, and Step
+  78D proved only local synthetic backend-only acceptance. The Step prohibits
+  runbook execution, production/VPS access, production DB access, `.env` reads,
+  migration execution, service startup, real import, DB writes, runtime/API/Web/
+  schema/migration/package/config changes, export/download, cleanup/rollback,
+  and existing untracked-artifact handling.
+- Decision:
+  - Treat `memory-bank/import-job-item-production-readonly-preflight-runbook.md`
+    as reference material for a future separately authorized production
+    read-only preflight only.
+  - Require read-only confirmation of migration
+    `20260705120000_add_import_job_items`; do not use the runbook to execute
+    migration deploy/apply/reset/repair.
+  - Require `import_job_items` structure checks to confirm table presence,
+    expected persisted field allowlist, no JSON/raw row-value fields, FKs to
+    `import_jobs` / `import_runs`, and no cascade delete semantics.
+  - Keep API preflight limited to GET-only
+    `GET /api/import-jobs/:id/items` under `system:config`, with 403 for
+    missing permission, 404 for missing/unreadable jobs, and safe empty-list
+    checks when no safe production sample is authorized.
+  - Keep response evidence limited to `items`, `total`, `page`, `pageSize`,
+    `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Keep Web import history aggregate-only: no call to
+    `/api/import-jobs/:id/items`, no item table/drawer/list/debug panel, and no
+    download/export/raw JSON/copy/business-object drilldown.
+- Scope:
+  - This decision does not authorize production access, production DB access,
+    migration execution, real import, DB writes, Web row-level display,
+    export/download, cleanup/rollback/retry/delete, raw JSON/raw CSV access,
+    production-readiness claims, credential reads, deletion, reset, restore,
+    checkout, clean, prune, volume deletion, or handling existing untracked
+    local artifacts.
+
 ## D264 - ImportJobItem read delivery is backend-only and archived
 
 - Date: 2026-07-05.

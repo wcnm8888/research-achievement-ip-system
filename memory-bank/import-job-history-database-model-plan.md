@@ -1757,3 +1757,66 @@ The delivery does not support retry, delete, cleanup, rollback, download, export
 - Future production readiness requires a separate production read-only preflight or updated runbook; it must not be inferred from Step 78D local synthetic acceptance.
 
 Step 78E closes the Step 78A-D read line without authorizing Web row-level display, production execution, real import apply, export/download behavior, raw/source data exposure, or business-object drilldown.
+
+## Step 79A ImportJobItem Production Readonly Preflight Runbook
+
+- Date: 2026-07-05.
+- Scope: docs-only production read-only preflight plan/runbook for
+  `ImportJobItem` row-level safe history.
+- Changed:
+  - `memory-bank/import-job-item-production-readonly-preflight-runbook.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no runbook execution, no production/VPS access, no production DB
+  access, no `.env` / `.env.production` content read, no migration
+  apply/deploy/reset/repair, no service startup, no real import, no DB write,
+  no Web/backend runtime/code/test change, no Prisma schema/migration change, no
+  package/lockfile/config change, no export/download, no cleanup/rollback/retry/
+  delete behavior, and no existing untracked-artifact handling.
+
+### Capability Baseline
+
+- Step 77A-D delivered `ImportJobItem` schema plus the Department,
+  Achievement, and User account success-path writers.
+- Step 78B delivered backend-only `GET /api/import-jobs/:id/items` under
+  `system:config`.
+- Step 78C kept Web import history aggregate-only.
+- Step 78D completed local synthetic backend-only acceptance only; it is not
+  production/VPS, production DB, real import, real-data, or production-readiness
+  evidence.
+
+### Production Preflight Plan
+
+The new runbook defines a future, separately authorized read-only production
+preflight for:
+
+- confirming migration `20260705120000_add_import_job_items` is applied through
+  read-only migration status only;
+- confirming `import_job_items` table presence and expected persisted structural
+  plus safe-fact field allowlist;
+- confirming no JSON/raw row-value columns exist;
+- confirming foreign keys target `import_jobs` and `import_runs` without cascade
+  delete semantics;
+- confirming `GET /api/import-jobs/:id/items` is reachable as GET-only and
+  remains under `system:config`;
+- confirming no-permission 403, missing/unreadable job 404, and safe empty-list
+  behavior;
+- confirming responses expose only `items`, `total`, `page`, `pageSize`, and
+  item `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`;
+- confirming production Web remains aggregate-only and does not call or display
+  `/api/import-jobs/:id/items`.
+
+### Stop Boundary
+
+The runbook stops on unconfirmed backup evidence, unclear migration state,
+forbidden DB fields, forbidden API response fields, Web row-level display,
+requests for real import or data repair, any write/retry/delete/cleanup/
+rollback/export/download request, or any request to paste `DATABASE_URL`,
+passwords, tokens, cookies, connection strings, private keys, `.env` contents,
+raw production ids, raw CSV, or personal/source identifiers.
+
+Step 79A creates the runbook only. It does not authorize production access,
+production DB access, migration execution, real import, DB write, Web row-level
+display, export/download, cleanup/rollback, or production readiness.

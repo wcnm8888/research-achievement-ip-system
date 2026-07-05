@@ -1,5 +1,52 @@
 # Progress
 
+## 2026-07-05 Step 79A - ImportJobItem production readonly preflight runbook
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only production read-only preflight plan for
+    `ImportJobItem` row-level safe history.
+- Scope completed:
+  - Added `memory-bank/import-job-item-production-readonly-preflight-runbook.md`.
+  - Documented the current capability baseline: Step 77A-D `ImportJobItem`
+    schema plus Department/Achievement/User account writers, Step 78B
+    backend-only `GET /api/import-jobs/:id/items`, Step 78C Web
+    aggregate-only boundary, and Step 78D local synthetic backend-only
+    acceptance.
+  - Defined future production preflight objectives for migration status,
+    `import_job_items` table structure, GET-only API reachability, response
+    allowlist verification, and Web non-use/non-display verification.
+  - Required read-only confirmation of migration
+    `20260705120000_add_import_job_items` without migration
+    deploy/apply/reset/repair.
+  - Documented DB structure checks for the table, safe persisted field
+    allowlist, absence of JSON/raw row-value fields, FK targets to
+    `import_jobs` / `import_runs`, and absence of cascade delete semantics.
+  - Documented API checks for `system:config`, 403 without permission, 404 for
+    missing/unreadable jobs, safe empty-list handling, and skipping item-data
+    reads when no safe production sample is explicitly authorized.
+  - Documented response allowlist and forbidden field/content categories.
+  - Reconfirmed Web remains aggregate-only and must not call or display
+    `/api/import-jobs/:id/items`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`,
+    `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Explicitly not done:
+  - No runbook execution.
+  - No production/VPS or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No migration apply/deploy/reset/repair.
+  - No service startup.
+  - No real import, DB write, retry, delete, cleanup, rollback, export, or
+    download.
+  - No Web/backend runtime/code/test change.
+  - No Prisma schema or migration change.
+  - No package/lockfile/config change.
+  - Existing untracked local artifacts were not touched.
+- Verification:
+  - Typecheck/test/build intentionally not run because this Step is docs-only
+    and changes only memory-bank documentation.
+  - Diff checks and final status are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 78E - ImportJobItem read final archive
 
 - Status: DONE.
