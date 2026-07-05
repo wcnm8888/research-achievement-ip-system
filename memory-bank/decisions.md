@@ -1,5 +1,20 @@
 # Decisions
 
+## D264 - ImportJobItem read delivery is backend-only and archived
+
+- Date: 2026-07-05.
+- Context: Step 78E archives Step 78A-D after the backend read DTO/API plan, backend-only read API implementation, Web aggregate-only decision, and local synthetic backend-only acceptance. The Step is docs-only and prohibits Web/backend runtime changes, Prisma schema/migration changes, package/lockfile/config changes, service startup, database/production/VPS access, `.env` reads, real import execution, migration execution, synthetic cleanup, retry/delete/cleanup/rollback/download/export, raw JSON/raw CSV access, business-object drilldown, and existing untracked-artifact handling.
+- Decision:
+  - Treat the Step 78A-D `ImportJobItem` read delivery line as archived for backend-only safe reads.
+  - Keep the delivered read surface limited to `GET /import-jobs/:id/items`; do not add a global `/import-job-items` route.
+  - Keep response DTOs limited to `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Keep Web import history aggregate-only with no API client method, no `/api/import-jobs/:id/items` call, and no row-level item table/drawer/list/debug panel.
+  - Treat Step 78D as local synthetic backend-only acceptance only, not production/VPS, production DB, real import, real-data, or production-readiness acceptance.
+  - Require a new Step 79A Web row-level UI plan before any future Web item display.
+  - Require a separate production read-only preflight or updated runbook before any production-readiness claim.
+- Scope:
+  - This decision does not authorize Web row-level display, target id exposure, production access, migration execution, real import execution, export/download behavior, raw/source data exposure, retry/delete/cleanup/rollback, business-object drilldown, credential reads, cleanup, deletion, reset, restore, checkout, clean, prune, volume deletion, or handling existing untracked local artifacts.
+
 ## D263 - Web import history remains aggregate-only for ImportJobItem rows
 
 - Date: 2026-07-05.

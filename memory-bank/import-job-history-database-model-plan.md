@@ -1712,3 +1712,48 @@ Step 78C does not authorize Web row-level display, API client methods, backend/A
 - Diff checks passed before commit.
 
 Step 78D completes local synthetic backend-only acceptance for Step 78B. It does not change the Step 78C decision: Web import history remains aggregate-only.
+
+## Step 78E ImportJobItem Read Final Archive
+
+- Date: 2026-07-05.
+- Scope: docs-only archive of the Step 78A-D `ImportJobItem` backend read delivery line.
+- Changed:
+  - `memory-bank/import-job-item-read-final-archive.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no Web/backend runtime/code/test changes, no Prisma schema/migration changes, no package/lockfile/config changes, no service startup, no database access, no production/VPS or production DB access, no `.env` / `.env.production` content read, no real import apply, no migration apply/deploy/reset, no synthetic data cleanup, no retry/delete/cleanup/rollback/download/export behavior, no raw JSON/raw CSV access, and no business-object drilldown.
+
+### Archived Delivery
+
+- Step 78A completed the backend read DTO/API plan.
+- Step 78B implemented backend-only `GET /import-jobs/:id/items`.
+- Step 78C kept Web import history aggregate-only.
+- Step 78D completed local synthetic backend-only acceptance.
+
+### Final Boundary
+
+- The read API remains job-scoped under `GET /import-jobs/:id/items`.
+- There is no global `/import-job-items` route.
+- Authorization remains `system:config`.
+- Parent validation uses safe parent context only.
+- Item reads use a Prisma select allowlist.
+- Response fields remain limited to `items`, `total`, `page`, `pageSize`, and item `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+
+The delivery does not return or display `targetId`, `jobId`, `runId`, raw CSV, row values, email, `employeeNo`, name, `departmentCode`, role, title, DOI, registration number, patent number, contributors, credentials, invite/password/token/cookie/connection string values, `safeSummary`, `auditLogIds`, fingerprints, hashes, or operator ids.
+
+The delivery does not support retry, delete, cleanup, rollback, download, export, raw JSON, raw CSV, or business-object drilldown.
+
+### Acceptance Boundary
+
+- Step 78D host-shell helper `DATABASE_URL_NOT_SET` was correctly BLOCKED and not counted as PASS.
+- Step 78D local Docker API/DB synthetic acceptance passed after local rebuild/restart and local migration deploy.
+- That acceptance is local synthetic backend-only evidence, not production/VPS, production DB, real import, real-data, or production-readiness evidence.
+
+### Future Split
+
+- Future Web row-level display requires a new Step 79A Web row-level UI plan before implementation.
+- Future production readiness requires a separate production read-only preflight or updated runbook; it must not be inferred from Step 78D local synthetic acceptance.
+
+Step 78E closes the Step 78A-D read line without authorizing Web row-level display, production execution, real import apply, export/download behavior, raw/source data exposure, or business-object drilldown.

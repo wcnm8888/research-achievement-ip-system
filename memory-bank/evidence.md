@@ -1,5 +1,52 @@
 # Evidence
 
+## 2026-07-05 Step 78E - ImportJobItem read final archive evidence
+
+- Goal:
+  - Archive the Step 78A-D `ImportJobItem` row-level safe history read delivery line as docs-only, without Web/API/runtime changes, DB access, service startup, migration execution, production/VPS access, or real import execution.
+- Initial state:
+  - `git log -1 --oneline`: `6915140 test: accept import job item read api locally`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 78A, Step 78B, Step 78C, Step 78D, `ImportJobItem`, backend read, aggregate-only, and local synthetic acceptance references before reading; large memory-bank files were not read in full.
+- Context read:
+  - `memory-bank/import-job-item-read-dto-plan.md`.
+  - `memory-bank/import-job-item-web-display-decision.md`.
+  - Step 78A-D sections from `memory-bank/import-job-history-database-model-plan.md`.
+  - Step 78A-D sections from `memory-bank/progress.md`.
+  - Step 78A-D sections from `memory-bank/evidence.md`.
+  - D261, D262, D263, and the latest Step 78D-related evidence from `memory-bank/decisions.md` / `memory-bank/evidence.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-read-final-archive.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/decisions.md`.
+- Archive evidence:
+  - Recorded Step 78A as the backend read DTO/API plan, choosing `GET /import-jobs/:id/items`, rejecting global `/import-job-items`, and limiting item DTO fields to `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Recorded Step 78B as backend-only implementation with `system:config`, parent job safe select, item select allowlist, and no `targetId`, `jobId`, `runId`, raw/source values, or sensitive fields in the response.
+  - Recorded Step 78C as the Web aggregate-only decision: no Web API client method, no call to `/api/import-jobs/:id/items`, no item table/drawer/list/debug panel, and no Web row-level display.
+  - Recorded Step 78D as local synthetic backend-only acceptance: host-shell `DATABASE_URL_NOT_SET` was correctly BLOCKED and not counted as PASS; local Docker API/DB acceptance passed after local rebuild/restart and local migration deploy.
+  - Reconfirmed the local Step 78D result is not production/VPS, production DB, production readiness, real import, or real-data acceptance.
+  - Reconfirmed forbidden fields/content: `targetId`, raw CSV, row values, email, `employeeNo`, name, `departmentCode`, role, title, DOI, registration number, patent number, contributors, credentials, invite/password/token/cookie/connection string values, `safeSummary`, `auditLogIds`, fingerprints, hashes, and operator ids.
+  - Reconfirmed unsupported capabilities: retry, delete, cleanup, rollback, download, export, raw JSON, raw CSV, and business-object drilldown.
+- Verification:
+  - Typecheck/test/build were intentionally not run because this Step is docs-only and does not change Web, backend runtime, Prisma schema, migrations, package files, lockfiles, or config.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; docs-only, no Web/backend/schema/migration/package/config change, no sensitive values, raw CSV, personal identifier examples, credentials, connection strings, no production-readiness claim from local synthetic acceptance, no Web row-level display authorization, and no `targetId` exposure authorization.
+- Boundary:
+  - No Web/backend runtime, API, test, Prisma schema, migration, package, lockfile, config, or script source files were changed.
+  - No service was started.
+  - No database, production/VPS, production DB, or external host was accessed.
+  - No `.env` or `.env.production` content was read or output.
+  - No real import apply, migration apply/deploy/reset, synthetic data cleanup, retry, delete, rollback, export, download, raw JSON/raw CSV access, business-object drilldown, reset, restore, checkout, clean, prune, or volume deletion was performed.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 78D - ImportJobItem backend read local synthetic acceptance evidence
 
 - Goal:

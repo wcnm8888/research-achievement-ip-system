@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-07-05 Step 78E - ImportJobItem read final archive
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only final archive for the Step 78A-D `ImportJobItem` row-level safe history read line.
+- Scope completed:
+  - Added `memory-bank/import-job-item-read-final-archive.md`.
+  - Archived Step 78A backend read DTO/API plan: `GET /import-jobs/:id/items`, no global `/import-job-items`, DTO allowlist limited to `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Archived Step 78B backend-only implementation: `system:config`, safe parent select, item select allowlist, and no `targetId` / `jobId` / `runId` or sensitive-field responses.
+  - Archived Step 78C Web decision: Web remains aggregate-only, no API client method, no `/api/import-jobs/:id/items` call, and no item table/drawer/list/debug panel.
+  - Archived Step 78D local synthetic acceptance: host shell `DATABASE_URL_NOT_SET` BLOCKED was not counted as PASS; local Docker API/DB synthetic acceptance passed after local rebuild/restart and local migration deploy.
+  - Reconfirmed local synthetic acceptance is not production/VPS/production DB readiness.
+  - Reconfirmed unsupported capabilities: retry, delete, cleanup, rollback, download, export, raw JSON, raw CSV, and business-object drilldown.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`, `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Explicitly not done:
+  - No Web/backend runtime/code/test change.
+  - No Prisma schema or migration change.
+  - No package/lockfile/config change.
+  - No service startup.
+  - No database, production/VPS, or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No real import apply and no synthetic data cleanup.
+  - No migration apply/deploy/reset.
+  - Existing untracked local artifacts were not touched.
+- Verification:
+  - Typecheck/test/build intentionally not run because this Step is docs-only and changes only memory-bank documentation.
+  - Diff checks and final status are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 78D - ImportJobItem backend read local synthetic acceptance
 
 - Status: DONE.
