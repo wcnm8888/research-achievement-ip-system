@@ -1393,3 +1393,26 @@ Step 76D archives the Step 76C schema plan as reference material only. It does n
 - `targetId` remains internal-only persistence and was not added to DTOs, Web display, or business-object drilldown.
 
 Step 77A implements only the previously planned schema/migration slice. Backend writer persistence, backend read DTOs, Web row-level planning, acceptance, migration execution, and production work remain separate future authorization boundaries.
+
+## Step 77B Department ImportJobItem Backend Writer
+
+- Date: 2026-07-05.
+- Scope: Department `CREATE_ONLY` backend writer only.
+- Changed:
+  - `apps/api/src/imports/department-import-job.repository.ts`.
+  - `apps/api/src/imports/department-import-job.repository.spec.ts`.
+  - `apps/api/src/imports/department-import-dry-run.service.ts`.
+  - `apps/api/src/imports/department-import-dry-run.service.spec.ts`.
+- Non-scope: no Prisma schema/migration changes, no migration apply/deploy/reset, no Achievement/User item writer, no read DTO/API route/controller/client/Web changes, no database access, no production/VPS or production DB access, no `.env` / `.env.production` content read, no real import apply, no seed, no backfill, no fixture row, no retry/delete/cleanup/rollback/download/export behavior, and no existing untracked-artifact handling.
+
+### Writer Boundary
+
+- Department item rows are written only in the `RUNNER` + successful `EXECUTED` path.
+- Item writes occur inside the same Prisma transaction as department creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+- Repository injects `jobId` and `runId`; item sub-input does not accept them.
+- Persisted item data remains limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+- Rejected, failed, replayed success, and in-progress paths do not write item rows.
+- No row values, raw CSV, raw identifiers, personal fields, achievement identifiers, credentials, `safeSummary`, or `auditLogIds` are stored on item rows.
+- `targetId` remains internal-only and does not enter DTOs, API responses, Web, logs, evidence examples, export, or business-object drilldown.
+
+Step 77B implements only the first Department writer slice. Achievement/User writers, backend read DTOs, Web planning, acceptance beyond local tests, migration execution, and production work remain separate future authorization boundaries.

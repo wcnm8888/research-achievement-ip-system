@@ -1,4 +1,9 @@
-import { ImportJobStatus } from "@prisma/client";
+import {
+  ImportJobItemPlannedAction,
+  ImportJobItemStatus,
+  ImportJobItemTargetType,
+  ImportJobStatus,
+} from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { DepartmentImportJobRepository } from "./department-import-job.repository";
 
@@ -22,6 +27,9 @@ describe("DepartmentImportJobRepository", () => {
       },
       importRun: {
         create: vi.fn().mockResolvedValue({ id: "run-1" }),
+      },
+      importJobItem: {
+        createMany: vi.fn(),
       },
     };
     const prisma = {
@@ -58,6 +66,9 @@ describe("DepartmentImportJobRepository", () => {
       importRun: {
         create: vi.fn(),
       },
+      importJobItem: {
+        createMany: vi.fn(),
+      },
     };
     const prisma = {
       $transaction: vi.fn(async (callback) => callback(tx)),
@@ -83,6 +94,7 @@ describe("DepartmentImportJobRepository", () => {
     expect(tx.importJob.create).toHaveBeenCalledOnce();
     expect(tx.importRun.create).not.toHaveBeenCalled();
     expect(tx.importJob.update).not.toHaveBeenCalled();
+    expect(tx.importJobItem.createMany).not.toHaveBeenCalled();
     expect(prisma.importJob.findFirst).toHaveBeenCalledWith({
       where: {
         targetEnvironment: "test",
@@ -97,5 +109,137 @@ describe("DepartmentImportJobRepository", () => {
         safeSummary: true,
       },
     });
+  });
+
+  it("writes only allowlisted department item data when marking a runner success", async () => {
+    const tx = {
+      importJob: {
+        update: vi.fn().mockResolvedValue({ id: "job-1" }),
+      },
+      importRun: {
+        update: vi.fn().mockResolvedValue({ id: "run-1" }),
+      },
+      importJobItem: {
+        createMany: vi.fn().mockResolvedValue({ count: 2 }),
+      },
+    };
+    const repository = new DepartmentImportJobRepository({} as never);
+
+    await repository.markSucceededInTransaction(tx as never, {
+      jobId: "job-1",
+      runId: "run-1",
+      acceptedRowCount: 2,
+      createdDepartmentsCount: 2,
+      auditCount: 2,
+      warningCount: 0,
+      errorCount: 0,
+      safeErrorCodes: [],
+      safeSummary: {
+        importType: "DEPARTMENT_METADATA",
+        mode: "CREATE_ONLY",
+        totalRows: 2,
+      },
+      auditLogIds: ["audit-1", "audit-2"],
+      items: [
+        { rowNumber: 2, safeCode: null, targetId: "department-1" },
+        { rowNumber: 3, safeCode: null, targetId: "department-2" },
+      ],
+    });
+
+    expect(tx.importJobItem.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          jobId: "job-1",
+          runId: "run-1",
+          rowNumber: 2,
+          plannedAction: ImportJobItemPlannedAction.CREATE,
+          status: ImportJobItemStatus.APPLIED,
+          safeCode: null,
+          targetType: ImportJobItemTargetType.DEPARTMENT,
+          targetId: "department-1",
+        },
+        {
+          jobId: "job-1",
+          runId: "run-1",
+          rowNumber: 3,
+          plannedAction: ImportJobItemPlannedAction.CREATE,
+          status: ImportJobItemStatus.APPLIED,
+          safeCode: null,
+          targetType: ImportJobItemTargetType.DEPARTMENT,
+          targetId: "department-2",
+        },
+      ],
+    });
+    const itemData = tx.importJobItem.createMany.mock.calls[0]![0].data;
+    for (const item of itemData) {
+      expect(Object.keys(item).sort()).toEqual([
+        "jobId",
+        "plannedAction",
+        "rowNumber",
+        "runId",
+        "safeCode",
+        "status",
+        "targetId",
+        "targetType",
+      ]);
+      expect(item).not.toHaveProperty("code");
+      expect(item).not.toHaveProperty("name");
+      expect(item).not.toHaveProperty("parentCode");
+      expect(item).not.toHaveProperty("email");
+      expect(item).not.toHaveProperty("employeeNo");
+      expect(item).not.toHaveProperty("title");
+      expect(item).not.toHaveProperty("doi");
+      expect(item).not.toHaveProperty("registration");
+      expect(item).not.toHaveProperty("patentNumber");
+      expect(item).not.toHaveProperty("rawCsv");
+      expect(item).not.toHaveProperty("safeSummary");
+      expect(item).not.toHaveProperty("auditLogIds");
+    }
+    expect(tx.importRun.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "run-1" } }),
+    );
+    expect(tx.importJob.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "job-1" } }),
+    );
+  });
+
+  it("does not write item rows when marking rejected or failed jobs", async () => {
+    const tx = {
+      importJob: {
+        update: vi.fn().mockResolvedValue({ id: "job-1" }),
+      },
+      importRun: {
+        update: vi.fn().mockResolvedValue({ id: "run-1" }),
+      },
+      importJobItem: {
+        createMany: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const repository = new DepartmentImportJobRepository(prisma as never);
+
+    await repository.markRejected({
+      jobId: "job-1",
+      runId: "run-1",
+      acceptedRowCount: 0,
+      warningCount: 0,
+      errorCount: 1,
+      safeErrorCodes: ["DUPLICATE_IN_FILE"],
+      safeSummary: {
+        importType: "DEPARTMENT_METADATA",
+        mode: "CREATE_ONLY",
+        totalRows: 1,
+      },
+    });
+    await repository.markFailed({
+      jobId: "job-1",
+      runId: "run-1",
+      failureCode: "UNEXPECTED_EXCEPTION",
+      failureStage: "TRANSACTION",
+    });
+
+    expect(tx.importJobItem.createMany).not.toHaveBeenCalled();
   });
 });

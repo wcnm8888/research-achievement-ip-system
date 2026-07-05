@@ -1,5 +1,42 @@
 # Evidence
 
+## 2026-07-05 Step 77B - Department ImportJobItem backend writer evidence
+
+- Goal:
+  - Connect `ImportJobItem` backend writer only for Department `CREATE_ONLY` import apply success, inside the existing business transaction, with no schema/migration/API/Web/read DTO or database apply work.
+- Initial state:
+  - `git log -1 --oneline`: `d8a9b96 feat: add import job item schema`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 77A, `ImportJobItem`, Department import writer, and `markSucceededInTransaction` references before reading; large memory-bank files were not read in full.
+- Context read:
+  - `memory-bank/import-job-item-schema-final-archive.md`.
+  - Step 77A section from `memory-bank/import-job-history-database-model-plan.md`.
+  - D256 section from `memory-bank/decisions.md`.
+  - Department import job repository, dry-run service, dry-run repository, and their focused tests.
+- Implementation:
+  - Extended `DepartmentImportJobTransactionClient` with `importJobItem`.
+  - Added a success item sub-input that excludes `jobId` and `runId`; repository injects those IDs consistently from the success input.
+  - Wrote Department item rows via `importJobItem.createMany` in `markSucceededInTransaction`.
+  - Built success item sub-input from applied in-memory Department rows using only row number, null safe code, and internal target reference.
+  - Rejected, failed, replay, and in-progress paths remain without item writes.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- department-import-job department-import-dry-run`: PASS; 4 files / 32 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked change scope is Department import writer/service tests plus memory-bank docs.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; no schema/migration, API/Web/read DTO, DB apply, production access, Achievement/User writer, seed/backfill, raw CSV, row values, raw identifiers, personal/achievement identifiers, credentials, `safeSummary`, or `auditLogIds` in item data.
+- Boundary:
+  - No migration apply, deploy, reset, database connection, production/VPS access, production DB access, real import apply, real data write, seed, backfill, fixture row, retry, delete, cleanup, rollback, download, or export was performed.
+  - No `prisma/schema.prisma`, migration, controller, route, DTO, Web, package, lockfile, config, or script files were changed.
+  - No `.env` or `.env.production` content was read or output.
+  - `targetId` remains internal-only and was not added to DTO/API/Web/log/evidence examples.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 77A - ImportJobItem schema/migration-only evidence
 
 - Goal:

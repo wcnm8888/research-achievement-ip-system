@@ -345,6 +345,37 @@ describe("DepartmentImportDryRunService", () => {
         safeErrorCodes: [],
       }),
     );
+    const successInput =
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1];
+    expect(successInput.items).toEqual([
+      {
+        rowNumber: 3,
+        safeCode: null,
+        targetId: ids.root,
+      },
+      {
+        rowNumber: 2,
+        safeCode: null,
+        targetId: ids.child,
+      },
+    ]);
+    for (const item of successInput.items) {
+      expect(Object.keys(item).sort()).toEqual(["rowNumber", "safeCode", "targetId"]);
+      expect(item).not.toHaveProperty("jobId");
+      expect(item).not.toHaveProperty("runId");
+      expect(item).not.toHaveProperty("code");
+      expect(item).not.toHaveProperty("name");
+      expect(item).not.toHaveProperty("parentCode");
+      expect(item).not.toHaveProperty("email");
+      expect(item).not.toHaveProperty("employeeNo");
+      expect(item).not.toHaveProperty("title");
+      expect(item).not.toHaveProperty("doi");
+      expect(item).not.toHaveProperty("registration");
+      expect(item).not.toHaveProperty("patentNumber");
+      expect(item).not.toHaveProperty("rawCsv");
+      expect(item).not.toHaveProperty("safeSummary");
+      expect(item).not.toHaveProperty("auditLogIds");
+    }
     const successSummary = JSON.stringify(
       importJobRepository.markSucceededInTransaction.mock.calls[0]![1],
     );
@@ -397,6 +428,7 @@ describe("DepartmentImportDryRunService", () => {
     expect(repository.findDepartmentsByCodes).not.toHaveBeenCalled();
     expect(repository.createDepartmentInTransaction).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("returns in-progress for a same-key running job without opening the business transaction", async () => {
@@ -423,6 +455,7 @@ describe("DepartmentImportDryRunService", () => {
     expect(repository.findDepartmentsByCodes).not.toHaveBeenCalled();
     expect(repository.createDepartmentInTransaction).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("rejects duplicate codes before opening a write transaction", async () => {
@@ -440,6 +473,7 @@ describe("DepartmentImportDryRunService", () => {
     expect(repository.createDepartmentInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
     expect(importJobRepository.markRejected).toHaveBeenCalledOnce();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
     const rejectedSummary = JSON.stringify(
       importJobRepository.markRejected.mock.calls[0]![0],
     );
@@ -502,6 +536,7 @@ describe("DepartmentImportDryRunService", () => {
     expect(repository.createDepartmentInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
     expect(importJobRepository.markRejected).toHaveBeenCalledOnce();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("rejects transaction-time missing parent rechecks without creating rows", async () => {
@@ -548,5 +583,6 @@ describe("DepartmentImportDryRunService", () => {
         failureCode: "UNEXPECTED_EXCEPTION",
       }),
     );
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 });

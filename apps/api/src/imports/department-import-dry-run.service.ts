@@ -617,6 +617,11 @@ const toSuccessfulImportJobInput = (
     safeErrorCodes: [],
     safeSummary,
     auditLogIds,
+    items: rows.map((row) => ({
+      rowNumber: row.rowNumber,
+      safeCode: null,
+      targetId: row.createdDepartmentId,
+    })),
   };
 };
 
