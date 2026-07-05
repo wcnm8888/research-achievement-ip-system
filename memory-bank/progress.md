@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-07-05 Step 78C - ImportJobItem Web display decision
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only Web display decision for `ImportJobItem` row-level safe history.
+- Scope completed:
+  - Added `memory-bank/import-job-item-web-display-decision.md`.
+  - Recorded current state: Step 77A-D write `ImportJobItem`, Step 78B exposes backend-only safe read API, and Web import history remains aggregate-only.
+  - Decided not to connect Web row-level item UI in the current phase.
+  - Kept Web import history aggregate-only with existing list/detail, aggregate counts, sanitized safe summary, run status, and `auditCount`.
+  - Prohibited Web calls to `/api/import-jobs/:id/items`, API client method additions, item table/drawer/list/debug panel, download/export/raw JSON/copy controls, business-object drilldown, and `targetId` / `jobId` / `runId` display.
+  - Reconfirmed future Web row-level history, if needed, must start with a new Step 79A plan and may only consider `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`, `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Explicitly not done:
+  - No Web runtime/code/test change.
+  - No backend runtime/code/test change.
+  - No API client method.
+  - No Prisma schema or migration change.
+  - No package/lockfile/config change.
+  - No migration apply/deploy/reset and no database access.
+  - No production/VPS or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No real import apply, retry, delete, cleanup, rollback, download, export, raw JSON/raw CSV access, or business-object drilldown.
+  - Existing untracked local artifacts were not touched.
+- Verification:
+  - Typecheck/test/build intentionally not run because this Step is docs-only and changes only memory-bank documentation.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; docs-only, no Web/backend/schema/migration/package/config change, no sensitive values, raw CSV, personal identifier examples, credentials, connection strings, no Web authorization for `/api/import-jobs/:id/items`, and no `targetId` Web/DTO/API display design.
+
 ## 2026-07-05 Step 78B - ImportJobItem backend read API
 
 - Status: DONE.

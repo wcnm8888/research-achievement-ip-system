@@ -1614,3 +1614,49 @@ Step 78A is a plan only. It does not authorize runtime implementation, Web displ
 - Diff checks passed before commit.
 
 Step 78B implements only the backend safe read API. Web row-level history remains deferred to Step 78C, and local synthetic acceptance remains deferred to Step 78D if needed.
+
+## Step 78C ImportJobItem Web Display Decision
+
+- Date: 2026-07-05.
+- Scope: docs-only decision on whether Web should display `ImportJobItem` row-level safe history.
+- Changed:
+  - `memory-bank/import-job-item-web-display-decision.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no Web runtime/code/test changes, no backend runtime/code/test changes, no API client method, no Prisma schema/migration changes, no package/lockfile/config changes, no migration apply/deploy/reset, no database access, no production/VPS or production DB access, no `.env` / `.env.production` content read, no real import apply, no retry/delete/cleanup/rollback/download/export behavior, no raw JSON/raw CSV access, and no business-object drilldown.
+
+### Current State
+
+- Step 77A-D write `ImportJobItem` rows for successful Department, Achievement, and User account import paths.
+- Step 78B exposes backend-only safe `GET /import-jobs/:id/items`.
+- Current Web import history remains aggregate-only and uses `listImportJobHistory` plus `getImportJobHistoryDetail`.
+- Current Web display covers list/detail, aggregate counts, sanitized safe summary, run status, and `auditCount`.
+
+### Decision
+
+- Do not connect Web row-level item UI in the current phase.
+- Keep Web import history aggregate-only.
+- Keep the Step 78B item API as backend support diagnostics only.
+
+### Rationale
+
+- `rowNumber` can be misused as a CSV reconstruction anchor.
+- Row-level history can be mistaken for business-object detail or drilldown.
+- Row lists invite copy, debug, raw JSON, download, and export pressure.
+- Future product pressure could add `targetId`, title, email, DOI, patent number, registration number, contributors, or other source identifiers back into Web display.
+- Existing aggregate counts, safe summary, run status, and `auditCount` are enough for ordinary operations review.
+
+### Web Boundary
+
+Web must not call `/api/import-jobs/:id/items`, add an API client method, add an item table/drawer/list/debug panel, add download/export/raw JSON/copy controls, display `targetId` / `jobId` / `runId`, display raw CSV or row values, display personal/source identifiers, or add business-object drilldown from row history.
+
+If future Web row-level display is needed, it must start with a new Step 79A Web row-level UI plan. That future plan may only consider `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`, and must still prohibit links, copy, download, export, raw JSON, raw CSV, and business-object drilldown.
+
+### Follow-Up Split
+
+- Step 78D may perform backend-only local synthetic acceptance if needed for Step 78B API behavior.
+- Future Web implementation requires a new Step 79A plan first.
+
+Step 78C does not authorize Web row-level display, API client methods, backend/API changes, migration execution, database or production access, real import execution, export/download behavior, raw/source data exposure, or business-object drilldown.

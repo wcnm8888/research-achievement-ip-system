@@ -1,5 +1,21 @@
 # Decisions
 
+## D263 - Web import history remains aggregate-only for ImportJobItem rows
+
+- Date: 2026-07-05.
+- Context: Step 78C decides whether Web should display `ImportJobItem` row-level safe history after Step 77A-D began writing item rows and Step 78B added a backend-only safe read API. The Step is docs-only and prohibits Web/backend/API/runtime changes, API client additions, Prisma schema/migration changes, package/lockfile/config changes, migration execution, database/production access, `.env` reads, real import execution, retry/delete/cleanup/rollback/download/export, raw JSON/raw CSV access, business-object drilldown, and existing untracked-artifact handling.
+- Decision:
+  - Keep Web import history aggregate-only in the current phase.
+  - Do not call `/api/import-jobs/:id/items` from Web.
+  - Do not add a Web API client method for item history.
+  - Do not add an item table, drawer, list, debug panel, download/export/raw JSON/copy control, or business-object drilldown.
+  - Continue using existing list/detail history surfaces with aggregate counts, sanitized safe summary, run status, and `auditCount`.
+  - Keep permission unchanged: `system:config`; do not add a permission for Web item display because Web item display is not being added.
+  - Keep `targetId`, `jobId`, `runId`, raw CSV, row values, personal/source identifiers, credentials, `safeSummary` item payloads, audit ids, fingerprints, hashes, and operator ids out of Web item display.
+  - If future Web row-level display is needed, require a new Step 79A Web UI plan before implementation and limit candidate fields to `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+- Scope:
+  - This decision does not authorize Web row-level display, API client methods, backend/API changes, schema/migration work, migration execution, database or production access, real import execution, export/download behavior, raw/source data exposure, permission changes, credential reads, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D262 - ImportJobItem read API is job-scoped and allowlist-only
 
 - Date: 2026-07-05.

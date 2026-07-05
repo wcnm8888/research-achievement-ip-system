@@ -1,5 +1,55 @@
 # Evidence
 
+## 2026-07-05 Step 78C - ImportJobItem Web display decision evidence
+
+- Goal:
+  - Decide whether Web should display `ImportJobItem` row-level safe history, as docs-only, without modifying Web/API/runtime, calling item APIs, accessing databases, or executing migrations.
+- Initial state:
+  - `git log -1 --oneline`: `a57bfeb feat: add import job item read api`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 78A, Step 78B, Step 78C, aggregate-only, `GET /import-jobs/:id/items`, and `targetId` references before reading; large memory-bank files were not read in full.
+- Context read:
+  - `memory-bank/import-job-item-read-dto-plan.md`.
+  - `memory-bank/import-job-item-writer-final-archive.md`.
+  - Step 78A/78B sections from `memory-bank/import-job-history-database-model-plan.md`.
+  - Step 78A/78B sections from `memory-bank/progress.md`.
+  - Step 78A/78B sections from `memory-bank/evidence.md`.
+  - D261/D262 section from `memory-bank/decisions.md`.
+  - Web import history API client snippets from `apps/web/src/api-client.ts`.
+  - Web import history panel snippets from `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - Web import history type snippets from `apps/web/src/types.ts`.
+  - Settings import history overview snippets from `apps/web/src/SettingsImportJobHistoryOverview.tsx`.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-web-display-decision.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/decisions.md`.
+- Decision evidence:
+  - Confirmed Step 77A-D already write `ImportJobItem` rows.
+  - Confirmed Step 78B already provides backend-only safe `GET /import-jobs/:id/items`.
+  - Confirmed current Web import history uses only `listImportJobHistory` and `getImportJobHistoryDetail`.
+  - Confirmed current Web display is aggregate/list/detail: counts, sanitized safe summary, run status, and `auditCount`.
+  - Decided Web should continue aggregate-only and should not call `/api/import-jobs/:id/items`.
+  - Recorded rationale: avoid CSV reconstruction pressure, business-object drilldown interpretation, copy/export/debug pressure, and future pressure to display `targetId` or source identifiers.
+  - Recorded future split: Step 78D may perform backend-only synthetic acceptance; future Web row-level UI requires a new Step 79A plan before implementation.
+- Verification:
+  - Typecheck/test/build were intentionally not run because this Step is docs-only and does not change Web, backend, Prisma schema, migrations, package files, lockfiles, or config.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; docs-only, no Web/backend/schema/migration/package/config change, no sensitive values, raw CSV, personal identifier examples, credentials, connection strings, no Web authorization for `/api/import-jobs/:id/items`, and no `targetId` Web/DTO/API display design.
+- Boundary:
+  - No Web, backend, API client, Prisma schema, migration, package, lockfile, config, or script files were changed.
+  - No `/api/import-jobs/:id/items` request was executed.
+  - No migration apply/deploy/reset, database connection, production/VPS access, production DB access, real import apply, real data write, seed, backfill, fixture row, retry, delete, cleanup, rollback, download, export, raw JSON/raw CSV access, or business-object drilldown was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 78B - ImportJobItem backend read API evidence
 
 - Goal:
