@@ -1,5 +1,44 @@
 # Decisions
 
+## D267 - ImportJobItem production preflight documentation line is archived
+
+- Date: 2026-07-05.
+- Context: Step 79C archives the Step 79A-B `ImportJobItem` production
+  read-only preflight documentation line after Step 79A created
+  `memory-bank/import-job-item-production-readonly-preflight-runbook.md` and
+  Step 79B linked it from `deploy/runbook-production.md` and
+  `deploy/checklist-production-cutover.md`. The Step is docs-only and
+  prohibits runbook execution, production/VPS access, production DB access,
+  `.env` reads, migration execution, service startup, real import, DB writes,
+  production-readiness claims, Web row-level display, runtime/API/Web/schema/
+  migration/package/config changes, export/download, cleanup/rollback, and
+  existing untracked-artifact handling.
+- Decision:
+  - Treat the Step 79A-B `ImportJobItem` production preflight documentation
+    line as archived reference material only.
+  - Keep the scope distinction: `ImportJob` / `ImportRun` aggregate history
+    readiness uses
+    `memory-bank/import-job-history-production-readonly-preflight-runbook.md`;
+    `ImportJobItem` row-level safe history readiness uses
+    `memory-bank/import-job-item-production-readonly-preflight-runbook.md`.
+  - Do not infer production readiness from Step 78D local synthetic
+    backend-only acceptance or from the Step 79A-C documentation line.
+  - Require any future production read-only preflight execution to be a new
+    separately authorized Step with backup confirmation and accepted safe
+    evidence boundaries before any check begins.
+  - Preserve safe evidence boundaries: do not record `DATABASE_URL`, passwords,
+    tokens, cookies, connection strings, private keys, `.env` contents, raw
+    production sample ids, raw item ids, `targetId`, `jobId`, `runId`, raw CSV,
+    personal identifiers, achievement identifiers, account identifiers,
+    credentials, or secret material.
+- Scope:
+  - This decision does not authorize production access, production DB access,
+    migration execution, real import, DB writes, production-readiness claims,
+    Web row-level display, export/download, cleanup/rollback/retry/delete, raw
+    JSON/raw CSV access, credential reads, deletion, reset, restore, checkout,
+    clean, prune, volume deletion, or handling existing untracked local
+    artifacts.
+
 ## D266 - ImportJobItem production preflight has a separate discovery path
 
 - Date: 2026-07-05.

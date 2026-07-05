@@ -1869,3 +1869,55 @@ boundary against recording `DATABASE_URL`, passwords, tokens, cookies,
 connection strings, raw production sample ids, raw item ids, `targetId`,
 `jobId`, `runId`, raw CSV, personal identifiers, achievement identifiers,
 account identifiers, credentials, or secret material.
+
+## Step 79C ImportJobItem Production Preflight Final Archive
+
+- Date: 2026-07-05.
+- Scope: docs-only final archive for the Step 79A-B `ImportJobItem` production
+  read-only preflight documentation line.
+- Changed:
+  - `memory-bank/import-job-item-production-preflight-final-archive.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no runbook execution, no production/VPS access, no production DB
+  access, no `.env` / `.env.production` content read, no migration
+  apply/deploy/reset, no service startup, no real import, no DB write, no
+  production-readiness claim, no Web row-level display, no Web/backend
+  runtime/code/test change, no Prisma schema/migration change, no package/
+  lockfile/config change, no export/download, no cleanup/rollback/retry/delete
+  behavior, and no existing untracked-artifact handling.
+
+### Archived Line
+
+- Step 79A created
+  `memory-bank/import-job-item-production-readonly-preflight-runbook.md`.
+- Step 79A covered read-only migration status, `import_job_items` table
+  structure, GET-only item API, response allowlist, and Web aggregate-only
+  boundary checks.
+- Step 79B linked that runbook from `deploy/runbook-production.md` and
+  `deploy/checklist-production-cutover.md`.
+- Step 79B distinguished the existing
+  `memory-bank/import-job-history-production-readonly-preflight-runbook.md` as
+  `ImportJob` / `ImportRun` aggregate history readiness, while the Step 79A
+  runbook covers `ImportJobItem` row-level safe history readiness only.
+
+### Final Boundary
+
+The archived Step 79A-B line is production-readiness reference material only.
+It does not authorize production/VPS access, production DB access, migration
+execution, DB write, real import, production-readiness claims, Web row-level
+display, export/download, retry/delete/cleanup/rollback, raw JSON/raw CSV
+access, source CSV inspection, or credential reads.
+
+Step 78D local synthetic backend-only acceptance cannot be extrapolated to
+production readiness. Any future execution of the production read-only preflight
+requires a new separately authorized Step that first confirms backup evidence
+and safe evidence boundaries.
+
+The evidence boundary remains: do not record `DATABASE_URL`, passwords, tokens,
+cookies, connection strings, private keys, `.env` contents, raw production
+sample ids, raw item ids, `targetId`, `jobId`, `runId`, raw CSV, personal
+identifiers, achievement identifiers, account identifiers, credentials, or
+secret material.
