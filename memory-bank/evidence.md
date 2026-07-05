@@ -17875,3 +17875,28 @@
   - No export, download, drilldown, raw detail endpoint, custom report engine, schema/migration/seed/package/lockfile change.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact modification.
   - Local Dashboard scoring metrics are local/demo summaries only and are not production monitoring or production acceptance.
+
+## 2026-07-05 Step 88 - Demo acceptance script evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `2d567c0 feat: enhance scoring dashboard reports`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Context reviewed:
+  - Step 88 priority and boundary notes from `memory-bank/phase-one-scoring-feature-priority.md`.
+  - Completion, incomplete items, and risk-boundary slices from `memory-bank/project-requirement-completion-matrix.md`.
+  - Latest Step 83-87 slices from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - `apps/web/src/demo-users.ts` only to confirm local demo user entry points and role presets; no credential, token, cookie, connection string, or `.env` content was read.
+- Local documentation evidence:
+  - Added `memory-bank/phase-one-demo-acceptance-script.md`.
+  - Added `memory-bank/phase-one-demo-checklist.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook execution.
+  - No real external system call, real email/SMS, real HR/SSO, real DOI/literature/patent platform, real finance/payment/invoice/reconciliation, BI, mobile, load test, disaster recovery, or production monitoring operation.
+  - No business code, Prisma schema, migration, package, lockfile, deployment config, or untracked local artifact was modified.
+  - Local/demo/synthetic acceptance remains explicitly not production acceptance.

@@ -13205,3 +13205,19 @@
   - `git diff --cached --stat`: empty.
 - Next step:
   - Proceed to Step 88:考核演示总验收脚本.
+
+## 2026-07-05 Step 88 - Demo acceptance script
+
+- Status: DONE.
+- Scope completed:
+  - Added `memory-bank/phase-one-demo-acceptance-script.md` as the phase-one competition/review demo acceptance route.
+  - Added `memory-bank/phase-one-demo-checklist.md` as the reviewer checklist.
+  - The script connects login/local demo context, achievement registration/review/archive, attachments/audit basics, fee online review loop, achievement conversion MVP, account activation with simulated notification, external interface mock demo center, Dashboard fixed scoring summaries, and ImportJob aggregate history.
+  - Each demo path records demo goal, prerequisites, steps, expected visible result, evidence/screenshot suggestion, and risk boundary.
+  - The documents explicitly distinguish local/demo/synthetic acceptance from production acceptance.
+- Explicitly not done:
+  - No business code, Prisma schema, migration, seed, package, lockfile, production/VPS, production DB, production runbook, or real external-system work.
+  - No real HR/SSO, email/SMS, DOI/literature, patent platform, finance/payment/invoice/reconciliation, BI platform, mobile, large-scale load test, disaster recovery, or production monitoring acceptance.
+  - No credentials, passwords, tokens, cookies, sessions, `DATABASE_URL`, connection strings, secrets, or API keys were documented.
+- Verification:
+  - Docs-only validation commands were run for diff whitespace/stat/status.
