@@ -13030,3 +13030,26 @@
   - `node memory-bank/step72n-user-import-job-acceptance.mjs`: PASS in local API container.
   - `corepack pnpm --filter @research-ip/api test -- user-account-import-dry-run department-import achievement-import imports.app-module`: PASS, 12 files / 114 tests.
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+
+## 2026-07-05 Step 83 - Fee review workflow loop
+
+- Status: DONE.
+- Gap analysis:
+  - Existing backend already created a `FEE_REVIEW` workflow during fee creation, assigned fee reviewers, completed the actor's pending fee review task during fee approve/reject, cancelled sibling fee review tasks, wrote fee review history, and wrote masked audit facts in the same transaction boundary.
+  - Existing Fee Web detail already showed review status/history, voucher attachment boundaries, fee review actions, and refreshed detail/history/task state after approve/reject.
+  - The missing demo gap was the generic Workflow Tasks page: it could list `FEE_RECORD` tasks but still treated executable actions as achievement department review only, so fee reviewers could not complete fee review from their todo page.
+- Scope completed:
+  - Added target-aware Workflow Tasks action execution: achievement tasks still call `/workflow/tasks/:taskId/approve|reject`; fee review tasks call existing `/fees/:feeRecordId/review/approve|reject`.
+  - Added Workflow Tasks fee record target filtering and target-type filtering.
+  - Added target-specific Web permission gating: `achievement:review_department` for achievement tasks and `fee:review_department` for fee review tasks.
+  - Added tests for fee workflow task availability, fee review API routing, fee record filters, fee task row display, and fee reviewer-only action visibility.
+- Explicitly not done:
+  - No backend state machine/API duplication.
+  - No schema, migration, seed, package, lockfile, production/VPS, production DB, real finance, real payment, real mail/SMS, HR, SSO, patent-provider, or external-system integration.
+  - No real financial execution; this remains local/demo workflow acceptance only.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- fee workflow`: PASS, 12 files / 201 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Fees workflow-tasks WorkflowTasks`: PASS, 3 files / 106 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS after fixing a local helper type-narrowing issue.
+  - `git diff --check`: PASS.

@@ -2,10 +2,12 @@ import { isApiError, type ApiClient, type ApiError } from "./api-client";
 import type {
   ApproveWorkflowTaskPayload,
   RejectWorkflowTaskPayload,
+  WorkflowActionKind,
   WorkflowInstanceStatusCode,
   WorkflowStepCode,
   WorkflowTargetTypeCode,
   WorkflowTask,
+  WorkflowTaskInstance,
   WorkflowTaskActionResult,
   WorkflowTaskListResult,
   WorkflowTaskQuery,
@@ -120,6 +122,19 @@ export const getWorkflowActionAvailability = (
 
   if (task.status !== "PENDING") {
     return unavailable("当前任务不是待处理状态");
+  }
+
+  if (
+    task.stepCode === "FEE_REVIEW" &&
+    task.instance?.status === "ACTIVE" &&
+    task.instance.currentStep === "FEE_REVIEW" &&
+    task.instance.targetType === "FEE_RECORD" &&
+    Boolean(task.instance.targetId?.trim())
+  ) {
+    return {
+      approve: true,
+      reject: true,
+    };
   }
 
   if (task.stepCode !== "DEPARTMENT_REVIEW") {
@@ -309,6 +324,71 @@ export const rejectWorkflowTask = (
 
   return client.post<WorkflowTaskActionResult>(`/workflow/tasks/${taskId}/reject`, payload);
 };
+
+type FeeReviewWorkflowTask = WorkflowTask & {
+  stepCode: "FEE_REVIEW";
+  instance: WorkflowTaskInstance & {
+    targetType: "FEE_RECORD";
+    targetId: string;
+  };
+};
+
+export const isFeeReviewWorkflowTask = (
+  task: WorkflowTask | null | undefined,
+): task is FeeReviewWorkflowTask =>
+  task?.stepCode === "FEE_REVIEW" &&
+  task.instance?.targetType === "FEE_RECORD" &&
+  Boolean(task.instance.targetId?.trim());
+
+export const approveWorkflowTaskForTarget = (
+  client: ApiClient,
+  task: WorkflowTask,
+  comment?: string,
+): Promise<unknown> => {
+  if (!isFeeReviewWorkflowTask(task)) {
+    return approveWorkflowTask(client, task.id, comment);
+  }
+
+  const reason = comment?.trim();
+
+  return client.post(
+    `/fees/${task.instance.targetId.trim()}/review/approve`,
+    reason ? { reason } : {},
+  );
+};
+
+export const rejectWorkflowTaskForTarget = (
+  client: ApiClient,
+  task: WorkflowTask,
+  comment: string,
+): Promise<unknown> => {
+  const payload = buildRejectWorkflowTaskPayload(comment);
+
+  if (!payload) {
+    return Promise.reject({
+      kind: "bad-request",
+      message: "Reject comment is required.",
+    } satisfies ApiError);
+  }
+
+  if (!isFeeReviewWorkflowTask(task)) {
+    return rejectWorkflowTask(client, task.id, comment);
+  }
+
+  return client.post(`/fees/${task.instance.targetId.trim()}/review/reject`, {
+    reason: payload.comment,
+  });
+};
+
+export const executeWorkflowTaskAction = (
+  client: ApiClient,
+  task: WorkflowTask,
+  action: WorkflowActionKind,
+  comment: string,
+): Promise<unknown> =>
+  action === "approve"
+    ? approveWorkflowTaskForTarget(client, task, comment)
+    : rejectWorkflowTaskForTarget(client, task, comment);
 
 const normalizeWorkflowError = (error: unknown): ApiError => {
   if (isApiError(error)) {

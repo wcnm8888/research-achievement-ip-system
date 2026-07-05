@@ -7,6 +7,7 @@ import {
   buildRejectWorkflowTaskPayload,
   buildWorkflowTaskDetailDisplayModel,
   buildWorkflowTaskQuery,
+  executeWorkflowTaskAction,
   fetchMyWorkflowTasks,
   fetchWorkflowTaskDetail,
   getWorkflowActionAvailability,
@@ -14,8 +15,11 @@ import {
   getWorkflowStepLabel,
   getWorkflowTargetTypeLabel,
   getWorkflowTaskStatusLabel,
+  isFeeReviewWorkflowTask,
   mapWorkflowErrorToDisplay,
+  approveWorkflowTaskForTarget,
   rejectWorkflowTask,
+  rejectWorkflowTaskForTarget,
 } from "./workflow-tasks";
 
 const pendingDepartmentReviewTask: WorkflowTask = {
@@ -33,6 +37,19 @@ const pendingDepartmentReviewTask: WorkflowTask = {
     targetId: "achievement-id",
     status: "ACTIVE",
     currentStep: "DEPARTMENT_REVIEW",
+  },
+};
+
+const pendingFeeReviewTask: WorkflowTask = {
+  ...pendingDepartmentReviewTask,
+  id: "fee-task-id",
+  instanceId: "fee-instance-id",
+  stepCode: "FEE_REVIEW",
+  instance: {
+    targetType: "FEE_RECORD",
+    targetId: "fee-id",
+    status: "ACTIVE",
+    currentStep: "FEE_REVIEW",
   },
 };
 
@@ -110,6 +127,14 @@ describe("getWorkflowActionAvailability", () => {
       approve: true,
       reject: true,
     });
+  });
+
+  it("allows pending fee review tasks", () => {
+    expect(getWorkflowActionAvailability(pendingFeeReviewTask)).toEqual({
+      approve: true,
+      reject: true,
+    });
+    expect(isFeeReviewWorkflowTask(pendingFeeReviewTask)).toBe(true);
   });
 
   it("blocks terminal task statuses", () => {
@@ -277,5 +302,47 @@ describe("workflow API wrappers", () => {
       message: "请填写驳回意见",
     });
     expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it("routes fee review task approval through the fee review API with reason payload", async () => {
+    const client = createClient();
+    const result = { id: "fee-id", reviewStatus: "APPROVED" };
+    vi.mocked(client.post).mockResolvedValue(result);
+
+    await expect(
+      approveWorkflowTaskForTarget(client, pendingFeeReviewTask, " finance checked "),
+    ).resolves.toEqual(result);
+
+    expect(client.post).toHaveBeenCalledWith("/fees/fee-id/review/approve", {
+      reason: "finance checked",
+    });
+  });
+
+  it("routes fee review task rejection through the fee review API with reason payload", async () => {
+    const client = createClient();
+    const result = { id: "fee-id", reviewStatus: "REJECTED" };
+    vi.mocked(client.post).mockResolvedValue(result);
+
+    await expect(
+      rejectWorkflowTaskForTarget(client, pendingFeeReviewTask, " missing voucher "),
+    ).resolves.toEqual(result);
+
+    expect(client.post).toHaveBeenCalledWith("/fees/fee-id/review/reject", {
+      reason: "missing voucher",
+    });
+  });
+
+  it("keeps achievement workflow actions on the workflow task API", async () => {
+    const client = createClient();
+    const result = { task: { ...pendingDepartmentReviewTask, status: "APPROVED" } };
+    vi.mocked(client.post).mockResolvedValue(result);
+
+    await expect(
+      executeWorkflowTaskAction(client, pendingDepartmentReviewTask, "approve", " agree "),
+    ).resolves.toEqual(result);
+
+    expect(client.post).toHaveBeenCalledWith("/workflow/tasks/task-id/approve", {
+      comment: "agree",
+    });
   });
 });

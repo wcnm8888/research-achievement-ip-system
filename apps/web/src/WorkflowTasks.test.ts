@@ -8,6 +8,8 @@ import {
   buildWorkflowTaskListDisplayRow,
   buildWorkflowTaskListQuery,
   canReviewDepartmentAchievements,
+  canReviewDepartmentFees,
+  canReviewWorkflowTaskTarget,
   getWorkflowTaskActionPresentation,
   getWorkbenchWorkflowNavKey,
 } from "./WorkflowTasks";
@@ -31,6 +33,19 @@ const baseTask: WorkflowTask = {
     targetId: "achievement-id",
     status: "ACTIVE",
     currentStep: "DEPARTMENT_REVIEW",
+  },
+};
+
+const baseFeeTask: WorkflowTask = {
+  ...baseTask,
+  id: "fee-task-id",
+  instanceId: "fee-instance-id",
+  stepCode: "FEE_REVIEW",
+  instance: {
+    targetType: "FEE_RECORD",
+    targetId: "fee-id",
+    status: "ACTIVE",
+    currentStep: "FEE_REVIEW",
   },
 };
 
@@ -73,6 +88,21 @@ describe("buildWorkflowTaskListQuery", () => {
       feeRecordId: undefined,
     });
   });
+
+  it("passes fee record target filters", () => {
+    expect(
+      buildWorkflowTaskListQuery({
+        status: "PENDING",
+        targetType: "FEE_RECORD",
+        feeRecordId: " fee-id ",
+      }),
+    ).toEqual({
+      status: "PENDING",
+      targetType: "FEE_RECORD",
+      achievementId: undefined,
+      feeRecordId: "fee-id",
+    });
+  });
 });
 
 describe("buildWorkflowTaskListDisplayRow", () => {
@@ -95,6 +125,18 @@ describe("buildWorkflowTaskListDisplayRow", () => {
       targetId: "未返回",
       instanceStatusLabel: "未返回",
       instanceStepLabel: "未返回",
+    });
+  });
+});
+
+describe("fee workflow task list row", () => {
+  it("uses fee task labels for fee review rows", () => {
+    expect(buildWorkflowTaskListDisplayRow(baseFeeTask)).toMatchObject({
+      id: "fee-task-id",
+      stepLabel: "Fee review",
+      targetTypeLabel: "Fee record",
+      targetId: "fee-id",
+      instanceStepLabel: "Fee review",
     });
   });
 });
@@ -145,6 +187,23 @@ describe("workflow task detail drawer helpers", () => {
       actions: [],
       readonlyReason: "当前用户无审批处理权限",
     });
+  });
+
+  it("shows fee review actions only with fee:review_department", () => {
+    const feeReviewer = { permissionCodes: ["fee:review_department"] };
+    const secretary = { permissionCodes: ["achievement:review_department"] };
+    const reader = { permissionCodes: ["fee:read_department"] };
+
+    expect(canReviewDepartmentFees(feeReviewer)).toBe(true);
+    expect(canReviewWorkflowTaskTarget(baseFeeTask, feeReviewer)).toBe(true);
+    expect(getWorkflowTaskActionPresentation(baseFeeTask, feeReviewer)).toEqual({
+      actions: ["approve", "reject"],
+    });
+    expect(canReviewWorkflowTaskTarget(baseFeeTask, secretary)).toBe(false);
+    expect(getWorkflowTaskActionPresentation(baseFeeTask, secretary)).toMatchObject({
+      actions: [],
+    });
+    expect(canReviewDepartmentFees(reader)).toBe(false);
   });
 
   it("maps a non-actionable task to readonly state", () => {

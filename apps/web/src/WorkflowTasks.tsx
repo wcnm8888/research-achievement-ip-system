@@ -29,11 +29,11 @@ import type {
   WorkflowTaskQuery,
 } from "./types";
 import {
-  approveWorkflowTask,
   buildApproveWorkflowTaskPayload,
   buildRejectWorkflowTaskPayload,
   buildWorkflowTaskDetailDisplayModel,
   buildWorkflowTaskQuery,
+  executeWorkflowTaskAction,
   fetchWorkflowTaskDetail,
   fetchMyWorkflowTasks,
   getWorkflowActionAvailability,
@@ -44,7 +44,6 @@ import {
   getWorkflowTargetTypeLabel,
   getWorkflowTaskStatusLabel,
   mapWorkflowErrorToDisplay,
-  rejectWorkflowTask,
   type WorkflowTaskLinkedAchievementState,
 } from "./workflow-tasks";
 
@@ -63,7 +62,9 @@ type WorkflowPermissionContext = Pick<AuthUser, "permissionCodes"> | null | unde
 
 type WorkflowTaskFilters = {
   status?: WorkflowTaskQuery["status"];
+  targetType?: WorkflowTaskQuery["targetType"];
   achievementId?: string;
+  feeRecordId?: string;
 };
 
 export type WorkflowTaskListDisplayRow = {
@@ -125,6 +126,14 @@ const statusOptions: Array<{ label: string; value: NonNullable<WorkflowTaskQuery
   { label: "已通过", value: "APPROVED" },
   { label: "已驳回", value: "REJECTED" },
   { label: "已取消", value: "CANCELLED" },
+];
+
+const targetTypeOptions: Array<{
+  label: string;
+  value: NonNullable<WorkflowTaskQuery["targetType"]>;
+}> = [
+  { label: "Achievement", value: "ACHIEVEMENT" },
+  { label: "Fee record", value: "FEE_RECORD" },
 ];
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
@@ -273,11 +282,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
     setActionError(null);
 
     try {
-      if (activeAction === "approve") {
-        await approveWorkflowTask(apiClient, detail.id, actionComment);
-      } else {
-        await rejectWorkflowTask(apiClient, detail.id, actionComment);
-      }
+      await executeWorkflowTaskAction(apiClient, detail, activeAction, actionComment);
 
       void message.success(getWorkflowActionSuccessMessage(activeAction));
       const nextState = buildWorkflowTaskActionSuccessTransition();
@@ -354,6 +359,21 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
               setDraftFilters((current) => ({ ...current, status: value }))
             }
           />
+          <Select
+            allowClear
+            className="workflow-filter-select"
+            placeholder="Target type"
+            options={targetTypeOptions}
+            value={draftFilters.targetType}
+            onChange={(value) =>
+              setDraftFilters((current) => ({
+                ...current,
+                targetType: value,
+                achievementId: value === "FEE_RECORD" ? undefined : current.achievementId,
+                feeRecordId: value === "ACHIEVEMENT" ? undefined : current.feeRecordId,
+              }))
+            }
+          />
           <Input.Search
             allowClear
             className="workflow-target-input"
@@ -364,6 +384,20 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
               setDraftFilters((current) => ({
                 ...current,
                 achievementId: event.target.value,
+              }))
+            }
+            onSearch={applyFilters}
+          />
+          <Input.Search
+            allowClear
+            className="workflow-target-input"
+            enterButton="Filter"
+            placeholder="Filter by fee record ID"
+            value={draftFilters.feeRecordId}
+            onChange={(event) =>
+              setDraftFilters((current) => ({
+                ...current,
+                feeRecordId: event.target.value,
               }))
             }
             onSearch={applyFilters}
@@ -552,11 +586,30 @@ export const canReviewDepartmentAchievements = (
   authUser: WorkflowPermissionContext,
 ): boolean => !authUser || authUser.permissionCodes.includes("achievement:review_department");
 
+export const canReviewDepartmentFees = (
+  authUser: WorkflowPermissionContext,
+): boolean => !authUser || authUser.permissionCodes.includes("fee:review_department");
+
+export const canReviewWorkflowTaskTarget = (
+  task: WorkflowTask,
+  authUser?: WorkflowPermissionContext,
+): boolean => {
+  if (task.instance?.targetType === "FEE_RECORD") {
+    return canReviewDepartmentFees(authUser);
+  }
+
+  if (task.instance?.targetType === "ACHIEVEMENT") {
+    return canReviewDepartmentAchievements(authUser);
+  }
+
+  return !authUser;
+};
+
 export const getWorkflowTaskActionPresentation = (
   task: WorkflowTask,
   authUser?: WorkflowPermissionContext,
 ): WorkflowTaskActionPresentation => {
-  if (!canReviewDepartmentAchievements(authUser)) {
+  if (!canReviewWorkflowTaskTarget(task, authUser)) {
     return {
       actions: [],
       readonlyReason: "当前用户无审批处理权限",
@@ -633,7 +686,9 @@ export const getWorkbenchWorkflowNavKey = (): "workflow" => "workflow";
 
 const trimWorkflowTaskFilters = (filters: WorkflowTaskFilters): WorkflowTaskFilters => ({
   status: filters.status,
+  targetType: filters.targetType,
   achievementId: filters.achievementId?.trim() || undefined,
+  feeRecordId: filters.feeRecordId?.trim() || undefined,
 });
 
 function WorkflowTaskDrawerActions({

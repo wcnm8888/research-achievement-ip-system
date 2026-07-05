@@ -17705,3 +17705,28 @@
   - No credential, session, lifecycle token, invite/reset/email, password, activation, or login-capable imported account path.
   - No Docker orphan cleanup, prune, or volume deletion.
   - `.env` / `.env.production` contents and `DATABASE_URL` value were not read, printed, or recorded.
+
+## 2026-07-05 Step 83 - Fee review workflow loop evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `6e18c3e docs: prioritize phase one scoring features`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Gap evidence:
+  - Backend fee create/review/history/workflow/audit code already existed and was covered by fee/workflow tests.
+  - Web Fees detail already loaded fee review history, fee review workflow tasks, voucher attachment metadata, and refreshed detail/history/task state after approve/reject.
+  - Generic Workflow Tasks Web code needed fee-target action routing and fee target filtering.
+- Local validation:
+  - `corepack pnpm --filter @research-ip/web test -- Fees workflow-tasks WorkflowTasks` -> passed after implementation; 3 files, 106 tests.
+  - `corepack pnpm --filter @research-ip/api test -- fee workflow` -> passed; 12 files, 201 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+  - First `corepack pnpm --filter @research-ip/web typecheck` exposed helper type narrowing errors in `workflow-tasks.ts`; helper type was narrowed locally.
+  - Final `corepack pnpm --filter @research-ip/web typecheck` -> passed.
+  - `git diff --check` -> passed.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No real finance, payment, mail/SMS, HR, SSO, patent-provider, or external-system call.
+  - No backend schema/migration/seed/package/lockfile change.
+  - No claim of production acceptance; validation is local synthetic/demo acceptance only.
