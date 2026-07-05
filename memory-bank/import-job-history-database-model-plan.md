@@ -1562,3 +1562,55 @@ Step 77E is an archive only. It does not authorize backend read DTOs, API/Web wo
 - Step 78D: local synthetic acceptance, only if later implementation requires it.
 
 Step 78A is a plan only. It does not authorize runtime implementation, Web display, migration execution, database or production access, real import execution, export/download behavior, or any raw/source data exposure.
+
+## Step 78B ImportJobItem Backend Read API
+
+- Date: 2026-07-05.
+- Scope: backend-only implementation of safe row-level `ImportJobItem` reads.
+- Changed:
+  - `apps/api/src/imports/import-job-history-read.controller.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.ts`.
+  - `apps/api/src/imports/import-job-history-read.controller.spec.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.spec.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.spec.ts`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no Web implementation, no Prisma schema/migration changes, no package/lockfile/config changes, no migration apply/deploy/reset, no database access, no production/VPS or production DB access, no `.env` / `.env.production` content read, no real import apply, no seed, no backfill, no fixture row, no retry/delete/cleanup/rollback/download/export behavior, no raw JSON/raw CSV access, and no business-object drilldown.
+
+### Implemented Read Surface
+
+- Added `GET /import-jobs/:id/items` under the existing `import-jobs` controller.
+- Did not add a global `/import-job-items` route.
+- Reused `UserContextGuard`, `PermissionGuard`, and `PermissionCode.systemConfig`.
+- Query validation uses whitelist and forbid-non-whitelisted behavior.
+- Supported query fields are optional `runId`, `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize`.
+
+### Repository And DTO Boundary
+
+- Service verifies the parent job exists before item reads.
+- Parent job validation selects only safe context: `id`, `importFamily`, `mode`, `achievementType`, and `status`.
+- Item queries always constrain `jobId` from the route.
+- If `runId` is provided, item queries constrain both route `jobId` and query `runId`.
+- Item ordering is `rowNumber asc`, with `runId asc` as a tie-breaker only when the query can span runs.
+- Item select returns only `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+- Response DTO returns only `items`, `total`, `page`, `pageSize`, and those five item fields.
+
+### Error And Safety Boundary
+
+- Missing `system:config` remains guard-level `403`.
+- Missing parent job returns `404`.
+- Existing parent job with no matching items returns `200` with an empty list.
+- Invalid route id, invalid filters, unsafe `safeCode`, excessive page size, or extra query fields return `400`.
+- The API does not return `targetId`, `jobId`, `runId`, raw CSV, row values, personal/account/achievement identifiers, credentials, `safeSummary`, `auditLogIds`, fingerprints, hashes, or operator ids.
+- The API does not provide retry, delete, cleanup, rollback, download, export, raw JSON, raw CSV, or business-object drilldown.
+
+### Verification
+
+- `corepack pnpm --filter @research-ip/api test -- import-job-history-read`: PASS; 3 files / 22 tests passed.
+- `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Diff checks passed before commit.
+
+Step 78B implements only the backend safe read API. Web row-level history remains deferred to Step 78C, and local synthetic acceptance remains deferred to Step 78D if needed.

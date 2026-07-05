@@ -2,6 +2,9 @@ import {
   AchievementType,
   ImportFamily,
   ImportJobStatus,
+  ImportJobItemPlannedAction,
+  ImportJobItemStatus,
+  ImportJobItemTargetType,
   ImportMode,
 } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
@@ -21,6 +24,7 @@ const ids = {
   role: "50000000-0000-4000-8000-000000000001",
   department: "10000000-0000-4000-8000-000000000001",
   job: "70000000-0000-4000-8000-000000000001",
+  run: "71000000-0000-4000-8000-000000000001",
 };
 
 const context: UserContext = {
@@ -42,6 +46,8 @@ const context: UserContext = {
 
 const createRepository = () => ({
   findById: vi.fn(),
+  findItemParentById: vi.fn(),
+  findItems: vi.fn(),
   findMany: vi.fn(),
 });
 
@@ -200,6 +206,124 @@ describe("ImportJobHistoryReadService", () => {
         repository as unknown as ImportJobHistoryReadRepository,
       ).getImportJob(context, ids.job),
     ).rejects.toBeInstanceOf(ImportJobHistoryNotFoundError);
+  });
+
+  it("lists item rows with defaults and safe DTO fields only", async () => {
+    const repository = createRepository();
+    repository.findItemParentById.mockResolvedValue({
+      id: ids.job,
+      family: ImportFamily.ACHIEVEMENT,
+      mode: ImportMode.CREATE_DRAFT_ONLY,
+      achievementType: AchievementType.PAPER,
+      status: ImportJobStatus.SUCCESS,
+    });
+    repository.findItems.mockResolvedValue({
+      items: [
+        {
+          rowNumber: 2,
+          plannedAction: ImportJobItemPlannedAction.CREATE_DRAFT,
+          status: ImportJobItemStatus.APPLIED,
+          safeCode: "ROW_APPLIED",
+          targetType: ImportJobItemTargetType.ACHIEVEMENT,
+          jobId: ids.job,
+          runId: ids.run,
+          targetId: "30000000-0000-4000-8000-000000000001",
+          safeSummary: { totalRows: 1 },
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    });
+
+    const result = await new ImportJobHistoryReadService(
+      repository as unknown as ImportJobHistoryReadRepository,
+    ).listImportJobItems(context, ids.job, {});
+
+    expect(repository.findItemParentById).toHaveBeenCalledWith(ids.job);
+    expect(repository.findItems).toHaveBeenCalledWith({
+      jobId: ids.job,
+      page: 1,
+      pageSize: 20,
+    });
+    expect(result).toEqual({
+      items: [
+        {
+          rowNumber: 2,
+          plannedAction: "CREATE_DRAFT",
+          status: "APPLIED",
+          safeCode: "ROW_APPLIED",
+          targetType: "ACHIEVEMENT",
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    });
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("targetId");
+    expect(serialized).not.toContain("jobId");
+    expect(serialized).not.toContain("runId");
+    expect(serialized).not.toContain("safeSummary");
+  });
+
+  it("passes item filters and pagination to the repository", async () => {
+    const repository = createRepository();
+    repository.findItemParentById.mockResolvedValue({
+      id: ids.job,
+      family: ImportFamily.USER_ACCOUNT,
+      mode: ImportMode.CREATE_ONLY_PENDING_NO_CREDENTIAL,
+      achievementType: null,
+      status: ImportJobStatus.SUCCESS,
+    });
+    repository.findItems.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 3,
+      pageSize: 5,
+    });
+
+    const result = await new ImportJobHistoryReadService(
+      repository as unknown as ImportJobHistoryReadRepository,
+    ).listImportJobItems(context, ids.job, {
+      runId: ids.run,
+      status: ImportJobItemStatus.APPLIED,
+      plannedAction: ImportJobItemPlannedAction.CREATE_PENDING_USER,
+      targetType: ImportJobItemTargetType.USER,
+      safeCode: "ROW_APPLIED",
+      page: 3,
+      pageSize: 5,
+    });
+
+    expect(repository.findItems).toHaveBeenCalledWith({
+      jobId: ids.job,
+      runId: ids.run,
+      status: ImportJobItemStatus.APPLIED,
+      plannedAction: ImportJobItemPlannedAction.CREATE_PENDING_USER,
+      targetType: ImportJobItemTargetType.USER,
+      safeCode: "ROW_APPLIED",
+      page: 3,
+      pageSize: 5,
+    });
+    expect(result).toEqual({
+      items: [],
+      total: 0,
+      page: 3,
+      pageSize: 5,
+    });
+  });
+
+  it("throws not found for item lists when the parent job is missing", async () => {
+    const repository = createRepository();
+    repository.findItemParentById.mockResolvedValue(null);
+
+    await expect(
+      new ImportJobHistoryReadService(
+        repository as unknown as ImportJobHistoryReadRepository,
+      ).listImportJobItems(context, ids.job, {}),
+    ).rejects.toBeInstanceOf(ImportJobHistoryNotFoundError);
+
+    expect(repository.findItems).not.toHaveBeenCalled();
   });
 
   it("sanitizes non-allowlisted keys and unsafe string values", () => {

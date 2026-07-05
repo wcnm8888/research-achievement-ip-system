@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-07-05 Step 78B - ImportJobItem backend read API evidence
+
+- Goal:
+  - Implement the backend-only safe row-level read API `GET /import-jobs/:id/items` for `ImportJobItem`, without Web work, migration execution, database/production access, or download/export/drilldown capabilities.
+- Initial state:
+  - `git log -1 --oneline`: `f4b8cbf docs: plan import job item read dto`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 78A, `ImportJobItem`, `GET /import-jobs/:id/items`, `targetId`, and DTO allowlist references before reading; large memory-bank files were not read in full.
+- Context read:
+  - `memory-bank/import-job-item-read-dto-plan.md`.
+  - `memory-bank/import-job-item-writer-final-archive.md`.
+  - Step 78A section from `memory-bank/import-job-history-database-model-plan.md`.
+  - D261 section from `memory-bank/decisions.md`.
+  - `apps/api/src/imports/import-job-history-read.controller.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.ts`.
+  - `apps/api/src/imports/import-job-history-read.controller.spec.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.spec.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.spec.ts`.
+- Implementation:
+  - Added `ImportJobItemHistoryListQueryDto` with whitelist validation for optional `runId`, `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize`.
+  - Added `GET /import-jobs/:id/items` under the existing `import-jobs` controller.
+  - Reused the existing guards and `system:config` permission boundary.
+  - Added service-level parent job existence check before item reads.
+  - Added repository `findItemParentById` using a safe parent `select`.
+  - Added repository `findItems` using route-scoped `jobId`, optional `runId`, safe filters, stable source-row ordering, pagination, and a strict item `select`.
+  - Added DTO mapping that returns only `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Added focused controller/service/repository coverage for validation, permissions, parent missing, empty list, query propagation, ordering, pagination, and forbidden-field absence.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- import-job-history-read`: PASS; 3 files / 22 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to allowed backend import-history read files and memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; no Web change, no schema/migration change, no package/config change, no DB apply or production access, response DTO and Prisma item select return only the approved allowlist, parent select is safe-context only, and the route is GET-only with no retry/delete/cleanup/rollback/download/export/raw JSON/raw CSV/business-object drilldown.
+- Boundary:
+  - No Web row-level UI was added.
+  - No Prisma schema, migration, package, lockfile, config, or script files were changed.
+  - No migration apply/deploy/reset, database connection, production/VPS access, production DB access, real import apply, real data write, seed, backfill, fixture row, retry, delete, cleanup, rollback, download, export, raw JSON/raw CSV access, or business-object drilldown was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 78A - ImportJobItem backend read DTO plan evidence
 
 - Goal:

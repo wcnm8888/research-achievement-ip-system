@@ -3,6 +3,9 @@ import {
   AchievementType,
   ImportFamily,
   ImportJobStatus,
+  ImportJobItemPlannedAction,
+  ImportJobItemStatus,
+  ImportJobItemTargetType,
   ImportMode,
   Prisma,
 } from "@prisma/client";
@@ -13,6 +16,8 @@ import {
   ImportJobHistoryListRecord,
   ImportJobHistoryReadRepository,
   ImportJobHistoryRunRecord,
+  ImportJobItemHistoryListInput,
+  ImportJobItemHistoryListRecord,
 } from "./import-job-history-read.repository";
 
 export type ImportJobHistoryQueryInput = {
@@ -22,6 +27,16 @@ export type ImportJobHistoryQueryInput = {
   status?: ImportJobStatus;
   createdFrom?: Date;
   createdTo?: Date;
+  page?: number;
+  pageSize?: number;
+};
+
+export type ImportJobItemHistoryQueryInput = {
+  runId?: string;
+  status?: ImportJobItemStatus;
+  plannedAction?: ImportJobItemPlannedAction;
+  targetType?: ImportJobItemTargetType;
+  safeCode?: string;
   page?: number;
   pageSize?: number;
 };
@@ -74,6 +89,21 @@ export type ImportJobHistoryRunDto = {
 export type ImportJobHistoryDetailDto = ImportJobHistoryListItemDto & {
   safeSummary: SafeSummaryDto | null;
   runs: ImportJobHistoryRunDto[];
+};
+
+export type ImportJobItemHistoryListItemDto = {
+  rowNumber: number;
+  plannedAction: string;
+  status: string;
+  safeCode: string | null;
+  targetType: string;
+};
+
+export type ImportJobItemHistoryListDto = {
+  items: ImportJobItemHistoryListItemDto[];
+  total: number;
+  page: number;
+  pageSize: number;
 };
 
 export type SafeSummaryDto =
@@ -138,6 +168,38 @@ export class ImportJobHistoryReadService {
 
     return toDetailDto(job);
   }
+
+  async listImportJobItems(
+    currentUser: UserContext,
+    jobId: string,
+    query: ImportJobItemHistoryQueryInput = {},
+  ): Promise<ImportJobItemHistoryListDto> {
+    void currentUser;
+    const parent = await this.repository.findItemParentById(jobId);
+    if (!parent) {
+      throw new ImportJobHistoryNotFoundError(jobId);
+    }
+
+    const page = query.page ?? defaultPage;
+    const pageSize = query.pageSize ?? defaultPageSize;
+    const result = await this.repository.findItems({
+      jobId,
+      runId: query.runId,
+      status: query.status,
+      plannedAction: query.plannedAction,
+      targetType: query.targetType,
+      safeCode: query.safeCode,
+      page,
+      pageSize,
+    } satisfies ImportJobItemHistoryListInput);
+
+    return {
+      items: result.items.map(toItemDto),
+      total: result.total,
+      page: result.page,
+      pageSize: result.pageSize,
+    };
+  }
 }
 
 const toListItemDto = (
@@ -178,6 +240,16 @@ const toRunDto = (record: ImportJobHistoryRunRecord): ImportJobHistoryRunDto => 
   validationSummary: sanitizeSafeSummary(record.validationSummary),
   applySummary: sanitizeSafeSummary(record.applySummary),
   auditCount: record.auditCount,
+});
+
+const toItemDto = (
+  record: ImportJobItemHistoryListRecord,
+): ImportJobItemHistoryListItemDto => ({
+  rowNumber: record.rowNumber,
+  plannedAction: record.plannedAction,
+  status: record.status,
+  safeCode: record.safeCode,
+  targetType: record.targetType,
 });
 
 const safeSummaryKeys = new Set([

@@ -2,6 +2,9 @@ import {
   AchievementType,
   ImportFamily,
   ImportJobStatus,
+  ImportJobItemPlannedAction,
+  ImportJobItemStatus,
+  ImportJobItemTargetType,
   ImportMode,
 } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
@@ -75,6 +78,18 @@ const createPrisma = () => ({
         },
       ],
     }),
+  },
+  importJobItem: {
+    count: vi.fn().mockResolvedValue(1),
+    findMany: vi.fn().mockResolvedValue([
+      {
+        rowNumber: 2,
+        plannedAction: ImportJobItemPlannedAction.CREATE_DRAFT,
+        status: ImportJobItemStatus.APPLIED,
+        safeCode: "ROW_APPLIED",
+        targetType: ImportJobItemTargetType.ACHIEVEMENT,
+      },
+    ]),
   },
 });
 
@@ -176,5 +191,128 @@ describe("ImportJobHistoryReadRepository", () => {
     );
     expect(JSON.stringify(result)).not.toContain("auditLogIds");
     expect(JSON.stringify(result)).not.toContain("90000000-0000-4000-8000");
+  });
+
+  it("checks item parent jobs with a safe select allowlist", async () => {
+    const prisma = createPrisma();
+    const repository = new ImportJobHistoryReadRepository(
+      prisma as unknown as PrismaService,
+    );
+
+    const result = await repository.findItemParentById(ids.job);
+
+    expect(prisma.importJob.findUnique).toHaveBeenCalledWith({
+      where: { id: ids.job },
+      select: {
+        id: true,
+        importFamily: true,
+        mode: true,
+        achievementType: true,
+        status: true,
+      },
+    });
+    const select = prisma.importJob.findUnique.mock.calls[0]?.[0].select;
+    expect(select).not.toHaveProperty("safeSummary");
+    expect(select).not.toHaveProperty("runs");
+    expect(select).not.toHaveProperty("auditLogIds");
+    expect(select).not.toHaveProperty("idempotencyKeyHash");
+    expect(select).not.toHaveProperty("scopeHash");
+    expect(select).not.toHaveProperty("fileFingerprint");
+    expect(select).not.toHaveProperty("requestFingerprint");
+    expect(select).not.toHaveProperty("operatorUserId");
+    expect(result).toEqual({
+      id: ids.job,
+      family: ImportFamily.ACHIEVEMENT,
+      mode: ImportMode.CREATE_DRAFT_ONLY,
+      achievementType: AchievementType.PATENT,
+      status: ImportJobStatus.SUCCESS,
+    });
+  });
+
+  it("queries item rows with job scope, filters, pagination, ordering, and select allowlist", async () => {
+    const prisma = createPrisma();
+    const repository = new ImportJobHistoryReadRepository(
+      prisma as unknown as PrismaService,
+    );
+
+    const result = await repository.findItems({
+      jobId: ids.job,
+      runId: ids.run,
+      status: ImportJobItemStatus.APPLIED,
+      plannedAction: ImportJobItemPlannedAction.CREATE_DRAFT,
+      targetType: ImportJobItemTargetType.ACHIEVEMENT,
+      safeCode: "ROW_APPLIED",
+      page: 2,
+      pageSize: 10,
+    });
+
+    expect(prisma.importJobItem.findMany).toHaveBeenCalledWith({
+      where: {
+        jobId: ids.job,
+        runId: ids.run,
+        status: ImportJobItemStatus.APPLIED,
+        plannedAction: ImportJobItemPlannedAction.CREATE_DRAFT,
+        targetType: ImportJobItemTargetType.ACHIEVEMENT,
+        safeCode: "ROW_APPLIED",
+      },
+      orderBy: [{ rowNumber: "asc" }],
+      skip: 10,
+      take: 10,
+      select: {
+        rowNumber: true,
+        plannedAction: true,
+        status: true,
+        safeCode: true,
+        targetType: true,
+      },
+    });
+    expect(prisma.importJobItem.count).toHaveBeenCalledWith({
+      where: prisma.importJobItem.findMany.mock.calls[0]?.[0].where,
+    });
+    const select = prisma.importJobItem.findMany.mock.calls[0]?.[0].select;
+    expect(select).not.toHaveProperty("targetId");
+    expect(select).not.toHaveProperty("jobId");
+    expect(select).not.toHaveProperty("runId");
+    expect(select).not.toHaveProperty("safeSummary");
+    expect(select).not.toHaveProperty("auditLogIds");
+    expect(result).toEqual({
+      items: [
+        {
+          rowNumber: 2,
+          plannedAction: "CREATE_DRAFT",
+          status: "APPLIED",
+          safeCode: "ROW_APPLIED",
+          targetType: "ACHIEVEMENT",
+        },
+      ],
+      total: 1,
+      page: 2,
+      pageSize: 10,
+    });
+  });
+
+  it("uses runId as an ordering tie-breaker only when item queries span runs", async () => {
+    const prisma = createPrisma();
+    const repository = new ImportJobHistoryReadRepository(
+      prisma as unknown as PrismaService,
+    );
+
+    await repository.findItems({
+      jobId: ids.job,
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(prisma.importJobItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { jobId: ids.job },
+        orderBy: [{ rowNumber: "asc" }, { runId: "asc" }],
+        select: expect.not.objectContaining({
+          targetId: true,
+          jobId: true,
+          runId: true,
+        }),
+      }),
+    );
   });
 });

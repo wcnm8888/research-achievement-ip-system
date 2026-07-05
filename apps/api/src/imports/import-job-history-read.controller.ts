@@ -14,10 +14,23 @@ import {
   AchievementType,
   ImportFamily,
   ImportJobStatus,
+  ImportJobItemPlannedAction,
+  ImportJobItemStatus,
+  ImportJobItemTargetType,
   ImportMode,
 } from "@prisma/client";
 import { Type } from "class-transformer";
-import { IsDateString, IsEnum, IsInt, IsOptional, Max, Min } from "class-validator";
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+} from "class-validator";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { CurrentUser } from "../authorization/decorators/current-user.decorator";
 import { RequirePermissions } from "../authorization/decorators/require-permissions.decorator";
@@ -26,6 +39,7 @@ import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import { UserContext } from "../identity/user-context";
 import {
   ImportJobHistoryNotFoundError,
+  ImportJobItemHistoryQueryInput,
   ImportJobHistoryQueryInput,
   ImportJobHistoryReadService,
 } from "./import-job-history-read.service";
@@ -69,6 +83,42 @@ export class ImportJobHistoryListQueryDto {
   pageSize?: number;
 }
 
+export class ImportJobItemHistoryListQueryDto {
+  @IsOptional()
+  @IsUUID("4")
+  runId?: string;
+
+  @IsOptional()
+  @IsEnum(ImportJobItemStatus)
+  status?: ImportJobItemStatus;
+
+  @IsOptional()
+  @IsEnum(ImportJobItemPlannedAction)
+  plannedAction?: ImportJobItemPlannedAction;
+
+  @IsOptional()
+  @IsEnum(ImportJobItemTargetType)
+  targetType?: ImportJobItemTargetType;
+
+  @IsOptional()
+  @MaxLength(120)
+  @Matches(/^[A-Za-z0-9_:.:-]+$/)
+  safeCode?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+}
+
 const importJobHistoryValidationOptions = {
   transform: true,
   whitelist: true,
@@ -81,6 +131,10 @@ const importJobHistoryValidationPipe = new ValidationPipe(
 const importJobHistoryListQueryValidationPipe = new ValidationPipe({
   ...importJobHistoryValidationOptions,
   expectedType: ImportJobHistoryListQueryDto,
+});
+const importJobItemHistoryListQueryValidationPipe = new ValidationPipe({
+  ...importJobHistoryValidationOptions,
+  expectedType: ImportJobItemHistoryListQueryDto,
 });
 
 @Controller("import-jobs")
@@ -103,6 +157,25 @@ export class ImportJobHistoryReadController {
       currentUser,
       toImportJobHistoryQueryInput(query),
     );
+  }
+
+  @Get(":id/items")
+  @RequirePermissions(PermissionCode.systemConfig)
+  async listImportJobItems(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @Query(importJobItemHistoryListQueryValidationPipe)
+    query: ImportJobItemHistoryListQueryDto = {},
+  ) {
+    try {
+      return await this.importJobHistoryReadService.listImportJobItems(
+        currentUser,
+        id,
+        toImportJobItemHistoryQueryInput(query),
+      );
+    } catch (error) {
+      throw mapImportJobHistoryReadError(error);
+    }
   }
 
   @Get(":id")
@@ -128,6 +201,18 @@ const toImportJobHistoryQueryInput = (
   status: query.status,
   createdFrom: query.createdFrom ? new Date(query.createdFrom) : undefined,
   createdTo: query.createdTo ? new Date(query.createdTo) : undefined,
+  page: query.page,
+  pageSize: query.pageSize,
+});
+
+const toImportJobItemHistoryQueryInput = (
+  query: ImportJobItemHistoryListQueryDto,
+): ImportJobItemHistoryQueryInput => ({
+  runId: query.runId,
+  status: query.status,
+  plannedAction: query.plannedAction,
+  targetType: query.targetType,
+  safeCode: query.safeCode,
   page: query.page,
   pageSize: query.pageSize,
 });

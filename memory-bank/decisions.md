@@ -1,5 +1,22 @@
 # Decisions
 
+## D262 - ImportJobItem read API is job-scoped and allowlist-only
+
+- Date: 2026-07-05.
+- Context: Step 78B implements the backend-only `GET /import-jobs/:id/items` read API after Step 78A planned a safe row-level DTO boundary. The Step prohibits Web changes, Prisma schema/migration changes, migration apply/deploy/reset, database/production/VPS access, `.env` reads, real import execution, retry/delete/cleanup/rollback/download/export, raw JSON/raw CSV access, business-object drilldown, and existing untracked-artifact handling.
+- Decision:
+  - Implement row-level reads only as `GET /import-jobs/:id/items` inside the existing import job history read controller.
+  - Do not add a global `/import-job-items` route.
+  - Reuse `UserContextGuard`, `PermissionGuard`, and `system:config`.
+  - Validate optional `runId`, `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize` with whitelist and forbid-non-whitelisted behavior.
+  - Verify the parent job exists using a safe parent `select` before item reads.
+  - Query items with route-scoped `jobId`, optional `runId`, safe filters, stable source-row ordering, pagination, and item `select` limited to `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Return only `items`, `total`, `page`, `pageSize`, and the five approved item DTO fields.
+  - Keep `targetId`, `jobId`, `runId`, raw/source values, personal/account/achievement identifiers, credentials, `safeSummary`, `auditLogIds`, fingerprints, hashes, and operator ids out of the response DTO and item select.
+  - Keep retry, delete, cleanup, rollback, download, export, raw JSON/raw CSV access, and business-object drilldown unsupported.
+- Scope:
+  - This decision does not authorize Web row-level display, schema/migration work, migration execution, database or production access, real import execution, export/download behavior, raw/source data exposure, permission changes, credential reads, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D261 - ImportJobItem row-level reads stay job-scoped and DTO-allowlisted
 
 - Date: 2026-07-05.

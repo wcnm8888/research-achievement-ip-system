@@ -3,6 +3,9 @@ import {
   AchievementType,
   ImportFamily,
   ImportJobStatus,
+  ImportJobItemPlannedAction,
+  ImportJobItemStatus,
+  ImportJobItemTargetType,
   ImportMode,
   Prisma,
 } from "@prisma/client";
@@ -15,6 +18,17 @@ export type ImportJobHistoryListInput = {
   status?: ImportJobStatus;
   createdFrom?: Date;
   createdTo?: Date;
+  page: number;
+  pageSize: number;
+};
+
+export type ImportJobItemHistoryListInput = {
+  jobId: string;
+  runId?: string;
+  status?: ImportJobItemStatus;
+  plannedAction?: ImportJobItemPlannedAction;
+  targetType?: ImportJobItemTargetType;
+  safeCode?: string;
   page: number;
   pageSize: number;
 };
@@ -69,6 +83,29 @@ export type ImportJobHistoryDetailRecord = ImportJobHistoryListRecord & {
   runs: ImportJobHistoryRunRecord[];
 };
 
+export type ImportJobItemParentRecord = {
+  id: string;
+  family: string;
+  mode: string;
+  achievementType: string | null;
+  status: string;
+};
+
+export type ImportJobItemHistoryListRecord = {
+  rowNumber: number;
+  plannedAction: string;
+  status: string;
+  safeCode: string | null;
+  targetType: string;
+};
+
+export type ImportJobItemHistoryListResult = {
+  items: ImportJobItemHistoryListRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 const importJobListSelect = {
   id: true,
   importFamily: true,
@@ -116,12 +153,36 @@ const importJobDetailSelect = {
   },
 } satisfies Prisma.ImportJobSelect;
 
+const importJobItemParentSelect = {
+  id: true,
+  importFamily: true,
+  mode: true,
+  achievementType: true,
+  status: true,
+} satisfies Prisma.ImportJobSelect;
+
+const importJobItemSelect = {
+  rowNumber: true,
+  plannedAction: true,
+  status: true,
+  safeCode: true,
+  targetType: true,
+} satisfies Prisma.ImportJobItemSelect;
+
 type ImportJobListRow = Prisma.ImportJobGetPayload<{
   select: typeof importJobListSelect;
 }>;
 
 type ImportJobDetailRow = Prisma.ImportJobGetPayload<{
   select: typeof importJobDetailSelect;
+}>;
+
+type ImportJobItemParentRow = Prisma.ImportJobGetPayload<{
+  select: typeof importJobItemParentSelect;
+}>;
+
+type ImportJobItemRow = Prisma.ImportJobItemGetPayload<{
+  select: typeof importJobItemSelect;
 }>;
 
 @Injectable()
@@ -159,6 +220,40 @@ export class ImportJobHistoryReadRepository {
 
     return job ? toDetailRecord(job) : null;
   }
+
+  async findItemParentById(id: string): Promise<ImportJobItemParentRecord | null> {
+    const job = await this.prisma.importJob.findUnique({
+      where: { id },
+      select: importJobItemParentSelect,
+    });
+
+    return job ? toItemParentRecord(job) : null;
+  }
+
+  async findItems(
+    input: ImportJobItemHistoryListInput,
+  ): Promise<ImportJobItemHistoryListResult> {
+    const where = toImportJobItemWhere(input);
+    const [items, total] = await Promise.all([
+      this.prisma.importJobItem.findMany({
+        where,
+        orderBy: input.runId
+          ? [{ rowNumber: "asc" as const }]
+          : [{ rowNumber: "asc" as const }, { runId: "asc" as const }],
+        skip: (input.page - 1) * input.pageSize,
+        take: input.pageSize,
+        select: importJobItemSelect,
+      }),
+      this.prisma.importJobItem.count({ where }),
+    ]);
+
+    return {
+      items: items.map(toItemRecord),
+      total,
+      page: input.page,
+      pageSize: input.pageSize,
+    };
+  }
 }
 
 const toImportJobWhere = (
@@ -176,6 +271,17 @@ const toImportJobWhere = (
         },
       }
     : {}),
+});
+
+const toImportJobItemWhere = (
+  input: ImportJobItemHistoryListInput,
+): Prisma.ImportJobItemWhereInput => ({
+  jobId: input.jobId,
+  ...(input.runId ? { runId: input.runId } : {}),
+  ...(input.status ? { status: input.status } : {}),
+  ...(input.plannedAction ? { plannedAction: input.plannedAction } : {}),
+  ...(input.targetType ? { targetType: input.targetType } : {}),
+  ...(input.safeCode ? { safeCode: input.safeCode } : {}),
 });
 
 const toListRecord = (row: ImportJobListRow): ImportJobHistoryListRecord => ({
@@ -220,4 +326,22 @@ const toDetailRecord = (
     applySummary: run.applySummary,
     auditCount: Array.isArray(run.auditLogIds) ? run.auditLogIds.length : 0,
   })),
+});
+
+const toItemParentRecord = (
+  row: ImportJobItemParentRow,
+): ImportJobItemParentRecord => ({
+  id: row.id,
+  family: row.importFamily,
+  mode: row.mode,
+  achievementType: row.achievementType,
+  status: row.status,
+});
+
+const toItemRecord = (row: ImportJobItemRow): ImportJobItemHistoryListRecord => ({
+  rowNumber: row.rowNumber,
+  plannedAction: row.plannedAction,
+  status: row.status,
+  safeCode: row.safeCode,
+  targetType: row.targetType,
 });
