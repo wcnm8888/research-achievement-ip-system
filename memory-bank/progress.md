@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-07-05 Step 76D - ImportJobItem schema plan final archive
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only archive task; no schema, migration, runtime, API, Web, database, or operational execution.
+- Scope completed:
+  - Added `memory-bank/import-job-item-schema-final-archive.md`.
+  - Archived Step 76C as a future `ImportJobItem` schema/migration safety reference only.
+  - Reconfirmed `ImportJobItem` remains deferred.
+  - Reconfirmed allowed future fields remain limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and optional internal-only `targetId`.
+  - Reconfirmed JSON row values, raw CSV, original imported values, email, employee number, `employeeNo`, DOI, software registration number, patent number, title, personnel names, contributor lists, owner names, raw/normalized identifiers, credentials, tokens, cookies, passwords, connection strings, storage keys, mail payloads, request headers, user agents, IP addresses, and raw exception values are forbidden.
+  - Archived relationship and migration principles: required `jobId` / `runId` relations, `onDelete: Restrict`, additive migration, no backfill, no seed, no business-table changes, and no cascade delete history.
+  - Reconfirmed `targetId` is internal-only and must not enter Web DTOs, Web display, copyable business fields, links, or business-object drilldown.
+  - Recorded required future split: schema/migration implementation, backend writer, backend read DTO, Web plan, and acceptance.
+  - Reconfirmed Step 76C and Step 76D do not authorize Prisma schema edits, migration generation, DB access, or import execution.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 76D archive addendum.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No `prisma/schema.prisma` change.
+  - No migration generation.
+  - No backend/API/Web/runtime/package/lockfile/config/script changes.
+  - No Web/API/Docker/browser startup.
+  - No database, production/VPS, or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, `targetId` display, or business-object drilldown.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 76D docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in four memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 76D docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV content, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-05 Step 76C - ImportJobItem schema plan
 
 - Status: DONE.

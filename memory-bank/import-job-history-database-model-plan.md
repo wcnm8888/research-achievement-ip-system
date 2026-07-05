@@ -1352,3 +1352,23 @@ Step 76B archives the Step 76A plan as privacy and field-boundary reference mate
 - Future work must be split into schema/migration, backend writer, backend read DTO, Web plan, and acceptance Steps.
 
 Step 76C documents a future schema plan only. It does not authorize schema edits, migration files, backend/API/Web implementation, database access, production access, import apply, or acceptance execution.
+
+## Step 76D ImportJobItem Schema Final Archive
+
+- Date: 2026-07-05.
+- Scope: documentation-only final archive for the Step 76C `ImportJobItem` schema and migration plan.
+- Added final archive:
+  - `memory-bank/import-job-item-schema-final-archive.md`.
+- Non-scope: no `prisma/schema.prisma` change, no migration generation, no backend/API/Web/runtime/package/lockfile/config/script changes, no service startup, no browser run, no database access, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no import apply, no migration execution, no retry/delete/cleanup/rollback/download/export behavior, no row-level API, no row-level Web display, no `targetId` display, and no business-object drilldown.
+
+### Archived Position
+
+- Step 76C completed a future schema/migration safety plan only.
+- `ImportJobItem` remains deferred.
+- Future fields remain limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and optional internal-only `targetId`.
+- Future implementation must preserve required `jobId` / `runId` relations, `onDelete: Restrict`, additive migration, no backfill, no seed, no business-table changes, and no cascade delete history.
+- JSON row values, raw CSV, original imported values, email, employee number, `employeeNo`, DOI, registration number, patent number, title, personnel names, contributor lists, and other identifying row data remain forbidden.
+- `targetId` remains internal-only and must not enter Web DTOs, Web display, or business-object drilldown.
+- Any continuation must be separately authorized as schema/migration implementation, backend writer, backend read DTO, Web plan, and acceptance.
+
+Step 76D archives the Step 76C schema plan as reference material only. It does not authorize Prisma schema edits, migration files, backend/API/Web implementation, database access, production access, import apply, or acceptance execution.

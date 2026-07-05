@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-07-05 Step 76D - ImportJobItem schema plan final archive evidence
+
+- Goal:
+  - Produce a docs-only final archive for Step 76C covering the `ImportJobItem` schema/migration safety plan.
+- Initial state:
+  - `git log -1 --oneline`: `21a3d04 docs: plan import job item schema`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 76C / `ImportJobItem` / schema plan / future split references before reading; no large memory-bank file was read in full.
+- Context read:
+  - `memory-bank/import-job-item-schema-plan.md`.
+  - `memory-bank/import-job-item-safe-history-plan.md`.
+  - `memory-bank/import-job-item-safe-history-final-archive.md`.
+  - Latest Step 76C section from `memory-bank/import-job-history-database-model-plan.md`.
+  - Latest Step 76C section from `memory-bank/progress.md`.
+  - Latest Step 76C section from `memory-bank/evidence.md`.
+  - Latest D255 / D254 sections from `memory-bank/decisions.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-schema-final-archive.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Archive evidence:
+  - Archived Step 76C as a future schema/migration safety reference only.
+  - Reconfirmed `ImportJobItem` remains deferred.
+  - Reconfirmed the future field allowlist: `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and optional internal-only `targetId`.
+  - Reconfirmed forbidden values: JSON row values, raw CSV, original imported values, email, employee number, `employeeNo`, DOI, registration number, patent number, title, personnel names, contributor lists, owner names, raw/normalized identifiers, credentials, tokens, cookies, passwords, connection strings, storage keys, mail payloads, request headers, user agents, IP addresses, and raw exception values.
+  - Archived relationship and migration principles: required `jobId` / `runId` relations, `onDelete: Restrict`, additive migration, no backfill, no seed, no business-table changes, and no cascade delete history.
+  - Reconfirmed `targetId` is internal-only and must not enter Web DTOs, Web display, copyable business fields, links, or business-object drilldown.
+  - Recorded required future split: schema/migration implementation, backend writer, backend read DTO, Web plan, and acceptance.
+  - Reconfirmed Step 76C and Step 76D do not authorize Prisma schema edits, migration generation, DB access, production access, or import execution.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 76D docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in four memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 76D docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV content, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+  - Typecheck/test/build were not run because this Step is docs-only and did not change runtime, schema, API, Web, package, or config files.
+- Boundary:
+  - No `prisma/schema.prisma` changes were made.
+  - No migration files were generated.
+  - No runtime, API, Web, Prisma schema implementation, package, lockfile, config, script, service startup, Docker, browser, database, production/VPS, production DB, migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, `targetId` display, business-object drilldown, DB write, permission modification, credential read, or credential propagation work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts in the repository were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 76C - ImportJobItem schema plan evidence
 
 - Goal:
