@@ -1,5 +1,93 @@
 # Evidence
 
+## 2026-07-05 Step 79B - Link ImportJobItem production readonly preflight evidence
+
+- Goal:
+  - Link the Step 79A `ImportJobItem` production read-only preflight runbook
+    into the existing production runbook/checklist discovery path as docs-only,
+    without executing the runbook, accessing production/VPS/production DB,
+    running migrations, starting services, reading secrets, or modifying
+    runtime/schema/Web/API code.
+- Initial state:
+  - `git log -1 --oneline`: `c9e4614 docs: add import job item production preflight`.
+  - `git status --short` showed only existing untracked local artifacts:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`,
+    `.local-step46g/`, `.local-step47i/`, `.local-step62c/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located existing import job history production preflight,
+    the Step 79A `ImportJobItem` production preflight runbook, and production
+    runbook/checklist references before reading; large memory-bank files were
+    not read in full.
+- Context read:
+  - `memory-bank/import-job-item-production-readonly-preflight-runbook.md`.
+  - `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+  - `memory-bank/import-job-history-production-preflight-final-archive.md`.
+  - Import-history related small sections from `deploy/runbook-production.md`.
+  - Import-history related small sections from
+    `deploy/checklist-production-cutover.md`.
+  - Step 79A section from
+    `memory-bank/import-job-history-database-model-plan.md`.
+  - Step 79A section from `memory-bank/progress.md`.
+  - Step 79A section from `memory-bank/evidence.md`.
+- Documentation updated:
+  - Updated `deploy/runbook-production.md`.
+  - Updated `deploy/checklist-production-cutover.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/decisions.md`.
+- Link-in evidence:
+  - Added production runbook references to
+    `memory-bank/import-job-item-production-readonly-preflight-runbook.md`.
+  - Distinguished the existing aggregate
+    `memory-bank/import-job-history-production-readonly-preflight-runbook.md`
+    as covering `ImportJob` / `ImportRun` aggregate history readiness.
+  - Documented the new runbook as covering only `ImportJobItem` row-level safe
+    history readiness.
+  - Limited `ImportJobItem` production smoke/checklist references to read-only
+    migration-state, `import_job_items` table-structure, GET-only item API,
+    response allowlist, and Web aggregate-only boundary checks.
+  - Reconfirmed the link does not authorize production apply, production/VPS/DB
+    access, migration execution, DB writes, real import, Web row-level display,
+    cleanup/rollback, export, or download.
+  - Preserved safe evidence boundaries against recording `DATABASE_URL`,
+    passwords, tokens, cookies, connection strings, raw production sample ids,
+    raw item ids, `targetId`, `jobId`, `runId`, raw CSV, personal identifiers,
+    achievement identifiers, account identifiers, credentials, or secret
+    material.
+- Verification:
+  - Typecheck/test/build were intentionally not run because this Step is
+    docs-only and does not change Web, backend runtime, Prisma schema,
+    migrations, package files, lockfiles, or config.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to production docs and
+    memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local
+    artifacts only.
+  - Manual diff review: PASS; docs-only, no Web/backend/schema/migration/
+    package/config change, no sensitive values, no real production samples, no
+    raw CSV, no personal identifiers, no credentials or connection strings, no
+    production access authorization, no migration execution authorization, no
+    DB write authorization, and no Web row-level display authorization.
+- Boundary:
+  - No runbook was executed.
+  - No production/VPS host, production database, or real environment was
+    accessed.
+  - No `.env`, `.env.production`, credential, token, cookie, password, private
+    key, or connection string content was read or output.
+  - No service was started.
+  - No migration apply/deploy/reset was run.
+  - No real import, DB write, Web row-level display, retry, delete, cleanup,
+    rollback, export, download, raw JSON/raw CSV access, business-object
+    drilldown, reset, restore, checkout, clean, prune, or volume deletion was
+    performed.
+  - Existing untracked local artifacts were not touched, cleaned, staged,
+    moved, or modified.
+
 ## 2026-07-05 Step 79A - ImportJobItem production readonly preflight evidence
 
 - Goal:

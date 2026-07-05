@@ -23,6 +23,7 @@ This runbook covers the single VPS production cutover route for the research ach
 - Do not run `docker-compose.demo.yml` as the production stack.
 - Do not remove demo containers, images, volumes, or directories until production `GO` and explicit cleanup confirmation.
 - Do not treat `memory-bank/import-job-history-production-readonly-preflight-runbook.md` as production apply authorization, production/VPS access authorization, or migration execution authorization.
+- Do not treat `memory-bank/import-job-item-production-readonly-preflight-runbook.md` as production apply authorization, production/VPS/DB access authorization, or migration execution authorization.
 
 ## Production Environment Preparation
 
@@ -130,6 +131,30 @@ strings, raw production sample ids, raw audit ids, raw CSV, personal identifiers
 or credentials in chat, docs, logs, screenshots, or commits while using that
 runbook.
 
+If `ImportJobItem` row-level safe history readiness is separately in scope,
+also review `memory-bank/import-job-item-production-readonly-preflight-runbook.md`.
+
+That document is distinct from the aggregate import-history runbook above:
+
+- `memory-bank/import-job-history-production-readonly-preflight-runbook.md`
+  covers `ImportJob` / `ImportRun` aggregate history readiness.
+- `memory-bank/import-job-item-production-readonly-preflight-runbook.md`
+  covers `ImportJobItem` row-level safe history readiness only.
+
+The `ImportJobItem` runbook is a read-only reference for migration-state,
+`import_job_items` table-structure, GET-only item API, response allowlist, and
+Web aggregate-only boundary checks. It is not production apply authorization,
+production/VPS/DB access authorization, migration execution authorization, DB
+write authorization, real import authorization, Web row-level display
+authorization, cleanup/rollback authorization, or export/download
+authorization.
+
+While using the `ImportJobItem` runbook, do not paste or record `DATABASE_URL`,
+passwords, tokens, cookies, connection strings, raw production sample ids, raw
+item ids, `targetId`, `jobId`, `runId`, raw CSV, personal identifiers,
+achievement identifiers, account identifiers, or credentials in chat, docs,
+logs, screenshots, or commits.
+
 ## Foundation Seed
 
 After migration succeeds and before bootstrap admin initialization, run the production foundation seed.
@@ -204,6 +229,15 @@ production smoke, use `memory-bank/import-job-history-production-readonly-prefli
 as the boundary reference. Keep the check GET-only, record only aggregate status,
 counts, HTTP status, and safe machine codes, and skip detail checks unless a safe
 sample alias is separately authorized.
+
+If `ImportJobItem` row-level safe history readonly checks are explicitly
+authorized as part of production smoke, use
+`memory-bank/import-job-item-production-readonly-preflight-runbook.md` as the
+separate boundary reference. Keep the check read-only and limited to
+migration-state, table-structure, GET-only item API, response allowlist, and Web
+aggregate-only checks. Do not execute migrations, run real imports, write to the
+database, enable Web row-level display, export, download, or record raw item
+identifiers.
 
 Do not run POST, PATCH, PUT, DELETE, imports, exports, notifications, approvals, or production writes in readonly smoke.
 

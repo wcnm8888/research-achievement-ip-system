@@ -1,5 +1,39 @@
 # Decisions
 
+## D266 - ImportJobItem production preflight has a separate discovery path
+
+- Date: 2026-07-05.
+- Context: Step 79B links the Step 79A
+  `memory-bank/import-job-item-production-readonly-preflight-runbook.md` into
+  `deploy/runbook-production.md` and `deploy/checklist-production-cutover.md`.
+  The Step is docs-only and prohibits runbook execution, production/VPS access,
+  production DB access, `.env` reads, migration execution, service startup,
+  real import, DB writes, Web row-level display, runtime/API/Web/schema/
+  migration/package/config changes, export/download, cleanup/rollback, and
+  existing untracked-artifact handling.
+- Decision:
+  - Keep the existing
+    `memory-bank/import-job-history-production-readonly-preflight-runbook.md`
+    scoped to `ImportJob` / `ImportRun` aggregate history readiness.
+  - Use `memory-bank/import-job-item-production-readonly-preflight-runbook.md`
+    only when `ImportJobItem` row-level safe history readiness is separately
+    in scope.
+  - Limit production runbook/checklist references for `ImportJobItem` to
+    read-only migration-state, `import_job_items` table-structure, GET-only
+    item API, response allowlist, and Web aggregate-only boundary checks.
+  - Preserve safe evidence boundaries: do not record `DATABASE_URL`, passwords,
+    tokens, cookies, connection strings, raw production sample ids, raw item
+    ids, `targetId`, `jobId`, `runId`, raw CSV, personal identifiers,
+    achievement identifiers, account identifiers, credentials, or secret
+    material.
+- Scope:
+  - This decision does not authorize production access, production DB access,
+    migration execution, real import, DB writes, Web row-level display,
+    export/download, cleanup/rollback/retry/delete, raw JSON/raw CSV access,
+    production-readiness claims, credential reads, deletion, reset, restore,
+    checkout, clean, prune, volume deletion, or handling existing untracked
+    local artifacts.
+
 ## D265 - ImportJobItem production preflight is read-only and non-authorizing
 
 - Date: 2026-07-05.

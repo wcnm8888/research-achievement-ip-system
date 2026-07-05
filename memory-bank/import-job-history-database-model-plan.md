@@ -1820,3 +1820,52 @@ raw production ids, raw CSV, or personal/source identifiers.
 Step 79A creates the runbook only. It does not authorize production access,
 production DB access, migration execution, real import, DB write, Web row-level
 display, export/download, cleanup/rollback, or production readiness.
+
+## Step 79B Link ImportJobItem Production Readonly Preflight
+
+- Date: 2026-07-05.
+- Scope: docs-only link-in of the Step 79A `ImportJobItem` production read-only
+  preflight runbook into the production runbook/checklist discovery path.
+- Changed:
+  - `deploy/runbook-production.md`.
+  - `deploy/checklist-production-cutover.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no runbook execution, no production/VPS access, no production DB
+  access, no `.env` / `.env.production` content read, no migration
+  apply/deploy/reset, no service startup, no real import, no DB write, no Web
+  row-level display, no Web/backend runtime/code/test change, no Prisma
+  schema/migration change, no package/lockfile/config change, no export/
+  download, no cleanup/rollback/retry/delete behavior, and no existing
+  untracked-artifact handling.
+
+### Discovery Path
+
+- `deploy/runbook-production.md` now points operators to
+  `memory-bank/import-job-item-production-readonly-preflight-runbook.md` when
+  `ImportJobItem` row-level safe history readiness is separately in scope.
+- `deploy/checklist-production-cutover.md` now includes checklist items to
+  review the Step 79A runbook and record `ImportJobItem` row-level safe history
+  preflight status as not in scope, skipped, passed, or blocked without
+  sensitive evidence.
+
+### Boundary Distinction
+
+- `memory-bank/import-job-history-production-readonly-preflight-runbook.md`
+  covers `ImportJob` / `ImportRun` aggregate history readiness.
+- `memory-bank/import-job-item-production-readonly-preflight-runbook.md` covers
+  `ImportJobItem` row-level safe history readiness only.
+
+The linked `ImportJobItem` checks are limited to read-only migration-state,
+`import_job_items` table-structure, GET-only item API, response allowlist, and
+Web aggregate-only boundary checks.
+
+Step 79B does not authorize production access, production DB access, migration
+execution, real import, DB write, Web row-level display, export/download,
+cleanup/rollback, or production readiness. It also preserves the evidence
+boundary against recording `DATABASE_URL`, passwords, tokens, cookies,
+connection strings, raw production sample ids, raw item ids, `targetId`,
+`jobId`, `runId`, raw CSV, personal identifiers, achievement identifiers,
+account identifiers, credentials, or secret material.

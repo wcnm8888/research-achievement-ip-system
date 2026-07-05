@@ -44,6 +44,7 @@ This checklist is for a single VPS production cutover. It must not contain real 
 - [ ] Restore-drill plan status recorded; actual restore remains separately authorized.
 - [ ] Restore path is known without exposing credentials.
 - [ ] If import task history readiness is in scope, `memory-bank/import-job-history-production-readonly-preflight-runbook.md` is reviewed as a read-only reference only.
+- [ ] If `ImportJobItem` row-level safe history readiness is in scope, `memory-bank/import-job-item-production-readonly-preflight-runbook.md` is reviewed as a read-only reference only.
 - [ ] Backup evidence is脱敏 and contains no passwords or connection strings.
 
 ## 4. Migration Target Confirmation
@@ -52,6 +53,7 @@ This checklist is for a single VPS production cutover. It must not contain real 
 - [ ] Migration files reviewed.
 - [ ] If applying the employee-number migration, `deploy/employee-no-production-migration-readiness.md` is reviewed and its stop conditions are accepted.
 - [ ] If import task history readiness is in scope, its runbook is referenced only for read-only migration-state and table-structure checks; it does not authorize migration execution.
+- [ ] If `ImportJobItem` row-level safe history readiness is in scope, its runbook is referenced only for read-only migration-state and `import_job_items` table/API/Web aggregate-only boundary checks; it does not authorize migration execution.
 - [ ] No demo users or demo business data will be imported as production data.
 - [ ] `prisma migrate deploy` is authorized for the production migration step.
 - [ ] Migration command is run through the production Compose stack, not demo/staging.
@@ -124,6 +126,8 @@ This checklist is for a single VPS production cutover. It must not contain real 
 - [ ] Readonly masked audit logs endpoint checked if authorized.
 - [ ] If import task history readonly checks are authorized, `memory-bank/import-job-history-production-readonly-preflight-runbook.md` boundaries are followed and only safe aggregate evidence is recorded.
 - [ ] Import history detail checks are skipped unless a safe sample alias is separately authorized; raw production sample ids and raw audit ids are not recorded.
+- [ ] If `ImportJobItem` row-level safe history readonly checks are authorized, `memory-bank/import-job-item-production-readonly-preflight-runbook.md` boundaries are followed for read-only migration-state, table-structure, GET-only item API, response allowlist, and Web aggregate-only checks only.
+- [ ] `ImportJobItem` checks do not execute migrations, run real imports, write to DB, enable Web row-level display, export, download, or record raw production sample ids, raw item ids, `targetId`, `jobId`, `runId`, raw CSV, personal identifiers, achievement identifiers, account identifiers, credentials, or connection strings.
 - [ ] `X-Demo-User-Id` without session cannot bypass auth.
 - [ ] No POST/PATCH/PUT/DELETE executed in readonly smoke.
 
@@ -155,6 +159,7 @@ Rollback must be considered if any item occurs:
 - [ ] HTTPS cookie smoke evidence reviewed.
 - [ ] GET-only smoke evidence reviewed.
 - [ ] Import task history read-only preflight status is recorded as not in scope, skipped, passed, or blocked without sensitive evidence, if applicable.
+- [ ] `ImportJobItem` row-level safe history read-only preflight status is recorded as not in scope, skipped, passed, or blocked without sensitive evidence, if applicable.
 - [ ] Write acceptance status explicitly recorded as completed, deferred, or separately blocked.
 - [ ] Final decision recorded as `GO`, `CONDITIONAL_GO`, `NO_GO`, or `ROLLBACK`.
 

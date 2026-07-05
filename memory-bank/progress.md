@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-07-05 Step 79B - Link ImportJobItem production readonly preflight
+
+- Status: DONE.
+- Task classification:
+  - XS/S docs-only link-in for the Step 79A `ImportJobItem` production
+    read-only preflight runbook.
+- Scope completed:
+  - Linked `memory-bank/import-job-item-production-readonly-preflight-runbook.md`
+    from `deploy/runbook-production.md`.
+  - Linked the same runbook from `deploy/checklist-production-cutover.md`.
+  - Distinguished the existing
+    `memory-bank/import-job-history-production-readonly-preflight-runbook.md`
+    as `ImportJob` / `ImportRun` aggregate history readiness, while the new
+    runbook covers `ImportJobItem` row-level safe history readiness only.
+  - Clarified that the `ImportJobItem` runbook is read-only reference material
+    for migration-state, `import_job_items` table-structure, GET-only item API,
+    response allowlist, and Web aggregate-only boundary checks.
+  - Preserved evidence boundaries against recording `DATABASE_URL`, passwords,
+    tokens, cookies, connection strings, raw production sample ids, raw item
+    ids, `targetId`, `jobId`, `runId`, raw CSV, personal identifiers,
+    achievement identifiers, account identifiers, credentials, or secret
+    material.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`,
+    `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Explicitly not done:
+  - No runbook execution.
+  - No production/VPS or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No migration apply/deploy/reset.
+  - No service startup.
+  - No real import, DB write, Web row-level display, export, download, retry,
+    delete, cleanup, or rollback.
+  - No Web/backend runtime/code/test change.
+  - No Prisma schema or migration change.
+  - No package/lockfile/config change.
+  - Existing untracked local artifacts were not touched.
+- Verification:
+  - Typecheck/test/build intentionally not run because this Step is docs-only
+    and changes only documentation links and memory-bank records.
+  - Diff checks and final status are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 79A - ImportJobItem production readonly preflight runbook
 
 - Status: DONE.
