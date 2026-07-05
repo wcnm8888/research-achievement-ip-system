@@ -1502,3 +1502,63 @@ Step 77D implements only the User account writer slice. Backend read DTOs, Web p
 - Step 78D: local synthetic acceptance, only if a later read/API/Web implementation requires it.
 
 Step 77E is an archive only. It does not authorize backend read DTOs, API/Web work, migration execution, database or production access, real import execution, or any row-level display/export behavior.
+
+## Step 78A ImportJobItem Backend Read DTO Plan
+
+- Date: 2026-07-05.
+- Scope: docs-only backend read DTO/API plan for `ImportJobItem` row-level safe history.
+- Changed:
+  - `memory-bank/import-job-item-read-dto-plan.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no backend read DTO/API/controller/service/repository implementation, no Web row-level history, no Prisma schema/migration changes, no runtime/package/lockfile/config changes, no migration apply/deploy/reset, no database access, no production/VPS or production DB access, no `.env` / `.env.production` content read, no real import apply, no seed, no backfill, no fixture row, no retry/delete/cleanup/rollback/download/export behavior, no raw JSON/raw CSV access, and no business-object drilldown.
+
+### Read Surface Recommendation
+
+- Recommend opening only an internal support row-level safe read API after Step 78B is separately authorized.
+- Keep Web aggregate-only until Step 78C decides whether to expose row-level history or stay aggregate-only.
+- Prefer `GET /import-jobs/:id/items` as a child resource under the existing import job detail route.
+- Do not add a global `/import-job-items` list because it would detach item rows from job/run context and encourage cross-job browsing, export, and drilldown behavior.
+
+### Authorization And Query Boundary
+
+- Reuse `UserContextGuard`, `PermissionGuard`, and `PermissionCode.systemConfig`.
+- Do not add a new permission in Step 78B.
+- Every query must be route-scoped by `jobId`.
+- Allowed filters are optional `runId`, `status`, `plannedAction`, `targetType`, and `safeCode`.
+- Use `page` / `pageSize` pagination with defaults `1` and `20`, max `100`.
+- Default ordering should be `rowNumber asc`; add `runId asc` only as a tie-breaker if a query can span multiple runs.
+
+### DTO Boundary
+
+- Response DTO allowlist is limited to `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+- Current `ImportJobItem` schema has no `createdAt` or `updatedAt`; do not invent created facts.
+- Do not return `jobId` because the route supplies it.
+- Do not return `runId` by default; if Step 78B finds it necessary for backend support triage, it must be explicitly justified and stay out of Web until Step 78C.
+- Never return `targetId`, raw CSV, row values, email, `employeeNo`, name, `departmentCode`, role, title, DOI, registration number, patent number, contributors, credentials, invite/password/token/cookie/connection string values, `safeSummary`, `auditLogIds`, `idempotencyKeyHash`, `scopeHash`, `fileFingerprint`, `requestFingerprint`, or `operatorUserId`.
+
+### Repository Boundary
+
+- Use Prisma `select` allowlists.
+- Do not return full Prisma records.
+- Do not `include` `ImportJob`, `ImportRun`, or business records from the item query.
+- Parent job validation may select only safe context such as `id`, `importFamily`, `mode`, `achievementType`, and `status`.
+- Item select should include only `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+
+### Error And Capability Boundary
+
+- Missing permission returns `403`.
+- Missing or unreadable job returns `404`.
+- Existing job with no matching items returns `200` with an empty list.
+- Invalid filters return `400`.
+- The read API must not provide retry, delete, cleanup, rollback, download, export, raw JSON, raw CSV, or business-object drilldown.
+
+### Follow-Up Split
+
+- Step 78B: backend read DTO/API implementation plus focused tests, only if Step 78A is accepted.
+- Step 78C: Web row-level read plan, or an explicit decision to keep Web aggregate-only.
+- Step 78D: local synthetic acceptance, only if later implementation requires it.
+
+Step 78A is a plan only. It does not authorize runtime implementation, Web display, migration execution, database or production access, real import execution, export/download behavior, or any raw/source data exposure.

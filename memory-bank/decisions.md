@@ -1,5 +1,23 @@
 # Decisions
 
+## D261 - ImportJobItem row-level reads stay job-scoped and DTO-allowlisted
+
+- Date: 2026-07-05.
+- Context: Step 78A plans the backend read DTO/API surface for `ImportJobItem` row-level safe history after Step 77A-D delivered schema/migration-only plus success-path writers and Step 77E archived that delivery line. The Step is docs-only and prohibits backend read DTO/API/Web implementation, Prisma schema/migration changes, runtime/package/lockfile/config changes, migration execution, database/production access, `.env` reads, real import execution, retry/delete/cleanup/rollback/download/export, raw JSON/raw CSV access, business-object drilldown, and existing untracked-artifact handling.
+- Decision:
+  - Recommend a future internal support row-level safe read API only after separate Step 78B authorization.
+  - Keep Web aggregate-only until Step 78C decides whether row-level history should be exposed or explicitly remain hidden.
+  - Use `GET /import-jobs/:id/items` under the existing job detail route; do not expose a global `/import-job-items` list.
+  - Reuse `UserContextGuard`, `PermissionGuard`, and `system:config`; do not add a new permission for this read surface.
+  - Require route-scoped `jobId`, optional `runId`, `status`, `plannedAction`, `targetType`, `safeCode`, and page/pageSize pagination.
+  - Limit the response DTO to `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`; do not invent created facts because `ImportJobItem` has no `createdAt`/`updatedAt`.
+  - Keep `targetId`, `jobId`, and `runId` out of the default response; `runId` may be reconsidered only with explicit Step 78B justification for backend support triage.
+  - Use Prisma `select` allowlists and never return full item records or include sensitive `ImportJob` / `ImportRun` fields.
+  - Define missing permission as `403`, missing or unreadable job as `404`, existing job with no matching items as `200` empty list, and invalid filters as `400`.
+  - Do not provide retry, delete, cleanup, rollback, download, export, raw JSON, raw CSV, or business-object drilldown.
+- Scope:
+  - This decision does not authorize implementation, Web display, migration execution, database or production access, real import execution, export/download behavior, raw/source data exposure, permission changes, credential reads, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D260 - ImportJobItem writer archive does not authorize read surfaces
 
 - Date: 2026-07-05.

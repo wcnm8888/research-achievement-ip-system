@@ -1,5 +1,62 @@
 # Evidence
 
+## 2026-07-05 Step 78A - ImportJobItem backend read DTO plan evidence
+
+- Goal:
+  - Plan the backend read DTO/API surface for `ImportJobItem` row-level safe history as docs-only, without implementing DTO/API/Web, accessing a database, or executing migrations.
+- Initial state:
+  - `git log -1 --oneline`: `be1b1b4 docs: archive import job item writer delivery`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 77E, `ImportJobItem`, backend read DTO, `targetId`, and aggregate-only references before reading; large memory-bank files were not read in full.
+- Context read:
+  - `memory-bank/import-job-item-writer-final-archive.md`.
+  - `memory-bank/import-job-item-schema-final-archive.md`.
+  - Step 77A-E section from `memory-bank/import-job-history-database-model-plan.md`.
+  - D254-D259 section from `memory-bank/decisions.md`.
+  - `apps/api/src/imports/import-job-history-read.controller.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.ts`.
+  - `apps/api/src/imports/import-job-history-read.controller.spec.ts`.
+  - `apps/api/src/imports/import-job-history-read.service.spec.ts`.
+  - `apps/api/src/imports/import-job-history-read.repository.spec.ts`.
+  - Focused `ImportJobItem` schema block from `prisma/schema.prisma` only to confirm whether item created facts exist.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-read-dto-plan.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/decisions.md`.
+- Plan evidence:
+  - Recommended a row-level safe read API only as an internal support backend surface after Step 78B authorization.
+  - Kept Web aggregate-only until Step 78C.
+  - Recommended `GET /import-jobs/:id/items` under existing job detail context.
+  - Rejected a global `/import-job-items` list.
+  - Kept `UserContextGuard`, `PermissionGuard`, and `system:config`; no new permission.
+  - Required route-scoped `jobId`, optional `runId`, optional `status`, `plannedAction`, `targetType`, `safeCode`, and `page` / `pageSize`.
+  - Recommended `rowNumber asc` ordering.
+  - Limited response DTO fields to `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Confirmed `ImportJobItem` has no `createdAt` or `updatedAt`; no created facts were added to the planned DTO.
+  - Prohibited returning `targetId`, raw CSV, row values, personal/account/achievement identifiers, credentials, invite/password/token/cookie/connection strings, `safeSummary`, `auditLogIds`, idempotency/scope/file/request fingerprints or hashes, and operator ids.
+  - Required Prisma `select` allowlists and prohibited full Prisma records or sensitive parent/run includes.
+  - Defined 403, 404, 200 empty list, and 400 error semantics.
+  - Reconfirmed no retry/delete/cleanup/rollback/download/export/raw JSON/business-object drilldown.
+- Verification:
+  - Runtime tests/typecheck/build were intentionally not run because this Step is docs-only and does not change runtime code, Prisma schema, API/Web files, package files, lockfiles, or config.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; docs-only, no runtime/API/Web/schema/migration/package/config change, no sensitive values, raw CSV, personal identifier examples, credentials, connection strings, and no `targetId` as a returned DTO field.
+- Boundary:
+  - No API/Web/read DTO implementation was added.
+  - No Prisma schema, migration, runtime, package, lockfile, config, or script files were changed.
+  - No migration apply/deploy/reset, database connection, production/VPS access, production DB access, real import apply, real data write, seed, backfill, fixture row, retry, delete, cleanup, rollback, download, export, or raw/source data access was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 77E - ImportJobItem writer final archive evidence
 
 - Goal:

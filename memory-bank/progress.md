@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-07-05 Step 78A - ImportJobItem backend read DTO plan
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only backend read DTO/API plan for `ImportJobItem` row-level safe history.
+- Scope completed:
+  - Added `memory-bank/import-job-item-read-dto-plan.md`.
+  - Recommended opening only an internal support row-level safe read API after separate Step 78B authorization.
+  - Kept Web aggregate-only until Step 78C decides whether to expose row-level history or stay aggregate-only.
+  - Recommended child route shape `GET /import-jobs/:id/items`; rejected a global `/import-job-items` list.
+  - Kept authorization on `UserContextGuard`, `PermissionGuard`, and `system:config`; no new permission.
+  - Defined filters and pagination: route-scoped `jobId`, optional `runId`, `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize`, with default `rowNumber asc` ordering.
+  - Defined DTO allowlist as `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType` only.
+  - Confirmed current `ImportJobItem` schema has no `createdAt`/`updatedAt`, so the plan does not invent created facts.
+  - Reconfirmed `targetId`, raw/source fields, personal identifiers, credentials, `safeSummary`, `auditLogIds`, fingerprints, hashes, and operator ids must not be returned.
+  - Defined Prisma parent and item `select` allowlists and prohibited full records or `ImportJob` / `ImportRun` includes with sensitive fields.
+  - Defined error semantics: 403 for missing permission, 404 for missing/unreadable job, 200 empty list for no items, and 400 for invalid filters.
+  - Recorded that retry/delete/cleanup/rollback/download/export/raw JSON/business-object drilldown remain unsupported.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`, `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Explicitly not done:
+  - No backend read DTO/API/controller/service/repository implementation.
+  - No Web row-level history implementation.
+  - No Prisma schema or migration change.
+  - No runtime/API/Web/package/lockfile/config change.
+  - No migration apply/deploy/reset and no database access.
+  - No production/VPS or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No real import apply, real data write, seed, backfill, fixture row, retry, delete, cleanup, rollback, download, or export.
+  - Existing untracked local artifacts were not touched.
+- Verification:
+  - Runtime tests/typecheck/build intentionally not run because this Step is docs-only and changes only memory-bank documentation.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; docs-only, no runtime/API/Web/schema/migration/package/config change, no sensitive values, raw CSV, personal identifier examples, credentials, connection strings, and no `targetId` as a returned DTO field.
+
 ## 2026-07-05 Step 77E - ImportJobItem writer final archive
 
 - Status: DONE.
