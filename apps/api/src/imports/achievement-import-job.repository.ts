@@ -1,6 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import {
   ImportFamily,
+  ImportJobItemPlannedAction,
+  ImportJobItemStatus,
+  ImportJobItemTargetType,
   ImportJobStatus,
   ImportMode,
   ImportRunStatus,
@@ -40,8 +43,14 @@ export type AchievementImportJobClaimResult =
 
 export type AchievementImportJobTransactionClient = Pick<
   Prisma.TransactionClient,
-  "importJob" | "importRun"
+  "importJob" | "importRun" | "importJobItem"
 >;
+
+export type AchievementImportJobSuccessItemInput = {
+  rowNumber: number;
+  safeCode: string | null;
+  targetId: string;
+};
 
 export type AchievementImportJobSuccessInput = {
   jobId: string;
@@ -58,6 +67,7 @@ export type AchievementImportJobSuccessInput = {
   safeErrorCodes: string[];
   safeSummary: Prisma.InputJsonValue;
   auditLogIds: string[];
+  items: AchievementImportJobSuccessItemInput[];
 };
 
 export type AchievementImportJobRejectedInput = {
@@ -142,6 +152,20 @@ export class AchievementImportJobRepository {
     input: AchievementImportJobSuccessInput,
   ): Promise<void> {
     const now = new Date();
+    if (input.items.length > 0) {
+      await client.importJobItem.createMany({
+        data: input.items.map((item) => ({
+          jobId: input.jobId,
+          runId: input.runId,
+          rowNumber: item.rowNumber,
+          plannedAction: ImportJobItemPlannedAction.CREATE_DRAFT,
+          status: ImportJobItemStatus.APPLIED,
+          safeCode: item.safeCode,
+          targetType: ImportJobItemTargetType.ACHIEVEMENT,
+          targetId: item.targetId,
+        })),
+      });
+    }
     await client.importRun.update({
       where: { id: input.runId },
       data: {

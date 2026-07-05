@@ -1416,3 +1416,27 @@ Step 77A implements only the previously planned schema/migration slice. Backend 
 - `targetId` remains internal-only and does not enter DTOs, API responses, Web, logs, evidence examples, export, or business-object drilldown.
 
 Step 77B implements only the first Department writer slice. Achievement/User writers, backend read DTOs, Web planning, acceptance beyond local tests, migration execution, and production work remain separate future authorization boundaries.
+
+## Step 77C Achievement ImportJobItem Backend Writer
+
+- Date: 2026-07-05.
+- Scope: Achievement `CREATE_DRAFT_ONLY` backend writer only for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+- Changed:
+  - `apps/api/src/imports/achievement-import-job.repository.ts`.
+  - `apps/api/src/imports/achievement-import-job.repository.spec.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.ts`.
+  - `apps/api/src/imports/achievement-import-dry-run.service.spec.ts`.
+- Non-scope: no Prisma schema/migration changes, no migration apply/deploy/reset, no User/account item writer, no read DTO/API route/controller/client/Web changes, no database access, no production/VPS or production DB access, no `.env` / `.env.production` content read, no real import apply, no seed, no backfill, no fixture row, no retry/delete/cleanup/rollback/download/export behavior, and no existing untracked-artifact handling.
+
+### Writer Boundary
+
+- Achievement item rows are written only in the `RUNNER` + successful `EXECUTED` path.
+- Item writes occur inside the same Prisma transaction as Achievement creation, typed detail creation, contributor creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+- Repository injects `jobId` and `runId`; item sub-input does not accept them.
+- Persisted item data remains limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+- `achievementType` is not duplicated on item rows; it remains inherited from `ImportJob`.
+- Rejected, failed, replayed success, and in-progress paths do not write item rows.
+- No row values, raw CSV, raw identifiers, personal fields, achievement identifiers, fee/reminder fields, credentials, `safeSummary`, or `auditLogIds` are stored on item rows.
+- `targetId` remains internal-only and does not enter DTOs, API responses, Web, logs, evidence examples, export, or business-object drilldown.
+
+Step 77C implements only the first Achievement writer slice. User/account writer, backend read DTOs, Web planning, acceptance beyond local tests, migration execution, and production work remain separate future authorization boundaries.

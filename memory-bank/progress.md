@@ -1,5 +1,40 @@
 # Progress
 
+## 2026-07-05 Step 77C - Achievement ImportJobItem backend writer
+
+- Status: DONE.
+- Task classification:
+  - S-level backend writer slice; Achievement `CREATE_DRAFT_ONLY` success path only for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`, with no schema/migration, API, Web, database apply, production access, or real-data execution.
+- Scope completed:
+  - Added Achievement `ImportJobItem` writer inside `AchievementImportJobRepository.markSucceededInTransaction`.
+  - The writer runs in the existing business Prisma transaction shared by Achievement creation, typed detail creation, contributor creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+  - `AchievementImportJobSuccessInput` item sub-input accepts only `rowNumber`, `safeCode`, and internal `targetId`; repository injects `jobId` and `runId` from the success input.
+  - Successful Achievement apply builds item sub-input from applied in-memory rows only.
+  - Item rows use fixed `plannedAction: CREATE_DRAFT`, `status: APPLIED`, `targetType: ACHIEVEMENT`, and `safeCode: null`.
+  - Added repository tests proving `importJobItem.createMany` receives only allowlist data with consistent `jobId` / `runId`.
+  - Added service tests proving `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` success paths pass item sub-inputs, and replay/in-progress/rejected/failed paths do not call the success writer.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`, `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Explicitly not done:
+  - No `prisma/schema.prisma` change and no migration file.
+  - No migration apply/deploy/reset and no database access.
+  - No User/account item writer.
+  - No read DTO, API route/controller, client contract, or Web changes.
+  - No production/VPS or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No real import apply, real data write, seed, backfill, or fixture row.
+  - No retry/delete/cleanup/rollback/download/export behavior.
+  - No raw CSV, row values, personal identifiers, achievement identifiers, fee/reminder fields, credentials, connection strings, `safeSummary`, or `auditLogIds` are written to item rows.
+  - `targetId` remains internal-only and was not added to DTO/API/Web/log/evidence examples.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- achievement-import-job achievement-import-dry-run`: PASS; 4 files / 50 tests passed.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to Achievement import writer/service tests plus memory-bank docs.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; no schema/migration, API/Web/read DTO, DB apply, production access, User writer, row values, raw identifiers, CSV content, personal/achievement identifiers, fee/reminder fields, credentials, or `auditLogIds` in item data.
+
 ## 2026-07-05 Step 77B - Department ImportJobItem backend writer
 
 - Status: DONE.

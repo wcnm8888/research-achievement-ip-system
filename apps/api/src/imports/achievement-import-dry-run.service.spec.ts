@@ -238,6 +238,33 @@ const createService = (input: {
   };
 };
 
+const expectAchievementItemInput = (
+  item: Record<string, unknown>,
+  expected: { rowNumber: number; targetId: string },
+) => {
+  expect(item).toEqual({
+    rowNumber: expected.rowNumber,
+    safeCode: null,
+    targetId: expected.targetId,
+  });
+  expect(Object.keys(item).sort()).toEqual(["rowNumber", "safeCode", "targetId"]);
+  expect(item).not.toHaveProperty("jobId");
+  expect(item).not.toHaveProperty("runId");
+  expect(item).not.toHaveProperty("type");
+  expect(item).not.toHaveProperty("title");
+  expect(item).not.toHaveProperty("ownerEmail");
+  expect(item).not.toHaveProperty("departmentCode");
+  expect(item).not.toHaveProperty("contributors");
+  expect(item).not.toHaveProperty("doi");
+  expect(item).not.toHaveProperty("registrationNumber");
+  expect(item).not.toHaveProperty("applicationNumber");
+  expect(item).not.toHaveProperty("patentNumber");
+  expect(item).not.toHaveProperty("feeAmount");
+  expect(item).not.toHaveProperty("nextFeeDate");
+  expect(item).not.toHaveProperty("safeSummary");
+  expect(item).not.toHaveProperty("auditLogIds");
+};
+
 describe("AchievementImportDryRunService", () => {
   it("returns safe no-write previews for paper, patent, and software copyright rows", async () => {
     const { service, repository } = createService({
@@ -558,6 +585,13 @@ describe("AchievementImportDryRunService", () => {
         safeErrorCodes: [],
       }),
     );
+    const successInput =
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1];
+    expect(successInput.items).toHaveLength(1);
+    expectAchievementItemInput(successInput.items[0], {
+      rowNumber: 2,
+      targetId: "30000000-0000-4000-8000-000000000001",
+    });
     const successSummary =
       importJobRepository.markSucceededInTransaction.mock.calls[0]![1].safeSummary;
     const successSummaryJson = JSON.stringify(successSummary);
@@ -663,7 +697,7 @@ describe("AchievementImportDryRunService", () => {
   });
 
   it("returns in-progress for same-key running PAPER imports without business writes", async () => {
-    const { service, repository, prisma, auditService } = createService({
+    const { service, repository, prisma, auditService, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
       claimResult: {
@@ -698,6 +732,7 @@ describe("AchievementImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createPaperDraftInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("stores safe rejected PAPER job summaries for missing DOI without business writes", async () => {
@@ -750,6 +785,7 @@ describe("AchievementImportDryRunService", () => {
     expect(rejectedSummaryJson).not.toContain("credential");
     expect(rejectedSummaryJson).not.toContain("session");
     expect(rejectedSummaryJson).not.toContain("token");
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("applies SOFTWARE_COPYRIGHT rows as draft achievements with detail, contributors, and safe audit", async () => {
@@ -854,6 +890,13 @@ describe("AchievementImportDryRunService", () => {
         safeErrorCodes: [],
       }),
     );
+    const successInput =
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1];
+    expect(successInput.items).toHaveLength(1);
+    expectAchievementItemInput(successInput.items[0], {
+      rowNumber: 2,
+      targetId: "30000000-0000-4000-8000-000000000002",
+    });
     const successSummary =
       importJobRepository.markSucceededInTransaction.mock.calls[0]![1].safeSummary;
     const successSummaryJson = JSON.stringify(successSummary);
@@ -964,7 +1007,7 @@ describe("AchievementImportDryRunService", () => {
   });
 
   it("returns in-progress for same-key running SOFTWARE_COPYRIGHT imports without business writes", async () => {
-    const { service, repository, prisma, auditService } = createService({
+    const { service, repository, prisma, auditService, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
       claimResult: {
@@ -999,6 +1042,7 @@ describe("AchievementImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createSoftwareCopyrightDraftInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("stores safe rejected SOFTWARE_COPYRIGHT job summaries for missing registration without business writes", async () => {
@@ -1053,6 +1097,7 @@ describe("AchievementImportDryRunService", () => {
     expect(rejectedSummaryJson).not.toContain("credential");
     expect(rejectedSummaryJson).not.toContain("session");
     expect(rejectedSummaryJson).not.toContain("token");
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("applies PATENT rows as draft achievements with detail, contributors, and safe audit", async () => {
@@ -1165,6 +1210,13 @@ describe("AchievementImportDryRunService", () => {
         safeErrorCodes: [],
       }),
     );
+    const successInput =
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1];
+    expect(successInput.items).toHaveLength(1);
+    expectAchievementItemInput(successInput.items[0], {
+      rowNumber: 2,
+      targetId: "30000000-0000-4000-8000-000000000003",
+    });
     const successSummary =
       importJobRepository.markSucceededInTransaction.mock.calls[0]![1].safeSummary;
     const successSummaryJson = JSON.stringify(successSummary);
@@ -1284,7 +1336,7 @@ describe("AchievementImportDryRunService", () => {
   });
 
   it("returns in-progress for same-key running PATENT imports without business writes", async () => {
-    const { service, repository, prisma, auditService } = createService({
+    const { service, repository, prisma, auditService, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
       claimResult: {
@@ -1319,6 +1371,7 @@ describe("AchievementImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createPatentDraftInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("stores safe rejected PATENT job summaries for grant-only rows without business writes", async () => {
@@ -1378,6 +1431,7 @@ describe("AchievementImportDryRunService", () => {
     expect(rejectedSummaryJson).not.toContain("credential");
     expect(rejectedSummaryJson).not.toContain("session");
     expect(rejectedSummaryJson).not.toContain("token");
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("stores safe rejected PATENT job summaries for warning-blocked identifier conflicts", async () => {
@@ -1418,6 +1472,7 @@ describe("AchievementImportDryRunService", () => {
     expect(rejectedSummaryJson).not.toContain("CN001");
     expect(rejectedSummaryJson).not.toContain("Secret Patent");
     expect(rejectedSummaryJson).not.toContain("owner@example.org");
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("redacts PATENT fee and reminder field validation details from stored job summaries", async () => {
@@ -1459,6 +1514,7 @@ describe("AchievementImportDryRunService", () => {
     expect(rejectedSummaryJson).not.toContain("APP-001");
     expect(rejectedSummaryJson).not.toContain("APP001");
     expect(rejectedSummaryJson).not.toContain("Secret Patent");
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("rejects unsupported apply mode before parsing or writing", async () => {
@@ -1880,7 +1936,7 @@ describe("AchievementImportDryRunService", () => {
 
   it("rejects apply when audit writing fails inside the transaction boundary", async () => {
     const auditError = new Error("audit failed");
-    const { service, repository, auditService } = createService({
+    const { service, repository, auditService, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       users: [activeUser("owner@example.org")],
       auditError,
@@ -1897,5 +1953,13 @@ describe("AchievementImportDryRunService", () => {
 
     expect(repository.createPaperDraftInTransaction).toHaveBeenCalledOnce();
     expect(auditService.recordEventInTransaction).toHaveBeenCalledOnce();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markFailed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobId: "import-job-id",
+        runId: "import-run-id",
+        failureCode: "UNEXPECTED_EXCEPTION",
+      }),
+    );
   });
 });

@@ -1,5 +1,19 @@
 # Decisions
 
+## D258 - Achievement ImportJobItem writer is success-transaction only
+
+- Date: 2026-07-05.
+- Context: Step 77C authorizes only the Achievement `CREATE_DRAFT_ONLY` backend writer slice for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` after Step 77A added the `ImportJobItem` schema and Step 77B established the Department writer pattern. The Step prohibits Prisma schema/migration changes, migration apply/deploy/reset, User item writer, read DTO/API/Web changes, database/production/VPS access, `.env` reads, real import apply, real data writes, seed/backfill, retry/delete/cleanup/rollback/download/export, and existing untracked-artifact handling.
+- Decision:
+  - Write Achievement `ImportJobItem` rows only from the runner success path inside the same Prisma transaction as Achievement creation, typed detail creation, contributor creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+  - Keep item input narrow: service may pass only row number, null or approved safe machine code, and internal target reference; repository injects `jobId` and `runId` from the success input.
+  - Persist only `jobId`, `runId`, `rowNumber`, `plannedAction: CREATE_DRAFT`, `status: APPLIED`, `safeCode`, `targetType: ACHIEVEMENT`, and internal `targetId`.
+  - Do not duplicate `achievementType` on `ImportJobItem`; it remains inherited from `ImportJob`.
+  - Do not write item rows for rejected, failed, replayed success, or in-progress claims.
+  - Keep `targetId` out of DTOs, API responses, Web, logs, evidence examples, copyable fields, export, and business-object drilldown.
+- Scope:
+  - This decision does not authorize User item writer, backend read DTOs, API routes/controllers, Web UI, schema/migration changes, migration execution, production/VPS access, production DB access, real import execution, real-data writes, seed/backfill, retry/delete/cleanup/rollback/download/export behavior, permission changes, credential reads, credential propagation, cleanup, deletion, reset, restore, checkout, drop, prune, or existing untracked local artifact handling.
+
 ## D257 - Department ImportJobItem writer is success-transaction only
 
 - Date: 2026-07-05.
