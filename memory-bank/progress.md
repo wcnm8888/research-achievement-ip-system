@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-07-05 Step 75C - Import job history production preflight final archive
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only archive task; no runtime or operational execution.
+- Scope completed:
+  - Added `memory-bank/import-job-history-production-preflight-final-archive.md`.
+  - Archived Step 75A adding `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+  - Archived Step 75B linking that runbook from `deploy/runbook-production.md` and `deploy/checklist-production-cutover.md`.
+  - Recorded established boundaries: read-only preflight reference only; not production apply authorization, production/VPS access authorization, migration execution authorization, DB write authorization, permission change authorization, or real-data import authorization.
+  - Recorded preflight coverage for backup confirmation, migration state, `ImportJob` / `ImportRun` structure presence, `system:config` permission confirmation, API health, `GET /api/import-jobs`, conditional `GET /api/import-jobs/:id`, Web page-local entries, settings overview visibility, safe evidence, and stop conditions.
+  - Recorded follow-up guidance that real production read-only preflight execution and any real-environment acceptance require separate explicit authorization.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 75C closure addendum.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No runbook execution.
+  - No production apply, real-data import, migration execution, retry, delete, cleanup, rollback, download, export, DB write, permission modification, credential read, or credential propagation.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 75C docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in four memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 75C docs plus existing untracked local artifacts before commit.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-04 Step 75B - Production runbook reference for import history read-only preflight
 
 - Status: DONE.

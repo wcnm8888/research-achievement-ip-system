@@ -1256,3 +1256,36 @@ Step 75A documents the production read-only preflight path only. It does not exe
 - The added references preserve the safety boundary against recording `DATABASE_URL`, passwords, tokens, cookies, connection strings, raw production sample ids, raw audit ids, raw CSV, personal identifiers, or credentials.
 
 Step 75B improves discoverability only. It does not execute the Step 75A runbook or expand production authority.
+
+## Step 75C Production Read-Only Preflight Documentation Final Archive
+
+- Date: 2026-07-05.
+- Scope: documentation-only final archive for the Step 75A through Step 75B import job history production read-only preflight documentation line.
+- Added final archive:
+  - `memory-bank/import-job-history-production-preflight-final-archive.md`.
+- Non-scope: no execution of the preflight runbook, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no service startup, no browser run, no migration execution, no import apply, no runtime/API/Web/schema/migration/package/lockfile/config changes, and no retry/delete/cleanup/rollback/download/export behavior.
+
+### Archived Completed Work
+
+- Step 75A created `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+- Step 75B linked that runbook from `deploy/runbook-production.md` and `deploy/checklist-production-cutover.md`.
+
+### Archived Boundary
+
+- The runbook is a read-only preflight reference only.
+- It is not production apply authorization, production/VPS access authorization, production DB access authorization, migration execution authorization, DB write authorization, permission change authorization, or real-data import authorization.
+- It must not be used to record `DATABASE_URL`, passwords, tokens, cookies, connection strings, credentials, raw production sample ids, raw audit ids, raw CSV, personal identifiers, raw request headers, user agents, IP addresses, raw exception bodies, or raw production JSON payloads.
+
+### Archived Preflight Coverage
+
+- Backup confirmation.
+- Migration state.
+- `ImportJob` / `ImportRun` structure presence.
+- `system:config` permission confirmation.
+- API health.
+- `GET /api/import-jobs`.
+- Conditional `GET /api/import-jobs/:id`.
+- Web page-local entries and settings overview visibility.
+- Safe evidence rules and stop conditions.
+
+Step 75C closes the production read-only preflight documentation line as reference material only. Any real production preflight execution or real-environment acceptance remains blocked until separately authorized.

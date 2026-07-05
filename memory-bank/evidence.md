@@ -1,5 +1,44 @@
 # Evidence
 
+## 2026-07-05 Step 75C - Import job history production preflight final archive evidence
+
+- Goal:
+  - Produce a docs-only final archive for Step 75A through Step 75B covering the import task history production read-only preflight documentation line.
+- Initial state:
+  - `git log -1 --oneline`: `cd1aa8c docs: link import history production preflight`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+  - Step 75B import-history preflight reference section from `deploy/runbook-production.md`.
+  - Step 75B import-history checklist references from `deploy/checklist-production-cutover.md`.
+  - Latest Step 75A through Step 75B sections from `memory-bank/progress.md`.
+  - Latest Step 75A through Step 75B sections from `memory-bank/evidence.md`.
+  - Latest Step 75A through Step 75B addenda from `memory-bank/import-job-history-database-model-plan.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-history-production-preflight-final-archive.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Archive evidence:
+  - Archived Step 75A creation of `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+  - Archived Step 75B production runbook/checklist links from `deploy/runbook-production.md` and `deploy/checklist-production-cutover.md`.
+  - Recorded that the runbook is a read-only preflight reference only and is not production apply authorization, production/VPS access authorization, migration execution authorization, DB write authorization, permission change authorization, or real-data import authorization.
+  - Recorded preflight coverage for backup confirmation, migration state, `ImportJob` / `ImportRun` structure presence, `system:config` permission confirmation, API health, `GET /api/import-jobs`, conditional `GET /api/import-jobs/:id`, Web page-local entries, settings overview visibility, safe evidence, and stop conditions.
+  - Recorded follow-up guidance that real production read-only preflight execution and any real-environment acceptance require separate explicit authorization.
+  - Recorded the safety rule that `DATABASE_URL`, passwords, tokens, cookies, connection strings, credentials, raw sample ids, raw audit IDs, raw CSV, and personal identifiers must not be pasted into chat, documentation, logs, screenshots, commits, or memory-bank evidence.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 75C docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in four memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 75C docs plus existing untracked local artifacts before commit.
+  - Manual diff review: PASS; no sensitive values, raw CSV, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No runtime, API, Web, Prisma schema, migration, package, lockfile, config, service startup, browser run, database, production/VPS, production DB, runbook execution, import apply, real-data import, migration execution, retry, delete, cleanup, rollback, download, export, DB write, permission modification, credential read, or credential propagation work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts in the repository were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-04 Step 75B - Production runbook reference for import history read-only preflight evidence
 
 - Goal:
