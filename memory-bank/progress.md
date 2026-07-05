@@ -1,5 +1,53 @@
 # Progress
 
+## 2026-07-05 Step 82B - Phase one scoring feature priority
+
+- Status: DONE.
+- Task classification:
+  - S docs-only scoring-oriented priority plan for phase-one unfinished
+    features.
+- Scope completed:
+  - Added `memory-bank/phase-one-scoring-feature-priority.md`.
+  - Read the existing requirement completion matrix and directly relevant
+    slices of `product-brief.md`, `architecture.md`, and
+    `next-phase-options.md`.
+  - Reframed next work around features that reviewers can see, demo, and
+    accept, instead of prioritizing production/VPS/real external-system
+    integration.
+  - Produced a scoring-oriented roadmap covering feature point, original
+    requirement source, current state, assessment display value,
+    implementation cost, risk, suggested Step, mock need, and production/real
+    system need.
+  - Recommended follow-up priority:
+    1. Step 83: 费用线上审批闭环。
+    2. Step 84: 成果转化 MVP。
+    3. Step 85: 账号激活/模拟通知闭环。
+    4. Step 86: 外部接口 mock 演示中心。
+    5. Step 87: 报表/看板增强。
+    6. Step 88: 考核演示总验收脚本。
+  - Included the existing untracked
+    `memory-bank/project-requirement-completion-matrix.md` in this docs
+    change because it is the direct source matrix for this Step.
+- Explicit boundaries:
+  - Current route does not prioritize production/VPS/real external-system
+    integration.
+  - Mock/adapter is documented only as demo capability, not as real external
+    integration.
+  - Local synthetic acceptance is documented as not equivalent to production
+    acceptance.
+- Explicitly not done:
+  - No runtime/API/Web/Prisma/schema/migration/package/lockfile/config change.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook, migration, service startup, real external call, or
+    production query execution.
+  - No existing untracked local artifact handling beyond staging the explicitly
+    authorized requirement matrix document.
+- Verification:
+  - Typecheck/test/build intentionally not run because this Step is docs-only
+    and changes only memory-bank documentation.
+  - Diff checks and final status are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 81A - Next phase route confirmation plan
 
 - Status: DONE.

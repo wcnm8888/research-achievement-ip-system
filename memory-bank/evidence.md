@@ -1,5 +1,76 @@
 # Evidence
 
+## 2026-07-05 Step 82B - Phase one scoring feature priority evidence
+
+- Goal:
+  - Add a docs-only priority plan for phase-one unfinished scoring features,
+    centered on functions that reviewers can see, demo, and accept.
+- Initial state:
+  - `git log -1 --oneline`: `3d8154d docs: outline next phase options`.
+  - `git status --short` showed existing untracked local artifacts plus the
+    Step-related untracked
+    `memory-bank/project-requirement-completion-matrix.md`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `memory-bank/project-requirement-completion-matrix.md` in full.
+  - `memory-bank/product-brief.md` sections for project background, product
+    goals, phase-one scope, phase-two scope, first-version exclusions,
+    non-functional goals, and success standards.
+  - `memory-bank/architecture.md` sections for system goal, delivery types,
+    module boundaries, data flow, external dependencies, and state management.
+  - `memory-bank/next-phase-options.md` route-selection guidance and relevant
+    production/authorization boundaries.
+  - Current top sections of `memory-bank/progress.md` and
+    `memory-bank/evidence.md`.
+  - Large historical progress/evidence bodies were not expanded beyond the
+    directly relevant current sections.
+- Documentation updated:
+  - Added `memory-bank/phase-one-scoring-feature-priority.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Staged the existing
+    `memory-bank/project-requirement-completion-matrix.md` because it is the
+    direct requirement-completion input for this Step.
+- Priority result:
+  - Recommended Step 83 first: 费用线上审批闭环。
+  - Then Step 84 成果转化 MVP, Step 85 账号激活/模拟通知闭环,
+    Step 86 外部接口 mock 演示中心, Step 87 报表/看板增强, and
+    Step 88 考核演示总验收脚本.
+  - Explicitly deferred production/VPS/real external-system integration.
+  - Explicitly documented that mock/adapter is demo capability only and must
+    not be described as real integration.
+  - Explicitly documented that local synthetic acceptance is not production
+    acceptance.
+- Verification:
+  - Typecheck/test/build were intentionally not run because this Step is
+    docs-only and does not change runtime code.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; unstaged diff empty after staging docs.
+  - `git diff --cached --stat`: PASS; staged changes limited to
+    `memory-bank/evidence.md`,
+    `memory-bank/phase-one-scoring-feature-priority.md`,
+    `memory-bank/progress.md`, and
+    `memory-bank/project-requirement-completion-matrix.md`.
+  - `git status --short`: PASS; staged docs changes plus existing untracked
+    local artifacts only.
+  - Manual diff review: PASS; docs-only, no runtime/API/Web/Prisma/schema/
+    migration/package/config change, no sensitive values introduced, no
+    credentials, no tokens, no cookies, no connection strings, no production
+    authorization, no real external-system claim, and no local artifact
+    handling outside the authorized matrix document.
+- Boundary:
+  - No `.env`, `.env.production`, credential, token, cookie, password, private
+    key, or connection string content was read or output.
+  - No production/VPS host, production DB, real external system, or production
+    environment was accessed.
+  - No production runbook, migration, import, service startup, browser command,
+    typecheck, test, or build was run.
+  - Existing untracked local artifacts were not touched, cleaned, moved,
+    deleted, staged, modified, or classified, except the explicitly authorized
+    `memory-bank/project-requirement-completion-matrix.md`.
+
 ## 2026-07-05 Step 81A - Next phase route confirmation plan evidence
 
 - Goal:
