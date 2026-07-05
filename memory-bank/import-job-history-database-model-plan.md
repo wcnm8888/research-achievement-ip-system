@@ -1464,3 +1464,41 @@ Step 77C implements only the first Achievement writer slice. User/account writer
 - `targetId` remains internal-only and does not enter DTOs, API responses, Web, logs, evidence examples, export, or business-object drilldown.
 
 Step 77D implements only the User account writer slice. Backend read DTOs, Web planning, acceptance beyond local tests, migration execution, and production work remain separate future authorization boundaries.
+
+## Step 77E ImportJobItem Writer Final Archive
+
+- Date: 2026-07-05.
+- Scope: docs-only archive for the Step 77A-D `ImportJobItem` row-level safe history delivery line.
+- Changed:
+  - `memory-bank/import-job-item-writer-final-archive.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no Prisma schema/migration changes, no backend/API/Web/runtime/package/lockfile/config changes, no backend read DTO/API/Web implementation, no migration apply/deploy/reset, no database access, no production/VPS or production DB access, no `.env` / `.env.production` content read, no real import apply, no seed, no backfill, no fixture row, no retry/delete/cleanup/rollback/download/export behavior, and no existing untracked-artifact handling.
+
+### Archived Delivery Line
+
+- Step 77A delivered `ImportJobItem` schema plus additive migration only; migration apply/deploy/reset was not executed.
+- Step 77B delivered Department `CREATE_ONLY` success-path item writing using `CREATE` / `APPLIED` / `DEPARTMENT`.
+- Step 77C delivered Achievement `CREATE_DRAFT_ONLY` success-path item writing for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` using `CREATE_DRAFT` / `APPLIED` / `ACHIEVEMENT`; `achievementType` is not duplicated on item rows.
+- Step 77D delivered User account `CREATE_ONLY_PENDING_NO_CREDENTIAL` success-path item writing using `CREATE_PENDING_USER` / `APPLIED` / `USER`.
+
+### Archived Shared Boundary
+
+- All writer slices write only for `RUNNER` + successful `EXECUTED`.
+- All item writes run in the same Prisma transaction as business creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+- Repositories inject `jobId` and `runId`; item sub-inputs do not accept them.
+- Rejected, failed, replayed success, and in-progress paths do not write item rows.
+- Persisted item data remains limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+- Item rows must not store raw CSV, row values, email, `employeeNo`, names, department codes, roles, titles, DOI, registration numbers, patent numbers, contributors, credentials, invites, passwords, `safeSummary`, `auditLogIds`, connection strings, or equivalent raw source/imported values.
+- `targetId` remains internal-only and does not enter DTOs, API responses, Web, logs, evidence examples, export, copyable fields, or business-object drilldown.
+
+### Suggested Future Split
+
+- Step 78A: backend read DTO plan, docs-only.
+- Step 78B: backend read DTO/API implementation, only if Step 78A is accepted.
+- Step 78C: Web row-level read plan, or an explicit decision to keep import history aggregate-only.
+- Step 78D: local synthetic acceptance, only if a later read/API/Web implementation requires it.
+
+Step 77E is an archive only. It does not authorize backend read DTOs, API/Web work, migration execution, database or production access, real import execution, or any row-level display/export behavior.

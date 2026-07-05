@@ -1,5 +1,39 @@
 # Progress
 
+## 2026-07-05 Step 77E - ImportJobItem writer final archive
+
+- Status: DONE.
+- Task classification:
+  - XS/S docs-only archive for the Step 77A-D `ImportJobItem` row-level safe history delivery line.
+- Scope completed:
+  - Added `memory-bank/import-job-item-writer-final-archive.md`.
+  - Archived Step 77A as schema/migration-only: `ImportJobItem` schema and additive migration were added, with no migration apply/deploy/reset.
+  - Archived Step 77B as Department `CREATE_ONLY` success-path writer using `CREATE` / `APPLIED` / `DEPARTMENT`.
+  - Archived Step 77C as Achievement `CREATE_DRAFT_ONLY` success-path writer for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`, using `CREATE_DRAFT` / `APPLIED` / `ACHIEVEMENT` and not duplicating `achievementType`.
+  - Archived Step 77D as User account `CREATE_ONLY_PENDING_NO_CREDENTIAL` success-path writer using `CREATE_PENDING_USER` / `APPLIED` / `USER`.
+  - Reconfirmed the shared writer boundary: only `RUNNER` + successful `EXECUTED` writes, same Prisma transaction as business creation/audit/job-run success updates, repository-injected `jobId` / `runId`, and no writes for rejected/failed/replay/in-progress paths.
+  - Reconfirmed the item data allowlist and forbidden raw CSV, row values, person/account/achievement identifiers, credentials, `safeSummary`, `auditLogIds`, and connection strings.
+  - Reconfirmed `targetId` remains internal-only and does not enter DTO/API/Web/log/evidence examples/export/copy/business-object drilldown.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`, `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Explicitly not done:
+  - No Prisma schema or migration change.
+  - No backend/API/Web/runtime/package/lockfile/config change.
+  - No backend read DTO/API/Web implementation.
+  - No migration apply/deploy/reset and no database access.
+  - No production/VPS or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No real import apply, real data write, seed, backfill, or fixture row.
+  - No retry/delete/cleanup/rollback/download/export behavior.
+  - Existing untracked local artifacts were not touched.
+- Verification:
+  - Runtime tests/typecheck/build intentionally not run because this Step is docs-only and does not change runtime code, Prisma schema, API/Web files, package files, lockfiles, or config.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; docs-only, no runtime/schema/API/Web/package/config change, no sensitive values, raw CSV, personal identifier examples, credentials, connection strings, or `targetId` DTO/API/Web/log/evidence example exposure.
+
 ## 2026-07-05 Step 77D - User account ImportJobItem backend writer
 
 - Status: DONE.

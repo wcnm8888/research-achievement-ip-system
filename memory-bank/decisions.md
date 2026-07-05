@@ -1,5 +1,19 @@
 # Decisions
 
+## D260 - ImportJobItem writer archive does not authorize read surfaces
+
+- Date: 2026-07-05.
+- Context: Step 77E archives the Step 77A-D `ImportJobItem` delivery line after schema/migration-only work and the Department, Achievement, and User account success-path writers were completed. The Step is docs-only and prohibits Prisma schema/migration changes, backend/API/Web/runtime/package/lockfile/config changes, migration execution, database/production/VPS access, `.env` reads, real import execution, real-data writes, seed/backfill, retry/delete/cleanup/rollback/download/export, and existing untracked-artifact handling.
+- Decision:
+  - Treat Step 77A-D as complete for schema/migration-only plus the three success-path backend writers.
+  - Keep backend read DTOs, backend read APIs, Web row-level history, migration apply/deploy/reset, database/production access, and real import execution outside the Step 77E archive.
+  - Preserve the writer boundary: item rows are written only for `RUNNER` + successful `EXECUTED`, inside the same Prisma transaction as business creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+  - Preserve the item persistence allowlist: `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal `targetId`.
+  - Keep raw CSV, row values, account/person/achievement identifiers, credentials, invites, passwords, `safeSummary`, `auditLogIds`, and connection strings out of item rows.
+  - Keep `targetId` out of DTOs, API responses, Web, logs, evidence examples, export, copyable fields, and business-object drilldown.
+- Scope:
+  - Future work should be split into a docs-only backend read DTO plan, conditional backend read DTO/API implementation, Web row-level read plan or aggregate-only decision, and local synthetic acceptance only if later implementation requires it.
+
 ## D259 - User account ImportJobItem writer is success-transaction only
 
 - Date: 2026-07-05.

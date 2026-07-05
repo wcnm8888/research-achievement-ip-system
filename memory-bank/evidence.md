@@ -1,5 +1,53 @@
 # Evidence
 
+## 2026-07-05 Step 77E - ImportJobItem writer final archive evidence
+
+- Goal:
+  - Archive the Step 77A-D `ImportJobItem` row-level safe history delivery line as docs-only, without authorizing read DTOs, API/Web, migration execution, database/production access, or real import execution.
+- Initial state:
+  - `git log -1 --oneline`: `bc40e15 feat: record user account import job items`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 77A, Step 77B, Step 77C, Step 77D, `ImportJobItem`, backend writer, and backend read DTO references before reading; large memory-bank files were not read in full.
+- Context read:
+  - Step 77A-D section from `memory-bank/import-job-history-database-model-plan.md`.
+  - Step 77A-D latest section from `memory-bank/progress.md`.
+  - Step 77A-D latest section from `memory-bank/evidence.md`.
+  - D256-D259 section from `memory-bank/decisions.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-writer-final-archive.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/decisions.md` only to record the docs-only archive boundary.
+- Archive evidence:
+  - Reconfirmed Step 77A added `ImportJobItem` schema and additive migration, and did not execute migration apply/deploy/reset.
+  - Reconfirmed Step 77B writes Department `CREATE_ONLY` success-path item rows as `CREATE` / `APPLIED` / `DEPARTMENT`.
+  - Reconfirmed Step 77C writes Achievement `CREATE_DRAFT_ONLY` success-path item rows for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT` as `CREATE_DRAFT` / `APPLIED` / `ACHIEVEMENT`, without duplicating `achievementType`.
+  - Reconfirmed Step 77D writes User account `CREATE_ONLY_PENDING_NO_CREDENTIAL` success-path item rows as `CREATE_PENDING_USER` / `APPLIED` / `USER`.
+  - Reconfirmed all writers write only for `RUNNER` + successful `EXECUTED`, in the same Prisma transaction as business creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+  - Reconfirmed repositories inject `jobId` and `runId`; item sub-inputs do not accept them.
+  - Reconfirmed rejected, failed, replayed success, and in-progress paths do not write item rows.
+  - Reconfirmed item persistence is limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and `targetId`.
+  - Reconfirmed forbidden content includes raw CSV, row values, email, `employeeNo`, names, department codes, roles, titles, DOI, registration numbers, patent numbers, contributors, credentials, invites, passwords, `safeSummary`, `auditLogIds`, and connection strings.
+  - Reconfirmed `targetId` remains internal-only and does not enter DTO/API/Web/log/evidence examples/export/copy/business-object drilldown.
+  - Recorded suggested future split: Step 78A docs-only backend read DTO plan, Step 78B backend read DTO/API implementation if accepted, Step 78C Web row-level read plan or aggregate-only decision, and Step 78D local synthetic acceptance if later implementation requires it.
+- Verification:
+  - Runtime tests/typecheck/build were intentionally not run because this Step is docs-only and does not change runtime code, Prisma schema, API/Web files, package files, lockfiles, or config.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank docs before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local artifacts only.
+  - Manual diff review: PASS; docs-only, no runtime/schema/API/Web/package/config change, no sensitive values, raw CSV, personal identifier examples, credentials, connection strings, or `targetId` DTO/API/Web/log/evidence example exposure.
+- Boundary:
+  - No migration apply, deploy, reset, database connection, production/VPS access, production DB access, real import apply, real data write, seed, backfill, fixture row, retry, delete, cleanup, rollback, download, or export was performed.
+  - No Prisma schema, migration, backend runtime, API, Web, package, lockfile, config, or script files were changed.
+  - No backend read DTO, API route/controller, Web row-level history, or export surface was added.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 77D - User account ImportJobItem backend writer evidence
 
 - Goal:
