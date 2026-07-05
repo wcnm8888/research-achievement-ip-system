@@ -753,6 +753,11 @@ const toSuccessfulUserAccountImportJobInput = (
     safeErrorCodes: [],
     safeSummary: safeSummary as unknown as Prisma.InputJsonValue,
     auditLogIds: [...auditLogIds],
+    items: rows.map((row) => ({
+      rowNumber: row.rowNumber,
+      safeCode: null,
+      targetId: row.createdUserId,
+    })),
   };
 };
 

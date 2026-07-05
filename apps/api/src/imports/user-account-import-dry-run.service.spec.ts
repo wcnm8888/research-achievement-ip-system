@@ -157,6 +157,30 @@ const createService = (input: {
   };
 };
 
+const expectUserAccountItemInput = (
+  item: Record<string, unknown>,
+  expected: { rowNumber: number; targetId: string },
+) => {
+  expect(item).toEqual({
+    rowNumber: expected.rowNumber,
+    safeCode: null,
+    targetId: expected.targetId,
+  });
+  expect(Object.keys(item).sort()).toEqual(["rowNumber", "safeCode", "targetId"]);
+  expect(item).not.toHaveProperty("jobId");
+  expect(item).not.toHaveProperty("runId");
+  expect(item).not.toHaveProperty("email");
+  expect(item).not.toHaveProperty("employeeNo");
+  expect(item).not.toHaveProperty("name");
+  expect(item).not.toHaveProperty("departmentCode");
+  expect(item).not.toHaveProperty("role");
+  expect(item).not.toHaveProperty("credential");
+  expect(item).not.toHaveProperty("invite");
+  expect(item).not.toHaveProperty("password");
+  expect(item).not.toHaveProperty("safeSummary");
+  expect(item).not.toHaveProperty("auditLogIds");
+};
+
 describe("UserAccountImportDryRunService", () => {
   it("returns a valid no-write user account preview for CSV rows", async () => {
     const { service, repository } = createService({
@@ -546,6 +570,17 @@ describe("UserAccountImportDryRunService", () => {
         auditLogIds: ["audit-1", "audit-1"],
       }),
     );
+    const successInput =
+      importJobRepository.markSucceededInTransaction.mock.calls[0]![1];
+    expect(successInput.items).toHaveLength(2);
+    expectUserAccountItemInput(successInput.items[0], {
+      rowNumber: 2,
+      targetId: ids.user,
+    });
+    expectUserAccountItemInput(successInput.items[1], {
+      rowNumber: 3,
+      targetId: ids.secondUser,
+    });
     const successSummaryJson = JSON.stringify(
       importJobRepository.markSucceededInTransaction.mock.calls[0]![1].safeSummary,
     );
@@ -652,6 +687,7 @@ describe("UserAccountImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("persists employee number display and normalized values during apply", async () => {
@@ -713,6 +749,7 @@ describe("UserAccountImportDryRunService", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.createPendingNoCredentialUserInTransaction).not.toHaveBeenCalled();
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
     expect(importJobRepository.markRejected).toHaveBeenCalledWith(
       expect.objectContaining({
         acceptedRowCount: 0,
@@ -929,7 +966,7 @@ describe("UserAccountImportDryRunService", () => {
   });
 
   it("keeps user create and audit inside one transaction for rollback on partial failure", async () => {
-    const { service, repository, prisma, auditService } = createService({
+    const { service, repository, importJobRepository, prisma, auditService } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
     });
@@ -974,6 +1011,7 @@ describe("UserAccountImportDryRunService", () => {
     expect(prisma.$transaction).toHaveBeenCalledOnce();
     expect(repository.createPendingNoCredentialUserInTransaction).toHaveBeenCalledTimes(2);
     expect(auditService.recordEventInTransaction).toHaveBeenCalledTimes(1);
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 
   it("rejects non CREATE_ONLY_PENDING_NO_CREDENTIAL modes", async () => {
@@ -992,7 +1030,7 @@ describe("UserAccountImportDryRunService", () => {
   });
 
   it("rejects repository uniqueness conflicts with a safe conflict report", async () => {
-    const { service, repository } = createService({
+    const { service, repository, importJobRepository } = createService({
       departments: [{ id: ids.department, code: "RD" }],
       roles: [{ id: ids.researcherRole, code: RoleCode.researcher }],
     });
@@ -1014,5 +1052,6 @@ describe("UserAccountImportDryRunService", () => {
         ]),
       }),
     });
+    expect(importJobRepository.markSucceededInTransaction).not.toHaveBeenCalled();
   });
 });

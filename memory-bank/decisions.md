@@ -1,5 +1,19 @@
 # Decisions
 
+## D259 - User account ImportJobItem writer is success-transaction only
+
+- Date: 2026-07-05.
+- Context: Step 77D authorizes only the User account `CREATE_ONLY_PENDING_NO_CREDENTIAL` backend writer slice after Step 77A added the `ImportJobItem` schema and Step 77B/77C established the writer pattern. The Step prohibits Prisma schema/migration changes, migration apply/deploy/reset, read DTO/API/Web changes, database/production/VPS access, `.env` reads, real import apply, real data writes, seed/backfill, retry/delete/cleanup/rollback/download/export, and existing untracked-artifact handling.
+- Decision:
+  - Write User account `ImportJobItem` rows only from the runner success path inside the same Prisma transaction as pending no-credential user creation, role creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+  - Keep item input narrow: service may pass only row number, null or approved safe machine code, and internal target reference; repository injects `jobId` and `runId` from the success input.
+  - Persist only `jobId`, `runId`, `rowNumber`, `plannedAction: CREATE_PENDING_USER`, `status: APPLIED`, `safeCode`, `targetType: USER`, and internal `targetId`.
+  - Do not persist credential, invite, password, email, employee number, name, department code, role code, raw CSV, row values, `safeSummary`, or `auditLogIds` on item rows.
+  - Do not write item rows for rejected, failed, replayed success, or in-progress claims.
+  - Keep `targetId` out of DTOs, API responses, Web, logs, evidence examples, copyable fields, export, and business-object drilldown.
+- Scope:
+  - This decision does not authorize backend read DTOs, API routes/controllers, Web UI, schema/migration changes, migration execution, production/VPS access, production DB access, real import execution, real-data writes, seed/backfill, retry/delete/cleanup/rollback/download/export behavior, permission changes, credential reads, credential propagation, cleanup, deletion, reset, restore, checkout, drop, prune, or existing untracked local artifact handling.
+
 ## D258 - Achievement ImportJobItem writer is success-transaction only
 
 - Date: 2026-07-05.

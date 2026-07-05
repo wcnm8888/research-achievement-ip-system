@@ -1440,3 +1440,27 @@ Step 77B implements only the first Department writer slice. Achievement/User wri
 - `targetId` remains internal-only and does not enter DTOs, API responses, Web, logs, evidence examples, export, or business-object drilldown.
 
 Step 77C implements only the first Achievement writer slice. User/account writer, backend read DTOs, Web planning, acceptance beyond local tests, migration execution, and production work remain separate future authorization boundaries.
+
+## Step 77D User Account ImportJobItem Backend Writer
+
+- Date: 2026-07-05.
+- Scope: User account `CREATE_ONLY_PENDING_NO_CREDENTIAL` backend writer only.
+- Changed:
+  - `apps/api/src/imports/user-account-import-job.repository.ts`.
+  - `apps/api/src/imports/user-account-import-job.repository.spec.ts`.
+  - `apps/api/src/imports/user-account-import-dry-run.service.ts`.
+  - `apps/api/src/imports/user-account-import-dry-run.service.spec.ts`.
+- Non-scope: no Prisma schema/migration changes, no migration apply/deploy/reset, no read DTO/API route/controller/client/Web changes, no database access, no production/VPS or production DB access, no `.env` / `.env.production` content read, no real import apply, no seed, no backfill, no fixture row, no retry/delete/cleanup/rollback/download/export behavior, and no existing untracked-artifact handling.
+
+### Writer Boundary
+
+- User account item rows are written only in the `RUNNER` + successful `EXECUTED` path.
+- Item writes occur inside the same Prisma transaction as pending no-credential user creation, role creation, audit writes, and `ImportRun` / `ImportJob` success updates.
+- Repository injects `jobId` and `runId`; item sub-input does not accept them.
+- Persisted item data remains limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+- User account item rows use `plannedAction: CREATE_PENDING_USER`, `status: APPLIED`, `targetType: USER`, and `safeCode: null` for the success path.
+- Rejected, failed, replayed success, and in-progress paths do not write item rows.
+- No row values, raw CSV, raw identifiers, account identifiers, credentials, invites, passwords, `safeSummary`, or `auditLogIds` are stored on item rows.
+- `targetId` remains internal-only and does not enter DTOs, API responses, Web, logs, evidence examples, export, or business-object drilldown.
+
+Step 77D implements only the User account writer slice. Backend read DTOs, Web planning, acceptance beyond local tests, migration execution, and production work remain separate future authorization boundaries.
