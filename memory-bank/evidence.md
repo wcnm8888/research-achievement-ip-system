@@ -1,5 +1,72 @@
 # Evidence
 
+## 2026-07-05 Step 81A - Next phase route confirmation plan evidence
+
+- Goal:
+  - Add a docs-only next-phase options document so the user can choose the
+    next route before any implementation or production activity starts.
+- Initial state:
+  - `git log -1 --oneline`: `687ed10 docs: add prompt 39 handoff archive`.
+  - `git status --short` showed only existing untracked local artifacts:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`,
+    `.local-step46g/`, `.local-step47i/`, `.local-step62c/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `memory-bank/prompt-39-handoff.md`.
+  - Step 80B section near the top of `memory-bank/progress.md`.
+  - Step 80B section near the top of `memory-bank/evidence.md`.
+  - `rg` was used to locate Step 80B references before precise reads; large
+    memory-bank history was not expanded in full.
+- Documentation updated:
+  - Added `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Route evidence:
+  - Recorded archived mainline coverage: ImportJob / ImportRun history, Web
+    aggregate-only history entries/settings overview, ImportJobItem schema/
+    writer/backend-only read/local synthetic acceptance/production readonly
+    preflight docs, and Prompt 39 handoff archive.
+  - Route A covers production read-only preflight preparation only and requires
+    explicit authorization before execution.
+  - Route B covers Web row-level display planning only and keeps `targetId`,
+    raw/source/export/drilldown exposure forbidden.
+  - Route C covers non-destructive audit planning for existing untracked local
+    artifacts and forbids cleanup, movement, deletion, and staging.
+  - Route D covers a new user-selected business feature line with fresh task
+    classification and scoped context reading.
+  - Each route records goal, risk, required authorization, first suggested Step,
+    and explicitly forbidden actions.
+- Verification:
+  - Typecheck/test/build were intentionally not run because this Step is
+    docs-only and does not change runtime code.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 81A docs.
+  - `git diff --cached --stat`: PASS; staged changes limited to
+    `memory-bank/evidence.md`, `memory-bank/next-phase-options.md`, and
+    `memory-bank/progress.md`.
+  - `git status --short`: PASS; staged docs changes plus existing untracked
+    local artifacts only.
+  - Manual diff review: PASS; docs-only, no runtime/API/Web/schema/migration/
+    package/config change, no sensitive values introduced, no raw CSV, no
+    personal identifier samples, no credentials, no `DATABASE_URL`, no tokens,
+    no cookies, no connection strings, no production/DB/env authorization, no
+    Web row-level display implementation, and no untracked artifact handling.
+- Boundary:
+  - No runtime/API/Web/schema/migration/package/lockfile/config files were
+    modified.
+  - No `.env`, `.env.production`, credential, token, cookie, password, private
+    key, or connection string content was read or output.
+  - No DB, production/VPS host, production DB, or real environment was
+    accessed.
+  - No migration, import, runbook, service startup, browser command, typecheck,
+    test, or build was run.
+  - No Web row-level display implementation was added.
+  - Existing untracked local artifacts were not touched, cleaned, moved,
+    deleted, staged, modified, or classified.
+
 ## 2026-07-05 Step 80B - Prompt 39 handoff archive evidence
 
 - Goal:

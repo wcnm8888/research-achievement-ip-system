@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-07-05 Step 81A - Next phase route confirmation plan
+
+- Status: DONE.
+- Task classification:
+  - XS/S docs-only route confirmation plan for selecting the next phase.
+- Scope completed:
+  - Added `memory-bank/next-phase-options.md`.
+  - Summarized the archived mainline: Import real-write first phase,
+    `ImportJob` / `ImportRun` history, Web aggregate-only history and settings
+    overview, `ImportJobItem` schema/writer/backend-only read/local synthetic
+    acceptance/production readonly preflight documentation, and Prompt 39
+    handoff archive.
+  - Documented optional next routes:
+    - Route A: production read-only preflight preparation, execution gated by
+      explicit user authorization.
+    - Route B: Web row-level display plan only, with implementation prohibited
+      and `targetId`, raw/source/export/drilldown exposure still forbidden.
+    - Route C: non-destructive safety audit plan for existing untracked local
+      artifacts.
+    - Route D: new business feature line selected by the user.
+  - For each route, recorded goal, risk, required authorization, first
+    suggested Step, and explicitly forbidden actions.
+  - Reconfirmed the default state: no DB/production/VPS access, no migration/
+    import/runbook execution, no `.env` / `.env.production` content read, and
+    no untracked local artifact handling.
+  - Updated `memory-bank/evidence.md`.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config change.
+  - No DB, production/VPS, or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No migration/import/runbook execution.
+  - No untracked local artifact cleanup, move, delete, staging, or
+    classification.
+  - No Web row-level display implementation.
+  - No `targetId`, raw CSV, personal identifier, credential, or connection
+    string exposure.
+- Verification:
+  - Typecheck/test/build intentionally not run because this Step is docs-only
+    and changes only memory-bank documentation.
+  - Diff checks and final status are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 80B - Prompt 39 handoff archive
 
 - Status: DONE.
