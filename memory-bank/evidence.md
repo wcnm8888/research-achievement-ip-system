@@ -1,5 +1,48 @@
 # Evidence
 
+## 2026-07-05 Step 76A - ImportJobItem safe history privacy plan evidence
+
+- Goal:
+  - Produce a docs-only privacy and field-boundary plan for a possible future `ImportJobItem` row-level safe history capability.
+- Initial state:
+  - `git log -1 --oneline`: `0281f03 docs: archive import history production preflight`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `ImportJobItem Deferred` section from `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/import-job-history-final-archive.md`.
+  - `memory-bank/import-job-history-settings-overview-final-archive.md`.
+  - `memory-bank/import-job-history-production-preflight-final-archive.md`.
+  - Latest Step 73E, Step 74D, and Step 75C sections from `memory-bank/progress.md`.
+  - Latest Step 73E, Step 74D, and Step 75C sections from `memory-bank/evidence.md`.
+  - Relevant Step 73E, Step 74D, and Step 75C addenda from `memory-bank/import-job-history-database-model-plan.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-safe-history-plan.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/decisions.md`.
+- Plan evidence:
+  - Explained that `ImportJobItem` stayed deferred because row-level history is close to source CSV/spreadsheet content and can expose row values, business identifiers, or people data if not strictly allowlisted.
+  - Defined the future row-level allowlist as `jobId`, `runId`, numeric `rowNumber`, machine `plannedAction`, machine `status`, machine `safeCode`, coarse `targetType`, and optional internal-only `targetId`.
+  - Covered Department `CREATE_ONLY`, User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and Achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+  - Explicitly prohibited raw CSV, CSV excerpts, row values, email, employee number, DOI, software registration number, patent number, title, personnel names, contributor/owner names, raw/normalized identifiers, credentials, tokens, cookies, passwords, connection strings, storage keys, mail payloads, request headers, user agents, IP addresses, and raw exception values.
+  - Recorded that `targetId` is internal diagnostics only and must not be displayed in Web, copied as a business field, or used for business-object drilldown from row history.
+  - Recorded that `ImportJob` remains the logical request and aggregate summary record, `ImportRun` remains the attempt ledger, and a future `ImportJobItem` would be a child safe outcome ledger only.
+  - Reconfirmed Web aggregate-only behavior and deferred row-level API/Web detail.
+  - Recommended future Step split: schema plan, backend implementation, Web plan, and acceptance.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 76A docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in five memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 76A docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV content, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No runtime, API, Web, Prisma schema, migration, package, lockfile, config, service startup, browser run, database, production/VPS, production DB, migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, business-object drilldown, DB write, permission modification, credential read, or credential propagation work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts in the repository were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 75C - Import job history production preflight final archive evidence
 
 - Goal:

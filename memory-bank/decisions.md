@@ -1,5 +1,20 @@
 # Decisions
 
+## D254 - ImportJobItem row-level history requires a strict safe-field allowlist
+
+- Date: 2026-07-05.
+- Context: Step 76A designs the privacy and field boundary for a possible future `ImportJobItem` row-level safe history model after the accepted `ImportJob` / `ImportRun` history line and production read-only preflight documentation. The task is documentation-only and prohibits runtime/API/Web/schema/migration/package/lockfile/config changes, service startup, browser runs, database access, production/VPS access, production DB access, `.env` / `.env.production` reads, migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, business-object drilldown, and existing untracked-artifact handling.
+- Decision:
+  - Keep `ImportJobItem` deferred until a separately authorized schema plan, backend implementation plan, Web plan, and acceptance step are completed.
+  - Treat row-level history as privacy-sensitive because it is close to source CSV/spreadsheet content and can expose row values, business identifiers, or people data.
+  - Limit any future row-level persisted fields to `jobId`, `runId`, numeric `rowNumber`, machine `plannedAction`, machine `status`, machine `safeCode`, coarse `targetType`, and optional internal-only `targetId` after creation.
+  - For Department, User/account, and Achievement imports, inherit family, mode, and achievement type from `ImportJob` where possible and do not duplicate source identifiers on `ImportJobItem`.
+  - Prohibit raw CSV, CSV excerpts, row values, email, employee number, DOI, software registration number, patent number, title, personnel names, contributor/owner names, raw/normalized identifiers, credentials, tokens, cookies, passwords, connection strings, storage keys, mail payloads, request headers, user agents, IP addresses, and raw exception values from row-level columns, JSON, DTOs, logs, evidence, and Web display.
+  - Keep `targetId` internal only: no Web display, copyable business field, row-level business-object drilldown, or external reference semantics.
+  - Keep current Web import history aggregate-only. Row-level API and Web detail remain deferred.
+- Scope:
+  - This decision does not authorize schema/migration/runtime/API/Web/package/lockfile/config implementation, service startup, browser automation, database access, production/VPS access, production DB access, `.env` / `.env.production` reads, migration execution, import apply, real-data import, retry/delete/cleanup/rollback/download/export behavior, row-level API, row-level Web display, business-object drilldown, target-id display, DB writes, permission changes, credential reads, credential propagation, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D253 - Import job Web history starts as family-local read-only entries
 
 - Date: 2026-07-04.

@@ -1289,3 +1289,29 @@ Step 75B improves discoverability only. It does not execute the Step 75A runbook
 - Safe evidence rules and stop conditions.
 
 Step 75C closes the production read-only preflight documentation line as reference material only. Any real production preflight execution or real-environment acceptance remains blocked until separately authorized.
+
+## Step 76A ImportJobItem Safe History Privacy Plan
+
+- Date: 2026-07-05.
+- Scope: documentation-only privacy and field-boundary plan for a possible future `ImportJobItem` row-level safe history model.
+- Added plan:
+  - `memory-bank/import-job-item-safe-history-plan.md`.
+- Non-scope: no runtime/API/Web/schema/migration/package/lockfile/config changes, no service startup, no browser run, no database access, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no import apply, no migration execution, no retry/delete/cleanup/rollback/download/export behavior, and no row-level Web display.
+
+### Safe History Boundary
+
+- `ImportJobItem` remains deferred because row-level history is closest to source CSV/spreadsheet content and could expose row values, business identifiers, or people data if not strictly allowlisted.
+- The future row-level allowlist is limited to `jobId`, `runId`, numeric `rowNumber`, machine `plannedAction`, machine `status`, machine `safeCode`, coarse `targetType`, and optional internal-only `targetId` after creation.
+- Forbidden row-level values include raw CSV, CSV excerpts, row values, email, employee number, DOI, software registration number, patent application/grant number, title, personnel names, contributor/owner names, raw identifiers, normalized identifiers, credentials, tokens, cookies, passwords, connection strings, storage keys, mail payloads, request headers, user agents, IP addresses, and raw exception values.
+- Department, User/account, and Achievement row-level plans may use only the global allowlist; family, mode, and achievement type should be inherited from `ImportJob` rather than duplicated with source identifiers.
+- `targetId` is internal diagnostics only. It must not be displayed in Web, exposed as a copyable business field, or used for business-object drilldown from row history.
+
+### Relationship And Web Position
+
+- `ImportJob` remains the logical request and aggregate summary record.
+- `ImportRun` remains the attempt ledger and safe run-summary record.
+- A future `ImportJobItem` would be a child row-level safe outcome ledger for one run inside one job; it must not become a replay/rollback instruction set, CSV reconstruction cache, source of truth for business objects, or replacement for aggregate history.
+- Web remains aggregate-only: list/detail and settings/system overview continue to show safe aggregate/status fields, sanitized safe summaries, run metadata, and audit counts.
+- Row-level API and Web detail remain deferred until separate schema, backend, Web, and acceptance steps are explicitly authorized.
+
+Step 76A documents privacy and field boundaries only. It does not authorize schema, migration, runtime, API, Web, database, production, import apply, or row-level display work.

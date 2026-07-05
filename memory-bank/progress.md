@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-07-05 Step 76A - ImportJobItem safe history privacy plan
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only privacy/design task; no schema, migration, runtime, API, Web, database, or operational execution.
+- Scope completed:
+  - Added `memory-bank/import-job-item-safe-history-plan.md`.
+  - Documented why `ImportJobItem` has remained deferred: row-level history is closest to CSV/spreadsheet content and can expose row values, business identifiers, or people data if not strictly allowlisted.
+  - Defined a global future row-level allowlist limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and optional internal-only `targetId`.
+  - Covered each supported import family: Department `CREATE_ONLY`, User/account `CREATE_ONLY_PENDING_NO_CREDENTIAL`, and Achievement `CREATE_DRAFT_ONLY` for `PAPER`, `SOFTWARE_COPYRIGHT`, and `PATENT`.
+  - Explicitly prohibited raw CSV, CSV excerpts, row values, email, employee number, DOI, software registration number, patent number, title, personnel names, contributor/owner names, raw/normalized identifiers, credentials, tokens, cookies, passwords, connection strings, storage keys, mail payloads, request headers, user agents, IP addresses, and raw exception values.
+  - Recorded that `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType` are allowed only as safe ordinal or machine fields.
+  - Recorded that `targetId` is internal only, optional after creation, not a Web display field, not copyable as a business field, and not a business-object drilldown affordance.
+  - Clarified the relationship to `ImportJob` and `ImportRun`: aggregate job/run history remains authoritative; a future item would be a child safe outcome ledger only.
+  - Reconfirmed Web remains aggregate-only and row-level detail remains deferred.
+  - Added future Step split recommendations for schema plan, backend implementation, Web plan, and acceptance.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 76A addendum.
+  - Updated `memory-bank/decisions.md` with the docs-only decision for the row-level safe history boundary.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No database, production/VPS, or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, business-object drilldown, or target-id display.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 76A docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in five memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 76A docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV content, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-05 Step 75C - Import job history production preflight final archive
 
 - Status: DONE.
