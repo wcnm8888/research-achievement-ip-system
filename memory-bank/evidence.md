@@ -1,5 +1,75 @@
 # Evidence
 
+## 2026-07-05 Step 80B - Prompt 39 handoff archive evidence
+
+- Goal:
+  - Add a docs-only Prompt 39 handoff archive for future Codex prompts,
+    covering current repository state, completed mainlines, current supported
+    capabilities, unauthorized boundaries, and optional next directions.
+- Initial state:
+  - `git log -1 --oneline`: `2400f3c docs: archive import job item delivery`.
+  - `git status --short` showed only existing untracked local artifacts:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`,
+    `.local-step46g/`, `.local-step47i/`, `.local-step62c/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 80A, final archive, import job item delivery,
+    and handoff references before reading; large memory-bank files were not
+    read in full.
+- Context read:
+  - `memory-bank/import-job-item-final-archive.md`.
+  - Top Step 80A section from `memory-bank/progress.md`.
+  - Top Step 80A section from `memory-bank/evidence.md`.
+- Documentation updated:
+  - Added `memory-bank/prompt-39-handoff.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Handoff evidence:
+  - Recorded current HEAD and repository state at Step 80B start.
+  - Summarized completed mainlines: import real-write first phase,
+    `ImportJob` / `ImportRun` history and idempotency, Web read-only history
+    and settings overview, and `ImportJobItem` safe row-level history through
+    Step 80A.
+  - Recorded current support for Department/Achievement/User account
+    `ImportJob` / `ImportRun`, `ImportJobItem` success-path writers,
+    backend-only `GET /api/import-jobs/:id/items`, and Web aggregate-only
+    history.
+  - Reconfirmed unsupported/unauthorized boundaries: Web row-level display,
+    `targetId` exposure, retry/delete/cleanup/rollback, raw CSV, download,
+    export, raw JSON, production/VPS/production DB execution, real-data import
+    apply, and untracked artifact cleanup.
+  - Recorded optional next directions: separately authorized production
+    read-only preflight execution, Web row-level display planning only if
+    needed, untracked local artifact handling, and new product/import lines.
+- Verification:
+  - Typecheck/test/build were intentionally not run because this Step is
+    docs-only and does not change runtime code.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 80B docs.
+  - `git diff --cached --stat`: PASS; staged changes limited to
+    `memory-bank/evidence.md`, `memory-bank/progress.md`, and
+    `memory-bank/prompt-39-handoff.md`.
+  - `git status --short`: PASS; staged docs changes plus existing untracked
+    local artifacts only.
+  - Manual diff review: PASS; docs-only, no runtime/API/Web/schema/migration/
+    package/config change, no sensitive values introduced, no raw CSV, no
+    personal identifier samples, no credentials, no `DATABASE_URL`, no tokens,
+    no cookies, no connection strings, no production/DB/env authorization, and
+    no Web row-level display implementation.
+- Boundary:
+  - No runtime/API/Web/schema/migration/package/lockfile/config files were
+    modified.
+  - No `.env`, `.env.production`, credential, token, cookie, password, private
+    key, or connection string content was read or output.
+  - No DB, production/VPS host, production DB, or real environment was
+    accessed.
+  - No migration, import, runbook, service startup, or browser command was run.
+  - No Web row-level display implementation was added.
+  - Existing untracked local artifacts were not touched, cleaned, moved,
+    deleted, staged, or modified.
+
 ## 2026-07-05 Step 80A - ImportJobItem final archive evidence
 
 - Goal:

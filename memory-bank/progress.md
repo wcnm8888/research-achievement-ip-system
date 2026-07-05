@@ -1,5 +1,40 @@
 # Progress
 
+## 2026-07-05 Step 80B - Prompt 39 handoff archive
+
+- Status: DONE.
+- Task classification:
+  - XS/S docs-only handoff archive for future Codex prompts.
+- Scope completed:
+  - Added `memory-bank/prompt-39-handoff.md`.
+  - Recorded Step 80B starting HEAD and repository state.
+  - Summarized completed mainlines: import real-write first phase,
+    `ImportJob` / `ImportRun` history and idempotency, Web read-only history
+    entries and settings overview, and the `ImportJobItem` safe row-level
+    history line through Step 80A.
+  - Recorded current supported capabilities for Department, Achievement, and
+    User account `ImportJob` / `ImportRun`, `ImportJobItem` success-path
+    writers, backend-only item reads, and Web aggregate-only history.
+  - Reconfirmed unsupported and unauthorized boundaries for Web row-level
+    display, `targetId` exposure, retry/delete/cleanup/rollback, raw CSV,
+    download/export/raw JSON, production/VPS/production DB execution,
+    real-data import apply, and untracked artifact cleanup.
+  - Recorded optional next directions: separately authorized production
+    read-only preflight execution, Web row-level display planning only if
+    needed, untracked local artifact handling, and new product/import lines.
+  - Updated `memory-bank/evidence.md`.
+- Explicitly not done:
+  - No runtime/API/Web/schema/migration/package/lockfile/config change.
+  - No `.env` / `.env.production` content read.
+  - No DB, production/VPS, or production DB access.
+  - No migration/import/runbook execution.
+  - No untracked local artifact cleanup, move, delete, or staging.
+  - No Web row-level display plan implementation.
+- Verification:
+  - Typecheck/test/build intentionally not run because this Step is docs-only
+    and changes only memory-bank documentation.
+  - Diff checks and final status are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 80A - ImportJobItem final archive
 
 - Status: DONE.
