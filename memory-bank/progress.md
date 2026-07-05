@@ -1,5 +1,51 @@
 # Progress
 
+## 2026-07-05 Step 80A - ImportJobItem final archive
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only total archive for the `ImportJobItem` row-level safe
+    history line from Step 76A through Step 79C.
+- Scope completed:
+  - Added `memory-bank/import-job-item-final-archive.md`.
+  - Summarized Step 76A/76B safe-field allowlist and forbidden-field boundary.
+  - Summarized Step 76C/76D schema plan and schema archive.
+  - Summarized Step 77A-E persistence delivery: schema plus additive migration,
+    Department writer, Achievement writer, User account writer, and writer
+    final archive.
+  - Summarized Step 78A-E read delivery: backend read DTO plan, backend-only
+    `GET /api/import-jobs/:id/items`, Web aggregate-only decision, local
+    synthetic backend-only acceptance, and read final archive.
+  - Summarized Step 79A-C production read-only preflight documentation:
+    runbook, production runbook/checklist discovery link, and production
+    preflight final archive.
+  - Recorded current support: Department/Achievement/User account success
+    paths write items; backend-only item read API exists; local synthetic
+    backend-only acceptance passed; production read-only preflight reference
+    exists but has not been executed.
+  - Reconfirmed unsupported and unauthorized boundaries for Web row-level
+    display, `targetId` exposure, global `/import-job-items`, retry/delete/
+    cleanup/rollback, download/export/raw JSON/raw CSV, business-object
+    drilldown, production/VPS/production DB access, migration execution, real
+    import, real-data use, and untracked artifact cleanup.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`,
+    `memory-bank/evidence.md`, and `memory-bank/decisions.md`.
+- Explicitly not done:
+  - No Web/backend runtime/code/test change.
+  - No Prisma schema or migration change.
+  - No package/lockfile/config change.
+  - No runbook execution.
+  - No production/VPS or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No migration apply/deploy/reset.
+  - No service startup.
+  - No real import or real-data use.
+  - No synthetic data cleanup or untracked local artifact handling.
+- Verification:
+  - Typecheck/test/build intentionally not run because this Step is docs-only
+    and changes only memory-bank documentation.
+  - Diff checks and final status are recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 79C - ImportJobItem production preflight final archive
 
 - Status: DONE.

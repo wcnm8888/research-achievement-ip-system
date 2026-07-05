@@ -1,5 +1,113 @@
 # Evidence
 
+## 2026-07-05 Step 80A - ImportJobItem final archive evidence
+
+- Goal:
+  - Create a docs-only total archive for the `ImportJobItem` row-level safe
+    history line from Step 76A through Step 79C, without modifying runtime,
+    Web, API, Prisma schema, migrations, package/lockfile/config, production
+    runbooks, or deployment files.
+- Initial state:
+  - `git log -1 --oneline`: `285c126 docs: archive import job item production preflight`.
+  - `git status --short` showed only existing untracked local artifacts:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`,
+    `.local-step46g/`, `.local-step47i/`, `.local-step62c/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+  - `rg` precisely located Step 76A, Step 76B, Step 76C, Step 76D, Step 77E,
+    Step 78E, Step 79C, `ImportJobItem`, and final archive references before
+    reading; large memory-bank files were not read in full.
+- Context read:
+  - `memory-bank/import-job-item-safe-history-final-archive.md`.
+  - `memory-bank/import-job-item-schema-final-archive.md`.
+  - `memory-bank/import-job-item-writer-final-archive.md`.
+  - `memory-bank/import-job-item-read-final-archive.md`.
+  - `memory-bank/import-job-item-production-preflight-final-archive.md`.
+  - Step 76A through Step 79C small sections from
+    `memory-bank/import-job-history-database-model-plan.md`.
+  - Top Step 79C/79B/79A/78E/77E sections from `memory-bank/progress.md`.
+  - Related Step 76A through Step 79C archive evidence sections from
+    `memory-bank/evidence.md`.
+  - D254 through D267 from `memory-bank/decisions.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-final-archive.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/decisions.md`.
+- Archive evidence:
+  - Summarized Step 76A/76B safe-field allowlist and forbidden-field boundary.
+  - Summarized Step 76C/76D schema plan and schema archive.
+  - Summarized Step 77A-E persistence delivery across schema/migration,
+    Department writer, Achievement writer, User account writer, and writer
+    archive.
+  - Summarized Step 78A-E read delivery across backend read DTO plan,
+    backend-only item read API, Web aggregate-only decision, local synthetic
+    backend-only acceptance, and read archive.
+  - Summarized Step 79A-C production read-only preflight documentation,
+    discovery links, and final archive.
+  - Reconfirmed current support: Department/Achievement/User account success
+    paths write item rows; backend-only `GET /api/import-jobs/:id/items`
+    exists; local synthetic backend-only acceptance passed; production
+    read-only preflight reference exists but has not been executed.
+  - Reconfirmed persistence allowlist: `jobId`, `runId`, `rowNumber`,
+    `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only
+    `targetId`.
+  - Reconfirmed API response allowlist: `items`, `total`, `page`, `pageSize`,
+    `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Reconfirmed forbidden fields/content: raw CSV, row values, email,
+    `employeeNo`, name, `departmentCode`, role, title, DOI, registration
+    number, patent number, contributors, credentials, invite/password/token/
+    cookie/connection string values, `safeSummary`, `auditLogIds`,
+    fingerprints, hashes, operator ids, raw sample ids, raw item ids, personal
+    identifiers, achievement identifiers, and account identifiers.
+  - Reconfirmed unsupported/unauthorized capabilities: Web row-level display,
+    `targetId` exposure, global `/import-job-items`, retry/delete/cleanup/
+    rollback, download/export/raw JSON/raw CSV, business-object drilldown,
+    production/VPS access, production DB access, migration execution as docs,
+    real import, real-data use, and untracked artifact cleanup.
+  - Recorded future route: Web row-level UI requires a new Web UI plan Step;
+    production preflight execution requires a new Step with backup and safe
+    evidence boundary confirmation; untracked local artifact cleanup requires a
+    separate safety audit/handling Step.
+- Verification:
+  - Typecheck/test/build were intentionally not run because this Step is
+    docs-only and does not change Web, backend runtime, Prisma schema,
+    migrations, package files, lockfiles, or config.
+  - `git diff --check`: PASS; Git reported line-ending normalization warnings
+    only.
+  - `git diff --cached --check`: PASS; empty before staging.
+  - `git diff --stat`: PASS; tracked changes limited to memory-bank docs
+    before staging, with the new archive shown as untracked in status.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; docs changes plus existing untracked local
+    artifacts and the new archive before staging.
+  - Manual diff review: PASS; docs-only, no Web/backend/schema/migration/
+    package/config change, no sensitive values introduced, no real production
+    samples, no raw CSV, no personal identifiers, no credentials or connection
+    strings, no production access authorization, no migration execution
+    authorization, no DB write authorization, no Web row-level display
+    authorization, and no `targetId` exposure authorization.
+- Boundary:
+  - No Web/backend runtime/code/test files were modified.
+  - No `prisma/schema.prisma` or migration files were modified.
+  - No package, lockfile, config, production runbook, or deploy file was
+    modified.
+  - No runbook was executed.
+  - No service was started.
+  - No database, production/VPS host, production DB, or real environment was
+    accessed.
+  - No `.env`, `.env.production`, credential, token, cookie, password, private
+    key, or connection string content was read or output.
+  - No migration apply/deploy/reset was run.
+  - No real import, real-data use, DB write, Web row-level display, target-id
+    exposure, retry, delete, cleanup, rollback, export, download, raw JSON/raw
+    CSV access, business-object drilldown, reset, restore, checkout, clean,
+    prune, or volume deletion was performed.
+  - Existing untracked local artifacts were not touched, cleaned, staged,
+    moved, or modified.
+
 ## 2026-07-05 Step 79C - ImportJobItem production preflight final archive evidence
 
 - Goal:

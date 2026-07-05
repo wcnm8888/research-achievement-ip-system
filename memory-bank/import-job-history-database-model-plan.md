@@ -1921,3 +1921,62 @@ cookies, connection strings, private keys, `.env` contents, raw production
 sample ids, raw item ids, `targetId`, `jobId`, `runId`, raw CSV, personal
 identifiers, achievement identifiers, account identifiers, credentials, or
 secret material.
+
+## Step 80A ImportJobItem Final Archive
+
+- Date: 2026-07-05.
+- Scope: docs-only total archive for the `ImportJobItem` row-level safe history
+  line from Step 76A through Step 79C.
+- Changed:
+  - `memory-bank/import-job-item-final-archive.md`.
+  - `memory-bank/import-job-history-database-model-plan.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+  - `memory-bank/decisions.md`.
+- Non-scope: no Web/backend runtime/code/test change, no Prisma schema or
+  migration change, no package/lockfile/config change, no runbook execution, no
+  production/VPS or production DB access, no `.env` / `.env.production` content
+  read, no migration apply/deploy/reset, no service startup, no real import, no
+  real-data use, no synthetic cleanup, and no existing untracked-artifact
+  handling.
+
+### Archived Total Line
+
+- Step 76A/76B established and archived the strict row-level safe-field
+  allowlist and forbidden-field boundary.
+- Step 76C/76D planned and archived the schema shape before implementation.
+- Step 77A delivered the `ImportJobItem` schema plus additive migration.
+- Step 77B delivered Department success-path item writing.
+- Step 77C delivered Achievement success-path item writing.
+- Step 77D delivered User account success-path item writing.
+- Step 77E archived the writer delivery line.
+- Step 78A planned the backend read DTO/API surface.
+- Step 78B delivered backend-only `GET /api/import-jobs/:id/items`.
+- Step 78C kept Web aggregate-only.
+- Step 78D completed local synthetic backend-only acceptance.
+- Step 78E archived the read delivery line.
+- Step 79A created the production read-only preflight runbook.
+- Step 79B linked the runbook from the production runbook/checklist discovery
+  path.
+- Step 79C archived the production preflight documentation line.
+
+### Current Boundary
+
+Current support is limited to Department/Achievement/User account success-path
+item writes, backend-only item reads, local synthetic backend-only acceptance,
+and an unexecuted production read-only preflight reference.
+
+Persistence remains limited to `jobId`, `runId`, `rowNumber`, `plannedAction`,
+`status`, `safeCode`, `targetType`, and internal-only `targetId`.
+
+API responses remain limited to `items`, `total`, `page`, `pageSize`,
+`rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+
+Unsupported and unauthorized capabilities remain: Web row-level display,
+`targetId` exposure, global `/import-job-items`, retry/delete/cleanup/rollback,
+download/export/raw JSON/raw CSV, business-object drilldown, production/VPS
+access, production DB access, migration execution as docs, real import,
+real-data use, and untracked local artifact cleanup.
+
+Future Web row-level UI, production preflight execution, and untracked artifact
+cleanup each require separate newly authorized Steps.

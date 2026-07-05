@@ -1,5 +1,42 @@
 # Decisions
 
+## D268 - ImportJobItem historical line is archived without widening access
+
+- Date: 2026-07-05.
+- Context: Step 80A creates a docs-only total archive for the `ImportJobItem`
+  row-level safe history line from Step 76A through Step 79C. The Step
+  summarizes privacy boundaries, schema/writer delivery, backend-only read
+  delivery, local synthetic backend-only acceptance, and production read-only
+  preflight documentation. The Step prohibits runtime/API/Web/schema/migration/
+  package/config changes, service startup, database access, production/VPS
+  access, production DB access, `.env` reads, migration execution, real import,
+  real-data use, runbook execution, Web row-level display, target-id exposure,
+  export/download, cleanup/rollback/retry/delete, and existing untracked
+  artifact handling.
+- Decision:
+  - Treat `memory-bank/import-job-item-final-archive.md` as the current
+    historical summary for Step 76A through Step 79C.
+  - Preserve the persistence allowlist: `jobId`, `runId`, `rowNumber`,
+    `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only
+    `targetId`.
+  - Preserve the API response allowlist: `items`, `total`, `page`, `pageSize`,
+    `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Keep Web import history aggregate-only; any future row-level Web UI must
+    start with a separate Web UI plan Step.
+  - Keep production preflight execution separate; any future execution must
+    first confirm backup evidence, explicit authorization, and safe evidence
+    boundaries.
+  - Keep untracked local artifact cleanup separate; it requires a dedicated
+    safety audit/handling Step.
+- Scope:
+  - This decision does not authorize Web row-level display, `targetId`
+    exposure, a global `/import-job-items` route, production/VPS access,
+    production DB access, migration execution, DB writes, real imports,
+    real-data use, production-readiness claims, retry/delete/cleanup/rollback,
+    download/export/raw JSON/raw CSV access, business-object drilldown,
+    credential reads, deletion, reset, restore, checkout, clean, prune, volume
+    deletion, or handling existing untracked local artifacts.
+
 ## D267 - ImportJobItem production preflight documentation line is archived
 
 - Date: 2026-07-05.
