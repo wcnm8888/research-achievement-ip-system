@@ -6,7 +6,12 @@ import { PrismaService } from "../database/prisma.service";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { ReminderStatusCode } from "../reminders/domain/reminder-domain.types";
 import { WorkflowTaskStatusCode } from "../workflow/domain/workflow-domain.types";
-import { DashboardBucket } from "./domain/dashboard-domain.types";
+import {
+  DashboardApiCallStatusCode,
+  DashboardBucket,
+  DashboardDepartmentRankBucket,
+  DashboardIntegrationCallBucket,
+} from "./domain/dashboard-domain.types";
 
 @Injectable()
 export class DashboardRepository {
@@ -88,6 +93,44 @@ export class DashboardRepository {
     }));
   }
 
+  async groupAchievementsByDepartment(
+    policyWhere: Prisma.AchievementWhereInput,
+    take: number,
+  ): Promise<DashboardDepartmentRankBucket[]> {
+    const rows = await this.prisma.achievement.groupBy({
+      by: ["departmentId"],
+      where: policyWhere,
+      _count: { _all: true },
+    });
+
+    const rankedRows = rows
+      .map((row) => ({ departmentId: row.departmentId, count: row._count._all }))
+      .sort((left, right) => right.count - left.count)
+      .slice(0, take);
+    const departmentIds = rankedRows.map((row) => row.departmentId);
+
+    if (departmentIds.length === 0) {
+      return [];
+    }
+
+    const departments = await this.prisma.department.findMany({
+      where: { id: { in: departmentIds } },
+      select: { id: true, code: true, name: true },
+    });
+    const departmentById = new Map(departments.map((department) => [department.id, department]));
+
+    return rankedRows.map((row) => {
+      const department = departmentById.get(row.departmentId);
+
+      return {
+        departmentId: row.departmentId,
+        departmentCode: department?.code ?? "UNKNOWN",
+        departmentName: department?.name ?? "未知部门",
+        count: row.count,
+      };
+    });
+  }
+
   async groupFeesByPayStatus(
     policyWhere: Prisma.FeeRecordWhereInput,
   ): Promise<DashboardBucket<PayStatusCode>[]> {
@@ -158,6 +201,64 @@ export class DashboardRepository {
     return rows.map((row) => ({
       key: row.status as ReminderStatusCode,
       count: row._count._all,
+    }));
+  }
+
+  async countRecentApiCallLogs(since: Date): Promise<number> {
+    return this.prisma.apiCallLog.count({
+      where: { createdAt: { gte: since } },
+    });
+  }
+
+  async groupRecentApiCallLogsByStatus(
+    since: Date,
+  ): Promise<DashboardBucket<DashboardApiCallStatusCode>[]> {
+    const rows = await this.prisma.apiCallLog.groupBy({
+      by: ["status"],
+      where: { createdAt: { gte: since } },
+      _count: { _all: true },
+    });
+
+    return rows.map((row) => ({
+      key: row.status as DashboardApiCallStatusCode,
+      count: row._count._all,
+    }));
+  }
+
+  async groupRecentApiCallLogsByIntegration(
+    since: Date,
+    take: number,
+  ): Promise<DashboardIntegrationCallBucket[]> {
+    const rows = await this.prisma.apiCallLog.groupBy({
+      by: ["integrationCode"],
+      where: { createdAt: { gte: since } },
+      _count: { _all: true },
+    });
+    const rankedRows = rows
+      .map((row) => ({
+        integrationCode: row.integrationCode,
+        count: row._count._all,
+      }))
+      .sort((left, right) => right.count - left.count)
+      .slice(0, take);
+    const integrationCodes = rankedRows.map((row) => row.integrationCode);
+
+    if (integrationCodes.length === 0) {
+      return [];
+    }
+
+    const integrations = await this.prisma.apiIntegration.findMany({
+      where: { code: { in: integrationCodes } },
+      select: { code: true, provider: true },
+    });
+    const integrationByCode = new Map(
+      integrations.map((integration) => [integration.code, integration]),
+    );
+
+    return rankedRows.map((row) => ({
+      integrationCode: row.integrationCode,
+      provider: integrationByCode.get(row.integrationCode)?.provider ?? "UNKNOWN",
+      count: row.count,
     }));
   }
 }

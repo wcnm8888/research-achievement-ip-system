@@ -9,12 +9,24 @@ import { PayStatusCode } from "../../fees/domain/fee-domain.types";
 import { ReminderStatusCode } from "../../reminders/domain/reminder-domain.types";
 import { WorkflowTaskStatusCode } from "../../workflow/domain/workflow-domain.types";
 
+export const DashboardApiCallStatusCode = {
+  success: "SUCCESS",
+  failed: "FAILED",
+  timeout: "TIMEOUT",
+  retried: "RETRIED",
+  skipped: "SKIPPED",
+} as const;
+
+export type DashboardApiCallStatusCode =
+  (typeof DashboardApiCallStatusCode)[keyof typeof DashboardApiCallStatusCode];
+
 export const DashboardMetricSectionCode = {
   achievement: "ACHIEVEMENT",
   conversion: "CONVERSION",
   fee: "FEE",
   workflow: "WORKFLOW",
   reminder: "REMINDER",
+  integrationMock: "INTEGRATION_MOCK",
 } as const;
 
 export type DashboardMetricSectionCode =
@@ -24,13 +36,19 @@ export const DashboardMetricKeyCode = {
   achievementTotal: "ACHIEVEMENT_TOTAL",
   achievementTypeDistribution: "ACHIEVEMENT_TYPE_DISTRIBUTION",
   achievementStatusDistribution: "ACHIEVEMENT_STATUS_DISTRIBUTION",
+  achievementDepartmentRanking: "ACHIEVEMENT_DEPARTMENT_RANKING",
   conversionTotal: "CONVERSION_TOTAL",
   conversionAmountSummary: "CONVERSION_AMOUNT_SUMMARY",
   conversionStatusFunnel: "CONVERSION_STATUS_FUNNEL",
   feePayStatusDistribution: "FEE_PAY_STATUS_DISTRIBUTION",
   feeDeadlineOverview: "FEE_DEADLINE_OVERVIEW",
+  feeRiskSummary: "FEE_RISK_SUMMARY",
   workflowTaskStatusOverview: "WORKFLOW_TASK_STATUS_OVERVIEW",
+  workflowApprovalEfficiency: "WORKFLOW_APPROVAL_EFFICIENCY",
   reminderTaskStatusOverview: "REMINDER_TASK_STATUS_OVERVIEW",
+  integrationMockRecentCalls: "INTEGRATION_MOCK_RECENT_CALLS",
+  integrationMockStatusDistribution: "INTEGRATION_MOCK_STATUS_DISTRIBUTION",
+  integrationMockByIntegration: "INTEGRATION_MOCK_BY_INTEGRATION",
 } as const;
 
 export type DashboardMetricKeyCode =
@@ -52,6 +70,17 @@ export type DashboardCount = {
 
 export type DashboardBucket<Key extends string> = DashboardCount & {
   key: Key;
+};
+
+export type DashboardDepartmentRankBucket = DashboardCount & {
+  departmentId: string;
+  departmentCode: string;
+  departmentName: string;
+};
+
+export type DashboardIntegrationCallBucket = DashboardCount & {
+  integrationCode: string;
+  provider: string;
 };
 
 export type DashboardDistribution<Key extends string> = {
@@ -77,11 +106,22 @@ export type DashboardAchievementSummary = {
     typeof DashboardMetricKeyCode.achievementStatusDistribution,
     DashboardDistribution<AchievementStatusCode>
   >;
+  departmentRanking: DashboardMetric<
+    typeof DashboardMetricKeyCode.achievementDepartmentRanking,
+    { buckets: DashboardDepartmentRankBucket[] }
+  >;
 };
 
 export type DashboardFeeDeadlineOverview = {
   overdue: DashboardBucket<typeof DashboardOverviewBucketCode.overdue>;
   dueSoon: DashboardBucket<typeof DashboardOverviewBucketCode.dueSoon>;
+};
+
+export type DashboardFeeRiskSummary = {
+  overdue: DashboardBucket<typeof DashboardOverviewBucketCode.overdue>;
+  dueSoon: DashboardBucket<typeof DashboardOverviewBucketCode.dueSoon>;
+  pending: DashboardBucket<typeof DashboardOverviewBucketCode.pending>;
+  paid: DashboardBucket<typeof PayStatusCode.paid>;
 };
 
 export type DashboardConversionAmountSummary = {
@@ -113,6 +153,18 @@ export type DashboardFeeSummary = {
     typeof DashboardMetricKeyCode.feeDeadlineOverview,
     DashboardFeeDeadlineOverview
   >;
+  risk: DashboardMetric<
+    typeof DashboardMetricKeyCode.feeRiskSummary,
+    DashboardFeeRiskSummary
+  >;
+};
+
+export type DashboardWorkflowApprovalEfficiency = {
+  total: DashboardBucket<typeof DashboardOverviewBucketCode.total>;
+  pending: DashboardBucket<typeof WorkflowTaskStatusCode.pending>;
+  approved: DashboardBucket<typeof WorkflowTaskStatusCode.approved>;
+  rejected: DashboardBucket<typeof WorkflowTaskStatusCode.rejected>;
+  cancelled: DashboardBucket<typeof WorkflowTaskStatusCode.cancelled>;
 };
 
 export type DashboardWorkflowTaskSummary = {
@@ -120,12 +172,31 @@ export type DashboardWorkflowTaskSummary = {
     typeof DashboardMetricKeyCode.workflowTaskStatusOverview,
     DashboardDistribution<WorkflowTaskStatusCode>
   >;
+  efficiency: DashboardMetric<
+    typeof DashboardMetricKeyCode.workflowApprovalEfficiency,
+    DashboardWorkflowApprovalEfficiency
+  >;
 };
 
 export type DashboardReminderTaskSummary = {
   byStatus: DashboardMetric<
     typeof DashboardMetricKeyCode.reminderTaskStatusOverview,
     DashboardDistribution<ReminderStatusCode>
+  >;
+};
+
+export type DashboardIntegrationMockSummary = {
+  recentCalls: DashboardMetric<
+    typeof DashboardMetricKeyCode.integrationMockRecentCalls,
+    DashboardCount & { windowDays: number }
+  >;
+  byStatus: DashboardMetric<
+    typeof DashboardMetricKeyCode.integrationMockStatusDistribution,
+    DashboardDistribution<DashboardApiCallStatusCode>
+  >;
+  byIntegration: DashboardMetric<
+    typeof DashboardMetricKeyCode.integrationMockByIntegration,
+    { buckets: DashboardIntegrationCallBucket[] }
   >;
 };
 
@@ -140,6 +211,7 @@ export type DashboardSummary = {
   fee: DashboardFeeSummary;
   workflowTasks: DashboardWorkflowTaskSummary;
   reminderTasks: DashboardReminderTaskSummary;
+  integrationMock: DashboardIntegrationMockSummary;
 };
 
 export type DashboardRequestOptions = {

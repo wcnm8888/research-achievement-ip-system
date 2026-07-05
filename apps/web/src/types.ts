@@ -3,6 +3,19 @@ export type DashboardBucket = {
   count: number;
 };
 
+export type DashboardDepartmentRankBucket = {
+  departmentId: string;
+  departmentCode: string;
+  departmentName: string;
+  count: number;
+};
+
+export type DashboardIntegrationCallBucket = {
+  integrationCode: string;
+  provider: string;
+  count: number;
+};
+
 export type DashboardMetric<Value> = {
   key: string;
   section: string;
@@ -23,6 +36,9 @@ export type DashboardSummary = {
     total: DashboardMetric<{ count: number }>;
     byType: DashboardMetric<DashboardDistribution>;
     byStatus: DashboardMetric<DashboardDistribution>;
+    departmentRanking: DashboardMetric<{
+      buckets: DashboardDepartmentRankBucket[];
+    }>;
   };
   conversion: {
     total: DashboardMetric<{ count: number }>;
@@ -38,12 +54,35 @@ export type DashboardSummary = {
       overdue: DashboardBucket;
       dueSoon: DashboardBucket;
     }>;
+    risk: DashboardMetric<{
+      overdue: DashboardBucket;
+      dueSoon: DashboardBucket;
+      pending: DashboardBucket;
+      paid: DashboardBucket;
+    }>;
   };
   workflowTasks: {
     byStatus: DashboardMetric<DashboardDistribution>;
+    efficiency: DashboardMetric<{
+      total: DashboardBucket;
+      pending: DashboardBucket;
+      approved: DashboardBucket;
+      rejected: DashboardBucket;
+      cancelled: DashboardBucket;
+    }>;
   };
   reminderTasks: {
     byStatus: DashboardMetric<DashboardDistribution>;
+  };
+  integrationMock: {
+    recentCalls: DashboardMetric<{
+      count: number;
+      windowDays: number;
+    }>;
+    byStatus: DashboardMetric<DashboardDistribution>;
+    byIntegration: DashboardMetric<{
+      buckets: DashboardIntegrationCallBucket[];
+    }>;
   };
 };
 

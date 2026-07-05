@@ -52,6 +52,20 @@ const makeDashboardSummary = (): DashboardSummary => ({
         buckets: [{ key: AchievementStatusCode.archived, count: 1 }],
       },
     },
+    departmentRanking: {
+      key: DashboardMetricKeyCode.achievementDepartmentRanking,
+      section: DashboardMetricSectionCode.achievement,
+      value: {
+        buckets: [
+          {
+            departmentId: ids.department,
+            departmentCode: "BIO",
+            departmentName: "生命科学学院",
+            count: 3,
+          },
+        ],
+      },
+    },
   },
   conversion: {
     total: {
@@ -91,6 +105,16 @@ const makeDashboardSummary = (): DashboardSummary => ({
         dueSoon: { key: DashboardOverviewBucketCode.dueSoon, count: 2 },
       },
     },
+    risk: {
+      key: DashboardMetricKeyCode.feeRiskSummary,
+      section: DashboardMetricSectionCode.fee,
+      value: {
+        overdue: { key: DashboardOverviewBucketCode.overdue, count: 1 },
+        dueSoon: { key: DashboardOverviewBucketCode.dueSoon, count: 2 },
+        pending: { key: DashboardOverviewBucketCode.pending, count: 2 },
+        paid: { key: PayStatusCode.paid, count: 0 },
+      },
+    },
   },
   workflowTasks: {
     byStatus: {
@@ -100,6 +124,17 @@ const makeDashboardSummary = (): DashboardSummary => ({
         buckets: [{ key: WorkflowTaskStatusCode.pending, count: 4 }],
       },
     },
+    efficiency: {
+      key: DashboardMetricKeyCode.workflowApprovalEfficiency,
+      section: DashboardMetricSectionCode.workflow,
+      value: {
+        total: { key: DashboardOverviewBucketCode.total, count: 4 },
+        pending: { key: WorkflowTaskStatusCode.pending, count: 4 },
+        approved: { key: WorkflowTaskStatusCode.approved, count: 0 },
+        rejected: { key: WorkflowTaskStatusCode.rejected, count: 0 },
+        cancelled: { key: WorkflowTaskStatusCode.cancelled, count: 0 },
+      },
+    },
   },
   reminderTasks: {
     byStatus: {
@@ -107,6 +142,30 @@ const makeDashboardSummary = (): DashboardSummary => ({
       section: DashboardMetricSectionCode.reminder,
       value: {
         buckets: [{ key: ReminderStatusCode.sent, count: 1 }],
+      },
+    },
+  },
+  integrationMock: {
+    recentCalls: {
+      key: DashboardMetricKeyCode.integrationMockRecentCalls,
+      section: DashboardMetricSectionCode.integrationMock,
+      value: {
+        count: 4,
+        windowDays: 7,
+      },
+    },
+    byStatus: {
+      key: DashboardMetricKeyCode.integrationMockStatusDistribution,
+      section: DashboardMetricSectionCode.integrationMock,
+      value: {
+        buckets: [{ key: "SUCCESS", count: 3 }],
+      },
+    },
+    byIntegration: {
+      key: DashboardMetricKeyCode.integrationMockByIntegration,
+      section: DashboardMetricSectionCode.integrationMock,
+      value: {
+        buckets: [{ integrationCode: "DOI_PRIMARY", provider: "DOI", count: 3 }],
       },
     },
   },
@@ -120,6 +179,12 @@ describe("Dashboard metric contract", () => {
     expect(summary.achievement.byType.value.buckets[0]).toEqual({
       key: AchievementTypeCode.paper,
       count: 2,
+    });
+    expect(summary.achievement.departmentRanking.value.buckets[0]).toEqual({
+      departmentId: ids.department,
+      departmentCode: "BIO",
+      departmentName: "生命科学学院",
+      count: 3,
     });
     expect(summary.fee.deadline.value.dueSoon).toEqual({
       key: DashboardOverviewBucketCode.dueSoon,
@@ -135,9 +200,14 @@ describe("Dashboard metric contract", () => {
     expect(summary.workflowTasks.byStatus.value.buckets[0]?.key).toBe(
       WorkflowTaskStatusCode.pending,
     );
+    expect(summary.workflowTasks.efficiency.value.pending.count).toBe(4);
     expect(summary.reminderTasks.byStatus.value.buckets[0]?.key).toBe(
       ReminderStatusCode.sent,
     );
+    expect(summary.integrationMock.recentCalls.value).toEqual({
+      count: 4,
+      windowDays: 7,
+    });
   });
 
   it("keeps bucket keys limited to non-sensitive enum facts", () => {
@@ -145,13 +215,19 @@ describe("Dashboard metric contract", () => {
       "ACHIEVEMENT_TOTAL",
       "ACHIEVEMENT_TYPE_DISTRIBUTION",
       "ACHIEVEMENT_STATUS_DISTRIBUTION",
+      "ACHIEVEMENT_DEPARTMENT_RANKING",
       "CONVERSION_TOTAL",
       "CONVERSION_AMOUNT_SUMMARY",
       "CONVERSION_STATUS_FUNNEL",
       "FEE_PAY_STATUS_DISTRIBUTION",
       "FEE_DEADLINE_OVERVIEW",
+      "FEE_RISK_SUMMARY",
       "WORKFLOW_TASK_STATUS_OVERVIEW",
+      "WORKFLOW_APPROVAL_EFFICIENCY",
       "REMINDER_TASK_STATUS_OVERVIEW",
+      "INTEGRATION_MOCK_RECENT_CALLS",
+      "INTEGRATION_MOCK_STATUS_DISTRIBUTION",
+      "INTEGRATION_MOCK_BY_INTEGRATION",
     ]);
     expect(Object.values(DashboardOverviewBucketCode)).toEqual([
       "TOTAL",
@@ -177,6 +253,11 @@ describe("Dashboard metric contract", () => {
       "newValue",
       "ipAddress",
       "userAgent",
+      "request",
+      "response",
+      "token",
+      "cookie",
+      "connectionString",
     ];
 
     for (const fieldName of forbiddenFieldNames) {

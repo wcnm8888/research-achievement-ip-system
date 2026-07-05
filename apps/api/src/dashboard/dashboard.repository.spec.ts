@@ -17,6 +17,9 @@ const createFakePrisma = () => ({
     count: vi.fn().mockResolvedValue(0),
     groupBy: vi.fn().mockResolvedValue([]),
   },
+  department: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
   achievementConversion: {
     aggregate: vi.fn().mockResolvedValue({
       _sum: {
@@ -36,6 +39,13 @@ const createFakePrisma = () => ({
   },
   reminderTask: {
     groupBy: vi.fn().mockResolvedValue([]),
+  },
+  apiCallLog: {
+    count: vi.fn().mockResolvedValue(0),
+    groupBy: vi.fn().mockResolvedValue([]),
+  },
+  apiIntegration: {
+    findMany: vi.fn().mockResolvedValue([]),
   },
 });
 
@@ -159,6 +169,51 @@ describe("DashboardRepository conversion aggregations", () => {
       _count: { _all: true },
     });
   });
+
+  it("ranks departments by visible achievement count without selecting achievement detail", async () => {
+    const { prisma, repository } = createRepository();
+    prisma.achievement.groupBy.mockResolvedValue([
+      { departmentId: "department-b", _count: { _all: 5 } },
+      { departmentId: ids.department, _count: { _all: 9 } },
+    ]);
+    prisma.department.findMany.mockResolvedValue([
+      {
+        id: ids.department,
+        code: "BIO",
+        name: "生命科学学院",
+      },
+      {
+        id: "department-b",
+        code: "CHEM",
+        name: "化学学院",
+      },
+    ]);
+
+    await expect(
+      repository.groupAchievementsByDepartment(
+        { departmentId: { in: [ids.department, "department-b"] } },
+        1,
+      ),
+    ).resolves.toEqual([
+      {
+        departmentId: ids.department,
+        departmentCode: "BIO",
+        departmentName: "生命科学学院",
+        count: 9,
+      },
+    ]);
+
+    expect(prisma.achievement.groupBy).toHaveBeenCalledWith({
+      by: ["departmentId"],
+      where: { departmentId: { in: [ids.department, "department-b"] } },
+      _count: { _all: true },
+    });
+    expect(prisma.department.findMany).toHaveBeenCalledWith({
+      where: { id: { in: [ids.department] } },
+      select: { id: true, code: true, name: true },
+    });
+    expect(prisma.achievement.groupBy.mock.calls[0]![0]).not.toHaveProperty("select");
+  });
 });
 
 describe("DashboardRepository fee aggregations", () => {
@@ -269,5 +324,71 @@ describe("DashboardRepository user-scoped task aggregations", () => {
     expect("update" in repository).toBe(false);
     expect("delete" in repository).toBe(false);
     expect(multiRemoveMethod in repository).toBe(false);
+  });
+});
+
+describe("DashboardRepository mock integration aggregations", () => {
+  it("counts recent API call logs by safe timestamp window", async () => {
+    const { prisma, repository } = createRepository();
+    const since = new Date("2026-07-01T00:00:00.000Z");
+    prisma.apiCallLog.count.mockResolvedValue(4);
+
+    await expect(repository.countRecentApiCallLogs(since)).resolves.toBe(4);
+
+    expect(prisma.apiCallLog.count).toHaveBeenCalledWith({
+      where: { createdAt: { gte: since } },
+    });
+  });
+
+  it("groups recent API call logs by status only", async () => {
+    const { prisma, repository } = createRepository();
+    const since = new Date("2026-07-01T00:00:00.000Z");
+    prisma.apiCallLog.groupBy.mockResolvedValue([
+      { status: "SUCCESS", _count: { _all: 3 } },
+      { status: "FAILED", _count: { _all: 1 } },
+    ]);
+
+    await expect(repository.groupRecentApiCallLogsByStatus(since)).resolves.toEqual([
+      { key: "SUCCESS", count: 3 },
+      { key: "FAILED", count: 1 },
+    ]);
+
+    expect(prisma.apiCallLog.groupBy).toHaveBeenCalledWith({
+      by: ["status"],
+      where: { createdAt: { gte: since } },
+      _count: { _all: true },
+    });
+  });
+
+  it("groups recent API call logs by integration code and provider without raw log fields", async () => {
+    const { prisma, repository } = createRepository();
+    const since = new Date("2026-07-01T00:00:00.000Z");
+    prisma.apiCallLog.groupBy.mockResolvedValue([
+      { integrationCode: "FINANCE_PRIMARY", _count: { _all: 2 } },
+      { integrationCode: "DOI_PRIMARY", _count: { _all: 5 } },
+    ]);
+    prisma.apiIntegration.findMany.mockResolvedValue([
+      { code: "DOI_PRIMARY", provider: "DOI" },
+      { code: "FINANCE_PRIMARY", provider: "FINANCE" },
+    ]);
+
+    await expect(repository.groupRecentApiCallLogsByIntegration(since, 1)).resolves.toEqual([
+      {
+        integrationCode: "DOI_PRIMARY",
+        provider: "DOI",
+        count: 5,
+      },
+    ]);
+
+    expect(prisma.apiCallLog.groupBy).toHaveBeenCalledWith({
+      by: ["integrationCode"],
+      where: { createdAt: { gte: since } },
+      _count: { _all: true },
+    });
+    expect(prisma.apiIntegration.findMany).toHaveBeenCalledWith({
+      where: { code: { in: ["DOI_PRIMARY"] } },
+      select: { code: true, provider: true },
+    });
+    expect(prisma.apiCallLog.groupBy.mock.calls[0]![0]).not.toHaveProperty("select");
   });
 });

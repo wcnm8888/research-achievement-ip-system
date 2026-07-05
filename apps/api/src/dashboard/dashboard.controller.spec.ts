@@ -88,6 +88,20 @@ const makeDashboardSummary = (): DashboardSummary => ({
         buckets: [{ key: AchievementStatusCode.archived, count: 1 }],
       },
     },
+    departmentRanking: {
+      key: DashboardMetricKeyCode.achievementDepartmentRanking,
+      section: DashboardMetricSectionCode.achievement,
+      value: {
+        buckets: [
+          {
+            departmentId: ids.department,
+            departmentCode: "BIO",
+            departmentName: "生命科学学院",
+            count: 3,
+          },
+        ],
+      },
+    },
   },
   conversion: {
     total: {
@@ -127,6 +141,16 @@ const makeDashboardSummary = (): DashboardSummary => ({
         dueSoon: { key: DashboardOverviewBucketCode.dueSoon, count: 2 },
       },
     },
+    risk: {
+      key: DashboardMetricKeyCode.feeRiskSummary,
+      section: DashboardMetricSectionCode.fee,
+      value: {
+        overdue: { key: DashboardOverviewBucketCode.overdue, count: 1 },
+        dueSoon: { key: DashboardOverviewBucketCode.dueSoon, count: 2 },
+        pending: { key: DashboardOverviewBucketCode.pending, count: 4 },
+        paid: { key: PayStatusCode.paid, count: 0 },
+      },
+    },
   },
   workflowTasks: {
     byStatus: {
@@ -136,6 +160,17 @@ const makeDashboardSummary = (): DashboardSummary => ({
         buckets: [{ key: WorkflowTaskStatusCode.pending, count: 5 }],
       },
     },
+    efficiency: {
+      key: DashboardMetricKeyCode.workflowApprovalEfficiency,
+      section: DashboardMetricSectionCode.workflow,
+      value: {
+        total: { key: DashboardOverviewBucketCode.total, count: 5 },
+        pending: { key: WorkflowTaskStatusCode.pending, count: 5 },
+        approved: { key: WorkflowTaskStatusCode.approved, count: 0 },
+        rejected: { key: WorkflowTaskStatusCode.rejected, count: 0 },
+        cancelled: { key: WorkflowTaskStatusCode.cancelled, count: 0 },
+      },
+    },
   },
   reminderTasks: {
     byStatus: {
@@ -143,6 +178,27 @@ const makeDashboardSummary = (): DashboardSummary => ({
       section: DashboardMetricSectionCode.reminder,
       value: {
         buckets: [{ key: ReminderStatusCode.sent, count: 2 }],
+      },
+    },
+  },
+  integrationMock: {
+    recentCalls: {
+      key: DashboardMetricKeyCode.integrationMockRecentCalls,
+      section: DashboardMetricSectionCode.integrationMock,
+      value: { count: 4, windowDays: 7 },
+    },
+    byStatus: {
+      key: DashboardMetricKeyCode.integrationMockStatusDistribution,
+      section: DashboardMetricSectionCode.integrationMock,
+      value: {
+        buckets: [{ key: "SUCCESS", count: 3 }],
+      },
+    },
+    byIntegration: {
+      key: DashboardMetricKeyCode.integrationMockByIntegration,
+      section: DashboardMetricSectionCode.integrationMock,
+      value: {
+        buckets: [{ integrationCode: "DOI_PRIMARY", provider: "DOI", count: 3 }],
       },
     },
   },
@@ -237,6 +293,14 @@ describe("DashboardController HTTP", () => {
         .expect(200);
 
       expect(response.body.achievement.total.value).toEqual({ count: 3 });
+      expect(response.body.achievement.departmentRanking.value.buckets).toEqual([
+        {
+          departmentId: ids.department,
+          departmentCode: "BIO",
+          departmentName: "生命科学学院",
+          count: 3,
+        },
+      ]);
       expect(response.body.conversion.total.value).toEqual({ count: 2 });
       expect(response.body.conversion.totals.value).toEqual({
         contractTotal: "100000.00",
@@ -245,6 +309,15 @@ describe("DashboardController HTTP", () => {
       expect(response.body.fee.deadline.value.dueSoon).toEqual({
         key: DashboardOverviewBucketCode.dueSoon,
         count: 2,
+      });
+      expect(response.body.fee.risk.value.pending).toEqual({
+        key: DashboardOverviewBucketCode.pending,
+        count: 4,
+      });
+      expect(response.body.workflowTasks.efficiency.value.pending.count).toBe(5);
+      expect(response.body.integrationMock.recentCalls.value).toEqual({
+        count: 4,
+        windowDays: 7,
       });
 
       const serialized = JSON.stringify(response.body);
@@ -261,6 +334,11 @@ describe("DashboardController HTTP", () => {
         "newValue",
         "ipAddress",
         "userAgent",
+        "request",
+        "response",
+        "token",
+        "cookie",
+        "connectionString",
       ]) {
         expect(serialized).not.toContain(fieldName);
       }

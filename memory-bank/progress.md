@@ -13170,3 +13170,38 @@
   - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
 - Next step:
   - Proceed to Step 87: report/dashboard enhancement.
+
+## 2026-07-05 Step 87 - Report/dashboard scoring enhancement
+
+- Status: DONE.
+- Gap analysis:
+  - Existing Dashboard already had achievement total/type/status buckets, fee pay-status/deadline buckets, current-user workflow/reminder status buckets, and Step 84 conversion count, contract/revenue totals, and conversion funnel.
+  - Existing Web Dashboard still carried Step 17 copy that said department ranking and amount summary were unavailable, which conflicted with Step 84/87 scoring needs.
+  - Step 86 added safe `ApiCallLog` mock demo fields, but Dashboard did not yet aggregate recent mock integration calls.
+  - This step intentionally enhances fixed scoring/reporting views only; it does not add a custom report designer, export, drilldown, real BI, production monitoring, or production data access.
+- Scope completed:
+  - Extended `GET /dashboard/summary` response with policy-scoped department achievement ranking: department id/code/name and achievement count only.
+  - Added fee risk summary with overdue, due-soon, pending, and paid fixed counts.
+  - Added workflow approval efficiency summary with total, pending, approved, rejected, and cancelled task counts for the current assignee.
+  - Reused Step 84 conversion metrics already in Dashboard: conversion count, contract/revenue totals, and status funnel.
+  - Added recent 7-day mock integration call overview from `ApiCallLog`: total recent count, status distribution, and integrationCode/provider call ranking.
+  - Web Dashboard now shows scoring summary tiles, department ranking, fee risk, approval efficiency, conversion funnel, and external mock integration overview from the same readonly summary endpoint.
+  - Replaced old Step 17 "department ranking / amount summary unavailable" copy with local/demo scoring boundary copy.
+- Security and boundary notes:
+  - Achievement and conversion aggregations still use `PolicyQueryFactory.achievementReadableWhere(context)`.
+  - Fee aggregations still use `PolicyQueryFactory.feeReadableWhere(context)` and active fee filtering.
+  - Workflow aggregation remains current-assignee scoped.
+  - Mock integration Dashboard aggregation returns only safe aggregate counts; it does not return raw request/response, request id, error detail list, credentials, tokens, cookies, connection strings, or real external payloads.
+  - No new export, drilldown, raw log, raw audit, or detail endpoint was added.
+  - No schema, migration, seed, package, or lockfile change was made.
+  - No production/VPS/production DB/real BI/real finance/real HR/SSO/real DOI/real patent/email/SMS system was accessed.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- dashboard report`: PASS, 5 files / 39 tests. The `report` filter matched no separate report test file; the command still ran the Dashboard suite.
+  - `corepack pnpm --filter @research-ip/web test -- Dashboard`: PASS, 1 file / 13 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Initial `corepack pnpm --filter @research-ip/web typecheck`: failed because the Web Dashboard test fixture placed `departmentRanking` under `conversion`; fixture corrected.
+  - Final `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `git diff --cached --stat`: empty.
+- Next step:
+  - Proceed to Step 88:考核演示总验收脚本.

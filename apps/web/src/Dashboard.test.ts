@@ -50,6 +50,26 @@ const dashboardSummary: DashboardSummary = {
         ],
       },
     },
+    departmentRanking: {
+      key: "ACHIEVEMENT_DEPARTMENT_RANKING",
+      section: "ACHIEVEMENT",
+      value: {
+        buckets: [
+          {
+            departmentId: "10000000-0000-4000-8000-000000000002",
+            departmentCode: "BIO",
+            departmentName: "生命科学学院",
+            count: 24,
+          },
+          {
+            departmentId: "10000000-0000-4000-8000-000000000003",
+            departmentCode: "CHEM",
+            departmentName: "化学学院",
+            count: 18,
+          },
+        ],
+      },
+    },
   },
   conversion: {
     total: {
@@ -96,6 +116,16 @@ const dashboardSummary: DashboardSummary = {
         dueSoon: { key: "DUE_SOON", count: 7 },
       },
     },
+    risk: {
+      key: "FEE_RISK_SUMMARY",
+      section: "FEE",
+      value: {
+        overdue: { key: "OVERDUE", count: 3 },
+        dueSoon: { key: "DUE_SOON", count: 7 },
+        pending: { key: "PENDING", count: 7 },
+        paid: { key: "PAID", count: 21 },
+      },
+    },
   },
   workflowTasks: {
     byStatus: {
@@ -108,6 +138,17 @@ const dashboardSummary: DashboardSummary = {
         ],
       },
     },
+    efficiency: {
+      key: "WORKFLOW_APPROVAL_EFFICIENCY",
+      section: "WORKFLOW",
+      value: {
+        total: { key: "TOTAL", count: 16 },
+        pending: { key: "PENDING", count: 5 },
+        approved: { key: "APPROVED", count: 9 },
+        rejected: { key: "REJECTED", count: 2 },
+        cancelled: { key: "CANCELLED", count: 0 },
+      },
+    },
   },
   reminderTasks: {
     byStatus: {
@@ -117,6 +158,37 @@ const dashboardSummary: DashboardSummary = {
         buckets: [
           { key: "PENDING", count: 4 },
           { key: "SENT", count: 8 },
+        ],
+      },
+    },
+  },
+  integrationMock: {
+    recentCalls: {
+      key: "INTEGRATION_MOCK_RECENT_CALLS",
+      section: "INTEGRATION_MOCK",
+      value: {
+        count: 12,
+        windowDays: 7,
+      },
+    },
+    byStatus: {
+      key: "INTEGRATION_MOCK_STATUS_DISTRIBUTION",
+      section: "INTEGRATION_MOCK",
+      value: {
+        buckets: [
+          { key: "SUCCESS", count: 9 },
+          { key: "FAILED", count: 2 },
+          { key: "SKIPPED", count: 1 },
+        ],
+      },
+    },
+    byIntegration: {
+      key: "INTEGRATION_MOCK_BY_INTEGRATION",
+      section: "INTEGRATION_MOCK",
+      value: {
+        buckets: [
+          { integrationCode: "DOI_PRIMARY", provider: "DOI", count: 8 },
+          { integrationCode: "FINANCE_PRIMARY", provider: "FINANCE", count: 4 },
         ],
       },
     },
@@ -206,8 +278,15 @@ describe("dashboard summary helpers", () => {
       conversionRevenueTotal: "180000.00",
       overdueFees: 3,
       dueSoonFees: 7,
+      pendingFees: 7,
+      paidFees: 21,
       pendingWorkflowTasks: 5,
+      approvedWorkflowTasks: 9,
+      rejectedWorkflowTasks: 2,
+      cancelledWorkflowTasks: 0,
       pendingReminders: 4,
+      integrationMockRecentCalls: 12,
+      integrationMockWindowDays: 7,
     });
   });
 
@@ -220,8 +299,15 @@ describe("dashboard summary helpers", () => {
       conversionRevenueTotal: "0.00",
       overdueFees: 0,
       dueSoonFees: 0,
+      pendingFees: 0,
+      paidFees: 0,
       pendingWorkflowTasks: 0,
+      approvedWorkflowTasks: 0,
+      rejectedWorkflowTasks: 0,
+      cancelledWorkflowTasks: 0,
       pendingReminders: 0,
+      integrationMockRecentCalls: 0,
+      integrationMockWindowDays: 7,
     });
   });
 
@@ -239,12 +325,13 @@ describe("dashboard summary helpers", () => {
     expect(sections.map((section) => section.title)).toEqual([
       "成果类型分布",
       "成果状态分布",
-      "Conversion funnel",
+      "成果转化漏斗",
       "费用缴费状态",
       "审批任务状态",
       "提醒任务状态",
+      "Mock 接口调用状态",
     ]);
-    expect(sections).toHaveLength(6);
+    expect(sections).toHaveLength(7);
     expect(sections[0]?.items).toEqual([
       { key: "PATENT", label: "专利", count: 20, percent: 48 },
       { key: "PAPER", label: "论文", count: 12, percent: 29 },
@@ -262,6 +349,11 @@ describe("dashboard summary helpers", () => {
     expect(sections[3]?.items.map((item) => item.label)).toEqual(["待缴", "已缴"]);
     expect(sections[4]?.items.map((item) => item.label)).toEqual(["待处理", "已通过"]);
     expect(sections[5]?.items.map((item) => item.label)).toEqual(["待发送", "已发送"]);
+    expect(sections[6]?.items.map((item) => item.label)).toEqual([
+      "成功",
+      "失败",
+      "跳过",
+    ]);
   });
 
   it("returns empty display items for empty buckets without inventing data", () => {
@@ -301,7 +393,7 @@ describe("dashboard errors and scope boundary", () => {
       method: "GET",
       allowedDueSoonDays: [7, 30, 90],
       defaultQuery: { dueSoonDays: 30 },
-      unavailableMetrics: ["年度趋势", "部门排行", "金额汇总", "专利法律状态专项统计"],
+      unavailableMetrics: ["年度趋势引擎", "专利法律状态专项统计"],
     });
   });
 
@@ -313,9 +405,7 @@ describe("dashboard errors and scope boundary", () => {
       defaultQuery: { dueSoonDays: 30 },
       excludedQuery: ["today"],
       unavailableMetrics: [
-        "年度趋势",
-        "部门排行",
-        "金额汇总",
+        "年度趋势引擎",
         "专利法律状态专项统计",
         "钻取详情",
         "导出",

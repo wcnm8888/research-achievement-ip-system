@@ -1,8 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
+import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { UserContext } from "../identity/user-context";
+import { WorkflowTaskStatusCode } from "../workflow/domain/workflow-domain.types";
 import { DashboardRepository } from "./dashboard.repository";
 import {
+  DashboardBucket,
   DashboardMetricKeyCode,
   DashboardMetricSectionCode,
   DashboardOverviewBucketCode,
@@ -33,6 +36,10 @@ export class DashboardService {
       todayDateOnly,
       normalizedOptions.dueSoonDays,
     );
+    const recentApiCallLogSince = addUtcDays(
+      todayDateOnly,
+      -dashboardRecentApiCallWindowDays,
+    );
     const achievementWhere =
       this.policyQueryFactory.achievementReadableWhere(context);
     const feeWhere = this.policyQueryFactory.feeReadableWhere(context);
@@ -41,6 +48,7 @@ export class DashboardService {
       achievementTotal,
       achievementTypeBuckets,
       achievementStatusBuckets,
+      achievementDepartmentBuckets,
       conversionTotal,
       conversionAmountSummary,
       conversionStatusBuckets,
@@ -49,10 +57,17 @@ export class DashboardService {
       dueSoonFeeCount,
       workflowTaskStatusBuckets,
       reminderTaskStatusBuckets,
+      recentApiCallLogCount,
+      recentApiCallStatusBuckets,
+      recentApiCallIntegrationBuckets,
     ] = await Promise.all([
       this.repository.countAchievements(achievementWhere),
       this.repository.groupAchievementsByType(achievementWhere),
       this.repository.groupAchievementsByStatus(achievementWhere),
+      this.repository.groupAchievementsByDepartment(
+        achievementWhere,
+        dashboardDepartmentRankingLimit,
+      ),
       this.repository.countConversions(achievementWhere),
       this.repository.sumConversionAmounts(achievementWhere),
       this.repository.groupConversionsByStatus(achievementWhere),
@@ -65,7 +80,35 @@ export class DashboardService {
       ),
       this.repository.groupWorkflowTasksByStatus(context.userId),
       this.repository.groupReminderTasksByStatus(context.userId),
+      this.repository.countRecentApiCallLogs(recentApiCallLogSince),
+      this.repository.groupRecentApiCallLogsByStatus(recentApiCallLogSince),
+      this.repository.groupRecentApiCallLogsByIntegration(
+        recentApiCallLogSince,
+        dashboardIntegrationRankingLimit,
+      ),
     ]);
+    const pendingFeeCount = countBucket(feePayStatusBuckets, PayStatusCode.pending);
+    const paidFeeCount = countBucket(feePayStatusBuckets, PayStatusCode.paid);
+    const pendingWorkflowTaskCount = countBucket(
+      workflowTaskStatusBuckets,
+      WorkflowTaskStatusCode.pending,
+    );
+    const approvedWorkflowTaskCount = countBucket(
+      workflowTaskStatusBuckets,
+      WorkflowTaskStatusCode.approved,
+    );
+    const rejectedWorkflowTaskCount = countBucket(
+      workflowTaskStatusBuckets,
+      WorkflowTaskStatusCode.rejected,
+    );
+    const cancelledWorkflowTaskCount = countBucket(
+      workflowTaskStatusBuckets,
+      WorkflowTaskStatusCode.cancelled,
+    );
+    const workflowTaskTotal = workflowTaskStatusBuckets.reduce(
+      (sum, bucket) => sum + bucket.count,
+      0,
+    );
 
     return {
       generatedAt: normalizedOptions.today,
@@ -89,6 +132,11 @@ export class DashboardService {
           section: DashboardMetricSectionCode.achievement,
           value: { buckets: achievementStatusBuckets },
         },
+        departmentRanking: {
+          key: DashboardMetricKeyCode.achievementDepartmentRanking,
+          section: DashboardMetricSectionCode.achievement,
+          value: { buckets: achievementDepartmentBuckets },
+        },
       },
       fee: {
         byPayStatus: {
@@ -107,6 +155,28 @@ export class DashboardService {
             dueSoon: {
               key: DashboardOverviewBucketCode.dueSoon,
               count: dueSoonFeeCount,
+            },
+          },
+        },
+        risk: {
+          key: DashboardMetricKeyCode.feeRiskSummary,
+          section: DashboardMetricSectionCode.fee,
+          value: {
+            overdue: {
+              key: DashboardOverviewBucketCode.overdue,
+              count: overdueFeeCount,
+            },
+            dueSoon: {
+              key: DashboardOverviewBucketCode.dueSoon,
+              count: dueSoonFeeCount,
+            },
+            pending: {
+              key: DashboardOverviewBucketCode.pending,
+              count: pendingFeeCount,
+            },
+            paid: {
+              key: PayStatusCode.paid,
+              count: paidFeeCount,
             },
           },
         },
@@ -134,12 +204,58 @@ export class DashboardService {
           section: DashboardMetricSectionCode.workflow,
           value: { buckets: workflowTaskStatusBuckets },
         },
+        efficiency: {
+          key: DashboardMetricKeyCode.workflowApprovalEfficiency,
+          section: DashboardMetricSectionCode.workflow,
+          value: {
+            total: {
+              key: DashboardOverviewBucketCode.total,
+              count: workflowTaskTotal,
+            },
+            pending: {
+              key: WorkflowTaskStatusCode.pending,
+              count: pendingWorkflowTaskCount,
+            },
+            approved: {
+              key: WorkflowTaskStatusCode.approved,
+              count: approvedWorkflowTaskCount,
+            },
+            rejected: {
+              key: WorkflowTaskStatusCode.rejected,
+              count: rejectedWorkflowTaskCount,
+            },
+            cancelled: {
+              key: WorkflowTaskStatusCode.cancelled,
+              count: cancelledWorkflowTaskCount,
+            },
+          },
+        },
       },
       reminderTasks: {
         byStatus: {
           key: DashboardMetricKeyCode.reminderTaskStatusOverview,
           section: DashboardMetricSectionCode.reminder,
           value: { buckets: reminderTaskStatusBuckets },
+        },
+      },
+      integrationMock: {
+        recentCalls: {
+          key: DashboardMetricKeyCode.integrationMockRecentCalls,
+          section: DashboardMetricSectionCode.integrationMock,
+          value: {
+            count: recentApiCallLogCount,
+            windowDays: dashboardRecentApiCallWindowDays,
+          },
+        },
+        byStatus: {
+          key: DashboardMetricKeyCode.integrationMockStatusDistribution,
+          section: DashboardMetricSectionCode.integrationMock,
+          value: { buckets: recentApiCallStatusBuckets },
+        },
+        byIntegration: {
+          key: DashboardMetricKeyCode.integrationMockByIntegration,
+          section: DashboardMetricSectionCode.integrationMock,
+          value: { buckets: recentApiCallIntegrationBuckets },
         },
       },
     };
@@ -162,3 +278,12 @@ export const addUtcDays = (value: Date, days: number): Date => {
   next.setUTCDate(next.getUTCDate() + days);
   return next;
 };
+
+export const dashboardDepartmentRankingLimit = 5;
+export const dashboardIntegrationRankingLimit = 5;
+export const dashboardRecentApiCallWindowDays = 7;
+
+const countBucket = <Key extends string>(
+  buckets: DashboardBucket<Key>[],
+  key: Key,
+): number => buckets.find((bucket) => bucket.key === key)?.count ?? 0;

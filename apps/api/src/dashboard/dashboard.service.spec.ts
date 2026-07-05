@@ -7,7 +7,13 @@ import { UserContext } from "../identity/user-context";
 import { ReminderStatusCode } from "../reminders/domain/reminder-domain.types";
 import { WorkflowTaskStatusCode } from "../workflow/domain/workflow-domain.types";
 import { DashboardRepository } from "./dashboard.repository";
-import { DashboardService, addUtcDays, toUtcDateOnly } from "./dashboard.service";
+import {
+  DashboardService,
+  addUtcDays,
+  dashboardDepartmentRankingLimit,
+  dashboardIntegrationRankingLimit,
+  toUtcDateOnly,
+} from "./dashboard.service";
 import {
   DashboardMetricKeyCode,
   DashboardOverviewBucketCode,
@@ -33,6 +39,7 @@ type DashboardRepositoryMock = {
   countAchievements: ReturnType<typeof vi.fn>;
   groupAchievementsByType: ReturnType<typeof vi.fn>;
   groupAchievementsByStatus: ReturnType<typeof vi.fn>;
+  groupAchievementsByDepartment: ReturnType<typeof vi.fn>;
   countConversions: ReturnType<typeof vi.fn>;
   sumConversionAmounts: ReturnType<typeof vi.fn>;
   groupConversionsByStatus: ReturnType<typeof vi.fn>;
@@ -41,6 +48,9 @@ type DashboardRepositoryMock = {
   countDueSoonFees: ReturnType<typeof vi.fn>;
   groupWorkflowTasksByStatus: ReturnType<typeof vi.fn>;
   groupReminderTasksByStatus: ReturnType<typeof vi.fn>;
+  countRecentApiCallLogs: ReturnType<typeof vi.fn>;
+  groupRecentApiCallLogsByStatus: ReturnType<typeof vi.fn>;
+  groupRecentApiCallLogsByIntegration: ReturnType<typeof vi.fn>;
 };
 
 const createRepositoryMock = (): DashboardRepositoryMock => ({
@@ -51,6 +61,14 @@ const createRepositoryMock = (): DashboardRepositoryMock => ({
   groupAchievementsByStatus: vi
     .fn()
     .mockResolvedValue([{ key: AchievementStatusCode.archived, count: 1 }]),
+  groupAchievementsByDepartment: vi.fn().mockResolvedValue([
+    {
+      departmentId: ids.department,
+      departmentCode: "BIO",
+      departmentName: "生命科学学院",
+      count: 3,
+    },
+  ]),
   countConversions: vi.fn().mockResolvedValue(2),
   sumConversionAmounts: vi
     .fn()
@@ -69,6 +87,17 @@ const createRepositoryMock = (): DashboardRepositoryMock => ({
   groupReminderTasksByStatus: vi
     .fn()
     .mockResolvedValue([{ key: ReminderStatusCode.sent, count: 2 }]),
+  countRecentApiCallLogs: vi.fn().mockResolvedValue(4),
+  groupRecentApiCallLogsByStatus: vi
+    .fn()
+    .mockResolvedValue([{ key: "SUCCESS", count: 3 }]),
+  groupRecentApiCallLogsByIntegration: vi.fn().mockResolvedValue([
+    {
+      integrationCode: "DOI_PRIMARY",
+      provider: "DOI",
+      count: 3,
+    },
+  ]),
 });
 
 const createPolicyQueryFactory = () => ({
@@ -103,6 +132,7 @@ describe("DashboardService", () => {
 
     const todayDateOnly = new Date("2026-06-18T00:00:00.000Z");
     const dueSoonEndDateOnly = new Date("2026-07-03T00:00:00.000Z");
+    const recentApiCallLogSince = new Date("2026-06-11T00:00:00.000Z");
 
     expect(policyQueryFactory.achievementReadableWhere).toHaveBeenCalledWith(context);
     expect(policyQueryFactory.feeReadableWhere).toHaveBeenCalledWith(context);
@@ -115,6 +145,10 @@ describe("DashboardService", () => {
     expect(repository.groupAchievementsByStatus).toHaveBeenCalledWith({
       departmentId: { in: [ids.department] },
     });
+    expect(repository.groupAchievementsByDepartment).toHaveBeenCalledWith(
+      { departmentId: { in: [ids.department] } },
+      dashboardDepartmentRankingLimit,
+    );
     expect(repository.countConversions).toHaveBeenCalledWith({
       departmentId: { in: [ids.department] },
     });
@@ -138,6 +172,14 @@ describe("DashboardService", () => {
     );
     expect(repository.groupWorkflowTasksByStatus).toHaveBeenCalledWith(ids.user);
     expect(repository.groupReminderTasksByStatus).toHaveBeenCalledWith(ids.user);
+    expect(repository.countRecentApiCallLogs).toHaveBeenCalledWith(recentApiCallLogSince);
+    expect(repository.groupRecentApiCallLogsByStatus).toHaveBeenCalledWith(
+      recentApiCallLogSince,
+    );
+    expect(repository.groupRecentApiCallLogsByIntegration).toHaveBeenCalledWith(
+      recentApiCallLogSince,
+      dashboardIntegrationRankingLimit,
+    );
 
     expect(summary.scope).toEqual({ userId: ids.user, departmentId: ids.department });
     expect(summary.generatedAt).toEqual(today);
@@ -147,9 +189,23 @@ describe("DashboardService", () => {
       section: "ACHIEVEMENT",
       value: { count: 3 },
     });
+    expect(summary.achievement.departmentRanking.value.buckets).toEqual([
+      {
+        departmentId: ids.department,
+        departmentCode: "BIO",
+        departmentName: "生命科学学院",
+        count: 3,
+      },
+    ]);
     expect(summary.fee.deadline.value).toEqual({
       overdue: { key: DashboardOverviewBucketCode.overdue, count: 1 },
       dueSoon: { key: DashboardOverviewBucketCode.dueSoon, count: 2 },
+    });
+    expect(summary.fee.risk.value).toEqual({
+      overdue: { key: DashboardOverviewBucketCode.overdue, count: 1 },
+      dueSoon: { key: DashboardOverviewBucketCode.dueSoon, count: 2 },
+      pending: { key: DashboardOverviewBucketCode.pending, count: 4 },
+      paid: { key: PayStatusCode.paid, count: 0 },
     });
     expect(summary.conversion.total.value.count).toBe(2);
     expect(summary.conversion.totals.value).toEqual({
@@ -162,8 +218,29 @@ describe("DashboardService", () => {
     expect(summary.workflowTasks.byStatus.value.buckets).toEqual([
       { key: WorkflowTaskStatusCode.pending, count: 5 },
     ]);
+    expect(summary.workflowTasks.efficiency.value).toEqual({
+      total: { key: DashboardOverviewBucketCode.total, count: 5 },
+      pending: { key: WorkflowTaskStatusCode.pending, count: 5 },
+      approved: { key: WorkflowTaskStatusCode.approved, count: 0 },
+      rejected: { key: WorkflowTaskStatusCode.rejected, count: 0 },
+      cancelled: { key: WorkflowTaskStatusCode.cancelled, count: 0 },
+    });
     expect(summary.reminderTasks.byStatus.value.buckets).toEqual([
       { key: ReminderStatusCode.sent, count: 2 },
+    ]);
+    expect(summary.integrationMock.recentCalls.value).toEqual({
+      count: 4,
+      windowDays: 7,
+    });
+    expect(summary.integrationMock.byStatus.value.buckets).toEqual([
+      { key: "SUCCESS", count: 3 },
+    ]);
+    expect(summary.integrationMock.byIntegration.value.buckets).toEqual([
+      {
+        integrationCode: "DOI_PRIMARY",
+        provider: "DOI",
+        count: 3,
+      },
     ]);
   });
 
@@ -174,6 +251,7 @@ describe("DashboardService", () => {
     repository.countAchievements.mockResolvedValue(0);
     repository.groupAchievementsByType.mockResolvedValue([]);
     repository.groupAchievementsByStatus.mockResolvedValue([]);
+    repository.groupAchievementsByDepartment.mockResolvedValue([]);
     repository.countConversions.mockResolvedValue(0);
     repository.sumConversionAmounts.mockResolvedValue({
       contractTotal: "0.00",
@@ -185,6 +263,9 @@ describe("DashboardService", () => {
     repository.countDueSoonFees.mockResolvedValue(0);
     repository.groupWorkflowTasksByStatus.mockResolvedValue([]);
     repository.groupReminderTasksByStatus.mockResolvedValue([]);
+    repository.countRecentApiCallLogs.mockResolvedValue(0);
+    repository.groupRecentApiCallLogsByStatus.mockResolvedValue([]);
+    repository.groupRecentApiCallLogsByIntegration.mockResolvedValue([]);
 
     const summary = await service.getDashboardSummary(context, {
       today: new Date("2026-06-18T00:00:00.000Z"),
@@ -194,6 +275,7 @@ describe("DashboardService", () => {
     expect(repository.countConversions).toHaveBeenCalledWith({ id: { in: [] } });
     expect(repository.groupFeesByPayStatus).toHaveBeenCalledWith({ id: { in: [] } });
     expect(summary.achievement.total.value.count).toBe(0);
+    expect(summary.achievement.departmentRanking.value.buckets).toEqual([]);
     expect(summary.conversion.total.value.count).toBe(0);
     expect(summary.conversion.totals.value.contractTotal).toBe("0.00");
     expect(summary.conversion.funnel.value.buckets).toEqual([]);
@@ -201,7 +283,10 @@ describe("DashboardService", () => {
     expect(summary.fee.deadline.value.overdue.count).toBe(0);
     expect(summary.fee.deadline.value.dueSoon.count).toBe(0);
     expect(summary.workflowTasks.byStatus.value.buckets).toEqual([]);
+    expect(summary.workflowTasks.efficiency.value.total.count).toBe(0);
     expect(summary.reminderTasks.byStatus.value.buckets).toEqual([]);
+    expect(summary.integrationMock.recentCalls.value.count).toBe(0);
+    expect(summary.integrationMock.byStatus.value.buckets).toEqual([]);
   });
 
   it("requires user context with a department", async () => {

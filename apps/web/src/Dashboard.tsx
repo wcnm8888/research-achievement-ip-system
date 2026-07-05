@@ -2,7 +2,12 @@ import { Button, Card, Col, Row, Segmented, Space, Statistic, Tag, Typography } 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createApiClient, isApiError, type ApiClient, type ApiError } from "./api-client";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
-import type { DashboardBucket, DashboardSummary } from "./types";
+import type {
+  DashboardBucket,
+  DashboardDepartmentRankBucket,
+  DashboardIntegrationCallBucket,
+  DashboardSummary,
+} from "./types";
 
 type Loadable<T> = {
   loading: boolean;
@@ -21,8 +26,15 @@ export type DashboardBasicMetrics = {
   conversionRevenueTotal: string;
   overdueFees: number;
   dueSoonFees: number;
+  pendingFees: number;
+  paidFees: number;
   pendingWorkflowTasks: number;
+  approvedWorkflowTasks: number;
+  rejectedWorkflowTasks: number;
+  cancelledWorkflowTasks: number;
   pendingReminders: number;
+  integrationMockRecentCalls: number;
+  integrationMockWindowDays: number;
 };
 
 export type DashboardDueSoonDays = (typeof allowedDashboardDueSoonDays)[number];
@@ -83,17 +95,17 @@ export function Dashboard({ demoUserId }: DashboardProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="统计看板"
-          description="请选择本地演示用户后读取后端 dashboard summary。"
+          description="请选择本地演示用户后读取本地评分口径 dashboard summary。"
         />
         <PermissionHint description="当前没有 X-Demo-User-Id，统计看板不会发起业务请求。选择或输入演示用户后，只读请求会统一带上本地演示上下文 header；这不是正式 SSO。" />
         <Card className="shell-card">
           <Space direction="vertical" size={8}>
             <Typography.Text strong>等待演示上下文</Typography.Text>
             <Typography.Text type="secondary">
-              Step 17 只读统计看板前端闭环要求没有演示用户时不调用 GET /dashboard/summary。
+              没有演示用户时不调用 GET /dashboard/summary。
             </Typography.Text>
             <Typography.Text type="secondary">
-              选择演示用户后，页面只读取 dashboard summary 的基础摘要和现有 buckets。
+              选择演示用户后，页面只读取本地/演示评分口径摘要；这不是 production monitoring。
             </Typography.Text>
           </Space>
         </Card>
@@ -105,7 +117,7 @@ export function Dashboard({ demoUserId }: DashboardProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="统计看板"
-        description="Step 17 只读展示 dashboard summary 的 count 与 bucket 指标；权限裁剪以后端策略为准。"
+        description="本页展示本地/演示评分口径摘要，用于快速查看成果规模、费用风险、审批效率、转化漏斗和 mock 接口调用概览。"
         extra={
           <Button onClick={loadDashboard} loading={dashboard.loading}>
             刷新
@@ -113,7 +125,7 @@ export function Dashboard({ demoUserId }: DashboardProps) {
         }
       />
 
-      <PermissionHint description="Step 17 当前页面仅使用 GET /dashboard/summary 返回的 count/bucket 指标，不实现年度趋势、部门排行、金额汇总、专利法律状态专项统计、钻取详情、导出、缓存、完整报表平台、审计日志或系统配置。" />
+      <PermissionHint description="权限裁剪以后端 Dashboard policy where 为准；本页不是完整 BI、自定义报表平台或生产监控，不提供钻取、导出、原始日志、真实财务凭证、密钥、连接串、token、cookie 或 raw request/response。" />
 
       <DashboardControls dueSoonDays={dueSoonDays} onDueSoonDaysChange={setDueSoonDays} />
 
@@ -154,14 +166,31 @@ export const extractDashboardBasicMetrics = (
   conversionRevenueTotal: summary?.conversion.totals.value.revenueTotal ?? "0.00",
   overdueFees: summary?.fee.deadline.value.overdue.count ?? 0,
   dueSoonFees: summary?.fee.deadline.value.dueSoon.count ?? 0,
+  pendingFees:
+    summary?.fee.risk.value.pending.count ??
+    countDashboardBucket(summary?.fee.byPayStatus.value.buckets, "PENDING"),
+  paidFees:
+    summary?.fee.risk.value.paid.count ??
+    countDashboardBucket(summary?.fee.byPayStatus.value.buckets, "PAID"),
   pendingWorkflowTasks: countDashboardBucket(
     summary?.workflowTasks.byStatus.value.buckets,
     "PENDING",
   ),
+  approvedWorkflowTasks:
+    summary?.workflowTasks.efficiency.value.approved.count ??
+    countDashboardBucket(summary?.workflowTasks.byStatus.value.buckets, "APPROVED"),
+  rejectedWorkflowTasks:
+    summary?.workflowTasks.efficiency.value.rejected.count ??
+    countDashboardBucket(summary?.workflowTasks.byStatus.value.buckets, "REJECTED"),
+  cancelledWorkflowTasks:
+    summary?.workflowTasks.efficiency.value.cancelled.count ??
+    countDashboardBucket(summary?.workflowTasks.byStatus.value.buckets, "CANCELLED"),
   pendingReminders: countDashboardBucket(
     summary?.reminderTasks.byStatus.value.buckets,
     "PENDING",
   ),
+  integrationMockRecentCalls: summary?.integrationMock.recentCalls.value.count ?? 0,
+  integrationMockWindowDays: summary?.integrationMock.recentCalls.value.windowDays ?? 7,
 });
 
 export const countDashboardBucket = (
@@ -204,7 +233,7 @@ export const buildDashboardDistributionSections = (
     ),
   },
   {
-    title: "Conversion funnel",
+    title: "成果转化漏斗",
     metricKey: summary?.conversion.funnel.key ?? "CONVERSION_STATUS_FUNNEL",
     items: buildDashboardDistributionItems(
       summary?.conversion.funnel.value.buckets,
@@ -230,6 +259,14 @@ export const buildDashboardDistributionSections = (
     items: buildDashboardDistributionItems(
       summary?.reminderTasks.byStatus.value.buckets,
       reminderTaskStatusLabels,
+    ),
+  },
+  {
+    title: "Mock 接口调用状态",
+    metricKey: summary?.integrationMock.byStatus.key ?? "INTEGRATION_MOCK_STATUS_DISTRIBUTION",
+    items: buildDashboardDistributionItems(
+      summary?.integrationMock.byStatus.value.buckets,
+      apiCallStatusLabels,
     ),
   },
 ];
@@ -276,7 +313,7 @@ export const getStep17AReadOnlyBoundary = () => ({
   method: "GET",
   allowedDueSoonDays: [...allowedDashboardDueSoonDays],
   defaultQuery: { dueSoonDays: defaultDashboardDueSoonDays },
-  unavailableMetrics: ["年度趋势", "部门排行", "金额汇总", "专利法律状态专项统计"],
+  unavailableMetrics: ["年度趋势引擎", "专利法律状态专项统计"],
 });
 
 export const getStep17BReadOnlyBoundary = () => ({
@@ -285,9 +322,7 @@ export const getStep17BReadOnlyBoundary = () => ({
   allowedDueSoonDays: [...allowedDashboardDueSoonDays],
   excludedQuery: ["today"],
   unavailableMetrics: [
-    "年度趋势",
-    "部门排行",
-    "金额汇总",
+    "年度趋势引擎",
     "专利法律状态专项统计",
     "钻取详情",
     "导出",
@@ -303,9 +338,7 @@ export const getStep17ReadOnlyBoundary = () => ({
   defaultQuery: { dueSoonDays: defaultDashboardDueSoonDays },
   excludedQuery: ["today"],
   unavailableMetrics: [
-    "年度趋势",
-    "部门排行",
-    "金额汇总",
+    "年度趋势引擎",
     "专利法律状态专项统计",
     "钻取详情",
     "导出",
@@ -333,7 +366,7 @@ const DashboardControls = ({
         onChange={(value) => onDueSoonDaysChange(normalizeDashboardDueSoonDays(Number(value)))}
       />
       <Typography.Text type="secondary">
-        仅控制 dashboard summary 的 dueSoonDays 参数；Step 17 不提供 today 自定义输入。
+        仅控制 dashboard summary 的 dueSoonDays 参数；页面不提供 today 自定义输入或趋势引擎。
       </Typography.Text>
     </Space>
   </Card>
@@ -351,11 +384,13 @@ const DashboardSummaryCard = ({
   const summary = dashboard.data;
   const metrics = extractDashboardBasicMetrics(summary);
   const distributionSections = buildDashboardDistributionSections(summary);
+  const departmentRanking = summary?.achievement.departmentRanking.value.buckets ?? [];
+  const integrationBuckets = summary?.integrationMock.byIntegration.value.buckets ?? [];
 
   return (
     <Card
       className="shell-card"
-      title="基础摘要"
+      title="评分摘要"
       extra={
         <Space size={8} wrap>
           <Tag color="processing">GET /dashboard/summary</Tag>
@@ -375,17 +410,17 @@ const DashboardSummaryCard = ({
             <MetricTile title="成果总量" value={metrics.achievementTotal} />
           </Col>
           <Col xs={24} sm={12} xl={5}>
-            <MetricTile title="Conversion records" value={metrics.conversionTotal} />
+            <MetricTile title="转化记录" value={metrics.conversionTotal} />
           </Col>
           <Col xs={24} sm={12} xl={5}>
             <MetricTile
-              title="Contract total"
+              title="合同总额"
               value={formatDashboardMoney(metrics.conversionContractTotal)}
             />
           </Col>
           <Col xs={24} sm={12} xl={5}>
             <MetricTile
-              title="Revenue total"
+              title="收入总额"
               value={formatDashboardMoney(metrics.conversionRevenueTotal)}
             />
           </Col>
@@ -396,10 +431,31 @@ const DashboardSummaryCard = ({
             <MetricTile title="费用即将到期" value={metrics.dueSoonFees} />
           </Col>
           <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="费用待缴" value={metrics.pendingFees} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="费用已缴" value={metrics.paidFees} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
             <MetricTile title="待处理审批任务" value={metrics.pendingWorkflowTasks} />
           </Col>
-          <Col xs={24} sm={12} xl={4}>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="已通过审批任务" value={metrics.approvedWorkflowTasks} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="已驳回审批任务" value={metrics.rejectedWorkflowTasks} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="已取消审批任务" value={metrics.cancelledWorkflowTasks} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
             <MetricTile title="待处理提醒" value={metrics.pendingReminders} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile
+              title={`Mock 调用 ${metrics.integrationMockWindowDays} 天`}
+              value={metrics.integrationMockRecentCalls}
+            />
           </Col>
         </Row>
 
@@ -412,6 +468,11 @@ const DashboardSummaryCard = ({
             部门范围：{summary?.scope.departmentId ?? "未返回"}
           </Typography.Text>
         </div>
+
+        <DashboardRankingGrid
+          departments={departmentRanking}
+          integrations={integrationBuckets}
+        />
 
         <DashboardDistributionGrid sections={distributionSections} />
       </DataState>
@@ -438,6 +499,77 @@ const DashboardDistributionGrid = ({ sections }: { sections: DashboardDistributi
     {sections.map((section) => (
       <DashboardDistributionCard key={section.metricKey} section={section} />
     ))}
+  </div>
+);
+
+const DashboardRankingGrid = ({
+  departments,
+  integrations,
+}: {
+  departments: DashboardDepartmentRankBucket[];
+  integrations: DashboardIntegrationCallBucket[];
+}) => (
+  <div className="dashboard-distribution-grid">
+    <DashboardDepartmentRankingCard departments={departments} />
+    <DashboardIntegrationRankingCard integrations={integrations} />
+  </div>
+);
+
+const DashboardDepartmentRankingCard = ({
+  departments,
+}: {
+  departments: DashboardDepartmentRankBucket[];
+}) => (
+  <div className="dashboard-distribution-card">
+    <div className="dashboard-distribution-header">
+      <Typography.Text strong>部门成果排行</Typography.Text>
+      <Tag color="default">ACHIEVEMENT_DEPARTMENT_RANKING</Tag>
+    </div>
+    {departments.length === 0 ? (
+      <Typography.Text type="secondary">暂无当前权限范围内部门聚合</Typography.Text>
+    ) : (
+      <div className="dashboard-distribution-list">
+        {departments.map((department, index) => (
+          <div className="dashboard-distribution-line" key={department.departmentId}>
+            <Typography.Text strong ellipsis>
+              {index + 1}. {department.departmentName}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              {department.departmentCode} · {department.count} 项
+            </Typography.Text>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+const DashboardIntegrationRankingCard = ({
+  integrations,
+}: {
+  integrations: DashboardIntegrationCallBucket[];
+}) => (
+  <div className="dashboard-distribution-card">
+    <div className="dashboard-distribution-header">
+      <Typography.Text strong>外部接口 mock 调用</Typography.Text>
+      <Tag color="default">INTEGRATION_MOCK_BY_INTEGRATION</Tag>
+    </div>
+    {integrations.length === 0 ? (
+      <Typography.Text type="secondary">暂无最近 mock 调用聚合</Typography.Text>
+    ) : (
+      <div className="dashboard-distribution-list">
+        {integrations.map((integration) => (
+          <div className="dashboard-distribution-line" key={integration.integrationCode}>
+            <Typography.Text strong ellipsis>
+              {integration.integrationCode}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              {integration.provider} · {integration.count} 次
+            </Typography.Text>
+          </div>
+        ))}
+      </div>
+    )}
   </div>
 );
 
@@ -525,6 +657,14 @@ const reminderTaskStatusLabels: Record<string, string> = {
   SENT: "已发送",
   CONFIRMED: "已确认",
   CANCELLED: "已取消",
+};
+
+const apiCallStatusLabels: Record<string, string> = {
+  SUCCESS: "成功",
+  FAILED: "失败",
+  TIMEOUT: "超时",
+  RETRIED: "重试",
+  SKIPPED: "跳过",
 };
 
 const hasDemoUser = (demoUserId: string | null): boolean => Boolean(demoUserId?.trim());

@@ -17837,3 +17837,41 @@
   - No schema/migration/seed/package/lockfile change.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact modification.
   - Local validation is local synthetic/mock demo acceptance only and is not production acceptance.
+
+## 2026-07-05 Step 87 - Report/dashboard scoring enhancement evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `85305e5 feat: add external integration mock demo center`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Gap evidence:
+  - Existing Dashboard metrics before Step 87: achievement total/type/status buckets, fee pay-status/deadline buckets, current-user workflow/reminder status buckets, and Step 84 conversion count, contract/revenue totals, and conversion funnel.
+  - Existing Web Dashboard still contained Step 17 "department ranking / amount summary unavailable" copy.
+  - Step 84 evidence confirmed conversion metrics are local ledger summaries scoped by current achievement visibility.
+  - Step 86 evidence confirmed `ApiCallLog` safe fields are `integrationCode`, `requestId`, `status`, `durationMs`, `errorSummary`, and `createdAt`; Step 87 uses only aggregate status/integration counts and provider labels.
+- Local implementation evidence:
+  - Dashboard domain contract now includes fixed scoring metrics for department ranking, fee risk, workflow approval efficiency, and mock integration overview.
+  - `DashboardRepository` added readonly aggregate queries only:
+    - `groupAchievementsByDepartment(...)` over the caller-provided achievement policy where, followed by department id/code/name lookup.
+    - `countRecentApiCallLogs(...)`, `groupRecentApiCallLogsByStatus(...)`, and `groupRecentApiCallLogsByIntegration(...)` over recent safe log aggregates.
+  - `DashboardService` still builds achievement and fee policy filters through `PolicyQueryFactory`; no permission bypass or new drilldown was added.
+  - Web Dashboard keeps one readonly request to `GET /dashboard/summary` and displays scoring sections for outcomes scale, department ranking, fee risk, approval efficiency, conversion funnel, and external mock call overview.
+  - Web copy now states the Dashboard is a local/demo scoring summary and not full BI, custom reporting, production monitoring, raw log viewing, or production acceptance.
+- Local validation:
+  - `corepack pnpm --filter @research-ip/api test -- dashboard report` -> passed; 5 files, 39 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Dashboard` -> passed; 1 file, 13 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+  - First `corepack pnpm --filter @research-ip/web typecheck` failed because the Web Dashboard test fixture placed `departmentRanking` under `conversion`; the fixture was corrected.
+  - Final `corepack pnpm --filter @research-ip/web typecheck` -> passed.
+  - `git diff --check` -> passed; only LF-to-CRLF warnings were printed.
+  - `git diff --cached --stat` -> empty.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook execution.
+  - No real BI, real finance, HR, SSO, DOI, patent platform, email, SMS, or external production system call.
+  - No raw log, raw request, raw response, request id list, credential, token, cookie, connection string, provider secret, raw audit value, or real financial credential was added to API/UI output or docs.
+  - No export, download, drilldown, raw detail endpoint, custom report engine, schema/migration/seed/package/lockfile change.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact modification.
+  - Local Dashboard scoring metrics are local/demo summaries only and are not production monitoring or production acceptance.
