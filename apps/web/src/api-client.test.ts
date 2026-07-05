@@ -1271,6 +1271,59 @@ describe("settings API integration API client", () => {
     const serialized = JSON.stringify([created, updated, archived, restored]);
     expect(serialized).not.toContain("raw-provider-value");
   });
+
+  it("calls mock demo run and recent safe ApiCallLog paths", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json(makeApiIntegrationMockRunResponse()))
+      .mockResolvedValueOnce(
+        Response.json({
+          items: [makeApiCallLogSummary()],
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    const run = await client.runApiIntegrationMockDemo({
+      provider: "DOI",
+      scenario: "DOI_LOOKUP",
+      resultMode: "SUCCESS",
+    });
+    const logs = await client.listApiCallLogs({ limit: 10 });
+
+    expect(run.mockOnly).toBe(true);
+    expect(logs.items).toHaveLength(1);
+    const [firstLog] = logs.items;
+    expect(firstLog?.requestId).toBe("mock-request-1");
+
+    const [runUrl, runInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [logsUrl, logsInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(runUrl).toBe(
+      "http://localhost/api/settings/api-integrations/mock-demo/run",
+    );
+    expect(runInit.method).toBe("POST");
+    expect(runInit.body).toBe(
+      JSON.stringify({
+        provider: "DOI",
+        scenario: "DOI_LOOKUP",
+        resultMode: "SUCCESS",
+      }),
+    );
+    expect(logsUrl).toBe(
+      "http://localhost/api/settings/api-integrations/mock-demo/logs?limit=10",
+    );
+    expect(logsInit.method).toBe("GET");
+    expect(JSON.stringify([run, logs])).not.toContain("token");
+    expect(JSON.stringify([run, logs])).not.toContain("rawResponse");
+  });
 });
 
 describe("account lifecycle public auth API client", () => {
@@ -1633,4 +1686,35 @@ const makeApiIntegrationResponse = (
   createdAt: "2026-06-29T00:00:00.000Z",
   updatedAt: "2026-06-29T00:00:00.000Z",
   archivedAt: overrides.archivedAt ?? null,
+});
+
+const makeApiCallLogSummary = () => ({
+  integrationCode: "DOI_LOOKUP",
+  requestId: "mock-request-1",
+  status: "SUCCESS",
+  durationMs: 126,
+  errorSummary: null,
+  createdAt: "2026-06-29T00:00:00.000Z",
+});
+
+const makeApiIntegrationMockRunResponse = () => ({
+  mockOnly: true,
+  provider: "DOI",
+  scenario: "DOI_LOOKUP",
+  requestedResultMode: "SUCCESS",
+  runStatus: "SUCCESS",
+  integration: {
+    code: "DOI_LOOKUP",
+    provider: "DOI",
+    enabled: true,
+    archivedAt: null,
+  },
+  summary: "Synthetic DOI metadata was normalized for preview only.",
+  syntheticSubject: "Synthetic DOI 10.0000/mock-demo-2026",
+  safeResult: {
+    source: "mock-adapter",
+    writesBusinessRecord: false,
+  },
+  safetyNotice: "Mock demo only.",
+  callLog: makeApiCallLogSummary(),
 });

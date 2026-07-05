@@ -26,7 +26,7 @@ export type ApiIntegrationUpdateInput = Partial<ApiIntegrationCreateInput>;
 
 export type ApiIntegrationSettingsTransactionClient = Pick<
   Prisma.TransactionClient,
-  "apiIntegration"
+  "apiIntegration" | "apiCallLog"
 >;
 
 export type ApiIntegrationRecord = {
@@ -39,6 +39,23 @@ export type ApiIntegrationRecord = {
   createdAt: Date;
   updatedAt: Date;
   archivedAt: Date | null;
+};
+
+export type ApiCallLogCreateInput = {
+  integrationCode: string;
+  requestId: string;
+  status: Prisma.ApiCallLogCreateInput["status"];
+  durationMs: number | null;
+  errorSummary: string | null;
+};
+
+export type ApiCallLogSafeRecord = {
+  integrationCode: string;
+  requestId: string;
+  status: Prisma.ApiCallLogCreateInput["status"];
+  durationMs: number | null;
+  errorSummary: string | null;
+  createdAt: Date;
 };
 
 @Injectable()
@@ -83,6 +100,22 @@ export class ApiIntegrationSettingsRepository {
         ...(options.includeArchived ? {} : { archivedAt: null }),
       },
       select: apiIntegrationSelect,
+    });
+
+    return row ? toApiIntegrationRecord(row) : null;
+  }
+
+  async findFirstByProvider(
+    provider: ApiIntegrationProvider,
+    options: { includeArchived?: boolean } = {},
+  ): Promise<ApiIntegrationRecord | null> {
+    const row = await this.prisma.apiIntegration.findFirst({
+      where: {
+        provider,
+        ...(options.includeArchived ? {} : { archivedAt: null }),
+      },
+      select: apiIntegrationSelect,
+      orderBy: [{ enabled: "desc" }, { code: "asc" }, { id: "asc" }],
     });
 
     return row ? toApiIntegrationRecord(row) : null;
@@ -152,6 +185,34 @@ export class ApiIntegrationSettingsRepository {
     return toApiIntegrationRecord(row);
   }
 
+  async createApiCallLogInTransaction(
+    client: ApiIntegrationSettingsTransactionClient,
+    input: ApiCallLogCreateInput,
+  ): Promise<ApiCallLogSafeRecord> {
+    const row = await client.apiCallLog.create({
+      data: {
+        integrationCode: input.integrationCode,
+        requestId: input.requestId,
+        status: input.status,
+        durationMs: input.durationMs,
+        errorSummary: input.errorSummary,
+      },
+      select: apiCallLogSafeSelect,
+    });
+
+    return toApiCallLogSafeRecord(row);
+  }
+
+  async findRecentApiCallLogs(limit: number): Promise<ApiCallLogSafeRecord[]> {
+    const rows = await this.prisma.apiCallLog.findMany({
+      select: apiCallLogSafeSelect,
+      orderBy: [{ createdAt: "desc" }, { requestId: "asc" }],
+      take: limit,
+    });
+
+    return rows.map(toApiCallLogSafeRecord);
+  }
+
   isPrismaUniqueConflict(error: unknown): boolean {
     return isPrismaKnownRequestError(error) && error.code === "P2002";
   }
@@ -173,8 +234,21 @@ const apiIntegrationSelect = {
   archivedAt: true,
 } satisfies Prisma.ApiIntegrationSelect;
 
+const apiCallLogSafeSelect = {
+  integrationCode: true,
+  requestId: true,
+  status: true,
+  durationMs: true,
+  errorSummary: true,
+  createdAt: true,
+} satisfies Prisma.ApiCallLogSelect;
+
 type ApiIntegrationRow = Prisma.ApiIntegrationGetPayload<{
   select: typeof apiIntegrationSelect;
+}>;
+
+type ApiCallLogSafeRow = Prisma.ApiCallLogGetPayload<{
+  select: typeof apiCallLogSafeSelect;
 }>;
 
 const toApiIntegrationRecord = (row: ApiIntegrationRow): ApiIntegrationRecord => ({
@@ -187,6 +261,15 @@ const toApiIntegrationRecord = (row: ApiIntegrationRow): ApiIntegrationRecord =>
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
   archivedAt: row.archivedAt,
+});
+
+const toApiCallLogSafeRecord = (row: ApiCallLogSafeRow): ApiCallLogSafeRecord => ({
+  integrationCode: row.integrationCode,
+  requestId: row.requestId,
+  status: row.status,
+  durationMs: row.durationMs,
+  errorSummary: row.errorSummary,
+  createdAt: row.createdAt,
 });
 
 const toApiIntegrationFindManyWhere = (

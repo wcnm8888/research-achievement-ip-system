@@ -1337,3 +1337,61 @@ export type UpdateApiIntegrationInput = {
 export type ApiIntegrationReasonInput = {
   reason?: string | null;
 };
+
+export type ApiIntegrationMockScenario =
+  | "DOI_LOOKUP"
+  | "PATENT_STATUS_SYNC"
+  | "FINANCE_RECONCILE"
+  | "HR_SYNC";
+
+export type ApiIntegrationMockResultMode = "SUCCESS" | "FAILURE" | "DEGRADED";
+
+export type ApiIntegrationMockRunStatus =
+  | "SUCCESS"
+  | "FAILED"
+  | "DEGRADED"
+  | "UNAVAILABLE";
+
+export type ApiIntegrationMockRunInput = {
+  provider: ApiIntegrationProvider;
+  scenario: ApiIntegrationMockScenario;
+  resultMode: ApiIntegrationMockResultMode;
+};
+
+export type ApiIntegrationMockIntegrationSummary = {
+  code: string;
+  provider: ApiIntegrationProvider;
+  enabled: boolean;
+  archivedAt: string | null;
+};
+
+export type ApiCallLogSummary = {
+  integrationCode: string;
+  requestId: string;
+  status: "SUCCESS" | "FAILED" | "TIMEOUT" | "RETRIED" | "SKIPPED" | string;
+  durationMs: number | null;
+  errorSummary: string | null;
+  createdAt: string;
+};
+
+export type ApiIntegrationMockRunResponse = {
+  mockOnly: true;
+  provider: ApiIntegrationProvider;
+  scenario: ApiIntegrationMockScenario;
+  requestedResultMode: ApiIntegrationMockResultMode;
+  runStatus: ApiIntegrationMockRunStatus;
+  integration: ApiIntegrationMockIntegrationSummary | null;
+  summary: string;
+  syntheticSubject: string;
+  safeResult: Record<string, unknown>;
+  safetyNotice: string;
+  callLog: ApiCallLogSummary | null;
+};
+
+export type ApiCallLogListResponse = {
+  items: ApiCallLogSummary[];
+};
+
+export type ListApiCallLogsQuery = {
+  limit?: number;
+};

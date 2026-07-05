@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { AccountManagementApiClient, AuthUser } from "./api-client";
 import {
+  buildApiIntegrationMockDemoPayload,
   buildApiIntegrationListQuery,
   buildApiIntegrationReasonPayload,
   buildCreateApiIntegrationPayload,
@@ -10,12 +11,16 @@ import {
   executeApiIntegrationOperation,
   fetchApiIntegrationDetail,
   fetchApiIntegrations,
+  fetchRecentApiCallLogs,
+  runApiIntegrationMockDemo,
   SettingsApiIntegrations,
   updateApiIntegrationFromForm,
 } from "./SettingsApiIntegrations";
 import type {
+  ApiCallLogListResponse,
   ApiIntegrationListResponse,
   ApiIntegrationMetadata,
+  ApiIntegrationMockRunResponse,
 } from "./types";
 
 const adminUser: Pick<AuthUser, "permissionCodes"> = {
@@ -69,6 +74,8 @@ describe("settings api integrations permission boundary", () => {
     expect(html).toContain("Import history overview");
     expect(html).toContain("read-only index");
     expect(html).toContain("API integrations");
+    expect(html).toContain("External interface mock demo center");
+    expect(html).toContain("Mock demo only / 非真实外部联调");
     expect(html).toContain("Config reference is a non-sensitive reference name");
     expect(html).not.toContain("API key");
   });
@@ -138,6 +145,67 @@ describe("settings api integration API helpers", () => {
     expect(client.getApiIntegration).toHaveBeenCalledWith(integration.id);
   });
 
+  it("runs mock demos and loads recent safe call logs through the settings client", async () => {
+    const runResponse: ApiIntegrationMockRunResponse = {
+      mockOnly: true,
+      provider: "DOI",
+      scenario: "DOI_LOOKUP",
+      requestedResultMode: "SUCCESS",
+      runStatus: "SUCCESS",
+      integration: {
+        code: "DOI_LOOKUP",
+        provider: "DOI",
+        enabled: true,
+        archivedAt: null,
+      },
+      summary: "Synthetic DOI metadata was normalized for preview only.",
+      syntheticSubject: "Synthetic DOI 10.0000/mock-demo-2026",
+      safeResult: {
+        source: "mock-adapter",
+        writesBusinessRecord: false,
+      },
+      safetyNotice: "Mock demo only.",
+      callLog: {
+        integrationCode: "DOI_LOOKUP",
+        requestId: "mock-request-1",
+        status: "SUCCESS",
+        durationMs: 126,
+        errorSummary: null,
+        createdAt: "2026-06-29T00:00:00.000Z",
+      },
+    };
+    const logResponse: ApiCallLogListResponse = {
+      items: [runResponse.callLog!],
+    };
+    const client = {
+      runApiIntegrationMockDemo: vi.fn(async () => runResponse),
+      listApiCallLogs: vi.fn(async () => logResponse),
+    } as unknown as Pick<
+      AccountManagementApiClient,
+      "runApiIntegrationMockDemo" | "listApiCallLogs"
+    >;
+
+    await expect(
+      runApiIntegrationMockDemo(client, {
+        provider: "DOI",
+        scenario: "DOI_LOOKUP",
+        resultMode: "SUCCESS",
+      }),
+    ).resolves.toEqual(runResponse);
+    await expect(fetchRecentApiCallLogs(client, { limit: 10 })).resolves.toEqual(
+      logResponse,
+    );
+
+    expect(client.runApiIntegrationMockDemo).toHaveBeenCalledWith({
+      provider: "DOI",
+      scenario: "DOI_LOOKUP",
+      resultMode: "SUCCESS",
+    });
+    expect(client.listApiCallLogs).toHaveBeenCalledWith({ limit: 10 });
+    expect(JSON.stringify(runResponse)).not.toContain("token");
+    expect(JSON.stringify(runResponse)).not.toContain("rawResponse");
+  });
+
   it("normalizes malformed list responses into stable shapes", async () => {
     const client = {
       listApiIntegrations: vi.fn(async () => ({ items: null, total: null })),
@@ -196,6 +264,20 @@ describe("settings api integration payload helpers", () => {
       reason: "unused",
     });
     expect(buildApiIntegrationReasonPayload({ reason: "   " })).toEqual({});
+  });
+
+  it("builds mock demo payloads without adding external request data", () => {
+    expect(
+      buildApiIntegrationMockDemoPayload({
+        provider: "FINANCE",
+        scenario: "FINANCE_RECONCILE",
+        resultMode: "DEGRADED",
+      }),
+    ).toEqual({
+      provider: "FINANCE",
+      scenario: "FINANCE_RECONCILE",
+      resultMode: "DEGRADED",
+    });
   });
 });
 

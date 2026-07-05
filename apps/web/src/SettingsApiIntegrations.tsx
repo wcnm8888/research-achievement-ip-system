@@ -32,9 +32,16 @@ import { SettingsImportJobHistoryOverview } from "./SettingsImportJobHistoryOver
 import type {
   ApiIntegrationListResponse,
   ApiIntegrationMetadata,
+  ApiIntegrationMockResultMode,
+  ApiIntegrationMockRunInput,
+  ApiIntegrationMockRunResponse,
+  ApiIntegrationMockScenario,
   ApiIntegrationProvider,
   ApiIntegrationReasonInput,
+  ApiCallLogListResponse,
+  ApiCallLogSummary,
   CreateApiIntegrationInput,
+  ListApiCallLogsQuery,
   ListApiIntegrationsQuery,
   UpdateApiIntegrationInput,
 } from "./types";
@@ -69,6 +76,12 @@ type ReasonFormValues = {
   reason?: string;
 };
 
+type ApiIntegrationMockDemoValues = {
+  provider: ApiIntegrationProvider;
+  scenario: ApiIntegrationMockScenario;
+  resultMode: ApiIntegrationMockResultMode;
+};
+
 type ApiIntegrationFormMode =
   | { kind: "create" }
   | { kind: "edit"; integration: ApiIntegrationMetadata };
@@ -79,6 +92,11 @@ type ApiIntegrationOperation =
 
 const defaultPageSize = 20;
 const defaultTimeoutMs = 3000;
+const defaultMockDemoValues: ApiIntegrationMockDemoValues = {
+  provider: "DOI",
+  scenario: "DOI_LOOKUP",
+  resultMode: "SUCCESS",
+};
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
   loading: false,
@@ -104,6 +122,38 @@ const providerLabels = Object.fromEntries(
   apiIntegrationProviderOptions.map((option) => [option.value, option.label]),
 ) as Record<ApiIntegrationProvider, string>;
 
+const mockScenarioOptions: Array<{
+  label: string;
+  value: ApiIntegrationMockScenario;
+  provider: ApiIntegrationProvider;
+}> = [
+  { label: "DOI lookup mock", value: "DOI_LOOKUP", provider: "DOI" },
+  {
+    label: "Patent status sync mock",
+    value: "PATENT_STATUS_SYNC",
+    provider: "PATENT",
+  },
+  {
+    label: "Finance callback/reconcile mock",
+    value: "FINANCE_RECONCILE",
+    provider: "FINANCE",
+  },
+  { label: "HR sync mock", value: "HR_SYNC", provider: "HR" },
+];
+
+const mockScenarioProviderMap = Object.fromEntries(
+  mockScenarioOptions.map((option) => [option.value, option.provider]),
+) as Record<ApiIntegrationMockScenario, ApiIntegrationProvider>;
+
+const mockResultModeOptions: Array<{
+  label: string;
+  value: ApiIntegrationMockResultMode;
+}> = [
+  { label: "Success", value: "SUCCESS" },
+  { label: "Failure", value: "FAILURE" },
+  { label: "Degraded", value: "DEGRADED" },
+];
+
 export function SettingsApiIntegrations({
   demoUserId,
   authUser,
@@ -118,6 +168,12 @@ export function SettingsApiIntegrations({
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [integrations, setIntegrations] =
     useState<Loadable<ApiIntegrationListResponse>>(emptyLoadable);
+  const [mockDemoValues, setMockDemoValues] =
+    useState<ApiIntegrationMockDemoValues>(defaultMockDemoValues);
+  const [mockDemoRun, setMockDemoRun] =
+    useState<Loadable<ApiIntegrationMockRunResponse>>(emptyLoadable);
+  const [apiCallLogs, setApiCallLogs] =
+    useState<Loadable<ApiCallLogListResponse>>(emptyLoadable);
   const [detailIntegrationId, setDetailIntegrationId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Loadable<ApiIntegrationMetadata>>(emptyLoadable);
   const [formMode, setFormMode] = useState<ApiIntegrationFormMode | null>(null);
@@ -165,16 +221,35 @@ export function SettingsApiIntegrations({
     [apiClient, canManageSettings, demoUserId],
   );
 
+  const loadApiCallLogs = useCallback(() => {
+    if (!canManageSettings || !demoUserId) {
+      setApiCallLogs(emptyLoadable);
+      return;
+    }
+
+    setApiCallLogs({ loading: true, data: null, error: null });
+    void fetchRecentApiCallLogs(apiClient, { limit: 10 })
+      .then((data) => setApiCallLogs({ loading: false, data, error: null }))
+      .catch((error: unknown) =>
+        setApiCallLogs({ loading: false, data: null, error: normalizeError(error) }),
+      );
+  }, [apiClient, canManageSettings, demoUserId]);
+
   useEffect(() => {
     loadIntegrations();
   }, [loadIntegrations]);
 
+  useEffect(() => {
+    loadApiCallLogs();
+  }, [loadApiCallLogs]);
+
   const refresh = useCallback(() => {
     loadIntegrations();
+    loadApiCallLogs();
     if (detailIntegrationId) {
       loadDetail(detailIntegrationId);
     }
-  }, [detailIntegrationId, loadDetail, loadIntegrations]);
+  }, [detailIntegrationId, loadApiCallLogs, loadDetail, loadIntegrations]);
 
   const applyFilters = () => {
     setPage(1);
@@ -292,6 +367,27 @@ export function SettingsApiIntegrations({
     }
   };
 
+  const handleMockScenarioChange = (scenario: ApiIntegrationMockScenario) => {
+    setMockDemoValues((current) => ({
+      ...current,
+      scenario,
+      provider: mockScenarioProviderMap[scenario],
+    }));
+  };
+
+  const handleMockDemoRun = async () => {
+    setMockDemoRun({ loading: true, data: null, error: null });
+
+    try {
+      const result = await runApiIntegrationMockDemo(apiClient, mockDemoValues);
+      setMockDemoRun({ loading: false, data: result, error: null });
+      message.success("Mock demo completed.");
+      loadApiCallLogs();
+    } catch (error) {
+      setMockDemoRun({ loading: false, data: null, error: normalizeError(error) });
+    }
+  };
+
   const rows = integrations.data?.items ?? [];
   const hasFilters = hasActiveApiIntegrationFilters(appliedFilters);
 
@@ -347,6 +443,22 @@ export function SettingsApiIntegrations({
       <PermissionHint description="This page stores metadata only: code, provider, enabled flag, timeout and config reference name. It does not read environment files, store provider credentials, or switch runtime adapters." />
 
       <SettingsImportJobHistoryOverview demoUserId={demoUserId} authUser={authUser} />
+
+      <ApiIntegrationMockDemoCenter
+        values={mockDemoValues}
+        result={mockDemoRun}
+        logs={apiCallLogs}
+        submitting={mockDemoRun.loading}
+        onProviderChange={(provider) =>
+          setMockDemoValues((current) => ({ ...current, provider }))
+        }
+        onScenarioChange={handleMockScenarioChange}
+        onResultModeChange={(resultMode) =>
+          setMockDemoValues((current) => ({ ...current, resultMode }))
+        }
+        onRun={handleMockDemoRun}
+        onReloadLogs={loadApiCallLogs}
+      />
 
       <Card className="shell-card">
         <Space className="settings-api-filter-bar" size={12} wrap>
@@ -519,6 +631,31 @@ export const fetchApiIntegrationDetail = async (
   client: Pick<AccountManagementApiClient, "getApiIntegration">,
   integrationId: string,
 ): Promise<ApiIntegrationMetadata> => client.getApiIntegration(integrationId);
+
+export const fetchRecentApiCallLogs = async (
+  client: Pick<AccountManagementApiClient, "listApiCallLogs">,
+  query: ListApiCallLogsQuery,
+): Promise<ApiCallLogListResponse> => {
+  const result = await client.listApiCallLogs(query);
+
+  return {
+    items: Array.isArray(result.items) ? result.items : [],
+  };
+};
+
+export const buildApiIntegrationMockDemoPayload = (
+  values: ApiIntegrationMockDemoValues,
+): ApiIntegrationMockRunInput => ({
+  provider: values.provider,
+  scenario: values.scenario,
+  resultMode: values.resultMode,
+});
+
+export const runApiIntegrationMockDemo = async (
+  client: Pick<AccountManagementApiClient, "runApiIntegrationMockDemo">,
+  values: ApiIntegrationMockDemoValues,
+): Promise<ApiIntegrationMockRunResponse> =>
+  client.runApiIntegrationMockDemo(buildApiIntegrationMockDemoPayload(values));
 
 export const buildCreateApiIntegrationPayload = (
   values: ApiIntegrationFormValues,
@@ -723,6 +860,200 @@ const createApiIntegrationColumns = ({
         )}
       </Space>
     ),
+  },
+];
+
+function ApiIntegrationMockDemoCenter({
+  values,
+  result,
+  logs,
+  submitting,
+  onProviderChange,
+  onScenarioChange,
+  onResultModeChange,
+  onRun,
+  onReloadLogs,
+}: {
+  values: ApiIntegrationMockDemoValues;
+  result: Loadable<ApiIntegrationMockRunResponse>;
+  logs: Loadable<ApiCallLogListResponse>;
+  submitting: boolean;
+  onProviderChange: (provider: ApiIntegrationProvider) => void;
+  onScenarioChange: (scenario: ApiIntegrationMockScenario) => void;
+  onResultModeChange: (resultMode: ApiIntegrationMockResultMode) => void;
+  onRun: () => void | Promise<void>;
+  onReloadLogs: () => void;
+}) {
+  const expectedProvider = mockScenarioProviderMap[values.scenario];
+  const providerMismatch = values.provider !== expectedProvider;
+  const callLogRows = logs.data?.items ?? [];
+
+  return (
+    <Card
+      className="shell-card settings-api-mock-demo"
+      title="External interface mock demo center"
+      extra={<Tag color="orange">Mock demo only / 非真实外部联调</Tag>}
+    >
+      <Space direction="vertical" size={16} className="full-width">
+        <Alert
+          type="warning"
+          showIcon
+          message="Mock demo only / 非真实外部联调"
+          description="Runs use synthetic adapter responses only. They do not call DOI, literature, patent, finance, HR, SSO, email, SMS, production, or VPS systems, and they do not create real payments, invoices, accounts, credentials, or business updates."
+        />
+
+        <Space size={12} wrap>
+          <Select<ApiIntegrationProvider>
+            className="settings-api-filter-select"
+            value={values.provider}
+            options={apiIntegrationProviderOptions.filter((option) =>
+              ["DOI", "PATENT", "FINANCE", "HR"].includes(option.value),
+            )}
+            onChange={onProviderChange}
+          />
+          <Select<ApiIntegrationMockScenario>
+            className="settings-api-filter-select"
+            value={values.scenario}
+            options={mockScenarioOptions}
+            onChange={onScenarioChange}
+          />
+          <Select<ApiIntegrationMockResultMode>
+            className="settings-api-filter-select"
+            value={values.resultMode}
+            options={mockResultModeOptions}
+            onChange={onResultModeChange}
+          />
+          <Button type="primary" loading={submitting} onClick={onRun}>
+            Run mock
+          </Button>
+          <Button onClick={onReloadLogs}>Reload logs</Button>
+        </Space>
+
+        {providerMismatch ? (
+          <Alert
+            type="error"
+            showIcon
+            message="Provider/scenario mismatch"
+            description={`Selected scenario expects ${expectedProvider}. The backend will reject mismatched mock demo requests before logging.`}
+          />
+        ) : null}
+
+        <DataState loading={result.loading} error={result.error}>
+          {result.data ? <MockDemoResultView result={result.data} /> : null}
+        </DataState>
+
+        <Card
+          className="shell-card"
+          title="Recent safe API call logs"
+          extra={<Tag>GET /settings/api-integrations/mock-demo/logs</Tag>}
+        >
+          <DataState
+            loading={logs.loading}
+            error={logs.error}
+            empty={!logs.loading && !logs.error && callLogRows.length === 0}
+            emptyText="No API call logs yet."
+            onRetry={onReloadLogs}
+          >
+            <Table<ApiCallLogSummary>
+              rowKey="requestId"
+              size="small"
+              columns={apiCallLogColumns}
+              dataSource={callLogRows}
+              pagination={false}
+              scroll={{ x: 960 }}
+            />
+          </DataState>
+        </Card>
+      </Space>
+    </Card>
+  );
+}
+
+function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse }) {
+  return (
+    <Card
+      className="shell-card"
+      title="Mock run result"
+      extra={renderMockRunStatus(result.runStatus)}
+    >
+      <Space direction="vertical" size={12} className="full-width">
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label="Scenario">{result.scenario}</Descriptions.Item>
+          <Descriptions.Item label="Provider">{result.provider}</Descriptions.Item>
+          <Descriptions.Item label="Requested mode">
+            {result.requestedResultMode}
+          </Descriptions.Item>
+          <Descriptions.Item label="Integration">
+            {result.integration
+              ? `${result.integration.code} (${result.integration.enabled ? "enabled" : "disabled"})`
+              : "Missing integration metadata"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Synthetic subject">
+            {result.syntheticSubject}
+          </Descriptions.Item>
+          <Descriptions.Item label="Summary">{result.summary}</Descriptions.Item>
+          <Descriptions.Item label="Call log">
+            {result.callLog
+              ? `${result.callLog.integrationCode} / ${result.callLog.requestId}`
+              : "No log was written"}
+          </Descriptions.Item>
+        </Descriptions>
+
+        <Alert type="info" showIcon message={result.safetyNotice} />
+
+        <Descriptions bordered size="small" column={1}>
+          {Object.entries(result.safeResult).map(([key, value]) => (
+            <Descriptions.Item key={key} label={key}>
+              {formatSafeResultValue(value)}
+            </Descriptions.Item>
+          ))}
+        </Descriptions>
+      </Space>
+    </Card>
+  );
+}
+
+const apiCallLogColumns: TableProps<ApiCallLogSummary>["columns"] = [
+  {
+    title: "Integration",
+    dataIndex: "integrationCode",
+    key: "integrationCode",
+    width: 180,
+  },
+  {
+    title: "Request ID",
+    dataIndex: "requestId",
+    key: "requestId",
+    width: 260,
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    key: "status",
+    width: 120,
+    render: (status: ApiCallLogSummary["status"]) => renderApiCallStatus(status),
+  },
+  {
+    title: "Duration",
+    dataIndex: "durationMs",
+    key: "durationMs",
+    width: 120,
+    render: (durationMs: number | null) =>
+      durationMs === null ? "Not returned" : `${durationMs} ms`,
+  },
+  {
+    title: "Error summary",
+    dataIndex: "errorSummary",
+    key: "errorSummary",
+    width: 280,
+    render: (errorSummary: string | null) => errorSummary || "None",
+  },
+  {
+    title: "Created",
+    dataIndex: "createdAt",
+    key: "createdAt",
+    width: 176,
+    render: (value: string) => formatDateTime(value),
   },
 ];
 
@@ -947,6 +1278,45 @@ const renderIntegrationState = (integration: ApiIntegrationMetadata) => (
     {integration.archivedAt ? <Tag color="orange">Archived</Tag> : <Tag>Active</Tag>}
   </Space>
 );
+
+const renderMockRunStatus = (status: ApiIntegrationMockRunResponse["runStatus"]) => {
+  const colorByStatus: Record<ApiIntegrationMockRunResponse["runStatus"], string> = {
+    SUCCESS: "green",
+    FAILED: "red",
+    DEGRADED: "gold",
+    UNAVAILABLE: "default",
+  };
+
+  return <Tag color={colorByStatus[status]}>{status}</Tag>;
+};
+
+const renderApiCallStatus = (status: ApiCallLogSummary["status"]) => {
+  const colorByStatus: Record<string, string> = {
+    SUCCESS: "green",
+    FAILED: "red",
+    TIMEOUT: "red",
+    RETRIED: "gold",
+    SKIPPED: "default",
+  };
+
+  return <Tag color={colorByStatus[status] ?? "default"}>{status}</Tag>;
+};
+
+const formatSafeResultValue = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return value.join(", ");
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+
+  if (value === null || value === undefined) {
+    return "Not returned";
+  }
+
+  return String(value);
+};
 
 const getOperationTitle = (operation: ApiIntegrationOperation): string =>
   operation.kind === "archive"

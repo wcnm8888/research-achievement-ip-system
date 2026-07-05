@@ -1,4 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { ApiCallStatus, ApiIntegrationProvider } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -9,14 +11,19 @@ import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
 import {
+  ApiCallLogSafeRecord,
   ApiIntegrationRecord,
   ApiIntegrationSettingsRepository,
   ApiIntegrationSettingsTransactionClient,
 } from "./api-integration-settings.repository";
 import {
   ApiIntegrationReasonDto,
+  ApiIntegrationMockResultMode,
+  ApiIntegrationMockScenario,
+  ListApiCallLogsQueryDto,
   CreateApiIntegrationDto,
   ListApiIntegrationsQueryDto,
+  RunApiIntegrationMockDemoDto,
   UpdateApiIntegrationDto,
 } from "./dto/api-integration-settings.dto";
 import {
@@ -24,6 +31,7 @@ import {
   SettingsConflictError,
   SettingsNotFoundError,
   SettingsPermissionDeniedError,
+  SettingsValidationError,
 } from "./settings.errors";
 
 type ApiIntegrationAuditOperation =
@@ -31,6 +39,32 @@ type ApiIntegrationAuditOperation =
   | "API_INTEGRATION_UPDATE"
   | "API_INTEGRATION_ARCHIVE"
   | "API_INTEGRATION_RESTORE";
+
+type ApiIntegrationMockRunStatus =
+  | "SUCCESS"
+  | "FAILED"
+  | "DEGRADED"
+  | "UNAVAILABLE";
+
+type ApiIntegrationMockScenarioDefinition = {
+  provider: ApiIntegrationProvider;
+  title: string;
+  syntheticSubject: string;
+  successSummary: string;
+  failureSummary: string;
+  degradedSummary: string;
+  successData: Record<string, string | number | boolean | string[]>;
+  degradedData: Record<string, string | number | boolean | string[]>;
+};
+
+type ApiCallLogSummary = {
+  integrationCode: string;
+  requestId: string;
+  status: string;
+  durationMs: number | null;
+  errorSummary: string | null;
+  createdAt: Date;
+};
 
 @Injectable()
 export class ApiIntegrationSettingsService {
@@ -248,6 +282,90 @@ export class ApiIntegrationSettingsService {
     }
   }
 
+  async runMockDemo(context: UserContext, dto: RunApiIntegrationMockDemoDto) {
+    this.assertCanManageSettings(context);
+    const definition = getMockScenarioDefinition(dto.scenario);
+
+    if (definition.provider !== dto.provider) {
+      throw new SettingsValidationError(
+        `Scenario ${dto.scenario} requires provider ${definition.provider}.`,
+      );
+    }
+
+    const integration = await this.repository.findFirstByProvider(dto.provider);
+    if (!integration) {
+      return buildUnavailableMockDemoResult({
+        definition,
+        dto,
+        reason:
+          "No active API integration metadata exists for this provider. Mock demo did not write ApiCallLog because there is no safe integrationCode foreign key.",
+      });
+    }
+
+    if (!integration.enabled) {
+      const log = await this.prisma.$transaction(async (tx) =>
+        this.repository.createApiCallLogInTransaction(
+          tx as ApiIntegrationSettingsTransactionClient,
+          {
+            integrationCode: integration.code,
+            requestId: createMockRequestId(),
+            status: ApiCallStatus.SKIPPED,
+            durationMs: 0,
+            errorSummary: "Mock skipped: integration is disabled.",
+          },
+        ),
+      );
+
+      return buildUnavailableMockDemoResult({
+        definition,
+        dto,
+        integration,
+        log,
+        reason:
+          "Integration metadata is disabled. Mock demo returned an unavailable fallback and did not simulate an external provider call.",
+      });
+    }
+
+    const result = buildEnabledMockDemoResult(definition, dto.resultMode);
+    const log = await this.prisma.$transaction(async (tx) =>
+      this.repository.createApiCallLogInTransaction(
+        tx as ApiIntegrationSettingsTransactionClient,
+        {
+          integrationCode: integration.code,
+          requestId: createMockRequestId(),
+          status: toApiCallStatus(dto.resultMode),
+          durationMs: result.durationMs,
+          errorSummary: result.errorSummary,
+        },
+      ),
+    );
+
+    return {
+      mockOnly: true,
+      provider: dto.provider,
+      scenario: dto.scenario,
+      requestedResultMode: dto.resultMode,
+      runStatus: result.runStatus,
+      integration: toMockIntegrationSummary(integration),
+      summary: result.summary,
+      syntheticSubject: definition.syntheticSubject,
+      safeResult: result.safeResult,
+      safetyNotice:
+        "Mock demo only. No real DOI, literature, patent, finance, HR, SSO, email, or SMS system was contacted.",
+      callLog: toApiCallLogSummary(log),
+    };
+  }
+
+  async listRecentApiCallLogs(
+    context: UserContext,
+    query: ListApiCallLogsQueryDto = {},
+  ): Promise<{ items: ApiCallLogSummary[] }> {
+    this.assertCanManageSettings(context);
+    const logs = await this.repository.findRecentApiCallLogs(query.limit ?? 10);
+
+    return { items: logs.map(toApiCallLogSummary) };
+  }
+
   private assertCanManageSettings(context: UserContext | null | undefined): void {
     if (!context?.userId || !context.departmentId) {
       throw new SettingsAccessDeniedError();
@@ -320,6 +438,214 @@ export class ApiIntegrationSettingsService {
     };
   }
 }
+
+const mockScenarioDefinitions: Record<
+  ApiIntegrationMockScenario,
+  ApiIntegrationMockScenarioDefinition
+> = {
+  [ApiIntegrationMockScenario.doiLookup]: {
+    provider: ApiIntegrationProvider.DOI,
+    title: "DOI lookup mock",
+    syntheticSubject: "Synthetic DOI 10.0000/mock-demo-2026",
+    successSummary:
+      "Synthetic DOI metadata was normalized for preview only; no paper was updated.",
+    failureSummary:
+      "Synthetic DOI provider failure was returned; manual entry remains the fallback.",
+    degradedSummary:
+      "Synthetic DOI lookup used cached/manual fallback fields; no external lookup happened.",
+    successData: {
+      title: "Synthetic research output metadata",
+      authors: ["Synthetic Author A", "Synthetic Author B"],
+      source: "mock-adapter",
+      writesBusinessRecord: false,
+    },
+    degradedData: {
+      title: "Manual-entry DOI metadata placeholder",
+      source: "mock-fallback",
+      confidence: "low",
+      writesBusinessRecord: false,
+    },
+  },
+  [ApiIntegrationMockScenario.patentStatusSync]: {
+    provider: ApiIntegrationProvider.PATENT,
+    title: "Patent status sync mock",
+    syntheticSubject: "Synthetic patent application CN-MOCK-2026-0001",
+    successSummary:
+      "Synthetic patent status was mapped to an internal preview state; no official data was synchronized.",
+    failureSummary:
+      "Synthetic patent status provider failure was returned; current records remain unchanged.",
+    degradedSummary:
+      "Synthetic patent status used stale/manual fallback data for preview only.",
+    successData: {
+      patentStatus: "UNDER_REVIEW",
+      annualFeeNode: "mock-year-2",
+      source: "mock-adapter",
+      writesBusinessRecord: false,
+    },
+    degradedData: {
+      patentStatus: "MANUAL_REVIEW_REQUIRED",
+      source: "mock-fallback",
+      confidence: "low",
+      writesBusinessRecord: false,
+    },
+  },
+  [ApiIntegrationMockScenario.financeReconcile]: {
+    provider: ApiIntegrationProvider.FINANCE,
+    title: "Finance callback/reconcile mock",
+    syntheticSubject: "Synthetic finance voucher FIN-MOCK-2026-0001",
+    successSummary:
+      "Synthetic finance callback was reconciled into a preview summary; no payment, invoice, receipt, or voucher was created.",
+    failureSummary:
+      "Synthetic finance reconciliation failure was returned; no ledger or payment state changed.",
+    degradedSummary:
+      "Synthetic finance callback entered manual reconciliation fallback for preview only.",
+    successData: {
+      voucherStatus: "MATCHED",
+      amountCny: 0,
+      source: "mock-adapter",
+      writesBusinessRecord: false,
+    },
+    degradedData: {
+      voucherStatus: "MANUAL_RECONCILE_REQUIRED",
+      amountCny: 0,
+      source: "mock-fallback",
+      writesBusinessRecord: false,
+    },
+  },
+  [ApiIntegrationMockScenario.hrSync]: {
+    provider: ApiIntegrationProvider.HR,
+    title: "HR sync mock",
+    syntheticSubject: "Synthetic department staff delta HR-MOCK-2026-0001",
+    successSummary:
+      "Synthetic HR delta was validated for preview only; no account, credential, SSO session, or production identity was created.",
+    failureSummary:
+      "Synthetic HR sync failure was returned; local identities remain unchanged.",
+    degradedSummary:
+      "Synthetic HR sync used manual account-maintenance fallback for preview only.",
+    successData: {
+      anonymizedStaffCount: 3,
+      departmentAction: "preview-only",
+      source: "mock-adapter",
+      createsCredentials: false,
+    },
+    degradedData: {
+      anonymizedStaffCount: 0,
+      departmentAction: "manual-review",
+      source: "mock-fallback",
+      createsCredentials: false,
+    },
+  },
+};
+
+const getMockScenarioDefinition = (
+  scenario: ApiIntegrationMockScenario,
+): ApiIntegrationMockScenarioDefinition => mockScenarioDefinitions[scenario];
+
+const buildEnabledMockDemoResult = (
+  definition: ApiIntegrationMockScenarioDefinition,
+  resultMode: ApiIntegrationMockResultMode,
+): {
+  runStatus: ApiIntegrationMockRunStatus;
+  durationMs: number;
+  errorSummary: string | null;
+  summary: string;
+  safeResult: Record<string, unknown>;
+} => {
+  if (resultMode === ApiIntegrationMockResultMode.failure) {
+    return {
+      runStatus: "FAILED",
+      durationMs: 248,
+      errorSummary: `Mock failure: ${definition.title} returned a synthetic adapter error.`,
+      summary: definition.failureSummary,
+      safeResult: {
+        mode: "failure",
+        fallback: "manual-entry",
+        writesBusinessRecord: false,
+      },
+    };
+  }
+
+  if (resultMode === ApiIntegrationMockResultMode.degraded) {
+    return {
+      runStatus: "DEGRADED",
+      durationMs: 412,
+      errorSummary: `Mock degraded: ${definition.title} used fallback data.`,
+      summary: definition.degradedSummary,
+      safeResult: definition.degradedData,
+    };
+  }
+
+  return {
+    runStatus: "SUCCESS",
+    durationMs: 126,
+    errorSummary: null,
+    summary: definition.successSummary,
+    safeResult: definition.successData,
+  };
+};
+
+const buildUnavailableMockDemoResult = ({
+  definition,
+  dto,
+  integration,
+  log,
+  reason,
+}: {
+  definition: ApiIntegrationMockScenarioDefinition;
+  dto: RunApiIntegrationMockDemoDto;
+  integration?: ApiIntegrationRecord;
+  log?: ApiCallLogSafeRecord;
+  reason: string;
+}) => ({
+  mockOnly: true,
+  provider: dto.provider,
+  scenario: dto.scenario,
+  requestedResultMode: dto.resultMode,
+  runStatus: "UNAVAILABLE" as const,
+  integration: integration ? toMockIntegrationSummary(integration) : null,
+  summary: reason,
+  syntheticSubject: definition.syntheticSubject,
+  safeResult: {
+    mode: "unavailable",
+    fallback: "manual-entry",
+    writesBusinessRecord: false,
+  },
+  safetyNotice:
+    "Mock demo only. No real DOI, literature, patent, finance, HR, SSO, email, or SMS system was contacted.",
+  callLog: log ? toApiCallLogSummary(log) : null,
+});
+
+const toApiCallStatus = (
+  resultMode: ApiIntegrationMockResultMode,
+): ApiCallStatus => {
+  if (resultMode === ApiIntegrationMockResultMode.failure) {
+    return ApiCallStatus.FAILED;
+  }
+
+  if (resultMode === ApiIntegrationMockResultMode.degraded) {
+    return ApiCallStatus.RETRIED;
+  }
+
+  return ApiCallStatus.SUCCESS;
+};
+
+const toMockIntegrationSummary = (integration: ApiIntegrationRecord) => ({
+  code: integration.code,
+  provider: integration.provider,
+  enabled: integration.enabled,
+  archivedAt: integration.archivedAt,
+});
+
+const toApiCallLogSummary = (log: ApiCallLogSafeRecord) => ({
+  integrationCode: log.integrationCode,
+  requestId: log.requestId,
+  status: log.status,
+  durationMs: log.durationMs,
+  errorSummary: log.errorSummary,
+  createdAt: log.createdAt,
+});
+
+const createMockRequestId = (): string => `mock-${randomUUID()}`;
 
 const normalizeConfigRef = (configRef: string | null | undefined): string | null => {
   const normalized = configRef?.trim();

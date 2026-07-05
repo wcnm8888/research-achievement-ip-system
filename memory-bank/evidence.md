@@ -17800,3 +17800,40 @@
   - No raw token, token hash, password/password hash, cookie/session token/hash, credential secret, full link, connection string, or provider secret was added to API/UI output or docs.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact modification.
   - Local validation is local synthetic/demo acceptance only and is not production acceptance.
+
+## 2026-07-05 Step 86 - External integration mock demo center evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `24c305e feat: complete account activation mock notification loop`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Gap evidence:
+  - API integration metadata CRUD already existed in `settings` with system-config permission checks and audit metadata.
+  - Existing `ApiCallLog` schema already had the required safe fields: `integrationCode`, `requestId`, `status`, `durationMs`, `errorSummary`, and `createdAt`.
+  - Settings repository/service did not previously expose `ApiCallLog` write/read paths.
+  - Web Settings API Integrations page did not have a mock demo center or safe call-log display.
+- Local implementation evidence:
+  - Added settings DTOs for `DOI_LOOKUP`, `PATENT_STATUS_SYNC`, `FINANCE_RECONCILE`, and `HR_SYNC` mock scenarios.
+  - Added `SUCCESS`, `FAILURE`, and `DEGRADED` result modes.
+  - Added backend mock demo service logic that returns synthetic safe summaries only.
+  - Added safe `ApiCallLog` writes for enabled/disabled integration paths and recent log listing.
+  - Added Web mock demo center with provider/scenario/result selectors, clear "Mock demo only / 非真实外部联调" copy, result summary, and recent safe logs.
+  - Added API and Web tests for mock run, logs, disabled/missing states, provider/scenario mismatch, API client paths, and safe response boundaries.
+- Local validation:
+  - `corepack pnpm --filter @research-ip/api test -- settings integration api-call mock` -> passed; 3 files, 17 tests.
+  - `corepack pnpm --filter @research-ip/web test -- SettingsApiIntegrations api-client` -> passed; 2 files, 56 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+  - First `corepack pnpm --filter @research-ip/web typecheck` failed on a test helper optional-array access in `api-client.test.ts`; no business code issue was found.
+  - Final `corepack pnpm --filter @research-ip/web typecheck` -> passed.
+  - `git diff --check` -> passed; only LF-to-CRLF warnings were printed.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook execution.
+  - No real DOI, literature, patent, finance, HR, SSO, email, SMS, or external production system call.
+  - No real paper enrichment, patent status synchronization, payment, invoice, receipt, voucher, account, credential, SSO session, or production identity change.
+  - No raw request, raw response, token, cookie, credential, connection string, provider secret, real personal information, or real financial credential was added to API/UI output or docs.
+  - No schema/migration/seed/package/lockfile change.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact modification.
+  - Local validation is local synthetic/mock demo acceptance only and is not production acceptance.

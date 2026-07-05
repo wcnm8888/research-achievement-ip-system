@@ -13128,3 +13128,45 @@
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
 - Next step:
   - Proceed to Step 86: external interface mock demo center.
+
+## 2026-07-05 Step 86 - External integration mock demo center
+
+- Status: DONE.
+- Gap analysis:
+  - Settings API integration CRUD already existed for code, provider, enabled flag, timeout, config reference, archive, and restore.
+  - `ApiIntegration` and `ApiCallLog` schema already existed with safe call-log fields, so no Prisma schema or migration change was needed.
+  - Repository/service previously did not expose `ApiCallLog` write/read capability for settings demonstrations.
+  - Web Settings API Integrations page showed metadata CRUD only; it did not provide a reviewer-facing adapter/mock demo center or recent call-log view.
+  - This step intentionally adds mock/adapter demonstration only, not real provider integration.
+- Scope completed:
+  - Added settings mock demo DTOs for four scenarios: DOI lookup, patent status sync, finance callback/reconcile, and HR sync.
+  - Added success, failure, and degraded result modes for each scenario.
+  - Added `POST /settings/api-integrations/mock-demo/run` to run synthetic mock scenarios.
+  - Added `GET /settings/api-integrations/mock-demo/logs` to list recent safe `ApiCallLog` summaries.
+  - Enabled mock runs write only safe `ApiCallLog` summaries: `integrationCode`, `requestId`, `status`, `durationMs`, `errorSummary`, and `createdAt`.
+  - Disabled integrations return `UNAVAILABLE` and write a `SKIPPED` safe log.
+  - Missing integrations return `UNAVAILABLE` without writing a log because the existing schema requires a valid `integrationCode` foreign key.
+  - Web Settings API Integrations page now has an External interface mock demo center with provider/scenario/result mode controls, mock result summary, synthetic safe result fields, and recent safe call logs.
+- Demo path:
+  - Create or enable an API integration metadata record for provider `DOI`, `PATENT`, `FINANCE`, or `HR`.
+  - Open Settings -> API integrations.
+  - In External interface mock demo center, select the matching provider/scenario and choose Success, Failure, or Degraded.
+  - Click `Run mock`.
+  - Review the synthetic summary and recent call-log table.
+  - Disable or omit an integration to demonstrate clear unavailable/degraded handling.
+- Explicitly not done:
+  - No real DOI, literature database, patent platform, finance system, HR, SSO, email, SMS, production, VPS, or production DB integration.
+  - No real paper enrichment, official patent sync, payment, invoice, receipt, voucher, account creation, credential creation, SSO session, or production identity change.
+  - No `.env` / `.env.production` content read.
+  - No schema/migration/package/lockfile change.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact changes.
+  - No claim of production acceptance; validation is local synthetic/mock demo acceptance only.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- settings integration api-call mock`: PASS, 3 files / 17 tests.
+  - `corepack pnpm --filter @research-ip/web test -- SettingsApiIntegrations api-client`: PASS, 2 files / 56 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Initial `corepack pnpm --filter @research-ip/web typecheck`: failed on one test helper optional-array access; the test assertion was narrowed locally.
+  - Final `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+- Next step:
+  - Proceed to Step 87: report/dashboard enhancement.

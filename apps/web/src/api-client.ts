@@ -3,7 +3,10 @@ import type {
   AccountUserListResponse,
   ApiIntegrationListResponse,
   ApiIntegrationMetadata,
+  ApiIntegrationMockRunInput,
+  ApiIntegrationMockRunResponse,
   ApiIntegrationReasonInput,
+  ApiCallLogListResponse,
   AssignAccountUserRoleInput,
   AssignAccountUserRoleResponse,
   AchievementImportApplyInput,
@@ -37,6 +40,7 @@ import type {
   InviteAcceptResponse,
   InviteIssueResponse,
   ListApiIntegrationsQuery,
+  ListApiCallLogsQuery,
   ListAccountUsersQuery,
   ListDepartmentsQuery,
   PasswordResetConfirmInput,
@@ -175,6 +179,10 @@ export type AccountManagementApiClient = ApiClient & {
     integrationId: string,
     payload?: ApiIntegrationReasonInput,
   ): Promise<ApiIntegrationMetadata>;
+  runApiIntegrationMockDemo(
+    payload: ApiIntegrationMockRunInput,
+  ): Promise<ApiIntegrationMockRunResponse>;
+  listApiCallLogs(query?: ListApiCallLogsQuery): Promise<ApiCallLogListResponse>;
   approveFeeReview(
     feeRecordId: string,
     payload?: ApproveFeeReviewInput,
@@ -607,6 +615,24 @@ export const createApiClient = (
       options,
     );
     return response as ApiIntegrationMetadata;
+  },
+  async runApiIntegrationMockDemo(payload: ApiIntegrationMockRunInput) {
+    const response = await request(
+      "/settings/api-integrations/mock-demo/run",
+      demoUserId,
+      { method: "POST", body: payload },
+      options,
+    );
+    return response as ApiIntegrationMockRunResponse;
+  },
+  async listApiCallLogs(query?: ListApiCallLogsQuery) {
+    const response = await request(
+      "/settings/api-integrations/mock-demo/logs",
+      demoUserId,
+      { method: "GET", query },
+      options,
+    );
+    return response as ApiCallLogListResponse;
   },
   async approveFeeReview(feeRecordId: string, payload: ApproveFeeReviewInput = {}) {
     const response = await request(

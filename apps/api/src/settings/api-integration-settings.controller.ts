@@ -27,7 +27,9 @@ import { ApiIntegrationSettingsService } from "./api-integration-settings.servic
 import {
   ApiIntegrationReasonDto,
   CreateApiIntegrationDto,
+  ListApiCallLogsQueryDto,
   ListApiIntegrationsQueryDto,
+  RunApiIntegrationMockDemoDto,
   UpdateApiIntegrationDto,
 } from "./dto/api-integration-settings.dto";
 import {
@@ -35,6 +37,7 @@ import {
   SettingsConflictError,
   SettingsNotFoundError,
   SettingsPermissionDeniedError,
+  SettingsValidationError,
 } from "./settings.errors";
 
 const settingsValidationOptions = {
@@ -55,6 +58,14 @@ const createApiIntegrationValidationPipe = new ValidationPipe({
 const updateApiIntegrationValidationPipe = new ValidationPipe({
   ...settingsValidationOptions,
   expectedType: UpdateApiIntegrationDto,
+});
+const runApiIntegrationMockDemoValidationPipe = new ValidationPipe({
+  ...settingsValidationOptions,
+  expectedType: RunApiIntegrationMockDemoDto,
+});
+const listApiCallLogsQueryValidationPipe = new ValidationPipe({
+  ...settingsValidationOptions,
+  expectedType: ListApiCallLogsQueryDto,
 });
 const apiIntegrationReasonValidationPipe = new ValidationPipe({
   ...settingsValidationOptions,
@@ -82,6 +93,36 @@ export class ApiIntegrationSettingsController {
         currentUser,
         query,
       );
+    } catch (error) {
+      throw mapSettingsError(error);
+    }
+  }
+
+  @Get("mock-demo/logs")
+  @RequirePermissions(PermissionCode.systemConfig)
+  async listRecentApiCallLogs(
+    @CurrentUser() currentUser: UserContext,
+    @Query(listApiCallLogsQueryValidationPipe)
+    query: ListApiCallLogsQueryDto = {},
+  ) {
+    try {
+      return await this.apiIntegrationSettingsService.listRecentApiCallLogs(
+        currentUser,
+        query,
+      );
+    } catch (error) {
+      throw mapSettingsError(error);
+    }
+  }
+
+  @Post("mock-demo/run")
+  @RequirePermissions(PermissionCode.systemConfig)
+  async runMockDemo(
+    @CurrentUser() currentUser: UserContext,
+    @Body(runApiIntegrationMockDemoValidationPipe) dto: RunApiIntegrationMockDemoDto,
+  ) {
+    try {
+      return await this.apiIntegrationSettingsService.runMockDemo(currentUser, dto);
     } catch (error) {
       throw mapSettingsError(error);
     }
@@ -189,6 +230,10 @@ const mapSettingsError = (error: unknown): Error => {
 
   if (error instanceof SettingsConflictError) {
     return new ConflictException(error.message);
+  }
+
+  if (error instanceof SettingsValidationError) {
+    return new BadRequestException(error.message);
   }
 
   return error instanceof Error

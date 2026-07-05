@@ -1,4 +1,4 @@
-import { ApiIntegrationProvider } from "@prisma/client";
+import { ApiCallStatus, ApiIntegrationProvider } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
 import { AuditTargetTypeCode } from "../audit/domain/audit-target-type-code";
@@ -13,8 +13,13 @@ import {
 } from "./api-integration-settings.repository";
 import { ApiIntegrationSettingsService } from "./api-integration-settings.service";
 import {
+  ApiIntegrationMockResultMode,
+  ApiIntegrationMockScenario,
+} from "./dto/api-integration-settings.dto";
+import {
   SettingsConflictError,
   SettingsPermissionDeniedError,
+  SettingsValidationError,
 } from "./settings.errors";
 
 const ids = {
@@ -248,6 +253,155 @@ describe("ApiIntegrationSettingsService", () => {
 
     expect(auditService.recordEventInTransaction).not.toHaveBeenCalled();
   });
+
+  it("runs enabled mock demos and writes only safe ApiCallLog summaries", async () => {
+    const { service, repository } = createService();
+
+    const result = await service.runMockDemo(adminContext, {
+      provider: ApiIntegrationProvider.DOI,
+      scenario: ApiIntegrationMockScenario.doiLookup,
+      resultMode: ApiIntegrationMockResultMode.success,
+    });
+
+    expect(result).toMatchObject({
+      mockOnly: true,
+      provider: ApiIntegrationProvider.DOI,
+      scenario: "DOI_LOOKUP",
+      runStatus: "SUCCESS",
+      integration: {
+        code: "DOI_LOOKUP",
+        enabled: true,
+      },
+      safeResult: expect.objectContaining({
+        source: "mock-adapter",
+        writesBusinessRecord: false,
+      }),
+      callLog: expect.objectContaining({
+        integrationCode: "DOI_LOOKUP",
+        status: ApiCallStatus.SUCCESS,
+        errorSummary: null,
+      }),
+    });
+    expect(repository.findFirstByProvider).toHaveBeenCalledWith(
+      ApiIntegrationProvider.DOI,
+    );
+    expect(repository.createApiCallLogInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        integrationCode: "DOI_LOOKUP",
+        status: ApiCallStatus.SUCCESS,
+        errorSummary: null,
+      }),
+    );
+    expect(JSON.stringify(result)).not.toContain("token");
+    expect(JSON.stringify(result)).not.toContain("raw");
+    expect(JSON.stringify(result)).not.toContain("credential");
+  });
+
+  it("maps failure and degraded mock results to safe ApiCallLog statuses", async () => {
+    const { service, repository } = createService();
+
+    await service.runMockDemo(adminContext, {
+      provider: ApiIntegrationProvider.PATENT,
+      scenario: ApiIntegrationMockScenario.patentStatusSync,
+      resultMode: ApiIntegrationMockResultMode.failure,
+    });
+    await service.runMockDemo(adminContext, {
+      provider: ApiIntegrationProvider.FINANCE,
+      scenario: ApiIntegrationMockScenario.financeReconcile,
+      resultMode: ApiIntegrationMockResultMode.degraded,
+    });
+
+    expect(repository.createApiCallLogInTransaction).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({
+        status: ApiCallStatus.FAILED,
+        errorSummary: expect.stringContaining("Mock failure"),
+      }),
+    );
+    expect(repository.createApiCallLogInTransaction).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Object),
+      expect.objectContaining({
+        status: ApiCallStatus.RETRIED,
+        errorSummary: expect.stringContaining("Mock degraded"),
+      }),
+    );
+  });
+
+  it("returns clear unavailable states for disabled and missing integrations", async () => {
+    const { service, repository } = createService();
+    repository.findFirstByProvider.mockResolvedValueOnce(
+      makeApiIntegration({
+        code: "HR_SYNC",
+        provider: ApiIntegrationProvider.HR,
+        enabled: false,
+      }),
+    );
+
+    const disabled = await service.runMockDemo(adminContext, {
+      provider: ApiIntegrationProvider.HR,
+      scenario: ApiIntegrationMockScenario.hrSync,
+      resultMode: ApiIntegrationMockResultMode.success,
+    });
+
+    expect(disabled.runStatus).toBe("UNAVAILABLE");
+    expect(disabled.callLog).toMatchObject({
+      integrationCode: "HR_SYNC",
+      status: ApiCallStatus.SKIPPED,
+    });
+    expect(repository.createApiCallLogInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        status: ApiCallStatus.SKIPPED,
+        errorSummary: "Mock skipped: integration is disabled.",
+      }),
+    );
+
+    repository.findFirstByProvider.mockResolvedValueOnce(null);
+    const missing = await service.runMockDemo(adminContext, {
+      provider: ApiIntegrationProvider.HR,
+      scenario: ApiIntegrationMockScenario.hrSync,
+      resultMode: ApiIntegrationMockResultMode.success,
+    });
+
+    expect(missing.runStatus).toBe("UNAVAILABLE");
+    expect(missing.integration).toBeNull();
+    expect(missing.callLog).toBeNull();
+  });
+
+  it("rejects provider and scenario mismatches before logging", async () => {
+    const { service, repository } = createService();
+
+    await expect(
+      service.runMockDemo(adminContext, {
+        provider: ApiIntegrationProvider.HR,
+        scenario: ApiIntegrationMockScenario.doiLookup,
+        resultMode: ApiIntegrationMockResultMode.success,
+      }),
+    ).rejects.toBeInstanceOf(SettingsValidationError);
+
+    expect(repository.createApiCallLogInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("lists recent ApiCallLog summaries through the settings permission boundary", async () => {
+    const { service, repository } = createService();
+
+    await expect(
+      service.listRecentApiCallLogs(adminContext, { limit: 5 }),
+    ).resolves.toEqual({
+      items: [
+        expect.objectContaining({
+          integrationCode: "DOI_LOOKUP",
+          requestId: "mock-request-1",
+          status: ApiCallStatus.SUCCESS,
+        }),
+      ],
+    });
+
+    expect(repository.findRecentApiCallLogs).toHaveBeenCalledWith(5);
+  });
 });
 
 const createService = () => {
@@ -267,6 +421,36 @@ const createService = () => {
       makeApiIntegration({ enabled: false, archivedAt: now }),
     ),
     restoreInTransaction: vi.fn().mockResolvedValue(makeApiIntegration()),
+    findFirstByProvider: vi.fn().mockResolvedValue(makeApiIntegration()),
+    createApiCallLogInTransaction: vi.fn(
+      async (
+        _tx: unknown,
+        input: {
+          integrationCode: string;
+          requestId: string;
+          status: ApiCallStatus;
+          durationMs: number | null;
+          errorSummary: string | null;
+        },
+      ) => ({
+        integrationCode: input.integrationCode,
+        requestId: input.requestId,
+        status: input.status,
+        durationMs: input.durationMs,
+        errorSummary: input.errorSummary,
+        createdAt: now,
+      }),
+    ),
+    findRecentApiCallLogs: vi.fn().mockResolvedValue([
+      {
+        integrationCode: "DOI_LOOKUP",
+        requestId: "mock-request-1",
+        status: ApiCallStatus.SUCCESS,
+        durationMs: 126,
+        errorSummary: null,
+        createdAt: now,
+      },
+    ]),
     isPrismaUniqueConflict: vi.fn((error: unknown) =>
       Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002"),
     ),
@@ -280,7 +464,7 @@ const createService = () => {
   };
 
   const prisma = {
-    tx: { apiIntegration: {}, auditLog: {} },
+    tx: { apiIntegration: {}, apiCallLog: {}, auditLog: {} },
     $transaction: vi.fn(async (callback) => callback(prisma.tx)),
   };
 

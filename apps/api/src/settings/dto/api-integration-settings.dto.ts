@@ -148,6 +148,39 @@ export class ApiIntegrationReasonDto {
   reason?: string | null;
 }
 
+export enum ApiIntegrationMockScenario {
+  doiLookup = "DOI_LOOKUP",
+  patentStatusSync = "PATENT_STATUS_SYNC",
+  financeReconcile = "FINANCE_RECONCILE",
+  hrSync = "HR_SYNC",
+}
+
+export enum ApiIntegrationMockResultMode {
+  success = "SUCCESS",
+  failure = "FAILURE",
+  degraded = "DEGRADED",
+}
+
+export class RunApiIntegrationMockDemoDto {
+  @IsEnum(ApiIntegrationProvider)
+  provider!: ApiIntegrationProvider;
+
+  @IsEnum(ApiIntegrationMockScenario)
+  scenario!: ApiIntegrationMockScenario;
+
+  @IsEnum(ApiIntegrationMockResultMode)
+  resultMode!: ApiIntegrationMockResultMode;
+}
+
+export class ListApiCallLogsQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number;
+}
+
 export type ApiIntegrationResponseDto = {
   id: string;
   code: string;
@@ -158,4 +191,13 @@ export type ApiIntegrationResponseDto = {
   createdAt: Date | string;
   updatedAt: Date | string;
   archivedAt: Date | string | null;
+};
+
+export type ApiCallLogSummaryDto = {
+  integrationCode: string;
+  requestId: string;
+  status: string;
+  durationMs: number | null;
+  errorSummary: string | null;
+  createdAt: Date | string;
 };

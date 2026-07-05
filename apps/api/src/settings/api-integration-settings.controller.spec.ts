@@ -24,6 +24,8 @@ const now = new Date("2026-06-29T00:00:00.000Z");
 
 type ApiIntegrationSettingsServiceMock = {
   listApiIntegrations: ReturnType<typeof vi.fn>;
+  listRecentApiCallLogs: ReturnType<typeof vi.fn>;
+  runMockDemo: ReturnType<typeof vi.fn>;
   getApiIntegration: ReturnType<typeof vi.fn>;
   createApiIntegration: ReturnType<typeof vi.fn>;
   updateApiIntegration: ReturnType<typeof vi.fn>;
@@ -83,6 +85,46 @@ const createServiceMock = (): ApiIntegrationSettingsServiceMock => ({
     page: 1,
     pageSize: 20,
   }),
+  listRecentApiCallLogs: vi.fn().mockResolvedValue({
+    items: [
+      {
+        integrationCode: "DOI_LOOKUP",
+        requestId: "mock-request-1",
+        status: "SUCCESS",
+        durationMs: 126,
+        errorSummary: null,
+        createdAt: now,
+      },
+    ],
+  }),
+  runMockDemo: vi.fn().mockResolvedValue({
+    mockOnly: true,
+    provider: ApiIntegrationProvider.DOI,
+    scenario: "DOI_LOOKUP",
+    requestedResultMode: "SUCCESS",
+    runStatus: "SUCCESS",
+    integration: {
+      code: "DOI_LOOKUP",
+      provider: ApiIntegrationProvider.DOI,
+      enabled: true,
+      archivedAt: null,
+    },
+    summary: "Synthetic DOI metadata was normalized for preview only.",
+    syntheticSubject: "Synthetic DOI 10.0000/mock-demo-2026",
+    safeResult: {
+      source: "mock-adapter",
+      writesBusinessRecord: false,
+    },
+    safetyNotice: "Mock demo only.",
+    callLog: {
+      integrationCode: "DOI_LOOKUP",
+      requestId: "mock-request-1",
+      status: "SUCCESS",
+      durationMs: 126,
+      errorSummary: null,
+      createdAt: now,
+    },
+  }),
   getApiIntegration: vi.fn().mockResolvedValue(makeApiIntegration()),
   createApiIntegration: vi.fn().mockResolvedValue(makeApiIntegration()),
   updateApiIntegration: vi.fn().mockResolvedValue(
@@ -122,8 +164,19 @@ describe("ApiIntegrationSettingsController HTTP", () => {
         .send({ code: "DOI_LOOKUP", provider: ApiIntegrationProvider.DOI })
         .expect(403);
 
+      await request(app.getHttpServer() as Server)
+        .post("/settings/api-integrations/mock-demo/run")
+        .set("X-Demo-User-Id", ids.user)
+        .send({
+          provider: ApiIntegrationProvider.DOI,
+          scenario: "DOI_LOOKUP",
+          resultMode: "SUCCESS",
+        })
+        .expect(403);
+
       expect(service.listApiIntegrations).not.toHaveBeenCalled();
       expect(service.createApiIntegration).not.toHaveBeenCalled();
+      expect(service.runMockDemo).not.toHaveBeenCalled();
     });
   });
 
@@ -146,6 +199,22 @@ describe("ApiIntegrationSettingsController HTTP", () => {
         .get(`/settings/api-integrations/${ids.integration}`)
         .set("X-Demo-User-Id", ids.user)
         .expect(200);
+
+      await request(app.getHttpServer() as Server)
+        .get("/settings/api-integrations/mock-demo/logs")
+        .set("X-Demo-User-Id", ids.user)
+        .query({ limit: "5" })
+        .expect(200);
+
+      await request(app.getHttpServer() as Server)
+        .post("/settings/api-integrations/mock-demo/run")
+        .set("X-Demo-User-Id", ids.user)
+        .send({
+          provider: ApiIntegrationProvider.DOI,
+          scenario: "DOI_LOOKUP",
+          resultMode: "SUCCESS",
+        })
+        .expect(201);
 
       await request(app.getHttpServer() as Server)
         .post("/settings/api-integrations")
@@ -184,6 +253,18 @@ describe("ApiIntegrationSettingsController HTTP", () => {
       expect(service.getApiIntegration).toHaveBeenCalledWith(
         expect.any(Object),
         ids.integration,
+      );
+      expect(service.listRecentApiCallLogs).toHaveBeenCalledWith(
+        expect.any(Object),
+        { limit: 5 },
+      );
+      expect(service.runMockDemo).toHaveBeenCalledWith(
+        expect.any(Object),
+        {
+          provider: ApiIntegrationProvider.DOI,
+          scenario: "DOI_LOOKUP",
+          resultMode: "SUCCESS",
+        },
       );
       expect(service.createApiIntegration).toHaveBeenCalledWith(
         expect.any(Object),
@@ -233,8 +314,19 @@ describe("ApiIntegrationSettingsController HTTP", () => {
         .send({ unexpectedField: "not-allowed" })
         .expect(400);
 
+      await request(app.getHttpServer() as Server)
+        .post("/settings/api-integrations/mock-demo/run")
+        .set("X-Demo-User-Id", ids.user)
+        .send({
+          provider: ApiIntegrationProvider.DOI,
+          scenario: "NOT_A_SCENARIO",
+          resultMode: "SUCCESS",
+        })
+        .expect(400);
+
       expect(service.createApiIntegration).not.toHaveBeenCalled();
       expect(service.updateApiIntegration).not.toHaveBeenCalled();
+      expect(service.runMockDemo).not.toHaveBeenCalled();
     });
   });
 });

@@ -27,3 +27,10 @@ export class SettingsConflictError extends Error {
     this.name = "SettingsConflictError";
   }
 }
+
+export class SettingsValidationError extends Error {
+  constructor(message = "Settings request is invalid.") {
+    super(message);
+    this.name = "SettingsValidationError";
+  }
+}
