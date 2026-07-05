@@ -17765,3 +17765,38 @@
   - No Docker, deploy, runbook, seed, production config, package, or lockfile change.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact modification.
   - Local validation is local synthetic/demo acceptance only and is not production acceptance.
+
+## 2026-07-05 Step 85 - Account activation and simulated notification loop evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `07f4c3a feat: add achievement conversion MVP`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Gap evidence:
+  - `AccountLifecycleService` already supported create invite, resend invite, invite accept, self/admin password reset, token consumption, credential activation, session revocation for reset, and audit writes without raw secrets.
+  - `AuthService.login` already required `ACTIVE` user status plus `ACTIVE` credential before issuing a session.
+  - `AccountLifecycleMailer` already defaulted to `LocalSafeStubDeliveryAdapter`; no new real mail/SMS/SSO/HR adapter was created.
+  - Account-management list/detail did not expose a reviewer-visible safe summary of the latest lifecycle delivery state.
+  - Web action copy did not clearly state that delivery is local/simulated and not a real external message.
+- Local implementation evidence:
+  - `AccountManagementRepository` now selects only safe latest lifecycle token delivery fields for account user list/detail.
+  - Added Web types for safe lifecycle delivery summaries.
+  - Account Management list/detail now display simulated delivery status, adapter, purpose, target user id, masked email, token status, and update time.
+  - Account detail now displays login capability based on account status and credential status.
+  - Resend invite, admin password reset, and reset revoke operations now re-fetch account detail after the lifecycle operation.
+  - Public invite accept and admin lifecycle copy explicitly mark the flow as local/simulated and not real email/SMS/production acceptance.
+- Local validation:
+  - `corepack pnpm --filter @research-ip/api test -- account-management account-lifecycle auth notification` -> passed; 14 files, 129 tests.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement AccountLifecycleAccess` -> passed; 2 files, 39 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck` -> passed.
+  - `corepack pnpm --filter @research-ip/web typecheck` -> passed.
+- Boundaries observed:
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook execution.
+  - No real email, SMS, HR, SSO, production identity, or external notification/system operation.
+  - No schema/migration/seed/package/lockfile change.
+  - No raw token, token hash, password/password hash, cookie/session token/hash, credential secret, full link, connection string, or provider secret was added to API/UI output or docs.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked artifact modification.
+  - Local validation is local synthetic/demo acceptance only and is not production acceptance.

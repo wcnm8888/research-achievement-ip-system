@@ -1120,6 +1120,7 @@ export type AccountUserSummary = {
   roles: AccountUserRoleSummary[];
   credential: AccountUserCredentialSummary | null;
   lastLogin: AccountUserLastLoginSummary | null;
+  recentLifecycleDelivery: AccountLifecycleDeliverySummary | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -1172,6 +1173,38 @@ export type AccountLifecycleDeliveryStatus =
   | "SENT"
   | "FAILED"
   | "SUPPRESSED";
+
+export type AccountLifecycleTokenPurpose =
+  | "INVITE_ACCEPT"
+  | "PASSWORD_RESET_SELF"
+  | "PASSWORD_RESET_ADMIN";
+
+export type AccountLifecycleTokenStatus = "ACTIVE" | "USED" | "REVOKED";
+
+export type AccountLifecycleDeliveryChannel = "EMAIL";
+
+export type AccountLifecycleDeliveryFailureCategory =
+  | "CONFIGURATION"
+  | "PERMANENT"
+  | "RATE_LIMITED"
+  | "SUPPRESSED"
+  | "TEMPORARY";
+
+export type AccountLifecycleDeliverySummary = {
+  purpose: AccountLifecycleTokenPurpose;
+  tokenStatus: AccountLifecycleTokenStatus;
+  deliveryChannel: AccountLifecycleDeliveryChannel | null;
+  deliveryStatus: AccountLifecycleDeliveryStatus | null;
+  deliveryAdapter: string | null;
+  failureCategory: AccountLifecycleDeliveryFailureCategory | null;
+  targetUserId: string | null;
+  maskedEmail: string;
+  expiresAt: string;
+  usedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type InviteIssueResponse = {
   userId: string;

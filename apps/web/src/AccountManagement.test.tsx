@@ -80,6 +80,21 @@ const accountUser: AccountUserDetail = {
     updatedAt: "2026-06-01T00:00:00.000Z",
   },
   lastLogin: null,
+  recentLifecycleDelivery: {
+    purpose: "INVITE_ACCEPT",
+    tokenStatus: "ACTIVE",
+    deliveryChannel: "EMAIL",
+    deliveryStatus: "QUEUED",
+    deliveryAdapter: "LOCAL_SAFE_STUB",
+    failureCategory: null,
+    targetUserId: "40000000-0000-4000-8000-000000000011",
+    maskedEmail: "r***@example.com",
+    expiresAt: "2026-06-08T00:00:00.000Z",
+    usedAt: null,
+    revokedAt: null,
+    createdAt: "2026-06-01T00:00:00.000Z",
+    updatedAt: "2026-06-01T00:00:00.000Z",
+  },
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-01T00:00:00.000Z",
 };
@@ -1130,6 +1145,7 @@ describe("account management operation API helpers", () => {
     }
 
     const client = {
+      getAccountUser: vi.fn(async () => accountUser),
       disableAccountUser: vi.fn(async () => disabledResponse),
       enableAccountUser: vi.fn(async () => accountUser),
       assignAccountUserRole: vi.fn(async () => assignedResponse),
@@ -1149,6 +1165,7 @@ describe("account management operation API helpers", () => {
     } as unknown as Pick<
       AccountManagementApiClient,
       | "disableAccountUser"
+      | "getAccountUser"
       | "enableAccountUser"
       | "assignAccountUserRole"
       | "revokeAccountUserRole"
@@ -1234,5 +1251,6 @@ describe("account management operation API helpers", () => {
     expect(client.revokePasswordResetTokens).toHaveBeenCalledWith(accountUser.id, {
       reason: "revoke stale links",
     });
+    expect(client.getAccountUser).toHaveBeenCalledTimes(3);
   });
 });

@@ -287,7 +287,7 @@ function InviteAcceptPanel({
   return (
     <LifecyclePanel
       title="Accept invitation"
-      description="Create your password to activate the account, then sign in from the main panel."
+      description="Create your password to activate the pending account, then sign in from the main panel. In this demo, invitation delivery is local/simulated and not a production email or SMS acceptance."
       onBackToLogin={onBackToLogin}
     >
       {status === "success" ? (
@@ -295,7 +295,7 @@ function InviteAcceptPanel({
           type="success"
           showIcon
           message="Invitation accepted"
-          description="Your account is active. Return to sign in with the password you set."
+          description="Your account is active for the local demo flow. Return to sign in with the password you set."
         />
       ) : null}
       {error ? <Alert type="error" showIcon message={getSafeLifecycleErrorMessage(error)} /> : null}

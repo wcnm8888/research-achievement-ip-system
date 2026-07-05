@@ -13091,3 +13091,40 @@
   - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
 - Next step:
   - Proceed to Step 85: account activation and simulated notification loop.
+
+## 2026-07-05 Step 85 - Account activation and simulated notification loop
+
+- Status: DONE.
+- Gap analysis:
+  - Existing backend already had create invite, resend invite, public invite accept, self/admin password reset, local safe stub delivery, and auth login eligibility checks.
+  - Existing import flow could create `PENDING_ACTIVATION` users without credentials.
+  - Existing Web account management had invite/resend/reset actions, but reviewers could not clearly see the latest simulated delivery/audit-safe summary from the account list/detail after operations.
+  - Existing public invite accept flow could activate a pending user by setting a password, but the UI copy did not explicitly state that the delivery path is local/simulated and not production email/SMS acceptance.
+- Scope completed:
+  - Added `recentLifecycleDelivery` to account-management user list/detail projections using only safe fields from the latest lifecycle token record.
+  - The projection includes purpose, token status, delivery channel/status/adapter, masked email, target user id, expiry/use/revoke timestamps, and updated timestamp.
+  - The projection does not select or return raw token, token hash, password hash, password, session token/hash, cookie, connection string, or provider secret.
+  - Web account list now shows a lifecycle delivery summary column.
+  - Web account detail now shows login capability (`ACTIVE` account + `ACTIVE` credential) and the latest local/simulated lifecycle delivery summary.
+  - Web lifecycle actions now refresh the user detail after resend invite, admin reset, or reset revoke so the latest delivery state is visible.
+  - Web copy now explicitly says lifecycle delivery is local/simulated and not a real email or SMS send.
+  - Public invite accept copy now states this is a local demo activation flow, not production email/SMS acceptance.
+- Demo path:
+  - Import or create a `PENDING_ACTIVATION` account without credentials.
+  - In Account Management, open the account and use `Resend invite` or use `Invite user` for a new pending account.
+  - Account detail/list show the safe simulated delivery summary: status, adapter, purpose, target user id, masked email, token status, and timestamp.
+  - The invited user completes the public `invite-accept` flow with a token and password.
+  - Backend `acceptInvite` consumes the invite token, creates/activates the credential, changes user status to `ACTIVE`, and auth login can then succeed through the normal `ACTIVE` user + `ACTIVE` credential check.
+  - Admin refresh/detail shows status `ACTIVE`, credential/login capability as loggable, and latest lifecycle delivery evidence.
+- Explicitly not done:
+  - No real email, SMS, SSO, HR, production identity, external notification provider, production DB, VPS, or production runbook work.
+  - No schema/migration/package/lockfile change.
+  - No raw delivery link or token display was added.
+  - No claim of production acceptance; validation is local synthetic/demo acceptance only.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- account-management account-lifecycle auth notification`: PASS, 14 files / 129 tests.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement AccountLifecycleAccess`: PASS, 2 files / 39 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Next step:
+  - Proceed to Step 86: external interface mock demo center.

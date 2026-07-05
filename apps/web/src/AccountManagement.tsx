@@ -34,6 +34,7 @@ import {
   validateImportDryRunCsvFile,
 } from "./importDryRunUi";
 import type {
+  AccountLifecycleDeliverySummary,
   AccountRoleCode,
   AccountRoleScopeType,
   AccountUserDetail,
@@ -164,6 +165,7 @@ export const accountResetPasswordPermissionCode = "account:reset_password";
 
 const statusOptions: Array<{ label: string; value: AccountUserStatus }> = [
   { label: "启用", value: "ACTIVE" },
+  { label: "Pending activation", value: "PENDING_ACTIVATION" },
   { label: "禁用", value: "DISABLED" },
   { label: "归档", value: "ARCHIVED" },
 ];
@@ -645,7 +647,8 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
             <Tag>account:reset_password unavailable</Tag>
           )}
           <Typography.Text type="secondary">
-            Invite and reset actions never display delivery links or raw tokens.
+            Local demo lifecycle only: simulated delivery status is shown, but links, raw tokens,
+            token hashes, passwords, and sessions are never displayed.
           </Typography.Text>
         </Space>
       </Card>
@@ -1590,6 +1593,7 @@ export const executeAccountOperation = async ({
 }: {
   apiClient: Pick<
     AccountManagementApiClient,
+    | "getAccountUser"
     | "disableAccountUser"
     | "enableAccountUser"
     | "assignAccountUserRole"
@@ -1618,7 +1622,7 @@ export const executeAccountOperation = async ({
 
   if (operation.kind === "resend-invite") {
     await apiClient.resendInvite(operation.user.id);
-    return operation.user;
+    return apiClient.getAccountUser(operation.user.id);
   }
 
   if (operation.kind === "admin-password-reset") {
@@ -1626,7 +1630,7 @@ export const executeAccountOperation = async ({
       operation.user.id,
       buildReasonPayload(reasonValues),
     );
-    return operation.user;
+    return apiClient.getAccountUser(operation.user.id);
   }
 
   if (operation.kind === "revoke-password-reset") {
@@ -1634,7 +1638,7 @@ export const executeAccountOperation = async ({
       operation.user.id,
       buildReasonPayload(reasonValues),
     );
-    return operation.user;
+    return apiClient.getAccountUser(operation.user.id);
   }
 
   if (operation.kind === "assign-role") {
@@ -1766,6 +1770,14 @@ const createAccountUserColumns = (
       ),
   },
   {
+    title: "Lifecycle delivery",
+    dataIndex: "recentLifecycleDelivery",
+    key: "recentLifecycleDelivery",
+    width: 220,
+    render: (delivery: AccountUserSummary["recentLifecycleDelivery"]) =>
+      renderLifecycleDeliverySummary(delivery),
+  },
+  {
     title: "最近登录",
     dataIndex: "lastLogin",
     key: "lastLogin",
@@ -1826,6 +1838,12 @@ function AccountUserDetailView({
         <Descriptions.Item label="凭证状态">
           {user.credential ? credentialStatusLabels[user.credential.status] ?? user.credential.status : "无凭证"}
         </Descriptions.Item>
+        <Descriptions.Item label="登录能力">
+          {getCredentialAccessLabel(user)}
+        </Descriptions.Item>
+        <Descriptions.Item label="最近生命周期交付">
+          {renderLifecycleDeliverySummary(user.recentLifecycleDelivery)}
+        </Descriptions.Item>
         <Descriptions.Item label="最近登录">
           {formatDateTime(user.lastLogin?.lastSeenAt ?? user.lastLogin?.createdAt)}
         </Descriptions.Item>
@@ -1853,7 +1871,8 @@ function AccountUserDetailView({
             <Tag>No lifecycle permission</Tag>
           ) : null}
           <Typography.Text type="secondary">
-            These actions return delivery status only; tokens and full links are never shown.
+            Local demo delivery only. The admin UI shows delivery status, adapter, target user,
+            and masked email; tokens, hashes, links, passwords, and sessions are never shown.
           </Typography.Text>
         </Space>
       </Card>
@@ -2090,7 +2109,7 @@ function CreateInviteDrawer({
         <Alert
           type="info"
           showIcon
-          message="Invitation delivery is handled by the configured backend adapter. This UI never displays generated tokens or full links."
+          message="This step uses the local/simulated lifecycle delivery adapter for demo review. It is not a real email or SMS send, and this UI never displays generated tokens or full links."
         />
         <DepartmentSelectorBoundary error={departmentSelector.error} />
         <Form<CreateInviteFormValues>
@@ -2346,7 +2365,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="info"
         showIcon
-        message="A new invite delivery will be queued. The UI will not display a token or full invitation link."
+        message="A new local/simulated invite delivery will be queued. This is not a real email or SMS send; the UI will not display a token or full invitation link."
       />
     );
   }
@@ -2356,7 +2375,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="warning"
         showIcon
-        message="A password reset delivery will be queued. The user must sign in again after completing the reset."
+        message="A local/simulated password reset delivery will be queued. This is not a real email or SMS send; the user must sign in again after completing the reset."
       />
     );
   }
@@ -2531,6 +2550,69 @@ const renderRoleTag = (code: AccountRoleCode | string, id: string) => (
 
 const getRoleLabel = (code: AccountRoleCode | string): string =>
   roleLabels[code as AccountRoleCode] ?? code;
+
+const getCredentialAccessLabel = (user: AccountUserSummary): string => {
+  if (user.status !== "ACTIVE") {
+    return "不可登录：账号未激活或不可用";
+  }
+
+  if (!user.credential) {
+    return "不可登录：尚无本地凭证";
+  }
+
+  if (user.credential.status !== "ACTIVE") {
+    return "不可登录：凭证不可用";
+  }
+
+  return "可登录：账号与凭证均为 ACTIVE";
+};
+
+const renderLifecycleDeliverySummary = (
+  delivery: AccountLifecycleDeliverySummary | null,
+) => {
+  if (!delivery) {
+    return <Tag>无模拟交付记录</Tag>;
+  }
+
+  return (
+    <Space direction="vertical" size={2}>
+      <Space size={4} wrap>
+        <Tag color={getLifecycleDeliveryStatusColor(delivery.deliveryStatus)}>
+          {delivery.deliveryStatus ?? "NO_STATUS"}
+        </Tag>
+        <Tag>{delivery.deliveryAdapter ?? "NO_ADAPTER"}</Tag>
+        <Tag>{delivery.purpose}</Tag>
+      </Space>
+      <Typography.Text type="secondary">
+        {delivery.maskedEmail} / target {delivery.targetUserId ?? "unknown"}
+      </Typography.Text>
+      <Typography.Text type="secondary">
+        token {delivery.tokenStatus}; failure {delivery.failureCategory ?? "not persisted"}
+      </Typography.Text>
+      <Typography.Text type="secondary">
+        updated {formatDateTime(delivery.updatedAt)}
+      </Typography.Text>
+    </Space>
+  );
+};
+
+const getLifecycleDeliveryStatusColor = (
+  status: AccountLifecycleDeliverySummary["deliveryStatus"],
+): string => {
+  if (status === "SENT") {
+    return "green";
+  }
+
+  if (status === "FAILED" || status === "SUPPRESSED") {
+    return "orange";
+  }
+
+  if (status === "PENDING" || status === "QUEUED") {
+    return "blue";
+  }
+
+  return "default";
+};
 
 const normalizeError = (error: unknown): ApiError => {
   if (isApiError(error)) {

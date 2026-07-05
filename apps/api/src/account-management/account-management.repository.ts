@@ -419,6 +419,23 @@ const accountUserSelect = {
     orderBy: [{ lastSeenAt: "desc" }, { createdAt: "desc" }],
     take: 1,
   },
+  accountLifecycleTokens: {
+    select: {
+      purpose: true,
+      status: true,
+      deliveryChannel: true,
+      deliveryStatus: true,
+      deliveryAdapter: true,
+      targetUserId: true,
+      expiresAt: true,
+      usedAt: true,
+      revokedAt: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 1,
+  },
 } satisfies Prisma.UserSelect;
 
 const accountUserRoleAssignmentSelect = {
@@ -467,6 +484,23 @@ const toAccountUserRecord = (row: AccountUserRow) => ({
         lastSeenAt: row.sessions[0].lastSeenAt,
       }
     : null,
+  recentLifecycleDelivery: row.accountLifecycleTokens[0]
+    ? {
+        purpose: row.accountLifecycleTokens[0].purpose,
+        tokenStatus: row.accountLifecycleTokens[0].status,
+        deliveryChannel: row.accountLifecycleTokens[0].deliveryChannel,
+        deliveryStatus: row.accountLifecycleTokens[0].deliveryStatus,
+        deliveryAdapter: row.accountLifecycleTokens[0].deliveryAdapter,
+        failureCategory: null,
+        targetUserId: row.accountLifecycleTokens[0].targetUserId,
+        maskedEmail: maskEmail(row.email),
+        expiresAt: row.accountLifecycleTokens[0].expiresAt,
+        usedAt: row.accountLifecycleTokens[0].usedAt,
+        revokedAt: row.accountLifecycleTokens[0].revokedAt,
+        createdAt: row.accountLifecycleTokens[0].createdAt,
+        updatedAt: row.accountLifecycleTokens[0].updatedAt,
+      }
+    : null,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
 });
@@ -503,4 +537,13 @@ const isPrismaKnownRequestError = (error: unknown): error is { code: string } =>
   }
 
   return typeof (error as { code?: unknown }).code === "string";
+};
+
+const maskEmail = (email: string): string => {
+  const [localPart, domainPart] = email.split("@");
+  if (!localPart || !domainPart) {
+    return "[masked-email]";
+  }
+
+  return `${localPart.slice(0, 1)}***@${domainPart}`;
 };
