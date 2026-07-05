@@ -1332,3 +1332,23 @@ Step 76A documents privacy and field boundaries only. It does not authorize sche
 - Any continuation must be split into separately authorized schema plan, backend implementation, Web plan, and acceptance Steps.
 
 Step 76B archives the Step 76A plan as privacy and field-boundary reference material only. It does not authorize or imply `ImportJobItem` implementation.
+
+## Step 76C ImportJobItem Schema Plan
+
+- Date: 2026-07-05.
+- Scope: documentation-only schema and migration plan for a possible future `ImportJobItem` row-level safe history table.
+- Added plan:
+  - `memory-bank/import-job-item-schema-plan.md`.
+- Non-scope: no `prisma/schema.prisma` change, no migration generation, no runtime/API/Web/package/lockfile/config changes, no service startup, no browser run, no database access, no production/VPS access, no production DB access, no `.env` / `.env.production` read, no import apply, no migration execution, no retry/delete/cleanup/rollback/download/export behavior, no row-level API, no row-level Web display, no `targetId` display, and no business-object drilldown.
+
+### Schema Planning Position
+
+- A future `ImportJobItem` would relate to `ImportJob` and `ImportRun` through required `jobId` and `runId` relations with conservative `onDelete: Restrict`; it must not cascade-delete history.
+- Candidate fields are limited to the Step 76A allowlist: `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+- Candidate enums are `ImportJobItemPlannedAction`, `ImportJobItemStatus`, and a narrow `ImportJobItemTargetType` rather than broad business-object drilldown types.
+- Required constraints/indexes include `jobId`, `runId`, `jobId + rowNumber`, and `runId + rowNumber`; `status` / `safeCode` indexes are optional only if later read DTOs need safe internal diagnostics.
+- The migration strategy must be additive, no-backfill, no-seed, no business-table changes, and no JSON fields for item row values.
+- `targetId` remains internal-only and must not enter Web DTOs.
+- Future work must be split into schema/migration, backend writer, backend read DTO, Web plan, and acceptance Steps.
+
+Step 76C documents a future schema plan only. It does not authorize schema edits, migration files, backend/API/Web implementation, database access, production access, import apply, or acceptance execution.

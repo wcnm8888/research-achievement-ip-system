@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-07-05 Step 76C - ImportJobItem schema plan evidence
+
+- Goal:
+  - Produce a docs-only schema/migration plan for a possible future `ImportJobItem` row-level safe history table.
+- Initial state:
+  - `git log -1 --oneline`: `fb1282c docs: archive import job item safe history plan`.
+  - `git status --short` showed only existing untracked local artifacts: `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`, `.local-step62c/`, `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context read:
+  - `memory-bank/import-job-item-safe-history-plan.md`.
+  - `memory-bank/import-job-item-safe-history-final-archive.md`.
+  - `ImportJob` / `ImportRun` schema and `ImportJobItem Deferred` sections from `memory-bank/import-job-history-database-model-plan.md`.
+  - Latest Step 76A and Step 76B sections from `memory-bank/import-job-history-database-model-plan.md`.
+  - Read-only `ImportJob` / `ImportRun` definitions from `prisma/schema.prisma`.
+  - Latest Step 76A and Step 76B sections from `memory-bank/progress.md`.
+  - Latest Step 76A and Step 76B sections from `memory-bank/evidence.md`.
+  - Latest D254 section from `memory-bank/decisions.md`.
+- Documentation updated:
+  - Added `memory-bank/import-job-item-schema-plan.md`.
+  - Updated `memory-bank/import-job-history-database-model-plan.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/decisions.md`.
+- Plan evidence:
+  - Defined `ImportJobItem` as a future child safe outcome ledger under both `ImportJob` and `ImportRun`.
+  - Required conservative `onDelete: Restrict` relations and no cascade deletion of history.
+  - Limited candidate fields to the Step 76A allowlist.
+  - Documented planned action, item status, and narrow import-item target type enum candidates.
+  - Planned required `jobId`, `runId`, indexed `jobId + rowNumber`, and composite `runId + rowNumber` table identity constraints/indexes, with `status` / `safeCode` indexes optional for later safe diagnostics.
+  - Required additive migration, no backfill, no seed, no business-table changes, no JSON columns, and no Web DTO fields in the schema step.
+  - Reconfirmed `targetId` is internal-only and must not be returned by Web DTOs or used for business-object drilldown.
+  - Split future work into schema/migration, backend writer, backend read DTO, Web plan, and acceptance steps.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 76C docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in five memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 76C docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV content, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+- Boundary:
+  - No `prisma/schema.prisma` changes were made.
+  - No runtime, API, Web, Prisma schema implementation, migration file, package, lockfile, config, service startup, browser run, database, production/VPS, production DB, migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, `targetId` display, business-object drilldown, DB write, permission modification, credential read, or credential propagation work was performed.
+  - No `.env` or `.env.production` content was read or output.
+  - Existing untracked local artifacts in the repository were not touched, cleaned, staged, moved, or modified.
+
 ## 2026-07-05 Step 76B - ImportJobItem safe history final archive evidence
 
 - Goal:

@@ -1,5 +1,41 @@
 # Progress
 
+## 2026-07-05 Step 76C - ImportJobItem schema plan
+
+- Status: DONE.
+- Task classification:
+  - S-level docs-only schema planning task; no schema, migration, runtime, API, Web, database, or operational execution.
+- Scope completed:
+  - Added `memory-bank/import-job-item-schema-plan.md`.
+  - Designed a future `ImportJobItem` relationship model as child safe outcome rows under `ImportJob` and `ImportRun`.
+  - Kept candidate fields limited to the Step 76A allowlist: `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+  - Proposed enum candidates for planned action, item status, and a narrow import-item target type.
+  - Recorded that a narrow `ImportJobItemTargetType` is preferred over broad reusable business-object target types to avoid drilldown semantics.
+  - Planned indexes and constraints for `jobId`, `runId`, indexed `jobId + rowNumber`, composite `runId + rowNumber` table identity, and optional `status` / `safeCode` diagnostics.
+  - Required conservative `onDelete: Restrict` relation behavior and explicitly rejected cascade deletion of history.
+  - Required additive migration, no backfill, no seed, no business-table changes, no JSON columns, and no Web DTO fields in the schema step.
+  - Reconfirmed `targetId` is internal-only and must not enter Web DTOs.
+  - Reconfirmed JSON fields must not be used to store row values.
+  - Split future implementation into schema/migration, backend writer, backend read DTO, Web plan, and acceptance steps.
+  - Updated `memory-bank/import-job-history-database-model-plan.md` with the Step 76C plan addendum.
+  - Updated `memory-bank/decisions.md` with the docs-only schema planning decision.
+  - Updated `memory-bank/evidence.md` with docs-only verification evidence.
+- Explicitly not done:
+  - No `prisma/schema.prisma` change.
+  - No migration generation.
+  - No runtime/API/Web/package/lockfile/config changes.
+  - No Web/API/Docker/browser startup.
+  - No database, production/VPS, or production DB access.
+  - No `.env` / `.env.production` content read.
+  - No backend writer, backend read DTO, Web implementation, migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, `targetId` display, or business-object drilldown.
+  - No typecheck/test/build because this Step changed documentation only.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --stat`: PASS; empty after staging the Step 76C docs.
+  - `git diff --cached --stat`: PASS; staged docs-only changes in five memory-bank files.
+  - `git status --short`: PASS; staged changes limited to Step 76C docs plus existing untracked local artifacts.
+  - Manual diff review: PASS; no sensitive values, raw CSV content, personal identifier examples, runtime code, backend, Web, schema, migration, package, lockfile, or config changes.
+
 ## 2026-07-05 Step 76B - ImportJobItem safe history final archive
 
 - Status: DONE.

@@ -1,5 +1,21 @@
 # Decisions
 
+## D255 - ImportJobItem schema candidate remains docs-only and non-authorizing
+
+- Date: 2026-07-05.
+- Context: Step 76C designs a future schema/migration plan for `ImportJobItem` after Step 76A defined the row-level safe history privacy allowlist and Step 76B archived it. The task is documentation-only and prohibits changing `prisma/schema.prisma`, generating migrations, modifying runtime/API/Web/package/lockfile/config files, starting services, browser runs, database access, production/VPS access, production DB access, `.env` / `.env.production` reads, migration execution, import apply, real-data import, retry, delete, cleanup, rollback, download, export, row-level API, row-level Web display, `targetId` display, business-object drilldown, and existing untracked-artifact handling.
+- Decision:
+  - Treat the Step 76C `ImportJobItem` schema shape as a candidate plan only, not schema or migration authorization.
+  - A future item table should relate to both `ImportJob` and `ImportRun` through required `jobId` and `runId` relations with `onDelete: Restrict`.
+  - Candidate fields stay limited to `jobId`, `runId`, `rowNumber`, `plannedAction`, `status`, `safeCode`, `targetType`, and internal-only `targetId`.
+  - Prefer narrow import-item-specific enums for planned action, item status, and target type; do not reuse broad business-object drilldown types for row history.
+  - Require indexed `jobId + rowNumber`, composite table identity on `runId + rowNumber`, plus indexes for `jobId` and `runId`; `status` and `safeCode` indexes are optional only for later safe internal diagnostics.
+  - Keep the migration strategy additive, no-backfill, no-seed, and isolated from business tables.
+  - Do not add JSON fields to `ImportJobItem`; JSON would create pressure to persist row values or source identifiers.
+  - Keep `targetId` internal-only and out of Web DTOs.
+- Scope:
+  - This decision does not authorize `prisma/schema.prisma` edits, migration generation, schema implementation, runtime/API/Web/package/lockfile/config changes, service startup, browser automation, database access, production/VPS access, production DB access, `.env` / `.env.production` reads, migration execution, import apply, real-data import, retry/delete/cleanup/rollback/download/export behavior, row-level API, row-level Web display, `targetId` display, business-object drilldown, DB writes, permission changes, credential reads, credential propagation, cleanup, deletion, reset, restore, checkout, drop, prune, or handling existing untracked local artifacts.
+
 ## D254 - ImportJobItem row-level history requires a strict safe-field allowlist
 
 - Date: 2026-07-05.
