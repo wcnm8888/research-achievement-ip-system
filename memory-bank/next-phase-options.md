@@ -132,6 +132,9 @@ Steps 112-113 implement and locally accept that safe display in the current Web
 detail drawer, archived in
 `memory-bank/import-job-item-web-local-ui-acceptance.md` and
 `memory-bank/import-job-item-web-display-closure.md`.
+Step 114 reselects the next Route B product slice as more complete account
+lifecycle local/demo enhancement, with the next recommended step documented in
+`memory-bank/route-b-next-slice-selection.md`.
 
 ### Goal
 
@@ -167,9 +170,10 @@ Completed first implementation loop:
 
 Recommended next Route B choices:
 
-- Select another phase-two product slice now that custom reports, achievement
-  conversion deepening, and ImportJobItem safe row Web display are locally
-  closed.
+- Start Step 115 - Account lifecycle enhancement technical plan, scoped to a
+  local/demo admin lifecycle status/actions/audit/safety summary and excluding
+  real HR/SSO, real email/SMS, token/password/session exposure, and production
+  identity acceptance.
 - Add deferred aggregate templates such as ImportJob aggregate history or
   external mock overview.
 - Run a separate mobile/responsive review only if the user explicitly wants
@@ -269,8 +273,9 @@ docs-only unless the user separately authorizes execution.
 - Route B is now the active product-enhancement planning route; the current
   custom reports / advanced reports MVP, achievement conversion deepening MVP,
   and ImportJobItem safe row Web display are closed for
-  localhost/local-demo/synthetic acceptance. The next Route B item should be
-  selected as a new scoped slice.
+  localhost/local-demo/synthetic acceptance. Step 114 selects more complete
+  account lifecycle local/demo enhancement as the next scoped slice and
+  recommends Step 115 for its technical plan.
 - Choose Route C if real external providers are available and the user wants
   integration readiness planning before any call.
 - Choose Route D if the user explicitly wants production readiness, with all

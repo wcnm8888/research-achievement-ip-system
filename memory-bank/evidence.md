@@ -18953,6 +18953,52 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-06 Step 114 - Route B next slice selection evidence
+
+- Canonical state checked before documentation:
+  - `git log -1 --oneline` -> `de01fa6 docs: archive import job item web acceptance`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads only:
+  - Route B current section in `memory-bank/next-phase-options.md`.
+  - Unfinished, phase-two, and current recommended next-step sections in
+    `memory-bank/project-requirement-completion-matrix.md`.
+  - `memory-bank/phase-two-feature-priority-plan.md`.
+  - `memory-bank/import-job-item-web-display-closure.md`.
+  - `memory-bank/conversion-deepening-mvp-closure.md`.
+  - `memory-bank/custom-reports-mvp-closure.md`.
+- Documentation evidence:
+  - Added `memory-bank/route-b-next-slice-selection.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Selection evidence:
+  - Covered all required candidates: mobile/responsive reassessment, fuller
+    account lifecycle, secret authorization management, attachment management,
+    scheduled reminders/planned tasks, custom report aggregate templates, and
+    local Docker/untracked read-only inventory.
+  - Scored candidates by review-visible value, cost, safety/privacy risk,
+    schema need, Docker/local-service need, production/external-system need,
+    local/demo closure fit, recommended next step, and explicit non-scope.
+  - Selected more complete account lifecycle local/demo enhancement as the next
+    Route B product slice.
+  - Recommended Step 115 - Account lifecycle enhancement technical plan.
+- Boundaries observed:
+  - Docs-only; no code implementation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real HR/SSO, email, SMS, finance, DOI, patent, or other external-system
+    call.
+  - No Docker container/volume was started, created, stopped, deleted, or
+    cleaned.
+  - No existing untracked local artifact or `.local-*` evidence directory was
+    touched.
+  - No secret, `DATABASE_URL`, connection string, token, cookie, password, or
+    session material was read or captured.
+
 ## 2026-07-06 Step 113 - ImportJobItem Web local UI acceptance evidence
 
 - Canonical state checked before acceptance:

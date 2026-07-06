@@ -202,7 +202,8 @@
 - P0：自定义报表 / 高级报表 MVP，优先做只读报表配置和结果展示，不依赖 production、真实外部系统或真实凭证。
 - P1：成果转化深化 MVP 已完成 localhost/local-demo/synthetic 闭环；后续不再建议继续扩展为真实合同/法务/财务/付款能力，除非先启动单独 readiness/授权方案。
 - P1：ImportJobItem Web 行级安全只读展示已在 Step 112-113 完成本地实现、localhost/local-demo/synthetic UI acceptance 和闭环归档；后续不再列为待实现项，继续严格禁止 raw payload/raw JSON/export/retry/rollback/drilldown。
-- P2/P3：移动端需求重评估、更完整账号生命周期、涉密授权管理增强、附件存储/下载增强、定时提醒/计划任务增强。
+- P0：Step 114 已选择更完整账号生命周期 local/demo enhancement 作为下一条 Route B scoped product slice；推荐 Step 115 先做技术方案，范围限于管理员可见的账号状态、停用/恢复、锁定、角色变更审计和安全摘要，不接真实 HR/SSO，不发真实邮件短信，不暴露 token/password/session。
+- P2/P3：移动端需求重评估、涉密授权管理增强、附件存储/下载增强、定时提醒/计划任务增强、自定义报表 aggregate-only 模板增强。
 
 ### 阶段 3：真实外部系统对接准备
 
@@ -228,7 +229,7 @@
 
 建议下一步：
 
-- Route B：二期功能增强，自定义报表 / 高级报表 MVP 与成果转化深化 MVP 均已完成本地闭环；下一步应重新选择新的 scoped product slice。
+- Route B：二期功能增强，自定义报表 / 高级报表 MVP、成果转化深化 MVP、ImportJobItem Web 行级安全只读展示均已完成本地闭环；Step 114 已选定下一条 scoped product slice 为更完整账号生命周期 local/demo enhancement，建议下一步 Step 115 先做技术方案。
 - Route C：真实外部系统对接准备，仅在有真实系统、凭证、测试环境和授权后启动。
 - Route D：production readiness，仅在用户明确要求并授权后启动。
 
@@ -237,6 +238,7 @@
 - 一期 localhost 演示闭环已经归档，不再建议继续以“补齐一期演示闭环”为默认主线。
 - Route A 已在 Step 100 最终交接归档，后续不再默认补演示文档。
 - 自定义报表 MVP 已直接回应统计汇总耗时和院/部门决策需求，当前保持只读、本地、aggregate-only、无真实外部系统依赖。
+- 账号生命周期增强对评审可见价值高，能继续补强已有部分完成的账号管理能力，并可保持 local/demo/synthetic，不依赖真实 HR/SSO、邮件、短信或生产身份系统。
 - 如果进入真实系统或生产路线，必须先确认授权、环境、凭证、脱敏和人工 go/no-go 门禁。
 
 ## 当前明确不能推断为完成的事项
@@ -247,5 +249,6 @@
 - 不能把 ImportJobItem Web 行级安全只读展示的 localhost/local-demo/synthetic acceptance 等同于 production import acceptance；它仍不支持 retry/export/raw JSON/rollback/drilldown。
 - 不能把 Step 95 screenshotable localhost 路径等同于 production/VPS/生产 DB 验收。
 - 不能把自定义报表 MVP 等同于 full BI、production monitoring、定时推送、保存模板、导出、raw JSON 或敏感 drilldown。
+- 不能把下一步账号生命周期 local/demo enhancement 等同于真实 HR/SSO、真实邮件短信、真实 token 交付、生产身份验收或生产安全验收。
 - 不能把 schema/migration 文件存在等同于生产 migration 已应用。
 - 不能把导入本地 apply 成功等同于真实生产数据导入已授权。

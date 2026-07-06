@@ -14084,3 +14084,36 @@
   - `memory-bank/import-job-item-web-display-closure.md`.
   - Local untracked evidence directory:
     `.local-step113-import-job-item-web-acceptance/`.
+
+## 2026-07-06 Step 114 - Route B next slice selection
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `de01fa6 docs: archive import job item web acceptance`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/route-b-next-slice-selection.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Compared the required candidate slices: mobile/responsive reassessment,
+    fuller account lifecycle, secret authorization management, attachment
+    management, scheduled reminders/planned tasks, custom report aggregate
+    templates, and local Docker/untracked read-only inventory.
+  - Selected more complete account lifecycle local/demo enhancement as the
+    next Route B scoped product slice.
+  - Recommended Step 115 as an account lifecycle enhancement technical plan.
+- Explicitly not done:
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` changes.
+  - No code implementation, service startup, browser acceptance, Docker
+    container creation/start/stop/delete/cleanup, production/VPS/production DB
+    access, production runbook, migration, or real external-system call.
+  - No existing untracked local artifact or `.local-*` evidence directory was
+    touched.
+- Boundaries for Step 115:
+  - Keep the first plan local/demo scoped to account lifecycle status/actions,
+    disable/restore, lock state, role change audit summary, and safety summary.
+  - Do not connect real HR/SSO, send real email/SMS, expose token/password/
+    session material, or claim production identity acceptance.
