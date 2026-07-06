@@ -18130,6 +18130,38 @@
   - Mock/adapter behavior remains local/demo only and is not real external integration evidence.
   - Existing untracked local artifacts listed by the user were not modified.
 
+## 2026-07-06 Step 96 - Phase-one localhost demo presenter brief evidence
+
+- Canonical state checked before documentation:
+  - `git log -1 --oneline` -> `d8b4b47 docs: add phase one final ui recheck evidence`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads only:
+  - `memory-bank/phase-one-demo-ui-final-recheck-report.md` Step 95 final classification, path evidence table, and boundaries.
+  - `memory-bank/phase-one-demo-checklist.md` environment gate, Step 95 final localhost UI recheck notes, PASS/BLOCKED rules, and explicit non-claims.
+  - `memory-bank/phase-one-demo-acceptance-script.md` environment boundary, demo user context, total route, demo paths, reviewer checklist, and final acceptance statement template.
+  - `memory-bank/evidence.md` Step 95 evidence section.
+  - `memory-bank/progress.md` Step 95 progress section.
+- Documentation updated:
+  - Added `memory-bank/phase-one-demo-presenter-brief.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Presenter package result:
+  - Retains Step 95 classification: PASS 0, PASS with caveat 10, BLOCKED 0.
+  - Limits formal presentation to localhost / local demo / synthetic DB.
+  - Documents demo user switch order: `researcher` -> `secretary` -> `admin`.
+  - Maps all 10 paths to Step 95 screenshot evidence filenames only.
+  - Adds speaking points, caveats, explicit non-claims, mock/adapter wording, local acceptance wording, on-site failure fallback, and sensitive-information protection.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker container startup/cleanup, UI rerun, typecheck/test/build, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+  - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, raw request/response, or raw log was captured in committed documentation.
+
 ## 2026-07-06 Step 95 - Phase-one demo localhost UI final recheck evidence
 
 - Canonical state checked before recheck:

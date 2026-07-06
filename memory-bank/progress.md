@@ -13426,6 +13426,30 @@
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
 
+## 2026-07-06 Step 96 - Phase-one localhost demo presenter brief
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `d8b4b47 docs: add phase one final ui recheck evidence`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` and `git diff --cached --stat` were empty at the required start check.
+- Scope completed:
+  - Added `memory-bank/phase-one-demo-presenter-brief.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with Step 96 presenter brief items.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - Packaged Step 95 localhost UI evidence into a presenter route covering demo order, user switching, screenshot filenames, speaking points, caveats, non-claims, failure fallback wording, and sensitive-information protection.
+- Final demo classification retained from Step 95:
+  - PASS: 0.
+  - PASS with caveat: 10.
+  - BLOCKED: 0.
+- Recommendation:
+  - Proceed to formal phase-one presentation only as a localhost/local-demo/synthetic walkthrough. The presenter must orally state this boundary before the route and must not describe it as production/VPS/production DB or real external-system acceptance.
+- Boundaries observed:
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, business-code change, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No screenshots, logs, `.local-step95-ui-preflight/` content, or existing untracked local artifacts were staged or modified.
+
 ## 2026-07-06 Step 95 - Phase-one demo localhost UI final recheck
 
 - Status: DONE.

@@ -112,6 +112,16 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Local automation reruns created extra Step 95 synthetic achievement drafts/tasks in the Step 95 local DB; they were intentionally not cleaned up because this Step forbids deletion/cleanup.
 - [ ] Formal phase-one demo is recommended only as localhost/local-demo/synthetic walkthrough with explicit caveats, not production acceptance.
 
+## Step 96 Presenter Brief Notes
+
+- [ ] Step 96 presenter brief completed: `memory-bank/phase-one-demo-presenter-brief.md`.
+- [ ] Step 95 final classification remains PASS 0, PASS with caveat 10, BLOCKED 0.
+- [ ] Before formal demo, presenter must orally state the boundary: localhost / local demo / synthetic DB only.
+- [ ] Presenter must use the demo user switch order `researcher` -> `secretary` -> `admin`.
+- [ ] If live localhost/Docker/browser setup fails on site, fall back only to Step 95 screenshot evidence and documentation conclusions; do not reclassify the result as production acceptance.
+- [ ] Continue to describe the external interface page as a mock demo center, not real DOI/literature/patent/finance/HR provider integration.
+- [ ] Do not show token, password, cookie, session, `DATABASE_URL`, connection string, raw payload, raw log, or complete email/SMS invite/reset links during presentation.
+
 ## PASS / BLOCKED Rules
 
 - PASS: the local/demo page/action is reproducible, expected visible result is present, evidence is captured, and boundary wording is accurate.
