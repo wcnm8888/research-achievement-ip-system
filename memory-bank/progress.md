@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-07-06 Step 102-B - Custom reports MVP technical plan and API contract
+
+- Status: DONE.
+- Task classification:
+  - S docs-only technical plan and interface contract for Route B first slice.
+- Starting point:
+  - HEAD at task start: `9f369c5 docs: plan phase two feature route`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/custom-reports-mvp-technical-plan.md`.
+  - Updated `memory-bank/next-phase-options.md` with the Step 102-B contract and next implementation order.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Technical plan result:
+  - MVP is read-only, 3 to 5 static templates, no saved templates, no scheduled delivery, no raw CSV/raw JSON export, no sensitive drilldown, no production monitoring, and no production/real external-system/real credential dependency.
+  - Recommended API shape is `GET /reports/templates` and `GET /reports/templates/:templateId/run`.
+  - Recommended templates are achievement distribution, achievement trend, fee risk summary, workflow efficiency, and conversion funnel.
+  - First MVP should not require DB/schema because templates are static and not persisted.
+  - Recommended next implementation order is Step 103-B backend read-only reports API, then Step 104-B Web Custom Reports page.
+- Explicitly not done:
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` changes.
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No screenshots, logs, `.local-step95-ui-preflight/` content, or existing untracked local artifacts were staged or modified.
+- Verification:
+  - Docs-only verification commands recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 101-B - Phase-two feature priority and first slice plan
 
 - Status: DONE.

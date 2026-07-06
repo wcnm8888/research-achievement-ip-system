@@ -105,6 +105,8 @@ explicitly asks for more.
 Status: selected for Step 101-B planning. Current recommended first slice is
 custom reports / advanced reports MVP, documented in
 `memory-bank/phase-two-feature-priority-plan.md`.
+Step 102-B adds the executable technical plan and interface contract in
+`memory-bank/custom-reports-mvp-technical-plan.md`.
 
 ### Goal
 
@@ -133,12 +135,17 @@ reports / advanced reports MVP as the first implementation slice.
 
 Recommended next implementation step:
 
-- Define and build a read-only custom reports MVP using existing safe local
-  data domains first.
+- Implement the read-only custom reports MVP backend API first, using existing
+  safe local data domains and the Step 102-B contract.
 - Keep saved templates, scheduled delivery, raw CSV/raw JSON export,
   production monitoring, and sensitive drilldowns out of the first slice unless
   separately authorized.
 - Do not require production, real providers, or real credentials.
+
+Next recommended implementation order:
+
+- Step 103-B: backend read-only reports API.
+- Step 104-B: Web Custom Reports page.
 
 ### Explicitly Forbidden
 

@@ -1,5 +1,53 @@
 # Evidence
 
+## 2026-07-06 Step 102-B - Custom reports MVP technical plan and API contract evidence
+
+- Goal:
+  - Produce a docs-only executable technical plan and interface contract for the Route B custom reports / advanced reports MVP before any business-code implementation.
+- Initial state:
+  - `git log -1 --oneline`: `9f369c5 docs: plan phase two feature route`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/phase-two-feature-priority-plan.md` Route A closure, candidate ranking, first slice recommendation, and non-entry areas.
+  - `memory-bank/next-phase-options.md` Route B section and C/D gates.
+  - `memory-bank/project-requirement-completion-matrix.md` rows for basic Dashboard, fixed scoring Dashboard, and advanced/custom reports.
+  - `memory-bank/product-brief.md` product goals, statistics/dashboard support, phase-two reporting scope, and first-version non-goals.
+  - `apps/api/src/dashboard/**` controller/service/repository/domain/dto snippets covering `GET /dashboard/summary`, policy-filtered aggregates, query validation, and summary contract.
+  - `apps/web/src/Dashboard.tsx`, `apps/web/src/Dashboard.test.ts`, `apps/web/src/api-client.ts`, and `apps/web/src/types.ts` snippets covering Dashboard request/loading/error/empty state, current summary types, readonly tests, and client query behavior.
+  - `apps/api/src/authorization/**` snippets for `UserContextGuard`, `PermissionGuard`, `PermissionCode.userContextRead`, and `PolicyQueryFactory` achievement/fee/department readable filters.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 87 and Step 101-B relevant slices.
+- Documentation updated:
+  - Added `memory-bank/custom-reports-mvp-technical-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Technical plan result:
+  - MVP scope is read-only and excludes saved templates, scheduled delivery, raw CSV/raw JSON export, sensitive detail drilldown, production monitoring, production, real external systems, and real credentials.
+  - Selected templates are `achievement-distribution`, `achievement-trend`, `fee-risk-summary`, `workflow-efficiency`, and `conversion-funnel`; external mock overview and ImportJob aggregate summary are deferred.
+  - Recommended backend API contract is `GET /reports/templates` and `GET /reports/templates/:templateId/run`.
+  - Response shape includes `metadata`, `filters`, `scopeSummary`, `columns`, `rows`, `totals`, and `generatedAt` inside metadata.
+  - Permission model reuses `UserContextGuard`, `PermissionGuard`, `PermissionCode.userContextRead`, and existing policy filters; `departmentId` filters narrow but never broaden scope.
+  - First MVP does not need DB/schema because templates are static and not persisted.
+  - Recommended next steps are Step 103-B backend read-only reports API, then Step 104-B Web Custom Reports page.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+- Docs-only verification:
+  - `git diff --check`: PASS; LF-to-CRLF normalization warnings only before staging.
+  - `git diff --cached --check`: PASS; empty before staging.
+  - `git diff --stat`: tracked docs diff only before staging; new custom reports technical plan remained untracked until explicitly staged.
+  - Final closeout verification after staging: `git diff --check` PASS, `git diff --cached --check` PASS, `git diff --stat` empty, and `git diff --cached --stat` limited to `memory-bank/custom-reports-mvp-technical-plan.md`, `memory-bank/evidence.md`, `memory-bank/next-phase-options.md`, and `memory-bank/progress.md`.
+  - Final `git status --short` showed those four allowed documentation files staged; existing untracked local artifacts remained untracked.
+
 ## 2026-07-06 Step 101-B - Phase-two feature priority and first slice plan evidence
 
 - Goal:
