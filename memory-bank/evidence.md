@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-07-06 Step 98-A - Phase-one formal demo rehearsal and on-site checklist evidence
+
+- Goal:
+  - Prepare the archived phase-one localhost demo for formal rehearsal and on-site delivery without changing runtime scope.
+- Initial state:
+  - `git log -1 --oneline`: `b12bae9 docs: archive phase one demo closure`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/phase-one-final-archive.md` closure judgment, ten demo paths, non-claims, Route A recommendation, and handoff summary.
+  - `memory-bank/phase-one-demo-presenter-brief.md` demo judgment, user switch order, ten-path presenter table, caveats, non-claims, fallback, and sensitive-information protection.
+  - `memory-bank/phase-one-demo-ui-final-recheck-report.md` Step 95 final classification, path evidence table, and observed boundaries.
+  - `memory-bank/phase-one-demo-checklist.md` environment gate, Step 95/96 notes, PASS/BLOCKED rules, and explicit non-claims.
+  - `memory-bank/next-phase-options.md` Route A formal demo rehearsal section.
+  - `memory-bank/evidence.md` Step 95-Step 97 relevant slices.
+  - `memory-bank/progress.md` Step 95-Step 97 relevant slices.
+- Documentation updated:
+  - Added `memory-bank/phase-one-demo-rehearsal-plan.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Rehearsal package result:
+  - Retains Step 95/96/97 classification: PASS 0, PASS with caveat 10, BLOCKED 0.
+  - Limits formal rehearsal and presentation to localhost / local demo / synthetic DB evidence.
+  - Defines a 10-step rehearsal order with demo user, entry page, operation action, expected screen, Step 95 screenshot filenames, recommended talk track, and caveat sentence.
+  - Documents persona switch wording for `researcher` -> `secretary` -> `admin` as local demo personas only.
+  - Documents opening statement and fallback wording for localhost unavailable, Docker unavailable, browser unavailable, and a live UI action failure.
+  - Reconfirms forbidden production and real-provider claims, including ImportJobItem Web row-level display and retry/delete/cleanup/rollback/download/export/raw JSON support.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+- Docs-only verification:
+  - `git diff --check`: PASS; no whitespace errors.
+  - `git diff --cached --check`: PASS; no whitespace errors.
+  - `git diff --stat`: empty after staging the docs-only changes.
+  - `git diff --cached --stat`: tracked staged changes limited to four allowed memory-bank documentation files.
+  - `git status --short`: staged changes limited to `memory-bank/evidence.md`, `memory-bank/phase-one-demo-checklist.md`, `memory-bank/phase-one-demo-rehearsal-plan.md`, and `memory-bank/progress.md`; existing untracked local artifacts remained untracked.
+
 ## 2026-07-06 Step 97 - Phase-one final archive and next-route refresh evidence
 
 - Goal:

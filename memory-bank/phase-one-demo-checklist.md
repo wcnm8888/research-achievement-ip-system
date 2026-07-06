@@ -1,6 +1,6 @@
 # Phase One Demo Checklist
 
-Date: 2026-07-05
+Date: 2026-07-06
 
 Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-demo-acceptance-script.md`.
 
@@ -122,6 +122,17 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Continue to describe the external interface page as a mock demo center, not real DOI/literature/patent/finance/HR provider integration.
 - [ ] Do not show token, password, cookie, session, `DATABASE_URL`, connection string, raw payload, raw log, or complete email/SMS invite/reset links during presentation.
 
+## Step 98-A Rehearsal Notes
+
+- [ ] Step 98-A rehearsal plan completed: `memory-bank/phase-one-demo-rehearsal-plan.md`.
+- [ ] Rehearsal conclusion remains PASS 0, PASS with caveat 10, BLOCKED 0.
+- [ ] Opening statement must say localhost / local demo / synthetic DB only, mock/adapter only where applicable, and no production acceptance.
+- [ ] Rehearsal user switch order remains `researcher` -> `secretary` -> `admin`.
+- [ ] Each of the 10 rehearsal steps must name the demo user, entry page, action, expected screen, Step 95 screenshot filename, talk track, and caveat.
+- [ ] If localhost, Docker, browser, or one live UI action fails, fall back only to Step 95 screenshots and Step 96/97 documentation conclusions.
+- [ ] Do not repair data, run migrations, start or clean Docker, access DB, run UI rechecks, edit code, open unrelated files, or call real external systems during rehearsal.
+- [ ] Do not restate the fallback as production/VPS/production DB or real external-system acceptance.
+
 ## PASS / BLOCKED Rules
 
 - PASS: the local/demo page/action is reproducible, expected visible result is present, evidence is captured, and boundary wording is accurate.
@@ -141,3 +152,5 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Do not claim full BI/custom report platform completion.
 - [ ] Do not claim mobile completion.
 - [ ] Do not claim large-scale real load testing, disaster recovery drill, or production monitoring completion.
+- [ ] Do not claim ImportJobItem Web row-level display.
+- [ ] Do not claim ImportJobItem retry/delete/cleanup/rollback/download/export/raw JSON support.
