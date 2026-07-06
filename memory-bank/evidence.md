@@ -19146,6 +19146,73 @@
   - `git diff --cached --check`: PASS.
   - `git diff --name-only`: only `memory-bank/**` documentation files.
 
+## 2026-07-06 Step 120 - Secret authorization management safety plan evidence
+
+- Classification:
+  - Docs-only security and product plan.
+  - No feature implementation.
+- Canonical state checked before documentation:
+  - `git log -1 --oneline` -> `dfe8102 docs: reselect route b slice after account lifecycle`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/route-b-next-slice-selection-after-account-lifecycle.md`.
+  - `memory-bank/next-phase-options.md` Route B and Step 120 snippets.
+  - `memory-bank/progress.md` Step 119 latest section.
+  - `memory-bank/evidence.md` Step 119 latest section.
+  - `prisma/schema.prisma` snippets for `ResourceAccessGrant`, `Achievement`,
+    `Attachment`, and `AuditLog`.
+  - `apps/api/src/authorization/constants/**` grant/resource/grantee/secret
+    level/permission snippets.
+  - `apps/api/src/authorization/policy/**` resource grant, secret access,
+    attachment access, policy query, and audit redaction snippets.
+  - `apps/api/src/achievements/achievement.service.ts` restricted/redacted
+    projection snippets.
+  - `apps/api/src/attachments/attachment.repository.ts` and
+    `apps/api/src/attachments/attachment.service.ts` grant lookup, attachment
+    authorization, and audit summary snippets.
+  - `apps/web/src/types.ts` secret-level, attachment metadata, and masked audit
+    snippets.
+  - `prisma/seed.cjs` snippets confirming the local demo `SECRET_MANAGER`
+    role, active `resource_grant:create` / `resource_grant:revoke`
+    permissions, and archived broad `secret:grant` permission.
+- Documentation evidence:
+  - Added `memory-bank/secret-authorization-management-safety-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Plan evidence:
+  - First MVP is read-only safe summary and management visibility only.
+  - The plan explicitly forbids exposing classified resource content,
+    attachment bodies, object/storage keys, storage paths, checksums, download
+    links, raw permission graph, raw audit JSON, debug/export/download panels,
+    batch authorization, global grant console, and cross-department overreach.
+  - The plan recommends reusing existing `ResourceAccessGrant`, RBAC,
+    department isolation, secret access policy, attachment policy, and masked
+    audit infrastructure.
+  - The first read-only MVP does not need schema or migration changes.
+  - Later grant mutation or approval workflows are deferred to separate
+    additive safety plans only.
+- Boundaries observed:
+  - No `apps/**` or `prisma/**` change.
+  - No schema or migration change.
+  - No service startup.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker start/create/stop/delete/cleanup.
+  - No existing untracked local artifact or `.local-*` evidence directory was
+    touched.
+- Docs-only verification:
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS after staging the Step 120 docs.
+  - `git diff --stat`: empty after staging.
+  - `git diff --cached --stat`: staged docs-only diff with 4 `memory-bank`
+    files.
+  - No test/typecheck was run because this Step is docs-only.
+
 ## 2026-07-06 Step 116 - Account lifecycle API projection hardening evidence
 
 - Canonical state checked before implementation:

@@ -14339,3 +14339,46 @@
   - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
   - `git diff --cached --check`: PASS.
   - `git diff --name-only`: only `memory-bank/**` documentation files.
+
+## 2026-07-06 Step 120 - Secret authorization management safety plan
+
+- Status: DONE, docs-only.
+- Starting point:
+  - HEAD at task start: `dfe8102 docs: reselect route b slice after account lifecycle`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/secret-authorization-management-safety-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Performed targeted read-only inspection of existing `ResourceAccessGrant`,
+    secret-level, attachment, masked-audit, authorization constant, policy, and
+    Web type surfaces.
+- Plan result:
+  - Recommended a low-risk first MVP as read-only safe authorization summary
+    and management visibility.
+  - Recommended reusing existing `ResourceAccessGrant`, RBAC, department
+    isolation, secret-level policy, attachment policy, and masked audit
+    infrastructure.
+  - Recommended gating the first local/demo management surface with
+    `system:config`.
+  - Deferred grant create/revoke workflows, approval flows, batch actions, and
+    dedicated read permission changes to later separately authorized steps.
+  - Judged that the first read-only MVP does not need schema or migration
+    changes; any mutation workflow schema work remains a future additive plan
+    only.
+- Explicit safety boundaries:
+  - Do not expose classified resource content, attachment bodies, object keys,
+    storage paths, checksums, download links, raw permission graph, raw audit
+    JSON, debug/export/download panels, or global/batch grant consoles.
+  - Do not describe local/demo/synthetic authorization evidence as production
+    authorization acceptance.
+- Explicitly not done:
+  - No `apps/**` or `prisma/**` change.
+  - No schema or migration change.
+  - No implementation, service run, production/VPS/production DB access, real
+    external-system call, Docker operation, or environment-file content read.
+- Verification:
+  - Docs-only verification commands recorded in `memory-bank/evidence.md`.

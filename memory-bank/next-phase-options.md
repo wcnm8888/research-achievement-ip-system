@@ -146,6 +146,10 @@ Step 119 reselects the next Route B slice in
 `memory-bank/route-b-next-slice-selection-after-account-lifecycle.md`; the
 recommended product next step is a docs-only Secret authorization management
 enhancement safety plan.
+Step 120 adds that docs-only safety plan in
+`memory-bank/secret-authorization-management-safety-plan.md`; it recommends a
+read-only safe projection MVP before any grant mutation workflow and keeps
+schema/migration changes out of the first slice.
 
 ### Goal
 
@@ -181,8 +185,9 @@ Completed first implementation loop:
 
 Recommended next Route B choices:
 
-- Start Step 120 - Secret authorization management enhancement safety plan as a
-  docs-only product/security design before any implementation.
+- Start Step 121 - Secret authorization read-only API projection hardening
+  using the Step 120 safety plan. Keep it no-schema/no-migration and do not add
+  grant mutation endpoints in the first implementation slice.
 - Keep the account lifecycle line closed as local/demo/synthetic PASS with
   caveat only; do not describe it as production identity acceptance.
 - If the user's priority is local environment sprawl instead of a product
@@ -287,11 +292,11 @@ docs-only unless the user separately authorizes execution.
 - Route B is now the active product-enhancement planning route; the current
   custom reports / advanced reports MVP, achievement conversion deepening MVP,
   ImportJobItem safe row Web display, and account lifecycle enhancement are
-  closed for localhost/local-demo/synthetic acceptance. Step 119 reselects the
-  next recommended Route B product slice as a docs-only Secret authorization
-  management enhancement safety plan. Treat Docker/untracked artifact inventory
-  as optional housekeeping only if the user prioritizes local environment
-  control.
+  closed for localhost/local-demo/synthetic acceptance. Step 120 documents the
+  Secret authorization management safety plan; the next recommended product
+  slice is read-only API projection hardening with no schema/migration and no
+  grant mutation endpoint. Treat Docker/untracked artifact inventory as
+  optional housekeeping only if the user prioritizes local environment control.
 - Choose Route C if real external providers are available and the user wants
   integration readiness planning before any call.
 - Choose Route D if the user explicitly wants production readiness, with all
