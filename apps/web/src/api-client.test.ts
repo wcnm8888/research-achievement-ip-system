@@ -977,6 +977,13 @@ describe("account management API client", () => {
     });
 
     expect(result.total).toBe(1);
+    const [firstUser] = result.items;
+    if (!firstUser) {
+      throw new Error("Expected account-management list response to include one user.");
+    }
+    expect(firstUser.loginEligibility.reasonCode).toBe("ACTIVE_CREDENTIAL");
+    expect(firstUser.lifecycleActionSummary).toHaveProperty("latestDeliveryAdapter");
+    expect(firstUser.roleChangeAuditSummary.recentRoleChanges).toEqual([]);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(
       "http://localhost/api/account-management/users?keyword=researcher&status=ACTIVE&departmentId=10000000-0000-4000-8000-000000000001&roleCode=RESEARCHER&page=2&pageSize=20",

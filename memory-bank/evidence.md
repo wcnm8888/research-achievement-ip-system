@@ -18953,6 +18953,61 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-06 Step 117 - Account lifecycle Web management enhancement evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `1f12d47 feat: harden account lifecycle projections`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/account-lifecycle-enhancement-technical-plan.md` Step 117
+    section.
+  - `memory-bank/progress.md` Step 116 latest section.
+  - `memory-bank/evidence.md` Step 116 latest section.
+  - `apps/web/src/AccountManagement.tsx`.
+  - `apps/web/src/AccountManagement.test.tsx`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/api-client.test.ts`.
+  - `apps/web/src/types.ts` account-management types.
+  - `apps/api/src/account-management/dto/account-management.dto.ts` field
+    semantics.
+- Implementation evidence:
+  - `AccountManagement` list now includes a `Login eligibility` projection
+    column.
+  - Account detail now renders `loginEligibility`,
+    `lifecycleActionSummary`, and `roleChangeAuditSummary` with stable empty
+    states and no raw JSON/debug/export/download panel.
+  - Lifecycle action entry points continue to depend on `account:invite` and
+    `account:reset_password`; missing permissions render explicit, non-leaking
+    reason tags.
+  - Existing `system:config` page boundary remains the list/detail API gate for
+    account-management.
+  - User-facing lifecycle delivery copy no longer displays internal
+    `targetUserId`; `lastLogin.sessionId` remains absent from Web-facing
+    response usage after Step 116.
+- Test evidence:
+  - Added AccountManagement projection tests for login eligibility, lifecycle
+    summary, role-change summary, permission reason display, and sensitive
+    field negative assertions.
+  - Added api-client assertion that account-management list responses preserve
+    the Step 116 safe projection fields.
+- Verification:
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 84 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundaries observed:
+  - No Prisma schema or migration change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No Docker command or operation.
+  - No real HR/SSO, email/SMS, or other external system call.
+  - No raw token, cookie, session, password, password hash, `DATABASE_URL`,
+    connection string, invite/reset link, raw payload, or raw request/response
+    was captured in committed documentation.
+
 ## 2026-07-06 Step 116 - Account lifecycle API projection hardening evidence
 
 - Canonical state checked before implementation:

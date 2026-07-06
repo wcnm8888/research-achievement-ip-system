@@ -598,7 +598,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
           </Button>
         }
       />
-      <PermissionHint description="账号管理权限最终以后端 system:config 校验为准；前端只做入口收敛和只读展示，不展示或缓存任何密码、token、session hash 或 credential secret。" />
+      <PermissionHint description="账号管理权限最终以后端 system:config 校验为准；前端只做入口收敛和只读展示，不展示或缓存任何密码、会话材料、连接材料或凭证材料。" />
       <PermissionHint description="部门选择器只用于账号绑定和角色部门 scope 绑定，不提供部门创建或编辑；部门 scope 仍精确匹配所选 departmentId，父部门不包含子部门权限。" />
       {departments.error ? (
         <Alert
@@ -639,16 +639,16 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
               Invite user
             </Button>
           ) : (
-            <Tag>account:invite unavailable</Tag>
+            <Tag>Invite actions hidden: missing account:invite</Tag>
           )}
           {canResetPasswords ? (
             <Tag color="blue">account:reset_password enabled</Tag>
           ) : (
-            <Tag>account:reset_password unavailable</Tag>
+            <Tag>Password reset actions hidden: missing account:reset_password</Tag>
           )}
           <Typography.Text type="secondary">
-            Local demo lifecycle only: simulated delivery status is shown, but links, raw tokens,
-            token hashes, passwords, and sessions are never displayed.
+            Local demo lifecycle only: simulated delivery status is shown, but delivery links,
+            credential material, and session material are never displayed.
           </Typography.Text>
         </Space>
       </Card>
@@ -727,7 +727,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
                 setPageSize(nextPageSize);
               },
             }}
-            scroll={{ x: 1080 }}
+            scroll={{ x: 1360 }}
           />
         </DataState>
       </Card>
@@ -1155,7 +1155,7 @@ export function UserAccountImportDryRunPanel({
         title="User account CSV dry-run"
         endpoint="POST /users/import/dry-run"
         noticeMessage="dryRun=true; CSV-only; validates users, departments, roles, scopes, and conflicts before optional pending no-credential apply."
-        noticeDescription="Required headers are email, displayName, departmentCode, and roleCode; optional headers are employeeNo, scopeType, scopeDepartmentCode, and status. Password, passwordHash, token, cookie, secret, invite link, and reset link columns are rejected."
+        noticeDescription="Required headers are email, displayName, departmentCode, and roleCode; optional headers are employeeNo, scopeType, scopeDepartmentCode, and status. Sensitive credential, session, invite-link, and reset-link columns are rejected."
         fileAriaLabel="User account CSV file"
         file={file}
         loading={loading}
@@ -1403,7 +1403,7 @@ export function UserAccountImportApplyConfirmContent({
         </Descriptions.Item>
       </Descriptions>
       <Typography.Text type="secondary">
-        No UserCredential, password generation/reset, session, invite/reset/lifecycle token,
+        No UserCredential, password generation/reset, session, invite/reset lifecycle material,
         email, or login activation will be created by this apply. The backend re-parses and
         revalidates the uploaded CSV before writing.
       </Typography.Text>
@@ -1704,6 +1704,142 @@ const trimAccountUserFilters = (filters: AccountUserFilters): AccountUserFilters
 const hasActiveAccountUserFilters = (filters: AccountUserFilters): boolean =>
   Boolean(filters.keyword?.trim() || filters.status || filters.departmentId?.trim() || filters.roleCode);
 
+const safeSummaryText = (values: string[], fallback: string): string => {
+  const nonEmptyValues = values.filter((value) => value.trim().length > 0);
+  return nonEmptyValues.length > 0 ? nonEmptyValues.join(" / ") : fallback;
+};
+
+export function AccountLoginEligibilityInline({
+  user,
+}: {
+  user: AccountUserSummary;
+}) {
+  const eligibility = user.loginEligibility;
+  const factorsText = safeSummaryText(eligibility.blockingFactors ?? [], "No blocking factors");
+
+  return (
+    <Space direction="vertical" size={2}>
+      <Space size={4} wrap>
+        <Tag color={eligibility.canLogin ? "green" : "orange"}>
+          {eligibility.canLogin ? "Can login" : "Login blocked"}
+        </Tag>
+        <Tag>{eligibility.reasonCode}</Tag>
+      </Space>
+      <Typography.Text type="secondary">
+        {eligibility.reasonLabel || getCredentialAccessLabel(user)}
+      </Typography.Text>
+      <Typography.Text type="secondary">{factorsText}</Typography.Text>
+    </Space>
+  );
+}
+
+type AccountRoleChangeAuditRow =
+  AccountUserSummary["roleChangeAuditSummary"]["recentRoleChanges"][number];
+
+const accountRoleChangeAuditColumns: TableProps<AccountRoleChangeAuditRow>["columns"] = [
+  {
+    title: "Operation",
+    dataIndex: "operation",
+    key: "operation",
+    width: 160,
+  },
+  {
+    title: "Role",
+    dataIndex: "roleCode",
+    key: "roleCode",
+    width: 120,
+    render: (roleCode: string) => roleCode || "No role returned",
+  },
+  {
+    title: "Scope",
+    dataIndex: "scopeType",
+    key: "scopeType",
+    width: 120,
+  },
+  {
+    title: "Department",
+    dataIndex: "departmentId",
+    key: "departmentId",
+    width: 220,
+    render: (departmentId: string | null) => departmentId ?? "No department scope",
+  },
+  {
+    title: "Reason",
+    dataIndex: "reasonProvided",
+    key: "reasonProvided",
+    width: 120,
+    render: (reasonProvided: boolean) => (reasonProvided ? "Provided" : "Not provided"),
+  },
+  {
+    title: "Created",
+    dataIndex: "createdAt",
+    key: "createdAt",
+    width: 176,
+    render: (createdAt: string) => formatDateTime(createdAt),
+  },
+];
+
+export function AccountLifecycleProjectionSummary({ user }: { user: AccountUserSummary }) {
+  const lifecycleSummary = user.lifecycleActionSummary;
+  const roleSummary = user.roleChangeAuditSummary;
+  const recentRoleChanges = roleSummary.recentRoleChanges ?? [];
+  const caveatText = safeSummaryText(lifecycleSummary.caveats ?? [], "No projection caveats returned");
+
+  return (
+    <Space direction="vertical" size={16} className="full-width">
+      <Card className="shell-card" title="Lifecycle history summary">
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label="Latest lifecycle action">
+            {formatDateTime(lifecycleSummary.latestActionAt)}
+          </Descriptions.Item>
+          <Descriptions.Item label="Disable / enable counts">
+            {lifecycleSummary.disabledCount ?? 0} disabled / {lifecycleSummary.enabledCount ?? 0} enabled
+          </Descriptions.Item>
+          <Descriptions.Item label="Invite counts">
+            {lifecycleSummary.inviteCreatedCount ?? 0} issued / {lifecycleSummary.inviteResentCount ?? 0} resent
+          </Descriptions.Item>
+          <Descriptions.Item label="Reset counts">
+            {lifecycleSummary.resetRequestedCount ?? 0} issued / {lifecycleSummary.resetRevokedCount ?? 0} revoked
+          </Descriptions.Item>
+          <Descriptions.Item label="Latest delivery">
+            {(lifecycleSummary.latestDeliveryStatus ?? "No delivery status returned") +
+              " / " +
+              (lifecycleSummary.latestDeliveryAdapter ?? "No adapter returned")}
+          </Descriptions.Item>
+          <Descriptions.Item label="Projection caveat">{caveatText}</Descriptions.Item>
+        </Descriptions>
+      </Card>
+
+      <Card className="shell-card" title="Role change summary">
+        <Space direction="vertical" size={12} className="full-width">
+          <Descriptions bordered size="small" column={1}>
+            <Descriptions.Item label="Latest role change">
+              {formatDateTime(roleSummary.latestRoleChangeAt)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Assign / revoke counts">
+              {roleSummary.assignedCount ?? 0} assigned / {roleSummary.revokedCount ?? 0} revoked
+            </Descriptions.Item>
+          </Descriptions>
+          {recentRoleChanges.length > 0 ? (
+            <Table<AccountRoleChangeAuditRow>
+              size="small"
+              pagination={false}
+              rowKey={(row) =>
+                `${row.operation}-${row.roleCode}-${row.scopeType}-${row.departmentId ?? "global"}-${row.createdAt}`
+              }
+              columns={accountRoleChangeAuditColumns}
+              dataSource={recentRoleChanges}
+              scroll={{ x: 920 }}
+            />
+          ) : (
+            <Typography.Text type="secondary">No recent safe role changes.</Typography.Text>
+          )}
+        </Space>
+      </Card>
+    </Space>
+  );
+}
+
 const createAccountUserColumns = (
   onViewDetail: (userId: string) => void,
   onOperation: (request: OperationRequest) => void,
@@ -1768,6 +1904,15 @@ const createAccountUserColumns = (
       ) : (
         <Tag>无凭证</Tag>
       ),
+  },
+  {
+    title: "Login eligibility",
+    dataIndex: "loginEligibility",
+    key: "loginEligibility",
+    width: 260,
+    render: (_value: AccountUserSummary["loginEligibility"], user) => (
+      <AccountLoginEligibilityInline user={user} />
+    ),
   },
   {
     title: "Lifecycle delivery",
@@ -1839,7 +1984,7 @@ function AccountUserDetailView({
           {user.credential ? credentialStatusLabels[user.credential.status] ?? user.credential.status : "无凭证"}
         </Descriptions.Item>
         <Descriptions.Item label="登录能力">
-          {getCredentialAccessLabel(user)}
+          <AccountLoginEligibilityInline user={user} />
         </Descriptions.Item>
         <Descriptions.Item label="最近生命周期交付">
           {renderLifecycleDeliverySummary(user.recentLifecycleDelivery)}
@@ -1850,29 +1995,39 @@ function AccountUserDetailView({
         <Descriptions.Item label="创建时间">{formatDateTime(user.createdAt)}</Descriptions.Item>
         <Descriptions.Item label="更新时间">{formatDateTime(user.updatedAt)}</Descriptions.Item>
       </Descriptions>
+      <AccountLifecycleProjectionSummary user={user} />
       <Card className="shell-card" title="Lifecycle actions">
-        <Space size={8} wrap>
-          {permissions.canInvite && user.status === "PENDING_ACTIVATION" ? (
-            <Button onClick={() => onOperation({ kind: "resend-invite", user })}>
-              Resend invite
-            </Button>
-          ) : null}
-          {permissions.canResetPassword && user.status === "ACTIVE" ? (
-            <>
-              <Button onClick={() => onOperation({ kind: "admin-password-reset", user })}>
-                Issue reset
+        <Space direction="vertical" size={8} className="full-width">
+          <Space size={8} wrap>
+            {permissions.canInvite && user.status === "PENDING_ACTIVATION" ? (
+              <Button onClick={() => onOperation({ kind: "resend-invite", user })}>
+                Resend invite
               </Button>
-              <Button onClick={() => onOperation({ kind: "revoke-password-reset", user })}>
-                Revoke reset links
-              </Button>
-            </>
+            ) : null}
+            {permissions.canResetPassword && user.status === "ACTIVE" ? (
+              <>
+                <Button onClick={() => onOperation({ kind: "admin-password-reset", user })}>
+                  Issue reset
+                </Button>
+                <Button onClick={() => onOperation({ kind: "revoke-password-reset", user })}>
+                  Revoke reset links
+                </Button>
+              </>
+            ) : null}
+          </Space>
+          {!permissions.canInvite ? (
+            <Tag>Invite actions hidden: missing account:invite</Tag>
+          ) : user.status !== "PENDING_ACTIVATION" ? (
+            <Tag>Invite resend only for pending activation accounts</Tag>
           ) : null}
-          {!permissions.canInvite && !permissions.canResetPassword ? (
-            <Tag>No lifecycle permission</Tag>
+          {!permissions.canResetPassword ? (
+            <Tag>Password reset actions hidden: missing account:reset_password</Tag>
+          ) : user.status !== "ACTIVE" ? (
+            <Tag>Password reset only for active accounts</Tag>
           ) : null}
           <Typography.Text type="secondary">
-            Local demo delivery only. The admin UI shows delivery status, adapter, target user,
-            and masked email; tokens, hashes, links, passwords, and sessions are never shown.
+            Local demo delivery only. The admin UI shows delivery status, adapter, current account,
+            and masked email; delivery links, credential material, and session material are never shown.
           </Typography.Text>
         </Space>
       </Card>
@@ -2109,7 +2264,7 @@ function CreateInviteDrawer({
         <Alert
           type="info"
           showIcon
-          message="This step uses the local/simulated lifecycle delivery adapter for demo review. It is not a real email or SMS send, and this UI never displays generated tokens or full links."
+          message="This step uses the local/simulated lifecycle delivery adapter for demo review. It is not a real email or SMS send, and this UI never displays generated delivery material or full links."
         />
         <DepartmentSelectorBoundary error={departmentSelector.error} />
         <Form<CreateInviteFormValues>
@@ -2365,7 +2520,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="info"
         showIcon
-        message="A new local/simulated invite delivery will be queued. This is not a real email or SMS send; the UI will not display a token or full invitation link."
+        message="A new local/simulated invite delivery will be queued. This is not a real email or SMS send; the UI will not display private delivery values or full invitation links."
       />
     );
   }
@@ -2591,7 +2746,7 @@ const renderLifecycleDeliverySummary = (
         {delivery.maskedEmail} / target current user
       </Typography.Text>
       <Typography.Text type="secondary">
-        token {delivery.tokenStatus}; failure {delivery.failureCategory ?? "not persisted"}
+        state {delivery.tokenStatus}; failure {delivery.failureCategory ?? "not persisted"}
       </Typography.Text>
       <Typography.Text type="secondary">
         updated {formatDateTime(delivery.updatedAt)}

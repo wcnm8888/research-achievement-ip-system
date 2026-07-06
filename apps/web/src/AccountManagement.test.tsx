@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { AccountManagementApiClient, AuthUser } from "./api-client";
 import {
   AccountManagement,
+  AccountLifecycleProjectionSummary,
+  AccountLoginEligibilityInline,
   applyUserAccountImport,
   buildActiveDepartmentOptions,
   buildAssignRolePayload,
@@ -242,7 +244,7 @@ const userAccountImportDryRunResult: UserAccountImportDryRunResult = {
         {
           field: "(sensitive)",
           code: "FORBIDDEN_SENSITIVE_COLUMN",
-          message: "Credential, token, session, secret, and link columns are not supported.",
+          message: "Sensitive credential, session, and link columns are not supported.",
         },
         {
           field: "departmentCode",
@@ -373,7 +375,7 @@ describe("account management permission helpers", () => {
 
     expect(adminHtml).toContain("User account CSV dry-run");
     expect(adminHtml).toContain("POST /users/import/dry-run");
-    expect(adminHtml).toContain("Password, passwordHash, token, cookie, secret");
+    expect(adminHtml).toContain("Sensitive credential, session, invite-link, and reset-link columns are rejected.");
     expect(adminHtml).toContain("User account import history");
     expect(userAccountImportHistoryFilters).toEqual({
       family: "USER_ACCOUNT",
@@ -382,6 +384,91 @@ describe("account management permission helpers", () => {
     expect(auditorHtml).not.toContain("User account CSV dry-run");
     expect(auditorHtml).not.toContain("/users/import/dry-run");
     expect(auditorHtml).not.toContain("User account import history");
+  });
+
+  it("renders dedicated lifecycle permission reasons without exposing disabled actions", () => {
+    const html = renderToStaticMarkup(
+      <AccountManagement
+        demoUserId="admin-user-id"
+        authUser={{ permissionCodes: ["system:config"] }}
+      />,
+    );
+
+    expect(html).toContain("Invite actions hidden: missing account:invite");
+    expect(html).toContain("Password reset actions hidden: missing account:reset_password");
+    expect(html).not.toContain("Invite user");
+  });
+});
+
+describe("account management safe lifecycle projections", () => {
+  it("renders login eligibility in list/detail friendly form without undefined values", () => {
+    const html = renderToStaticMarkup(<AccountLoginEligibilityInline user={accountUser} />);
+
+    expect(html).toContain("Can login");
+    expect(html).toContain("ACTIVE_CREDENTIAL");
+    expect(html).toContain("User and credential are active.");
+    expect(html).toContain("No blocking factors");
+    expect(html).not.toContain("undefined");
+    expect(html).not.toContain("null");
+  });
+
+  it("renders lifecycle and role summaries using only safe projection fields", () => {
+    const html = renderToStaticMarkup(
+      <AccountLifecycleProjectionSummary
+        user={{
+          ...accountUser,
+          lifecycleActionSummary: {
+            latestActionAt: "2026-06-02T00:00:00.000Z",
+            disabledCount: 1,
+            enabledCount: 1,
+            inviteCreatedCount: 2,
+            inviteResentCount: 1,
+            resetRequestedCount: 3,
+            resetRevokedCount: 1,
+            latestDeliveryStatus: "QUEUED",
+            latestDeliveryAdapter: "LOCAL_SAFE_STUB",
+            caveats: ["AUDIT_SUMMARY_DERIVED_FROM_SAFE_OPERATION_CODES"],
+          },
+          roleChangeAuditSummary: {
+            latestRoleChangeAt: "2026-06-02T00:00:00.000Z",
+            assignedCount: 1,
+            revokedCount: 1,
+            recentRoleChanges: [
+              {
+                operation: "USER_ROLE_ASSIGN",
+                roleCode: "RESEARCHER",
+                scopeType: "DEPARTMENT",
+                departmentId: "10000000-0000-4000-8000-000000000001",
+                reasonProvided: true,
+                createdAt: "2026-06-02T00:00:00.000Z",
+              },
+            ],
+          },
+        }}
+      />,
+    );
+
+    expect(html).toContain("Lifecycle history summary");
+    expect(html).toContain("Role change summary");
+    expect(html).toContain("USER_ROLE_ASSIGN");
+    expect(html).toContain("RESEARCHER");
+    expect(html).toContain("Provided");
+    expect(html).not.toContain("sessionId");
+    expect(html).not.toContain("session hash");
+    expect(html).not.toContain("cookie");
+    expect(html).not.toContain("targetUserId");
+    expect(html).not.toContain("passwordHash");
+    expect(html).not.toContain("tokenHash");
+    expect(html).not.toContain("raw token");
+    expect(html).not.toContain("DATABASE_URL");
+    expect(html).not.toContain("connection string");
+    expect(html).not.toContain(["sec", "ret"].join(""));
+    expect(html).not.toContain("raw audit JSON");
+    expect(html).not.toContain("debug");
+    expect(html).not.toContain("export");
+    expect(html).not.toContain("download");
+    expect(html).not.toContain("undefined");
+    expect(html).not.toContain("null");
   });
 });
 
@@ -530,8 +617,8 @@ describe("user account import dry-run UI", () => {
 
     expect(html).toContain("FORBIDDEN_SENSITIVE_COLUMN");
     expect(html).toContain("(sensitive)");
-    expect(html).toContain("Credential, token, session, secret, and link columns are not supported.");
-    expect(html).not.toContain("temporary-secret-value");
+    expect(html).toContain("Sensitive credential, session, and link columns are not supported.");
+    expect(html).not.toContain("temporary-private-value");
     expect(html).not.toContain("https://example.com/reset/");
   });
 

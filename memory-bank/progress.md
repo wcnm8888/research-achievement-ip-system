@@ -14200,3 +14200,42 @@
   - `corepack pnpm --filter @research-ip/api test -- account-management account-lifecycle auth`: PASS, 13 files / 132 tests.
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+
+## 2026-07-06 Step 117 - Account lifecycle Web management enhancement
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `1f12d47 feat: harden account lifecycle projections`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added Web display for Step 116 `loginEligibility` in the account list and
+    detail drawer.
+  - Added detail-only safe `lifecycleActionSummary` display with counts,
+    latest lifecycle timestamp, latest delivery status/adapter, and caveat
+    text.
+  - Added detail-only safe `roleChangeAuditSummary` display with assign/revoke
+    counts and recent role-change rows limited to operation, role code, scope,
+    department id, reason-present boolean, and timestamp.
+  - Tightened lifecycle action affordance copy so missing `account:invite` and
+    `account:reset_password` permissions show explicit, non-sensitive reasons.
+  - Kept `system:config` as the account-management page/list/detail boundary;
+    unauthorized users still do not render execution entry points or trigger
+    account-management API loading.
+  - Removed user-facing lifecycle copy that referred to internal target user
+    identifiers and avoided raw/debug/export/download style panels.
+- Explicitly not done:
+  - No Prisma schema or migration change.
+  - No API service/DTO code change beyond reading DTO semantics for field
+    alignment.
+  - No production/VPS/production DB access, Docker operation, real HR/SSO
+    integration, real email/SMS send, or external provider call.
+  - No `.env` or `.env.production` content read.
+  - Existing untracked local artifacts and `.local-*` evidence directories were
+    left untouched.
+- Verification:
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 84 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
