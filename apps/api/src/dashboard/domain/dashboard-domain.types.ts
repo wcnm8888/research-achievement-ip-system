@@ -1,4 +1,7 @@
 import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
   AchievementConversionStatusCode,
 } from "../../achievement-conversions/domain/achievement-conversion-domain.types";
 import {
@@ -40,6 +43,10 @@ export const DashboardMetricKeyCode = {
   conversionTotal: "CONVERSION_TOTAL",
   conversionAmountSummary: "CONVERSION_AMOUNT_SUMMARY",
   conversionStatusFunnel: "CONVERSION_STATUS_FUNNEL",
+  conversionContractStatusDistribution: "CONVERSION_CONTRACT_STATUS_DISTRIBUTION",
+  conversionRevenueStatusDistribution: "CONVERSION_REVENUE_STATUS_DISTRIBUTION",
+  conversionLocalRiskSummary: "CONVERSION_LOCAL_RISK_SUMMARY",
+  conversionEvaluationEffectDistribution: "CONVERSION_EVALUATION_EFFECT_DISTRIBUTION",
   feePayStatusDistribution: "FEE_PAY_STATUS_DISTRIBUTION",
   feeDeadlineOverview: "FEE_DEADLINE_OVERVIEW",
   feeRiskSummary: "FEE_RISK_SUMMARY",
@@ -141,6 +148,22 @@ export type DashboardConversionSummary = {
   funnel: DashboardMetric<
     typeof DashboardMetricKeyCode.conversionStatusFunnel,
     DashboardDistribution<AchievementConversionStatusCode>
+  >;
+  byContractStatus: DashboardMetric<
+    typeof DashboardMetricKeyCode.conversionContractStatusDistribution,
+    DashboardDistribution<AchievementConversionContractStatusCode>
+  >;
+  byRevenueStatus: DashboardMetric<
+    typeof DashboardMetricKeyCode.conversionRevenueStatusDistribution,
+    DashboardDistribution<AchievementConversionRevenueStatusCode>
+  >;
+  localRisk: DashboardMetric<
+    typeof DashboardMetricKeyCode.conversionLocalRiskSummary,
+    { overdue: DashboardBucket<typeof DashboardOverviewBucketCode.overdue> }
+  >;
+  byEvaluationEffect: DashboardMetric<
+    typeof DashboardMetricKeyCode.conversionEvaluationEffectDistribution,
+    DashboardDistribution<AchievementConversionEvaluationEffectCode>
   >;
 };
 

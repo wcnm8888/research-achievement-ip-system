@@ -1,6 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
+import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
+  AchievementConversionStatusCode,
+} from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { AchievementStatusCode, AchievementTypeCode } from "../achievements/domain/achievement-domain.types";
 import { PrismaService } from "../database/prisma.service";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
@@ -89,6 +94,78 @@ export class DashboardRepository {
 
     return rows.map((row) => ({
       key: row.status as AchievementConversionStatusCode,
+      count: row._count._all,
+    }));
+  }
+
+  async groupConversionsByContractStatus(
+    achievementPolicyWhere: Prisma.AchievementWhereInput,
+  ): Promise<DashboardBucket<AchievementConversionContractStatusCode>[]> {
+    const rows = await this.prisma.achievementConversion.groupBy({
+      by: ["contractStatus"],
+      where: toConversionWhere(achievementPolicyWhere),
+      _count: { _all: true },
+    });
+
+    return rows.map((row) => ({
+      key: row.contractStatus as AchievementConversionContractStatusCode,
+      count: row._count._all,
+    }));
+  }
+
+  async groupConversionsByRevenueStatus(
+    achievementPolicyWhere: Prisma.AchievementWhereInput,
+  ): Promise<DashboardBucket<AchievementConversionRevenueStatusCode>[]> {
+    const rows = await this.prisma.achievementConversion.groupBy({
+      by: ["revenueStatus"],
+      where: toConversionWhere(achievementPolicyWhere),
+      _count: { _all: true },
+    });
+
+    return rows.map((row) => ({
+      key: row.revenueStatus as AchievementConversionRevenueStatusCode,
+      count: row._count._all,
+    }));
+  }
+
+  async countOverdueConversions(
+    achievementPolicyWhere: Prisma.AchievementWhereInput,
+    todayDateOnly: Date,
+  ): Promise<number> {
+    return this.prisma.achievementConversion.count({
+      where: {
+        AND: [
+          toConversionWhere(achievementPolicyWhere),
+          {
+            OR: [
+              { revenueStatus: AchievementConversionRevenueStatusCode.overdue },
+              {
+                revenueStatus: {
+                  in: [
+                    AchievementConversionRevenueStatusCode.unpaid,
+                    AchievementConversionRevenueStatusCode.partial,
+                  ],
+                },
+                revenueDueDate: { lt: todayDateOnly },
+              },
+            ],
+          },
+        ],
+      },
+    });
+  }
+
+  async groupConversionsByEvaluationEffect(
+    achievementPolicyWhere: Prisma.AchievementWhereInput,
+  ): Promise<DashboardBucket<AchievementConversionEvaluationEffectCode>[]> {
+    const rows = await this.prisma.achievementConversion.groupBy({
+      by: ["evaluationEffect"],
+      where: toConversionWhere(achievementPolicyWhere),
+      _count: { _all: true },
+    });
+
+    return rows.map((row) => ({
+      key: row.evaluationEffect as AchievementConversionEvaluationEffectCode,
       count: row._count._all,
     }));
   }

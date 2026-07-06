@@ -1,4 +1,9 @@
-import { AchievementConversionStatusCode } from "../../achievement-conversions/domain/achievement-conversion-domain.types";
+import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
+  AchievementConversionStatusCode,
+} from "../../achievement-conversions/domain/achievement-conversion-domain.types";
 import {
   AchievementStatusCode,
   AchievementTypeCode,
@@ -119,6 +124,12 @@ export type ConversionAmountSummary = {
   contractTotal: string;
   revenueTotal: string;
 };
+
+export type ConversionAggregateStatusCode =
+  | AchievementConversionStatusCode
+  | AchievementConversionContractStatusCode
+  | AchievementConversionRevenueStatusCode
+  | AchievementConversionEvaluationEffectCode;
 
 export const customReportTemplates: readonly CustomReportTemplate[] = [
   {

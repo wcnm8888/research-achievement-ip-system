@@ -1,5 +1,57 @@
 # Progress
 
+## 2026-07-06 Step 108-B-C - Conversion deepening schema and backend extension
+
+- Status: DONE.
+- Task classification:
+  - M backend/schema implementation slice for the Route B achievement conversion
+    deepening MVP.
+- Starting point:
+  - HEAD at task start: `5d931f3 docs: design conversion deepening mvp`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added additive Prisma enums:
+    `AchievementConversionContractStatus`,
+    `AchievementConversionRevenueStatus`, and
+    `AchievementConversionEvaluationEffect`.
+  - Added additive `AchievementConversion` fields:
+    `contractStatus`, `revenueStatus`, `revenueDueDate`,
+    `revenueReceivedDate`, `benefitDistributionJson`, `evaluationEffect`,
+    `evaluationSummary`, and `evaluationDate`.
+  - Added additive local migration
+    `prisma/migrations/20260706120000_extend_achievement_conversion_deepening/migration.sql`.
+  - Extended conversion DTO/domain/repository/service/API response support for
+    the new fields.
+  - Added safe structured `benefitDistributionJson` validation: category
+    allowlist, max 10 rows, text length limits, non-negative amounts, 0..1
+    ratios, per-row amount/ratio requirement, ratio total <= 1, and allocation
+    amount total <= revenue amount when revenue is present.
+  - Kept audit values as masked summaries: status fields, dates, booleans, and
+    allocation item count only; no raw allocation note, evaluation summary,
+    contract/payment/legal payload, or external response.
+  - Added Dashboard conversion aggregates for contract status, revenue status,
+    local overdue conversion count, and evaluation effect.
+  - Extended Custom Reports `conversion-funnel` with aggregate-only dimensions
+    for conversion status, contract status, revenue status, evaluation effect,
+    plus local overdue/evaluated totals.
+  - Added/updated API tests for DTO validation, service create/update/list,
+    permission boundary preservation, Dashboard aggregations, Reports
+    aggregations, and sensitive field-name avoidance.
+- Explicitly not done:
+  - No Web page extension.
+  - No real contract/legal/payment/finance/invoice/settlement/reconciliation or
+    external-system integration.
+  - No production migration execution.
+  - No production/VPS/production DB access.
+- Verification:
+  - Required Step 108-B-C gates recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 107-B-C - Conversion deepening MVP technical plan
 
 - Status: DONE.

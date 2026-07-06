@@ -1,6 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
+import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
+  AchievementConversionStatusCode,
+} from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import {
   AchievementStatusCode,
   AchievementTypeCode,
@@ -45,6 +50,10 @@ type ReportsRepositoryMock = {
   countDueSoonFees: ReturnType<typeof vi.fn>;
   groupWorkflowTasksByStatus: ReturnType<typeof vi.fn>;
   groupConversionsByStatus: ReturnType<typeof vi.fn>;
+  groupConversionsByContractStatus: ReturnType<typeof vi.fn>;
+  groupConversionsByRevenueStatus: ReturnType<typeof vi.fn>;
+  countOverdueConversions: ReturnType<typeof vi.fn>;
+  groupConversionsByEvaluationEffect: ReturnType<typeof vi.fn>;
   sumConversionAmounts: ReturnType<typeof vi.fn>;
 };
 
@@ -77,6 +86,16 @@ const createRepositoryMock = (): ReportsRepositoryMock => ({
   ]),
   groupConversionsByStatus: vi.fn().mockResolvedValue([
     { key: AchievementConversionStatusCode.signed, count: 1 },
+  ]),
+  groupConversionsByContractStatus: vi.fn().mockResolvedValue([
+    { key: AchievementConversionContractStatusCode.active, count: 1 },
+  ]),
+  groupConversionsByRevenueStatus: vi.fn().mockResolvedValue([
+    { key: AchievementConversionRevenueStatusCode.partial, count: 1 },
+  ]),
+  countOverdueConversions: vi.fn().mockResolvedValue(1),
+  groupConversionsByEvaluationEffect: vi.fn().mockResolvedValue([
+    { key: AchievementConversionEvaluationEffectCode.positive, count: 1 },
   ]),
   sumConversionAmounts: vi.fn().mockResolvedValue({
     contractTotal: "100000.00",
@@ -251,6 +270,74 @@ describe("ReportsService", () => {
         {},
       ],
     });
+    expect(repository.groupConversionsByContractStatus).toHaveBeenCalledWith({
+      AND: [
+        {
+          achievement: {
+            AND: [
+              { departmentId: { in: [ids.department] } },
+              {},
+              { type: AchievementTypeCode.patent },
+              {},
+              {},
+            ],
+          },
+        },
+        {},
+        { status: AchievementConversionStatusCode.signed },
+        {},
+      ],
+    });
+    expect(repository.groupConversionsByRevenueStatus).toHaveBeenCalledWith(
+      expect.any(Object),
+    );
+    expect(repository.countOverdueConversions).toHaveBeenCalledWith(
+      expect.any(Object),
+      new Date("2026-06-18T00:00:00.000Z"),
+    );
+    expect(repository.groupConversionsByEvaluationEffect).toHaveBeenCalledWith(
+      expect.any(Object),
+    );
+  });
+
+  it("adds aggregate-only conversion deepening totals to conversion funnel", async () => {
+    const { service } = createService();
+
+    const report = await service.runTemplate(
+      context,
+      CustomReportTemplateIdCode.conversionFunnel,
+    );
+
+    expect(report.columns).toEqual([
+      { key: "dimension", label: "Dimension", type: "text" },
+      { key: "status", label: "Status", type: "text" },
+      { key: "count", label: "Count", type: "number" },
+    ]);
+    expect(report.rows).toEqual([
+      { dimension: "conversionStatus", status: AchievementConversionStatusCode.signed, count: 1 },
+      {
+        dimension: "contractStatus",
+        status: AchievementConversionContractStatusCode.active,
+        count: 1,
+      },
+      {
+        dimension: "revenueStatus",
+        status: AchievementConversionRevenueStatusCode.partial,
+        count: 1,
+      },
+      {
+        dimension: "evaluationEffect",
+        status: AchievementConversionEvaluationEffectCode.positive,
+        count: 1,
+      },
+    ]);
+    expect(report.totals).toEqual({
+      count: 1,
+      contractTotal: "100000.00",
+      revenueTotal: "60000.00",
+      localOverdue: 1,
+      evaluated: 1,
+    });
   });
 
   it("uses the fee readable policy for fee risk queries", async () => {
@@ -297,6 +384,9 @@ describe("ReportsService", () => {
       "DATABASE_URL",
       "objectKey",
       "checksum",
+      "payment",
+      "legal",
+      "externalPayload",
     ]) {
       expect(serialized).not.toContain(forbidden);
     }

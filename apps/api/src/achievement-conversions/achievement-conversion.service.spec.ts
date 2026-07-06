@@ -3,7 +3,13 @@ import { PermissionCode } from "../authorization/constants/permission-code";
 import { UserContext } from "../identity/user-context";
 import { AchievementConversionRepository } from "./achievement-conversion.repository";
 import { AchievementConversionService } from "./achievement-conversion.service";
-import { AchievementConversionStatusCode, AchievementConversionTypeCode } from "./domain/achievement-conversion-domain.types";
+import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
+  AchievementConversionStatusCode,
+  AchievementConversionTypeCode,
+} from "./domain/achievement-conversion-domain.types";
 import {
   AchievementConversionInvalidPayloadError,
   AchievementConversionInvalidStateError,
@@ -41,6 +47,22 @@ const makeConversion = (
   status: AchievementConversionStatusCode.signed,
   conversionDate: new Date("2026-07-01T00:00:00.000Z"),
   benefitDistributionSummary: "Team 60%, institute 40%",
+  contractStatus: AchievementConversionContractStatusCode.signed,
+  revenueStatus: AchievementConversionRevenueStatusCode.partial,
+  revenueDueDate: new Date("2026-08-01T00:00:00.000Z"),
+  revenueReceivedDate: new Date("2026-07-15T00:00:00.000Z"),
+  benefitDistributionJson: [
+    {
+      category: "TEAM",
+      label: "Research team",
+      amount: 30000,
+      ratio: 0.5,
+      note: "Internal allocation note",
+    },
+  ],
+  evaluationEffect: AchievementConversionEvaluationEffectCode.positive,
+  evaluationSummary: "Local evaluation summary",
+  evaluationDate: new Date("2026-09-01T00:00:00.000Z"),
   remarks: "Internal ledger note",
   createdById: ids.user,
   updatedById: ids.user,
@@ -70,6 +92,7 @@ const makeService = (permissionAllowed = true) => {
       ...conversion,
       status: AchievementConversionStatusCode.paid,
       revenueAmount: "80000.00",
+      revenueStatus: AchievementConversionRevenueStatusCode.paid,
     }),
   };
   const rbacPolicy = {
@@ -159,6 +182,22 @@ describe("AchievementConversionService", () => {
       status: AchievementConversionStatusCode.signed,
       conversionDate: "2026-07-01",
       benefitDistributionSummary: "Team 60%, institute 40%",
+      contractStatus: AchievementConversionContractStatusCode.active,
+      revenueStatus: AchievementConversionRevenueStatusCode.partial,
+      revenueDueDate: "2026-08-01",
+      revenueReceivedDate: "2026-07-15",
+      benefitDistributionJson: [
+        {
+          category: "TEAM",
+          label: " Research team ",
+          amount: 30000,
+          ratio: 0.5,
+          note: " Internal allocation note ",
+        },
+      ],
+      evaluationEffect: AchievementConversionEvaluationEffectCode.positive,
+      evaluationSummary: "Local evaluation summary",
+      evaluationDate: "2026-09-01",
       remarks: "Internal ledger note",
     });
 
@@ -168,6 +207,22 @@ describe("AchievementConversionService", () => {
         achievementId: ids.achievement,
         departmentId: ids.department,
         counterpartyName: "Example Company",
+        contractStatus: AchievementConversionContractStatusCode.active,
+        revenueStatus: AchievementConversionRevenueStatusCode.partial,
+        revenueDueDate: new Date("2026-08-01"),
+        revenueReceivedDate: new Date("2026-07-15"),
+        benefitDistributionJson: [
+          {
+            category: "TEAM",
+            label: "Research team",
+            amount: 30000,
+            ratio: 0.5,
+            note: "Internal allocation note",
+          },
+        ],
+        evaluationEffect: AchievementConversionEvaluationEffectCode.positive,
+        evaluationSummary: "Local evaluation summary",
+        evaluationDate: new Date("2026-09-01"),
         createdById: ids.user,
       }),
     );
@@ -176,12 +231,20 @@ describe("AchievementConversionService", () => {
     expect(JSON.stringify(auditInput)).not.toContain("Example Company");
     expect(JSON.stringify(auditInput)).not.toContain("Team 60%");
     expect(JSON.stringify(auditInput)).not.toContain("Internal ledger note");
+    expect(JSON.stringify(auditInput)).not.toContain("Research team");
+    expect(JSON.stringify(auditInput)).not.toContain("Local evaluation summary");
     expect(auditInput.newValue).toMatchObject({
       achievementConversionId: ids.conversion,
       achievementId: ids.achievement,
+      contractStatus: AchievementConversionContractStatusCode.signed,
+      revenueStatus: AchievementConversionRevenueStatusCode.partial,
+      evaluationEffect: AchievementConversionEvaluationEffectCode.positive,
       contractAmountProvided: true,
       revenueAmountProvided: true,
       benefitDistributionSummaryProvided: true,
+      benefitDistributionJsonProvided: true,
+      benefitDistributionItemCount: 1,
+      evaluationSummaryProvided: true,
       remarksProvided: true,
     });
   });
@@ -193,6 +256,8 @@ describe("AchievementConversionService", () => {
       service.updateConversion(context, ids.conversion, {
         status: AchievementConversionStatusCode.paid,
         revenueAmount: 80000,
+        revenueStatus: AchievementConversionRevenueStatusCode.paid,
+        evaluationEffect: AchievementConversionEvaluationEffectCode.mixed,
       }),
     ).resolves.toEqual(
       expect.objectContaining({
@@ -215,12 +280,15 @@ describe("AchievementConversionService", () => {
       expect.objectContaining({
         conversionId: ids.conversion,
         revenueAmount: 80000,
+        revenueStatus: AchievementConversionRevenueStatusCode.paid,
+        evaluationEffect: AchievementConversionEvaluationEffectCode.mixed,
         updatedById: ids.user,
       }),
     );
     const auditInput = auditService.recordEventInTransaction.mock.calls[0]?.[1];
     expect(auditInput.action).toBe("UPDATE");
     expect(JSON.stringify(auditInput)).not.toContain("Example Company");
+    expect(JSON.stringify(auditInput)).not.toContain("Internal allocation note");
   });
 
   it("rejects list, create, and update when department read permission is missing", async () => {
@@ -263,5 +331,35 @@ describe("AchievementConversionService", () => {
     ).rejects.toBeInstanceOf(AchievementConversionInvalidPayloadError);
 
     expect(repository.updateInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects benefit distribution totals above the stored revenue amount", async () => {
+    const { service } = makeService();
+
+    await expect(
+      service.createConversion(context, ids.achievement, {
+        conversionType: AchievementConversionTypeCode.license,
+        counterpartyName: "Example Company",
+        contractAmount: 100000,
+        revenueAmount: 60000,
+        status: AchievementConversionStatusCode.signed,
+        benefitDistributionJson: [
+          { category: "TEAM", label: "Research team", amount: 70000 },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(AchievementConversionInvalidPayloadError);
+  });
+
+  it("rejects benefit distribution ratios above one", async () => {
+    const { service } = makeService();
+
+    await expect(
+      service.updateConversion(context, ids.conversion, {
+        benefitDistributionJson: [
+          { category: "TEAM", label: "Research team", ratio: 0.7 },
+          { category: "UNIT", label: "Institute", ratio: 0.4 },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(AchievementConversionInvalidPayloadError);
   });
 });

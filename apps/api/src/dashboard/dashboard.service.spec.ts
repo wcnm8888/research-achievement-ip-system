@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { PermissionCode } from "../authorization/constants/permission-code";
-import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
+import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
+  AchievementConversionStatusCode,
+} from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { AchievementStatusCode, AchievementTypeCode } from "../achievements/domain/achievement-domain.types";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { UserContext } from "../identity/user-context";
@@ -43,6 +48,10 @@ type DashboardRepositoryMock = {
   countConversions: ReturnType<typeof vi.fn>;
   sumConversionAmounts: ReturnType<typeof vi.fn>;
   groupConversionsByStatus: ReturnType<typeof vi.fn>;
+  groupConversionsByContractStatus: ReturnType<typeof vi.fn>;
+  groupConversionsByRevenueStatus: ReturnType<typeof vi.fn>;
+  countOverdueConversions: ReturnType<typeof vi.fn>;
+  groupConversionsByEvaluationEffect: ReturnType<typeof vi.fn>;
   groupFeesByPayStatus: ReturnType<typeof vi.fn>;
   countOverdueFees: ReturnType<typeof vi.fn>;
   countDueSoonFees: ReturnType<typeof vi.fn>;
@@ -76,6 +85,16 @@ const createRepositoryMock = (): DashboardRepositoryMock => ({
   groupConversionsByStatus: vi
     .fn()
     .mockResolvedValue([{ key: AchievementConversionStatusCode.signed, count: 1 }]),
+  groupConversionsByContractStatus: vi
+    .fn()
+    .mockResolvedValue([{ key: AchievementConversionContractStatusCode.active, count: 1 }]),
+  groupConversionsByRevenueStatus: vi
+    .fn()
+    .mockResolvedValue([{ key: AchievementConversionRevenueStatusCode.partial, count: 1 }]),
+  countOverdueConversions: vi.fn().mockResolvedValue(1),
+  groupConversionsByEvaluationEffect: vi
+    .fn()
+    .mockResolvedValue([{ key: AchievementConversionEvaluationEffectCode.positive, count: 1 }]),
   groupFeesByPayStatus: vi
     .fn()
     .mockResolvedValue([{ key: PayStatusCode.pending, count: 4 }]),
@@ -158,6 +177,19 @@ describe("DashboardService", () => {
     expect(repository.groupConversionsByStatus).toHaveBeenCalledWith({
       departmentId: { in: [ids.department] },
     });
+    expect(repository.groupConversionsByContractStatus).toHaveBeenCalledWith({
+      departmentId: { in: [ids.department] },
+    });
+    expect(repository.groupConversionsByRevenueStatus).toHaveBeenCalledWith({
+      departmentId: { in: [ids.department] },
+    });
+    expect(repository.countOverdueConversions).toHaveBeenCalledWith(
+      { departmentId: { in: [ids.department] } },
+      todayDateOnly,
+    );
+    expect(repository.groupConversionsByEvaluationEffect).toHaveBeenCalledWith({
+      departmentId: { in: [ids.department] },
+    });
     expect(repository.groupFeesByPayStatus).toHaveBeenCalledWith({
       departmentId: { in: [ids.department] },
     });
@@ -215,6 +247,19 @@ describe("DashboardService", () => {
     expect(summary.conversion.funnel.value.buckets).toEqual([
       { key: AchievementConversionStatusCode.signed, count: 1 },
     ]);
+    expect(summary.conversion.byContractStatus.value.buckets).toEqual([
+      { key: AchievementConversionContractStatusCode.active, count: 1 },
+    ]);
+    expect(summary.conversion.byRevenueStatus.value.buckets).toEqual([
+      { key: AchievementConversionRevenueStatusCode.partial, count: 1 },
+    ]);
+    expect(summary.conversion.localRisk.value.overdue).toEqual({
+      key: DashboardOverviewBucketCode.overdue,
+      count: 1,
+    });
+    expect(summary.conversion.byEvaluationEffect.value.buckets).toEqual([
+      { key: AchievementConversionEvaluationEffectCode.positive, count: 1 },
+    ]);
     expect(summary.workflowTasks.byStatus.value.buckets).toEqual([
       { key: WorkflowTaskStatusCode.pending, count: 5 },
     ]);
@@ -258,6 +303,10 @@ describe("DashboardService", () => {
       revenueTotal: "0.00",
     });
     repository.groupConversionsByStatus.mockResolvedValue([]);
+    repository.groupConversionsByContractStatus.mockResolvedValue([]);
+    repository.groupConversionsByRevenueStatus.mockResolvedValue([]);
+    repository.countOverdueConversions.mockResolvedValue(0);
+    repository.groupConversionsByEvaluationEffect.mockResolvedValue([]);
     repository.groupFeesByPayStatus.mockResolvedValue([]);
     repository.countOverdueFees.mockResolvedValue(0);
     repository.countDueSoonFees.mockResolvedValue(0);
@@ -279,6 +328,10 @@ describe("DashboardService", () => {
     expect(summary.conversion.total.value.count).toBe(0);
     expect(summary.conversion.totals.value.contractTotal).toBe("0.00");
     expect(summary.conversion.funnel.value.buckets).toEqual([]);
+    expect(summary.conversion.byContractStatus.value.buckets).toEqual([]);
+    expect(summary.conversion.byRevenueStatus.value.buckets).toEqual([]);
+    expect(summary.conversion.localRisk.value.overdue.count).toBe(0);
+    expect(summary.conversion.byEvaluationEffect.value.buckets).toEqual([]);
     expect(summary.achievement.byType.value.buckets).toEqual([]);
     expect(summary.fee.deadline.value.overdue.count).toBe(0);
     expect(summary.fee.deadline.value.dueSoon.count).toBe(0);

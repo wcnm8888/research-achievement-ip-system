@@ -52,6 +52,10 @@ export class DashboardService {
       conversionTotal,
       conversionAmountSummary,
       conversionStatusBuckets,
+      conversionContractStatusBuckets,
+      conversionRevenueStatusBuckets,
+      overdueConversionCount,
+      conversionEvaluationEffectBuckets,
       feePayStatusBuckets,
       overdueFeeCount,
       dueSoonFeeCount,
@@ -71,6 +75,10 @@ export class DashboardService {
       this.repository.countConversions(achievementWhere),
       this.repository.sumConversionAmounts(achievementWhere),
       this.repository.groupConversionsByStatus(achievementWhere),
+      this.repository.groupConversionsByContractStatus(achievementWhere),
+      this.repository.groupConversionsByRevenueStatus(achievementWhere),
+      this.repository.countOverdueConversions(achievementWhere, todayDateOnly),
+      this.repository.groupConversionsByEvaluationEffect(achievementWhere),
       this.repository.groupFeesByPayStatus(feeWhere),
       this.repository.countOverdueFees(feeWhere, todayDateOnly),
       this.repository.countDueSoonFees(
@@ -196,6 +204,31 @@ export class DashboardService {
           key: DashboardMetricKeyCode.conversionStatusFunnel,
           section: DashboardMetricSectionCode.conversion,
           value: { buckets: conversionStatusBuckets },
+        },
+        byContractStatus: {
+          key: DashboardMetricKeyCode.conversionContractStatusDistribution,
+          section: DashboardMetricSectionCode.conversion,
+          value: { buckets: conversionContractStatusBuckets },
+        },
+        byRevenueStatus: {
+          key: DashboardMetricKeyCode.conversionRevenueStatusDistribution,
+          section: DashboardMetricSectionCode.conversion,
+          value: { buckets: conversionRevenueStatusBuckets },
+        },
+        localRisk: {
+          key: DashboardMetricKeyCode.conversionLocalRiskSummary,
+          section: DashboardMetricSectionCode.conversion,
+          value: {
+            overdue: {
+              key: DashboardOverviewBucketCode.overdue,
+              count: overdueConversionCount,
+            },
+          },
+        },
+        byEvaluationEffect: {
+          key: DashboardMetricKeyCode.conversionEvaluationEffectDistribution,
+          section: DashboardMetricSectionCode.conversion,
+          value: { buckets: conversionEvaluationEffectBuckets },
         },
       },
       workflowTasks: {

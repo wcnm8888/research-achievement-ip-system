@@ -1,5 +1,113 @@
 # Evidence
 
+## 2026-07-06 Step 108-B-C - Conversion deepening schema and backend evidence
+
+- Goal:
+  - Implement the schema + backend extension for the Route B achievement
+    conversion deepening MVP without Web changes or real contract/legal/finance
+    integration.
+- Initial state:
+  - `git log -1 --oneline`: `5d931f3 docs: design conversion deepening mvp`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/conversion-deepening-mvp-technical-plan.md`.
+  - `prisma/schema.prisma` `AchievementConversion` model and related enum
+    snippets.
+  - `apps/api/src/achievement-conversions/**` controller/service/repository/DTO
+    and domain snippets.
+  - `apps/api/src/dashboard/**` conversion aggregation snippets.
+  - `apps/api/src/reports/**` conversion-funnel aggregation snippets.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 84 and Step
+    107-B-C sections.
+- Files updated:
+  - `prisma/schema.prisma`.
+  - `prisma/migrations/20260706120000_extend_achievement_conversion_deepening/migration.sql`.
+  - `apps/api/src/achievement-conversions/domain/achievement-conversion-domain.types.ts`.
+  - `apps/api/src/achievement-conversions/domain/achievement-conversion-repository.types.ts`.
+  - `apps/api/src/achievement-conversions/domain/achievement-conversion-prisma.mapper.ts`.
+  - `apps/api/src/achievement-conversions/dto/create-achievement-conversion.dto.ts`.
+  - `apps/api/src/achievement-conversions/dto/update-achievement-conversion.dto.ts`.
+  - `apps/api/src/achievement-conversions/dto/achievement-conversion-dto.spec.ts`.
+  - `apps/api/src/achievement-conversions/achievement-conversion.service.ts`.
+  - `apps/api/src/achievement-conversions/achievement-conversion.service.spec.ts`.
+  - `apps/api/src/dashboard/domain/dashboard-domain.types.ts`.
+  - `apps/api/src/dashboard/domain/dashboard-domain.types.spec.ts`.
+  - `apps/api/src/dashboard/dashboard.repository.ts`.
+  - `apps/api/src/dashboard/dashboard.repository.spec.ts`.
+  - `apps/api/src/dashboard/dashboard.service.ts`.
+  - `apps/api/src/dashboard/dashboard.service.spec.ts`.
+  - `apps/api/src/dashboard/dashboard.controller.spec.ts`.
+  - `apps/api/src/dashboard/dashboard.app-module.spec.ts`.
+  - `apps/api/src/reports/domain/custom-report-domain.types.ts`.
+  - `apps/api/src/reports/reports.repository.ts`.
+  - `apps/api/src/reports/reports.service.ts`.
+  - `apps/api/src/reports/reports.service.spec.ts`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Schema/migration evidence:
+  - Added enums:
+    `AchievementConversionContractStatus`,
+    `AchievementConversionRevenueStatus`, and
+    `AchievementConversionEvaluationEffect`.
+  - Added `AchievementConversion` fields:
+    `contractStatus`, `revenueStatus`, `revenueDueDate`,
+    `revenueReceivedDate`, `benefitDistributionJson`, `evaluationEffect`,
+    `evaluationSummary`, and `evaluationDate`.
+  - Added indexes for department + contract status, department + revenue
+    status, revenue due date, and department + evaluation effect.
+  - Migration is additive and contains no destructive SQL.
+- Backend/API evidence:
+  - Existing nested conversion endpoints keep the same route shape:
+    `GET/POST/PATCH /achievements/:achievementId/conversions`.
+  - POST/PATCH DTOs accept the new local status/date/evaluation/allocation
+    fields.
+  - GET/list response select includes the new fields.
+  - Existing achievement department policy remains the read/update boundary.
+  - Audit summary remains masked and does not include raw allocation notes,
+    evaluation summary text, contract/payment/legal payloads, or external
+    responses.
+- Dashboard/Reports evidence:
+  - Dashboard conversion summary now includes contract-status distribution,
+    revenue-status distribution, local overdue count, and evaluation-effect
+    distribution.
+  - Custom Reports `conversion-funnel` now returns aggregate-only rows by
+    dimension: conversion status, contract status, revenue status, and
+    evaluation effect; totals include contract/revenue totals, local overdue
+    count, and evaluated count.
+  - No raw drilldown or real contract/payment/finance detail is returned.
+- Validation evidence:
+  - `git diff --check`: PASS; Git reported LF-to-CRLF working-copy warnings
+    only.
+  - `$env:DATABASE_URL='postgresql://local:local@127.0.0.1:55432/local?schema=public'; corepack pnpm prisma:validate`: PASS.
+  - `corepack pnpm exec prisma generate`: first two attempts failed with a
+    Windows `EPERM` rename lock on Prisma's query engine DLL while existing
+    local Node/API watch processes were running. No process was terminated and
+    no node_modules cleanup was performed.
+  - `$env:DATABASE_URL='postgresql://local:local@127.0.0.1:55432/local?schema=public'; corepack pnpm exec prisma generate --no-engine`: PASS, used to update generated Client types without replacing the locked engine DLL.
+  - `$env:DATABASE_URL='postgresql://local:local@127.0.0.1:55432/local?schema=public'; corepack pnpm exec prisma generate`: PASS on retry after the no-engine generation.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-conversions dashboard reports conversion`: PASS, 9 files / 72 tests.
+  - First `corepack pnpm --filter @research-ip/api typecheck`: failed on local
+    null narrowing and stale Dashboard test fixtures; both were corrected.
+  - Final `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Boundaries observed:
+  - No `apps/web/**` files were modified.
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access.
+  - No production runbook or production migration execution.
+  - No real contract, legal, finance, payment, invoice, settlement,
+    reconciliation, or external-system call.
+  - No Docker startup or cleanup.
+  - No `.local-step106-custom-reports-acceptance/` screenshot/log/browser
+    evidence or existing untracked local artifact was staged, committed, moved,
+    deleted, cleaned, or modified.
+
 ## 2026-07-06 Step 107-B-C - Conversion deepening MVP technical plan evidence
 
 - Goal:

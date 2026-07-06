@@ -7,7 +7,12 @@ import {
   AchievementStatusCode,
   AchievementTypeCode,
 } from "../achievements/domain/achievement-domain.types";
-import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
+import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
+  AchievementConversionStatusCode,
+} from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
@@ -122,6 +127,34 @@ const makeDashboardSummary = (): DashboardSummary => ({
       section: DashboardMetricSectionCode.conversion,
       value: {
         buckets: [{ key: AchievementConversionStatusCode.signed, count: 1 }],
+      },
+    },
+    byContractStatus: {
+      key: DashboardMetricKeyCode.conversionContractStatusDistribution,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        buckets: [{ key: AchievementConversionContractStatusCode.active, count: 1 }],
+      },
+    },
+    byRevenueStatus: {
+      key: DashboardMetricKeyCode.conversionRevenueStatusDistribution,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        buckets: [{ key: AchievementConversionRevenueStatusCode.partial, count: 1 }],
+      },
+    },
+    localRisk: {
+      key: DashboardMetricKeyCode.conversionLocalRiskSummary,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        overdue: { key: DashboardOverviewBucketCode.overdue, count: 1 },
+      },
+    },
+    byEvaluationEffect: {
+      key: DashboardMetricKeyCode.conversionEvaluationEffectDistribution,
+      section: DashboardMetricSectionCode.conversion,
+      value: {
+        buckets: [{ key: AchievementConversionEvaluationEffectCode.positive, count: 1 }],
       },
     },
   },

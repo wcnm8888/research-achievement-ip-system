@@ -1,5 +1,7 @@
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
+  IsArray,
   IsDateString,
   IsEnum,
   IsNumber,
@@ -8,11 +10,16 @@ import {
   Length,
   Min,
   ValidateIf,
+  ValidateNested,
 } from "class-validator";
 import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
   AchievementConversionStatusCode,
   AchievementConversionTypeCode,
 } from "../domain/achievement-conversion-domain.types";
+import { AchievementConversionBenefitDistributionItemDto } from "./create-achievement-conversion.dto";
 
 export class UpdateAchievementConversionDto {
   @IsOptional()
@@ -43,6 +50,42 @@ export class UpdateAchievementConversionDto {
   @ValidateIf((_dto: UpdateAchievementConversionDto, value) => value !== null && value !== undefined)
   @IsDateString()
   conversionDate?: string | null;
+
+  @IsOptional()
+  @IsEnum(AchievementConversionContractStatusCode)
+  contractStatus?: AchievementConversionContractStatusCode;
+
+  @IsOptional()
+  @IsEnum(AchievementConversionRevenueStatusCode)
+  revenueStatus?: AchievementConversionRevenueStatusCode;
+
+  @ValidateIf((_dto: UpdateAchievementConversionDto, value) => value !== null && value !== undefined)
+  @IsDateString()
+  revenueDueDate?: string | null;
+
+  @ValidateIf((_dto: UpdateAchievementConversionDto, value) => value !== null && value !== undefined)
+  @IsDateString()
+  revenueReceivedDate?: string | null;
+
+  @ValidateIf((_dto: UpdateAchievementConversionDto, value) => value !== null && value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => AchievementConversionBenefitDistributionItemDto)
+  benefitDistributionJson?: AchievementConversionBenefitDistributionItemDto[] | null;
+
+  @IsOptional()
+  @IsEnum(AchievementConversionEvaluationEffectCode)
+  evaluationEffect?: AchievementConversionEvaluationEffectCode;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 1000)
+  evaluationSummary?: string | null;
+
+  @ValidateIf((_dto: UpdateAchievementConversionDto, value) => value !== null && value !== undefined)
+  @IsDateString()
+  evaluationDate?: string | null;
 
   @IsOptional()
   @IsString()

@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
+import {
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
+  AchievementConversionStatusCode,
+} from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import { AchievementStatusCode, AchievementTypeCode } from "../achievements/domain/achievement-domain.types";
 import { PrismaService } from "../database/prisma.service";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
@@ -167,6 +172,102 @@ describe("DashboardRepository conversion aggregations", () => {
         achievement: { departmentId: { in: [ids.department] } },
       },
       _count: { _all: true },
+    });
+  });
+
+  it("groups conversion deepening statuses through achievement policy where", async () => {
+    const { prisma, repository } = createRepository();
+    prisma.achievementConversion.groupBy
+      .mockResolvedValueOnce([
+        { contractStatus: AchievementConversionContractStatusCode.active, _count: { _all: 2 } },
+      ])
+      .mockResolvedValueOnce([
+        { revenueStatus: AchievementConversionRevenueStatusCode.partial, _count: { _all: 1 } },
+      ])
+      .mockResolvedValueOnce([
+        {
+          evaluationEffect: AchievementConversionEvaluationEffectCode.positive,
+          _count: { _all: 1 },
+        },
+      ]);
+
+    await expect(
+      repository.groupConversionsByContractStatus({
+        departmentId: { in: [ids.department] },
+      }),
+    ).resolves.toEqual([
+      { key: AchievementConversionContractStatusCode.active, count: 2 },
+    ]);
+    await expect(
+      repository.groupConversionsByRevenueStatus({
+        departmentId: { in: [ids.department] },
+      }),
+    ).resolves.toEqual([
+      { key: AchievementConversionRevenueStatusCode.partial, count: 1 },
+    ]);
+    await expect(
+      repository.groupConversionsByEvaluationEffect({
+        departmentId: { in: [ids.department] },
+      }),
+    ).resolves.toEqual([
+      { key: AchievementConversionEvaluationEffectCode.positive, count: 1 },
+    ]);
+
+    expect(prisma.achievementConversion.groupBy).toHaveBeenNthCalledWith(1, {
+      by: ["contractStatus"],
+      where: {
+        achievement: { departmentId: { in: [ids.department] } },
+      },
+      _count: { _all: true },
+    });
+    expect(prisma.achievementConversion.groupBy).toHaveBeenNthCalledWith(2, {
+      by: ["revenueStatus"],
+      where: {
+        achievement: { departmentId: { in: [ids.department] } },
+      },
+      _count: { _all: true },
+    });
+    expect(prisma.achievementConversion.groupBy).toHaveBeenNthCalledWith(3, {
+      by: ["evaluationEffect"],
+      where: {
+        achievement: { departmentId: { in: [ids.department] } },
+      },
+      _count: { _all: true },
+    });
+  });
+
+  it("counts local overdue conversions without reading payment detail fields", async () => {
+    const { prisma, repository } = createRepository();
+    const today = new Date("2026-07-06T00:00:00.000Z");
+    prisma.achievementConversion.count.mockResolvedValue(1);
+
+    await expect(
+      repository.countOverdueConversions(
+        { departmentId: { in: [ids.department] } },
+        today,
+      ),
+    ).resolves.toBe(1);
+
+    expect(prisma.achievementConversion.count).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          { achievement: { departmentId: { in: [ids.department] } } },
+          {
+            OR: [
+              { revenueStatus: AchievementConversionRevenueStatusCode.overdue },
+              {
+                revenueStatus: {
+                  in: [
+                    AchievementConversionRevenueStatusCode.unpaid,
+                    AchievementConversionRevenueStatusCode.partial,
+                  ],
+                },
+                revenueDueDate: { lt: today },
+              },
+            ],
+          },
+        ],
+      },
     });
   });
 

@@ -1,6 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { AchievementConversionStatusCode } from "../achievement-conversions/domain/achievement-conversion-domain.types";
+import {
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionStatusCode,
+} from "../achievement-conversions/domain/achievement-conversion-domain.types";
 import {
   AchievementStatusCode,
   AchievementTypeCode,
@@ -15,6 +18,7 @@ import {
 } from "./dto/custom-report-run-query.dto";
 import {
   CountBucket,
+  ConversionAggregateStatusCode,
   CustomReportGroupBy,
   CustomReportRunFilters,
   CustomReportRunOptions,
@@ -249,25 +253,42 @@ export class ReportsService {
       { ...options, status: undefined },
     );
     const conversionWhere = buildConversionWhere(achievementWhere, options);
-    const [statusBuckets, amountSummary] = await Promise.all([
+    const todayDateOnly = toUtcDateOnly(generatedAt);
+    const [
+      statusBuckets,
+      contractStatusBuckets,
+      revenueStatusBuckets,
+      overdueCount,
+      evaluationEffectBuckets,
+      amountSummary,
+    ] = await Promise.all([
       this.repository.groupConversionsByStatus(conversionWhere),
+      this.repository.groupConversionsByContractStatus(conversionWhere),
+      this.repository.groupConversionsByRevenueStatus(conversionWhere),
+      this.repository.countOverdueConversions(conversionWhere, todayDateOnly),
+      this.repository.groupConversionsByEvaluationEffect(conversionWhere),
       this.repository.sumConversionAmounts(conversionWhere),
     ]);
-    const rows = statusBuckets.map((bucket) => ({
-      status: bucket.key,
-      count: bucket.count,
-    }));
+    const rows = [
+      ...toConversionAggregateRows("conversionStatus", statusBuckets),
+      ...toConversionAggregateRows("contractStatus", contractStatusBuckets),
+      ...toConversionAggregateRows("revenueStatus", revenueStatusBuckets),
+      ...toConversionAggregateRows("evaluationEffect", evaluationEffectBuckets),
+    ];
 
     return baseReportResult(context, template, options, generatedAt, "achievement-readable", {
       columns: [
-        { key: "status", label: "Conversion status", type: "text" },
+        { key: "dimension", label: "Dimension", type: "text" },
+        { key: "status", label: "Status", type: "text" },
         { key: "count", label: "Count", type: "number" },
       ],
       rows,
       totals: {
-        count: sumRows(rows, "count"),
+        count: sumRows(statusBuckets, "count"),
         contractTotal: amountSummary.contractTotal,
         revenueTotal: amountSummary.revenueTotal,
+        localOverdue: overdueCount,
+        evaluated: countEvaluatedConversions(evaluationEffectBuckets),
       },
     });
   }
@@ -511,6 +532,23 @@ const countBucket = <T extends string>(
   buckets: readonly CountBucket<T>[],
   key: T,
 ): number => buckets.find((bucket) => bucket.key === key)?.count ?? 0;
+
+const toConversionAggregateRows = <T extends ConversionAggregateStatusCode>(
+  dimension: string,
+  buckets: readonly CountBucket<T>[],
+) =>
+  buckets.map((bucket) => ({
+    dimension,
+    status: bucket.key,
+    count: bucket.count,
+  }));
+
+const countEvaluatedConversions = (
+  buckets: readonly CountBucket<AchievementConversionEvaluationEffectCode>[],
+): number =>
+  buckets
+    .filter((bucket) => bucket.key !== AchievementConversionEvaluationEffectCode.notEvaluated)
+    .reduce((sum, bucket) => sum + bucket.count, 0);
 
 const formatPeriod = (date: Date, groupBy: CustomReportGroupBy): string => {
   const year = date.getUTCFullYear().toString();

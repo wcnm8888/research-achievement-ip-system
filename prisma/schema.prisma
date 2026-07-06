@@ -123,6 +123,30 @@ enum AchievementConversionStatus {
   CANCELLED
 }
 
+enum AchievementConversionContractStatus {
+  DRAFT
+  SIGNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum AchievementConversionRevenueStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+  WAIVED
+}
+
+enum AchievementConversionEvaluationEffect {
+  NOT_EVALUATED
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  MIXED
+}
+
 enum SecretLevel {
   PUBLIC
   INTERNAL
@@ -767,6 +791,14 @@ model AchievementConversion {
   status                     AchievementConversionStatus @default(LEAD_INTENT)
   conversionDate             DateTime?                   @map("conversion_date") @db.Date
   benefitDistributionSummary String?                     @map("benefit_distribution_summary") @db.VarChar(1000)
+  contractStatus             AchievementConversionContractStatus   @default(DRAFT) @map("contract_status")
+  revenueStatus              AchievementConversionRevenueStatus    @default(UNPAID) @map("revenue_status")
+  revenueDueDate             DateTime?                             @map("revenue_due_date") @db.Date
+  revenueReceivedDate        DateTime?                             @map("revenue_received_date") @db.Date
+  benefitDistributionJson    Json?                                 @map("benefit_distribution_json")
+  evaluationEffect           AchievementConversionEvaluationEffect @default(NOT_EVALUATED) @map("evaluation_effect")
+  evaluationSummary          String?                               @map("evaluation_summary") @db.VarChar(1000)
+  evaluationDate             DateTime?                             @map("evaluation_date") @db.Date
   remarks                    String?                     @db.VarChar(1000)
   createdById                String?                     @map("created_by_id") @db.Uuid
   updatedById                String?                     @map("updated_by_id") @db.Uuid
@@ -780,6 +812,10 @@ model AchievementConversion {
 
   @@index([achievementId, status])
   @@index([departmentId, status])
+  @@index([departmentId, contractStatus])
+  @@index([departmentId, revenueStatus])
+  @@index([revenueDueDate])
+  @@index([departmentId, evaluationEffect])
   @@index([conversionType])
   @@index([conversionDate])
   @@map("achievement_conversions")

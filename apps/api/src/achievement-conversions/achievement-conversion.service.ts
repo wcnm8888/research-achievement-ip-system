@@ -13,6 +13,10 @@ import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
 import { AchievementConversionRepository, AchievementConversionTransactionClient } from "./achievement-conversion.repository";
 import {
+  AchievementConversionBenefitDistributionJson,
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
   AchievementConversionStatusCode,
   AchievementConversionTypeCode,
 } from "./domain/achievement-conversion-domain.types";
@@ -94,12 +98,23 @@ export class AchievementConversionService {
       status: dto.status,
       conversionDate: parseNullableDate(dto.conversionDate),
       benefitDistributionSummary: normalizeNullableText(dto.benefitDistributionSummary),
+      contractStatus: dto.contractStatus,
+      revenueStatus: dto.revenueStatus,
+      revenueDueDate: parseNullableDate(dto.revenueDueDate),
+      revenueReceivedDate: parseNullableDate(dto.revenueReceivedDate),
+      benefitDistributionJson: normalizeBenefitDistributionJson(
+        dto.benefitDistributionJson,
+      ),
+      evaluationEffect: dto.evaluationEffect,
+      evaluationSummary: normalizeNullableText(dto.evaluationSummary),
+      evaluationDate: parseNullableDate(dto.evaluationDate),
       remarks: normalizeNullableText(dto.remarks),
       createdById: context.userId,
       updatedById: context.userId,
     };
 
     this.assertConversionAmounts(input.contractAmount, input.revenueAmount);
+    this.assertBenefitDistribution(input.benefitDistributionJson, input.revenueAmount);
 
     return this.prisma.$transaction(async (tx) => {
       const client = tx as AchievementConversionTransactionClient;
@@ -140,6 +155,14 @@ export class AchievementConversionService {
       input.contractAmount === undefined
         ? parseStoredAmount(current.contractAmount)
         : input.contractAmount,
+      input.revenueAmount === undefined
+        ? parseStoredAmount(current.revenueAmount)
+        : input.revenueAmount,
+    );
+    this.assertBenefitDistribution(
+      input.benefitDistributionJson === undefined
+        ? current.benefitDistributionJson
+        : input.benefitDistributionJson,
       input.revenueAmount === undefined
         ? parseStoredAmount(current.revenueAmount)
         : input.revenueAmount,
@@ -201,6 +224,60 @@ export class AchievementConversionService {
     }
   }
 
+  private assertBenefitDistribution(
+    benefitDistributionJson: AchievementConversionBenefitDistributionJson | null,
+    revenueAmount: number | null,
+  ): void {
+    if (!benefitDistributionJson) {
+      return;
+    }
+
+    const ratioTotal = benefitDistributionJson.reduce(
+      (sum, item) => sum + (item.ratio ?? 0),
+      0,
+    );
+    const amountTotal = benefitDistributionJson.reduce(
+      (sum, item) => sum + (item.amount ?? 0),
+      0,
+    );
+
+    for (const item of benefitDistributionJson) {
+      if (item.amount === undefined && item.ratio === undefined) {
+        throw new AchievementConversionInvalidPayloadError(
+          "Each benefit distribution item requires amount or ratio.",
+        );
+      }
+
+      if (item.amount !== undefined && item.amount !== null && item.amount < 0) {
+        throw new AchievementConversionInvalidPayloadError(
+          "Benefit distribution amount cannot be negative.",
+        );
+      }
+
+      if (
+        item.ratio !== undefined &&
+        item.ratio !== null &&
+        (item.ratio < 0 || item.ratio > 1)
+      ) {
+        throw new AchievementConversionInvalidPayloadError(
+          "Benefit distribution ratio must be between 0 and 1.",
+        );
+      }
+    }
+
+    if (ratioTotal > 1) {
+      throw new AchievementConversionInvalidPayloadError(
+        "Benefit distribution ratios cannot exceed 1 in total.",
+      );
+    }
+
+    if (revenueAmount !== null && amountTotal > revenueAmount) {
+      throw new AchievementConversionInvalidPayloadError(
+        "Benefit distribution amount cannot exceed revenue amount.",
+      );
+    }
+  }
+
   private toUpdateInput(
     context: UserContext,
     conversionId: string,
@@ -224,6 +301,30 @@ export class AchievementConversionService {
         : {}),
       ...(dto.benefitDistributionSummary !== undefined
         ? { benefitDistributionSummary: normalizeNullableText(dto.benefitDistributionSummary) }
+        : {}),
+      ...(dto.contractStatus !== undefined ? { contractStatus: dto.contractStatus } : {}),
+      ...(dto.revenueStatus !== undefined ? { revenueStatus: dto.revenueStatus } : {}),
+      ...(dto.revenueDueDate !== undefined
+        ? { revenueDueDate: parseNullableDate(dto.revenueDueDate) }
+        : {}),
+      ...(dto.revenueReceivedDate !== undefined
+        ? { revenueReceivedDate: parseNullableDate(dto.revenueReceivedDate) }
+        : {}),
+      ...(dto.benefitDistributionJson !== undefined
+        ? {
+            benefitDistributionJson: normalizeBenefitDistributionJson(
+              dto.benefitDistributionJson,
+            ),
+          }
+        : {}),
+      ...(dto.evaluationEffect !== undefined
+        ? { evaluationEffect: dto.evaluationEffect }
+        : {}),
+      ...(dto.evaluationSummary !== undefined
+        ? { evaluationSummary: normalizeNullableText(dto.evaluationSummary) }
+        : {}),
+      ...(dto.evaluationDate !== undefined
+        ? { evaluationDate: parseNullableDate(dto.evaluationDate) }
         : {}),
       ...(dto.remarks !== undefined ? { remarks: normalizeNullableText(dto.remarks) } : {}),
       updatedById: context.userId,
@@ -269,6 +370,22 @@ const parseNullableDate = (value: string | null | undefined): Date | null =>
 const parseStoredAmount = (value: string | null): number | null =>
   value === null ? null : Number(value);
 
+const normalizeBenefitDistributionJson = (
+  value: AchievementConversionBenefitDistributionJson | null | undefined,
+): AchievementConversionBenefitDistributionJson | null => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return value.map((item) => ({
+    category: item.category,
+    label: item.label.trim(),
+    ...(item.amount !== undefined && item.amount !== null ? { amount: item.amount } : {}),
+    ...(item.ratio !== undefined && item.ratio !== null ? { ratio: item.ratio } : {}),
+    ...(normalizeNullableText(item.note) ? { note: normalizeNullableText(item.note) } : {}),
+  }));
+};
+
 const toConversionAuditSummary = (
   action: AuditActionCode,
   record: AchievementConversionRecord,
@@ -280,17 +397,34 @@ const toConversionAuditSummary = (
     action,
     conversionType: record.conversionType as AchievementConversionTypeCode,
     status: record.status as AchievementConversionStatusCode,
+    contractStatus: record.contractStatus as AchievementConversionContractStatusCode,
+    revenueStatus: record.revenueStatus as AchievementConversionRevenueStatusCode,
+    evaluationEffect: record.evaluationEffect as AchievementConversionEvaluationEffectCode,
     ...(oldRecord
       ? {
           oldStatus: oldRecord.status,
           newStatus: record.status,
+          oldContractStatus: oldRecord.contractStatus,
+          newContractStatus: record.contractStatus,
+          oldRevenueStatus: oldRecord.revenueStatus,
+          newRevenueStatus: record.revenueStatus,
+          oldEvaluationEffect: oldRecord.evaluationEffect,
+          newEvaluationEffect: record.evaluationEffect,
         }
       : {}),
     contractAmountProvided: record.contractAmount !== null,
     revenueAmountProvided: record.revenueAmount !== null,
     benefitDistributionSummaryProvided: Boolean(record.benefitDistributionSummary),
+    benefitDistributionJsonProvided: Boolean(record.benefitDistributionJson),
+    benefitDistributionItemCount: record.benefitDistributionJson?.length ?? 0,
+    evaluationSummaryProvided: Boolean(record.evaluationSummary),
     remarksProvided: Boolean(record.remarks),
     conversionDate: record.conversionDate ? record.conversionDate.toISOString() : null,
+    revenueDueDate: record.revenueDueDate ? record.revenueDueDate.toISOString() : null,
+    revenueReceivedDate: record.revenueReceivedDate
+      ? record.revenueReceivedDate.toISOString()
+      : null,
+    evaluationDate: record.evaluationDate ? record.evaluationDate.toISOString() : null,
   }) as AuditJsonValue;
 
 type ConversionAuditTarget = Pick<

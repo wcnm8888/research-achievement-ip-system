@@ -1,5 +1,9 @@
 import { Prisma } from "@prisma/client";
 import {
+  AchievementConversionBenefitDistributionJson,
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
+  AchievementConversionRevenueStatusCode,
   AchievementConversionStatusCode,
   AchievementConversionTypeCode,
 } from "./achievement-conversion-domain.types";
@@ -16,6 +20,14 @@ export type AchievementConversionRecord = {
   status: AchievementConversionStatusCode;
   conversionDate: Date | null;
   benefitDistributionSummary: string | null;
+  contractStatus: AchievementConversionContractStatusCode;
+  revenueStatus: AchievementConversionRevenueStatusCode;
+  revenueDueDate: Date | null;
+  revenueReceivedDate: Date | null;
+  benefitDistributionJson: AchievementConversionBenefitDistributionJson | null;
+  evaluationEffect: AchievementConversionEvaluationEffectCode;
+  evaluationSummary: string | null;
+  evaluationDate: Date | null;
   remarks: string | null;
   createdById: string | null;
   updatedById: string | null;
@@ -45,6 +57,14 @@ export type CreateAchievementConversionInput = {
   status: AchievementConversionStatusCode;
   conversionDate?: Date | null;
   benefitDistributionSummary?: string | null;
+  contractStatus?: AchievementConversionContractStatusCode;
+  revenueStatus?: AchievementConversionRevenueStatusCode;
+  revenueDueDate?: Date | null;
+  revenueReceivedDate?: Date | null;
+  benefitDistributionJson?: AchievementConversionBenefitDistributionJson | null;
+  evaluationEffect?: AchievementConversionEvaluationEffectCode;
+  evaluationSummary?: string | null;
+  evaluationDate?: Date | null;
   remarks?: string | null;
   createdById?: string | null;
   updatedById?: string | null;
@@ -60,6 +80,14 @@ export type UpdateAchievementConversionInput = Partial<
     | "status"
     | "conversionDate"
     | "benefitDistributionSummary"
+    | "contractStatus"
+    | "revenueStatus"
+    | "revenueDueDate"
+    | "revenueReceivedDate"
+    | "benefitDistributionJson"
+    | "evaluationEffect"
+    | "evaluationSummary"
+    | "evaluationDate"
     | "remarks"
     | "updatedById"
   >
@@ -88,6 +116,14 @@ export const achievementConversionSelect = {
   status: true,
   conversionDate: true,
   benefitDistributionSummary: true,
+  contractStatus: true,
+  revenueStatus: true,
+  revenueDueDate: true,
+  revenueReceivedDate: true,
+  benefitDistributionJson: true,
+  evaluationEffect: true,
+  evaluationSummary: true,
+  evaluationDate: true,
   remarks: true,
   createdById: true,
   updatedById: true,
