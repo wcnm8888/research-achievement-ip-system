@@ -1,5 +1,41 @@
 # Progress
 
+## 2026-07-06 Step 103-B - Custom reports MVP backend read API
+
+- Status: DONE.
+- Task classification:
+  - S backend-only Route B feature slice; no Web page, no Prisma schema or migration change.
+- Starting point:
+  - HEAD at task start: `a7dd588 docs: design custom reports mvp`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `apps/api/src/reports/**` with a dedicated Reports module, controller, service, repository, DTO, domain types, and errors.
+  - Added `GET /reports/templates` and `GET /reports/templates/:templateId/run`.
+  - Registered `ReportsModule` in `apps/api/src/app.module.ts`.
+  - Added API tests for route wiring, permission denial, query validation, template execution, policy where usage, department narrowing, unknown templates, and response field safety.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Implemented templates:
+  - `achievement-distribution`.
+  - `achievement-trend`.
+  - `fee-risk-summary`.
+  - `workflow-efficiency`.
+  - `conversion-funnel`.
+- Security and permission result:
+  - Controller uses existing `UserContextGuard`, `PermissionGuard`, and `user_context:read`.
+  - Achievement and conversion reports use `PolicyQueryFactory.achievementReadableWhere(...)`.
+  - Fee report uses `PolicyQueryFactory.feeReadableWhere(...)`.
+  - Workflow report is aggregate-only for the current assignee and does not expose row-level task details.
+  - `departmentId` filters are applied as narrowing predicates and never replace the existing readable policy.
+  - Responses expose only metadata, effective filters, safe scope summary, columns, aggregate rows, totals, and caveats.
+- Explicitly not done:
+  - No `apps/web/**` changes.
+  - No `prisma/schema.prisma`, migration, or seed change.
+  - No saved templates, scheduled reports, CSV/raw JSON export, sensitive drilldown, Docker operation, UI recheck, production/VPS/production DB access, or real external-system call.
+  - No `.env` / `.env.production` content read.
+- Verification:
+  - Required verification commands recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 102-B - Custom reports MVP technical plan and API contract
 
 - Status: DONE.

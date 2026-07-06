@@ -1,5 +1,69 @@
 # Evidence
 
+## 2026-07-06 Step 103-B - Custom reports MVP backend read API evidence
+
+- Goal:
+  - Implement the Route B custom reports / advanced reports MVP backend read-only API without Web UI, Prisma schema, migrations, saved templates, exports, scheduled delivery, production access, or real external systems.
+- Initial state:
+  - `git log -1 --oneline`: `a7dd588 docs: design custom reports mvp`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/custom-reports-mvp-technical-plan.md`.
+  - `memory-bank/phase-two-feature-priority-plan.md` custom reports first-slice section.
+  - `apps/api/src/dashboard/**` controller/service/repository/domain/dto/test patterns.
+  - `apps/api/src/authorization/constants/permission-code.ts`.
+  - `apps/api/src/authorization/policy/policy-query.factory.ts`.
+  - `apps/api/src/app.module.ts`.
+  - Prisma schema snippets for `Achievement`, `AchievementConversion`, `WorkflowTask`, `FeeRecord`, `Department`, and relevant enums only.
+- Files updated:
+  - Added `apps/api/src/reports/reports.module.ts`.
+  - Added `apps/api/src/reports/reports.controller.ts`.
+  - Added `apps/api/src/reports/reports.service.ts`.
+  - Added `apps/api/src/reports/reports.repository.ts`.
+  - Added `apps/api/src/reports/domain/custom-report-domain.types.ts`.
+  - Added `apps/api/src/reports/domain/custom-report-errors.ts`.
+  - Added `apps/api/src/reports/dto/custom-report-run-query.dto.ts`.
+  - Added `apps/api/src/reports/reports.service.spec.ts`.
+  - Added `apps/api/src/reports/reports.app-module.spec.ts`.
+  - Updated `apps/api/src/app.module.ts`.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- API implemented:
+  - `GET /reports/templates`.
+  - `GET /reports/templates/:templateId/run`.
+- Templates implemented:
+  - `achievement-distribution`.
+  - `achievement-trend`.
+  - `fee-risk-summary`.
+  - `workflow-efficiency`.
+  - `conversion-funnel`.
+- Safety evidence:
+  - Route guard requires `user_context:read`.
+  - Achievement and conversion reports use `achievementReadableWhere(...)`.
+  - Fee report uses `feeReadableWhere(...)`.
+  - Workflow report is aggregate-only for current assignee.
+  - `departmentId` is a narrowing filter layered on top of policy where.
+  - Response shape is aggregate-only and includes `metadata`, `filters`, `scopeSummary`, `columns`, `rows`, `totals`, and `caveats`.
+  - Tests assert response serialization does not include raw/source/token/cookie/password/connectionString/DATABASE_URL/objectKey/checksum field names.
+- Local pre-verification:
+  - `corepack pnpm --filter @research-ip/api test -- reports`: PASS, 2 files / 17 tests.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, Web test/typecheck, Prisma validate/generate, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/web/**`, `prisma/schema.prisma`, migration, or `prisma/seed.cjs` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+- Required verification:
+  - `git diff --check`: PASS; LF-to-CRLF normalization warnings only.
+  - `corepack pnpm --filter @research-ip/api test -- reports dashboard authorization`: PASS, 11 files / 116 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `git diff --stat`, `git diff --cached --stat`, and `git status --short`: recorded at final review before commit.
+
 ## 2026-07-06 Step 102-B - Custom reports MVP technical plan and API contract evidence
 
 - Goal:

@@ -14,6 +14,7 @@ import { HealthController } from "./health.controller";
 import { IdentityModule } from "./identity/identity.module";
 import { ImportsModule } from "./imports/imports.module";
 import { RemindersModule } from "./reminders/reminders.module";
+import { ReportsModule } from "./reports/reports.module";
 import { SearchModule } from "./search/search.module";
 import { SettingsModule } from "./settings/settings.module";
 import { WorkflowModule } from "./workflow/workflow.module";
@@ -37,6 +38,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     DepartmentManagementModule,
     SettingsModule,
     ImportsModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
 })
