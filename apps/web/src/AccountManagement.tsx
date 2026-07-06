@@ -2552,6 +2552,10 @@ const getRoleLabel = (code: AccountRoleCode | string): string =>
   roleLabels[code as AccountRoleCode] ?? code;
 
 const getCredentialAccessLabel = (user: AccountUserSummary): string => {
+  if (user.loginEligibility) {
+    return user.loginEligibility.reasonLabel;
+  }
+
   if (user.status !== "ACTIVE") {
     return "不可登录：账号未激活或不可用";
   }
@@ -2584,7 +2588,7 @@ const renderLifecycleDeliverySummary = (
         <Tag>{delivery.purpose}</Tag>
       </Space>
       <Typography.Text type="secondary">
-        {delivery.maskedEmail} / target {delivery.targetUserId ?? "unknown"}
+        {delivery.maskedEmail} / target current user
       </Typography.Text>
       <Typography.Text type="secondary">
         token {delivery.tokenStatus}; failure {delivery.failureCategory ?? "not persisted"}

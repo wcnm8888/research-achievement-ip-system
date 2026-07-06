@@ -18953,6 +18953,70 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-06 Step 116 - Account lifecycle API projection hardening evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `1fe59f9 docs: design account lifecycle enhancement`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads only:
+  - `memory-bank/account-lifecycle-enhancement-technical-plan.md`.
+  - `apps/api/src/account-management/account-management.controller.ts`.
+  - `apps/api/src/account-management/account-management.service.ts`.
+  - `apps/api/src/account-management/account-management.repository.ts`.
+  - `apps/api/src/account-management/dto/account-management.dto.ts`.
+  - `apps/api/src/account-management/*.spec.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.repository.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.service.ts`.
+  - Login eligibility segment in `apps/api/src/auth/auth.service.ts`.
+  - Account-management type segment in `apps/web/src/types.ts`.
+- Implementation evidence:
+  - `apps/api/src/account-management/account-management.repository.ts` no
+    longer selects or returns `lastLogin.sessionId` or lifecycle
+    `targetUserId`.
+  - Account list/detail projections now include safe `loginEligibility`,
+    `lifecycleActionSummary`, and `roleChangeAuditSummary`.
+  - `lifecycleActionSummary` is derived from existing safe audit operation
+    codes and lifecycle token delivery metadata; it records caveats for
+    operation-code-derived summaries and non-persisted delivery failure
+    category.
+  - `roleChangeAuditSummary` returns a recent bounded safe row set only:
+    operation, role code, scope type, department id, reason-present boolean,
+    and timestamp.
+  - `apps/web/src/types.ts` removes `AccountUserLastLoginSummary.sessionId`
+    and `AccountLifecycleDeliverySummary.targetUserId`, and adds the new safe
+    projection types.
+  - `apps/web/src/AccountManagement.tsx` no longer renders lifecycle
+    `targetUserId` and uses the API-derived login eligibility label when
+    present.
+- Test evidence:
+  - Added `apps/api/src/account-management/account-management.repository.spec.ts`
+    covering list/detail safe projection, login eligibility states, lifecycle
+    counts, bounded role summary, and negative serialized-response assertions.
+  - Updated `apps/api/src/account-management/account-management.controller.spec.ts`
+    to assert hardened HTTP list/detail projection and sensitive-field
+    absence.
+  - Existing account-management service tests continue to assert disable
+    disables credentials, revokes sessions, returns safe count, and enable does
+    not restore disabled credentials.
+- Verification:
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- account-management account-lifecycle auth`: PASS, 13 files / 132 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundaries observed:
+  - No Prisma schema or migration file was modified.
+  - No production migration was run.
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access occurred.
+  - No real HR/SSO, real email/SMS, or external-provider call occurred.
+  - No Docker container was started, stopped, created, deleted, or cleaned.
+  - Existing untracked local artifacts and `.local-*` evidence directories were
+    not touched.
+
 ## 2026-07-06 Step 115 - Account lifecycle enhancement technical plan evidence
 
 - Canonical state checked before documentation:

@@ -14161,3 +14161,42 @@
     `targetUserId` as a user-facing detail.
   - If a distinct persistent lock/unlock state becomes mandatory, stop and
     create a separate additive schema plan instead of expanding Step 116.
+
+## 2026-07-06 Step 116 - Account lifecycle API projection hardening
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `1fe59f9 docs: design account lifecycle enhancement`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Hardened account-management list/detail projections so `lastLogin` no
+    longer includes `sessionId`.
+  - Hardened `recentLifecycleDelivery` so it no longer includes
+    `targetUserId` in the Web-facing DTO.
+  - Added safe derived `loginEligibility` with `canLogin`, `reasonCode`,
+    `reasonLabel`, and `blockingFactors`.
+  - Added safe `lifecycleActionSummary` counts/latest delivery metadata from
+    existing audit/token sources.
+  - Added bounded `roleChangeAuditSummary` with only operation, role code,
+    scope type, department id, reason-present boolean, and timestamp.
+  - Synchronized Web response types and removed the user-facing target id line
+    from `AccountManagement`.
+  - Added repository/controller projection tests and serialized-response
+    negative assertions for credential, token, session, cookie, connection
+    string, secret, raw audit/debug/export/download leakage.
+- Explicitly not done:
+  - No Prisma schema or migration change.
+  - No production migration, production/VPS/production DB access, Docker
+    operation, real HR/SSO integration, real email/SMS send, or external
+    provider call.
+  - No `.env` or `.env.production` content read.
+  - Existing untracked local artifacts and `.local-*` evidence directories were
+    left untouched.
+- Verification:
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- account-management account-lifecycle auth`: PASS, 13 files / 132 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.

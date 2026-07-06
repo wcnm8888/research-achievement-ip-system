@@ -1293,11 +1293,52 @@ export type AccountUserCredentialSummary = {
 };
 
 export type AccountUserLastLoginSummary = {
-  sessionId: string;
   createdAt: string;
   expiresAt: string;
   revokedAt: string | null;
   lastSeenAt: string | null;
+};
+
+export type AccountLoginEligibilityReasonCode =
+  | "ACTIVE_CREDENTIAL"
+  | "PENDING_ACTIVATION"
+  | "USER_DISABLED"
+  | "USER_ARCHIVED"
+  | "NO_CREDENTIAL"
+  | "CREDENTIAL_DISABLED";
+
+export type AccountLoginEligibility = {
+  canLogin: boolean;
+  reasonCode: AccountLoginEligibilityReasonCode;
+  reasonLabel: string;
+  blockingFactors: string[];
+};
+
+export type AccountLifecycleActionSummary = {
+  latestActionAt: string | null;
+  disabledCount: number;
+  enabledCount: number;
+  inviteCreatedCount: number;
+  inviteResentCount: number;
+  resetRequestedCount: number;
+  resetRevokedCount: number;
+  latestDeliveryStatus: string | null;
+  latestDeliveryAdapter: string | null;
+  caveats: string[];
+};
+
+export type AccountRoleChangeAuditSummary = {
+  latestRoleChangeAt: string | null;
+  assignedCount: number;
+  revokedCount: number;
+  recentRoleChanges: {
+    operation: "USER_ROLE_ASSIGN" | "USER_ROLE_REVOKE";
+    roleCode: string;
+    scopeType: AccountRoleScopeType;
+    departmentId: string | null;
+    reasonProvided: boolean;
+    createdAt: string;
+  }[];
 };
 
 export type AccountUserSummary = {
@@ -1310,6 +1351,9 @@ export type AccountUserSummary = {
   credential: AccountUserCredentialSummary | null;
   lastLogin: AccountUserLastLoginSummary | null;
   recentLifecycleDelivery: AccountLifecycleDeliverySummary | null;
+  loginEligibility: AccountLoginEligibility;
+  lifecycleActionSummary: AccountLifecycleActionSummary;
+  roleChangeAuditSummary: AccountRoleChangeAuditSummary;
   createdAt: string;
   updatedAt: string;
 };
@@ -1386,7 +1430,6 @@ export type AccountLifecycleDeliverySummary = {
   deliveryStatus: AccountLifecycleDeliveryStatus | null;
   deliveryAdapter: string | null;
   failureCategory: AccountLifecycleDeliveryFailureCategory | null;
-  targetUserId: string | null;
   maskedEmail: string;
   expiresAt: string;
   usedAt: string | null;

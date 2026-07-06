@@ -115,7 +115,59 @@ const makeAccountUser = () => ({
     createdAt: new Date("2026-06-24T00:00:00.000Z"),
     updatedAt: new Date("2026-06-24T00:00:00.000Z"),
   },
-  lastLogin: null,
+  lastLogin: {
+    createdAt: new Date("2026-06-24T01:00:00.000Z"),
+    expiresAt: new Date("2026-06-25T01:00:00.000Z"),
+    revokedAt: null,
+    lastSeenAt: new Date("2026-06-24T02:00:00.000Z"),
+  },
+  recentLifecycleDelivery: {
+    purpose: "PASSWORD_RESET_ADMIN",
+    tokenStatus: "ACTIVE",
+    deliveryChannel: "EMAIL",
+    deliveryStatus: "QUEUED",
+    deliveryAdapter: "LOCAL_SAFE_STUB",
+    failureCategory: null,
+    maskedEmail: "r***@example.com",
+    expiresAt: new Date("2026-06-25T00:00:00.000Z"),
+    usedAt: null,
+    revokedAt: null,
+    createdAt: new Date("2026-06-24T00:00:00.000Z"),
+    updatedAt: new Date("2026-06-24T00:10:00.000Z"),
+  },
+  loginEligibility: {
+    canLogin: true,
+    reasonCode: "ACTIVE_CREDENTIAL",
+    reasonLabel: "User and credential are active.",
+    blockingFactors: [],
+  },
+  lifecycleActionSummary: {
+    latestActionAt: new Date("2026-06-24T00:00:00.000Z"),
+    disabledCount: 0,
+    enabledCount: 0,
+    inviteCreatedCount: 0,
+    inviteResentCount: 0,
+    resetRequestedCount: 1,
+    resetRevokedCount: 0,
+    latestDeliveryStatus: "QUEUED",
+    latestDeliveryAdapter: "LOCAL_SAFE_STUB",
+    caveats: ["AUDIT_SUMMARY_DERIVED_FROM_SAFE_OPERATION_CODES"],
+  },
+  roleChangeAuditSummary: {
+    latestRoleChangeAt: new Date("2026-06-24T00:00:00.000Z"),
+    assignedCount: 1,
+    revokedCount: 0,
+    recentRoleChanges: [
+      {
+        operation: "USER_ROLE_ASSIGN",
+        roleCode: RoleCode.researcher,
+        scopeType: ScopeType.department,
+        departmentId: ids.department,
+        reasonProvided: true,
+        createdAt: new Date("2026-06-24T00:00:00.000Z"),
+      },
+    ],
+  },
   createdAt: new Date("2026-06-24T00:00:00.000Z"),
   updatedAt: new Date("2026-06-24T00:00:00.000Z"),
 });
@@ -270,6 +322,65 @@ describe("AccountManagementController HTTP", () => {
     });
   });
 
+  it("returns hardened account lifecycle projections from list and detail", async () => {
+    await withTestApp([PermissionCode.systemConfig], async (app) => {
+      const listResponse = await request(app.getHttpServer() as Server)
+        .get("/account-management/users")
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+      const detailResponse = await request(app.getHttpServer() as Server)
+        .get(`/account-management/users/${ids.createdUser}`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      expect(listResponse.body.items[0].loginEligibility).toEqual(
+        expect.objectContaining({
+          canLogin: true,
+          reasonCode: "ACTIVE_CREDENTIAL",
+          reasonLabel: "User and credential are active.",
+          blockingFactors: [],
+        }),
+      );
+      expect(detailResponse.body.lifecycleActionSummary).toEqual(
+        expect.objectContaining({
+          resetRequestedCount: 1,
+          latestDeliveryStatus: "QUEUED",
+          latestDeliveryAdapter: "LOCAL_SAFE_STUB",
+        }),
+      );
+      expect(detailResponse.body.roleChangeAuditSummary.recentRoleChanges[0]).toEqual({
+        operation: "USER_ROLE_ASSIGN",
+        roleCode: RoleCode.researcher,
+        scopeType: ScopeType.department,
+        departmentId: ids.department,
+        reasonProvided: true,
+        createdAt: "2026-06-24T00:00:00.000Z",
+      });
+      expect(detailResponse.body.lastLogin).not.toHaveProperty("sessionId");
+      expect(detailResponse.body.recentLifecycleDelivery).not.toHaveProperty("targetUserId");
+
+      const serialized = JSON.stringify({
+        list: listResponse.body,
+        detail: detailResponse.body,
+      });
+      expect(serialized).not.toContain("passwordHash");
+      expect(serialized).not.toContain("safe-password-123");
+      expect(serialized).not.toContain("raw-token");
+      expect(serialized).not.toContain("tokenHash");
+      expect(serialized).not.toContain("https://");
+      expect(serialized).not.toContain("sessionId");
+      expect(serialized).not.toContain("sessionHash");
+      expect(serialized).not.toContain("cookie");
+      expect(serialized).not.toContain("DATABASE_URL");
+      expect(serialized).not.toContain("postgres://");
+      expect(serialized).not.toContain("secret");
+      expect(serialized).not.toContain("rawAuditJson");
+      expect(serialized).not.toContain("debug");
+      expect(serialized).not.toContain("exportUrl");
+      expect(serialized).not.toContain("downloadUrl");
+    });
+  });
+
   it("lets admin create a user and never returns credential secrets", async () => {
     await withTestApp([PermissionCode.systemConfig], async (app, service) => {
       const response = await request(app.getHttpServer() as Server)
@@ -289,7 +400,8 @@ describe("AccountManagementController HTTP", () => {
       const serialized = JSON.stringify(response.body);
       expect(serialized).not.toContain("safe-password-123");
       expect(serialized).not.toContain("passwordHash");
-      expect(serialized).not.toContain("token");
+      expect(serialized).not.toContain("raw-token");
+      expect(serialized).not.toContain("tokenHash");
       expect(serialized).not.toContain("secret");
     });
   });
@@ -376,7 +488,8 @@ describe("AccountManagementController HTTP", () => {
       );
       const serialized = JSON.stringify(response.body);
       expect(serialized).not.toContain("passwordHash");
-      expect(serialized).not.toContain("token");
+      expect(serialized).not.toContain("raw-token");
+      expect(serialized).not.toContain("tokenHash");
       expect(serialized).not.toContain("sessionHash");
       expect(serialized).not.toContain("secret");
     });
