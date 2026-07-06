@@ -49,8 +49,11 @@ The current archived mainline includes:
   - Schema plan and additive schema/migration archive.
   - Department, Achievement, and User account success-path item writers.
   - Backend-only safe item read DTO and `GET /api/import-jobs/:id/items`.
-  - Web aggregate-only history decision.
+  - Web aggregate-only history decision before Step 112.
+  - Web route-scoped safe row display in ImportJob detail, limited to
+    `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
   - Local synthetic backend-only acceptance.
+  - Local synthetic Web UI acceptance and closure.
   - Production read-only preflight documentation.
 - Prompt 39 handoff archive in `memory-bank/prompt-39-handoff.md`.
 - Phase-one final archive in `memory-bank/phase-one-final-archive.md`.
@@ -125,6 +128,10 @@ Step 111 adds the docs-only safety and UX plan for optionally connecting the
 existing backend-only `ImportJobItem` read API to Web as a strictly allowlisted
 safe row display in
 `memory-bank/import-job-item-web-row-display-plan.md`.
+Steps 112-113 implement and locally accept that safe display in the current Web
+detail drawer, archived in
+`memory-bank/import-job-item-web-local-ui-acceptance.md` and
+`memory-bank/import-job-item-web-display-closure.md`.
 
 ### Goal
 
@@ -160,10 +167,9 @@ Completed first implementation loop:
 
 Recommended next Route B choices:
 
-- Implement the Step 111 `ImportJobItem` safe row Web display plan as Step 112,
-  if the user wants the next Route B slice to focus on import history UX.
-- Select another phase-two product slice now that both custom reports and
-  achievement conversion deepening MVPs are locally closed.
+- Select another phase-two product slice now that custom reports, achievement
+  conversion deepening, and ImportJobItem safe row Web display are locally
+  closed.
 - Add deferred aggregate templates such as ImportJob aggregate history or
   external mock overview.
 - Run a separate mobile/responsive review only if the user explicitly wants
@@ -261,9 +267,10 @@ docs-only unless the user separately authorizes execution.
 - Route A is complete for formal phase-one demo preparation and should not be
   the default next step after Step 100.
 - Route B is now the active product-enhancement planning route; the current
-  custom reports / advanced reports MVP and achievement conversion deepening
-  MVP are both closed for localhost/local-demo/synthetic acceptance. The next
-  Route B item should be selected as a new scoped slice.
+  custom reports / advanced reports MVP, achievement conversion deepening MVP,
+  and ImportJobItem safe row Web display are closed for
+  localhost/local-demo/synthetic acceptance. The next Route B item should be
+  selected as a new scoped slice.
 - Choose Route C if real external providers are available and the user wants
   integration readiness planning before any call.
 - Choose Route D if the user explicitly wants production readiness, with all

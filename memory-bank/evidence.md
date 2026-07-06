@@ -18953,6 +18953,68 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-06 Step 113 - ImportJobItem Web local UI acceptance evidence
+
+- Canonical state checked before acceptance:
+  - `git log -1 --oneline` -> `396d1b7 feat: add import job item safe web display`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed:
+  - `memory-bank/import-job-item-web-row-display-plan.md`.
+  - Step 112 section in `memory-bank/progress.md`.
+  - Step 112 section in `memory-bank/evidence.md`.
+  - Safe row history section in `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - Safe row safety assertions in `apps/web/src/ImportJobHistoryPanel.test.tsx`.
+- Local stack findings:
+  - Existing Docker containers were inspected with read-only `docker ps`.
+  - Already-running production-auth Web container at `127.0.0.1:18081` was reachable but unsuitable for demo-user UI acceptance.
+  - Existing local API at `127.0.0.1:3000` was reachable and reused.
+  - No Docker container, stack, or volume was created, stopped, deleted, or cleaned.
+  - Temporary current-checkout Vite Web server at `127.0.0.1:5173` was started and stopped after acceptance.
+- Synthetic data:
+  - Created local synthetic Department import jobs via existing local API and system-admin demo header.
+  - Created a 12-row synthetic import job to verify item pagination.
+  - No real external system, production DB, or real data was used.
+- UI acceptance evidence:
+  - Opened Settings / Import History overview as system-admin demo user.
+  - Confirmed item API was not called before opening detail.
+  - Opened ImportJob detail drawer and confirmed Safe row history panel appears.
+  - Delayed item API to confirm `Loading safe row history`.
+  - Confirmed normal row display with only `Row`, `Planned action`, `Status`, `Safe code`, and `Target type`.
+  - Confirmed null `safeCode` displays `Not returned`.
+  - Confirmed visible boundary copy says local/demo safe row view only and not raw CSV, not raw JSON, not production import acceptance, not retry/rollback/cleanup/export/drilldown.
+  - Confirmed `Refresh items` triggers a new route-scoped item request.
+  - Confirmed filters serialize only `status`, `plannedAction`, `targetType`, and `safeCode`.
+  - Confirmed safe empty state for a no-match safe filter.
+  - Confirmed pagination sends `page=2&pageSize=10` for the current job.
+  - Confirmed non-`system:config` demo user does not render Import History overview or Safe row history and does not request item APIs.
+  - Safe row panel scan found no forbidden fields/action controls outside the required boundary notice.
+- Local evidence artifacts:
+  - `.local-step113-import-job-item-web-acceptance/safe-row-history-detail.png`.
+  - `.local-step113-import-job-item-web-acceptance/safe-row-history-filter-empty.png`.
+  - `.local-step113-import-job-item-web-acceptance/safe-row-history-page2.png`.
+  - `.local-step113-import-job-item-web-acceptance/researcher-no-system-config.png`.
+  - `.local-step113-import-job-item-web-acceptance/vite-stdout.log`.
+  - `.local-step113-import-job-item-web-acceptance/vite-stderr.log`.
+  - The evidence directory remains untracked and is not committed.
+- Documentation evidence:
+  - Added `memory-bank/import-job-item-web-local-ui-acceptance.md`.
+  - Added `memory-bank/import-job-item-web-display-closure.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No `apps/api/**` or `prisma/**` modifications.
+  - No production/VPS/production DB access.
+  - No production runbook or migration execution.
+  - No real external-system call.
+  - No Docker container or volume creation, stop, delete, or cleanup.
+  - No existing untracked local artifacts were touched.
+  - No retry/export/raw JSON/rollback/drilldown support was implemented or implied.
+
 ## 2026-07-06 Step 112 - ImportJobItem Web row safe display evidence
 
 - Canonical state checked before implementation:

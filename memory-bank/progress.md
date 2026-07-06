@@ -14040,3 +14040,47 @@
   - No `.env` or `.env.production` content read.
   - No secrets, tokens, cookies, sessions, passwords, `DATABASE_URL`, connection strings, raw payloads, raw source rows, or raw request/response data were read or captured.
   - Existing untracked local artifacts and `.local-*` evidence directories were not touched.
+
+## 2026-07-06 Step 113 - ImportJobItem Web local UI acceptance and closure
+
+- Status: DONE; UI acceptance result is PASS with caveat.
+- Starting point:
+  - HEAD at task start: `396d1b7 feat: add import job item safe web display`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Ran localhost/local-demo/synthetic UI acceptance for the Step 112
+    ImportJobItem safe row display.
+  - Reused existing local API at `127.0.0.1:3000`.
+  - Started a temporary current-checkout Vite Web server at `127.0.0.1:5173`
+    because the already-running Web container was production-auth mode and not
+    suitable for demo-user UI acceptance; stopped the temporary server after
+    acceptance.
+  - Created local synthetic Department import jobs through the existing local
+    API to provide safe item rows and pagination data.
+  - Verified `Safe row history` appears only inside an opened ImportJob detail
+    drawer, calls `GET /api/import-jobs/:id/items`, and remains route-scoped to
+    the current job.
+  - Verified loading, normal display, safe empty state, refresh, pagination,
+    and safe filters for `status`, `plannedAction`, `targetType`, and
+    `safeCode`.
+  - Verified the five display columns only: `Row`, `Planned action`, `Status`,
+    `Safe code`, and `Target type`; empty `safeCode` displays `Not returned`.
+  - Verified non-`system:config` demo user does not render Import History
+    overview or Safe row history and does not request import-job item APIs.
+  - Added acceptance and closure docs.
+  - Updated next-phase options and project completion matrix to mark the
+    ImportJobItem Web safe row display as locally closed.
+- Explicitly not done:
+  - No `apps/api/**` or `prisma/**` changes.
+  - No production/VPS/production DB access.
+  - No production runbook, migration, real external-system call, Docker
+    container creation, Docker stack startup, Docker stop/delete/cleanup, or
+    Docker volume cleanup.
+  - No retry/export/raw JSON/rollback/drilldown implementation or support.
+  - No screenshot/log/CSV evidence committed.
+- Evidence:
+  - `memory-bank/import-job-item-web-local-ui-acceptance.md`.
+  - `memory-bank/import-job-item-web-display-closure.md`.
+  - Local untracked evidence directory:
+    `.local-step113-import-job-item-web-acceptance/`.
