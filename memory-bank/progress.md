@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-07-06 Step 101-B - Phase-two feature priority and first slice plan
+
+- Status: DONE.
+- Task classification:
+  - S docs-only Route B feature-priority planning update.
+- Starting point:
+  - HEAD at task start: `ccccc56 docs: archive route a demo handoff`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/phase-two-feature-priority-plan.md`.
+  - Updated `memory-bank/next-phase-options.md` to mark Route B planning active and recommend the first implementation slice.
+  - Updated `memory-bank/project-requirement-completion-matrix.md` with the Step 101-B Route B priority result.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Route A boundary retained:
+  - Route A remains closed as PASS 0, PASS with caveat 10, BLOCKED 0 for localhost / local demo / synthetic DB only.
+  - No more demo-preparation documents should be added by default unless the user explicitly asks.
+- Recommended first Route B implementation slice:
+  - Custom reports / advanced reports MVP.
+  - First slice should stay read-only, local/dev scoped, and avoid saved templates, scheduled delivery, raw CSV/raw JSON export, production monitoring, sensitive drilldowns, production, real external systems, and real credentials.
+- Explicitly not done:
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` changes.
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No screenshots, logs, `.local-step95-ui-preflight/` content, or existing untracked local artifacts were staged or modified.
+- Verification:
+  - Docs-only verification commands recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 100 - Route A demo preparation final handoff archive
 
 - Status: DONE.

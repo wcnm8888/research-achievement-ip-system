@@ -102,6 +102,10 @@ explicitly asks for more.
 
 ## Route B - Phase-Two Feature Enhancement
 
+Status: selected for Step 101-B planning. Current recommended first slice is
+custom reports / advanced reports MVP, documented in
+`memory-bank/phase-two-feature-priority-plan.md`.
+
 ### Goal
 
 Start a product enhancement line after the phase-one demo archive. Recommended
@@ -124,9 +128,17 @@ conversion, revenue distribution/post-evaluation, and richer scheduled reports.
 
 ### First Suggested Step
 
-Step 98-B: create a feature brief and implementation plan for one selected
-phase-two enhancement, starting with custom reports or fuller achievement
-conversion unless the user chooses otherwise.
+Step 101-B completed the Route B feature priority plan and recommends custom
+reports / advanced reports MVP as the first implementation slice.
+
+Recommended next implementation step:
+
+- Define and build a read-only custom reports MVP using existing safe local
+  data domains first.
+- Keep saved templates, scheduled delivery, raw CSV/raw JSON export,
+  production monitoring, and sensitive drilldowns out of the first slice unless
+  separately authorized.
+- Do not require production, real providers, or real credentials.
 
 ### Explicitly Forbidden
 
@@ -215,8 +227,9 @@ docs-only unless the user separately authorizes execution.
 
 - Route A is complete for formal phase-one demo preparation and should not be
   the default next step after Step 100.
-- Choose Route B if the next priority is product value beyond the demo:
-  custom reports, mobile, fuller conversion, or richer phase-two workflows.
+- Route B is now the active product-enhancement planning route; the current
+  first recommended implementation slice is custom reports / advanced reports
+  MVP.
 - Choose Route C if real external providers are available and the user wants
   integration readiness planning before any call.
 - Choose Route D if the user explicitly wants production readiness, with all

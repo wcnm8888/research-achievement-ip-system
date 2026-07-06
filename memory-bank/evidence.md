@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-07-06 Step 101-B - Phase-two feature priority and first slice plan evidence
+
+- Goal:
+  - Start Route B docs-only planning, rank phase-two feature candidates, and recommend the first implementation slice without entering production, VPS, production DB, or real external systems.
+- Initial state:
+  - `git log -1 --oneline`: `ccccc56 docs: archive route a demo handoff`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/phase-one-route-a-final-handoff.md` Route A final state, material index, non-claims, and next route selection.
+  - `memory-bank/next-phase-options.md` Route B section, Route C/D gates, and selection guidance.
+  - `memory-bank/project-requirement-completion-matrix.md` original scope summary, completion matrix rows for phase-two/uncompleted items, unfinished categories, suggested schedule, and current recommended next step.
+  - `memory-bank/phase-one-final-archive.md` closure judgment, explicit non-claims, unfinished phase-two items, and Route B recommendation.
+  - `memory-bank/product-brief.md` product goals, phase-two scope, and first-version non-goals.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 97-Step 100 relevant slices.
+- Documentation updated:
+  - Added `memory-bank/phase-two-feature-priority-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Planning result:
+  - Route A is explicitly closed as PASS 0, PASS with caveat 10, BLOCKED 0 for localhost / local demo / synthetic DB only.
+  - Candidate ranking covers custom/advanced reports, achievement conversion deepening, mobile reassessment, account lifecycle, ImportJobItem Web row-level safe display, secret authorization enhancement, attachment storage/download enhancement, and scheduled reminder/planned task enhancement.
+  - Recommended first implementation slice is custom reports / advanced reports MVP.
+  - First slice should avoid production, real external systems, real credentials, saved templates, scheduled delivery, raw CSV/raw JSON export, production monitoring, and sensitive drilldowns unless separately authorized.
+  - Explicit non-entry areas remain production/VPS/production DB, real HR/SSO, real email/SMS, real finance payment/reconciliation, and real DOI/literature/patent provider integration.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+- Docs-only verification:
+  - `git diff --check`: PASS; LF-to-CRLF normalization warnings only before staging.
+  - `git diff --cached --check`: PASS; empty before staging.
+  - `git diff --stat`: tracked docs diff only before staging; new phase-two priority plan remained untracked until explicitly staged.
+  - Final closeout verification after staging: `git diff --check` PASS, `git diff --cached --check` PASS, `git diff --stat` empty, and `git diff --cached --stat` limited to `memory-bank/evidence.md`, `memory-bank/next-phase-options.md`, `memory-bank/phase-two-feature-priority-plan.md`, `memory-bank/progress.md`, and `memory-bank/project-requirement-completion-matrix.md`.
+  - Final `git status --short` showed those five allowed documentation files staged; existing untracked local artifacts remained untracked.
+
 ## 2026-07-06 Step 100 - Route A demo preparation final handoff archive evidence
 
 - Goal:
