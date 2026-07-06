@@ -14117,3 +14117,47 @@
     disable/restore, lock state, role change audit summary, and safety summary.
   - Do not connect real HR/SSO, send real email/SMS, expose token/password/
     session material, or claim production identity acceptance.
+
+## 2026-07-06 Step 115 - Account lifecycle enhancement technical plan
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `2a19b56 docs: select next route b feature slice`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/account-lifecycle-enhancement-technical-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Reviewed current account-management and account-lifecycle API/Web/test
+    surfaces in targeted read-only mode.
+  - Confirmed existing capabilities already include list/detail,
+    `PENDING_ACTIVATION`/`ACTIVE`/`DISABLED`, invite/resend invite, invite
+    accept, admin password reset/revoke reset, disable/enable, role
+    assign/revoke, recent lifecycle delivery summary, and local/simulated
+    delivery.
+  - Identified safe projection hardening gaps: account-management currently
+    projects `lastLogin.sessionId`, and Web currently displays
+    `recentLifecycleDelivery.targetUserId`; Step 116 should remove or stop
+    exposing these internal identifiers.
+  - Recommended Step 116 as API projection hardening with no schema/migration
+    for the first MVP.
+- Explicitly not done:
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` changes.
+  - No code implementation, service startup, browser acceptance, Docker
+    container creation/start/stop/delete/cleanup, production/VPS/production DB
+    access, production runbook, migration, or real external-system call.
+  - No `.env` or `.env.production` content read.
+  - No existing untracked local artifact or `.local-*` evidence directory was
+    touched.
+- Step 116 recommendation:
+  - No schema/migration by default.
+  - Derive safe `loginEligibility`, lifecycle action summary, and role-change
+    summary from existing `User`, `UserCredential`, `UserSession`, `UserRole`,
+    `AuditLog`, and `AccountLifecycleToken`.
+  - Remove/deprecate `lastLogin.sessionId` and stop rendering lifecycle
+    `targetUserId` as a user-facing detail.
+  - If a distinct persistent lock/unlock state becomes mandatory, stop and
+    create a separate additive schema plan instead of expanding Step 116.

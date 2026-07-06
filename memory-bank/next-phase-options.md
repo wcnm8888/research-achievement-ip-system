@@ -135,6 +135,9 @@ detail drawer, archived in
 Step 114 reselects the next Route B product slice as more complete account
 lifecycle local/demo enhancement, with the next recommended step documented in
 `memory-bank/route-b-next-slice-selection.md`.
+Step 115 adds the docs-only account lifecycle enhancement technical plan in
+`memory-bank/account-lifecycle-enhancement-technical-plan.md`; it recommends
+Step 116 as API projection hardening with no schema/migration for the first MVP.
 
 ### Goal
 
@@ -174,6 +177,10 @@ Recommended next Route B choices:
   local/demo admin lifecycle status/actions/audit/safety summary and excluding
   real HR/SSO, real email/SMS, token/password/session exposure, and production
   identity acceptance.
+- After Step 115, start Step 116 as API projection hardening: derive safe login
+  eligibility, lifecycle action summary, and role-change summary from existing
+  models without schema/migration unless implementation proves the derivation
+  impossible.
 - Add deferred aggregate templates such as ImportJob aggregate history or
   external mock overview.
 - Run a separate mobile/responsive review only if the user explicitly wants
@@ -275,7 +282,9 @@ docs-only unless the user separately authorizes execution.
   and ImportJobItem safe row Web display are closed for
   localhost/local-demo/synthetic acceptance. Step 114 selects more complete
   account lifecycle local/demo enhancement as the next scoped slice and
-  recommends Step 115 for its technical plan.
+  Step 115 completes its technical plan. The next recommended implementation
+  step is Step 116 API projection hardening with no schema/migration for the
+  first MVP.
 - Choose Route C if real external providers are available and the user wants
   integration readiness planning before any call.
 - Choose Route D if the user explicitly wants production readiness, with all

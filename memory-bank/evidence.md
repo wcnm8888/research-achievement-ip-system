@@ -18953,6 +18953,81 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-06 Step 115 - Account lifecycle enhancement technical plan evidence
+
+- Canonical state checked before documentation:
+  - `git log -1 --oneline` -> `2a19b56 docs: select next route b feature slice`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads only:
+  - Account lifecycle recommendation and Step 115 boundary in
+    `memory-bank/route-b-next-slice-selection.md`.
+  - Account management, account lifecycle, and real HR/SSO boundary rows in
+    `memory-bank/project-requirement-completion-matrix.md`.
+  - Step 115 recommendation in `memory-bank/next-phase-options.md`.
+  - `apps/api/src/account-management/account-management.controller.ts`.
+  - `apps/api/src/account-management/account-management.service.ts`.
+  - `apps/api/src/account-management/account-management.repository.ts`.
+  - `apps/api/src/account-management/dto/account-management.dto.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.service.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.repository.ts`.
+  - `apps/api/src/account-lifecycle/dto/account-lifecycle.dto.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-delivery.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle-mailer.ts`.
+  - `apps/api/src/account-lifecycle/account-lifecycle.module.ts`.
+  - `apps/web/src/AccountManagement.tsx`.
+  - `apps/web/src/AccountLifecycleAccess.tsx`.
+  - `apps/web/src/AccountManagement.test.tsx`.
+  - `apps/web/src/AccountLifecycleAccess.test.tsx`.
+  - Relevant `prisma/schema.prisma` model/enum snippets for `User`,
+    `UserCredential`, `UserSession`, `UserRole`, `AccountLifecycleToken`,
+    `AuditLog`, and `Notification`.
+- Technical findings:
+  - Existing backend already supports account list/detail, create user,
+    invite/resend invite, invite accept, self/admin reset, reset revoke,
+    disable/enable, assign/revoke role, and department change.
+  - Existing Web already renders account list/detail, lifecycle actions,
+    disable/enable, role actions, invite/reset controls, and recent lifecycle
+    delivery summary under permission gates.
+  - Current login eligibility is derived from `User.status === ACTIVE` and
+    `UserCredential.status === ACTIVE`.
+  - Existing `UserStatus.DISABLED` and `CredentialStatus.DISABLED` are enough
+    for the first local/demo MVP; distinct persistent lock/unlock would need a
+    separate additive schema plan.
+  - Current safe projection gaps were recorded for Step 116: account-management
+    projects `lastLogin.sessionId`, and Web displays
+    `recentLifecycleDelivery.targetUserId`; both should be removed or stopped
+    from user-facing lifecycle review surfaces.
+- Documentation evidence:
+  - Added `memory-bank/account-lifecycle-enhancement-technical-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Plan result:
+  - Recommended Step 116 as account lifecycle API projection hardening.
+  - Recommended no schema/migration for Step 116.
+  - Proposed safe derived `loginEligibility`, lifecycle action summary, and
+    role-change audit summary using existing models.
+  - Included safe projection hardening for `lastLogin.sessionId` and lifecycle
+    `targetUserId`.
+  - Deferred true lock/unlock state to a separate additive schema plan only if
+    product requirements require it.
+- Boundaries observed:
+  - Docs-only; no code implementation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real HR/SSO, email, SMS, finance, DOI, patent, or other external-system
+    call.
+  - No Docker container/volume was started, created, stopped, deleted, or
+    cleaned.
+  - No existing untracked local artifact or `.local-*` evidence directory was
+    touched.
+  - No secret, `DATABASE_URL`, connection string, token, cookie, password, or
+    session material was read or captured.
+
 ## 2026-07-06 Step 114 - Route B next slice selection evidence
 
 - Canonical state checked before documentation:

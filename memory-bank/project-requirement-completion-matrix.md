@@ -202,7 +202,7 @@
 - P0：自定义报表 / 高级报表 MVP，优先做只读报表配置和结果展示，不依赖 production、真实外部系统或真实凭证。
 - P1：成果转化深化 MVP 已完成 localhost/local-demo/synthetic 闭环；后续不再建议继续扩展为真实合同/法务/财务/付款能力，除非先启动单独 readiness/授权方案。
 - P1：ImportJobItem Web 行级安全只读展示已在 Step 112-113 完成本地实现、localhost/local-demo/synthetic UI acceptance 和闭环归档；后续不再列为待实现项，继续严格禁止 raw payload/raw JSON/export/retry/rollback/drilldown。
-- P0：Step 114 已选择更完整账号生命周期 local/demo enhancement 作为下一条 Route B scoped product slice；推荐 Step 115 先做技术方案，范围限于管理员可见的账号状态、停用/恢复、锁定、角色变更审计和安全摘要，不接真实 HR/SSO，不发真实邮件短信，不暴露 token/password/session。
+- P0：Step 114 已选择更完整账号生命周期 local/demo enhancement 作为下一条 Route B scoped product slice；Step 115 已制定技术方案。推荐 Step 116 做 API projection hardening，优先不改 schema/migration，范围限于管理员可见的账号状态、停用/恢复、登录资格解释、角色变更审计和安全摘要，不接真实 HR/SSO，不发真实邮件短信，不暴露 token/password/session。
 - P2/P3：移动端需求重评估、涉密授权管理增强、附件存储/下载增强、定时提醒/计划任务增强、自定义报表 aggregate-only 模板增强。
 
 ### 阶段 3：真实外部系统对接准备
@@ -229,7 +229,7 @@
 
 建议下一步：
 
-- Route B：二期功能增强，自定义报表 / 高级报表 MVP、成果转化深化 MVP、ImportJobItem Web 行级安全只读展示均已完成本地闭环；Step 114 已选定下一条 scoped product slice 为更完整账号生命周期 local/demo enhancement，建议下一步 Step 115 先做技术方案。
+- Route B：二期功能增强，自定义报表 / 高级报表 MVP、成果转化深化 MVP、ImportJobItem Web 行级安全只读展示均已完成本地闭环；Step 114 已选定下一条 scoped product slice 为更完整账号生命周期 local/demo enhancement，Step 115 已完成技术方案；建议下一步 Step 116 做 API projection hardening，第一版不需要 schema/migration。
 - Route C：真实外部系统对接准备，仅在有真实系统、凭证、测试环境和授权后启动。
 - Route D：production readiness，仅在用户明确要求并授权后启动。
 
