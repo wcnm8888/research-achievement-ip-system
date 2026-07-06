@@ -97,7 +97,8 @@
 | 导入任务历史 ImportJob/ImportRun | 已完成 | Step 72A-73E，`GET /import-jobs`、`GET /import-jobs/:id` | 生产只读预检尚未执行 |
 | Web 导入历史汇总展示 | 已完成 | Step 73/74，页内入口和 settings overview | 只展示 aggregate，不展示行级 item |
 | ImportJobItem 行级安全历史后端写入 | 已完成 | Step 77A-E，Department/Achievement/User writer | targetId 仅内部持久化，不暴露 |
-| ImportJobItem 后端只读 API | 已完成 backend-only | Step 78B/D，`GET /api/import-jobs/:id/items` | Web 行级展示未授权 |
+| ImportJobItem 后端只读 API | 已完成 backend-only | Step 78B/D，`GET /api/import-jobs/:id/items` | Web 行级展示方案已在 Step 111 完成，尚未实现 |
+| ImportJobItem Web 行级安全只读展示 | 方案已完成，待实现 | Step 111：`memory-bank/import-job-item-web-row-display-plan.md`，建议仅展示 rowNumber/plannedAction/status/safeCode/targetType | 仍未实现 Web UI；禁止 targetId、raw payload、raw JSON、safeSummary、auditLogIds、jobId/runId 明细、retry/export/rollback/drilldown |
 | 一期 localhost 演示脚本/复验/讲解口径 | 已归档 | Step 88 checklist/script、Step 95 final UI recheck、Step 96 presenter brief、Step 97 final archive | 仅代表 localhost/local-demo/synthetic evidence，不是 production/VPS/生产 DB/真实外部系统验收 |
 | 导入重试/删除/清理/回滚 | 未完成且当前不支持 | prompt-39 handoff 明确 unsupported | 如未来需要，必须先做安全方案 |
 | 原 CSV 下载/导出/raw JSON | 未完成且当前禁止 | prompt-39 handoff 明确 forbidden | 默认不做，除非重新定义安全边界 |
@@ -159,7 +160,7 @@
 
 ### 一期演示后可选增强
 
-1. Web 行级导入历史展示方案。
+1. Web 行级导入历史展示实现。
 2. 导入任务 retry/repair/rollback 的安全方案。
 3. 正式演示 rehearsal 和现场 fallback 准备。
 4. 更完整账号生命周期、费用审批和成果转化产品深度。
@@ -200,7 +201,7 @@
 
 - P0：自定义报表 / 高级报表 MVP，优先做只读报表配置和结果展示，不依赖 production、真实外部系统或真实凭证。
 - P1：成果转化深化 MVP 已完成 localhost/local-demo/synthetic 闭环；后续不再建议继续扩展为真实合同/法务/财务/付款能力，除非先启动单独 readiness/授权方案。
-- P1：ImportJobItem Web 行级安全只读展示，复用既有 backend-only API，严格禁止 raw payload/raw JSON/export/retry/rollback。
+- P1：ImportJobItem Web 行级安全只读展示方案已完成；下一步可按 Step 112 实现 Web API client/types + item panel，继续严格禁止 raw payload/raw JSON/export/retry/rollback。
 - P2/P3：移动端需求重评估、更完整账号生命周期、涉密授权管理增强、附件存储/下载增强、定时提醒/计划任务增强。
 
 ### 阶段 3：真实外部系统对接准备
@@ -243,7 +244,7 @@
 - 不能把本地 synthetic acceptance 等同于生产验收。
 - 不能把 runbook 文档等同于 runbook 已执行。
 - 不能把 adapter/mock 等同于真实外部系统联调。
-- 不能把 ImportJobItem backend-only API 等同于 Web 行级展示。
+- 不能把 ImportJobItem backend-only API 或 Step 111 Web 方案等同于 Web 行级展示已实现。
 - 不能把 Step 95 screenshotable localhost 路径等同于 production/VPS/生产 DB 验收。
 - 不能把自定义报表 MVP 等同于 full BI、production monitoring、定时推送、保存模板、导出、raw JSON 或敏感 drilldown。
 - 不能把 schema/migration 文件存在等同于生产 migration 已应用。

@@ -1,5 +1,44 @@
 # Progress
 
+## 2026-07-06 Step 111 - ImportJobItem Web row display plan
+
+- Status: DONE.
+- Task classification:
+  - S docs-only safety and UX plan for optionally connecting the existing
+    backend-only `ImportJobItem` read API to Web.
+- Starting point:
+  - HEAD at task start: `7665a9e docs: archive conversion deepening acceptance`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step110-conversion-deepening-acceptance/`, `.local-step44h/`,
+    `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`,
+    `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/import-job-item-web-row-display-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Plan decision:
+  - Recommend Step 112 implementation, because the existing backend-only item
+    API already returns the five allowlisted fields:
+    `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Step 112 must keep the Web panel route-scoped to the current import job,
+    read-only, paginated, and free of raw/source fields or business drilldown.
+- Explicitly not done:
+  - No Web row-level display implementation.
+  - No API/Web/Prisma/schema/migration code changes.
+  - No retry, repair, rollback, cleanup, delete, download, export, copy raw,
+    raw JSON, raw CSV, raw log/debug panel, or business-object drilldown.
+  - No production/VPS/production DB access and no real external-system calls.
+  - No `.env` or `.env.production` content read.
+  - No `.local-*` screenshot/log directory staged, cleaned, or modified.
+- Verification:
+  - Docs-only git checks recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 110-B-C - Conversion deepening local UI acceptance and closure
 
 - Status: DONE.

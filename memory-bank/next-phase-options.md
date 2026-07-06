@@ -121,6 +121,10 @@ schema/backend fields, Web display/edit fields, Dashboard/Custom Reports
 aggregate enhancement, and localhost/local-demo/synthetic UI acceptance in
 `memory-bank/conversion-deepening-local-ui-acceptance.md` and
 `memory-bank/conversion-deepening-mvp-closure.md`.
+Step 111 adds the docs-only safety and UX plan for optionally connecting the
+existing backend-only `ImportJobItem` read API to Web as a strictly allowlisted
+safe row display in
+`memory-bank/import-job-item-web-row-display-plan.md`.
 
 ### Goal
 
@@ -156,7 +160,9 @@ Completed first implementation loop:
 
 Recommended next Route B choices:
 
-- Select the next phase-two product slice now that both custom reports and
+- Implement the Step 111 `ImportJobItem` safe row Web display plan as Step 112,
+  if the user wants the next Route B slice to focus on import history UX.
+- Select another phase-two product slice now that both custom reports and
   achievement conversion deepening MVPs are locally closed.
 - Add deferred aggregate templates such as ImportJob aggregate history or
   external mock overview.

@@ -1,5 +1,77 @@
 # Evidence
 
+## 2026-07-06 Step 111 - ImportJobItem Web row display plan evidence
+
+- Goal:
+  - Produce a docs-only safety and UX plan for whether/how to connect the
+    existing backend-only `ImportJobItem` read API to Web without changing
+    API/Web/Prisma code.
+- Initial state:
+  - `git log -1 --oneline`: `7665a9e docs: archive conversion deepening acceptance`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step110-conversion-deepening-acceptance/`, `.local-step44h/`,
+    `.local-step45c4/`, `.local-step46g/`, `.local-step47i/`,
+    `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/project-requirement-completion-matrix.md` import-history and
+    unfinished-item snippets.
+  - `memory-bank/next-phase-options.md` Route B snippets.
+  - `memory-bank/import-job-item-web-display-decision.md`.
+  - `memory-bank/prompt-39-handoff.md` ImportJobItem boundary snippets.
+  - `apps/api/src/imports/import-job-history-read.controller.ts` route/query
+    snippets.
+  - `apps/api/src/imports/import-job-history-read.service.ts` DTO mapping
+    snippets.
+  - `apps/api/src/imports/import-job-history-read.repository.ts` select/where
+    snippets.
+- Files updated:
+  - `memory-bank/import-job-item-web-row-display-plan.md`.
+  - `memory-bank/next-phase-options.md`.
+  - `memory-bank/project-requirement-completion-matrix.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- API contract evidence:
+  - Existing route: `GET /api/import-jobs/:id/items`.
+  - Permission remains `system:config`.
+  - Current backend item DTO returns only:
+    `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Repository item select is limited to those same five fields.
+  - Current query supports `status`, `plannedAction`, `targetType`,
+    `safeCode`, `page`, and `pageSize`; it also supports `runId`, but the Step
+    111 plan recommends not exposing a run ID filter or run ID display in the
+    first Web implementation.
+- Plan evidence:
+  - Recommends entering Step 112 for Web API client/types and an Import History
+    safe row panel.
+  - Keeps display allowlist to `rowNumber`, `plannedAction`, `status`,
+    `safeCode`, and `targetType`.
+  - Requires route-scoped pagination/filtering to the current import job.
+  - Forbids `targetId`, raw/source payload, raw JSON, `safeSummary`,
+    `auditLogIds`, `jobId`/`runId` internal detail display, operator ID,
+    fingerprint/hash/checksum/object key, personal identifiers, credentials,
+    retry/repair/rollback/cleanup/delete, download/export/copy raw,
+    business-object drilldown, and raw log/debug panels.
+- Boundary evidence:
+  - Web row-level display is still not implemented.
+  - Backend-only API is not described as completed Web display.
+  - No API/Web/Prisma/schema/migration code changed.
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No `.local-*` screenshot/log directory was staged, cleaned, or modified.
+- Verification:
+  - `git diff --check`: passed with Windows LF/CRLF warnings only.
+  - `git diff --cached --check`: passed.
+  - `git diff --stat`: docs-only memory-bank changes.
+  - `git diff --cached --stat`: empty before staging.
+  - `git status --short`: only allowed docs changes plus existing untracked
+    local artifacts and the new untracked plan file before staging.
+
 ## 2026-07-06 Step 110-B-C - Conversion deepening local UI acceptance evidence
 
 - Goal:
