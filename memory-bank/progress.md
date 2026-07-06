@@ -14382,3 +14382,41 @@
     external-system call, Docker operation, or environment-file content read.
 - Verification:
   - Docs-only verification commands recorded in `memory-bank/evidence.md`.
+
+## 2026-07-07 Step 121 - Secret authorization read-only API projection hardening
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `9619d0a docs: design secret authorization management safety plan`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `apps/api/src/secret-authorization/**` as a read-only API module.
+  - Registered `SecretAuthorizationModule` in `apps/api/src/app.module.ts`.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- API endpoints added:
+  - `GET /secret-authorization/overview`.
+  - `GET /secret-authorization/resources`.
+  - `GET /secret-authorization/resources/:resourceType/:resourceId/grants`.
+- Security projection:
+  - Uses `system:config` as the first-version read boundary.
+  - Does not treat `resource_grant:create` or `resource_grant:revoke` as read
+    management permissions.
+  - Returns aggregate counts by resource type, secret level, grant type,
+    grantee type, and status.
+  - Derives active, expired, revoked, future-dated, and expiring-soon grant
+    counts from existing grant lifecycle fields.
+  - Returns safe resource summaries, bounded grant summaries, bounded audit
+    summaries, and caveats only.
+  - Detail rows are bounded to 5 grants and 5 audits.
+- Explicitly not done:
+  - No `prisma/**` change, schema change, or migration.
+  - No grant create/revoke/approve/batch/export/download endpoint.
+  - No Web page.
+  - No service startup, Docker operation, production/VPS/production DB access,
+    real external-system call, or environment-file content read.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- secret-authorization`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- secret-authorization authorization achievements attachments`: PASS, 19 files / 244 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.

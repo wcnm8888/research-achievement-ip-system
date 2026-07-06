@@ -16,6 +16,7 @@ import { ImportsModule } from "./imports/imports.module";
 import { RemindersModule } from "./reminders/reminders.module";
 import { ReportsModule } from "./reports/reports.module";
 import { SearchModule } from "./search/search.module";
+import { SecretAuthorizationModule } from "./secret-authorization/secret-authorization.module";
 import { SettingsModule } from "./settings/settings.module";
 import { WorkflowModule } from "./workflow/workflow.module";
 
@@ -39,6 +40,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     SettingsModule,
     ImportsModule,
     ReportsModule,
+    SecretAuthorizationModule,
   ],
   controllers: [HealthController],
 })

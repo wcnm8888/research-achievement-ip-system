@@ -19213,6 +19213,85 @@
     files.
   - No test/typecheck was run because this Step is docs-only.
 
+## 2026-07-07 Step 121 - Secret authorization read-only API projection hardening evidence
+
+- Classification:
+  - API read-only implementation slice.
+  - No Web implementation and no grant mutation workflow.
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `9619d0a docs: design secret authorization management safety plan`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/secret-authorization-management-safety-plan.md`.
+  - `memory-bank/progress.md` Step 120 latest section.
+  - `memory-bank/evidence.md` Step 120 latest section.
+  - `prisma/schema.prisma` snippets for `ResourceAccessGrant`, `Achievement`,
+    `Attachment`, and `AuditLog`.
+  - `apps/api/src/authorization/constants/**`.
+  - `apps/api/src/authorization/policy/**`.
+  - `apps/api/src/achievements/achievement.repository.ts` and
+    `apps/api/src/achievements/achievement.service.ts` secret projection
+    snippets.
+  - `apps/api/src/attachments/attachment.repository.ts` and
+    `apps/api/src/attachments/attachment.service.ts` authorization and
+    sensitive attachment snippets.
+  - `apps/api/src/app.module.ts`.
+- Implementation evidence:
+  - Added `apps/api/src/secret-authorization/secret-authorization.module.ts`.
+  - Added `apps/api/src/secret-authorization/secret-authorization.controller.ts`.
+  - Added `apps/api/src/secret-authorization/secret-authorization.service.ts`.
+  - Added `apps/api/src/secret-authorization/secret-authorization.repository.ts`.
+  - Added `apps/api/src/secret-authorization/dto/secret-authorization.dto.ts`.
+  - Added controller and service specs under `apps/api/src/secret-authorization/`.
+  - Registered the new module in `apps/api/src/app.module.ts`.
+- API evidence:
+  - `GET /secret-authorization/overview`.
+  - `GET /secret-authorization/resources`.
+  - `GET /secret-authorization/resources/:resourceType/:resourceId/grants`.
+- Permission evidence:
+  - All endpoints are guarded by `UserContextGuard` and `PermissionGuard`.
+  - All endpoints require `system:config`.
+  - Tests verify that `resource_grant:create` and `resource_grant:revoke`
+    without `system:config` receive 403 and do not call the service.
+- Projection evidence:
+  - Overview returns restricted resource counts, counts by resource type,
+    secret level, grant type, grantee type, and raw grant status.
+  - Overview derives active, expired, revoked, future-dated, and expiring-soon
+    grant counts.
+  - Resource list returns safe resource labels, department id where safe,
+    secret level, redaction flags, aggregate grant counts, latest grant
+    timestamps, and caveats.
+  - Resource detail returns bounded grant summaries and bounded audit summaries
+    with a 5-row limit for each.
+  - Repository selects only safe columns and does not select attachment body,
+    storage/object key, checksum, raw permission graph, raw actor profile, or
+    credential/session material.
+- Forbidden-field negative assertion evidence:
+  - Service and controller tests assert serialized responses do not include
+    attachment body markers, storage/object key, internal/provider path,
+    checksum, download URL, pre-signed URL, raw audit JSON, permission graph,
+    debug/export fields, operator email, password/passwordHash, token/tokenHash,
+    sessionId, cookie, `DATABASE_URL`, connection string, or secret-value
+    markers.
+- Boundaries observed:
+  - No `prisma/**` change.
+  - No schema or migration change.
+  - No grant create/revoke/approve/batch/export/download endpoint.
+  - No Web page.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker start/create/stop/delete/cleanup.
+  - No existing untracked local artifact or `.local-*` evidence directory was
+    touched.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- secret-authorization`: PASS, 2 files / 9 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- secret-authorization authorization achievements attachments`: PASS, 19 files / 244 tests.
+
 ## 2026-07-06 Step 116 - Account lifecycle API projection hardening evidence
 
 - Canonical state checked before implementation:
