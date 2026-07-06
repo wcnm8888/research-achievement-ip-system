@@ -86,6 +86,71 @@ export type DashboardSummary = {
   };
 };
 
+export type CustomReportTemplateId =
+  | "achievement-distribution"
+  | "achievement-trend"
+  | "fee-risk-summary"
+  | "workflow-efficiency"
+  | "conversion-funnel";
+
+export type CustomReportTemplate = {
+  templateId: CustomReportTemplateId;
+  name: string;
+  description: string;
+};
+
+export type CustomReportColumnType = "text" | "number" | "money" | "date";
+
+export type CustomReportColumn = {
+  key: string;
+  label: string;
+  type: CustomReportColumnType;
+};
+
+export type CustomReportRowValue = string | number | null;
+
+export type CustomReportRow = Record<string, CustomReportRowValue>;
+
+export type CustomReportTotals = Record<string, CustomReportRowValue>;
+
+export type CustomReportGroupBy = "year" | "month";
+
+export type CustomReportRunQuery = {
+  dateFrom?: string;
+  dateTo?: string;
+  departmentId?: string;
+  achievementType?: AchievementTypeCode;
+  status?: string;
+  groupBy?: CustomReportGroupBy;
+  dueSoonDays?: number;
+};
+
+export type CustomReportScopeSummary = {
+  userId: string;
+  departmentId: string;
+  departmentScope: {
+    departmentIds: string[];
+  };
+  policy: "achievement-readable" | "fee-readable" | "current-assignee";
+};
+
+export type CustomReportRunResponse = {
+  metadata: {
+    templateId: CustomReportTemplateId;
+    name: string;
+    description: string;
+    generatedAt: string;
+    localDemoOnly: true;
+    notProductionMonitoring: true;
+  };
+  filters: CustomReportRunQuery;
+  scopeSummary: CustomReportScopeSummary;
+  columns: CustomReportColumn[];
+  rows: CustomReportRow[];
+  totals: CustomReportTotals;
+  caveats: string[];
+};
+
 export type WorkflowTaskStatusCode =
   | "PENDING"
   | "CLAIMED"

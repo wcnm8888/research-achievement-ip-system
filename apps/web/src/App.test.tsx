@@ -107,6 +107,21 @@ describe("production auth mode helpers", () => {
     );
   });
 
+  it("shows custom reports navigation to ordinary demo users", () => {
+    const customReportsNavigationKey = "custom-reports";
+
+    expect(
+      getVisibleNavItems(navItems, {
+        ...authUser,
+        permissionCodes: ["user_context:read"],
+      }).some((item) => item.key === customReportsNavigationKey),
+    ).toBe(true);
+    expect(navItems.find((item) => item.key === customReportsNavigationKey)).toMatchObject({
+      label: "Custom Reports",
+      step: "Step 104-B",
+    });
+  });
+
   it("shows department maintenance navigation only to system config users", () => {
     const departmentNavigationKey = "department-management";
 

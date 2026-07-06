@@ -1,5 +1,35 @@
 # Progress
 
+## 2026-07-06 Step 104-B - Custom reports MVP Web page
+
+- Status: DONE.
+- Task classification:
+  - S Web-only Route B feature slice; consumes Step 103-B read-only API.
+- Starting point:
+  - HEAD at task start: `0cafaab feat: add custom reports read api`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `apps/web/src/CustomReports.tsx` and `apps/web/src/CustomReports.test.tsx`.
+  - Added custom report Web types in `apps/web/src/types.ts`.
+  - Added API client methods `listCustomReportTemplates(...)` and `runCustomReport(...)`.
+  - Added `Custom Reports` navigation near Dashboard in `apps/web/src/App.tsx`.
+  - Updated Web tests in `api-client.test.ts` and `App.test.tsx`.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Web page result:
+  - Entry: `Custom Reports` navigation item.
+  - Supports templates `achievement-distribution`, `achievement-trend`, `fee-risk-summary`, `workflow-efficiency`, and `conversion-funnel`.
+  - Shows local/demo/custom-report boundary text, template selector, filters, Run/Refresh, metadata, filters, scope summary, totals, aggregate rows table, empty rows state, safe error state, and caveats.
+  - `achievement-trend` shows `groupBy`.
+  - `fee-risk-summary` shows `dueSoonDays`.
+- Explicitly not done:
+  - No export/download, saved templates, scheduled reports, raw JSON view, raw payload view, or sensitive drilldown.
+  - No `apps/api/**`, Prisma schema, migration, or seed change.
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access, Docker operation, production runbook/migration, or real external-system call.
+- Verification:
+  - Required verification commands recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 103-B - Custom reports MVP backend read API
 
 - Status: DONE.

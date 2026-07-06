@@ -1,5 +1,59 @@
 # Evidence
 
+## 2026-07-06 Step 104-B - Custom reports MVP Web page evidence
+
+- Goal:
+  - Implement the Route B custom reports / advanced reports MVP Web page by consuming the Step 103-B backend read-only API only.
+- Initial state:
+  - `git log -1 --oneline`: `0cafaab feat: add custom reports read api`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/custom-reports-mvp-technical-plan.md` Web tests and non-goals section.
+  - `apps/api/src/reports/domain/custom-report-domain.types.ts` response shape only.
+  - `apps/web/src/api-client.ts` and `apps/web/src/api-client.test.ts` GET/query patterns.
+  - `apps/web/src/types.ts` Dashboard type organization.
+  - `apps/web/src/Dashboard.tsx` and `apps/web/src/Dashboard.test.ts` loading/error/boundary/helper patterns.
+  - `apps/web/src/App.tsx` and `apps/web/src/App.test.tsx` navigation and page mounting patterns.
+  - `apps/web/src/SettingsImportJobHistoryOverview.tsx` and test snippets for filters/table/safe display.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 102-B and Step 103-B relevant slices.
+- Files updated:
+  - Added `apps/web/src/CustomReports.tsx`.
+  - Added `apps/web/src/CustomReports.test.tsx`.
+  - Updated `apps/web/src/api-client.ts`.
+  - Updated `apps/web/src/api-client.test.ts`.
+  - Updated `apps/web/src/types.ts`.
+  - Updated `apps/web/src/App.tsx`.
+  - Updated `apps/web/src/App.test.tsx`.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Web behavior implemented:
+  - Navigation entry: `Custom Reports`, near Dashboard.
+  - API client methods: `listCustomReportTemplates(...)` and `runCustomReport(...)`.
+  - Safe filters passed to API: `dateFrom`, `dateTo`, `departmentId`, `achievementType`, `status`, `groupBy`, and `dueSoonDays`.
+  - Supports templates `achievement-distribution`, `achievement-trend`, `fee-risk-summary`, `workflow-efficiency`, and `conversion-funnel`.
+  - Shows boundary copy: local/demo/custom report summary; not full BI; not production monitoring; no raw export; no sensitive drilldown; no real external-system evidence.
+  - Shows metadata, filters, scope summary, totals, columns/rows aggregate table, caveats, loading, safe errors, and `No aggregate rows match these filters.` empty state.
+- Safety evidence:
+  - No export/download/save-template/schedule/raw JSON/raw payload/sensitive drilldown UI entry was added.
+  - Error mapping drops detail text and uses safe status-specific copy so raw payload/token/cookie/password/connection string details are not rendered.
+  - Page avoids report API requests when no demo user context is selected.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- CustomReports api-client App`: PASS, 4 files / 66 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS; LF-to-CRLF normalization warnings only.
+  - `git diff --stat`, `git diff --cached --stat`, and `git status --short`: recorded at final review before commit.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI screenshot run, API test/typecheck, Prisma validate/generate, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `prisma/schema.prisma`, migration, or `prisma/seed.cjs` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+
 ## 2026-07-06 Step 103-B - Custom reports MVP backend read API evidence
 
 - Goal:

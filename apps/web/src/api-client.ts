@@ -15,6 +15,9 @@ import type {
   AchievementImportDryRunResult,
   ChangeAccountUserDepartmentInput,
   CreateInviteInput,
+  CustomReportRunQuery,
+  CustomReportRunResponse,
+  CustomReportTemplate,
   CreateDepartmentInput,
   CreateAccountUserInput,
   CreateApiIntegrationInput,
@@ -130,6 +133,11 @@ export type AccountManagementApiClient = ApiClient & {
     query?: ImportJobHistoryListQuery,
   ): Promise<ImportJobHistoryListResponse>;
   getImportJobHistoryDetail(importJobId: string): Promise<ImportJobHistoryDetail>;
+  listCustomReportTemplates(): Promise<CustomReportTemplate[]>;
+  runCustomReport(
+    templateId: string,
+    query?: CustomReportRunQuery,
+  ): Promise<CustomReportRunResponse>;
   listAccountUsers(query?: ListAccountUsersQuery): Promise<AccountUserListResponse>;
   getAccountUser(userId: string): Promise<AccountUserDetail>;
   createAccountUser(payload: CreateAccountUserInput): Promise<AccountUserDetail>;
@@ -446,6 +454,24 @@ export const createApiClient = (
       options,
     );
     return response as ImportJobHistoryDetail;
+  },
+  async listCustomReportTemplates() {
+    const response = await request(
+      "/reports/templates",
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as CustomReportTemplate[];
+  },
+  async runCustomReport(templateId: string, query?: CustomReportRunQuery) {
+    const response = await request(
+      `/reports/templates/${encodeURIComponent(templateId)}/run`,
+      demoUserId,
+      { method: "GET", query },
+      options,
+    );
+    return response as CustomReportRunResponse;
   },
   async listAccountUsers(query?: ListAccountUsersQuery) {
     const response = await request(

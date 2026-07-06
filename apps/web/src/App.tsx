@@ -18,6 +18,7 @@ import {
 } from "./api-client";
 import { AuditLogs } from "./AuditLogs";
 import { BoundaryNotice, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { CustomReports } from "./CustomReports";
 import {
   demoUserPresets,
   findDemoUserPreset,
@@ -80,6 +81,13 @@ export const navItems: NavItem[] = [
     step: "Step 17",
     description:
       "Step 17 提供只读 dashboard summary 前端闭环，展示基础摘要、五组分布和 7/30/90 天窗口，不伪造完整报表能力。",
+  },
+  {
+    key: "custom-reports",
+    label: "Custom Reports",
+    step: "Step 104-B",
+    description:
+      "Step 104-B 提供自定义报表 MVP Web 页面，只消费 /reports/templates 和 /reports/templates/:templateId/run，不提供导出、保存模板、定时推送、raw JSON 或敏感钻取。",
   },
   {
     key: "audit",
@@ -162,6 +170,7 @@ export const getDemoPermissionCodes = (role: string): string[] => {
       "achievement:read_department",
       "fee:read_department",
       "fee:review_department",
+      "user_context:read",
       "system:config",
       "account:invite",
       "account:reset_password",
@@ -176,6 +185,7 @@ export const getDemoPermissionCodes = (role: string): string[] => {
       "achievement:submit",
       "achievement:update_own",
       "attachment:read_metadata",
+      "user_context:read",
     ];
   }
 
@@ -188,6 +198,7 @@ export const getDemoPermissionCodes = (role: string): string[] => {
       "reminder:read_department",
       "department:read_department",
       "attachment:read_metadata",
+      "user_context:read",
     ];
   }
 
@@ -410,6 +421,8 @@ export function App() {
               <Search demoUserId={businessContextId} />
             ) : activeKey === "dashboard" ? (
               <Dashboard demoUserId={businessContextId} />
+            ) : activeKey === "custom-reports" ? (
+              <CustomReports demoUserId={businessContextId} />
             ) : activeKey === "audit" ? (
               <AuditLogs demoUserId={businessContextId} />
             ) : activeKey === "settings" ? (

@@ -125,6 +125,71 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("X-Demo-User-Id")).toBeNull();
   });
 
+  it("requests the custom report template list", async () => {
+    const fetchMock = vi.fn(async () => Response.json([]));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("demo-user-id");
+    await expect(client.listCustomReportTemplates()).resolves.toEqual([]);
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe("http://localhost/api/reports/templates");
+    expect(init.method).toBe("GET");
+    expect(headers.get("X-Demo-User-Id")).toBe("demo-user-id");
+  });
+
+  it("runs a custom report template with serialized safe filters", async () => {
+    const response = {
+      metadata: {
+        templateId: "achievement-trend",
+        name: "Trend",
+        description: "Trend",
+        generatedAt: "2026-07-06T00:00:00.000Z",
+        localDemoOnly: true,
+        notProductionMonitoring: true,
+      },
+      filters: {},
+      scopeSummary: {
+        userId: "demo-user-id",
+        departmentId: "department-id",
+        departmentScope: { departmentIds: ["department-id"] },
+        policy: "achievement-readable",
+      },
+      columns: [],
+      rows: [],
+      totals: {},
+      caveats: [],
+    };
+    const fetchMock = vi.fn(async () => Response.json(response));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("demo-user-id");
+    await expect(
+      client.runCustomReport("achievement-trend", {
+        dateFrom: "2026-01-01",
+        dateTo: "2026-12-31",
+        departmentId: "10000000-0000-4000-8000-000000000001",
+        achievementType: "PAPER",
+        status: "ARCHIVED",
+        groupBy: "month",
+        dueSoonDays: undefined,
+      }),
+    ).resolves.toEqual(response);
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe(
+      "http://localhost/api/reports/templates/achievement-trend/run?dateFrom=2026-01-01&dateTo=2026-12-31&departmentId=10000000-0000-4000-8000-000000000001&achievementType=PAPER&status=ARCHIVED&groupBy=month",
+    );
+    expect(init.method).toBe("GET");
+    expect(headers.get("X-Demo-User-Id")).toBe("demo-user-id");
+  });
+
   it("sends PATCH without content type when body is absent and accepts 204", async () => {
     const fetchMock = vi.fn(
       async () =>
