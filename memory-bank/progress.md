@@ -13425,3 +13425,28 @@
   - `corepack pnpm --filter @research-ip/web test -- Achievement`: PASS, 3 files / 61 tests.
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+
+## 2026-07-06 Step 95 - Phase-one demo localhost UI final recheck
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `fec0494 fix: repair demo achievement detail blockers`.
+  - `git status --short` showed only existing untracked local artifacts plus the new Step 95 local evidence directory after work began.
+  - `git diff --stat` and `git diff --cached --stat` were empty at the required start check.
+- Scope completed:
+  - Added `memory-bank/phase-one-demo-ui-final-recheck-report.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with Step 95 final recheck notes.
+  - Ran localhost-only UI recheck against a new Step 95 synthetic PostgreSQL container, local API dev server, local Web dev server, and Playwright/Microsoft Edge screenshots under `.local-step95-ui-preflight/`.
+  - Did not modify business code, Prisma schema, migrations, or seed code.
+- Final UI recheck classification:
+  - PASS: 0.
+  - PASS with caveat: 10.
+  - BLOCKED: 0.
+- Recommendation:
+  - The phase-one route may enter formal demo only as a localhost/local-demo/synthetic walkthrough with explicit caveats. It must not be presented as production/VPS/production DB, real external integration, real HR/SSO, real email/SMS, or real finance acceptance.
+- Boundaries observed:
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed documentation.
+  - Existing untracked local artifacts listed by the user were not modified.

@@ -18130,6 +18130,54 @@
   - Mock/adapter behavior remains local/demo only and is not real external integration evidence.
   - Existing untracked local artifacts listed by the user were not modified.
 
+## 2026-07-06 Step 95 - Phase-one demo localhost UI final recheck evidence
+
+- Canonical state checked before recheck:
+  - `git log -1 --oneline` -> `fec0494 fix: repair demo achievement detail blockers`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed:
+  - Step 94 Repair Addendum in `memory-bank/phase-one-demo-ui-recheck-report.md`.
+  - Step 94 Repair Notes and recheck checklist in `memory-bank/phase-one-demo-checklist.md`.
+  - Demo user, deterministic seeded shortcut, and screenshot checklist sections in `memory-bank/phase-one-demo-acceptance-script.md`.
+  - Latest Step 93 and Step 94 evidence sections in `memory-bank/evidence.md`.
+  - `prisma/seed.cjs` was only searched for relevant local demo identifiers and seed behavior; it was not modified.
+- Local/demo setup evidence:
+  - Started new Step 95 local synthetic PostgreSQL container `research-step95-postgres` bound to `127.0.0.1:16432` with local trust auth and no password.
+  - `pg_isready` for the Step 95 container: PASS.
+  - `corepack pnpm prisma migrate deploy` against the Step 95 synthetic DB: PASS, 11 migrations applied.
+  - `corepack pnpm prisma db seed` against the Step 95 synthetic DB: PASS. Later seed reruns reset seeded archive/fee paths after partial automation attempts.
+  - Started local API dev server; `GET http://127.0.0.1:3000/api/health` returned `{"service":"research-achievement-ip-api","status":"ok"}`.
+  - Started local Web dev server; `http://127.0.0.1:5173` returned HTTP 200.
+  - Browser automation used bundled Playwright with local Microsoft Edge channel. No dependency installation was performed.
+- UI evidence captured locally under `.local-step95-ui-preflight/screenshots/`:
+  - Researcher create/submit: `01-researcher-create-form.png`, `02-researcher-created-draft.png`, `03-researcher-draft-detail.png`, `04-researcher-submit-confirm.png`, `05-researcher-submit-result.png`.
+  - Secretary review: `06-secretary-workflow-task-list.png`, `07-secretary-workflow-task-detail.png`, `08-secretary-approve-confirm.png`, `09-secretary-approve-result.png`.
+  - Admin archive: `30-tail-admin-pending-archive-list.png`, `31-tail-admin-pending-archive-detail.png`, `32-tail-admin-archive-confirm.png`, `33-tail-admin-archive-result.png`.
+  - Attachment/audit: `14-attachment-metadata.png`, `15-audit-masked-summary.png`.
+  - Fee review: `16-admin-fee-list.png`, `17-admin-fee-pending-detail.png`, `18-admin-fee-approve-confirm.png`, `19-admin-fee-approve-result.png`.
+  - Conversion ledger: `34-tail-admin-conversion-ledger-panel.png`, `35-tail-admin-conversion-create-form.png`, `36-tail-admin-conversion-create-result.png`.
+  - Account lifecycle: `37-tail-account-lifecycle-buttons.png`.
+  - External mock center: `38-tail-external-mock-center.png`, `39-tail-external-mock-result.png`.
+  - Dashboard: `40-tail-dashboard-fixed-scoring.png`.
+  - ImportJob history/empty state: `41-tail-import-job-history-overview.png`.
+- Classification:
+  - PASS: 0.
+  - PASS with caveat: 10.
+  - BLOCKED: 0.
+- Documentation evidence:
+  - Added `memory-bank/phase-one-demo-ui-final-recheck-report.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation operation, production runbook, production migration, or production monitoring operation.
+  - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed documentation.
+  - Existing untracked local artifacts listed by the user were not modified.
+
 ## 2026-07-06 Step 92 - Phase-one demo UI blocker repair evidence
 
 - Canonical state checked before implementation:

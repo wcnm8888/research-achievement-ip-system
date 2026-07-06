@@ -102,6 +102,16 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Latest code/test classification is PASS 0, PASS with caveat 10, BLOCKED 0, pending a fresh localhost-only UI screenshot recheck before formal demo use.
 - [ ] Continue to state that local/demo/synthetic validation is not production acceptance, mock/adapter behavior is not real external integration, and any future blocker must remain BLOCKED rather than being described as PASS.
 
+## Step 95 Final Localhost UI Recheck Notes
+
+- [ ] Step 95 final localhost UI recheck result: PASS 0, PASS with caveat 10, BLOCKED 0.
+- [ ] Admin archive path is screenshotable after Step 94: seeded `Demo Patent for Data Governance Method` detail opens, archive action appears, and archive confirmation/result were captured.
+- [ ] Conversion ledger path is screenshotable after Step 94: admin opens archived `Demo Paper on Knowledge Management`, sees the seeded ledger, and captures local create-result evidence.
+- [ ] Fee review remains screenshotable through the admin local fee-review-capable demo context and must not be described as production finance reviewer acceptance.
+- [ ] Account lifecycle and external integration evidence remain local/simulated/mock only; do not claim real delivery, real HR/SSO, or real external provider integration.
+- [ ] Local automation reruns created extra Step 95 synthetic achievement drafts/tasks in the Step 95 local DB; they were intentionally not cleaned up because this Step forbids deletion/cleanup.
+- [ ] Formal phase-one demo is recommended only as localhost/local-demo/synthetic walkthrough with explicit caveats, not production acceptance.
+
 ## PASS / BLOCKED Rules
 
 - PASS: the local/demo page/action is reproducible, expected visible result is present, evidence is captured, and boundary wording is accurate.
