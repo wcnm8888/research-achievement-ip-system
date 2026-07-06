@@ -116,6 +116,11 @@ remain untracked under `.local-step106-custom-reports-acceptance/`.
 Step 107-B-C adds the docs-only technical plan for the next Route B line,
 achievement conversion deepening MVP, in
 `memory-bank/conversion-deepening-mvp-technical-plan.md`.
+Steps 108-B-C to 110-B-C close that local/demo MVP loop with additive
+schema/backend fields, Web display/edit fields, Dashboard/Custom Reports
+aggregate enhancement, and localhost/local-demo/synthetic UI acceptance in
+`memory-bank/conversion-deepening-local-ui-acceptance.md` and
+`memory-bank/conversion-deepening-mvp-closure.md`.
 
 ### Goal
 
@@ -151,8 +156,8 @@ Completed first implementation loop:
 
 Recommended next Route B choices:
 
-- Implement the achievement conversion deepening MVP schema/backend extension
-  from the Step 107-B-C technical plan.
+- Select the next phase-two product slice now that both custom reports and
+  achievement conversion deepening MVPs are locally closed.
 - Add deferred aggregate templates such as ImportJob aggregate history or
   external mock overview.
 - Run a separate mobile/responsive review only if the user explicitly wants
@@ -250,9 +255,9 @@ docs-only unless the user separately authorizes execution.
 - Route A is complete for formal phase-one demo preparation and should not be
   the default next step after Step 100.
 - Route B is now the active product-enhancement planning route; the current
-  custom reports / advanced reports MVP is closed, and the next recommended
-  implementation line is the achievement conversion deepening MVP from the
-  Step 107-B-C technical plan.
+  custom reports / advanced reports MVP and achievement conversion deepening
+  MVP are both closed for localhost/local-demo/synthetic acceptance. The next
+  Route B item should be selected as a new scoped slice.
 - Choose Route C if real external providers are available and the user wants
   integration readiness planning before any call.
 - Choose Route D if the user explicitly wants production readiness, with all

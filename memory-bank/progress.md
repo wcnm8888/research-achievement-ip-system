@@ -1,5 +1,59 @@
 # Progress
 
+## 2026-07-06 Step 110-B-C - Conversion deepening local UI acceptance and closure
+
+- Status: DONE.
+- Task classification:
+  - S local UI/browser acceptance plus closure archive for the Route B
+    achievement conversion deepening MVP.
+- Starting point:
+  - HEAD at task start: `71e020d feat: add conversion deepening web fields`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Local acceptance setup:
+  - Used localhost API/Web dev servers and a local synthetic PostgreSQL DB.
+  - Reused the existing local synthetic container
+    `research-step106-custom-reports-postgres`; did not clean Docker, volumes,
+    containers, or evidence directories.
+  - Applied Step 108 additive migration to the local synthetic DB only.
+  - Evidence directory:
+    `.local-step110-conversion-deepening-acceptance/`, kept untracked.
+- Local UI acceptance result:
+  - PASS: opened archived achievement detail and confirmed the conversion
+    ledger shows the new fields.
+  - PASS: edited a local conversion record through the UI with
+    `contractStatus=ACTIVE`, `revenueStatus=OVERDUE`, due/received dates, one
+    safe benefit allocation row, `evaluationEffect=POSITIVE`, evaluation
+    summary, and evaluation date.
+  - PASS: Dashboard shows contract-status distribution, revenue-status
+    distribution, local overdue/risk count, and evaluation-effect distribution.
+  - PASS: Custom Reports `conversion-funnel` shows conversion status, contract
+    status, revenue status, evaluation effect, `localOverdue`, and `evaluated`
+    aggregate-only results.
+  - PASS: browser text check found no disabled entry points or sensitive terms.
+  - BLOCKED: none.
+- Scope completed:
+  - Added `memory-bank/conversion-deepening-local-ui-acceptance.md`.
+  - Added `memory-bank/conversion-deepening-mvp-closure.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Explicitly not done:
+  - No API or Prisma schema/migration source changes.
+  - No production/VPS/production DB access.
+  - No production migration execution.
+  - No real contract/legal/payment/finance/invoice/settlement/reconciliation or
+    external-system integration.
+  - No screenshot/log/evidence directory committed.
+- Verification:
+  - Required Step 110-B-C gates recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 109-B-C - Conversion deepening Web extension
 
 - Status: DONE.

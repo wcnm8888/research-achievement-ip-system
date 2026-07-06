@@ -108,7 +108,8 @@
 | 真实 DOI/文献库/专利状态接入 | 未完成 | adapter 方向存在，真实联调未做 | 二期/集成专项 |
 | 费用线上审批闭环 | 已完成本地演示闭环 | Step 83/95/96：费用审批动作、结果、历史和讲解 caveat 已进入 10 路径演示 | 真实财务付款、发票、对账、批量缴费单和生产财务系统联调未完成 |
 | 成果转化 MVP | 已完成本地演示闭环 | Step 84/95/96：归档成果的 conversion ledger 面板、创建结果和 Dashboard 指标可见 | 不等于成果转化全流程、真实合同、法务、付款、收益分配或后评估验收 |
-| 成果转化全流程 | 技术方案已完成，待实现 | 原始需求列为二期深化；Step 84 仅完成 MVP local ledger；Step 107-B-C 已制定成果转化深化 MVP 技术方案 | 下一步建议 Step 108-B-C additive schema/backend 扩展；仍不等于真实合同、法务、付款、收益分配或后评估全流程验收 |
+| 成果转化深化 MVP | 已完成本地演示闭环 | Step 107-B-C 技术方案；Step 108-B-C additive schema/backend；Step 109-B-C Web 展示/编辑；Step 110-B-C localhost/local-demo/synthetic UI acceptance 和闭环归档 | 仅为本地深化切片；不等于真实合同、法务、财务、付款、发票、结算、生产监控、生产验收或真实外部系统联调 |
+| 成果转化全流程 | 本地深化 MVP 已闭环，真实全流程未完成 | 原始需求列为二期深化；Step 84 local ledger 和 Step 107-110 本地深化 MVP 已完成 | 后续若要做真实全流程，必须另立真实合同/法务/财务/付款/发票/结算/外部系统 readiness 与授权方案 |
 | 高级报表/自定义报表 | MVP 已完成 | Step 101-B 选定首片；Step 102-B 技术方案；Step 103-B `GET /reports/templates` 和 `GET /reports/templates/:templateId/run`；Step 104-B Web `Custom Reports` 页面；Step 105-B 归档 | 仅 aggregate-only/local-demo/custom report summary；不是 full BI、production monitoring、生产验收、定时推送、保存模板、导出、raw JSON 或敏感 drilldown |
 | 移动端 | 未完成 | 原始需求明确第一版不做完整移动端 | 二期或独立项目 |
 | 大规模性能压测 | 未完成 | 原始需求明确第一版不做十万级真实压测 | 生产前专项 |
@@ -198,7 +199,7 @@
 建议任务：
 
 - P0：自定义报表 / 高级报表 MVP，优先做只读报表配置和结果展示，不依赖 production、真实外部系统或真实凭证。
-- P1：成果转化深化 MVP，Step 107-B-C 已完成 schema-aware 技术方案；下一步建议 additive schema/backend 扩展，包含本地合同状态、到账状态、收益分配明细 JSON 和后评价摘要。
+- P1：成果转化深化 MVP 已完成 localhost/local-demo/synthetic 闭环；后续不再建议继续扩展为真实合同/法务/财务/付款能力，除非先启动单独 readiness/授权方案。
 - P1：ImportJobItem Web 行级安全只读展示，复用既有 backend-only API，严格禁止 raw payload/raw JSON/export/retry/rollback。
 - P2/P3：移动端需求重评估、更完整账号生命周期、涉密授权管理增强、附件存储/下载增强、定时提醒/计划任务增强。
 
@@ -226,7 +227,7 @@
 
 建议下一步：
 
-- Route B：二期功能增强，自定义报表 / 高级报表 MVP 已闭环；成果转化深化 MVP 技术方案已完成，下一步建议 Step 108-B-C schema + backend 扩展。
+- Route B：二期功能增强，自定义报表 / 高级报表 MVP 与成果转化深化 MVP 均已完成本地闭环；下一步应重新选择新的 scoped product slice。
 - Route C：真实外部系统对接准备，仅在有真实系统、凭证、测试环境和授权后启动。
 - Route D：production readiness，仅在用户明确要求并授权后启动。
 

@@ -1,5 +1,94 @@
 # Evidence
 
+## 2026-07-06 Step 110-B-C - Conversion deepening local UI acceptance evidence
+
+- Goal:
+  - Run localhost/local-demo/synthetic UI acceptance for the achievement
+    conversion deepening MVP and archive closure evidence without API/Prisma
+    source changes or production access.
+- Initial state:
+  - `git log -1 --oneline`: `71e020d feat: add conversion deepening web fields`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/conversion-deepening-mvp-technical-plan.md`.
+  - `apps/web/src/AchievementDetail.tsx` conversion ledger snippets.
+  - `apps/web/src/Dashboard.tsx` conversion aggregate snippets.
+  - `apps/web/src/CustomReports.tsx` and `CustomReports.test.tsx`
+    conversion-funnel snippets.
+  - Step 108 conversion domain/DTO snippets.
+  - `prisma/schema.prisma` conversion enum/model snippets.
+  - `prisma/seed.cjs` demo user, archived achievement, and seeded conversion
+    snippets.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 108/109
+    sections.
+- Local runtime evidence:
+  - Used existing local synthetic PostgreSQL container
+    `research-step106-custom-reports-postgres`, database
+    `research_step106_custom_reports`.
+  - Applied the Step 108 additive migration to the local synthetic DB only:
+    `20260706120000_extend_achievement_conversion_deepening`.
+  - Started local API dev server on `127.0.0.1:3100`.
+  - Started local Web dev server on `localhost:5173`.
+  - Stopped the local API/Web dev server processes after acceptance.
+  - Did not clean Docker, volumes, containers, or evidence directories.
+- Acceptance evidence directory:
+  - `.local-step110-conversion-deepening-acceptance/`.
+  - Kept untracked and not staged.
+- Browser/UI evidence:
+  - `05-achievement-detail-after-edit.yml` and `.png`:
+    archived achievement detail shows `Contract: Active`, `Revenue: Overdue`,
+    `Evaluation: Positive`, due/received dates, evaluation summary, and safe
+    allocation summary.
+  - `06-dashboard-conversion-summary.yml` and `.png`:
+    Dashboard shows `转化合同状态`, `转化到账状态`, `转化本地逾期`, and
+    `转化评价效果`.
+  - `08-custom-reports-conversion-funnel.yml` and `.png`:
+    Custom Reports `conversion-funnel` shows `conversionStatus`,
+    `contractStatus`, `revenueStatus`, `evaluationEffect`, `localOverdue`, and
+    `evaluated`.
+  - `09-forbidden-text-check.json`: no disabled entry points or sensitive terms
+    matched.
+  - `acceptance-report.json`: sanitized PASS summary.
+- PASS/BLOCKED classification:
+  - PASS: AchievementDetail conversion ledger field visibility.
+  - PASS: local UI edit of conversion deepening fields.
+  - PASS: Dashboard conversion aggregate display.
+  - PASS: Custom Reports conversion-funnel aggregate-only display.
+  - PASS: disabled entry point and sensitive term check.
+  - BLOCKED: none.
+- Boundary evidence:
+  - This is localhost/local-demo/synthetic UI acceptance only.
+  - Not production/VPS/production DB acceptance.
+  - Not real contract/legal/finance/payment/invoice/settlement acceptance.
+  - No real external-system integration or provider call.
+  - No `.env` or `.env.production` content was read.
+  - No production runbook or production migration was executed.
+  - No API source, Web source, Prisma schema, or migration source was modified.
+- Files updated for archive:
+  - `memory-bank/conversion-deepening-local-ui-acceptance.md`.
+  - `memory-bank/conversion-deepening-mvp-closure.md`.
+  - `memory-bank/next-phase-options.md`.
+  - `memory-bank/project-requirement-completion-matrix.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Verification:
+  - `git diff --check`: passed with Windows LF/CRLF warnings only.
+  - `git diff --cached --check`: passed.
+  - `corepack pnpm --filter @research-ip/api test -- achievement-conversions dashboard reports conversion`:
+    passed, 9 test files and 72 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement Dashboard CustomReports api-client`:
+    passed, 6 test files and 131 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: passed.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - Final git diff/stat/status checks are recorded in the Step 110 closeout.
+
 ## 2026-07-06 Step 109-B-C - Conversion deepening Web evidence
 
 - Goal:
