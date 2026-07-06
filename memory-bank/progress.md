@@ -14291,3 +14291,51 @@
     hits from the local scan list.
   - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
   - `git diff --cached --check`: PASS.
+
+## 2026-07-06 Step 119 - Route B account lifecycle closure retro and next slice reselection
+
+- Status: DONE, docs-only.
+- Starting point:
+  - HEAD at task start: `ffa15b2 docs: archive account lifecycle local acceptance`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/route-b-next-slice-selection-after-account-lifecycle.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Account lifecycle closure:
+  - Step 115 produced the technical plan.
+  - Step 116 completed API projection hardening.
+  - Step 117 completed Web management display enhancement.
+  - Step 118 completed localhost/local-demo/synthetic UI acceptance as PASS
+    with caveat.
+  - The closure is not production identity acceptance.
+  - The line did not connect real HR/SSO, send real email/SMS, use production
+    DB/VPS, or operate Docker.
+- Caveat classification:
+  - Local seed data lacked pending-activation, active-credential, and
+    persistent disabled sample users.
+  - Local demo personas lacked a system-config user missing only the
+    invite-specific or reset-specific lifecycle permission.
+  - The local enable operation wait timed out in the browser script, but later
+    UI/API checks confirmed ACTIVE.
+  - These are local demonstration data coverage gaps, not production
+    acceptance.
+- Route B reselection:
+  - Recommended next product slice: Secret authorization management enhancement
+    as a docs-only safety plan.
+  - Alternative if the user prioritizes environment control: Docker/untracked
+    artifact read-only inventory as housekeeping only.
+  - `.local-step118-account-lifecycle-acceptance/web-dev.pid` was recorded as a
+    local acceptance run trace only; it was not deleted, moved, or cleaned.
+- Explicitly not done:
+  - No `apps/**` or `prisma/**` change.
+  - No schema or migration change.
+  - No service run, production/VPS/production DB access, real external-system
+    call, Docker operation, or environment-file content read.
+- Verification:
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS.
+  - `git diff --name-only`: only `memory-bank/**` documentation files.

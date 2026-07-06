@@ -138,6 +138,14 @@ lifecycle local/demo enhancement, with the next recommended step documented in
 Step 115 adds the docs-only account lifecycle enhancement technical plan in
 `memory-bank/account-lifecycle-enhancement-technical-plan.md`; it recommends
 Step 116 as API projection hardening with no schema/migration for the first MVP.
+Steps 116-118 close the account lifecycle local/demo loop with API projection
+hardening, Web management display, and local UI acceptance archived in
+`.local-step118-account-lifecycle-acceptance/`. The result is local/demo
+synthetic PASS with caveat, not production identity acceptance.
+Step 119 reselects the next Route B slice in
+`memory-bank/route-b-next-slice-selection-after-account-lifecycle.md`; the
+recommended product next step is a docs-only Secret authorization management
+enhancement safety plan.
 
 ### Goal
 
@@ -173,14 +181,13 @@ Completed first implementation loop:
 
 Recommended next Route B choices:
 
-- Start Step 115 - Account lifecycle enhancement technical plan, scoped to a
-  local/demo admin lifecycle status/actions/audit/safety summary and excluding
-  real HR/SSO, real email/SMS, token/password/session exposure, and production
-  identity acceptance.
-- After Step 115, start Step 116 as API projection hardening: derive safe login
-  eligibility, lifecycle action summary, and role-change summary from existing
-  models without schema/migration unless implementation proves the derivation
-  impossible.
+- Start Step 120 - Secret authorization management enhancement safety plan as a
+  docs-only product/security design before any implementation.
+- Keep the account lifecycle line closed as local/demo/synthetic PASS with
+  caveat only; do not describe it as production identity acceptance.
+- If the user's priority is local environment sprawl instead of a product
+  feature, run a Docker/untracked artifact read-only inventory as housekeeping
+  only. Do not clean, stop, delete, move, archive, or prune anything.
 - Add deferred aggregate templates such as ImportJob aggregate history or
   external mock overview.
 - Run a separate mobile/responsive review only if the user explicitly wants
@@ -279,12 +286,12 @@ docs-only unless the user separately authorizes execution.
   the default next step after Step 100.
 - Route B is now the active product-enhancement planning route; the current
   custom reports / advanced reports MVP, achievement conversion deepening MVP,
-  and ImportJobItem safe row Web display are closed for
-  localhost/local-demo/synthetic acceptance. Step 114 selects more complete
-  account lifecycle local/demo enhancement as the next scoped slice and
-  Step 115 completes its technical plan. The next recommended implementation
-  step is Step 116 API projection hardening with no schema/migration for the
-  first MVP.
+  ImportJobItem safe row Web display, and account lifecycle enhancement are
+  closed for localhost/local-demo/synthetic acceptance. Step 119 reselects the
+  next recommended Route B product slice as a docs-only Secret authorization
+  management enhancement safety plan. Treat Docker/untracked artifact inventory
+  as optional housekeeping only if the user prioritizes local environment
+  control.
 - Choose Route C if real external providers are available and the user wants
   integration readiness planning before any call.
 - Choose Route D if the user explicitly wants production readiness, with all

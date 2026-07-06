@@ -19084,6 +19084,68 @@
   - No Docker start/create/stop/delete/cleanup.
   - No real HR/SSO, email/SMS, or external system call.
 
+## 2026-07-06 Step 119 - Route B account lifecycle closure retro and next slice reselection evidence
+
+- Classification:
+  - Docs-only closure retro and Route B reselection.
+  - No feature implementation.
+- Canonical state checked before documentation:
+  - `git log -1 --oneline` -> `ffa15b2 docs: archive account lifecycle local acceptance`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/account-lifecycle-enhancement-technical-plan.md` Step 116-118
+    and caveats sections.
+  - `memory-bank/progress.md` Step 115-118 latest sections.
+  - `memory-bank/evidence.md` Step 115-118 latest sections.
+  - `memory-bank/route-b-next-slice-selection.md`.
+  - `memory-bank/next-phase-options.md` Route B section.
+- Documentation evidence:
+  - Added `memory-bank/route-b-next-slice-selection-after-account-lifecycle.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Account lifecycle closure evidence:
+  - Step 115: docs-only technical plan.
+  - Step 116: API projection hardening.
+  - Step 117: Web management enhancement.
+  - Step 118: localhost/local-demo/synthetic UI acceptance, PASS with caveat.
+  - The account lifecycle line is closed only as local/demo/synthetic evidence,
+    not production identity acceptance.
+- Caveat classification evidence:
+  - Local seed data did not include pending-activation, active-credential, or
+    persistent disabled sample users.
+  - Local demo personas did not include a system-config user missing only the
+    invite-specific or reset-specific lifecycle permission.
+  - The local enable wait timed out in the browser script, but subsequent UI/API
+    checks confirmed ACTIVE.
+  - These are local demonstration data coverage gaps, not production acceptance.
+- Reselection evidence:
+  - Ranked the requested candidates: Secret authorization management,
+    Attachment management, Scheduled reminders / planned task, Custom report
+    enhancement templates, Mobile / responsive demand reassessment, and Local
+    Docker / untracked artifact read-only inventory.
+  - Recommended Secret authorization management enhancement as the next Route B
+    product slice, starting with a docs-only safety plan.
+  - Recorded Docker/untracked artifact read-only inventory as optional
+    housekeeping if environment sprawl becomes the priority.
+  - Recorded `.local-step118-account-lifecycle-acceptance/web-dev.pid` as a
+    local acceptance run trace only; it was not deleted, moved, or cleaned.
+- Boundaries observed:
+  - No `apps/**` or `prisma/**` change.
+  - No schema or migration change.
+  - No service startup.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No Docker start/create/stop/delete/cleanup.
+  - No real HR/SSO, email/SMS, or external system call.
+- Verification:
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS.
+  - `git diff --name-only`: only `memory-bank/**` documentation files.
+
 ## 2026-07-06 Step 116 - Account lifecycle API projection hardening evidence
 
 - Canonical state checked before implementation:
