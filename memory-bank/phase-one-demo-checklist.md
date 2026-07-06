@@ -143,6 +143,15 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] If localhost, Docker, browser, or one UI action fails on site, fall back only to Step 95 screenshots and Step 96/97/98-A documentation conclusions.
 - [ ] Do not show token, password, cookie, session, `DATABASE_URL`, connection string, raw payload, raw log, `.env` content, or unmasked sensitive evidence.
 
+## Step 100 Route A Final Handoff Notes
+
+- [ ] Step 100 Route A final handoff completed: `memory-bank/phase-one-route-a-final-handoff.md`.
+- [ ] Route A final status remains PASS 0, PASS with caveat 10, BLOCKED 0 under localhost / local demo / synthetic DB only.
+- [ ] Formal demo should start from the onsite card, use the rehearsal plan for fuller wording, use presenter brief plus Step 95 final recheck for evidence mapping, and use final archive for closeout boundaries.
+- [ ] Do not add more demo-preparation documents by default after Step 100 unless the user explicitly asks.
+- [ ] Next phase should be user-selected Route B, Route C, or Route D.
+- [ ] Route C/D require separate explicit authorization and must not default to reading `.env`, accessing production/VPS/production DB, running production migration/runbook, or calling real external systems.
+
 ## PASS / BLOCKED Rules
 
 - PASS: the local/demo page/action is reproducible, expected visible result is present, evidence is captured, and boundary wording is accurate.

@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-07-06 Step 100 - Route A demo preparation final handoff archive evidence
+
+- Goal:
+  - Produce a docs-only final handoff archive for Route A formal demo preparation and direct the next phase to user-selected Route B/C/D.
+- Initial state:
+  - `git log -1 --oneline`: `613b568 docs: add phase one demo onsite card`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/phase-one-demo-onsite-card.md` opening statement, 10-step run card, persona switch, Q&A, forbidden answers, and fallback wording.
+  - `memory-bank/phase-one-demo-rehearsal-plan.md` demo judgment, boundary, 10-step rehearsal order, persona switch, fallback, do-not-claim checklist, and closing line.
+  - `memory-bank/phase-one-final-archive.md` closure judgment, ten demo paths, explicit non-claims, recommended next routes, and handoff summary.
+  - `memory-bank/next-phase-options.md` current default state, archived mainline, Route A/B/C/D, and selection guidance.
+  - `memory-bank/phase-one-demo-checklist.md` Step 98-A/99-A notes, PASS/BLOCKED rules, and explicit non-claims.
+  - `memory-bank/evidence.md` Step 97-Step 99-A relevant slices.
+- Documentation updated:
+  - Added `memory-bank/phase-one-route-a-final-handoff.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Handoff result:
+  - Route A final status remains PASS 0, PASS with caveat 10, BLOCKED 0.
+  - Formal demo remains limited to `localhost` / local demo / synthetic DB and is not production acceptance.
+  - Completed material index now points to final archive, presenter brief, rehearsal plan, onsite card, final UI screenshot evidence report, and checklist.
+  - Formal demo use order starts with onsite card, then rehearsal plan, presenter brief plus Step 95 final recheck, then final archive.
+  - Non-claims explicitly include production/VPS/production DB acceptance, production migration execution, real HR/SSO/email/SMS/finance/DOI/literature/patent integration, full BI/mobile/load/disaster-recovery/production-monitoring completion, and ImportJobItem row-level/retry/delete/cleanup/rollback/download/export/raw JSON support.
+  - Next phase is user-selected Route B, Route C, or Route D; Route C/D require separate authorization and must not default to reading `.env`, accessing production/VPS/production DB, or calling real external systems.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+- Docs-only verification:
+  - `git diff --check`: PASS; LF-to-CRLF normalization warnings only before staging.
+  - `git diff --cached --check`: PASS; empty before staging.
+  - `git diff --stat`: tracked docs diff only before staging; new handoff file remained untracked until explicitly staged.
+  - Final closeout verification after staging: `git diff --check` PASS, `git diff --cached --check` PASS, `git diff --stat` empty, and `git diff --cached --stat` limited to `memory-bank/evidence.md`, `memory-bank/next-phase-options.md`, `memory-bank/phase-one-demo-checklist.md`, `memory-bank/phase-one-route-a-final-handoff.md`, and `memory-bank/progress.md`.
+  - Final `git status --short` showed those five allowed documentation files staged; existing untracked local artifacts remained untracked.
+
 ## 2026-07-06 Step 99-A - Phase-one demo onsite card and Q&A guardrails evidence
 
 - Goal:

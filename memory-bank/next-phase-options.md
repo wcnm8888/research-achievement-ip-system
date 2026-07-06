@@ -23,6 +23,10 @@ display, real external-system calls, or local artifact cleanup.
   unstaged, undeleted, and uncleaned.
 - Runtime/API/Web/schema/migration/package/lockfile/config files remain out of
   scope for this Step.
+- Route A formal demo preparation is now finally handed off in
+  `memory-bank/phase-one-route-a-final-handoff.md`; by default, do not add more
+  demo-preparation documents unless the user asks for them.
+- The next phase should be selected by the user as Route B, Route C, or Route D.
 
 ## Archived Mainline
 
@@ -53,6 +57,8 @@ The current archived mainline includes:
 
 ## Route A - Formal Demo Rehearsal
 
+Status: complete and handed off by Step 100.
+
 ### Goal
 
 Prepare for a formal phase-one localhost presentation without changing runtime
@@ -75,9 +81,14 @@ order, evidence references, and fallback preparation.
 
 ### First Suggested Step
 
-Step 98-A: read-only rehearsal checklist for `phase-one-final-archive.md`,
-Step 95 evidence, and Step 96 presenter brief. Confirm the opening caveat,
-10-path order, fallback wording, and explicit non-claims.
+Completed:
+
+- Step 98-A: `memory-bank/phase-one-demo-rehearsal-plan.md`.
+- Step 99-A: `memory-bank/phase-one-demo-onsite-card.md`.
+- Step 100: `memory-bank/phase-one-route-a-final-handoff.md`.
+
+Default next action: stop adding Route A demo-preparation docs unless the user
+explicitly asks for more.
 
 ### Explicitly Forbidden
 
@@ -202,8 +213,8 @@ docs-only unless the user separately authorizes execution.
 
 ## Selection Guidance
 
-- Choose Route A if a formal phase-one demo is imminent and the work should
-  remain read-only rehearsal/presenter preparation.
+- Route A is complete for formal phase-one demo preparation and should not be
+  the default next step after Step 100.
 - Choose Route B if the next priority is product value beyond the demo:
   custom reports, mobile, fuller conversion, or richer phase-two workflows.
 - Choose Route C if real external providers are available and the user wants

@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-07-06 Step 100 - Route A demo preparation final handoff archive
+
+- Status: DONE.
+- Task classification:
+  - S docs-only Route A handoff/archive update.
+- Starting point:
+  - HEAD at task start: `613b568 docs: add phase one demo onsite card`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/phase-one-route-a-final-handoff.md`.
+  - Updated `memory-bank/next-phase-options.md` to mark Route A complete and direct the next phase to user-selected Route B/C/D.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with Step 100 handoff notes.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Route A final classification:
+  - PASS: 0.
+  - PASS with caveat: 10.
+  - BLOCKED: 0.
+- Final handoff conclusion:
+  - Phase-one localhost demo closure is archived.
+  - Route A rehearsal and onsite card are complete.
+  - Formal demo may proceed only as localhost / local demo / synthetic DB evidence, not production acceptance.
+  - No more demo-preparation documents should be added by default unless the user explicitly requests them.
+  - Next phase should be selected by the user as Route B, Route C, or Route D.
+- Explicitly not done:
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` changes.
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No screenshots, logs, `.local-step95-ui-preflight/` content, or existing untracked local artifacts were staged or modified.
+- Verification:
+  - Docs-only verification commands recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 99-A - Phase-one demo onsite card and Q&A guardrails
 
 - Status: DONE.
