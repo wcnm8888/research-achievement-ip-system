@@ -19008,6 +19008,82 @@
     connection string, invite/reset link, raw payload, or raw request/response
     was captured in committed documentation.
 
+## 2026-07-06 Step 118 - Account lifecycle local UI acceptance evidence
+
+- Classification:
+  - Local/demo/synthetic UI acceptance only.
+  - This is not production identity acceptance.
+- Canonical state checked before acceptance:
+  - `git log -1 --oneline` -> `5db2c6a feat: enhance account lifecycle web management`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/account-lifecycle-enhancement-technical-plan.md` Step 118
+    section.
+  - `memory-bank/progress.md` Step 117 latest section.
+  - `memory-bank/evidence.md` Step 117 latest section.
+  - `apps/web/src/AccountManagement.tsx` lifecycle projection display
+    snippets.
+  - `apps/web/src/AccountManagement.test.tsx` Step 117 projection and
+    permission-boundary tests.
+- Local service evidence:
+  - Existing local API listener was found on `localhost:3000`.
+  - `GET /api/health` returned OK.
+  - A local Vite Web dev server was started on `localhost:5173` for the
+    acceptance run and connected to the existing API proxy.
+  - The local Vite Web dev server started for this run was stopped after
+    acceptance evidence was captured.
+  - Docker was not used.
+- UI acceptance evidence:
+  - AccountManagement list loaded with 6 local demo users.
+  - `Login eligibility` column was visible in the list.
+  - Detail drawer displayed login eligibility, lifecycle action summary, and
+    role change audit summary.
+  - Detail empty states were stable, including the no recent safe role changes
+    state.
+  - A local disable/enable roundtrip was performed on `Demo Secret Manager`;
+    the intermediate disabled state appeared in detail, then the user was
+    restored to ACTIVE.
+  - Non-system-config demo context hid the AccountManagement navigation entry
+    and recorded zero AccountManagement API requests during the boundary check.
+- Caveats:
+  - Current local seed data only provided ACTIVE users with no local credential.
+  - No pre-existing pending-activation, active-credential, or persistent
+    disabled sample was available.
+  - Available demo personas did not include a system-config user missing only
+    the invite-specific or reset-specific lifecycle permission, so those
+    missing-permission displays are supported by Step 117 automated UI tests
+    rather than this live persona switch.
+- Evidence directory:
+  - `.local-step118-account-lifecycle-acceptance/acceptance-report.md`.
+  - `.local-step118-account-lifecycle-acceptance/acceptance-summary.json`.
+  - `.local-step118-account-lifecycle-acceptance/account-management-list.png`.
+  - `.local-step118-account-lifecycle-acceptance/account-management-detail.png`.
+  - `.local-step118-account-lifecycle-acceptance/account-management-disabled-after-action.png`.
+  - `.local-step118-account-lifecycle-acceptance/account-management-enabled-after-restore.png`.
+  - `.local-step118-account-lifecycle-acceptance/non-system-config-boundary.png`.
+  - `.local-step118-account-lifecycle-acceptance/browser-console.txt`.
+  - `.local-step118-account-lifecycle-acceptance/sensitive-scan.txt`.
+- Sensitive-field scan evidence:
+  - Local DOM and evidence-text scan found no high-risk private markers from
+    the Step 118 forbidden-display list.
+  - The only browser console errors observed were local expected 403 responses
+    from workflow access after switching to a non-system-config persona.
+- Verification:
+  - Step 118 evidence directory text scan: PASS, no high-risk private marker
+    hits from the local scan list.
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS.
+- Boundaries observed:
+  - No Prisma schema or migration change.
+  - No source-code change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No Docker start/create/stop/delete/cleanup.
+  - No real HR/SSO, email/SMS, or external system call.
+
 ## 2026-07-06 Step 116 - Account lifecycle API projection hardening evidence
 
 - Canonical state checked before implementation:

@@ -14239,3 +14239,55 @@
   - `git diff --cached --check`: PASS.
   - `corepack pnpm --filter @research-ip/web test -- AccountManagement api-client`: PASS, 2 files / 84 tests.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+
+## 2026-07-06 Step 118 - Account lifecycle local UI acceptance and closure
+
+- Status: DONE, PASS with caveat.
+- Starting point:
+  - HEAD at task start: `5db2c6a feat: enhance account lifecycle web management`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Local services used:
+  - Reused existing local API on `localhost:3000`; `/api/health` returned OK.
+  - Started a local Vite Web dev server on `localhost:5173` for this acceptance
+    run, using the existing API proxy.
+  - No Docker operation was performed.
+- Acceptance completed:
+  - AccountManagement list loaded and displayed 6 local demo users.
+  - The list displayed the `Login eligibility` column.
+  - Detail displayed login eligibility, lifecycle action summary, and role
+    change audit summary.
+  - Detail empty states were stable; no missing-value rendering markers were
+    observed.
+  - Local disable/enable roundtrip succeeded for `Demo Secret Manager`; the
+    detail and list surfaces refreshed after state changes, and the user was
+    restored to ACTIVE.
+  - Non-system-config demo context did not show the AccountManagement
+    navigation entry and recorded zero AccountManagement API requests during
+    the boundary check.
+  - Local page/evidence scan found no high-risk private markers from the Step
+    118 forbidden-display list.
+- Caveats:
+  - Current local seed data only provided ACTIVE users with no local credential;
+    no pre-existing pending-activation, active-credential, or persistent
+    disabled samples were available.
+  - Disabled state was demonstrated through the local disable/enable
+    roundtrip, not as a pre-existing seed row.
+  - Available demo personas did not include a system-config user missing only
+    the invite-specific or reset-specific lifecycle permission; those
+    missing-permission states remain covered by Step 117 automated UI tests.
+- Evidence directory:
+  - `.local-step118-account-lifecycle-acceptance/`.
+- Explicitly not done:
+  - No Prisma schema or migration change.
+  - No source-code change.
+  - No production/VPS/production DB access.
+  - No real HR/SSO integration, real email/SMS send, or external provider call.
+  - No `.env` or `.env.production` content read.
+  - No Docker start/create/stop/delete/cleanup.
+- Verification:
+  - Step 118 evidence directory text scan: PASS, no high-risk private marker
+    hits from the local scan list.
+  - `git diff --check`: PASS; Windows LF-to-CRLF warnings only.
+  - `git diff --cached --check`: PASS.
