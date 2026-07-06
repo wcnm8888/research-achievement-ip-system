@@ -85,6 +85,14 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Account lifecycle reset button visibility is not the same as successful delivery; use an eligible local account if delivery-summary evidence is required.
 - [ ] Do not describe the Step 92 admin persona as a production account, real HR/SSO identity, production finance reviewer, or broad production admin data scope.
 
+## Step 93 UI Recheck Notes
+
+- [ ] Step 93 recheck result: final local/demo classification is PASS 0, PASS with caveat 8, BLOCKED 2.
+- [ ] Admin fee review is repaired locally: admin can see fee `60000000-0000-4000-8000-000000000001`, approve it, and see completed review history/task state.
+- [ ] Admin archive remains BLOCKED: admin can list `PENDING_ARCHIVE` achievements, but opening seeded `Demo Patent for Data Governance Method` detail returns `Required permissions are missing`, and no archive action is visible.
+- [ ] Conversion ledger remains BLOCKED: admin can list archived `Demo Paper on Knowledge Management`, but opening detail returns `Required permissions are missing`, so seeded ledger and create/update controls are not visible.
+- [ ] Formal full 10-path demo is not recommended until archive/detail and conversion/detail permission/action blockers are repaired and re-screenshoted locally.
+
 ## PASS / BLOCKED Rules
 
 - PASS: the local/demo page/action is reproducible, expected visible result is present, evidence is captured, and boundary wording is accurate.

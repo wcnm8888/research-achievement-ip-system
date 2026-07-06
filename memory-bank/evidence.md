@@ -18036,6 +18036,55 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-06 Step 93 - Phase-one demo UI recheck evidence
+
+- Canonical state checked before recheck:
+  - `git log -1 --oneline` -> `b976966 fix: repair phase one demo ui blockers`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed:
+  - `memory-bank/phase-one-demo-ui-preflight-report.md`.
+  - `memory-bank/phase-one-demo-acceptance-script.md`.
+  - `memory-bank/phase-one-demo-checklist.md`.
+  - Latest Step 92 section of `memory-bank/progress.md`.
+  - Latest Step 92 section of `memory-bank/evidence.md`.
+- Local/demo setup evidence:
+  - Docker Desktop was initially unavailable, then local Docker Desktop was started from the E: drive installation and `docker version` returned server `29.5.2`.
+  - Started local synthetic PostgreSQL container `research-step93-postgres` bound to `127.0.0.1:15432`.
+  - `pg_isready` and local TCP probe for `127.0.0.1:15432`: PASS.
+  - `corepack pnpm prisma migrate deploy` with redacted local-only `DATABASE_URL`: PASS, 11 migrations applied.
+  - `corepack pnpm prisma db seed` with redacted local-only `DATABASE_URL`: PASS.
+  - Started local API dev server; `GET http://127.0.0.1:3000/api/health` returned `{"service":"research-achievement-ip-api","status":"ok"}`.
+  - Started local Web dev server; `http://127.0.0.1:5173` returned HTTP 200.
+  - Playwright was available from the Codex runtime; local Chrome executable was used. No browser package download was performed.
+- UI evidence captured locally under `.local-step93-ui-preflight/`:
+  - Researcher context, Achievements list, create form, local AI-department draft creation, submit modal/result.
+  - Secretary Workflow Tasks list/detail, approve modal, approve result.
+  - Admin Achievements list showing `PENDING_ARCHIVE` records, followed by seeded patent detail permission blocker.
+  - Admin Workflow Tasks showing fee review only, no archive task.
+  - Admin Fees/detail pending review, approve modal, approve result, review history, and completed fee workflow task.
+  - Admin archived paper detail permission blocker for conversion ledger.
+  - Fee attachment metadata and admin masked Audit Logs.
+  - Account Management lifecycle buttons and safety wording.
+  - Settings import history empty state, API integration metadata create/enable, success/failure mock logs.
+  - Dashboard fixed scoring summary.
+- Classification:
+  - PASS: 0.
+  - PASS with caveat: 8.
+  - BLOCKED: 2.
+- Documentation evidence:
+  - Added `memory-bank/phase-one-demo-ui-recheck-report.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation operation, production runbook, production migration, or production monitoring operation.
+  - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed report text.
+  - Existing untracked local artifacts listed by the user were not modified.
+
 ## 2026-07-06 Step 92 - Phase-one demo UI blocker repair evidence
 
 - Canonical state checked before implementation:

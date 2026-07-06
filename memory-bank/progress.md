@@ -13351,3 +13351,38 @@
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
   - Local synthetic DB seed/UI preflight: BLOCKED by local environment because Docker CLI was present but Docker Desktop `desktop-linux` engine was not running, so `docker run` could not connect to `npipe:////./pipe/dockerDesktopLinuxEngine`. No Docker daemon start, production/VPS access, `.env` read, seed write, local screenshot capture, or cleanup was attempted after that failure.
+
+## 2026-07-06 Step 93 - Phase-one demo UI recheck after Step 92
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `b976966 fix: repair phase one demo ui blockers`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/phase-one-demo-ui-recheck-report.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with Step 93 recheck cautions.
+  - Ran local/demo UI recheck with Docker Desktop available, a fresh local synthetic PostgreSQL container, local API/Web dev servers, and Playwright-driven local Chrome screenshots under `.local-step93-ui-preflight/`.
+- UI recheck classification:
+  - PASS: 0.
+  - PASS with caveat: 8.
+  - BLOCKED: 2.
+- PASS with caveat:
+  - Researcher created and submitted a local AI-department achievement.
+  - Secretary approved the generated workflow task.
+  - Attachment metadata and masked audit logs were visible.
+  - Admin fee review path is repaired: fee `60000000-0000-4000-8000-000000000001` showed pending review action and completed approval/history/task state.
+  - Account lifecycle buttons and safety wording were visible.
+  - External mock center worked after creating/enabling non-sensitive local DOI metadata; success/failure safe logs were visible.
+  - Dashboard fixed scoring sections were visible.
+  - Import history empty states were visible.
+- BLOCKED:
+  - Admin archive path: admin can list `PENDING_ARCHIVE` achievements, but opening seeded `Demo Patent for Data Governance Method` detail returns `Required permissions are missing`; no archive action is visible.
+  - Conversion ledger: admin can list archived `Demo Paper on Knowledge Management`, but opening detail returns `Required permissions are missing`; seeded ledger and create/update controls are not visible.
+- Recommendation:
+  - Do not enter the full formal 10-path demo yet. Archive and conversion need a follow-up repair and fresh localhost screenshots.
+- Boundaries observed:
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation, production runbook, production migration, or production monitoring operation.
+  - No raw token, cookie, session, password, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed documentation.
