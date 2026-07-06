@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-07-06 Step 105-B - Custom reports MVP closure
+
+- Status: DONE.
+- Task classification:
+  - S docs + verification closure for the Route B custom reports MVP.
+- Starting point:
+  - HEAD at task start: `8b03cf1 feat: add custom reports web page`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/custom-reports-mvp-closure.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Closure conclusion:
+  - Custom reports MVP backend + Web loop is closed.
+  - `GET /reports/templates` and `GET /reports/templates/:templateId/run` are implemented.
+  - Web `Custom Reports` page is implemented and linked from navigation.
+  - Five templates are supported end to end: `achievement-distribution`, `achievement-trend`, `fee-risk-summary`, `workflow-efficiency`, and `conversion-funnel`.
+- Boundaries retained:
+  - Aggregate-only summary.
+  - Existing backend policy visibility and department narrowing.
+  - Workflow first version is current-assignee aggregate.
+  - No export/download, saved templates, scheduled reports, raw JSON, raw payload, or sensitive drilldown.
+  - Not full BI, not production monitoring, not production/VPS/production DB acceptance, and not real external-system integration.
+- Verification:
+  - Required Step 105-B gates recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 104-B - Custom reports MVP Web page
 
 - Status: DONE.

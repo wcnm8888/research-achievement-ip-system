@@ -84,8 +84,8 @@
 | 费用预警/提醒 | 已完成基础 | `ReminderTask`、`Notification`、`reminders`、`notifications` | scheduler/cron、真实邮件/短信、真实队列未完成 |
 | 站内通知 mock | 已完成基础 | Notification mock/in-app 边界 | 真实邮件、短信通道未完成 |
 | 基础搜索 | 已完成基础 | `apps/api/src/search`、`Search.tsx`，Step 9B DONE | 高级组合检索、真实 Meilisearch 生产索引运维需后续确认 |
-| 基础统计看板 | 已完成基础 | `apps/api/src/dashboard`、`Dashboard.tsx`，Step 9 DONE | 自定义报表、定时推送、完整趋势分析未完成 |
-| Dashboard 固定评分口径 | 已完成本地演示 | Step 87/95/96：Dashboard 展示部门、费用风险、审批效率、成果转化、mock 集成概览 | 固定评分摘要不是完整 BI、自定义报表、生产监控或真实生产数据验收 |
+| 基础统计看板 | 已完成基础 | `apps/api/src/dashboard`、`Dashboard.tsx`，Step 9 DONE | 定时推送、完整趋势分析、生产监控未完成 |
+| Dashboard 固定评分口径 | 已完成本地演示 | Step 87/95/96：Dashboard 展示部门、费用风险、审批效率、成果转化、mock 集成概览 | 固定评分摘要不是完整 BI、生产监控或真实生产数据验收 |
 | 系统配置/API 集成配置 | 已完成基础 | `settings` API 与 `SettingsApiIntegrations.tsx`，Step 51D/E/F | 真实外部接口密钥/连接配置生产使用未授权 |
 | 外部接口 mock demo center | 已完成本地演示 | Step 86/95/96：mock provider 场景、安全结果和调用日志摘要可见 | mock/adapter 演示不是 DOI、文献库、专利平台、财务、HR/SSO 真实联调 |
 | 部门维护 | 已完成 | `department-management` API 与 `DepartmentManagement.tsx`，Step 37 完成 | 生产写验收仍需单独授权 |
@@ -109,7 +109,7 @@
 | 费用线上审批闭环 | 已完成本地演示闭环 | Step 83/95/96：费用审批动作、结果、历史和讲解 caveat 已进入 10 路径演示 | 真实财务付款、发票、对账、批量缴费单和生产财务系统联调未完成 |
 | 成果转化 MVP | 已完成本地演示闭环 | Step 84/95/96：归档成果的 conversion ledger 面板、创建结果和 Dashboard 指标可见 | 不等于成果转化全流程、真实合同、法务、付款、收益分配或后评估验收 |
 | 成果转化全流程 | 未完成 | 原始需求列为二期深化；Step 84 仅完成 MVP local ledger | 二期功能线 |
-| 高级报表/自定义报表 | 二期 P0 推荐首个切片 | 原始需求列为二期深化；Step 101-B 已新增 `memory-bank/phase-two-feature-priority-plan.md` | 推荐先做不依赖 production/真实外部系统/真实凭证的只读自定义报表 MVP |
+| 高级报表/自定义报表 | MVP 已完成 | Step 101-B 选定首片；Step 102-B 技术方案；Step 103-B `GET /reports/templates` 和 `GET /reports/templates/:templateId/run`；Step 104-B Web `Custom Reports` 页面；Step 105-B 归档 | 仅 aggregate-only/local-demo/custom report summary；不是 full BI、production monitoring、生产验收、定时推送、保存模板、导出、raw JSON 或敏感 drilldown |
 | 移动端 | 未完成 | 原始需求明确第一版不做完整移动端 | 二期或独立项目 |
 | 大规模性能压测 | 未完成 | 原始需求明确第一版不做十万级真实压测 | 生产前专项 |
 | 灾备演练/生产监控大盘 | 未完成 | 有策略/文档方向，未执行演练 | 生产上线前专项 |
@@ -226,7 +226,7 @@
 
 建议下一步：
 
-- Route B：二期功能增强，当前首个推荐实现切片是自定义报表 / 高级报表 MVP。
+- Route B：二期功能增强，自定义报表 / 高级报表 MVP 已闭环；下一步可选择 local UI/browser acceptance、自定义报表增强模板，或成果转化深化 MVP 技术方案。
 - Route C：真实外部系统对接准备，仅在有真实系统、凭证、测试环境和授权后启动。
 - Route D：production readiness，仅在用户明确要求并授权后启动。
 
@@ -234,7 +234,7 @@
 
 - 一期 localhost 演示闭环已经归档，不再建议继续以“补齐一期演示闭环”为默认主线。
 - Route A 已在 Step 100 最终交接归档，后续不再默认补演示文档。
-- 自定义报表 MVP 直接回应统计汇总耗时和院/部门决策需求，且可先保持只读、本地、无真实外部系统依赖。
+- 自定义报表 MVP 已直接回应统计汇总耗时和院/部门决策需求，当前保持只读、本地、aggregate-only、无真实外部系统依赖。
 - 如果进入真实系统或生产路线，必须先确认授权、环境、凭证、脱敏和人工 go/no-go 门禁。
 
 ## 当前明确不能推断为完成的事项
@@ -244,5 +244,6 @@
 - 不能把 adapter/mock 等同于真实外部系统联调。
 - 不能把 ImportJobItem backend-only API 等同于 Web 行级展示。
 - 不能把 Step 95 screenshotable localhost 路径等同于 production/VPS/生产 DB 验收。
+- 不能把自定义报表 MVP 等同于 full BI、production monitoring、定时推送、保存模板、导出、raw JSON 或敏感 drilldown。
 - 不能把 schema/migration 文件存在等同于生产 migration 已应用。
 - 不能把导入本地 apply 成功等同于真实生产数据导入已授权。

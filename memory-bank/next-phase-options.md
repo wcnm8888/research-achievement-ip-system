@@ -107,6 +107,9 @@ custom reports / advanced reports MVP, documented in
 `memory-bank/phase-two-feature-priority-plan.md`.
 Step 102-B adds the executable technical plan and interface contract in
 `memory-bank/custom-reports-mvp-technical-plan.md`.
+Steps 103-B to 105-B close the first custom reports MVP loop with the backend
+read-only API, Web `Custom Reports` page, and closure archive in
+`memory-bank/custom-reports-mvp-closure.md`.
 
 ### Goal
 
@@ -133,19 +136,23 @@ conversion, revenue distribution/post-evaluation, and richer scheduled reports.
 Step 101-B completed the Route B feature priority plan and recommends custom
 reports / advanced reports MVP as the first implementation slice.
 
-Recommended next implementation step:
-
-- Implement the read-only custom reports MVP backend API first, using existing
-  safe local data domains and the Step 102-B contract.
-- Keep saved templates, scheduled delivery, raw CSV/raw JSON export,
-  production monitoring, and sensitive drilldowns out of the first slice unless
-  separately authorized.
-- Do not require production, real providers, or real credentials.
-
-Next recommended implementation order:
+Completed first implementation loop:
 
 - Step 103-B: backend read-only reports API.
 - Step 104-B: Web Custom Reports page.
+- Step 105-B: custom reports MVP closure and archive.
+
+Recommended next Route B choices:
+
+- Run custom reports local UI/browser acceptance if visual/local evidence is
+  needed for this new page.
+- Add deferred aggregate templates such as ImportJob aggregate history or
+  external mock overview.
+- Start the achievement conversion deepening MVP technical plan.
+
+Keep saved templates, scheduled delivery, raw CSV/raw JSON export, production
+monitoring, and sensitive drilldowns out of the completed MVP unless separately
+authorized.
 
 ### Explicitly Forbidden
 

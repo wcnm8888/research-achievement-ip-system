@@ -1,5 +1,54 @@
 # Evidence
 
+## 2026-07-06 Step 105-B - Custom reports MVP closure evidence
+
+- Goal:
+  - Close and archive the Route B custom reports / advanced reports MVP loop after Step 103-B backend API and Step 104-B Web page.
+- Initial state:
+  - `git log -1 --oneline`: `8b03cf1 feat: add custom reports web page`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/custom-reports-mvp-technical-plan.md`.
+  - `memory-bank/phase-two-feature-priority-plan.md` custom reports first-slice lines.
+  - `apps/api/src/reports/reports.controller.ts`, `reports.service.ts`, `domain/custom-report-domain.types.ts`, and reports tests key lines.
+  - `apps/web/src/CustomReports.tsx` and `CustomReports.test.tsx` key lines.
+  - `apps/web/src/App.tsx` Custom Reports nav and mount lines.
+  - `apps/web/src/api-client.ts` reports client lines.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 103-B and Step 104-B sections.
+- Files updated:
+  - Added `memory-bank/custom-reports-mvp-closure.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Closure evidence:
+  - API supports `GET /reports/templates`.
+  - API supports `GET /reports/templates/:templateId/run`.
+  - Web `Custom Reports` page is linked near Dashboard.
+  - End-to-end supported templates are `achievement-distribution`, `achievement-trend`, `fee-risk-summary`, `workflow-efficiency`, and `conversion-funnel`.
+  - Web copy states local/demo/custom report summary, not full BI, not production monitoring, no raw export, no sensitive drilldown, and no real external-system evidence.
+  - API/Web tests cover no export/download/raw JSON/save template/schedule UI entries and sensitive field-name avoidance.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI screenshot run, Prisma validate/generate, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `prisma/schema.prisma`, migration, or `prisma/seed.cjs` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+- Required verification:
+  - `git diff --check`: PASS; LF-to-CRLF normalization warnings only.
+  - `git diff --cached --check`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- reports`: PASS, 2 files / 17 tests.
+  - `corepack pnpm --filter @research-ip/web test -- CustomReports api-client App`: PASS, 4 files / 66 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --stat`, `git diff --cached --stat`, and `git status --short`: recorded at final review before commit.
+
 ## 2026-07-06 Step 104-B - Custom reports MVP Web page evidence
 
 - Goal:
