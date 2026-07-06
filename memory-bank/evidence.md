@@ -1,5 +1,81 @@
 # Evidence
 
+## 2026-07-06 Step 107-B-C - Conversion deepening MVP technical plan evidence
+
+- Goal:
+  - Produce a docs-only technical plan for the Route B achievement conversion
+    deepening MVP, based on the existing Step 84 local conversion ledger and the
+    closed Step 105/106 Custom Reports loop.
+- Initial state:
+  - `git log -1 --oneline`: `e22e3a2 docs: record custom reports local ui acceptance`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/custom-reports-mvp-closure.md`.
+  - `memory-bank/custom-reports-local-ui-acceptance.md`.
+  - `memory-bank/phase-two-feature-priority-plan.md` achievement conversion
+    deepening row.
+  - `memory-bank/project-requirement-completion-matrix.md` achievement
+    conversion rows and Route B recommendation sections.
+  - `memory-bank/next-phase-options.md` Route B section and selection guidance.
+  - `apps/api/src/achievement-conversions/**` controller/service/repository/DTO
+    and domain snippets only.
+  - `apps/web/src/AchievementDetail.tsx` conversion ledger panel snippets only.
+  - `apps/api/src/dashboard/**` and `apps/web/src/Dashboard.tsx` conversion
+    metric snippets only.
+  - `apps/api/src/reports/**` and `apps/web/src/CustomReports.tsx` conversion
+    funnel aggregate snippets only.
+  - `prisma/schema.prisma` `AchievementConversion` model and related enum
+    snippets only.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 84, Step
+    105-B, and Step 106-B-A sections only.
+- Files updated:
+  - Added `memory-bank/conversion-deepening-mvp-technical-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Technical plan conclusion:
+  - Recommended MVP slice: extend the existing local conversion ledger with
+    local contract status, revenue collection status, optional due/received
+    dates, structured aggregate benefit allocation JSON, and one
+    post-evaluation summary.
+  - Recommended DB approach: additive Prisma schema/migration with nullable
+    fields/defaulted enums so existing Step 84 records remain valid.
+  - Recommended API approach: extend existing nested
+    `GET/POST/PATCH /achievements/:achievementId/conversions` DTOs and response
+    shape; no first-step endpoint split.
+  - Recommended Web approach: extend the current `AchievementDetail` conversion
+    ledger panel plus narrow Dashboard/Custom Reports aggregates.
+  - Recommended next steps: Step 108-B-C schema + backend extension, Step
+    109-B-C Web extension, Step 110-B-C local UI acceptance / closure.
+- Boundaries observed:
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` files were modified.
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, Prisma
+    validate/generate, service startup, typecheck, test, build, real external
+    provider call, real contract/legal/payment/finance/invoice/reconciliation
+    operation, or remote host access.
+  - No `.local-step106-custom-reports-acceptance/` screenshot/log/browser
+    evidence or existing untracked local artifact was staged, committed, moved,
+    deleted, cleaned, or modified.
+- Required verification:
+  - `git diff --check`: PASS; Git reported LF-to-CRLF working-copy warnings
+    for touched memory-bank files only.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: docs-only memory-bank diff before staging; the new
+    technical plan was still untracked at that moment.
+  - `git diff --cached --stat`: empty before staging.
+  - `git status --short`: tracked memory-bank docs changes plus existing
+    untracked local artifacts and the new technical plan before staging.
+
 ## 2026-07-06 Step 106-B-A - Custom reports local UI/browser acceptance evidence
 
 - Goal:

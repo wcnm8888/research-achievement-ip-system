@@ -113,6 +113,9 @@ read-only API, Web `Custom Reports` page, and closure archive in
 Step 106-B-A adds localhost/local-demo/synthetic UI/browser acceptance evidence
 in `memory-bank/custom-reports-local-ui-acceptance.md`; screenshots and logs
 remain untracked under `.local-step106-custom-reports-acceptance/`.
+Step 107-B-C adds the docs-only technical plan for the next Route B line,
+achievement conversion deepening MVP, in
+`memory-bank/conversion-deepening-mvp-technical-plan.md`.
 
 ### Goal
 
@@ -148,15 +151,16 @@ Completed first implementation loop:
 
 Recommended next Route B choices:
 
+- Implement the achievement conversion deepening MVP schema/backend extension
+  from the Step 107-B-C technical plan.
 - Add deferred aggregate templates such as ImportJob aggregate history or
   external mock overview.
-- Start the achievement conversion deepening MVP technical plan.
 - Run a separate mobile/responsive review only if the user explicitly wants
   browser viewport acceptance beyond the current desktop local-demo path.
 
-Keep saved templates, scheduled delivery, raw CSV/raw JSON export, production
-monitoring, and sensitive drilldowns out of the completed MVP unless separately
-authorized.
+Keep real contract/legal/payment/finance integration, saved templates,
+scheduled delivery, raw CSV/raw JSON export, production monitoring, and
+sensitive drilldowns out of the completed MVP unless separately authorized.
 
 ### Explicitly Forbidden
 
@@ -246,8 +250,9 @@ docs-only unless the user separately authorizes execution.
 - Route A is complete for formal phase-one demo preparation and should not be
   the default next step after Step 100.
 - Route B is now the active product-enhancement planning route; the current
-  first recommended implementation slice is custom reports / advanced reports
-  MVP.
+  custom reports / advanced reports MVP is closed, and the next recommended
+  implementation line is the achievement conversion deepening MVP from the
+  Step 107-B-C technical plan.
 - Choose Route C if real external providers are available and the user wants
   integration readiness planning before any call.
 - Choose Route D if the user explicitly wants production readiness, with all

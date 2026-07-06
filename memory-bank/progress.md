@@ -1,5 +1,54 @@
 # Progress
 
+## 2026-07-06 Step 107-B-C - Conversion deepening MVP technical plan
+
+- Status: DONE.
+- Task classification:
+  - S docs-only technical planning for the next Route B phase-two feature line.
+- Starting point:
+  - HEAD at task start: `e22e3a2 docs: record custom reports local ui acceptance`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/conversion-deepening-mvp-technical-plan.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Recommended MVP scope:
+  - Extend the existing Step 84 local `AchievementConversion` ledger with local
+    contract status, revenue collection status, optional due/received dates,
+    structured aggregate benefit allocation JSON, and one post-evaluation
+    summary.
+  - Keep real contract/legal/payment/finance/invoice/settlement systems,
+    normalized allocation workflow, milestone history table, scheduled
+    reminders, exports, and sensitive drilldowns out of the first
+    implementation step.
+- DB/schema decision:
+  - The recommended MVP needs an additive Prisma schema/migration because the
+    new fields must be durable, validated, and aggregateable.
+  - Existing conversion rows should remain valid through nullable fields and
+    defaults.
+- Next implementation recommendation:
+  - Step 108-B-C: schema + backend extension.
+  - Step 109-B-C: Web extension.
+  - Step 110-B-C: local UI acceptance / closure.
+- Boundaries retained:
+  - Docs-only; no `apps/api/**`, `apps/web/**`, or `prisma/**` changes.
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, migration, Docker startup/cleanup, or real external
+    system call.
+  - Existing untracked local artifacts, including screenshots/logs, were not
+    staged, committed, moved, deleted, or cleaned.
+- Verification:
+  - Required Step 107-B-C docs-only gates recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 106-B-A - Custom reports local UI/browser acceptance
 
 - Status: DONE.
