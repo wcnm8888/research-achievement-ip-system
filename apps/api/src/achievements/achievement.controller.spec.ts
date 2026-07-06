@@ -310,6 +310,36 @@ describe("AchievementController HTTP", () => {
     });
   });
 
+  it("reads detail with department-scoped achievement read permission for demo admin paths", async () => {
+    await withTestApp([PermissionCode.achievementReadDepartment], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get(`/achievements/${ids.achievement}`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      expect(service.getDetail).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          permissionCodes: expect.arrayContaining([
+            PermissionCode.achievementReadDepartment,
+          ]),
+        }),
+        ids.achievement,
+      );
+    });
+  });
+
+  it("rejects detail when neither own nor department read permission is granted", async () => {
+    await withTestApp([PermissionCode.achievementArchive], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get(`/achievements/${ids.achievement}`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(403);
+
+      expect(response.body.message).toBe("None of the required permissions are granted.");
+      expect(service.getDetail).not.toHaveBeenCalled();
+    });
+  });
+
   it("updates a draft with achievement:update_own", async () => {
     await withTestApp([PermissionCode.achievementUpdateOwn], async (app, service) => {
       await request(app.getHttpServer() as Server)

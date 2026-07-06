@@ -200,6 +200,18 @@ const createService = () => {
         ? { effect: "ALLOW" as const, reason: "allowed" }
         : { effect: "DENY" as const, reason: "denied", missingPermissions: [permission] },
     ),
+    hasAnyPermission: vi.fn((
+      context: UserContext | null | undefined,
+      permissions: readonly PermissionCode[],
+    ) => {
+      const matchedPermission = permissions.find((permission) =>
+        context?.permissionCodes.includes(permission),
+      );
+
+      return matchedPermission
+        ? { effect: "ALLOW" as const, reason: "allowed" }
+        : { effect: "DENY" as const, reason: "denied", missingPermissions: permissions };
+    }),
   };
   const policyQueryFactory = {
     achievementReadableWhere: vi.fn().mockReturnValue({ ownerUserId: ids.user }),
@@ -673,6 +685,42 @@ describe("AchievementService.getDetail", () => {
     expect(repository.findDetailByIdWhere).toHaveBeenCalledWith(ids.achievement, {
       ownerUserId: ids.user,
     });
+  });
+
+  it("reads seeded demo admin detail through department-scoped read permission", async () => {
+    const { service, repository, policyQueryFactory } = createService();
+    const departmentWhere = { departmentId: { in: [ids.department] } };
+    policyQueryFactory.achievementReadableWhere.mockReturnValueOnce(departmentWhere);
+
+    await service.getDetail(
+      makeContext([
+        PermissionCode.achievementArchive,
+        PermissionCode.achievementReadDepartment,
+      ]),
+      ids.achievement,
+    );
+
+    expect(policyQueryFactory.achievementReadableWhere).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissionCodes: [
+          PermissionCode.achievementArchive,
+          PermissionCode.achievementReadDepartment,
+        ],
+      }),
+    );
+    expect(repository.findDetailByIdWhere).toHaveBeenCalledWith(
+      ids.achievement,
+      departmentWhere,
+    );
+  });
+
+  it("rejects detail reads before repository access when no achievement read permission exists", async () => {
+    const { service, repository } = createService();
+
+    await expect(
+      service.getDetail(makeContext([PermissionCode.achievementArchive]), ids.achievement),
+    ).rejects.toBeInstanceOf(AchievementAccessDeniedError);
+    expect(repository.findDetailByIdWhere).not.toHaveBeenCalled();
   });
 
   it("uses forbidden semantics when a restricted achievement lacks SECRET_READ grant", async () => {

@@ -18085,6 +18085,51 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed report text.
   - Existing untracked local artifacts listed by the user were not modified.
 
+## 2026-07-06 Step 94 - Admin achievement detail blocker repair evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `014164b docs: add phase one demo ui recheck report`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed:
+  - Step 93 blocker sections in `memory-bank/phase-one-demo-ui-recheck-report.md`.
+  - Step 93 blocker and Step 94 checklist locations in `memory-bank/phase-one-demo-checklist.md`.
+  - `prisma/seed.cjs` role, admin user role, seeded pending archive achievement, archive workflow, and conversion ledger sections.
+  - `apps/api/src/achievements/**` detail/read/archive controller and service paths.
+  - `apps/api/src/achievement-conversions/**` list/create/update paths.
+  - Relevant `apps/api/src/authorization/**` guard/policy files.
+  - `apps/web/src/AchievementDetail.tsx` and `apps/web/src/Achievements.tsx` detail/action/conversion conditions.
+  - Achievement, conversion, and authorization test files touched by the repair.
+- Root cause evidence:
+  - List route: `GET /achievements` requires `user_context:read` and calls `AchievementService.list(...)`, which applies `achievementReadableWhere(...)`.
+  - Detail route before Step 94: `GET /achievements/:id` required only `achievement:read_own`, so local demo admin with department-scoped `achievement:read_department` was stopped by `PermissionGuard` with `Required permissions are missing`.
+  - Seeded admin remains a composite local demo user with `SYSTEM_ADMIN` plus AI department-scoped `DEPARTMENT_ADMIN` and `FINANCE_REVIEWER`; the repair did not add owner grants or broad superuser read.
+- Code evidence:
+  - Added `requiredAnyPermissionsMetadataKey` and `RequireAnyPermission(...)`.
+  - `PermissionGuard` now enforces all-permission metadata and any-permission metadata independently.
+  - `AchievementController.getDetail(...)` now accepts either `achievement:read_own` or `achievement:read_department`.
+  - `AchievementService.getDetail(...)` now asserts the same any-read requirement before repository access, then keeps the existing readable query and restricted-secret checks.
+  - `prisma/seed.cjs` was not modified.
+- Automated evidence:
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `node --check prisma/seed.cjs`: not run because `prisma/seed.cjs` was not modified in Step 94.
+  - `corepack pnpm --filter @research-ip/api test -- achievement conversion authorization`: PASS, 16 files / 225 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement`: PASS, 3 files / 61 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Classification evidence:
+  - Admin archive path: code/permission blocker repaired; classified as `PASS with caveat` pending fresh localhost UI screenshots for detail/action/result.
+  - Conversion ledger path: code/permission blocker repaired; classified as `PASS with caveat` pending fresh localhost UI screenshots for panel/create/update.
+  - Latest local/demo/synthetic classification: PASS 0, PASS with caveat 10, BLOCKED 0 known Step 93 code/permission blockers.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation operation, production runbook, production migration, or production monitoring operation.
+  - No local UI screenshot recheck was run in Step 94; this repair must not be described as production acceptance.
+  - Mock/adapter behavior remains local/demo only and is not real external integration evidence.
+  - Existing untracked local artifacts listed by the user were not modified.
+
 ## 2026-07-06 Step 92 - Phase-one demo UI blocker repair evidence
 
 - Canonical state checked before implementation:

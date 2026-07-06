@@ -8,6 +8,7 @@ import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
 import { PrismaService } from "../database/prisma.service";
+import { UserContext } from "../identity/user-context";
 import { AchievementService } from "./achievement.service";
 import {
   AchievementStatusCode,
@@ -266,6 +267,24 @@ describe("Achievement routes through AppModule", () => {
       expect(response.body.message).toBe("Required permissions are missing.");
       expect(service.createDraft).not.toHaveBeenCalled();
       expect(getFindFirstCallCount()).toBe(1);
+    });
+  });
+
+  it("allows achievement detail through AppModule with department read permission", async () => {
+    await withAppModule([PermissionCode.achievementReadDepartment], async (app, service) => {
+      await request(app.getHttpServer() as Server)
+        .get(`/achievements/${ids.achievement}`)
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      expect(service.getDetail).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          permissionCodes: expect.arrayContaining([
+            PermissionCode.achievementReadDepartment,
+          ]),
+        }),
+        ids.achievement,
+      );
     });
   });
 });

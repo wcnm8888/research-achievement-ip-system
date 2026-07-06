@@ -4,7 +4,11 @@ import { UserContext } from "../identity/user-context";
 import { AchievementConversionRepository } from "./achievement-conversion.repository";
 import { AchievementConversionService } from "./achievement-conversion.service";
 import { AchievementConversionStatusCode, AchievementConversionTypeCode } from "./domain/achievement-conversion-domain.types";
-import { AchievementConversionInvalidPayloadError, AchievementConversionInvalidStateError } from "./domain/achievement-conversion-service.errors";
+import {
+  AchievementConversionInvalidPayloadError,
+  AchievementConversionInvalidStateError,
+  AchievementConversionPermissionDeniedError,
+} from "./domain/achievement-conversion-service.errors";
 import { AchievementConversionRecord } from "./domain/achievement-conversion-repository.types";
 
 const ids = {
@@ -49,7 +53,7 @@ const makeConversion = (
   ...overrides,
 });
 
-const makeService = () => {
+const makeService = (permissionAllowed = true) => {
   const conversion = makeConversion();
   const repository = {
     findAchievementParentByIdWhere: vi.fn().mockResolvedValue({
@@ -69,7 +73,11 @@ const makeService = () => {
     }),
   };
   const rbacPolicy = {
-    hasPermission: vi.fn().mockReturnValue({ effect: "ALLOW" }),
+    hasPermission: vi.fn().mockReturnValue(
+      permissionAllowed
+        ? { effect: "ALLOW" }
+        : { effect: "DENY", reason: "denied" },
+    ),
   };
   const policyQueryFactory = {
     achievementDepartmentWhere: vi.fn().mockReturnValue({
@@ -176,6 +184,69 @@ describe("AchievementConversionService", () => {
       benefitDistributionSummaryProvided: true,
       remarksProvided: true,
     });
+  });
+
+  it("updates archived achievement conversion records through department-scoped policy", async () => {
+    const { auditService, policyQueryFactory, repository, service } = makeService();
+
+    await expect(
+      service.updateConversion(context, ids.conversion, {
+        status: AchievementConversionStatusCode.paid,
+        revenueAmount: 80000,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: ids.conversion,
+        status: AchievementConversionStatusCode.paid,
+        revenueAmount: "80000.00",
+      }),
+    );
+
+    expect(policyQueryFactory.achievementDepartmentWhere).toHaveBeenCalledWith(
+      context,
+      PermissionCode.achievementReadDepartment,
+    );
+    expect(repository.findByIdWhere).toHaveBeenCalledWith({
+      conversionId: ids.conversion,
+      achievementWhere: { departmentId: { in: [ids.department] } },
+    });
+    expect(repository.updateInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        conversionId: ids.conversion,
+        revenueAmount: 80000,
+        updatedById: ids.user,
+      }),
+    );
+    const auditInput = auditService.recordEventInTransaction.mock.calls[0]?.[1];
+    expect(auditInput.action).toBe("UPDATE");
+    expect(JSON.stringify(auditInput)).not.toContain("Example Company");
+  });
+
+  it("rejects list, create, and update when department read permission is missing", async () => {
+    const { repository, service } = makeService(false);
+
+    await expect(
+      service.listByAchievement(context, ids.achievement),
+    ).rejects.toBeInstanceOf(AchievementConversionPermissionDeniedError);
+    await expect(
+      service.createConversion(context, ids.achievement, {
+        conversionType: AchievementConversionTypeCode.license,
+        counterpartyName: "Example Company",
+        contractAmount: 100000,
+        revenueAmount: 60000,
+        status: AchievementConversionStatusCode.signed,
+      }),
+    ).rejects.toBeInstanceOf(AchievementConversionPermissionDeniedError);
+    await expect(
+      service.updateConversion(context, ids.conversion, {
+        status: AchievementConversionStatusCode.paid,
+      }),
+    ).rejects.toBeInstanceOf(AchievementConversionPermissionDeniedError);
+
+    expect(repository.listByAchievementWhere).not.toHaveBeenCalled();
+    expect(repository.findAchievementParentByIdWhere).not.toHaveBeenCalled();
+    expect(repository.findByIdWhere).not.toHaveBeenCalled();
   });
 
   it("rejects updates that would make revenue exceed contract total", async () => {

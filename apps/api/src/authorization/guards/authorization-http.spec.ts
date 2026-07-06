@@ -18,7 +18,10 @@ import { PermissionCode } from "../constants/permission-code";
 import { RoleCode } from "../constants/role-code";
 import { ScopeType } from "../constants/scope-type";
 import { CurrentUser } from "../decorators/current-user.decorator";
-import { RequirePermissions } from "../decorators/require-permissions.decorator";
+import {
+  RequireAnyPermission,
+  RequirePermissions,
+} from "../decorators/require-permissions.decorator";
 import { PermissionGuard } from "./permission.guard";
 import { UserContextGuard } from "./user-context.guard";
 
@@ -86,6 +89,19 @@ class Step4DTestController {
       userId: currentUser.userId,
     };
   }
+
+  @Get("protected-any")
+  @UseGuards(UserContextGuard, PermissionGuard)
+  @RequireAnyPermission(
+    PermissionCode.achievementReadOwn,
+    PermissionCode.achievementReadDepartment,
+  )
+  getProtectedAny(@CurrentUser() currentUser: UserContext) {
+    return {
+      ok: true,
+      userId: currentUser.userId,
+    };
+  }
 }
 
 @Module({
@@ -135,6 +151,39 @@ describe("authorization HTTP guards and decorators", () => {
         ok: true,
         userId: ids.users.researcher,
       });
+      expect(getFindFirstCallCount()).toBe(1);
+    });
+  });
+
+  it("allows a request when any one declared permission is granted", async () => {
+    await withTestApp(
+      { user: makeLoadedUser([PermissionCode.achievementReadDepartment]) },
+      async (app, getFindFirstCallCount) => {
+        const response = await request(app.getHttpServer() as Server)
+          .get("/step-4d-test/protected-any")
+          .set("X-Demo-User-Id", ids.users.researcher)
+          .expect(200);
+
+        expect(response.body).toEqual({
+          ok: true,
+          userId: ids.users.researcher,
+        });
+        expect(getFindFirstCallCount()).toBe(1);
+      },
+    );
+  });
+
+  it("returns 403 when none of the declared any-permissions are granted", async () => {
+    await withTestApp({ user: makeLoadedUser([PermissionCode.userContextRead]) }, async (
+      app,
+      getFindFirstCallCount,
+    ) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/step-4d-test/protected-any")
+        .set("X-Demo-User-Id", ids.users.researcher)
+        .expect(403);
+
+      expect(response.body.message).toBe("None of the required permissions are granted.");
       expect(getFindFirstCallCount()).toBe(1);
     });
   });

@@ -166,6 +166,10 @@ export class AchievementService {
     achievementId: string,
   ): Promise<AchievementAggregate> {
     this.assertUserContext(context);
+    this.assertAnyPermission(context, [
+      PermissionCode.achievementReadOwn,
+      PermissionCode.achievementReadDepartment,
+    ]);
 
     const where = this.policyQueryFactory.achievementReadableWhere(context);
     const aggregate = await this.repository.findDetailByIdWhere(achievementId, where);
@@ -553,6 +557,17 @@ export class AchievementService {
 
     if (decision.effect === "DENY") {
       throw new AchievementPermissionDeniedError(permission);
+    }
+  }
+
+  private assertAnyPermission(
+    context: UserContext,
+    permissions: readonly PermissionCode[],
+  ): void {
+    const decision = this.rbacPolicy.hasAnyPermission(context, permissions);
+
+    if (decision.effect === "DENY") {
+      throw new AchievementAccessDeniedError(decision.reason);
     }
   }
 

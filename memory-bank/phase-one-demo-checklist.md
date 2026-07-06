@@ -93,6 +93,15 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Conversion ledger remains BLOCKED: admin can list archived `Demo Paper on Knowledge Management`, but opening detail returns `Required permissions are missing`, so seeded ledger and create/update controls are not visible.
 - [ ] Formal full 10-path demo is not recommended until archive/detail and conversion/detail permission/action blockers are repaired and re-screenshoted locally.
 
+## Step 94 Repair Notes
+
+- [ ] Step 94 root cause: list used service-level department read policy, while detail was blocked early by a controller guard that required only `achievement:read_own`.
+- [ ] Step 94 repair: `GET /achievements/:id` now accepts `achievement:read_own` or `achievement:read_department`, and service detail read still enforces achievement readable scope plus restricted-secret policy.
+- [ ] Admin archive path is no longer a known code/permission blocker: local admin should be able to open `Demo Patent for Data Governance Method`, see the archive action for `PENDING_ARCHIVE`, and execute the local demo archive path.
+- [ ] Conversion ledger is no longer a known code/permission blocker: local admin should be able to open `Demo Paper on Knowledge Management`, see conversion record `93000000-0000-4000-8000-000000000001`, and create or update a safe local ledger record.
+- [ ] Latest code/test classification is PASS 0, PASS with caveat 10, BLOCKED 0, pending a fresh localhost-only UI screenshot recheck before formal demo use.
+- [ ] Continue to state that local/demo/synthetic validation is not production acceptance, mock/adapter behavior is not real external integration, and any future blocker must remain BLOCKED rather than being described as PASS.
+
 ## PASS / BLOCKED Rules
 
 - PASS: the local/demo page/action is reproducible, expected visible result is present, evidence is captured, and boundary wording is accurate.

@@ -13386,3 +13386,42 @@
   - No production/VPS/production DB access.
   - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation, production runbook, production migration, or production monitoring operation.
   - No raw token, cookie, session, password, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed documentation.
+
+## 2026-07-06 Step 94 - Admin achievement detail blocker repair
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `014164b docs: add phase one demo ui recheck report`.
+  - `git status --short` showed only existing untracked local artifacts listed by the user.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Root cause:
+  - The list route allowed local demo admin to see AI-department achievements because it required `user_context:read` and delegated actual achievement scope to `achievementReadableWhere(...)`.
+  - The detail route statically required `achievement:read_own`, so the local demo admin with department-scoped `achievement:read_department` was rejected before service-level department scope could run.
+  - Seeded roles/data were not the root cause, and the Web conversion/detail paths were using the intended nested endpoints.
+- Scope completed:
+  - Added `RequireAnyPermission(...)` metadata and `PermissionGuard` support for routes that require one of several permissions.
+  - Changed `GET /achievements/:id` to accept `achievement:read_own` or `achievement:read_department`.
+  - Added service-layer detail read assertion for the same any-read requirement before repository access, while keeping owner/department readable query scope and restricted-secret checks.
+  - Added API tests for department-scoped achievement detail, failure without read permission, admin archive detail precondition, conversion ledger create/update, and authorization OR semantics.
+  - Updated phase-one demo recheck report, checklist, progress, and evidence.
+- Blocker handling:
+  - Admin archive path: `BLOCKED` -> `PASS with caveat` at code/test level; fresh localhost UI screenshot evidence is still required before formal demo use.
+  - Conversion ledger path: `BLOCKED` -> `PASS with caveat` at code/test level; fresh localhost UI screenshot evidence is still required before formal demo use.
+- Latest local/demo classification:
+  - PASS: 0.
+  - PASS with caveat: 10.
+  - BLOCKED: 0 known code/permission blockers from Step 93.
+- Explicitly not done:
+  - No `prisma/seed.cjs` change.
+  - No fresh browser screenshot recheck was run in Step 94.
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook, production migration, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
+- Verification:
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `node --check prisma/seed.cjs`: not run because `prisma/seed.cjs` was not modified in Step 94.
+  - `corepack pnpm --filter @research-ip/api test -- achievement conversion authorization`: PASS, 16 files / 225 tests.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement`: PASS, 3 files / 61 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.

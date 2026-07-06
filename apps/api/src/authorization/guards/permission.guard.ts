@@ -8,7 +8,10 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { PermissionCode } from "../constants/permission-code";
-import { requiredPermissionsMetadataKey } from "../decorators/authorization-metadata";
+import {
+  requiredAnyPermissionsMetadataKey,
+  requiredPermissionsMetadataKey,
+} from "../decorators/authorization-metadata";
 import { RbacPolicyService } from "../policy/rbac-policy.service";
 import {
   getRequestUserContext,
@@ -30,8 +33,16 @@ export class PermissionGuard implements CanActivate {
         requiredPermissionsMetadataKey,
         [context.getHandler(), context.getClass()],
       );
+    const requiredAnyPermissions =
+      this.reflector.getAllAndOverride<readonly PermissionCode[]>(
+        requiredAnyPermissionsMetadataKey,
+        [context.getHandler(), context.getClass()],
+      );
 
-    if (!requiredPermissions || requiredPermissions.length === 0) {
+    if (
+      (!requiredPermissions || requiredPermissions.length === 0) &&
+      (!requiredAnyPermissions || requiredAnyPermissions.length === 0)
+    ) {
       return true;
     }
 
@@ -42,13 +53,22 @@ export class PermissionGuard implements CanActivate {
       throw new UnauthorizedException("User context is required.");
     }
 
-    const decision = this.rbacPolicy.hasAllPermissions(
-      userContext,
-      requiredPermissions,
-    );
+    const allDecision =
+      requiredPermissions && requiredPermissions.length > 0
+        ? this.rbacPolicy.hasAllPermissions(userContext, requiredPermissions)
+        : null;
 
-    if (decision.effect === "DENY") {
-      throw new ForbiddenException(decision.reason);
+    if (allDecision?.effect === "DENY") {
+      throw new ForbiddenException(allDecision.reason);
+    }
+
+    const anyDecision =
+      requiredAnyPermissions && requiredAnyPermissions.length > 0
+        ? this.rbacPolicy.hasAnyPermission(userContext, requiredAnyPermissions)
+        : null;
+
+    if (anyDecision?.effect === "DENY") {
+      throw new ForbiddenException(anyDecision.reason);
     }
 
     return true;

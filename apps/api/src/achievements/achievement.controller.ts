@@ -18,7 +18,10 @@ import {
 } from "@nestjs/common";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { CurrentUser } from "../authorization/decorators/current-user.decorator";
-import { RequirePermissions } from "../authorization/decorators/require-permissions.decorator";
+import {
+  RequireAnyPermission,
+  RequirePermissions,
+} from "../authorization/decorators/require-permissions.decorator";
 import { PermissionGuard } from "../authorization/guards/permission.guard";
 import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import { UserContext } from "../identity/user-context";
@@ -97,7 +100,10 @@ export class AchievementController {
   }
 
   @Get(":id")
-  @RequirePermissions(PermissionCode.achievementReadOwn)
+  @RequireAnyPermission(
+    PermissionCode.achievementReadOwn,
+    PermissionCode.achievementReadDepartment,
+  )
   async getDetail(
     @CurrentUser() currentUser: UserContext,
     @Param("id", new ParseUUIDPipe({ version: "4" })) achievementId: string,

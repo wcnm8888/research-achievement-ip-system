@@ -81,3 +81,31 @@ Do not claim:
 ## 7. Final Recheck Statement
 
 Step 93 rechecked the Step 92 local seed/persona repair with Docker Desktop and a local synthetic DB available. Final local/demo classification is 0 PASS, 8 PASS with caveat, and 2 BLOCKED. The admin fee review path is repaired. The admin archive path and conversion ledger path remain blocked at the achievement detail permission/action layer.
+
+## 8. Step 94 Repair Addendum
+
+Step 94 repaired the permission/action layer blocker identified above.
+
+Root cause:
+
+- The Achievements list route required `user_context:read` and then used `achievementReadableWhere(...)`, so the local demo admin could list AI-department achievements through its department-scoped `DEPARTMENT_ADMIN` role.
+- The achievement detail route statically required only `achievement:read_own`, so the same local demo admin was rejected by `PermissionGuard` before `AchievementService.getDetail(...)` could apply the existing department-scoped read policy.
+- The seed was not missing owner grants for the admin, and the Web detail/conversion paths were not calling the wrong resource. The mismatch was a backend list/detail policy mismatch at the controller guard layer.
+
+Repair:
+
+- Added an explicit `RequireAnyPermission(...)` guard path and changed `GET /achievements/:id` to accept either `achievement:read_own` or `achievement:read_department`.
+- Added a service-layer any-read assertion before detail repository access, then kept the existing `achievementReadableWhere(...)` department/owner scope and restricted-secret policy checks.
+- Did not make the demo admin a superuser, did not add owner grants, and did not bypass department or restricted-secret boundaries.
+
+Updated local/demo classification after code and automated tests:
+
+| Decision | Count | Paths |
+| --- | ---: | --- |
+| PASS | 0 | None. This remains local/demo/synthetic readiness only. |
+| PASS with caveat | 10 | Previous 8 caveated paths plus admin archive path and conversion ledger path. |
+| BLOCKED | 0 | No remaining known code/permission blocker from Step 93. |
+
+Caveat: Step 94 did not perform a fresh browser screenshot recheck. Before a formal presentation, rerun localhost-only UI evidence capture to show the admin pending-archive detail, archive action/result, archived detail, conversion ledger panel, and conversion create/update result. Do not present this as production/VPS/production DB acceptance.
+
+Non-claims remain unchanged: local/demo/synthetic acceptance is not production acceptance; mock/adapter behavior is not real external system integration; BLOCKED findings must not be packaged as PASS if a future UI recheck finds a new blocker.
