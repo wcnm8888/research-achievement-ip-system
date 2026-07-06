@@ -1,5 +1,67 @@
 # Evidence
 
+## 2026-07-06 Step 109-B-C - Conversion deepening Web evidence
+
+- Goal:
+  - Implement the Web display and edit entry points for the Step 108
+    achievement conversion deepening backend fields without API, Prisma,
+    production, or external-system changes.
+- Initial state:
+  - `git log -1 --oneline`: `3d0f43d feat: extend conversion deepening backend`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/conversion-deepening-mvp-technical-plan.md` Web plan section.
+  - Step 108 conversion domain/DTO snippets for field names and enum values.
+  - Step 108 Dashboard and Custom Reports domain snippets for aggregate shape.
+  - Existing `AchievementDetail`, `Dashboard`, `CustomReports`, and Web type
+    snippets.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 108 sections.
+- Files updated:
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/AchievementDetail.tsx`.
+  - `apps/web/src/AchievementDetail.test.ts`.
+  - `apps/web/src/Dashboard.tsx`.
+  - `apps/web/src/Dashboard.test.ts`.
+  - `apps/web/src/CustomReports.test.tsx`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Web evidence:
+  - `AchievementConversionRecord` and create/update input types now include
+    `contractStatus`, `revenueStatus`, `revenueDueDate`,
+    `revenueReceivedDate`, `benefitDistributionJson`, `evaluationEffect`,
+    `evaluationSummary`, and `evaluationDate`.
+  - `AchievementDetail` conversion ledger cards display the new local/demo
+    fields and only summarize benefit allocations as category, label, amount,
+    and ratio.
+  - `AchievementDetail` create/edit form supports the new local fields and a
+    bounded allocation editor; it does not expose raw JSON, contract files,
+    payment vouchers, exports, or external-system links.
+  - Dashboard displays Step 108 contract-status, revenue-status, local overdue,
+    and evaluation-effect conversion aggregates as local/demo summary.
+  - Custom Reports continues to render conversion-funnel aggregate-only rows and
+    totals through the existing generic table.
+- Boundary evidence:
+  - No `apps/api/**` changes.
+  - No `prisma/**` changes.
+  - No real contract/legal/payment/finance/invoice/settlement/reconciliation or
+    external-system integration.
+  - No production/VPS/production DB access and no production migration
+    execution.
+  - No screenshot/log directory was staged for commit.
+- Verification:
+  - `git diff --check`: passed with Windows LF/CRLF warnings only.
+  - `corepack pnpm --filter @research-ip/web test -- Achievement Dashboard CustomReports api-client`:
+    passed, 6 test files and 131 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: passed.
+  - Final git diff/stat/status checks are recorded in the Step 109 closeout.
+
 ## 2026-07-06 Step 108-B-C - Conversion deepening schema and backend evidence
 
 - Goal:

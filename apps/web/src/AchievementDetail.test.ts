@@ -3,6 +3,7 @@ import type { ApiClient, ApiError } from "./api-client";
 import {
   buildAttachmentDetailMetadataViewModel,
   buildAchievementAttachmentFormData,
+  buildConversionInput,
   buildAttachmentMetadataViewModel,
   buildVoidActionPayload,
   canUploadAchievementAttachment,
@@ -13,6 +14,7 @@ import {
   fetchAchievementAttachmentMetadata,
   fetchAchievementDetailById,
   formatAttachmentSize,
+  formatBenefitDistributionJson,
   getActionConfirmConfig,
   getAvailableAchievementActions,
   getAttachmentDetailMetadataReadonlyBoundary,
@@ -30,6 +32,7 @@ import {
   shouldLoadAttachmentMetadata,
   shouldLoadAchievementConversions,
   getTypeDetailFields,
+  toConversionForm,
 } from "./AchievementDetail";
 import type { AchievementConversionRecord, AchievementDetail, AttachmentMetadata } from "./types";
 
@@ -187,6 +190,17 @@ describe("Step 84 achievement conversion helpers", () => {
     revenueAmount: "60000.00",
     status: "SIGNED",
     conversionDate: "2026-07-01T00:00:00.000Z",
+    contractStatus: "ACTIVE",
+    revenueStatus: "PARTIAL",
+    revenueDueDate: "2026-08-01T00:00:00.000Z",
+    revenueReceivedDate: "2026-08-15T00:00:00.000Z",
+    benefitDistributionJson: [
+      { category: "TEAM", label: "Core team", amount: 36000, ratio: 0.6, note: "hidden note" },
+      { category: "UNIT", label: "Institute", amount: 24000, ratio: 0.4 },
+    ],
+    evaluationEffect: "POSITIVE",
+    evaluationSummary: "Local evaluation summary",
+    evaluationDate: "2026-09-01T00:00:00.000Z",
     benefitDistributionSummary: "Team 60%, institute 40%",
     remarks: "Internal ledger note",
     createdById: "user-id",
@@ -250,6 +264,56 @@ describe("Step 84 achievement conversion helpers", () => {
         body: expect.objectContaining({ status: "PAID" }),
       },
     ]);
+  });
+
+  it("builds Step 109 conversion deepening create and update payload fields", () => {
+    const form = toConversionForm(conversion);
+    const input = buildConversionInput({
+      ...form,
+      counterpartyName: " Example Company ",
+      contractAmount: "100000",
+      revenueAmount: "60000",
+      benefitDistributionJson: [
+        { category: "TEAM", label: " Core team ", amount: "36000", ratio: "0.6" },
+        { category: "UNIT", label: "Institute", amount: "24000", ratio: "0.4" },
+      ],
+    });
+
+    expect(input).toEqual(
+      expect.objectContaining({
+        contractStatus: "ACTIVE",
+        revenueStatus: "PARTIAL",
+        revenueDueDate: "2026-08-01",
+        revenueReceivedDate: "2026-08-15",
+        evaluationEffect: "POSITIVE",
+        evaluationSummary: "Local evaluation summary",
+        evaluationDate: "2026-09-01",
+        benefitDistributionJson: [
+          { category: "TEAM", label: "Core team", amount: 36000, ratio: 0.6 },
+          { category: "UNIT", label: "Institute", amount: 24000, ratio: 0.4 },
+        ],
+      }),
+    );
+
+    expect(
+      buildConversionInput({
+        ...form,
+        benefitDistributionJson: [
+          { category: "TEAM", label: "Core team", amount: "36000", ratio: "2" },
+        ],
+      }),
+    ).toBeNull();
+  });
+
+  it("renders safe benefit allocation summaries without raw notes or payload labels", () => {
+    const summary = formatBenefitDistributionJson(conversion.benefitDistributionJson);
+
+    expect(summary).toContain("Team / Core team");
+    expect(summary).toContain("Unit / Institute");
+    expect(summary).toContain("60%");
+    expect(summary).toContain("40%");
+    expect(summary).not.toContain("hidden note");
+    expect(summary).not.toContain("raw");
   });
 
   it("does not load conversion records without a demo user or achievement id", () => {

@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-07-06 Step 109-B-C - Conversion deepening Web extension
+
+- Status: DONE.
+- Task classification:
+  - M Web implementation slice for the Route B achievement conversion
+    deepening MVP.
+- Starting point:
+  - HEAD at task start: `3d0f43d feat: extend conversion deepening backend`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step106-custom-reports-acceptance/`,
+    `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Extended Web conversion types for Step 108 contract status, revenue
+    status, revenue due/received dates, structured benefit allocation,
+    evaluation effect, evaluation summary, and evaluation date.
+  - Extended `AchievementDetail` conversion ledger cards with local/demo
+    contract, revenue, evaluation, dates, post-evaluation summary, and safe
+    benefit allocation summaries.
+  - Extended `AchievementDetail` create/edit form with the same fields and a
+    simplified allocation editor limited to category, label, amount, and ratio.
+  - Extended Dashboard display for conversion contract-status distribution,
+    revenue-status distribution, local overdue/risk count, and
+    evaluation-effect distribution.
+  - Confirmed Custom Reports can render Step 108 conversion-funnel
+    aggregate-only rows/totals through the existing generic result table.
+  - Added Web tests for conversion payloads, safe allocation summaries,
+    Dashboard conversion aggregates, and Custom Reports conversion-funnel
+    aggregate rows.
+- Explicitly not done:
+  - No API or Prisma schema/migration changes.
+  - No real contract/legal/payment/finance/invoice/settlement/reconciliation
+    or external-system integration.
+  - No export/download, contract file upload, payment voucher upload, raw JSON,
+    or sensitive drilldown entry points.
+- Verification:
+  - Required Step 109-B-C gates recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 108-B-C - Conversion deepening schema and backend extension
 
 - Status: DONE.

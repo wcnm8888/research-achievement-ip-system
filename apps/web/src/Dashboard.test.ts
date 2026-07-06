@@ -96,6 +96,44 @@ const dashboardSummary: DashboardSummary = {
         ],
       },
     },
+    byContractStatus: {
+      key: "CONVERSION_CONTRACT_STATUS_DISTRIBUTION",
+      section: "CONVERSION",
+      value: {
+        buckets: [
+          { key: "ACTIVE", count: 4 },
+          { key: "COMPLETED", count: 2 },
+        ],
+      },
+    },
+    byRevenueStatus: {
+      key: "CONVERSION_REVENUE_STATUS_DISTRIBUTION",
+      section: "CONVERSION",
+      value: {
+        buckets: [
+          { key: "PARTIAL", count: 3 },
+          { key: "OVERDUE", count: 1 },
+          { key: "PAID", count: 2 },
+        ],
+      },
+    },
+    localRisk: {
+      key: "CONVERSION_LOCAL_RISK_SUMMARY",
+      section: "CONVERSION",
+      value: {
+        overdue: { key: "OVERDUE", count: 1 },
+      },
+    },
+    byEvaluationEffect: {
+      key: "CONVERSION_EVALUATION_EFFECT_DISTRIBUTION",
+      section: "CONVERSION",
+      value: {
+        buckets: [
+          { key: "POSITIVE", count: 2 },
+          { key: "NOT_EVALUATED", count: 4 },
+        ],
+      },
+    },
   },
   fee: {
     byPayStatus: {
@@ -276,6 +314,7 @@ describe("dashboard summary helpers", () => {
       conversionTotal: 6,
       conversionContractTotal: "250000.00",
       conversionRevenueTotal: "180000.00",
+      conversionLocalOverdue: 1,
       overdueFees: 3,
       dueSoonFees: 7,
       pendingFees: 7,
@@ -297,6 +336,7 @@ describe("dashboard summary helpers", () => {
       conversionTotal: 0,
       conversionContractTotal: "0.00",
       conversionRevenueTotal: "0.00",
+      conversionLocalOverdue: 0,
       overdueFees: 0,
       dueSoonFees: 0,
       pendingFees: 0,
@@ -326,12 +366,15 @@ describe("dashboard summary helpers", () => {
       "成果类型分布",
       "成果状态分布",
       "成果转化漏斗",
+      "转化合同状态",
+      "转化到账状态",
+      "转化评价效果",
       "费用缴费状态",
       "审批任务状态",
       "提醒任务状态",
       "Mock 接口调用状态",
     ]);
-    expect(sections).toHaveLength(7);
+    expect(sections).toHaveLength(10);
     expect(sections[0]?.items).toEqual([
       { key: "PATENT", label: "专利", count: 20, percent: 48 },
       { key: "PAPER", label: "论文", count: 12, percent: 29 },
@@ -346,10 +389,20 @@ describe("dashboard summary helpers", () => {
       "Paid",
       "Completed",
     ]);
-    expect(sections[3]?.items.map((item) => item.label)).toEqual(["待缴", "已缴"]);
-    expect(sections[4]?.items.map((item) => item.label)).toEqual(["待处理", "已通过"]);
-    expect(sections[5]?.items.map((item) => item.label)).toEqual(["待发送", "已发送"]);
-    expect(sections[6]?.items.map((item) => item.label)).toEqual([
+    expect(sections[3]?.items.map((item) => item.label)).toEqual(["Active", "Completed"]);
+    expect(sections[4]?.items.map((item) => item.label)).toEqual([
+      "Partial",
+      "Overdue",
+      "Paid",
+    ]);
+    expect(sections[5]?.items.map((item) => item.label)).toEqual([
+      "Positive",
+      "Not evaluated",
+    ]);
+    expect(sections[6]?.items.map((item) => item.label)).toEqual(["待缴", "已缴"]);
+    expect(sections[7]?.items.map((item) => item.label)).toEqual(["待处理", "已通过"]);
+    expect(sections[8]?.items.map((item) => item.label)).toEqual(["待发送", "已发送"]);
+    expect(sections[9]?.items.map((item) => item.label)).toEqual([
       "成功",
       "失败",
       "跳过",

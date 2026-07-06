@@ -47,6 +47,12 @@ export type DashboardSummary = {
       revenueTotal: string;
     }>;
     funnel: DashboardMetric<DashboardDistribution>;
+    byContractStatus: DashboardMetric<DashboardDistribution>;
+    byRevenueStatus: DashboardMetric<DashboardDistribution>;
+    localRisk: DashboardMetric<{
+      overdue: DashboardBucket;
+    }>;
+    byEvaluationEffect: DashboardMetric<DashboardDistribution>;
   };
   fee: {
     byPayStatus: DashboardMetric<DashboardDistribution>;
@@ -386,6 +392,45 @@ export type AchievementConversionStatusCode =
   | "COMPLETED"
   | "CANCELLED";
 
+export type AchievementConversionContractStatusCode =
+  | "DRAFT"
+  | "SIGNED"
+  | "ACTIVE"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type AchievementConversionRevenueStatusCode =
+  | "UNPAID"
+  | "PARTIAL"
+  | "PAID"
+  | "OVERDUE"
+  | "WAIVED";
+
+export type AchievementConversionEvaluationEffectCode =
+  | "NOT_EVALUATED"
+  | "POSITIVE"
+  | "NEUTRAL"
+  | "NEGATIVE"
+  | "MIXED";
+
+export type AchievementConversionBenefitCategoryCode =
+  | "UNIT"
+  | "TEAM"
+  | "PERSON"
+  | "PLATFORM"
+  | "OTHER";
+
+export type AchievementConversionBenefitDistributionItem = {
+  category: AchievementConversionBenefitCategoryCode;
+  label: string;
+  amount?: number | null;
+  ratio?: number | null;
+  note?: string | null;
+};
+
+export type AchievementConversionBenefitDistributionJson =
+  AchievementConversionBenefitDistributionItem[];
+
 export type AchievementConversionRecord = {
   id: string;
   achievementId: string;
@@ -396,6 +441,14 @@ export type AchievementConversionRecord = {
   revenueAmount: string | null;
   status: AchievementConversionStatusCode;
   conversionDate: string | null;
+  contractStatus: AchievementConversionContractStatusCode;
+  revenueStatus: AchievementConversionRevenueStatusCode;
+  revenueDueDate: string | null;
+  revenueReceivedDate: string | null;
+  benefitDistributionJson: AchievementConversionBenefitDistributionJson | null;
+  evaluationEffect: AchievementConversionEvaluationEffectCode;
+  evaluationSummary: string | null;
+  evaluationDate: string | null;
   benefitDistributionSummary: string | null;
   remarks: string | null;
   createdById: string | null;
@@ -415,6 +468,14 @@ export type CreateAchievementConversionInput = {
   revenueAmount?: number | null;
   status: AchievementConversionStatusCode;
   conversionDate?: string | null;
+  contractStatus?: AchievementConversionContractStatusCode;
+  revenueStatus?: AchievementConversionRevenueStatusCode;
+  revenueDueDate?: string | null;
+  revenueReceivedDate?: string | null;
+  benefitDistributionJson?: AchievementConversionBenefitDistributionJson | null;
+  evaluationEffect?: AchievementConversionEvaluationEffectCode;
+  evaluationSummary?: string | null;
+  evaluationDate?: string | null;
   benefitDistributionSummary?: string | null;
   remarks?: string | null;
 };

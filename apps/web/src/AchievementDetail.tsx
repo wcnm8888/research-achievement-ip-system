@@ -20,7 +20,12 @@ import { isApiError, type ApiClient, type ApiError, type AuthUser } from "./api-
 import { DataState, PermissionHint } from "./components/StateBlocks";
 import type {
   AchievementContributor,
+  AchievementConversionBenefitCategoryCode,
+  AchievementConversionBenefitDistributionItem,
+  AchievementConversionContractStatusCode,
+  AchievementConversionEvaluationEffectCode,
   AchievementConversionRecord,
+  AchievementConversionRevenueStatusCode,
   AchievementConversionStatusCode,
   AchievementConversionTypeCode,
   AchievementDetail as AchievementDetailType,
@@ -171,6 +176,38 @@ const conversionStatusLabels: Record<AchievementConversionStatusCode, string> = 
   PAID: "Paid",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
+};
+
+const conversionContractStatusLabels: Record<AchievementConversionContractStatusCode, string> = {
+  DRAFT: "Draft",
+  SIGNED: "Signed",
+  ACTIVE: "Active",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const conversionRevenueStatusLabels: Record<AchievementConversionRevenueStatusCode, string> = {
+  UNPAID: "Unpaid",
+  PARTIAL: "Partial",
+  PAID: "Paid",
+  OVERDUE: "Overdue",
+  WAIVED: "Waived",
+};
+
+const conversionEvaluationEffectLabels: Record<AchievementConversionEvaluationEffectCode, string> = {
+  NOT_EVALUATED: "Not evaluated",
+  POSITIVE: "Positive",
+  NEUTRAL: "Neutral",
+  NEGATIVE: "Negative",
+  MIXED: "Mixed",
+};
+
+const conversionBenefitCategoryLabels: Record<AchievementConversionBenefitCategoryCode, string> = {
+  UNIT: "Unit",
+  TEAM: "Team",
+  PERSON: "Person",
+  PLATFORM: "Platform",
+  OTHER: "Other",
 };
 
 const allowedAttachmentExtensions = new Set(["pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"]);
@@ -983,16 +1020,33 @@ const getDetailContentReadonlyLabels = (mode: DetailContentMode) => {
   };
 };
 
-type ConversionFormState = {
+export type ConversionFormState = {
   conversionType: AchievementConversionTypeCode;
   counterpartyName: string;
   contractAmount: string;
   revenueAmount: string;
   status: AchievementConversionStatusCode;
   conversionDate: string;
+  contractStatus: AchievementConversionContractStatusCode;
+  revenueStatus: AchievementConversionRevenueStatusCode;
+  revenueDueDate: string;
+  revenueReceivedDate: string;
+  benefitDistributionJson: ConversionBenefitAllocationFormState[];
+  evaluationEffect: AchievementConversionEvaluationEffectCode;
+  evaluationSummary: string;
+  evaluationDate: string;
   benefitDistributionSummary: string;
   remarks: string;
 };
+
+export type ConversionBenefitAllocationFormState = {
+  category: AchievementConversionBenefitCategoryCode;
+  label: string;
+  amount: string;
+  ratio: string;
+};
+
+const conversionBenefitAllocationMaxRows = 5;
 
 const emptyConversionForm = (): ConversionFormState => ({
   conversionType: "LICENSE",
@@ -1001,8 +1055,23 @@ const emptyConversionForm = (): ConversionFormState => ({
   revenueAmount: "",
   status: "LEAD_INTENT",
   conversionDate: "",
+  contractStatus: "DRAFT",
+  revenueStatus: "UNPAID",
+  revenueDueDate: "",
+  revenueReceivedDate: "",
+  benefitDistributionJson: [],
+  evaluationEffect: "NOT_EVALUATED",
+  evaluationSummary: "",
+  evaluationDate: "",
   benefitDistributionSummary: "",
   remarks: "",
+});
+
+const emptyBenefitAllocationRow = (): ConversionBenefitAllocationFormState => ({
+  category: "TEAM",
+  label: "",
+  amount: "",
+  ratio: "",
 });
 
 function AchievementConversionSection({
@@ -1104,8 +1173,8 @@ function AchievementConversionSection({
         <Alert
           showIcon
           type="info"
-          message="Internal structured ledger only"
-          description="This MVP records conversion status, counterparty, amounts, and benefit-distribution summary inside this system. It is not a contract signing, finance, legal, payment, invoice, or external platform integration."
+          message="Local/demo conversion deepening only"
+          description="This local MVP records status details, revenue status, safe allocation summaries, and post-evaluation notes for review. It is not real contract, legal, payment, invoice, settlement, finance system, or external-system acceptance."
         />
 
         <DataState
@@ -1118,14 +1187,23 @@ function AchievementConversionSection({
           <div className="conversion-ledger-list">
             {items.map((item) => (
               <div className="conversion-ledger-card" key={item.id}>
-                <Space direction="vertical" size={8} className="full-width">
-                  <Space size={8} wrap>
-                    <Tag color={getConversionStatusTagColor(item.status)}>
-                      {conversionStatusLabels[item.status] ?? item.status}
-                    </Tag>
-                    <Tag>{conversionTypeLabels[item.conversionType] ?? item.conversionType}</Tag>
-                    <Typography.Text strong>{item.counterpartyName}</Typography.Text>
-                  </Space>
+                  <Space direction="vertical" size={8} className="full-width">
+                    <Space size={8} wrap>
+                      <Tag color={getConversionStatusTagColor(item.status)}>
+                        {conversionStatusLabels[item.status] ?? item.status}
+                      </Tag>
+                      <Tag color={getConversionContractStatusTagColor(item.contractStatus)}>
+                        Contract: {conversionContractStatusLabels[item.contractStatus] ?? item.contractStatus}
+                      </Tag>
+                      <Tag color={getConversionRevenueStatusTagColor(item.revenueStatus)}>
+                        Revenue: {conversionRevenueStatusLabels[item.revenueStatus] ?? item.revenueStatus}
+                      </Tag>
+                      <Tag color={getConversionEvaluationEffectTagColor(item.evaluationEffect)}>
+                        Evaluation: {conversionEvaluationEffectLabels[item.evaluationEffect] ?? item.evaluationEffect}
+                      </Tag>
+                      <Tag>{conversionTypeLabels[item.conversionType] ?? item.conversionType}</Tag>
+                      <Typography.Text strong>{item.counterpartyName}</Typography.Text>
+                    </Space>
                   <Descriptions bordered column={2} size="small">
                     <Descriptions.Item label="Related achievement">
                       {item.achievementId}
@@ -1133,11 +1211,35 @@ function AchievementConversionSection({
                     <Descriptions.Item label="Date">
                       {formatDate(item.conversionDate)}
                     </Descriptions.Item>
+                    <Descriptions.Item label="Contract status">
+                      {conversionContractStatusLabels[item.contractStatus] ?? item.contractStatus}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Revenue status">
+                      {conversionRevenueStatusLabels[item.revenueStatus] ?? item.revenueStatus}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Revenue due date">
+                      {formatDate(item.revenueDueDate)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Revenue received date">
+                      {formatDate(item.revenueReceivedDate)}
+                    </Descriptions.Item>
                     <Descriptions.Item label="Contract total">
                       {formatMoney(item.contractAmount)}
                     </Descriptions.Item>
                     <Descriptions.Item label="Revenue total">
                       {formatMoney(item.revenueAmount)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Evaluation effect">
+                      {conversionEvaluationEffectLabels[item.evaluationEffect] ?? item.evaluationEffect}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Evaluation date">
+                      {formatDate(item.evaluationDate)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Evaluation summary" span={2}>
+                      {formatValue(item.evaluationSummary)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Benefit allocation detail" span={2}>
+                      {formatBenefitDistributionJson(item.benefitDistributionJson)}
                     </Descriptions.Item>
                     <Descriptions.Item label="Benefit summary" span={2}>
                       {formatValue(item.benefitDistributionSummary)}
@@ -1220,6 +1322,50 @@ function AchievementConversionSection({
                 />
               </Space>
               <Space size={8} wrap>
+                <Select
+                  className="conversion-ledger-select"
+                  options={Object.entries(conversionContractStatusLabels).map(([value, label]) => ({
+                    value,
+                    label: `Contract: ${label}`,
+                  }))}
+                  value={form.contractStatus}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      contractStatus: value as AchievementConversionContractStatusCode,
+                    }))
+                  }
+                />
+                <Select
+                  className="conversion-ledger-select"
+                  options={Object.entries(conversionRevenueStatusLabels).map(([value, label]) => ({
+                    value,
+                    label: `Revenue: ${label}`,
+                  }))}
+                  value={form.revenueStatus}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      revenueStatus: value as AchievementConversionRevenueStatusCode,
+                    }))
+                  }
+                />
+                <Select
+                  className="conversion-ledger-select"
+                  options={Object.entries(conversionEvaluationEffectLabels).map(([value, label]) => ({
+                    value,
+                    label: `Evaluation: ${label}`,
+                  }))}
+                  value={form.evaluationEffect}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      evaluationEffect: value as AchievementConversionEvaluationEffectCode,
+                    }))
+                  }
+                />
+              </Space>
+              <Space size={8} wrap>
                 <Input
                   className="conversion-ledger-input"
                   placeholder="Contract amount"
@@ -1244,7 +1390,7 @@ function AchievementConversionSection({
                 />
                 <Input
                   className="conversion-ledger-input"
-                  placeholder="YYYY-MM-DD"
+                  placeholder="Conversion date YYYY-MM-DD"
                   value={form.conversionDate}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -1254,6 +1400,140 @@ function AchievementConversionSection({
                   }
                 />
               </Space>
+              <Space size={8} wrap>
+                <Input
+                  className="conversion-ledger-input"
+                  placeholder="Revenue due YYYY-MM-DD"
+                  value={form.revenueDueDate}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      revenueDueDate: event.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  className="conversion-ledger-input"
+                  placeholder="Revenue received YYYY-MM-DD"
+                  value={form.revenueReceivedDate}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      revenueReceivedDate: event.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  className="conversion-ledger-input"
+                  placeholder="Evaluation date YYYY-MM-DD"
+                  value={form.evaluationDate}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      evaluationDate: event.target.value,
+                    }))
+                  }
+                />
+              </Space>
+              <Space direction="vertical" size={8} className="full-width">
+                <Space size={8} wrap>
+                  <Typography.Text strong>Safe benefit allocation detail</Typography.Text>
+                  <Button
+                    size="small"
+                    disabled={form.benefitDistributionJson.length >= conversionBenefitAllocationMaxRows}
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        benefitDistributionJson: [
+                          ...current.benefitDistributionJson,
+                          emptyBenefitAllocationRow(),
+                        ],
+                      }))
+                    }
+                  >
+                    Add allocation
+                  </Button>
+                </Space>
+                {form.benefitDistributionJson.length === 0 ? (
+                  <Typography.Text type="secondary">
+                    No local allocation rows. Add only category, label, amount, and ratio.
+                  </Typography.Text>
+                ) : (
+                  form.benefitDistributionJson.map((row, index) => (
+                    <Space size={8} wrap key={`allocation-${index}`}>
+                      <Select
+                        className="conversion-ledger-select"
+                        options={Object.entries(conversionBenefitCategoryLabels).map(([value, label]) => ({
+                          value,
+                          label,
+                        }))}
+                        value={row.category}
+                        onChange={(value) =>
+                          setForm((current) => updateBenefitAllocationRow(current, index, {
+                            category: value as AchievementConversionBenefitCategoryCode,
+                          }))
+                        }
+                      />
+                      <Input
+                        className="conversion-ledger-input"
+                        placeholder="Allocation label"
+                        value={row.label}
+                        onChange={(event) =>
+                          setForm((current) =>
+                            updateBenefitAllocationRow(current, index, { label: event.target.value }),
+                          )
+                        }
+                      />
+                      <Input
+                        className="conversion-ledger-input"
+                        placeholder="Amount"
+                        value={row.amount}
+                        onChange={(event) =>
+                          setForm((current) =>
+                            updateBenefitAllocationRow(current, index, { amount: event.target.value }),
+                          )
+                        }
+                      />
+                      <Input
+                        className="conversion-ledger-input"
+                        placeholder="Ratio 0-1"
+                        value={row.ratio}
+                        onChange={(event) =>
+                          setForm((current) =>
+                            updateBenefitAllocationRow(current, index, { ratio: event.target.value }),
+                          )
+                        }
+                      />
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          setForm((current) => ({
+                            ...current,
+                            benefitDistributionJson: current.benefitDistributionJson.filter(
+                              (_, rowIndex) => rowIndex !== index,
+                            ),
+                          }))
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </Space>
+                  ))
+                )}
+              </Space>
+              <Input.TextArea
+                maxLength={1000}
+                placeholder="Post-evaluation summary"
+                rows={2}
+                showCount
+                value={form.evaluationSummary}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    evaluationSummary: event.target.value,
+                  }))
+                }
+              />
               <Input.TextArea
                 maxLength={1000}
                 placeholder="Benefit distribution summary"
@@ -1306,14 +1586,22 @@ function AchievementConversionSection({
   );
 }
 
-const buildConversionInput = (
+export const buildConversionInput = (
   form: ConversionFormState,
 ): CreateAchievementConversionInput | null => {
   const counterpartyName = form.counterpartyName.trim();
   const contractAmount = parseOptionalAmount(form.contractAmount);
   const revenueAmount = parseOptionalAmount(form.revenueAmount);
+  const benefitDistributionJson = normalizeBenefitDistributionInput(
+    form.benefitDistributionJson,
+  );
 
-  if (!counterpartyName || contractAmount === undefined || revenueAmount === undefined) {
+  if (
+    !counterpartyName ||
+    contractAmount === undefined ||
+    revenueAmount === undefined ||
+    benefitDistributionJson === undefined
+  ) {
     return null;
   }
 
@@ -1324,6 +1612,14 @@ const buildConversionInput = (
     revenueAmount,
     status: form.status,
     conversionDate: form.conversionDate.trim() || null,
+    contractStatus: form.contractStatus,
+    revenueStatus: form.revenueStatus,
+    revenueDueDate: form.revenueDueDate.trim() || null,
+    revenueReceivedDate: form.revenueReceivedDate.trim() || null,
+    benefitDistributionJson,
+    evaluationEffect: form.evaluationEffect,
+    evaluationSummary: form.evaluationSummary.trim() || null,
+    evaluationDate: form.evaluationDate.trim() || null,
     benefitDistributionSummary: form.benefitDistributionSummary.trim() || null,
     remarks: form.remarks.trim() || null,
   };
@@ -1339,7 +1635,58 @@ const parseOptionalAmount = (value: string): number | null | undefined => {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 };
 
-const toConversionForm = (
+const parseOptionalRatio = (value: string): number | null | undefined => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : undefined;
+};
+
+const normalizeBenefitDistributionInput = (
+  rows: ConversionBenefitAllocationFormState[],
+): AchievementConversionBenefitDistributionItem[] | null | undefined => {
+  const normalized: AchievementConversionBenefitDistributionItem[] = [];
+
+  for (const row of rows.slice(0, conversionBenefitAllocationMaxRows)) {
+    const label = row.label.trim();
+    const amount = parseOptionalAmount(row.amount);
+    const ratio = parseOptionalRatio(row.ratio);
+    const isEmptyRow = !label && amount === null && ratio === null;
+
+    if (isEmptyRow) {
+      continue;
+    }
+
+    if (!label || amount === undefined || ratio === undefined) {
+      return undefined;
+    }
+
+    normalized.push({
+      category: row.category,
+      label,
+      amount,
+      ratio,
+    });
+  }
+
+  return normalized.length > 0 ? normalized : null;
+};
+
+const updateBenefitAllocationRow = (
+  form: ConversionFormState,
+  index: number,
+  patch: Partial<ConversionBenefitAllocationFormState>,
+): ConversionFormState => ({
+  ...form,
+  benefitDistributionJson: form.benefitDistributionJson.map((row, rowIndex) =>
+    rowIndex === index ? { ...row, ...patch } : row,
+  ),
+});
+
+export const toConversionForm = (
   conversion: AchievementConversionRecord,
 ): ConversionFormState => ({
   conversionType: conversion.conversionType,
@@ -1348,6 +1695,21 @@ const toConversionForm = (
   revenueAmount: conversion.revenueAmount ?? "",
   status: conversion.status,
   conversionDate: conversion.conversionDate?.slice(0, 10) ?? "",
+  contractStatus: conversion.contractStatus ?? "DRAFT",
+  revenueStatus: conversion.revenueStatus ?? "UNPAID",
+  revenueDueDate: conversion.revenueDueDate?.slice(0, 10) ?? "",
+  revenueReceivedDate: conversion.revenueReceivedDate?.slice(0, 10) ?? "",
+  benefitDistributionJson: (conversion.benefitDistributionJson ?? [])
+    .slice(0, conversionBenefitAllocationMaxRows)
+    .map((item) => ({
+      category: item.category,
+      label: item.label,
+      amount: item.amount == null ? "" : String(item.amount),
+      ratio: item.ratio == null ? "" : String(item.ratio),
+    })),
+  evaluationEffect: conversion.evaluationEffect ?? "NOT_EVALUATED",
+  evaluationSummary: conversion.evaluationSummary ?? "",
+  evaluationDate: conversion.evaluationDate?.slice(0, 10) ?? "",
   benefitDistributionSummary: conversion.benefitDistributionSummary ?? "",
   remarks: conversion.remarks ?? "",
 });
@@ -1386,6 +1748,84 @@ const getConversionStatusTagColor = (status: AchievementConversionStatusCode): s
   }
 
   return "gold";
+};
+
+const getConversionContractStatusTagColor = (
+  status: AchievementConversionContractStatusCode,
+): string => {
+  if (status === "COMPLETED" || status === "ACTIVE") {
+    return "green";
+  }
+
+  if (status === "CANCELLED") {
+    return "default";
+  }
+
+  if (status === "SIGNED") {
+    return "blue";
+  }
+
+  return "gold";
+};
+
+const getConversionRevenueStatusTagColor = (
+  status: AchievementConversionRevenueStatusCode,
+): string => {
+  if (status === "PAID" || status === "WAIVED") {
+    return "green";
+  }
+
+  if (status === "OVERDUE") {
+    return "red";
+  }
+
+  if (status === "PARTIAL") {
+    return "gold";
+  }
+
+  return "default";
+};
+
+const getConversionEvaluationEffectTagColor = (
+  effect: AchievementConversionEvaluationEffectCode,
+): string => {
+  if (effect === "POSITIVE") {
+    return "green";
+  }
+
+  if (effect === "NEGATIVE") {
+    return "red";
+  }
+
+  if (effect === "MIXED") {
+    return "gold";
+  }
+
+  return "default";
+};
+
+export const formatBenefitDistributionJson = (
+  items: AchievementConversionBenefitDistributionItem[] | null | undefined,
+): string => {
+  if (!items?.length) {
+    return "Not returned";
+  }
+
+  return items
+    .slice(0, conversionBenefitAllocationMaxRows)
+    .map((item) => {
+      const amount = item.amount == null ? null : formatMoney(String(item.amount));
+      const ratio = item.ratio == null ? null : `${Math.round(item.ratio * 100)}%`;
+      return [
+        conversionBenefitCategoryLabels[item.category] ?? item.category,
+        item.label,
+        amount,
+        ratio,
+      ]
+        .filter(Boolean)
+        .join(" / ");
+    })
+    .join("; ");
 };
 
 const formatMoney = (value: string | null | undefined): string =>

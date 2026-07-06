@@ -219,6 +219,53 @@ describe("CustomReportsView display states", () => {
     expect(html).toContain("No aggregate rows match these filters.");
   });
 
+  it("renders conversion-funnel Step 109 aggregate-only rows and totals", () => {
+    const html = renderView("conversion-funnel", {
+      ...runResponse,
+      metadata: {
+        ...runResponse.metadata,
+        templateId: "conversion-funnel",
+        name: "成果转化合同/收入/状态漏斗摘要",
+      },
+      columns: [
+        { key: "dimension", label: "Dimension", type: "text" },
+        { key: "status", label: "Status", type: "text" },
+        { key: "count", label: "Count", type: "number" },
+      ],
+      rows: [
+        { dimension: "conversionStatus", status: "SIGNED", count: 3 },
+        { dimension: "contractStatus", status: "ACTIVE", count: 4 },
+        { dimension: "revenueStatus", status: "OVERDUE", count: 1 },
+        { dimension: "evaluationEffect", status: "POSITIVE", count: 2 },
+      ],
+      totals: {
+        count: 6,
+        contractTotal: "250000.00",
+        revenueTotal: "180000.00",
+        localOverdue: 1,
+        evaluated: 2,
+      },
+      caveats: [
+        "local/demo/custom report summary",
+        "aggregate-only conversion deepening totals",
+        "not real finance status",
+      ],
+    });
+
+    expect(html).toContain("conversion-funnel");
+    expect(html).toContain("Dimension");
+    expect(html).toContain("contractStatus");
+    expect(html).toContain("revenueStatus");
+    expect(html).toContain("evaluationEffect");
+    expect(html).toContain("localOverdue");
+    expect(html).toContain("evaluated");
+    expect(html).toContain("aggregate-only conversion deepening totals");
+
+    for (const forbidden of ["Export", "Download", "Raw JSON"]) {
+      expect(html).not.toContain(forbidden);
+    }
+  });
+
   it("renders safe error messages without leaking raw or secret-bearing details", () => {
     const unsafeDetail = [
       "raw payload",

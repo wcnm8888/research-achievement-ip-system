@@ -24,6 +24,7 @@ export type DashboardBasicMetrics = {
   conversionTotal: number;
   conversionContractTotal: string;
   conversionRevenueTotal: string;
+  conversionLocalOverdue: number;
   overdueFees: number;
   dueSoonFees: number;
   pendingFees: number;
@@ -164,6 +165,7 @@ export const extractDashboardBasicMetrics = (
   conversionTotal: summary?.conversion.total.value.count ?? 0,
   conversionContractTotal: summary?.conversion.totals.value.contractTotal ?? "0.00",
   conversionRevenueTotal: summary?.conversion.totals.value.revenueTotal ?? "0.00",
+  conversionLocalOverdue: summary?.conversion.localRisk?.value.overdue.count ?? 0,
   overdueFees: summary?.fee.deadline.value.overdue.count ?? 0,
   dueSoonFees: summary?.fee.deadline.value.dueSoon.count ?? 0,
   pendingFees:
@@ -238,6 +240,30 @@ export const buildDashboardDistributionSections = (
     items: buildDashboardDistributionItems(
       summary?.conversion.funnel.value.buckets,
       conversionStatusLabels,
+    ),
+  },
+  {
+    title: "转化合同状态",
+    metricKey: summary?.conversion.byContractStatus.key ?? "CONVERSION_CONTRACT_STATUS_DISTRIBUTION",
+    items: buildDashboardDistributionItems(
+      summary?.conversion.byContractStatus.value.buckets,
+      conversionContractStatusLabels,
+    ),
+  },
+  {
+    title: "转化到账状态",
+    metricKey: summary?.conversion.byRevenueStatus.key ?? "CONVERSION_REVENUE_STATUS_DISTRIBUTION",
+    items: buildDashboardDistributionItems(
+      summary?.conversion.byRevenueStatus.value.buckets,
+      conversionRevenueStatusLabels,
+    ),
+  },
+  {
+    title: "转化评价效果",
+    metricKey: summary?.conversion.byEvaluationEffect.key ?? "CONVERSION_EVALUATION_EFFECT_DISTRIBUTION",
+    items: buildDashboardDistributionItems(
+      summary?.conversion.byEvaluationEffect.value.buckets,
+      conversionEvaluationEffectLabels,
     ),
   },
   {
@@ -425,6 +451,13 @@ const DashboardSummaryCard = ({
             />
           </Col>
           <Col xs={24} sm={12} xl={5}>
+            <MetricTile
+              title="转化本地逾期"
+              value={metrics.conversionLocalOverdue}
+              danger={metrics.conversionLocalOverdue > 0}
+            />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
             <MetricTile title="费用逾期" value={metrics.overdueFees} danger={metrics.overdueFees > 0} />
           </Col>
           <Col xs={24} sm={12} xl={5}>
@@ -460,6 +493,9 @@ const DashboardSummaryCard = ({
         </Row>
 
         <div className="summary-meta dashboard-scope-meta">
+          <Typography.Text type="secondary">
+            成果转化深化指标为 local/demo summary，不是 production monitoring 或真实财务状态。
+          </Typography.Text>
           <Typography.Text type="secondary">
             生成时间：{formatDashboardDateTime(summary?.generatedAt)}
           </Typography.Text>
@@ -627,6 +663,30 @@ const conversionStatusLabels: Record<string, string> = {
   PAID: "Paid",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
+};
+
+const conversionContractStatusLabels: Record<string, string> = {
+  DRAFT: "Draft",
+  SIGNED: "Signed",
+  ACTIVE: "Active",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const conversionRevenueStatusLabels: Record<string, string> = {
+  UNPAID: "Unpaid",
+  PARTIAL: "Partial",
+  PAID: "Paid",
+  OVERDUE: "Overdue",
+  WAIVED: "Waived",
+};
+
+const conversionEvaluationEffectLabels: Record<string, string> = {
+  NOT_EVALUATED: "Not evaluated",
+  POSITIVE: "Positive",
+  NEUTRAL: "Neutral",
+  NEGATIVE: "Negative",
+  MIXED: "Mixed",
 };
 
 const formatDashboardMoney = (value: string): string =>
