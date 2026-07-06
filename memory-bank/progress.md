@@ -14465,3 +14465,44 @@
 - Verification:
   - `corepack pnpm --filter @research-ip/web test -- SecretAuthorization api-client App`: PASS, 4 files / 70 tests.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+
+## 2026-07-07 Step 123 - Secret authorization local UI acceptance and closure
+
+- Status: BLOCKED.
+- Acceptance classification:
+  - Localhost/local-demo/synthetic UI acceptance was attempted only through
+    read-only service checks and evidence archiving.
+  - This is not production authorization acceptance.
+- Starting point:
+  - HEAD at task start: `7bc6a39 feat: add secret authorization read-only web view`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Evidence directory:
+  - `.local-step123-secret-authorization-acceptance/`.
+- Blocker:
+  - `http://127.0.0.1:3000/api/health` was unavailable.
+  - `http://127.0.0.1:5173` and `http://127.0.0.1:5174` were unavailable.
+  - Existing API dev watch processes were visible, but no listener existed on
+    the expected local API/Web ports.
+  - Completing the live API-backed UI acceptance would require restoring a
+    local API data service. This Step did not start, create, stop, delete, or
+    clean Docker.
+- Scope not completed because of the blocker:
+  - Could not verify live navigation visibility in a running localhost Web app.
+  - Could not verify live overview cards, resource table, or resource detail
+    against localhost API responses.
+  - Could not observe live `/secret-authorization/*` network traffic.
+  - Could not live-verify a persona with grant write permissions but without
+    `system:config`; Step 122 automated tests remain the available evidence for
+    that boundary.
+- Safety scan:
+  - Step 123 local evidence directory scan passed for forbidden field-family
+    markers.
+- Explicitly not done:
+  - No `apps/api/**` or `apps/web/**` source change.
+  - No `prisma/**` change, schema change, or migration.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.
+  - No environment-file content read.

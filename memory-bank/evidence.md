@@ -19029,6 +19029,71 @@
   - `corepack pnpm --filter @research-ip/web test -- SecretAuthorization api-client App`: PASS, 4 files / 70 tests.
   - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
 
+## 2026-07-07 Step 123 - Secret authorization local UI acceptance evidence
+
+- Classification:
+  - Localhost/local-demo/synthetic UI acceptance and closure archive.
+  - Result: BLOCKED.
+  - This is not production authorization acceptance.
+- Canonical state checked before acceptance:
+  - `git log -1 --oneline` -> `7bc6a39 feat: add secret authorization read-only web view`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/secret-authorization-management-safety-plan.md` Step 123 and
+    local UI acceptance snippets.
+  - `memory-bank/progress.md` Step 122 latest section.
+  - `memory-bank/evidence.md` Step 122 latest section.
+  - `apps/web/src/SecretAuthorization.tsx` loading, permission boundary, and
+    display snippets.
+  - `apps/web/src/SecretAuthorization.test.tsx` Step 122 permission, safe
+    projection, empty-state, and helper test snippets.
+- Evidence directory:
+  - `.local-step123-secret-authorization-acceptance/`.
+  - `acceptance-report.md`: BLOCKED report.
+  - `service-checks.txt`: local port and health check summary.
+  - `sensitive-field-scan.txt`: local evidence field-family scan result.
+- Read-only service checks:
+  - Local API health endpoint on `127.0.0.1:3000` was unavailable.
+  - Local Web ports `5173` and `5174` were unavailable.
+  - Existing API dev watch processes were visible, but no listener existed on
+    expected local API/Web ports.
+- Blocker:
+  - Full live API-backed UI acceptance could not run because the local API was
+    unavailable.
+  - Completing the live check would require restoring a local API data service.
+  - This Step did not use Docker to recover the local stack.
+- Acceptance coverage not completed:
+  - Live system-config navigation visibility was not verified.
+  - Live non-system-config navigation hiding and no-call behavior were not
+    verified in browser.
+  - Live overview cards, resource table, resource detail, bounded grant rows,
+    and bounded audit rows were not verified against localhost API responses.
+  - Live network observation for `/secret-authorization/*` did not run because
+    the required local API was unavailable.
+  - A local persona with grant write permissions but without `system:config`
+    could not be live-verified; Step 122 automated tests remain the available
+    evidence for that boundary.
+- Safety evidence:
+  - No screenshots were captured because the live acceptance was blocked before
+    the Web page could be verified.
+  - No page DOM or console log was captured.
+  - Step 123 local evidence directory scan passed for forbidden field-family
+    markers.
+- Boundaries observed:
+  - No `apps/api/**` source change.
+  - No `apps/web/**` source change.
+  - No `prisma/**` change.
+  - No schema or migration change.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker start/create/stop/delete/cleanup.
+  - No environment-file content read.
+  - Existing untracked local artifacts and previous `.local-step*` directories
+    were not touched.
+
 ## 2026-07-06 Step 117 - Account lifecycle Web management enhancement evidence
 
 - Canonical state checked before implementation:
