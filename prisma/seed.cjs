@@ -62,6 +62,8 @@ const ids = {
     auditor: "41000000-0000-4000-8000-000000000004",
     leader: "41000000-0000-4000-8000-000000000005",
     secretManager: "41000000-0000-4000-8000-000000000006",
+    adminAiDepartmentAdmin: "41000000-0000-4000-8000-000000000007",
+    adminAiFinanceReviewer: "41000000-0000-4000-8000-000000000008",
   },
   achievements: {
     paper: "50000000-0000-4000-8000-000000000001",
@@ -87,6 +89,19 @@ const ids = {
     patent: "70000000-0000-4000-8000-000000000002",
     software: "70000000-0000-4000-8000-000000000003",
     feeVoucher: "70000000-0000-4000-8000-000000000004",
+  },
+  workflowInstances: {
+    patentArchive: "90000000-0000-4000-8000-000000000001",
+    patentFeeReview: "90000000-0000-4000-8000-000000000002",
+  },
+  workflowTasks: {
+    patentFeeReviewAdmin: "91000000-0000-4000-8000-000000000001",
+  },
+  workflowActions: {
+    patentFeeReviewSubmit: "92000000-0000-4000-8000-000000000001",
+  },
+  conversions: {
+    paperLicense: "93000000-0000-4000-8000-000000000001",
   },
 };
 
@@ -251,6 +266,8 @@ async function seedUsers() {
     [ids.userRoles.researcher, ids.users.researcher, ids.roles.researcher, "DEPARTMENT", ids.departments.ai, ids.departments.ai],
     [ids.userRoles.secretary, ids.users.secretary, ids.roles.secretary, "DEPARTMENT", ids.departments.ai, ids.departments.ai],
     [ids.userRoles.admin, ids.users.admin, ids.roles.systemAdmin, "GLOBAL", "GLOBAL", null],
+    [ids.userRoles.adminAiDepartmentAdmin, ids.users.admin, ids.roles.departmentAdmin, "DEPARTMENT", ids.departments.ai, ids.departments.ai],
+    [ids.userRoles.adminAiFinanceReviewer, ids.users.admin, ids.roles.financeReviewer, "DEPARTMENT", ids.departments.ai, ids.departments.ai],
     [ids.userRoles.auditor, ids.users.auditor, ids.roles.auditor, "GLOBAL", "GLOBAL", null],
     [ids.userRoles.leader, ids.users.leader, ids.roles.leader, "GLOBAL", "GLOBAL", null],
     [ids.userRoles.secretManager, ids.users.secretManager, ids.roles.secretManager, "GLOBAL", "GLOBAL", null],
@@ -319,7 +336,7 @@ async function seedAchievements() {
     update: {
       title: "Demo Patent for Data Governance Method",
       status: "PENDING_ARCHIVE",
-      secretLevel: "SECRET",
+      secretLevel: "INTERNAL",
       departmentId: ids.departments.ai,
       ownerUserId: ids.users.researcher,
       submittedById: ids.users.researcher,
@@ -329,7 +346,7 @@ async function seedAchievements() {
       type: "PATENT",
       title: "Demo Patent for Data Governance Method",
       status: "PENDING_ARCHIVE",
-      secretLevel: "SECRET",
+      secretLevel: "INTERNAL",
       departmentId: ids.departments.ai,
       ownerUserId: ids.users.researcher,
       submittedById: ids.users.researcher,
@@ -460,6 +477,9 @@ async function seedFeesRemindersAndAttachments() {
       amount: "1200.00",
       dueDate: dateOnly("2026-07-15"),
       payStatus: "PENDING",
+      reviewStatus: "PENDING",
+      reviewedById: null,
+      reviewedAt: null,
       voucherNo: "DEMO-VOUCHER-PATENT-001",
     },
     create: {
@@ -487,6 +507,9 @@ async function seedFeesRemindersAndAttachments() {
       amount: "300.00",
       dueDate: dateOnly("2026-06-30"),
       payStatus: "PENDING",
+      reviewStatus: "PENDING",
+      reviewedById: null,
+      reviewedAt: null,
       voucherNo: "DEMO-VOUCHER-SW-001",
     },
     create: {
@@ -569,6 +592,119 @@ async function seedFeesRemindersAndAttachments() {
   }
 }
 
+async function seedDemoWorkflowsAndConversions() {
+  await prisma.workflowInstance.upsert({
+    where: { id: ids.workflowInstances.patentArchive },
+    update: {
+      targetType: "ACHIEVEMENT",
+      targetId: ids.achievements.patent,
+      status: "ACTIVE",
+      currentStep: "ARCHIVE",
+      completedAt: null,
+      cancelledAt: null,
+    },
+    create: {
+      id: ids.workflowInstances.patentArchive,
+      targetType: "ACHIEVEMENT",
+      targetId: ids.achievements.patent,
+      status: "ACTIVE",
+      currentStep: "ARCHIVE",
+    },
+  });
+
+  await prisma.workflowInstance.upsert({
+    where: { id: ids.workflowInstances.patentFeeReview },
+    update: {
+      targetType: "FEE_RECORD",
+      targetId: ids.fees.patentAnnual,
+      status: "ACTIVE",
+      currentStep: "FEE_REVIEW",
+      completedAt: null,
+      cancelledAt: null,
+    },
+    create: {
+      id: ids.workflowInstances.patentFeeReview,
+      targetType: "FEE_RECORD",
+      targetId: ids.fees.patentAnnual,
+      status: "ACTIVE",
+      currentStep: "FEE_REVIEW",
+    },
+  });
+
+  await prisma.workflowTask.upsert({
+    where: { id: ids.workflowTasks.patentFeeReviewAdmin },
+    update: {
+      instanceId: ids.workflowInstances.patentFeeReview,
+      assigneeId: ids.users.admin,
+      stepCode: "FEE_REVIEW",
+      status: "PENDING",
+      claimedAt: null,
+      completedAt: null,
+    },
+    create: {
+      id: ids.workflowTasks.patentFeeReviewAdmin,
+      instanceId: ids.workflowInstances.patentFeeReview,
+      assigneeId: ids.users.admin,
+      stepCode: "FEE_REVIEW",
+      status: "PENDING",
+    },
+  });
+
+  await prisma.workflowAction.upsert({
+    where: { id: ids.workflowActions.patentFeeReviewSubmit },
+    update: {
+      instanceId: ids.workflowInstances.patentFeeReview,
+      taskId: null,
+      actorId: ids.users.secretary,
+      action: "SUBMIT",
+      comment: "Local demo seed fee review request.",
+      createdAt: dateOnly("2026-06-01"),
+    },
+    create: {
+      id: ids.workflowActions.patentFeeReviewSubmit,
+      instanceId: ids.workflowInstances.patentFeeReview,
+      taskId: null,
+      actorId: ids.users.secretary,
+      action: "SUBMIT",
+      comment: "Local demo seed fee review request.",
+      createdAt: dateOnly("2026-06-01"),
+    },
+  });
+
+  await prisma.achievementConversion.upsert({
+    where: { id: ids.conversions.paperLicense },
+    update: {
+      achievementId: ids.achievements.paper,
+      departmentId: ids.departments.ai,
+      conversionType: "LICENSE",
+      counterpartyName: "Demo Local Partner",
+      contractAmount: "100000.00",
+      revenueAmount: "60000.00",
+      status: "SIGNED",
+      conversionDate: dateOnly("2026-07-01"),
+      benefitDistributionSummary: "Local demo split summary; not a real contract or payment.",
+      remarks: "Seeded local conversion ledger evidence.",
+      createdById: ids.users.admin,
+      updatedById: ids.users.admin,
+    },
+    create: {
+      id: ids.conversions.paperLicense,
+      achievementId: ids.achievements.paper,
+      departmentId: ids.departments.ai,
+      conversionType: "LICENSE",
+      counterpartyName: "Demo Local Partner",
+      contractAmount: "100000.00",
+      revenueAmount: "60000.00",
+      status: "SIGNED",
+      conversionDate: dateOnly("2026-07-01"),
+      benefitDistributionSummary: "Local demo split summary; not a real contract or payment.",
+      remarks: "Seeded local conversion ledger evidence.",
+      createdById: ids.users.admin,
+      updatedById: ids.users.admin,
+    },
+  });
+}
+
 async function getSeedSummary() {
   const [
     departments,
@@ -582,6 +718,10 @@ async function getSeedSummary() {
     fees,
     reminders,
     attachments,
+    workflowInstances,
+    workflowTasks,
+    workflowActions,
+    conversions,
   ] = await Promise.all([
     prisma.department.count(),
     prisma.role.count(),
@@ -594,6 +734,10 @@ async function getSeedSummary() {
     prisma.feeRecord.count(),
     prisma.reminderTask.count(),
     prisma.attachment.count(),
+    prisma.workflowInstance.count(),
+    prisma.workflowTask.count(),
+    prisma.workflowAction.count(),
+    prisma.achievementConversion.count(),
   ]);
 
   return {
@@ -608,6 +752,10 @@ async function getSeedSummary() {
     fees,
     reminders,
     attachments,
+    workflowInstances,
+    workflowTasks,
+    workflowActions,
+    conversions,
   };
 }
 
@@ -618,6 +766,7 @@ async function main() {
   await seedAchievements();
   await seedContributors();
   await seedFeesRemindersAndAttachments();
+  await seedDemoWorkflowsAndConversions();
 
   const summary = await getSeedSummary();
   console.log("Seed completed:", JSON.stringify(summary));

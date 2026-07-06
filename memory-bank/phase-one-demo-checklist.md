@@ -78,11 +78,12 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 ## Step 91 UI Preflight Notes
 
 - [ ] Before formal demo, verify the seeded or newly created draft achievement belongs to a department with an active research secretary; the seeded `Demo Research Asset Registry` draft is not sufficient because submit can fail with no active department reviewer.
-- [ ] Do not claim admin archive readiness unless the admin context can see a `PENDING_ARCHIVE` achievement and the archive action/result is screenshotable.
-- [ ] Do not claim admin fee review readiness unless the admin context can load fee data and show the local fee review action; secretary fee visibility is not a substitute for the documented admin path.
-- [ ] Do not claim conversion ledger readiness unless at least one archived achievement shows the ledger or safe create/update action for the selected persona.
+- [ ] After Step 92 seed repair, verify admin can see the AI department `PENDING_ARCHIVE` achievement `Demo Patent for Data Governance Method` and capture the archive action/result.
+- [ ] After Step 92 seed repair, verify admin can load fee `60000000-0000-4000-8000-000000000001`, see its pending `FEE_REVIEW` task, and complete approve or reject.
+- [ ] After Step 92 seed repair, verify admin can open archived achievement `Demo Paper on Knowledge Management`, see seeded conversion ledger record `93000000-0000-4000-8000-000000000001`, and create or update a safe local record.
 - [ ] Import history may be screenshotable as an empty state, but aggregate-detail evidence requires at least one safe local ImportJob.
 - [ ] Account lifecycle reset button visibility is not the same as successful delivery; use an eligible local account if delivery-summary evidence is required.
+- [ ] Do not describe the Step 92 admin persona as a production account, real HR/SSO identity, production finance reviewer, or broad production admin data scope.
 
 ## PASS / BLOCKED Rules
 

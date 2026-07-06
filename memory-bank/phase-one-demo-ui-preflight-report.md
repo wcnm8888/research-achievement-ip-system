@@ -4,6 +4,28 @@ Date: 2026-07-05
 
 Scope: Step 91 local/demo UI evidence preflight before the phase-one formal demo. This report used localhost only and validates whether the Step 90 role paths have visible, reproducible, screenshotable UI evidence. It is not production acceptance.
 
+## Step 92 Repair Addendum
+
+Date: 2026-07-06
+
+Step 92 repairs the three Step 91 blockers at the local/demo seed precondition level. This addendum does not convert the Step 91 screenshots into production evidence; it defines the repaired local seed path that must be re-screenshoted during the next local UI preflight.
+
+Repaired local/demo preconditions:
+
+1. Admin archive path: seeded admin `40000000-0000-4000-8000-000000000003` keeps `SYSTEM_ADMIN` and now also has local AI department-scoped `DEPARTMENT_ADMIN` and `FINANCE_REVIEWER` roles. This gives backend-scoped visibility into AI department demo achievements while preserving archive permission through `SYSTEM_ADMIN`.
+2. Fee review action: the same admin local demo user has a real department-scoped `FINANCE_REVIEWER` role and a seeded pending `FEE_REVIEW` workflow task for fee `60000000-0000-4000-8000-000000000001`, so the Fees detail workflow-task section can show approve/reject actions and complete them through the existing backend fee review API.
+3. Conversion ledger: seeded archived achievement `50000000-0000-4000-8000-000000000001` now has a safe local conversion ledger record `93000000-0000-4000-8000-000000000001`, and the admin local demo user's AI department scope can read the archived achievement and create/update conversion records through the existing conversion API.
+
+Updated local/demo readiness classification after Step 92 repair:
+
+| Decision | Count | Paths |
+| --- | ---: | --- |
+| PASS | 0 | None. The evidence remains local/demo/synthetic and still needs caveat wording. |
+| PASS with caveat | 10 | Researcher submit, secretary review, admin archive, attachment/audit safe summary, admin local fee review action, conversion ledger, account lifecycle buttons and safety summary, external integration mock demo center, Dashboard fixed scoring summary, ImportJob history empty state. |
+| BLOCKED | 0 | None after the Step 92 local seed/persona repair, assuming the database is re-seeded and new screenshots are captured locally. |
+
+Safe wording: "Step 92 repairs local/demo seed and persona preconditions. The admin persona is a local composite demo user, not a production account, real HR/SSO identity, or production finance reviewer."
+
 ## 1. Environment Boundary
 
 - Local Web: `http://127.0.0.1:5173`.
@@ -35,7 +57,7 @@ Scope: Step 91 local/demo UI evidence preflight before the phase-one formal demo
 | PASS with caveat | 7 | Researcher submit, secretary review, attachment/audit safe summary, account lifecycle buttons and safety summary, external integration mock demo center, Dashboard fixed scoring summary, ImportJob history empty state. |
 | BLOCKED | 3 | Admin archive, admin local fee review action, conversion ledger. |
 
-Recommendation: do not enter the formal demo claiming the full Step 90 route is ready. Proceed only if the demo script is narrowed to the 7 caveated paths, or first repair the 3 blockers and seed/import data gaps locally.
+Recommendation update after Step 92: the full phase-one route can proceed as `PASS with caveat` only after re-seeding a local synthetic database and capturing fresh localhost screenshots for the repaired archive, fee review, and conversion ledger paths. Do not reuse the Step 91 blocker screenshots as PASS evidence.
 
 ## 4. Path Findings
 
@@ -88,7 +110,7 @@ Safe wording: "This is local/demo/synthetic UI evidence. Mock runs used a local 
 
 ## 8. Formal Demo Recommendation
 
-Do not enter the formal demo with the current Step 90 script as a full PASS route.
+Do not enter the formal demo claiming production PASS. After Step 92, the local/demo route may be presented as `PASS with caveat` if fresh localhost screenshots show the repaired seed paths.
 
 Minimum before formal demo:
 
@@ -100,4 +122,4 @@ Minimum before formal demo:
 
 ## 9. Final Preflight Statement
 
-Step 91 found local/demo UI evidence for 7 of 10 checked paths, all with caveats. Three paths remain BLOCKED for the documented route: admin archive, admin local fee review action, and conversion ledger. The current local/demo evidence is useful for preparing the demo, but it is not sufficient to recommend the full formal phase-one demo without narrowing claims or repairing the blockers.
+Step 91 found local/demo UI evidence for 7 of 10 checked paths, all with caveats, and 3 blockers. Step 92 repairs those blockers at the local seed/persona level, bringing the intended local/demo route to 10 PASS with caveat and 0 BLOCKED once a fresh local UI preflight captures new evidence. This remains local/demo/synthetic evidence only and is not production acceptance.

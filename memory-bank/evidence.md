@@ -18035,3 +18035,53 @@
   - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation operation, production runbook, production migration, or production monitoring operation.
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
+
+## 2026-07-06 Step 92 - Phase-one demo UI blocker repair evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `b0947c9 docs: add phase one demo ui preflight report`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed:
+  - `memory-bank/phase-one-demo-ui-preflight-report.md`.
+  - `memory-bank/phase-one-demo-dry-run-report.md`.
+  - `memory-bank/phase-one-demo-acceptance-script.md`.
+  - `memory-bank/phase-one-demo-checklist.md`.
+  - `apps/web/src/App.tsx`.
+  - `apps/web/src/demo-users.ts`.
+  - `apps/web/src/WorkflowTasks.tsx`.
+  - `apps/web/src/Fees.tsx`.
+  - `apps/web/src/AchievementDetail.tsx`.
+  - `apps/web/src/AccountManagement.tsx`.
+  - `apps/api/src/achievements/**`.
+  - `apps/api/src/fees/**`.
+  - `apps/api/src/achievement-conversions/**`.
+  - `apps/api/src/identity/dev-identity.adapter.ts`.
+  - `prisma/seed.cjs`.
+  - `prisma/seed-foundation.cjs`.
+- Local seed/code evidence:
+  - `prisma/seed.cjs` now gives admin demo user `40000000-0000-4000-8000-000000000003` local AI department-scoped `DEPARTMENT_ADMIN` and `FINANCE_REVIEWER` roles in addition to `SYSTEM_ADMIN`.
+  - Seeded archive path: `Demo Patent for Data Governance Method` remains a local `PENDING_ARCHIVE` achievement and has active archive workflow instance `90000000-0000-4000-8000-000000000001`.
+  - Seeded fee review path: fee `60000000-0000-4000-8000-000000000001` is reset to `reviewStatus=PENDING` and has pending fee review workflow task `91000000-0000-4000-8000-000000000001` assigned to the local admin demo user.
+  - Seeded conversion path: archived `Demo Paper on Knowledge Management` has local conversion ledger record `93000000-0000-4000-8000-000000000001`.
+  - The seeded admin persona remains local/demo/synthetic and must not be described as a production account, real HR/SSO identity, or production finance reviewer.
+- Documentation evidence:
+  - Updated `memory-bank/phase-one-demo-ui-preflight-report.md` with a Step 92 repair addendum and updated local/demo classification.
+  - Updated `memory-bank/phase-one-demo-acceptance-script.md` with the composite local demo persona and deterministic seeded shortcut paths.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with Step 92 verification checks.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Verification:
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `corepack pnpm --filter @research-ip/api test -- achievement fee conversion`: PASS, 18 files / 273 tests.
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement Fees WorkflowTasks`: PASS, 7 files / 156 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - Local synthetic DB seed/UI preflight was attempted only to the point of starting a new local PostgreSQL container, but Docker Desktop `desktop-linux` engine was unavailable. The attempted `docker run` failed before any container was created, and no seed/preflight screenshots were produced.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation operation, production runbook, production migration, or production monitoring operation.
+  - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.

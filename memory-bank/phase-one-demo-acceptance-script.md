@@ -34,6 +34,8 @@ Step 90 fixed local frontend permission projection for the walkthrough. Use thes
 | Fee reviewer | admin / `SYSTEM_ADMIN` | `40000000-0000-4000-8000-000000000003` | Run local fee review UI/actions with `fee:review_department`. | This is the local demo fee-review-capable context, not a production finance reviewer. Do not call it a real HR/SSO or production `FINANCE_REVIEWER` account. |
 | Account lifecycle admin | admin / `SYSTEM_ADMIN` | `40000000-0000-4000-8000-000000000003` | Open Account Management and trigger invite/resend/reset UI with `system:config`, `account:invite`, and `account:reset_password`. | Local/simulated delivery only; never show raw token/link/password/session. |
 
+Step 92 local seed note: after running the local demo seed, admin `40000000-0000-4000-8000-000000000003` is a composite local demo persona. It keeps `SYSTEM_ADMIN` and receives AI department-scoped `DEPARTMENT_ADMIN` plus `FINANCE_REVIEWER` roles only for local/demo walkthroughs. Do not describe this as a production identity, production finance reviewer, real HR/SSO account, or broad production admin data scope.
+
 Suggested order: start as researcher, switch to secretary for achievement review, switch to admin for archive, fee review if no dedicated seeded fee reviewer exists, account lifecycle, settings, and import history. These are local/demo personas only, not production identities or real HR/SSO accounts.
 
 ## 3. Total Demo Route
@@ -89,6 +91,8 @@ Steps:
 8. Click side nav -> Achievements; filter/open the approved or `PENDING_ARCHIVE` achievement detail.
 9. Archive the achievement where the role allows it.
 
+Step 92 seeded shortcut: after local seed, admin can open `Demo Patent for Data Governance Method` (`50000000-0000-4000-8000-000000000002`) from the AI department. It is seeded as `PENDING_ARCHIVE` with an active `ARCHIVE` workflow instance so the archive action is executable locally.
+
 Expected visible result: achievement status changes through the lifecycle; workflow result is visible; archived achievement can be used for conversion MVP.
 
 Evidence: screenshots of the researcher submit state, secretary Workflow Tasks approve result, admin archive action/result, and final archived achievement detail.
@@ -129,6 +133,8 @@ Steps:
 5. Approve or reject the local fee review task.
 6. Return to Fees detail/history.
 
+Step 92 seeded shortcut: after local seed, fee `60000000-0000-4000-8000-000000000001` has `reviewStatus=PENDING` and a pending `FEE_REVIEW` workflow task assigned to the local admin demo user. Use the Fees detail workflow-task section for the clearest screenshot path.
+
 Expected visible result: fee review action routes to the fee review path; fee status/history/task state update visibly; attachment metadata and audit/history remain connected where available.
 
 Evidence: screenshots of the active admin local demo context, fee detail before/after review, fee review workflow task/action, and fee review history.
@@ -147,6 +153,8 @@ Steps:
 2. Locate the conversion ledger panel.
 3. Add or update a conversion record with demo fields such as type, status, contract/revenue totals, date, and summary.
 4. Open Dashboard and show conversion count, totals, and status funnel.
+
+Step 92 seeded shortcut: after local seed, archived achievement `Demo Paper on Knowledge Management` (`50000000-0000-4000-8000-000000000001`) has a safe local conversion ledger record. The admin local demo user can edit that record or create another local record from the ledger panel.
 
 Expected visible result: conversion record appears under the achievement; Dashboard shows conversion metrics.
 

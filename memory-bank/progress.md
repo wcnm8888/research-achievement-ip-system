@@ -13316,3 +13316,38 @@
   - No production/VPS/production DB access.
   - No real external systems, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation, production runbook, production monitoring, or production migration operation.
   - No raw token, cookie, session, password, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, or raw request/response was captured in the report.
+
+## 2026-07-06 Step 92 - Phase-one demo UI blocker repair
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `b0947c9 docs: add phase one demo ui preflight report`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Repaired the three Step 91 local/demo UI blockers through seed/persona preconditions, without changing production auth, production policy, Prisma schema, migrations, deployment config, or real external integrations.
+  - Updated `prisma/seed.cjs` so local admin `40000000-0000-4000-8000-000000000003` remains `SYSTEM_ADMIN` and also receives local AI department-scoped `DEPARTMENT_ADMIN` plus `FINANCE_REVIEWER` roles.
+  - Seeded an active archive workflow instance for `Demo Patent for Data Governance Method` so the admin local demo path can see and archive a `PENDING_ARCHIVE` achievement.
+  - Seeded a pending fee review workflow instance/task for fee `60000000-0000-4000-8000-000000000001`, assigned to the admin local demo user, so the Fees detail workflow-task section can show approve/reject and complete the existing backend fee review API path.
+  - Seeded a safe local conversion ledger record for archived `Demo Paper on Knowledge Management`, making the conversion ledger visible and editable/creatable for the admin local demo user.
+  - Updated the phase-one UI preflight report, acceptance script, checklist, progress, and evidence with Step 92 caveats and re-screenshot requirements.
+- Step 91 blocker handling:
+  - Admin archive path: `BLOCKED` -> `PASS with caveat` after re-seed and fresh localhost screenshot.
+  - Admin local fee review action: `BLOCKED` -> `PASS with caveat` after re-seed and fresh localhost screenshot.
+  - Conversion ledger: `BLOCKED` -> `PASS with caveat` after re-seed and fresh localhost screenshot.
+- Final local/demo readiness classification after Step 92:
+  - PASS: 0.
+  - PASS with caveat: 10.
+  - BLOCKED: 0.
+- Explicitly not done:
+  - No production/VPS/production DB access.
+  - No `.env` / `.env.production` content read.
+  - No production runbook, production migration, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
+- Verification:
+  - `git diff --check`: PASS; only Windows LF-to-CRLF warnings were printed.
+  - `corepack pnpm --filter @research-ip/api test -- achievement fee conversion`: PASS, 18 files / 273 tests.
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement Fees WorkflowTasks`: PASS, 7 files / 156 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - Local synthetic DB seed/UI preflight: BLOCKED by local environment because Docker CLI was present but Docker Desktop `desktop-linux` engine was not running, so `docker run` could not connect to `npipe:////./pipe/dockerDesktopLinuxEngine`. No Docker daemon start, production/VPS access, `.env` read, seed write, local screenshot capture, or cleanup was attempted after that failure.
