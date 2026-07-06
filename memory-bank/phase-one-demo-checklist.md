@@ -133,6 +133,16 @@ Scope: reviewer checklist for Step 88. Use together with `memory-bank/phase-one-
 - [ ] Do not repair data, run migrations, start or clean Docker, access DB, run UI rechecks, edit code, open unrelated files, or call real external systems during rehearsal.
 - [ ] Do not restate the fallback as production/VPS/production DB or real external-system acceptance.
 
+## Step 99-A On-Site Card Notes
+
+- [ ] Step 99-A onsite card completed: `memory-bank/phase-one-demo-onsite-card.md`.
+- [ ] On-site opening statement must explicitly say `localhost` / local demo / synthetic DB, `PASS 0 / PASS with caveat 10 / BLOCKED 0`, mock/adapter only, and not production acceptance.
+- [ ] On-site run order remains 10 steps with demo persona, page/entry, one-line action, one-line caveat, and Step 95 screenshot reference.
+- [ ] Presenter must switch `researcher` -> `secretary` -> `admin` and describe them only as local demo personas, not real HR/SSO users, production accounts, or production finance reviewers.
+- [ ] Q&A answers must block misleading production, real HR/SSO, real email/SMS, real finance/payment/reconciliation, real DOI/literature/patent, full BI, and ImportJob row-level/retry/rollback/export claims.
+- [ ] If localhost, Docker, browser, or one UI action fails on site, fall back only to Step 95 screenshots and Step 96/97/98-A documentation conclusions.
+- [ ] Do not show token, password, cookie, session, `DATABASE_URL`, connection string, raw payload, raw log, `.env` content, or unmasked sensitive evidence.
+
 ## PASS / BLOCKED Rules
 
 - PASS: the local/demo page/action is reproducible, expected visible result is present, evidence is captured, and boundary wording is accurate.

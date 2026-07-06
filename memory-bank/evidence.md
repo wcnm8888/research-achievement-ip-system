@@ -1,5 +1,51 @@
 # Evidence
 
+## 2026-07-06 Step 99-A - Phase-one demo onsite card and Q&A guardrails evidence
+
+- Goal:
+  - Produce a formal-demo one-page on-site card and Q&A anti-misleading wording from Step 96 presenter brief, Step 97 final archive, and Step 98-A rehearsal plan.
+- Initial state:
+  - `git log -1 --oneline`: `9830ef3 docs: add phase one demo rehearsal plan`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/phase-one-demo-rehearsal-plan.md` demo judgment, opening statement, ten-step rehearsal order, persona switch script, fallback wording, do-not-claim checklist, and closing line.
+  - `memory-bank/phase-one-demo-presenter-brief.md` demo judgment, user switch order, ten-path presenter table, required caveats, explicit non-claims, fallback, and sensitive-information protection.
+  - `memory-bank/phase-one-final-archive.md` closure judgment, reviewer-visible closure, ten demo paths, explicit non-claims, route recommendations, and handoff summary.
+  - `memory-bank/phase-one-demo-checklist.md` Step 95/96/98-A notes, PASS/BLOCKED rules, and explicit non-claims.
+  - `memory-bank/evidence.md` Step 95-Step 98-A relevant slices.
+  - `memory-bank/progress.md` Step 95-Step 98-A relevant slices.
+- Documentation updated:
+  - Added `memory-bank/phase-one-demo-onsite-card.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- On-site card result:
+  - Retains Step 95/96/97/98-A classification: PASS 0, PASS with caveat 10, BLOCKED 0.
+  - Opening statement explicitly says `localhost` / local demo / synthetic DB, mock/adapter only, and not production acceptance.
+  - Ten-step run card includes demo persona, page/entry, one-line action, one-line caveat, and Step 95 screenshot reference.
+  - Persona switch card keeps `researcher` -> `secretary` -> `admin` as local demo personas only, not real HR/SSO, production accounts, or production finance reviewers.
+  - Q&A covers production status, HR/SSO, email/SMS, finance/payment/reconciliation, DOI/literature/patent providers, Dashboard BI scope, ImportJob row-level/retry/rollback/export scope, meaning of 10 PASS with caveat items, and localhost failure.
+  - Forbidden answers explicitly block production/VPS/production DB acceptance, production migration execution, real external-system integration, mock-as-real wording, local synthetic acceptance as production acceptance, and exposure of token/password/cookie/session/`DATABASE_URL`/connection string/raw payload/raw log.
+  - Failure fallback wording covers localhost unavailable, Docker unavailable, browser unavailable, and a single live UI action failure, always falling back to Step 95 screenshots plus Step 96/97/98-A conclusions without production PASS wording.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+- Docs-only verification:
+  - `git diff --check`: PASS; LF-to-CRLF normalization warnings only before staging.
+  - `git diff --cached --check`: PASS.
+  - `git diff --stat`: tracked docs diff only before staging; new onsite card remained untracked until explicitly staged.
+  - Final closeout verification after staging: `git diff --check` PASS, `git diff --cached --check` PASS, `git diff --stat` empty, and `git diff --cached --stat` limited to `memory-bank/evidence.md`, `memory-bank/phase-one-demo-checklist.md`, `memory-bank/phase-one-demo-onsite-card.md`, and `memory-bank/progress.md`.
+  - Final `git status --short` showed those four allowed documentation files staged; existing untracked local artifacts remained untracked.
+
 ## 2026-07-06 Step 98-A - Phase-one formal demo rehearsal and on-site checklist evidence
 
 - Goal:

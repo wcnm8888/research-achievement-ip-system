@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-07-06 Step 99-A - Phase-one demo onsite card and Q&A guardrails
+
+- Status: DONE.
+- Task classification:
+  - S docs-only formal-demo onsite card update.
+- Starting point:
+  - HEAD at task start: `9830ef3 docs: add phase one demo rehearsal plan`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/phase-one-demo-onsite-card.md`.
+  - Updated `memory-bank/phase-one-demo-checklist.md` with Step 99-A onsite card notes.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - Compressed Step 96 presenter brief, Step 97 final archive, and Step 98-A rehearsal plan into an on-site card covering the 30-second opening, 10-step run order, persona switch wording, judge Q&A, forbidden answers, and failure fallback wording.
+- On-site classification retained:
+  - PASS: 0.
+  - PASS with caveat: 10.
+  - BLOCKED: 0.
+- Required guardrail retained:
+  - Present only as localhost / local demo / synthetic DB evidence, with mock/adapter-only wording where applicable, and no production acceptance or real external-system acceptance claim.
+- Explicitly not done:
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` changes.
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No screenshots, logs, `.local-step95-ui-preflight/` content, or existing untracked local artifacts were staged or modified.
+- Verification:
+  - Docs-only verification commands recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 98-A - Phase-one formal demo rehearsal and on-site checklist
 
 - Status: DONE.
