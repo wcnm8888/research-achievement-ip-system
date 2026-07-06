@@ -1,13 +1,13 @@
 # Next Phase Options
 
-Date: 2026-07-05
+Date: 2026-07-06
 
-Scope: Step 81A documentation-only route confirmation plan.
+Scope: Step 97 documentation-only next-route refresh after phase-one localhost demo closure.
 
-This document summarizes the archived import-history mainline and lays out
-optional next routes for user selection. It is not authorization to execute
+This document summarizes the archived phase-one localhost demo state and lays
+out optional next routes for user selection. It is not authorization to execute
 production work, database work, migrations, imports, runbooks, Web row-level
-display, or local artifact cleanup.
+display, real external-system calls, or local artifact cleanup.
 
 ## Current Default State
 
@@ -15,6 +15,10 @@ display, or local artifact cleanup.
 - No migration, import, production runbook, service startup, or real-data apply
   is authorized or performed.
 - `.env` and `.env.production` content remains unread.
+- The phase-one localhost demo loop is archived as `PASS 0 / PASS with caveat
+  10 / BLOCKED 0`, limited to localhost / local demo / synthetic DB.
+- Mock/local/demo evidence is not real external integration or production
+  acceptance.
 - Existing untracked local artifacts remain untouched, unclassified, unmoved,
   unstaged, undeleted, and uncleaned.
 - Runtime/API/Web/schema/migration/package/lockfile/config files remain out of
@@ -24,6 +28,13 @@ display, or local artifact cleanup.
 
 The current archived mainline includes:
 
+- Phase-one scoring/demo closure from Step 82B through Step 97:
+  - Fee online review loop.
+  - Achievement conversion MVP.
+  - Account lifecycle and simulated notification loop.
+  - External interface mock demo center.
+  - Dashboard fixed scoring summary.
+  - Demo script, final localhost UI recheck, presenter brief, and final archive.
 - Import real-write first phase archive, with production execution and real-data
   apply kept as separate authorization decisions.
 - `ImportJob` / `ImportRun` history and idempotency for Department,
@@ -38,165 +49,164 @@ The current archived mainline includes:
   - Local synthetic backend-only acceptance.
   - Production read-only preflight documentation.
 - Prompt 39 handoff archive in `memory-bank/prompt-39-handoff.md`.
+- Phase-one final archive in `memory-bank/phase-one-final-archive.md`.
 
-## Route A - Production Read-Only Preflight Preparation
+## Route A - Formal Demo Rehearsal
 
 ### Goal
 
-Prepare a separately authorized production read-only preflight execution plan
-for the existing import-history and `ImportJobItem` documentation. The route is
-limited to readiness checks, operator checklist preparation, evidence boundary
-definition, and a final go/no-go prompt before any production access.
+Prepare for a formal phase-one localhost presentation without changing runtime
+scope. This route is limited to read-only rehearsal, caveat wording, presenter
+order, evidence references, and fallback preparation.
 
 ### Risk
 
-- Accidental exposure of production identifiers, source values, credentials,
-  connection strings, or personal data in evidence.
-- Confusing documentation readiness with authorization to access production.
-- Running a runbook or command before explicit user approval.
+- Rewording local/demo/synthetic evidence as production acceptance.
+- Depending on live localhost availability without the Step 95 screenshot and
+  Step 96 presenter fallback.
+- Accidentally opening unrelated private files, credentials, or raw logs during
+  rehearsal.
 
 ### Required Authorization
 
-- Explicit user approval to prepare the preflight execution package.
-- Separate explicit user approval before any DB, production, VPS, production DB,
-  credential, connection-string, or runbook execution step.
-- Explicit confirmation of what evidence may be recorded and what must be
-  redacted or omitted.
+- User confirmation that the next activity is rehearsal/presentation prep.
+- Separate explicit approval for any service startup, UI rerun, screenshot
+  capture, production access, real external-system call, or environment change.
 
 ### First Suggested Step
 
-Step 81B-A: create a production read-only preflight execution preparation
-checklist that references existing runbooks, defines safe evidence boundaries,
-and stops before any production access or command execution.
+Step 98-A: read-only rehearsal checklist for `phase-one-final-archive.md`,
+Step 95 evidence, and Step 96 presenter brief. Confirm the opening caveat,
+10-path order, fallback wording, and explicit non-claims.
+
+### Explicitly Forbidden
+
+- Do not access DB, production, VPS, production DB, or remote hosts.
+- Do not read `.env`, `.env.production`, credentials, tokens, cookies, private
+  keys, raw logs, or connection strings.
+- Do not run migrations, imports, runbooks, service startup commands, or
+  production queries.
+- Do not call real external systems.
+- Do not describe `PASS with caveat` as production PASS.
+
+## Route B - Phase-Two Feature Enhancement
+
+### Goal
+
+Start a product enhancement line after the phase-one demo archive. Recommended
+first themes are custom reports, mobile needs assessment, fuller achievement
+conversion, revenue distribution/post-evaluation, and richer scheduled reports.
+
+### Risk
+
+- Expanding a feature into production, real-provider, or sensitive-data work
+  without a separate boundary.
+- Overbuilding a full platform when a scoped phase-two slice is enough.
+- Treating existing mock/local demo behavior as real integration.
+
+### Required Authorization
+
+- User-selected feature theme and desired outcome.
+- Explicit scope for allowed runtime/API/Web/schema work and verification.
+- Separate explicit approval for production, DB, migration, credential, real
+  provider, or sensitive-data work.
+
+### First Suggested Step
+
+Step 98-B: create a feature brief and implementation plan for one selected
+phase-two enhancement, starting with custom reports or fuller achievement
+conversion unless the user chooses otherwise.
+
+### Explicitly Forbidden
+
+- Do not infer permission for production/VPS/production DB, real providers, or
+  credentials.
+- Do not implement broad exports, raw JSON, raw CSV, or sensitive drilldowns
+  without a separate safety design.
+
+## Route C - Real External-System Integration Preparation
+
+### Goal
+
+Prepare for real DOI/literature/patent/finance/HR/SSO/email/SMS integration
+only when real systems, credentials, test environment, integration contacts,
+and written authorization exist. This route starts with readiness and safety
+documentation, not provider calls.
+
+### Risk
+
+- Exposing credentials, provider payloads, production identifiers, or personal
+  data.
+- Calling real systems before test-environment and authorization boundaries are
+  explicit.
+- Treating the Step 86 mock demo center as completed real integration.
+
+### Required Authorization
+
+- Explicit user approval to prepare real integration.
+- Named provider/system, test environment, data boundary, credential owner, and
+  allowed evidence format.
+- Separate explicit approval before reading credentials or making any real
+  provider call.
+
+### First Suggested Step
+
+Step 98-C: docs-only integration readiness checklist that defines providers,
+test-environment gates, credential handling, redaction, retry/failure behavior,
+audit evidence, rollback, and final go/no-go.
+
+### Explicitly Forbidden
+
+- Do not call real DOI/literature/patent/finance/HR/SSO/email/SMS systems.
+- Do not read `.env`, `.env.production`, credentials, tokens, cookies, private
+  keys, or connection strings without separate approval.
+- Do not use production data as test evidence unless explicitly authorized and
+  redaction rules are approved.
+
+## Route D - Production Readiness
+
+### Goal
+
+Prepare production readiness only when the user explicitly asks for it and
+authorizes scope. This route starts with read-only preflight preparation,
+backup/rollback criteria, migration-window criteria, monitoring criteria, and
+human confirmation gates.
+
+### Risk
+
+- Confusing documentation readiness with authorization to access production.
+- Running production migration/runbook/preflight commands too early.
+- Recording production identifiers, source values, credentials, connection
+  strings, or personal data in evidence.
+
+### Required Authorization
+
+- Explicit user approval for production readiness preparation.
+- Separate explicit approval before any DB, production, VPS, production DB,
+  credential, connection-string, runbook, migration, or production query step.
+- Explicit confirmation of safe evidence and redaction rules.
+
+### First Suggested Step
+
+Step 98-D: create a production readiness preflight package that remains
+docs-only unless the user separately authorizes execution.
 
 ### Explicitly Forbidden
 
 - Do not access DB, production, VPS, production DB, or remote hosts.
 - Do not read `.env`, `.env.production`, credentials, tokens, cookies, private
   keys, or connection strings.
-- Do not run migrations, imports, runbooks, service startup commands, or
-  production queries.
-- Do not record raw IDs, raw source values, raw CSV, personal identifiers,
-  secrets, or connection strings.
-
-## Route B - Web Row-Level Display Plan Only
-
-### Goal
-
-Draft a Web row-level display plan for safe `ImportJobItem` visibility without
-implementing UI or API changes. The plan should re-evaluate the product and
-privacy boundary and keep Web history aggregate-only unless the user separately
-approves a later implementation Step.
-
-### Risk
-
-- Turning a planning Step into implementation without authorization.
-- Expanding row-level display into sensitive details or operational actions.
-- Accidentally allowing `targetId`, raw source data, export, copy controls, or
-  business-object drilldown.
-
-### Required Authorization
-
-- Explicit user approval to plan Web row-level display.
-- Separate explicit user approval for any later runtime/API/Web/schema work.
-- Separate explicit approval before changing the current aggregate-only Web
-  boundary.
-
-### First Suggested Step
-
-Step 81B-B: write a Web row-level display design plan that covers allowed
-columns, forbidden fields, empty/loading/error states, access boundaries, and
-acceptance criteria, with no code changes.
-
-### Explicitly Forbidden
-
-- Do not implement Web row-level display.
-- Do not expose `targetId`, raw CSV, raw source values, personal identifiers,
-  raw JSON, downloads, exports, copy controls, or business-object drilldown.
-- Do not add global `/import-job-items` routes.
-- Do not modify runtime/API/Web/schema/migration/package/lockfile/config files
-  during the planning Step.
-
-## Route C - Existing Untracked Local Artifact Safety Audit
-
-### Goal
-
-Create a non-destructive safety audit plan for existing untracked local
-artifacts so the user can decide whether they should be archived, ignored,
-classified, or handled manually in a later authorized Step.
-
-### Risk
-
-- Accidentally deleting, moving, staging, or modifying local artifacts.
-- Reading unrelated private or sensitive artifact content.
-- Treating artifact presence as permission to clean or commit it.
-
-### Required Authorization
-
-- Explicit user approval to audit the existing untracked local artifacts.
-- Explicit scope for which artifact paths may be inspected.
-- Separate explicit approval for any later move, archive, deletion, staging, or
-  cleanup action.
-
-### First Suggested Step
-
-Step 81B-C: produce a read-only artifact safety audit plan that lists the
-current untracked paths from `git status --short`, defines minimal inspection
-rules, and proposes non-destructive handling options.
-
-### Explicitly Forbidden
-
-- Do not delete, move, rename, archive, stage, or clean untracked artifacts.
-- Do not run batch cleanup commands.
-- Do not read unrelated personal files, credentials, `.env`, or production
-  secrets.
-- Do not commit untracked artifacts unless a later Step explicitly authorizes a
-  specific path and purpose.
-
-## Route D - New Business Feature Line
-
-### Goal
-
-Start a new product, import, or operational capability line selected by the
-user. This route should begin from task classification, scoped context reading,
-and a plan appropriate to the requested feature.
-
-### Risk
-
-- Carrying over old import-history assumptions as authorization for new writes,
-  production access, or sensitive data handling.
-- Reading too much unrelated context before the new feature is defined.
-- Starting implementation before success criteria and boundaries are clear.
-
-### Required Authorization
-
-- User-selected feature theme and desired outcome.
-- Explicit scope for allowed files, systems, data, and verification level.
-- Separate explicit approval for production, DB, migration, import, credential,
-  or sensitive-data work if the new feature needs any of those.
-
-### First Suggested Step
-
-Step 81B-D: classify the requested feature, read only directly relevant
-context, and create a feature brief plus implementation plan before code work.
-
-### Explicitly Forbidden
-
-- Do not infer production, DB, migration, import, or credential authorization
-  from previous completed work.
-- Do not modify unrelated runtime/API/Web/schema/migration/package/lockfile/
-  config files.
-- Do not expose raw CSV, personal identifiers, credentials, connection strings,
-  or hidden operational data.
-- Do not handle existing untracked local artifacts unless the new route
-  explicitly includes a separately authorized artifact Step.
+- Do not run migrations, imports, runbooks, service startup commands,
+  production queries, Docker cleanup, or destructive cleanup.
+- Do not treat localhost PASS-with-caveat as production acceptance.
 
 ## Selection Guidance
 
-- Choose Route A if the next priority is getting ready for a carefully bounded
-  production read-only preflight, with execution still gated.
-- Choose Route B if the next priority is product/design clarity for Web
-  row-level visibility, with implementation still prohibited.
-- Choose Route C if the next priority is understanding existing untracked local
-  artifacts without cleaning them.
-- Choose Route D if the next priority is a new user-defined feature line.
+- Choose Route A if a formal phase-one demo is imminent and the work should
+  remain read-only rehearsal/presenter preparation.
+- Choose Route B if the next priority is product value beyond the demo:
+  custom reports, mobile, fuller conversion, or richer phase-two workflows.
+- Choose Route C if real external providers are available and the user wants
+  integration readiness planning before any call.
+- Choose Route D if the user explicitly wants production readiness, with all
+  production execution still separately gated.

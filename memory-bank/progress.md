@@ -1,5 +1,32 @@
 # Progress
 
+## 2026-07-06 Step 97 - Phase-one final archive and next-route refresh
+
+- Status: DONE.
+- Task classification:
+  - S docs-only closure/archive update.
+- Starting point:
+  - HEAD at task start: `9bab53f docs: add phase one demo presenter brief`.
+  - `git status --short` showed only existing untracked local artifacts.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/phase-one-final-archive.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md` to reflect Step 83-Step 96 outcomes and explicitly mark mock/local/demo items as not real integration or production acceptance.
+  - Updated `memory-bank/next-phase-options.md` so the default recommendation is now Route A rehearsal / Route B phase-two enhancement / Route C real integration preparation / Route D production readiness.
+  - Updated `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Final phase-one localhost demo classification:
+  - PASS: 0.
+  - PASS with caveat: 10.
+  - BLOCKED: 0.
+- Explicitly not done:
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` changes.
+  - No `.env` / `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
+  - No screenshots, logs, `.local-step95-ui-preflight/` content, or existing untracked local artifacts were staged or modified.
+- Verification:
+  - Docs-only verification commands recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-05 Step 82B - Phase one scoring feature priority
 
 - Status: DONE.

@@ -1,6 +1,6 @@
 # 项目需求完成度矩阵
 
-日期：2026-07-05
+日期：2026-07-06
 
 本文用于把项目最初的需求说明、项目计划书和当前仓库实现状态对齐，形成后续排期依据。
 
@@ -14,6 +14,7 @@
 - 当前进度记录：`memory-bank/progress.md`
 - 最新交接文档：`memory-bank/prompt-39-handoff.md`
 - 下一阶段路线：`memory-bank/next-phase-options.md`
+- 一期最终归档：`memory-bank/phase-one-final-archive.md`
 
 说明：当前 HTML 与早期 memory-bank 文档存在编码显示问题，但章节结构和项目范围可对应到“科研成果与知识产权管理系统需求规格说明书”。后续如要正式对外交付，建议单独做一次文档编码修复或重新导出。
 
@@ -43,7 +44,7 @@
 
 当前最新核查 HEAD：
 
-- `3d8154d docs: outline next phase options`
+- `9bab53f docs: add phase one demo presenter brief`
 
 当前仓库状态：
 
@@ -56,7 +57,9 @@
 
 - 一期核心业务骨架已经基本建成。
 - 导入与导入历史能力明显超出最初一期基础需求，已经形成独立主线并归档。
+- Step 83-Step 96 已把一期评分导向的 localhost 演示闭环归档为 `PASS 0 / PASS with caveat 10 / BLOCKED 0`。
 - 当前仍不是生产上线完成态，生产执行、真实外部系统联调、完整二期功能和部分高级能力仍未完成。
+- mock/local/demo 项只能说明 localhost / local demo / synthetic DB 演示可见，不等于真实联调或生产验收。
 
 ## 完成度矩阵
 
@@ -82,10 +85,12 @@
 | 站内通知 mock | 已完成基础 | Notification mock/in-app 边界 | 真实邮件、短信通道未完成 |
 | 基础搜索 | 已完成基础 | `apps/api/src/search`、`Search.tsx`，Step 9B DONE | 高级组合检索、真实 Meilisearch 生产索引运维需后续确认 |
 | 基础统计看板 | 已完成基础 | `apps/api/src/dashboard`、`Dashboard.tsx`，Step 9 DONE | 自定义报表、定时推送、完整趋势分析未完成 |
+| Dashboard 固定评分口径 | 已完成本地演示 | Step 87/95/96：Dashboard 展示部门、费用风险、审批效率、成果转化、mock 集成概览 | 固定评分摘要不是完整 BI、自定义报表、生产监控或真实生产数据验收 |
 | 系统配置/API 集成配置 | 已完成基础 | `settings` API 与 `SettingsApiIntegrations.tsx`，Step 51D/E/F | 真实外部接口密钥/连接配置生产使用未授权 |
+| 外部接口 mock demo center | 已完成本地演示 | Step 86/95/96：mock provider 场景、安全结果和调用日志摘要可见 | mock/adapter 演示不是 DOI、文献库、专利平台、财务、HR/SSO 真实联调 |
 | 部门维护 | 已完成 | `department-management` API 与 `DepartmentManagement.tsx`，Step 37 完成 | 生产写验收仍需单独授权 |
 | 账号管理 | 部分完成 | `account-management` API 与 `AccountManagement.tsx` | 当前偏只读/导入创建待激活账号；完整账号生命周期管理未完全展开 |
-| 账号生命周期 | 部分完成 | `account-lifecycle` 模块存在 | 真实邮件、邀请、重置、激活生产闭环未完成 |
+| 账号生命周期 | 已完成本地演示闭环 | Step 85/95/96：账号生命周期动作和模拟通知安全摘要可见 | 真实 HR/SSO、真实邮件/短信、真实 token 交付和生产身份验收未完成 |
 | 部门导入真实写入 | 已完成本地 | Step 65B-F，`CREATE_ONLY` | 真实生产导入未授权 |
 | 用户账号导入真实写入 | 已完成本地 | Step 66B-F，`CREATE_ONLY_PENDING_NO_CREDENTIAL` | 不创建凭证/邮件/登录激活；生产导入未授权 |
 | 成果导入真实写入 | 已完成本地 | Step 68/69/70 覆盖 PAPER、SOFTWARE_COPYRIGHT、PATENT | 真实生产导入未授权 |
@@ -93,6 +98,7 @@
 | Web 导入历史汇总展示 | 已完成 | Step 73/74，页内入口和 settings overview | 只展示 aggregate，不展示行级 item |
 | ImportJobItem 行级安全历史后端写入 | 已完成 | Step 77A-E，Department/Achievement/User writer | targetId 仅内部持久化，不暴露 |
 | ImportJobItem 后端只读 API | 已完成 backend-only | Step 78B/D，`GET /api/import-jobs/:id/items` | Web 行级展示未授权 |
+| 一期 localhost 演示脚本/复验/讲解口径 | 已归档 | Step 88 checklist/script、Step 95 final UI recheck、Step 96 presenter brief、Step 97 final archive | 仅代表 localhost/local-demo/synthetic evidence，不是 production/VPS/生产 DB/真实外部系统验收 |
 | 导入重试/删除/清理/回滚 | 未完成且当前不支持 | prompt-39 handoff 明确 unsupported | 如未来需要，必须先做安全方案 |
 | 原 CSV 下载/导出/raw JSON | 未完成且当前禁止 | prompt-39 handoff 明确 forbidden | 默认不做，除非重新定义安全边界 |
 | 生产部署执行 | 未完成 | runbook 存在，但 production/VPS/生产 DB 未访问 | 需用户单独授权，只读 preflight 先行 |
@@ -100,7 +106,9 @@
 | 真实 HR/SSO 接入 | 未完成 | adapter 方向存在，真实联调未做 | 二期/部署集成阶段 |
 | 真实财务系统接入 | 未完成 | settings/adapter 方向存在，真实联调未做 | 二期/部署集成阶段 |
 | 真实 DOI/文献库/专利状态接入 | 未完成 | adapter 方向存在，真实联调未做 | 二期/集成专项 |
-| 成果转化全流程 | 未完成 | 原始需求列为二期深化 | 二期功能线 |
+| 费用线上审批闭环 | 已完成本地演示闭环 | Step 83/95/96：费用审批动作、结果、历史和讲解 caveat 已进入 10 路径演示 | 真实财务付款、发票、对账、批量缴费单和生产财务系统联调未完成 |
+| 成果转化 MVP | 已完成本地演示闭环 | Step 84/95/96：归档成果的 conversion ledger 面板、创建结果和 Dashboard 指标可见 | 不等于成果转化全流程、真实合同、法务、付款、收益分配或后评估验收 |
+| 成果转化全流程 | 未完成 | 原始需求列为二期深化；Step 84 仅完成 MVP local ledger | 二期功能线 |
 | 高级报表/自定义报表 | 未完成 | 原始需求列为二期深化 | 二期功能线 |
 | 移动端 | 未完成 | 原始需求明确第一版不做完整移动端 | 二期或独立项目 |
 | 大规模性能压测 | 未完成 | 原始需求明确第一版不做十万级真实压测 | 生产前专项 |
@@ -121,9 +129,15 @@
 - 基础看板。
 - 部门维护。
 - 系统配置基础页面。
+- 一期 localhost 演示闭环：Step 95/96/97 已归档为 `PASS 0 / PASS with caveat 10 / BLOCKED 0`，仅限 local/demo/synthetic。
 
 ### 超出原一期但已经完成的增强
 
+- 费用线上审批本地演示闭环。
+- 成果转化 MVP 本地 ledger。
+- 账号生命周期与模拟通知本地演示闭环。
+- 外部接口 mock demo center。
+- Dashboard 固定评分口径。
 - 部门、用户、成果三类导入真实写入本地闭环。
 - 导入任务历史和幂等。
 - Web 导入历史汇总入口。
@@ -133,7 +147,7 @@
 
 ## 未完成内容归类
 
-### 一期上线前建议补齐
+### production / 上线前仍需补齐
 
 1. 生产只读预检执行准备。
 2. 生产环境 migration 与部署授权流程。
@@ -142,12 +156,12 @@
 5. 基础性能和安全验收。
 6. 外部接口未接入时的降级策略确认。
 
-### 一期可选增强
+### 一期演示后可选增强
 
 1. Web 行级导入历史展示方案。
 2. 导入任务 retry/repair/rollback 的安全方案。
-3. 账号生命周期完整闭环。
-4. 费用审批更完整闭环。
+3. 正式演示 rehearsal 和现场 fallback 准备。
+4. 更完整账号生命周期、费用审批和成果转化产品深度。
 5. untracked 本地产物安全审计。
 
 ### 二期功能
@@ -161,69 +175,67 @@
 
 ## 建议后续排期
 
-### 阶段 1：上线前只读核查与差距确认
+### 阶段 1：正式演示 rehearsal
 
-目标：确认当前系统是否具备进入生产部署准备阶段的条件。
+目标：在不重新扩大范围的前提下，复核一期 localhost 演示口径、顺序、fallback 和 caveat。
 
 建议任务：
 
-- Step 82B：生产上线差距核查清单。
-- Step 82C：只读 production preflight 执行准备包。
-- Step 82D：本地到生产配置差异核查，不读取密钥内容。
-- Step 82E：安全与隐私证据包整理。
+- 只读复核 `phase-one-final-archive.md`、Step 95 evidence、Step 96 presenter brief。
+- 演练 `researcher` -> `secretary` -> `admin` 的现场讲解顺序。
+- 准备 localhost 不可用时的截图/文档 fallback 说法。
 
 禁止事项：
 
 - 未授权不得访问 production/VPS/生产 DB。
 - 不读取 `.env` / `.env.production` 内容。
-- 不执行 migration/import/runbook。
+- 不执行 migration/import/runbook，不调用真实外部系统，不把 caveat 改写成 production PASS。
 
-### 阶段 2：一期缺口补齐
+### 阶段 2：二期功能增强
 
-目标：补齐一期上线所需但仍不足的产品与运维能力。
-
-建议任务：
-
-- 账号生命周期生产闭环计划。
-- 费用审批闭环最小实现计划。
-- 真实邮件/通知 adapter 选型与安全方案。
-- 基础性能验收方案。
-- 生产备份恢复演练方案。
-
-### 阶段 3：导入能力决策
-
-目标：决定是否把导入能力从“安全本地闭环”推进到“生产可执行能力”。
+目标：在一期演示闭环之后，按产品价值扩展功能深度。
 
 建议任务：
 
-- 生产导入 apply 授权流程方案。
-- 真实数据导入 dry-run 证据格式。
-- ImportJobItem Web 行级展示方案。
-- 导入 retry/repair/rollback 风险评估。
-
-### 阶段 4：二期产品能力
-
-目标：按原始需求二期范围扩展。
-
-建议任务：
-
-- 成果转化业务建模。
-- 收益分配与合同台账。
-- 高级报表/自定义报表。
+- 自定义报表/定时报表。
 - 移动端需求重评估。
-- 外部系统真实联调专项。
+- 更完整成果转化、收益分配和后评估。
+- 更完整费用审批和账号生命周期产品能力。
+
+### 阶段 3：真实外部系统对接准备
+
+目标：仅在具备真实系统、凭证、测试环境和授权后，准备 DOI/文献库/专利平台/财务/HR/SSO/邮件/短信等集成。
+
+建议任务：
+
+- 集成 readiness 清单。
+- 凭证和脱敏证据边界。
+- 测试环境、回滚和人工确认门禁。
+
+### 阶段 4：production readiness
+
+目标：仅在用户明确要求并授权后，进入生产就绪准备。
+
+建议任务：
+
+- production read-only preflight。
+- 生产 migration 窗口、备份、回滚和监控方案。
+- 基础性能、安全、灾备和生产可观测性验收。
 
 ## 当前最推荐下一步
 
-建议下一步先做：
+建议下一步四选一：
 
-`Step 82B - 生产上线差距核查清单`
+- Route A：正式演示前 rehearsal，只读复核口径和现场准备。
+- Route B：二期功能增强，优先自定义报表、移动端需求重评估、更完整成果转化。
+- Route C：真实外部系统对接准备，仅在有真实系统、凭证、测试环境和授权后启动。
+- Route D：production readiness，仅在用户明确要求并授权后启动。
 
 原因：
 
-- 当前一期核心功能已有较多实现，继续盲目加功能容易扩大范围。
-- 生产、DB、外部接口、备份恢复、性能安全这些是上线前关键风险。
-- 该 Step 可以继续保持 docs-only，不访问生产，不读取密钥，只把上线差距和授权门槛列清楚。
+- 一期 localhost 演示闭环已经归档，不再建议继续以“补齐一期演示闭环”为默认主线。
+- 如果近期要展示，Route A 风险最低、收益最高。
+- 如果进入真实系统或生产路线，必须先确认授权、环境、凭证、脱敏和人工 go/no-go 门禁。
 
 ## 当前明确不能推断为完成的事项
 
@@ -231,5 +243,6 @@
 - 不能把 runbook 文档等同于 runbook 已执行。
 - 不能把 adapter/mock 等同于真实外部系统联调。
 - 不能把 ImportJobItem backend-only API 等同于 Web 行级展示。
+- 不能把 Step 95 screenshotable localhost 路径等同于 production/VPS/生产 DB 验收。
 - 不能把 schema/migration 文件存在等同于生产 migration 已应用。
 - 不能把导入本地 apply 成功等同于真实生产数据导入已授权。

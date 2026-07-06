@@ -1,5 +1,50 @@
 # Evidence
 
+## 2026-07-06 Step 97 - Phase-one final archive and next-route refresh evidence
+
+- Goal:
+  - Archive the Step 82B-Step 96 phase-one localhost demo closure and refresh the next-route recommendation.
+- Initial state:
+  - `git log -1 --oneline`: `9bab53f docs: add phase one demo presenter brief`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/phase-one-demo-presenter-brief.md`.
+  - `memory-bank/phase-one-demo-ui-final-recheck-report.md`.
+  - `memory-bank/phase-one-demo-checklist.md` environment gate, Step 95/96 notes, PASS/BLOCKED rules, and non-claims.
+  - `memory-bank/project-requirement-completion-matrix.md` current status, matrix rows, unfinished categories, and next-step sections.
+  - `memory-bank/phase-one-scoring-feature-priority.md` Step 82B priority conclusions and boundaries.
+  - `memory-bank/next-phase-options.md`.
+  - `memory-bank/progress.md` Step 82B-Step 96 relevant slices.
+  - `memory-bank/evidence.md` Step 95-Step 96 relevant slices.
+- Documentation updated:
+  - Added `memory-bank/phase-one-final-archive.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Archive result:
+  - Final classification remains `PASS 0 / PASS with caveat 10 / BLOCKED 0`.
+  - Scope is explicitly limited to localhost / local demo / synthetic DB.
+  - Updated next-route recommendation is Route A formal demo rehearsal, Route B phase-two enhancement, Route C real external-system integration preparation, or Route D production readiness.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, Docker startup/cleanup, UI rerun, typecheck/test/build, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `apps/web/**`, or `prisma/**` change.
+  - No `.local-step95-ui-preflight/` content, screenshot, log, or existing untracked local artifact was staged or modified.
+- Pre-stage docs-only verification:
+  - `git diff --check`: PASS; Git printed LF-to-CRLF normalization warnings only.
+  - `git diff --cached --check`: PASS; empty before staging.
+  - `git diff --stat`: PASS; tracked docs diff only before staging.
+  - `git diff --cached --stat`: PASS; empty before staging.
+  - `git status --short`: PASS; tracked docs changes plus existing untracked local artifacts and new untracked `memory-bank/phase-one-final-archive.md`.
+
 ## 2026-07-05 Step 82B - Phase one scoring feature priority evidence
 
 - Goal:
