@@ -110,6 +110,9 @@ Step 102-B adds the executable technical plan and interface contract in
 Steps 103-B to 105-B close the first custom reports MVP loop with the backend
 read-only API, Web `Custom Reports` page, and closure archive in
 `memory-bank/custom-reports-mvp-closure.md`.
+Step 106-B-A adds localhost/local-demo/synthetic UI/browser acceptance evidence
+in `memory-bank/custom-reports-local-ui-acceptance.md`; screenshots and logs
+remain untracked under `.local-step106-custom-reports-acceptance/`.
 
 ### Goal
 
@@ -141,14 +144,15 @@ Completed first implementation loop:
 - Step 103-B: backend read-only reports API.
 - Step 104-B: Web Custom Reports page.
 - Step 105-B: custom reports MVP closure and archive.
+- Step 106-B-A: Custom Reports local UI/browser acceptance with screenshots.
 
 Recommended next Route B choices:
 
-- Run custom reports local UI/browser acceptance if visual/local evidence is
-  needed for this new page.
 - Add deferred aggregate templates such as ImportJob aggregate history or
   external mock overview.
 - Start the achievement conversion deepening MVP technical plan.
+- Run a separate mobile/responsive review only if the user explicitly wants
+  browser viewport acceptance beyond the current desktop local-demo path.
 
 Keep saved templates, scheduled delivery, raw CSV/raw JSON export, production
 monitoring, and sensitive drilldowns out of the completed MVP unless separately

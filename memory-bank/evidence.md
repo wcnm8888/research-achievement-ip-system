@@ -1,5 +1,72 @@
 # Evidence
 
+## 2026-07-06 Step 106-B-A - Custom reports local UI/browser acceptance evidence
+
+- Goal:
+  - Run localhost/local-demo/synthetic UI/browser acceptance for the Route B Custom Reports MVP and archive visual evidence without treating it as production acceptance.
+- Initial state:
+  - `git log -1 --oneline`: `b48da92 docs: archive custom reports mvp`.
+  - `git status --short` showed existing untracked local artifacts only:
+    `.learnings/`, `.local-step44h/`, `.local-step45c4/`, `.local-step46g/`,
+    `.local-step47i/`, `.local-step62c/`, `.local-step91-ui-preflight/`,
+    `.local-step93-ui-preflight/`, `.local-step95-ui-preflight/`,
+    `apps/api/deploy/`, and `local-prod-preview-proxy.cjs`.
+  - `git diff --stat`: empty.
+  - `git diff --cached --stat`: empty.
+- Context reviewed with targeted reads only:
+  - `memory-bank/custom-reports-mvp-closure.md`.
+  - `memory-bank/custom-reports-mvp-technical-plan.md`.
+  - `apps/web/src/CustomReports.tsx` and `CustomReports.test.tsx` key sections.
+  - `apps/api/src/reports/reports.controller.ts` and `reports.service.ts` key sections.
+  - `prisma/seed.cjs` snippets for demo users and seeded achievements/fees/workflow/conversion only.
+  - `memory-bank/progress.md` and `memory-bank/evidence.md` Step 103-B through Step 105-B sections.
+- Files updated:
+  - Added `memory-bank/custom-reports-local-ui-acceptance.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+  - Updated `memory-bank/next-phase-options.md`.
+  - Updated `apps/web/src/CustomReports.tsx` with a minimal boundary-copy fix: `not production acceptance`.
+  - Updated `apps/web/src/CustomReports.test.tsx` to assert that boundary text.
+- Local acceptance setup:
+  - Created local untracked evidence directory `.local-step106-custom-reports-acceptance/`.
+  - Used local synthetic PostgreSQL container `research-step106-custom-reports-postgres` on `127.0.0.1:17432`.
+  - Ran Prisma migration deploy against an explicit local synthetic `DATABASE_URL` only.
+  - Ran `prisma db seed` against the same explicit local synthetic `DATABASE_URL` only.
+  - Started localhost API at `http://127.0.0.1:3000`.
+  - Started localhost Web at `http://127.0.0.1:5173`.
+  - Ran local Edge headless browser through Chrome DevTools Protocol; no Playwright/Puppeteer dependency was installed.
+- Browser acceptance evidence:
+  - Report: `.local-step106-custom-reports-acceptance/acceptance-report.json`.
+  - Navigation screenshot: `.local-step106-custom-reports-acceptance/01-custom-reports-nav.png`.
+  - `achievement-distribution`: PASS, screenshot `02-achievement-distribution.png`.
+  - `achievement-trend`: PASS, `groupBy` visible, screenshot `03-achievement-trend.png`.
+  - `fee-risk-summary`: PASS, `dueSoonDays` visible, screenshot `04-fee-risk-summary.png`.
+  - `workflow-efficiency`: PASS, screenshot `05-workflow-efficiency.png`.
+  - `conversion-funnel`: PASS, screenshot `06-conversion-funnel.png`.
+- UI safety evidence:
+  - `Custom Reports` navigation entry was visible.
+  - Each template rendered aggregate-only metadata, filters, scope summary, totals, aggregate rows or empty state, and caveats.
+  - Page copy includes `local/demo/custom report summary`, `not full BI`, `not production monitoring`, `not production acceptance`, `no raw export`, `no sensitive drilldown`, and `no real external-system evidence`.
+  - Forbidden UI entries checked as absent: `Export`, `Download`, `Raw JSON`, `Save template`, `Schedule`, and actionable drilldown/detail/raw payload entry.
+  - Sensitive leakage terms checked as absent from accepted page state: raw payload, token, cookie, password, connection string, `DATABASE_URL`, object key, and checksum.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No production runbook, production migration, real external provider call, real email/SMS, real HR/SSO, or real finance/payment/invoice/reconciliation operation.
+  - No `apps/api/**`, `prisma/schema.prisma`, migration file, or `prisma/seed.cjs` change.
+  - No export/download, saved templates, scheduled reports, raw JSON, raw payload, or sensitive drilldown implementation.
+  - No `.local-step106-custom-reports-acceptance/` screenshot/log/browser-profile evidence was staged or committed.
+  - Existing untracked local artifacts were not moved, deleted, cleaned, staged, or modified.
+- Required verification:
+  - Browser acceptance script: PASS; five templates passed and screenshots/report were written under `.local-step106-custom-reports-acceptance/`.
+  - `git diff --check`: PASS; LF-to-CRLF normalization warnings only.
+  - `git diff --cached --check`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- reports`: PASS, 2 files / 17 tests.
+  - `corepack pnpm --filter @research-ip/web test -- CustomReports api-client App`: PASS, 4 files / 66 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --stat`, `git diff --cached --stat`, and `git status --short`: recorded at final review before commit.
+
 ## 2026-07-06 Step 105-B - Custom reports MVP closure evidence
 
 - Goal:

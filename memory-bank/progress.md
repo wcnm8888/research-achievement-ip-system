@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-07-06 Step 106-B-A - Custom reports local UI/browser acceptance
+
+- Status: DONE.
+- Task classification:
+  - S local UI/browser acceptance plus documentation for the Route B Custom Reports MVP.
+- Starting point:
+  - HEAD at task start: `b48da92 docs: archive custom reports mvp`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/custom-reports-local-ui-acceptance.md`.
+  - Updated `memory-bank/progress.md`, `memory-bank/evidence.md`, and `memory-bank/next-phase-options.md`.
+  - Made a minimal Web boundary-copy fix in `apps/web/src/CustomReports.tsx` to explicitly state `not production acceptance`.
+  - Updated `apps/web/src/CustomReports.test.tsx` for that boundary text.
+- Local acceptance result:
+  - Ran localhost/local-demo/synthetic UI/browser acceptance with a local synthetic PostgreSQL database, localhost API, localhost Web, and local Edge CDP browser session.
+  - Confirmed `Custom Reports` navigation entry is visible.
+  - Confirmed all five templates can be selected and run in the Web page:
+    `achievement-distribution`, `achievement-trend`, `fee-risk-summary`,
+    `workflow-efficiency`, and `conversion-funnel`.
+  - Confirmed result sections render aggregate-only metadata, filters, scope summary, totals, aggregate rows or empty state, and caveats.
+  - Confirmed `achievement-trend` shows `groupBy`.
+  - Confirmed `fee-risk-summary` shows `dueSoonDays`.
+- Boundaries retained:
+  - Not production/VPS/production DB acceptance.
+  - Not full BI or production monitoring.
+  - No real external-system integration.
+  - No export/download, saved templates, scheduled reports, raw JSON, raw payload, or sensitive drilldown.
+  - No Prisma schema, migration file, or seed change.
+  - `.local-step106-custom-reports-acceptance/` contains screenshots/logs and remains untracked.
+- Verification:
+  - Required Step 106-B-A gates recorded in `memory-bank/evidence.md`.
+
 ## 2026-07-06 Step 105-B - Custom reports MVP closure
 
 - Status: DONE.

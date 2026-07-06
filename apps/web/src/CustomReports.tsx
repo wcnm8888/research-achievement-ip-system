@@ -70,7 +70,7 @@ export const customReportTemplateIds: readonly CustomReportTemplateId[] = [
 ];
 
 export const customReportBoundaryText =
-  "local/demo/custom report summary; not full BI; not production monitoring; no raw export; no sensitive drilldown; no real external-system evidence.";
+  "local/demo/custom report summary; not full BI; not production monitoring; not production acceptance; no raw export; no sensitive drilldown; no real external-system evidence.";
 
 const emptyTemplates: Loadable<CustomReportTemplate[]> = {
   loading: false,

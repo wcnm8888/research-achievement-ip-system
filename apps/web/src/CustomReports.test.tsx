@@ -186,6 +186,7 @@ describe("CustomReportsView display states", () => {
     expect(html).toContain("local/demo/custom report summary");
     expect(html).toContain("not full BI");
     expect(html).toContain("not production monitoring");
+    expect(html).toContain("not production acceptance");
     expect(html).toContain("no raw export");
     expect(html).toContain("no sensitive drilldown");
     expect(html).toContain("no real external-system evidence");
