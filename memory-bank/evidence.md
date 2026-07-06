@@ -18953,6 +18953,82 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-07 Step 122 - Secret authorization Web read-only management view evidence
+
+- Classification:
+  - Web read-only management view slice.
+  - Local/demo/synthetic reviewer-visible safe summary only.
+  - Not production authorization acceptance.
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `d31f2b2 feat: add secret authorization read-only projections`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/secret-authorization-management-safety-plan.md` Step 122/Web
+    slice snippets.
+  - `memory-bank/progress.md` Step 121 latest section.
+  - `memory-bank/evidence.md` Step 121 latest section.
+  - `apps/api/src/secret-authorization/dto/secret-authorization.dto.ts`.
+  - `apps/web/src/App.tsx`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/api-client.test.ts`.
+  - `apps/web/src/types.ts`.
+  - System-config Web page patterns in `AccountManagement`,
+    `DepartmentManagement`, `SettingsApiIntegrations`, and related tests.
+- Implementation evidence:
+  - Added `apps/web/src/SecretAuthorization.tsx`.
+  - Added `apps/web/src/SecretAuthorization.test.tsx`.
+  - Updated `apps/web/src/types.ts` with Step 121 safe projection response
+    types.
+  - Updated `apps/web/src/api-client.ts` with read-only GET client methods:
+    `getSecretAuthorizationOverview`,
+    `listSecretAuthorizationResources`, and
+    `getSecretAuthorizationResourceGrants`.
+  - Updated `apps/web/src/App.tsx` to add the `Secret Authorization` navigation
+    entry and route.
+  - Updated `apps/web/src/App.test.tsx` and `apps/web/src/api-client.test.ts`.
+- Permission evidence:
+  - Navigation tests verify the entry is visible with `system:config`.
+  - Navigation tests verify it is hidden for non-`system:config` users.
+  - Tests verify `resource_grant:create` and `resource_grant:revoke` alone do
+    not reveal the navigation entry.
+  - Component tests verify the non-`system:config` boundary does not call
+    injected secret authorization API client methods.
+- Projection evidence:
+  - Overview renders restricted resource count, active grant count,
+    revoked/expired count, expiring-soon count, breakdowns, generated timestamp,
+    and caveats.
+  - Resource table renders resource type, safe resource label, department id,
+    secret level, restricted/redacted flags, active grant count, grant type
+    counts, grantee counts, and nearest expiry.
+  - Detail renders bounded grant summaries and bounded audit summaries with
+    stable empty states for empty grants/audits.
+  - Page copy explicitly states local/demo/synthetic read-only management view
+    and not production authorization acceptance.
+- Forbidden-field negative assertion evidence:
+  - `SecretAuthorization.test.tsx` asserts rendered safe projection HTML omits
+    credential/session/user-target, runtime connection, storage/path/link,
+    integrity marker, audit raw-payload, raw permission, raw actor, diagnostic,
+    file-output, bulk-action, and grant write-control field families.
+  - `api-client.test.ts` asserts no secret authorization write, bulk,
+    file-output, or file-retrieval client methods exist.
+- Boundaries observed:
+  - No `apps/api/**` change.
+  - No `prisma/**` change.
+  - No schema or migration change.
+  - No grant write, bulk, file-output, or file-retrieval UI or endpoint.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker start/create/stop/delete/cleanup.
+  - No existing untracked local artifact or `.local-*` evidence directory was
+    touched.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- SecretAuthorization api-client App`: PASS, 4 files / 70 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+
 ## 2026-07-06 Step 117 - Account lifecycle Web management enhancement evidence
 
 - Canonical state checked before implementation:

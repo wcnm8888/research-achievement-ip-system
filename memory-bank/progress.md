@@ -14420,3 +14420,48 @@
   - `corepack pnpm --filter @research-ip/api test -- secret-authorization`: PASS.
   - `corepack pnpm --filter @research-ip/api test -- secret-authorization authorization achievements attachments`: PASS, 19 files / 244 tests.
   - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+
+## 2026-07-07 Step 122 - Secret authorization Web read-only management view
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `d31f2b2 feat: add secret authorization read-only projections`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `apps/web/src/SecretAuthorization.tsx`.
+  - Added `apps/web/src/SecretAuthorization.test.tsx`.
+  - Added Step 121 DTO-compatible Web types in `apps/web/src/types.ts`.
+  - Added read-only Web API client methods for the three
+    `/secret-authorization/*` GET endpoints.
+  - Added the `Secret Authorization` navigation entry in `apps/web/src/App.tsx`.
+  - Updated `apps/web/src/App.test.tsx` and `apps/web/src/api-client.test.ts`.
+- Web view:
+  - Shows local/demo/synthetic read-only management copy and explicitly avoids
+    production authorization acceptance wording.
+  - Shows overview cards for restricted resources, active grants,
+    revoked/expired grants, expiring-soon grants, and caveats.
+  - Shows resource summaries with resource type, safe resource label,
+    department id, secret level, restricted/redacted flags, and aggregate grant
+    counts.
+  - Shows bounded grant summaries and bounded audit summaries for selected
+    resource detail.
+  - Provides stable empty states for empty overview, resource, grant, and audit
+    data.
+- Permission boundary:
+  - Navigation is visible only to `system:config` users.
+  - The page does not request `/secret-authorization/*` APIs without
+    `system:config` or without an active local/demo context.
+  - `resource_grant:create` and `resource_grant:revoke` are not treated as read
+    management page permissions.
+- Explicitly not done:
+  - No `apps/api/**` change.
+  - No `prisma/**` change, schema change, or migration.
+  - No grant write workflow, bulk workflow, file-output control, or
+    file-retrieval control was added.
+  - No service startup, Docker operation, production/VPS/production DB access,
+    real external-system call, or environment-file content read.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- SecretAuthorization api-client App`: PASS, 4 files / 70 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.

@@ -142,6 +142,32 @@ describe("production auth mode helpers", () => {
     ).toBe(false);
   });
 
+  it("shows secret authorization navigation only to system config users", () => {
+    const secretAuthorizationNavigationKey = "secret-authorization";
+
+    expect(
+      getVisibleNavItems(navItems, {
+        ...authUser,
+        permissionCodes: ["system:config"],
+      }).some((item) => item.key === secretAuthorizationNavigationKey),
+    ).toBe(true);
+    expect(
+      getVisibleNavItems(navItems, {
+        ...authUser,
+        permissionCodes: ["resource_grant:create", "resource_grant:revoke"],
+      }).some((item) => item.key === secretAuthorizationNavigationKey),
+    ).toBe(false);
+    expect(
+      getVisibleNavItems(navItems, null).some(
+        (item) => item.key === secretAuthorizationNavigationKey,
+      ),
+    ).toBe(false);
+    expect(navItems.find((item) => item.key === secretAuthorizationNavigationKey)).toMatchObject({
+      label: "Secret Authorization",
+      step: "Step 122",
+    });
+  });
+
   it("derives a frontend-only permission context from demo user presets", () => {
     expect(getDemoAuthUser("40000000-0000-4000-8000-000000000003")).toMatchObject({
       id: "40000000-0000-4000-8000-000000000003",

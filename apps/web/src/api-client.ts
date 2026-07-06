@@ -56,6 +56,9 @@ import type {
   PasswordResetRevokeResponse,
   RevokeAccountUserRoleInput,
   RejectFeeReviewInput,
+  SecretAuthorizationOverview,
+  SecretAuthorizationResourceDetail,
+  SecretAuthorizationResourceList,
   UpdateApiIntegrationInput,
   UpdateDepartmentInput,
   UserAccountImportApplyInput,
@@ -178,6 +181,12 @@ export type AccountManagementApiClient = ApiClient & {
     userId: string,
     payload?: { reason?: string | null },
   ): Promise<PasswordResetRevokeResponse>;
+  getSecretAuthorizationOverview(): Promise<SecretAuthorizationOverview>;
+  listSecretAuthorizationResources(): Promise<SecretAuthorizationResourceList>;
+  getSecretAuthorizationResourceGrants(
+    resourceType: string,
+    resourceId: string,
+  ): Promise<SecretAuthorizationResourceDetail>;
   listApiIntegrations(query?: ListApiIntegrationsQuery): Promise<ApiIntegrationListResponse>;
   getApiIntegration(integrationId: string): Promise<ApiIntegrationMetadata>;
   createApiIntegration(payload: CreateApiIntegrationInput): Promise<ApiIntegrationMetadata>;
@@ -602,6 +611,33 @@ export const createApiClient = (
       options,
     );
     return response as PasswordResetRevokeResponse;
+  },
+  async getSecretAuthorizationOverview() {
+    const response = await request(
+      "/secret-authorization/overview",
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as SecretAuthorizationOverview;
+  },
+  async listSecretAuthorizationResources() {
+    const response = await request(
+      "/secret-authorization/resources",
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as SecretAuthorizationResourceList;
+  },
+  async getSecretAuthorizationResourceGrants(resourceType: string, resourceId: string) {
+    const response = await request(
+      `/secret-authorization/resources/${encodeURIComponent(resourceType)}/${encodeURIComponent(resourceId)}/grants`,
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as SecretAuthorizationResourceDetail;
   },
   async listApiIntegrations(query?: ListApiIntegrationsQuery) {
     const response = await request(

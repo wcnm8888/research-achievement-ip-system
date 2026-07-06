@@ -1308,6 +1308,128 @@ describe("account management API client", () => {
   });
 });
 
+describe("secret authorization API client", () => {
+  it("requests read-only secret authorization projections with the correct GET paths", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          restrictedResourceCount: 1,
+          restrictedResourceCountsByType: { ACHIEVEMENT: 1 },
+          restrictedResourceCountsBySecretLevel: { SECRET: 1 },
+          grantCountsByStatus: { ACTIVE: 1 },
+          grantCountsByType: { READ_METADATA: 1 },
+          grantCountsByGranteeType: { USER: 1 },
+          activeGrantCount: 1,
+          expiredGrantCount: 0,
+          revokedGrantCount: 0,
+          futureDatedGrantCount: 0,
+          expiringSoonCount: 0,
+          generatedAt: "2026-07-07T00:00:00.000Z",
+          caveats: ["LOCAL_DEMO_SYNTHETIC_ONLY"],
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          items: [
+            {
+              resourceType: "ACHIEVEMENT",
+              resourceId: "achievement 1",
+              safeResourceLabel: "Achievement restricted summary",
+              departmentId: "department-1",
+              secretLevel: "SECRET",
+              isRestricted: true,
+              contentRedacted: true,
+              activeGrantCount: 1,
+              grantCountsByType: { READ_METADATA: 1 },
+              grantCountsByGranteeType: { USER: 1 },
+              latestGrantCreatedAt: "2026-07-07T00:00:00.000Z",
+              latestGrantRevokedAt: null,
+              nearestGrantExpiresAt: null,
+              caveats: ["RESOURCE_CONTENT_REDACTED"],
+            },
+          ],
+          total: 1,
+          caveats: ["LOCAL_DEMO_SYNTHETIC_ONLY"],
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          resource: {
+            resourceType: "ACHIEVEMENT",
+            resourceId: "achievement 1",
+            safeResourceLabel: "Achievement restricted summary",
+            departmentId: "department-1",
+            secretLevel: "SECRET",
+            isRestricted: true,
+            contentRedacted: true,
+            activeGrantCount: 1,
+            grantCountsByType: { READ_METADATA: 1 },
+            grantCountsByGranteeType: { USER: 1 },
+            latestGrantCreatedAt: "2026-07-07T00:00:00.000Z",
+            latestGrantRevokedAt: null,
+            nearestGrantExpiresAt: null,
+            caveats: ["RESOURCE_CONTENT_REDACTED"],
+          },
+          grants: [],
+          audits: [],
+          limits: { grantRows: 5, auditRows: 5 },
+          caveats: ["LOCAL_DEMO_SYNTHETIC_ONLY"],
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(client.getSecretAuthorizationOverview()).resolves.toMatchObject({
+      restrictedResourceCount: 1,
+    });
+    await expect(client.listSecretAuthorizationResources()).resolves.toMatchObject({
+      total: 1,
+    });
+    await expect(
+      client.getSecretAuthorizationResourceGrants("ACHIEVEMENT", "achievement 1"),
+    ).resolves.toMatchObject({
+      limits: { grantRows: 5, auditRows: 5 },
+    });
+
+    const [overviewUrl, overviewInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [resourcesUrl, resourcesInit] = fetchMock.mock.calls[1] as unknown as [
+      string,
+      RequestInit,
+    ];
+    const [detailUrl, detailInit] = fetchMock.mock.calls[2] as unknown as [
+      string,
+      RequestInit,
+    ];
+
+    expect(overviewUrl).toBe("http://localhost/api/secret-authorization/overview");
+    expect(resourcesUrl).toBe("http://localhost/api/secret-authorization/resources");
+    expect(detailUrl).toBe(
+      "http://localhost/api/secret-authorization/resources/ACHIEVEMENT/achievement%201/grants",
+    );
+    [overviewInit, resourcesInit, detailInit].forEach((init) => {
+      expect(init.method).toBe("GET");
+      expect(init.credentials).toBe("include");
+      expect((init.headers as Headers).get("X-Demo-User-Id")).toBe("admin-user-id");
+    });
+  });
+
+  it("does not expose secret authorization mutation client methods", () => {
+    const client = createApiClient("admin-user-id") as unknown as Record<string, unknown>;
+
+    expect(client.createSecretAuthorizationGrant).toBeUndefined();
+    expect(client.revokeSecretAuthorizationGrant).toBeUndefined();
+    expect(client.approveSecretAuthorizationGrant).toBeUndefined();
+    expect(client.batchSecretAuthorizationGrants).toBeUndefined();
+    expect(client.exportSecretAuthorization).toBeUndefined();
+    expect(client.downloadSecretAuthorization).toBeUndefined();
+  });
+});
+
 describe("settings API integration API client", () => {
   it("serializes listApiIntegrations filters and pagination", async () => {
     const fetchMock = vi.fn(async () =>

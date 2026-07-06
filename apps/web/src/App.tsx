@@ -29,6 +29,7 @@ import { Dashboard } from "./Dashboard";
 import { DepartmentManagement } from "./DepartmentManagement";
 import { Fees } from "./Fees";
 import { Search } from "./Search";
+import { SecretAuthorization } from "./SecretAuthorization";
 import { SettingsApiIntegrations } from "./SettingsApiIntegrations";
 import { Workbench } from "./Workbench";
 import { WorkflowTasks } from "./WorkflowTasks";
@@ -103,6 +104,13 @@ export const navItems: NavItem[] = [
     description: "Step 51E provides API integrations metadata management through system:config.",
   },
   {
+    key: "secret-authorization",
+    label: "Secret Authorization",
+    step: "Step 122",
+    description:
+      "Step 122 provides local/demo/synthetic read-only secret authorization safe summaries through system:config.",
+  },
+  {
     key: "account-management",
     label: "账号管理",
     step: "Step 36E-2",
@@ -139,7 +147,7 @@ export const getVisibleNavItems = (
 ): NavItem[] =>
   items.filter(
     (item) =>
-      !["account-management", "department-management"].includes(item.key) ||
+      !["account-management", "department-management", "secret-authorization"].includes(item.key) ||
       hasSystemConfigPermission(authUser),
   );
 
@@ -427,6 +435,8 @@ export function App() {
               <AuditLogs demoUserId={businessContextId} />
             ) : activeKey === "settings" ? (
               <SettingsApiIntegrations demoUserId={businessContextId} authUser={effectiveAuthUser} />
+            ) : activeKey === "secret-authorization" ? (
+              <SecretAuthorization demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "account-management" ? (
               <AccountManagement demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "department-management" ? (
