@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Descriptions, Drawer, Empty, Select, Space, Table, Tag, Typography } from "antd";
+import { Alert, Button, Card, Descriptions, Drawer, Empty, Input, Select, Space, Table, Tag, Typography } from "antd";
 import type { SelectProps, TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isApiError, type AccountManagementApiClient, type ApiError } from "./api-client";
@@ -10,6 +10,9 @@ import type {
   ImportJobHistoryListQuery,
   ImportJobHistoryListResponse,
   ImportJobHistoryMode,
+  ImportJobItemHistoryListQuery,
+  ImportJobItemHistoryListResponse,
+  ImportJobItemHistoryRow,
   ImportRunHistorySummary,
 } from "./types";
 
@@ -21,8 +24,10 @@ export type ImportJobHistoryFilters = {
 
 type ImportJobHistoryClient = Pick<
   AccountManagementApiClient,
-  "listImportJobHistory" | "getImportJobHistoryDetail"
+  "listImportJobHistory" | "getImportJobHistoryDetail" | "listImportJobHistoryItems"
 >;
+
+type ImportJobItemHistoryClient = Pick<AccountManagementApiClient, "listImportJobHistoryItems">;
 
 type Loadable<T> = {
   loading: boolean;
@@ -50,9 +55,11 @@ type ImportJobHistoryPanelViewProps = {
   onRefresh?: () => void;
   onOpenDetail?: (jobId: string) => void;
   onCloseDetail?: () => void;
+  itemHistoryClient?: ImportJobItemHistoryClient;
 };
 
 const defaultPageSize = 10;
+const defaultItemPageSize = 10;
 
 const achievementTypeOptions: SelectProps<AchievementTypeCode>["options"] = [
   { label: "PAPER", value: "PAPER" },
@@ -145,6 +152,7 @@ export function ImportJobHistoryPanel({
       onRefresh={loadList}
       onOpenDetail={openDetail}
       onCloseDetail={closeDetail}
+      itemHistoryClient={apiClient}
     />
   );
 }
@@ -161,6 +169,7 @@ export function ImportJobHistoryPanelView({
   onRefresh,
   onOpenDetail,
   onCloseDetail,
+  itemHistoryClient,
 }: ImportJobHistoryPanelViewProps) {
   const items = list.data?.items ?? [];
   const isEmpty = !list.loading && !list.error && items.length === 0;
@@ -225,7 +234,7 @@ export function ImportJobHistoryPanelView({
         onClose={onCloseDetail}
         destroyOnClose
       >
-        <ImportJobHistoryDetailView detail={detail} />
+        <ImportJobHistoryDetailView detail={detail} itemHistoryClient={itemHistoryClient} />
       </Drawer>
     </Card>
   );
@@ -233,8 +242,10 @@ export function ImportJobHistoryPanelView({
 
 export function ImportJobHistoryDetailView({
   detail,
+  itemHistoryClient,
 }: {
   detail: Loadable<ImportJobHistoryDetail>;
+  itemHistoryClient?: ImportJobItemHistoryClient;
 }) {
   if (detail.loading) {
     return <Alert type="info" showIcon message="Loading import job detail" />;
@@ -316,7 +327,233 @@ export function ImportJobHistoryDetailView({
           columns={runSummaryColumns}
         />
       </Card>
+
+      {itemHistoryClient ? (
+        <ImportJobItemHistoryPanel
+          importJobId={detail.data.id}
+          apiClient={itemHistoryClient}
+          enabled
+        />
+      ) : null}
     </Space>
+  );
+}
+
+type ImportJobItemHistoryPanelProps = {
+  importJobId: string;
+  apiClient: ImportJobItemHistoryClient;
+  enabled?: boolean;
+};
+
+type ImportJobItemHistoryFilters = Pick<
+  ImportJobItemHistoryListQuery,
+  "status" | "plannedAction" | "targetType" | "safeCode"
+>;
+
+type ImportJobItemHistoryPanelViewProps = {
+  filters: ImportJobItemHistoryFilters;
+  itemList: Loadable<ImportJobItemHistoryListResponse>;
+  page: number;
+  pageSize: number;
+  onFilterChange?: <K extends keyof ImportJobItemHistoryFilters>(
+    key: K,
+    value: ImportJobItemHistoryFilters[K] | undefined,
+  ) => void;
+  onResetFilters?: () => void;
+  onRefresh?: () => void;
+  onPageChange?: (page: number, pageSize: number) => void;
+};
+
+const emptyItemHistoryLoadable: Loadable<ImportJobItemHistoryListResponse> = {
+  loading: false,
+  data: null,
+  error: null,
+};
+
+export function ImportJobItemHistoryPanel({
+  importJobId,
+  apiClient,
+  enabled = true,
+}: ImportJobItemHistoryPanelProps) {
+  const [filters, setFilters] = useState<ImportJobItemHistoryFilters>({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(defaultItemPageSize);
+  const [itemList, setItemList] =
+    useState<Loadable<ImportJobItemHistoryListResponse>>(emptyItemHistoryLoadable);
+  const query = useMemo(
+    () => buildImportJobItemHistoryPanelQuery(filters, page, pageSize),
+    [filters, page, pageSize],
+  );
+
+  const loadItems = useCallback(() => {
+    if (!enabled) {
+      setItemList(emptyItemHistoryLoadable);
+      return;
+    }
+
+    setItemList({ loading: true, data: null, error: null });
+    void apiClient
+      .listImportJobHistoryItems(importJobId, query)
+      .then((data) => setItemList({ loading: false, data, error: null }))
+      .catch((error: unknown) =>
+        setItemList({ loading: false, data: null, error: normalizeApiError(error) }),
+      );
+  }, [apiClient, enabled, importJobId, query]);
+
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
+
+  const changeFilter = useCallback(
+    <K extends keyof ImportJobItemHistoryFilters>(
+      key: K,
+      value: ImportJobItemHistoryFilters[K] | undefined,
+    ) => {
+      setFilters((current) => ({
+        ...current,
+        [key]: normalizeItemFilterValue(value),
+      }));
+      setPage(1);
+    },
+    [],
+  );
+
+  const resetFilters = useCallback(() => {
+    setFilters({});
+    setPage(1);
+    setPageSize(defaultItemPageSize);
+  }, []);
+
+  const changePage = useCallback((nextPage: number, nextPageSize: number) => {
+    setPage(nextPage);
+    setPageSize(nextPageSize);
+  }, []);
+
+  return (
+    <ImportJobItemHistoryPanelView
+      filters={filters}
+      itemList={itemList}
+      page={page}
+      pageSize={pageSize}
+      onFilterChange={changeFilter}
+      onResetFilters={resetFilters}
+      onRefresh={loadItems}
+      onPageChange={changePage}
+    />
+  );
+}
+
+export function ImportJobItemHistoryPanelView({
+  filters,
+  itemList,
+  page,
+  pageSize,
+  onFilterChange,
+  onResetFilters,
+  onRefresh,
+  onPageChange,
+}: ImportJobItemHistoryPanelViewProps) {
+  const rows = itemList.data?.items ?? [];
+  const isEmpty = !itemList.loading && !itemList.error && rows.length === 0;
+
+  return (
+    <Card size="small" title="Safe row history">
+      <Space direction="vertical" size={12} className="import-job-history-stack">
+        <Space size={8} wrap>
+          <Tag>GET /import-jobs/:id/items</Tag>
+          <Tag>route-scoped</Tag>
+          <Button onClick={onRefresh}>Refresh items</Button>
+        </Space>
+
+        <Alert
+          className="safe-row-history-boundary"
+          type="info"
+          showIcon
+          message="Local/demo safe row view only"
+          description="Shows only row number, planned action, status, safe code, and target type. It is not raw CSV, not raw JSON, not production import acceptance, not retry, rollback, cleanup, export, or business-object drilldown."
+        />
+
+        <Space size={8} wrap>
+          <Input
+            className="import-job-history-item-filter"
+            aria-label="item status"
+            placeholder="Status"
+            value={filters.status}
+            onChange={(event) => onFilterChange?.("status", event.target.value)}
+          />
+          <Input
+            className="import-job-history-item-filter"
+            aria-label="item planned action"
+            placeholder="Planned action"
+            value={filters.plannedAction}
+            onChange={(event) => onFilterChange?.("plannedAction", event.target.value)}
+          />
+          <Input
+            className="import-job-history-item-filter"
+            aria-label="item target type"
+            placeholder="Target type"
+            value={filters.targetType}
+            onChange={(event) => onFilterChange?.("targetType", event.target.value)}
+          />
+          <Input
+            className="import-job-history-item-filter"
+            aria-label="item safe code"
+            placeholder="Safe code"
+            value={filters.safeCode}
+            onChange={(event) => onFilterChange?.("safeCode", event.target.value)}
+          />
+          <Button onClick={onResetFilters}>Reset filters</Button>
+        </Space>
+
+        {itemList.loading ? (
+          <Alert type="info" showIcon message="Loading safe row history" />
+        ) : null}
+
+        {itemList.error ? (
+          <Alert
+            type="error"
+            showIcon
+            message="Safe row history unavailable"
+            description={getSafeImportJobItemErrorMessage(itemList.error)}
+          />
+        ) : null}
+
+        {isEmpty ? (
+          <Empty
+            description={
+              <Space direction="vertical" size={4}>
+                <Typography.Text>
+                  No safe row history returned for this import job.
+                </Typography.Text>
+                <Typography.Text type="secondary">
+                  This does not imply raw source rows are unavailable; raw source data is
+                  outside this Web boundary.
+                </Typography.Text>
+              </Space>
+            }
+          />
+        ) : null}
+
+        {rows.length > 0 ? (
+          <Table<ImportJobItemHistoryRow>
+            size="small"
+            rowKey={buildSafeImportJobItemRowKey}
+            dataSource={rows}
+            columns={importJobItemHistoryColumns}
+            pagination={{
+              current: itemList.data?.page ?? page,
+              pageSize: itemList.data?.pageSize ?? pageSize,
+              total: itemList.data?.total ?? 0,
+              showSizeChanger: true,
+              showTotal: (total) => `${total} safe rows`,
+              onChange: (nextPage, nextPageSize) => {
+                onPageChange?.(nextPage, nextPageSize);
+              },
+            }}
+          />
+        ) : null}
+      </Space>
+    </Card>
   );
 }
 
@@ -329,6 +566,19 @@ export const buildImportJobHistoryQuery = (
   mode: filters.mode,
   achievementType: selectedAchievementType ?? filters.achievementType,
   page: 1,
+  pageSize,
+});
+
+export const buildImportJobItemHistoryPanelQuery = (
+  filters: ImportJobItemHistoryFilters,
+  page = 1,
+  pageSize = defaultItemPageSize,
+): ImportJobItemHistoryListQuery => ({
+  status: normalizeItemFilterValue(filters.status),
+  plannedAction: normalizeItemFilterValue(filters.plannedAction),
+  targetType: normalizeItemFilterValue(filters.targetType),
+  safeCode: normalizeItemFilterValue(filters.safeCode),
+  page,
   pageSize,
 });
 
@@ -478,6 +728,36 @@ export const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] =
   },
 ];
 
+export const importJobItemHistoryColumns: TableProps<ImportJobItemHistoryRow>["columns"] = [
+  {
+    title: "Row",
+    dataIndex: "rowNumber",
+    key: "rowNumber",
+  },
+  {
+    title: "Planned action",
+    dataIndex: "plannedAction",
+    key: "plannedAction",
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    key: "status",
+    render: (value: string) => <Tag color={getStatusTagColor(value)}>{value}</Tag>,
+  },
+  {
+    title: "Safe code",
+    dataIndex: "safeCode",
+    key: "safeCode",
+    render: (value?: string | null) => value ?? "Not returned",
+  },
+  {
+    title: "Target type",
+    dataIndex: "targetType",
+    key: "targetType",
+  },
+];
+
 export type SafeSummaryRow = {
   key: string;
   value: string;
@@ -610,6 +890,50 @@ export const getStatusTagColor = (status: string): string | undefined => {
 export function formatImportJobTimestamp(value?: string | null): string {
   return value ?? "N/A";
 }
+
+const normalizeItemFilterValue = <T extends string | undefined>(
+  value: T,
+): T | undefined => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return (trimmed || undefined) as T | undefined;
+};
+
+const buildSafeImportJobItemRowKey = (row: ImportJobItemHistoryRow): string =>
+  [
+    row.rowNumber,
+    row.plannedAction,
+    row.status,
+    row.safeCode ?? "NOT_RETURNED",
+    row.targetType,
+  ].join(":");
+
+export const getSafeImportJobItemErrorMessage = (error: ApiError): string => {
+  if (error.status === 401 || error.kind === "unauthorized") {
+    return "Select or switch demo user.";
+  }
+
+  if (error.status === 403 || error.kind === "forbidden") {
+    return "Current role cannot read safe import item history.";
+  }
+
+  if (error.status === 404) {
+    return "Import job not found or not visible to this route.";
+  }
+
+  if (error.status === 400 || error.status === 422 || error.kind === "bad-request") {
+    return "Item filter parameters are invalid.";
+  }
+
+  if (error.kind === "server" || error.kind === "network") {
+    return "Safe import item history service unavailable.";
+  }
+
+  return "Safe import item history request failed.";
+};
 
 const normalizeApiError = (error: unknown): ApiError => {
   if (isApiError(error)) {

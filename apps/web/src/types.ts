@@ -1216,6 +1216,30 @@ export type ImportJobHistoryListQuery = {
   pageSize?: number;
 };
 
+export type ImportJobItemHistoryRow = {
+  rowNumber: number;
+  plannedAction: string;
+  status: string;
+  safeCode?: string | null;
+  targetType: string;
+};
+
+export type ImportJobItemHistoryListResponse = {
+  items: ImportJobItemHistoryRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type ImportJobItemHistoryListQuery = {
+  status?: string;
+  plannedAction?: string;
+  targetType?: string;
+  safeCode?: string;
+  page?: number;
+  pageSize?: number;
+};
+
 export type AccountUserStatus = "ACTIVE" | "DISABLED" | "ARCHIVED" | "PENDING_ACTIVATION";
 
 export type AccountCredentialStatus = "ACTIVE" | "DISABLED";

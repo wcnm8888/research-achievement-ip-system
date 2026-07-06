@@ -55,7 +55,7 @@ export type SettingsImportJobHistoryFilters = {
 
 type SettingsImportJobHistoryClient = Pick<
   AccountManagementApiClient,
-  "listImportJobHistory" | "getImportJobHistoryDetail"
+  "listImportJobHistory" | "getImportJobHistoryDetail" | "listImportJobHistoryItems"
 >;
 
 type SettingsImportJobHistoryOverviewProps = {
@@ -80,6 +80,7 @@ type SettingsImportJobHistoryOverviewViewProps = {
   onPageChange?: (page: number, pageSize: number) => void;
   onOpenDetail?: (jobId: string) => void;
   onCloseDetail?: () => void;
+  itemHistoryClient?: Pick<AccountManagementApiClient, "listImportJobHistoryItems">;
 };
 
 export const settingsImportJobHistoryDefaultPage = 1;
@@ -235,6 +236,7 @@ export function SettingsImportJobHistoryOverview({
       onPageChange={changePage}
       onOpenDetail={openDetail}
       onCloseDetail={closeDetail}
+      itemHistoryClient={historyClient}
     />
   );
 }
@@ -252,6 +254,7 @@ export function SettingsImportJobHistoryOverviewView({
   onPageChange,
   onOpenDetail,
   onCloseDetail,
+  itemHistoryClient,
 }: SettingsImportJobHistoryOverviewViewProps) {
   const rows = list.data?.items ?? [];
   const hasRows = rows.length > 0;
@@ -369,7 +372,7 @@ export function SettingsImportJobHistoryOverviewView({
         onClose={onCloseDetail}
         destroyOnClose
       >
-        <ImportJobHistoryDetailView detail={detail} />
+        <ImportJobHistoryDetailView detail={detail} itemHistoryClient={itemHistoryClient} />
       </Drawer>
     </Card>
   );

@@ -121,6 +121,7 @@ describe("SettingsImportJobHistoryOverview permission boundary", () => {
     expect(html).toBe("");
     expect(client.listImportJobHistory).not.toHaveBeenCalled();
     expect(client.getImportJobHistoryDetail).not.toHaveBeenCalled();
+    expect(client.listImportJobHistoryItems).not.toHaveBeenCalled();
   });
 });
 
@@ -334,8 +335,14 @@ describe("family-local import history entries keep fixed filters", () => {
 
 const makeHistoryClient = (): Pick<
   AccountManagementApiClient,
-  "listImportJobHistory" | "getImportJobHistoryDetail"
+  "listImportJobHistory" | "getImportJobHistoryDetail" | "listImportJobHistoryItems"
 > => ({
   listImportJobHistory: vi.fn(async () => listResponse),
   getImportJobHistoryDetail: vi.fn(async () => detail),
+  listImportJobHistoryItems: vi.fn(async () => ({
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 10,
+  })),
 });

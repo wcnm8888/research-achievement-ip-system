@@ -14012,3 +14012,31 @@
   - No production runbook, production migration, real HR/SSO, real email/SMS, real finance/payment/invoice/reconciliation, or real external provider operation.
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed documentation.
   - Existing untracked local artifacts listed by the user were not modified.
+
+## 2026-07-06 Step 112 - ImportJobItem Web row safe display
+
+- Status: DONE.
+- Starting point:
+  - HEAD at task start: `ef8a174 docs: plan import job item web display`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added Web `ImportJobItem` safe history row/list/query types with only `rowNumber`, `plannedAction`, `status`, `safeCode`, and `targetType`.
+  - Added `listImportJobHistoryItems(importJobId, query)` to the Web API client, fixed to `GET /import-jobs/:id/items`.
+  - Added query allowlisting/trimming for only `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize`; no Web `runId` filter.
+  - Added a route-scoped `Safe row history` read-only panel inside the existing import job detail drawer.
+  - The panel supports loading, sanitized error messages, empty state, refresh, safe filters, and pagination.
+  - The panel displays only `Row`, `Planned action`, `Status`, `Safe code`, and `Target type`; empty `safeCode` displays `Not returned`.
+  - Settings import history overview passes the same existing system-config-bound client to the detail view; users without `system:config` still do not render the overview or request item history.
+- Explicitly not done:
+  - No `apps/api/**` or `prisma/**` changes.
+  - No global item browser, new navigation entry, `runId` filter, job/run ID item detail display, raw CSV, raw JSON, retry, rollback, cleanup, export, repair, delete, download, debug panel, or business-object drilldown.
+  - No localhost/browser acceptance in this step; UI acceptance remains for Step 113.
+  - No Docker startup, creation, deletion, volume cleanup, production/VPS/production DB access, production runbook, migration, or real external-system call.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- ImportJobHistory SettingsImportJobHistoryOverview api-client`: PASS, 3 files / 65 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No secrets, tokens, cookies, sessions, passwords, `DATABASE_URL`, connection strings, raw payloads, raw source rows, or raw request/response data were read or captured.
+  - Existing untracked local artifacts and `.local-*` evidence directories were not touched.

@@ -1,13 +1,20 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildImportJobItemHistoryPanelQuery,
   buildImportJobHistoryQuery,
+  getSafeImportJobItemErrorMessage,
   getImportJobStatusExplanation,
   ImportJobHistoryDetailView,
+  ImportJobItemHistoryPanelView,
   ImportJobHistoryPanelView,
   type ImportJobHistoryFilters,
 } from "./ImportJobHistoryPanel";
-import type { ImportJobHistoryDetail, ImportJobHistoryListResponse } from "./types";
+import type {
+  ImportJobHistoryDetail,
+  ImportJobHistoryListResponse,
+  ImportJobItemHistoryListResponse,
+} from "./types";
 
 const achievementFilters: ImportJobHistoryFilters = {
   family: "ACHIEVEMENT",
@@ -81,6 +88,28 @@ const detail: ImportJobHistoryDetail = {
       auditCount: 2,
     },
   ],
+};
+
+const itemHistoryResponse: ImportJobItemHistoryListResponse = {
+  items: [
+    {
+      rowNumber: 2,
+      plannedAction: "CREATE_DRAFT",
+      status: "SUCCESS",
+      safeCode: null,
+      targetType: "ACHIEVEMENT",
+    },
+    {
+      rowNumber: 3,
+      plannedAction: "SKIP",
+      status: "FAILED",
+      safeCode: "SAFE_VALIDATION_ERROR",
+      targetType: "ACHIEVEMENT",
+    },
+  ],
+  total: 12,
+  page: 1,
+  pageSize: 10,
 };
 
 describe("ImportJobHistoryPanel", () => {
@@ -191,5 +220,178 @@ describe("ImportJobHistoryPanel", () => {
     expect(text).toContain("Rejected:");
     expect(text).toContain("Failed:");
     expect(text).not.toMatch(/\b(retry|delete|cleanup|rollback|download)\b/i);
+  });
+
+  it("builds safe row history queries with only safe filters and pagination", () => {
+    expect(
+      buildImportJobItemHistoryPanelQuery(
+        {
+          status: " SUCCESS ",
+          plannedAction: " CREATE_DRAFT ",
+          targetType: " ACHIEVEMENT ",
+          safeCode: "  ",
+        },
+        3,
+        25,
+      ),
+    ).toEqual({
+      status: "SUCCESS",
+      plannedAction: "CREATE_DRAFT",
+      targetType: "ACHIEVEMENT",
+      safeCode: undefined,
+      page: 3,
+      pageSize: 25,
+    });
+  });
+
+  it("renders safe row history states and only the five allowlisted columns", () => {
+    const loadingHtml = renderToStaticMarkup(
+      <ImportJobItemHistoryPanelView
+        filters={{}}
+        itemList={{ loading: true, data: null, error: null }}
+        page={1}
+        pageSize={10}
+      />,
+    );
+    expect(loadingHtml).toContain("Safe row history");
+    expect(loadingHtml).toContain("Loading safe row history");
+    expect(loadingHtml).toContain("GET /import-jobs/:id/items");
+    expect(loadingHtml).toContain("not raw CSV");
+    expect(loadingHtml).toContain("not raw JSON");
+    expect(loadingHtml).toContain("not production import acceptance");
+
+    const emptyHtml = renderToStaticMarkup(
+      <ImportJobItemHistoryPanelView
+        filters={{}}
+        itemList={{
+          loading: false,
+          data: { items: [], total: 0, page: 1, pageSize: 10 },
+          error: null,
+        }}
+        page={1}
+        pageSize={10}
+      />,
+    );
+    expect(emptyHtml).toContain("No safe row history returned for this import job.");
+    expect(emptyHtml).toContain("raw source data is outside this Web boundary");
+
+    const errorHtml = renderToStaticMarkup(
+      <ImportJobItemHistoryPanelView
+        filters={{}}
+        itemList={{
+          loading: false,
+          data: null,
+          error: {
+            kind: "forbidden",
+            status: 403,
+            message: "Forbidden",
+            detail: "raw payload token DATABASE_URL",
+          },
+        }}
+        page={1}
+        pageSize={10}
+      />,
+    );
+    expect(errorHtml).toContain("Safe row history unavailable");
+    expect(errorHtml).toContain("Current role cannot read safe import item history.");
+    expect(errorHtml).not.toContain("raw payload token DATABASE_URL");
+
+    const listHtml = renderToStaticMarkup(
+      <ImportJobItemHistoryPanelView
+        filters={{
+          status: "SUCCESS",
+          plannedAction: "CREATE_DRAFT",
+          targetType: "ACHIEVEMENT",
+          safeCode: "SAFE_VALIDATION_ERROR",
+        }}
+        itemList={{ loading: false, data: itemHistoryResponse, error: null }}
+        page={1}
+        pageSize={10}
+      />,
+    );
+
+    expect(listHtml).toContain("Row");
+    expect(listHtml).toContain("Planned action");
+    expect(listHtml).toContain("Status");
+    expect(listHtml).toContain("Safe code");
+    expect(listHtml).toContain("Target type");
+    expect(listHtml).toContain("CREATE_DRAFT");
+    expect(listHtml).toContain("SUCCESS");
+    expect(listHtml).toContain("Not returned");
+    expect(listHtml).toContain("SAFE_VALIDATION_ERROR");
+    expect(listHtml).toContain("ACHIEVEMENT");
+    expect(listHtml).toContain("12 safe rows");
+  });
+
+  it("does not expose forbidden safe row fields or action controls outside boundary copy", () => {
+    const html = renderToStaticMarkup(
+      <ImportJobItemHistoryPanelView
+        filters={{}}
+        itemList={{ loading: false, data: itemHistoryResponse, error: null }}
+        page={1}
+        pageSize={10}
+      />,
+    );
+    const boundaryCopy =
+      /<div class="ant-alert-description">.*?<\/div>/.exec(html)?.[0] ?? "";
+    const actionSurface = html.replace(boundaryCopy, "");
+
+    [
+      "targetId",
+      "raw payload",
+      "source payload",
+      "safeSummary",
+      "auditLogIds",
+      "jobId",
+      "runId",
+      "operator id",
+      "fingerprint",
+      "hash",
+      "checksum",
+      "object key",
+      "email",
+      "phone",
+      "employee id",
+      "ID card",
+      "password",
+      "token",
+      "cookie",
+      "session",
+      "DATABASE_URL",
+      "connection string",
+      "secret",
+      "download",
+      "delete",
+      "repair",
+      "debug panel",
+    ].forEach((forbiddenText) => {
+      expect(actionSurface).not.toContain(forbiddenText);
+    });
+
+    expect(actionSurface).not.toMatch(/\b(export|retry|rollback|cleanup|drilldown)\b/i);
+  });
+
+  it("maps safe row history errors without exposing backend detail text", () => {
+    expect(
+      getSafeImportJobItemErrorMessage({
+        kind: "unauthorized",
+        status: 401,
+        message: "Unauthorized",
+      }),
+    ).toBe("Select or switch demo user.");
+    expect(
+      getSafeImportJobItemErrorMessage({
+        kind: "bad-request",
+        status: 422,
+        message: "Invalid",
+        detail: "raw request body",
+      }),
+    ).toBe("Item filter parameters are invalid.");
+    expect(
+      getSafeImportJobItemErrorMessage({
+        kind: "network",
+        message: "Network failed",
+      }),
+    ).toBe("Safe import item history service unavailable.");
   });
 });

@@ -37,6 +37,8 @@ import type {
   FeeReviewHistoryEntry,
   FeeStateRecord,
   ImportJobHistoryDetail,
+  ImportJobItemHistoryListQuery,
+  ImportJobItemHistoryListResponse,
   ImportJobHistoryListQuery,
   ImportJobHistoryListResponse,
   InviteAcceptInput,
@@ -133,6 +135,10 @@ export type AccountManagementApiClient = ApiClient & {
     query?: ImportJobHistoryListQuery,
   ): Promise<ImportJobHistoryListResponse>;
   getImportJobHistoryDetail(importJobId: string): Promise<ImportJobHistoryDetail>;
+  listImportJobHistoryItems(
+    importJobId: string,
+    query?: ImportJobItemHistoryListQuery,
+  ): Promise<ImportJobItemHistoryListResponse>;
   listCustomReportTemplates(): Promise<CustomReportTemplate[]>;
   runCustomReport(
     templateId: string,
@@ -454,6 +460,15 @@ export const createApiClient = (
       options,
     );
     return response as ImportJobHistoryDetail;
+  },
+  async listImportJobHistoryItems(importJobId: string, query?: ImportJobItemHistoryListQuery) {
+    const response = await request(
+      `/import-jobs/${importJobId}/items`,
+      demoUserId,
+      { method: "GET", query: buildImportJobItemHistoryQuery(query) },
+      options,
+    );
+    return response as ImportJobItemHistoryListResponse;
   },
   async listCustomReportTemplates() {
     const response = await request(
@@ -900,6 +915,22 @@ export const serializeQuery = (query?: ApiQuery): string => {
   });
 
   return searchParams.toString();
+};
+
+export const buildImportJobItemHistoryQuery = (
+  query?: ImportJobItemHistoryListQuery,
+): ApiQuery => ({
+  status: trimQueryString(query?.status),
+  plannedAction: trimQueryString(query?.plannedAction),
+  targetType: trimQueryString(query?.targetType),
+  safeCode: trimQueryString(query?.safeCode),
+  page: query?.page,
+  pageSize: query?.pageSize,
+});
+
+const trimQueryString = (value?: string): string | undefined => {
+  const trimmed = value?.trim();
+  return trimmed || undefined;
 };
 
 const appendQueryValue = (

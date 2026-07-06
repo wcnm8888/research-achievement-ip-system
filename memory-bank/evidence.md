@@ -18953,6 +18953,45 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-06 Step 112 - ImportJobItem Web row safe display evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `ef8a174 docs: plan import job item web display`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed:
+  - `memory-bank/import-job-item-web-row-display-plan.md`.
+  - `apps/web/src/ImportJobHistoryPanel.tsx`.
+  - `apps/web/src/SettingsImportJobHistoryOverview.tsx`.
+  - `apps/web/src/api-client.ts`.
+  - `apps/web/src/types.ts`.
+  - `apps/web/src/ImportJobHistoryPanel.test.tsx`.
+  - `apps/web/src/SettingsImportJobHistoryOverview.test.tsx`.
+  - `apps/web/src/api-client.test.ts`.
+- Implementation evidence:
+  - `apps/web/src/types.ts` adds `ImportJobItemHistoryRow`, `ImportJobItemHistoryListResponse`, and `ImportJobItemHistoryListQuery`.
+  - `apps/web/src/api-client.ts` adds `listImportJobHistoryItems(importJobId, query)` fixed to `GET /import-jobs/:id/items`.
+  - Query serialization is allowlisted to `status`, `plannedAction`, `targetType`, `safeCode`, `page`, and `pageSize`; unsupported fields such as `runId` are not serialized.
+  - `apps/web/src/ImportJobHistoryPanel.tsx` adds the route-scoped `Safe row history` detail panel with loading, sanitized error, empty, refresh, safe filters, and pagination states.
+  - The panel displays only `Row`, `Planned action`, `Status`, `Safe code`, and `Target type`; missing `safeCode` displays `Not returned`.
+  - `apps/web/src/SettingsImportJobHistoryOverview.tsx` passes the existing authorized history client into the detail view; without `system:config`, item history is not requested.
+- Test evidence:
+  - API client tests cover the item URL, query trimming, and ignoring unsupported extra fields.
+  - UI tests cover the safe row panel states, five-column allowlist, sanitized errors, and absence of forbidden fields/action controls outside the mandatory boundary notice.
+  - Settings overview tests confirm non-system-config users do not render or request item history.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- ImportJobHistory SettingsImportJobHistoryOverview api-client`: PASS, 3 files / 65 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundaries observed:
+  - No `apps/api/**` or `prisma/**` files changed.
+  - No `.env` or `.env.production` content read.
+  - No localhost/browser acceptance was run in Step 112.
+  - No Docker container or volume was started, created, deleted, or cleaned.
+  - No production/VPS/production DB access, production runbook, migration, or real external-system call.
+  - No existing untracked local artifacts or `.local-*` evidence directories were touched.
+  - No raw CSV, raw JSON, retry, rollback, cleanup, export, repair, delete, download, debug panel, or business-object drilldown was implemented.
+
 ## 2026-07-06 Step 93 - Phase-one demo UI recheck evidence
 
 - Canonical state checked before recheck:

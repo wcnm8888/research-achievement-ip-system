@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  buildImportJobItemHistoryQuery,
   createApiClient,
   createAuthClient,
   mapApiErrorMessage,
@@ -487,6 +488,86 @@ describe("createApiClient writes JSON requests", () => {
     expect(url).toBe(`http://localhost/api/import-jobs/${importJobId}`);
     expect(init.method).toBe("GET");
     expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
+  it("lists safe import job item history through the route-scoped items endpoint", async () => {
+    const importJobId = "10000000-0000-4000-8000-000000000073";
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        items: [
+          {
+            rowNumber: 2,
+            plannedAction: "CREATE_DRAFT",
+            status: "SUCCESS",
+            safeCode: null,
+            targetType: "ACHIEVEMENT",
+          },
+        ],
+        total: 1,
+        page: 1,
+        pageSize: 10,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    await expect(
+      client.listImportJobHistoryItems(importJobId, {
+        status: " SUCCESS ",
+        plannedAction: " CREATE_DRAFT ",
+        targetType: " ACHIEVEMENT ",
+        safeCode: "  ",
+        page: 1,
+        pageSize: 10,
+      }),
+    ).resolves.toMatchObject({
+      total: 1,
+      items: [
+        {
+          rowNumber: 2,
+          plannedAction: "CREATE_DRAFT",
+          status: "SUCCESS",
+          safeCode: null,
+          targetType: "ACHIEVEMENT",
+        },
+      ],
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe(
+      `http://localhost/api/import-jobs/${importJobId}/items?status=SUCCESS&plannedAction=CREATE_DRAFT&targetType=ACHIEVEMENT&page=1&pageSize=10`,
+    );
+    expect(init.method).toBe("GET");
+    expect(headers.get("X-Demo-User-Id")).toBe("admin-user-id");
+  });
+
+  it("builds safe import job item queries without unsupported fields", () => {
+    const query = buildImportJobItemHistoryQuery({
+      status: " FAILED ",
+      plannedAction: " SKIP ",
+      targetType: " USER_ACCOUNT ",
+      safeCode: " SAFE_VALIDATION_ERROR ",
+      page: 2,
+      pageSize: 25,
+      runId: "should-not-pass",
+      targetId: "should-not-pass",
+      rawJson: "should-not-pass",
+    } as unknown as Parameters<typeof buildImportJobItemHistoryQuery>[0]);
+
+    expect(query).toEqual({
+      status: "FAILED",
+      plannedAction: "SKIP",
+      targetType: "USER_ACCOUNT",
+      safeCode: "SAFE_VALIDATION_ERROR",
+      page: 2,
+      pageSize: 25,
+    });
+    expect(serializeQuery(query)).not.toContain("runId");
+    expect(serializeQuery(query)).not.toContain("targetId");
+    expect(serializeQuery(query)).not.toContain("rawJson");
   });
 
   it("sends user account import dry-run as multipart form data", async () => {
