@@ -19135,6 +19135,68 @@
   - No app source, API, Prisma schema, migration, package, lockfile, or config
     change was made.
 
+## 2026-07-07 Step 143 - Latest preview login check evidence
+
+- Canonical state checked before preview validation:
+  - `git log -1 --oneline` -> `bc9b101 docs: add client-facing code freeze punch list`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+- Temporary preview evidence:
+  - Created `.local-step143-client-facing-preview-acceptance/`.
+  - Started a temporary Node preview server on `127.0.0.1:18141`.
+  - Served the latest local Web build from
+    `.local-step143-client-facing-preview-acceptance/dist`.
+  - Proxied `/api/*` to `127.0.0.1:14001`.
+  - Stopped the Step-started process and confirmed port `18141` was released.
+- Browser evidence before fix:
+  - Edge headless scan of the latest preview login page found that the page text
+    included both `已登录` and `请先登录`.
+  - The issue was not a stale-bundle artifact; it was current source behavior in
+    `ProductionIdentityControls`.
+- Source changes:
+  - Updated `apps/web/src/App.tsx`.
+  - Updated `apps/web/src/App.test.tsx`.
+  - Added `getProductionAuthStatusTag` so unauthenticated state displays
+    `未登录`, checking state displays `检查中`, error state displays `需重新登录`,
+    and only authenticated state displays `已登录`.
+- Browser evidence after fix:
+  - Screenshot:
+    `.local-step143-client-facing-preview-acceptance/02-login-fixed-latest-preview.png`.
+  - Text scan:
+    `.local-step143-client-facing-preview-acceptance/browser-fixed-forbidden-scan.json`.
+  - Page text:
+    `.local-step143-client-facing-preview-acceptance/browser-login-fixed-text.txt`.
+  - The fixed login-page scan reported zero matches for `Phase 1 frontend`,
+    `production auth`, `GET /`, `POST /`, `X-Demo-User-Id`, `dryRun=true`,
+    `Achievement CSV dry-run`, `Safe preview`, `Failed to fetch`,
+    `Network request failed`, `Custom Reports`, `Secret Authorization`,
+    `local/demo`, `not production`, `raw JSON`, and `batch mutation`.
+  - State text after fix: `已登录` 0, `未登录` 1, `请先登录` 1.
+  - Requests observed: only GET `/`, JS/CSS assets, and GET `/api/auth/me`.
+    `/api/auth/me` returned 401 as expected for an unauthenticated page.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App`: PASS, 2 files / 14 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web exec vite build --outDir ../../.local-step143-client-facing-preview-acceptance/dist --emptyOutDir false`: PASS.
+- Files updated:
+  - `apps/web/src/App.tsx`.
+  - `apps/web/src/App.test.tsx`.
+  - Added `memory-bank/client-facing-latest-preview-login-check-step143.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Remaining caveat:
+  - Latest non-Docker preview login page is clean for the scanned terms.
+  - Full UI/code freeze still requires refreshing the actual `18081` demo entry
+    and running authenticated screenshot acceptance across the main application
+    pages.
+- Boundary evidence:
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No Docker operation was performed.
+  - No API, Prisma schema, migration, package, lockfile, or config change was
+    made.
+
 ## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish evidence
 
 - Scope:

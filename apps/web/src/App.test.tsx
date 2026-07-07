@@ -4,6 +4,7 @@ import {
   getBusinessContextId,
   getDemoAuthUser,
   getDemoPermissionCodes,
+  getProductionAuthStatusTag,
   getVisibleNavItems,
   loginAndRefreshCurrentUser,
   logoutAndClearCurrentUser,
@@ -85,6 +86,25 @@ describe("production auth mode helpers", () => {
     expect(mapLoginErrorMessage(unauthorized)).toBe("邮箱或密码错误。");
     expect(mapLoginErrorMessage(forbidden)).toBe("当前角色无权限");
     expect(mapLoginErrorMessage(new Error("network"))).toBe("登录失败，请稍后重试。");
+  });
+
+  it("labels production auth states without claiming login before authentication", () => {
+    expect(getProductionAuthStatusTag("checking")).toEqual({
+      label: "检查中",
+      color: "blue",
+    });
+    expect(getProductionAuthStatusTag("anonymous")).toEqual({
+      label: "未登录",
+      color: "default",
+    });
+    expect(getProductionAuthStatusTag("error")).toEqual({
+      label: "需重新登录",
+      color: "orange",
+    });
+    expect(getProductionAuthStatusTag("authenticated")).toEqual({
+      label: "已登录",
+      color: "green",
+    });
   });
 
   it("shows account management navigation only to system config users", () => {

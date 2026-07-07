@@ -15228,3 +15228,47 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 143 - Latest preview login page client-facing check
+
+- Status: DONE with remaining full-browser freeze gate.
+- Goal:
+  - Use a non-Docker temporary preview of the latest Web build to verify whether
+    the client-facing login page still exposes stale or contradictory wording.
+- Local preview:
+  - Started a temporary Node preview server on `127.0.0.1:18141`.
+  - Served `.local-step143-client-facing-preview-acceptance/dist`.
+  - Proxied `/api/*` to the currently reachable local API at `127.0.0.1:14001`
+    without logging headers, cookies, tokens, or request bodies.
+  - Stopped the Step-started process and confirmed port `18141` was released.
+- Finding and fix:
+  - Browser text showed the unauthenticated login page contained both `已登录`
+    and `请先登录`.
+  - Updated `apps/web/src/App.tsx` so the top auth status tag reflects the real
+    state: `已登录`, `检查中`, `需重新登录`, or `未登录`.
+  - Updated `apps/web/src/App.test.tsx` to lock this behavior.
+- Evidence:
+  - `.local-step143-client-facing-preview-acceptance/02-login-fixed-latest-preview.png`.
+  - `.local-step143-client-facing-preview-acceptance/browser-fixed-forbidden-scan.json`.
+  - `.local-step143-client-facing-preview-acceptance/browser-login-fixed-text.txt`.
+  - Added `memory-bank/client-facing-latest-preview-login-check-step143.md`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App`: PASS, 2 files / 14 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web exec vite build --outDir ../../.local-step143-client-facing-preview-acceptance/dist --emptyOutDir false`: PASS.
+  - Edge headless login-page scan after the fix: no matches for `Phase 1
+    frontend`, `production auth`, `GET /`, `POST /`, `X-Demo-User-Id`,
+    `dryRun=true`, `Achievement CSV dry-run`, `Safe preview`, raw network
+    errors, `Custom Reports`, `Secret Authorization`, `local/demo`,
+    `not production`, `raw JSON`, or `batch mutation`.
+  - Post-fix login-state scan: `已登录` 0, `未登录` 1, `请先登录` 1.
+- Remaining caveat:
+  - This validated the latest non-Docker preview login page and build artifact.
+  - Full code freeze still requires refreshing the actual `18081` demo entry and
+    running authenticated browser screenshot acceptance across the main pages.
+- Explicitly not done:
+  - No API, Prisma schema, migration, package, lockfile, or config change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

@@ -229,6 +229,24 @@ export const mapLoginErrorMessage = (error: unknown): string => {
   return isApiError(error) ? error.message : "登录失败，请稍后重试。";
 };
 
+export const getProductionAuthStatusTag = (
+  authStatus: AuthStatus,
+): { label: string; color: string } => {
+  if (authStatus === "authenticated") {
+    return { label: "已登录", color: "green" };
+  }
+
+  if (authStatus === "checking") {
+    return { label: "检查中", color: "blue" };
+  }
+
+  if (authStatus === "error") {
+    return { label: "需重新登录", color: "orange" };
+  }
+
+  return { label: "未登录", color: "default" };
+};
+
 export const logoutAndClearCurrentUser = async (authClient: AuthClient): Promise<null> => {
   await authClient.logout();
   return null;
@@ -498,9 +516,11 @@ function ProductionIdentityControls({
   authUser: AuthUser | null;
   onLogout: () => void;
 }) {
+  const statusTag = getProductionAuthStatusTag(authStatus);
+
   return (
     <div className="identity-bar">
-      <Tag color={authStatus === "authenticated" ? "green" : "blue"}>已登录</Tag>
+      <Tag color={statusTag.color}>{statusTag.label}</Tag>
       {authUser ? (
         <>
           <Typography.Text strong>{authUser.name}</Typography.Text>
