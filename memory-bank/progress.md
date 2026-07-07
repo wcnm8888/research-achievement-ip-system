@@ -14619,6 +14619,59 @@
   - No real external-system call.
   - No source, schema, or migration change.
 
+## 2026-07-07 Step 129 - Secret authorization authenticated Docker UI acceptance
+
+- Status: PASS with caveat.
+- Acceptance classification:
+  - Local Docker production-like authenticated UI acceptance.
+  - This is not production/VPS acceptance and not production authorization
+    acceptance.
+- Starting point:
+  - HEAD at task start: `c9935c6 docs: document local api config recovery options`.
+  - The Docker production-like stack had already been rebuilt to include the
+    Step 121/122 API and Web code.
+  - `http://127.0.0.1:14001/api/health` returned `200`.
+  - `http://127.0.0.1:18081` returned `200`.
+  - Unauthenticated `GET /api/secret-authorization/overview` returned `401`,
+    confirming the route exists and remains protected.
+- Browser acceptance:
+  - Used the user-authorized existing local Docker account credential for
+    login, without recording the password in documentation.
+  - Login succeeded and the local system admin session showed the
+    `Secret Authorization` navigation entry.
+  - The `Secret authorization` page rendered with the safe-summary boundary
+    alert.
+  - `GET /api/secret-authorization/overview` returned `200`.
+  - `GET /api/secret-authorization/resources` returned `200`.
+  - Secret Authorization network traffic remained read-only; no grant mutation,
+    batch mutation, export, download, or debug request was observed.
+- Local data caveat:
+  - The current local Docker dataset returned `resources.total=0` and
+    `items.length=0`.
+  - The page showed stable empty states for restricted resources and resource
+    detail.
+  - Resource detail and grants-table rendering were not exercised with a live
+    selected resource because no restricted resource row was returned.
+- Sensitive-field scan:
+  - Exact high-risk DOM markers were not found.
+  - The only broad `download` text hit was the aggregate enum value
+    `ATTACHMENT_DOWNLOAD`, not a download URL, link, export, or file retrieval
+    control.
+- Scope completed:
+  - Added
+    `memory-bank/secret-authorization-authenticated-ui-acceptance-step129.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Explicitly not done:
+  - No source, schema, migration, or Docker compose file change.
+  - No `.env` or `.env.production` content read.
+  - No password, cookie, token, session value, connection string, or secret
+    recorded in committed documentation.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker prune, volume delete, stack delete, orphan cleanup, or local file
+    deletion.
+
 ## 2026-07-07 Step 127 - Local API config recovery handbook
 
 - Status: DONE, docs-only/read-only.

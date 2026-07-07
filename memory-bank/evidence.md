@@ -18953,6 +18953,73 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-07 Step 129 - Secret authorization authenticated Docker UI acceptance evidence
+
+- Canonical state checked before acceptance:
+  - `git log -1 --oneline` -> `c9935c6 docs: document local api config recovery options`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Service readiness:
+  - `GET http://127.0.0.1:14001/api/health` -> `200`.
+  - `GET http://127.0.0.1:18081` -> `200`.
+  - Unauthenticated `GET /api/secret-authorization/overview` -> `401`,
+    confirming route presence and auth protection after the Docker stack
+    rebuild.
+- Authenticated browser evidence:
+  - Used browser session `step129-secret-auth`.
+  - Used the user-authorized existing local Docker account credential only for
+    this acceptance.
+  - Login succeeded; the session displayed the local system admin account.
+  - `Secret Authorization` navigation was visible.
+  - The `Secret authorization` page rendered with the safe-summary boundary
+    alert.
+- Observed network evidence:
+  - `POST /api/auth/login` -> `200` for the authorized login.
+  - `GET /api/auth/me` -> `200` after login.
+  - `GET /api/secret-authorization/overview` -> `200`.
+  - `GET /api/secret-authorization/resources` -> `200`.
+  - Repeated same-origin polling checks for the two Secret Authorization
+    endpoints also returned `200`.
+  - No Secret Authorization mutation, grant create/revoke, batch, export,
+    download, debug, or file retrieval request was observed.
+- UI state evidence:
+  - Overview safe projection keys were present.
+  - Resource response keys were `caveats`, `items`, and `total`.
+  - `resources.total` was `0`; `items.length` was `0`.
+  - The page showed `No restricted resources returned.`
+  - The page showed `No restricted resource is selected.`
+  - Visible controls were navigation, logout, and `Refresh`; no write/export/
+    download/debug/batch control was present.
+- Sensitive-field negative evidence:
+  - Exact DOM scan found no attachment body, storage/object key, checksum,
+    download URL, raw audit JSON, raw permission graph, operator email,
+    password hash, token hash, session ID, `DATABASE_URL`, connection string,
+    or secret-value marker.
+  - A broad `download` text hit was traced to the aggregate enum
+    `ATTACHMENT_DOWNLOAD`, not a download URL, link, button, export, or file
+    retrieval control.
+- Local artifacts:
+  - Screenshot:
+    `.local-step129-secret-authorization-authenticated-acceptance/secret-authorization-authenticated.png`.
+- Residual caveat:
+  - Current local Docker data contains no selectable restricted resource rows,
+    so resource detail/grant-table rendering was not exercised through a live
+    selected row.
+  - A dashboard summary request returned `500` after login before the Secret
+    Authorization page path; it is unrelated to this page acceptance and was
+    not used as Secret Authorization evidence.
+- Boundaries observed:
+  - No source code, schema, migration, or Docker compose file was modified.
+  - No `.env` or `.env.production` content read or displayed.
+  - No password, cookie, token, session value, connection string, or secret was
+    recorded in committed documentation.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, storage, or
+    third-party system call.
+  - No Docker prune, volume delete, stack delete, orphan cleanup, reset,
+    restore, checkout, clean, or local file deletion.
+
 ## 2026-07-07 Step 122 - Secret authorization Web read-only management view evidence
 
 - Classification:
