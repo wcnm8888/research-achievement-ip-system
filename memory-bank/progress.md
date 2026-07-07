@@ -15319,3 +15319,32 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 145 prompt prep - Final browser acceptance authorization package
+
+- Status: DONE, awaiting explicit user authorization for Docker Web refresh.
+- Goal:
+  - Convert the remaining client-facing freeze blocker into a precise next-step
+    prompt with boundaries, allowed commands, evidence requirements, and
+    pass/caveat/block rules.
+- Read-only confirmation:
+  - Current `http://127.0.0.1:18081` still references
+    `assets/index-DTUeQ4MR.js`.
+  - Latest Step 144 build output is
+    `.local-step144-client-facing-copy-polish/dist/assets/index-BDGa5WnL.js`.
+  - Therefore the actual demo entry remains stale and cannot support a UI freeze
+    claim yet.
+- Documentation:
+  - Added `memory-bank/client-facing-final-browser-acceptance-prompt-step145.md`.
+- Next recommended action:
+  - User explicitly authorizes a bounded Docker Web refresh:
+    `docker compose -f docker-compose.production.yml build web` and
+    `docker compose -f docker-compose.production.yml up -d --no-deps web`.
+  - Then run authenticated browser screenshot acceptance across the main pages.
+- Boundaries recorded:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation in this prompt-prep step.
+  - Future Step 145 must not run prune, `down -v`, volume deletion, orphan
+    cleanup, file deletion, or production/VPS access.

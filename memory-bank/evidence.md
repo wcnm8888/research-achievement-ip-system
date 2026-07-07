@@ -19255,6 +19255,41 @@
   - No API, Prisma schema, migration, package, lockfile, or config change was
     made.
 
+## 2026-07-07 Step 145 prompt prep - Final browser acceptance authorization evidence
+
+- Canonical state checked before prompt-prep documentation:
+  - `git log -1 --oneline` -> `836490c fix: localize remaining client-facing copy`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+- Read-only service evidence:
+  - `GET http://127.0.0.1:18081` still referenced
+    `assets/index-DTUeQ4MR.js`.
+  - Latest Step 144 local build output contained
+    `.local-step144-client-facing-copy-polish/dist/assets/index-BDGa5WnL.js`.
+  - This proves the actual `18081` demo entry is still stale relative to the
+    latest client-facing source/build.
+- Files updated:
+  - Added `memory-bank/client-facing-final-browser-acceptance-prompt-step145.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Prompt package content:
+  - Defines Step 145 scope as refreshing the local demo Web bundle and running
+    client-facing final browser acceptance.
+  - Allows only bounded replacement of the existing compose-managed Web
+    container after explicit user authorization.
+  - Requires bundle hash confirmation, page-by-page screenshots, forbidden-term
+    DOM scans, and request method/path summaries.
+  - Forbids env-content reads, production/VPS access, real external systems,
+    prune, `down -v`, volume deletion, orphan cleanup, local file deletion,
+    schema/migration changes, and production acceptance claims.
+- Boundary evidence:
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No Docker operation was performed in this prompt-prep step.
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change was made.
+
 ## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish evidence
 
 - Scope:
