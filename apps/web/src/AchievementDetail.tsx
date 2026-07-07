@@ -16,7 +16,14 @@ import {
 } from "antd";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import { isApiError, type ApiClient, type ApiError, type AuthUser } from "./api-client";
+import {
+  createAttachmentPreviewObjectUrl,
+  downloadAttachmentPreviewBlob,
+  isPreviewableAttachment,
+  revokeAttachmentPreviewObjectUrl,
+} from "./attachment-preview";
 import { DataState, PermissionHint } from "./components/StateBlocks";
 import { sanitizeBusinessTitle } from "./display-text";
 import type {
@@ -73,6 +80,15 @@ type Loadable<T> = {
   error: ApiError | null;
 };
 
+type AttachmentPreviewState = {
+  error: ApiError | null;
+  fileName: string;
+  loading: boolean;
+  mimeType: string | null;
+  open: boolean;
+  previewUrl: string | null;
+};
+
 type AchievementPermissionContext = Pick<AuthUser, "id" | "permissionCodes"> | null | undefined;
 
 export type AchievementAction = "submit" | "void" | "archive";
@@ -88,6 +104,15 @@ const emptyLoadable = <T,>(): Loadable<T> => ({
   loading: false,
   data: null,
   error: null,
+});
+
+const emptyAttachmentPreviewState = (): AttachmentPreviewState => ({
+  error: null,
+  fileName: "",
+  loading: false,
+  mimeType: null,
+  open: false,
+  previewUrl: null,
 });
 
 const typeLabels: Record<AchievementTypeCode, string> = {
@@ -304,6 +329,16 @@ export const downloadAchievementAttachment = (
     `/achievements/${achievementId}/attachments/${attachmentId}/download`,
   );
 };
+
+export const previewAchievementAttachment = (
+  client: ApiClient,
+  achievementId: string,
+  attachmentId: string,
+): Promise<Blob> =>
+  downloadAttachmentPreviewBlob(
+    client,
+    `/achievements/${achievementId}/attachments/${attachmentId}/preview`,
+  );
 
 export function AchievementDetail({
   apiClient,
@@ -805,6 +840,54 @@ export const mapAttachmentDownloadErrorToDisplay = (error: ApiError): ApiError =
   return {
     ...error,
     message: error.message || "附件下载失败",
+  };
+};
+
+export const mapAttachmentPreviewErrorToDisplay = (error: ApiError): ApiError => {
+  if (error.status === 401 || error.kind === "unauthorized") {
+    return {
+      ...error,
+      message: "请选择或切换业务用户",
+      detail: "附件预览需要有效用户上下文。",
+    };
+  }
+
+  if (error.status === 403 || error.kind === "forbidden") {
+    return {
+      ...error,
+      message: "当前角色无附件预览权限",
+      detail: "当前账号没有预览该附件的权限。",
+    };
+  }
+
+  if (error.status === 404) {
+    return {
+      ...error,
+      message: "附件不存在或不可预览",
+      detail: "请刷新附件列表后重试。",
+    };
+  }
+
+  if (error.status === 415 || error.status === 422) {
+    return {
+      ...error,
+      message: "附件格式暂不支持在线预览",
+      detail: "当前仅支持 PDF、PNG、JPG。",
+    };
+  }
+
+  if (error.kind === "network" || error.kind === "server" || (error.status ?? 0) >= 500) {
+    return {
+      ...error,
+      message: "附件预览服务暂不可用",
+      detail: "请稍后重试。",
+    };
+  }
+
+  return {
+    ...error,
+    message: error.message || "附件预览失败",
+    detail: "请稍后重试。",
   };
 };
 
@@ -1870,6 +1953,9 @@ function AttachmentMetadataSection({
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<ApiError | null>(null);
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | null>(null);
+  const [previewingAttachmentId, setPreviewingAttachmentId] = useState<string | null>(null);
+  const [previewState, setPreviewState] =
+    useState<AttachmentPreviewState>(emptyAttachmentPreviewState);
   const canLoadAttachments = shouldLoadAttachmentMetadata(demoUserId, achievementId);
   const canUpload = canLoadAttachments && !readonly && canUploadAchievementAttachment(authUser, detail);
 
@@ -1905,7 +1991,19 @@ function AttachmentMetadataSection({
     setUploadError(null);
     setUploadSuccess(null);
     setDownloadError(null);
+    setPreviewingAttachmentId(null);
+    setPreviewState((current) => {
+      revokeAttachmentPreviewObjectUrl(current.previewUrl);
+      return emptyAttachmentPreviewState();
+    });
   }, [achievementId]);
+
+  useEffect(
+    () => () => {
+      revokeAttachmentPreviewObjectUrl(previewState.previewUrl);
+    },
+    [previewState.previewUrl],
+  );
 
   const items = attachments.data ?? [];
 
@@ -1965,6 +2063,50 @@ function AttachmentMetadataSection({
     }
   };
 
+  const closePreview = () => {
+    setPreviewState((current) => {
+      revokeAttachmentPreviewObjectUrl(current.previewUrl);
+      return emptyAttachmentPreviewState();
+    });
+  };
+
+  const onPreview = async (attachment: AttachmentMetadata) => {
+    const fileName = getAttachmentDownloadFileName(attachment);
+    setPreviewingAttachmentId(attachment.id);
+    setPreviewState((current) => {
+      revokeAttachmentPreviewObjectUrl(current.previewUrl);
+      return {
+        error: null,
+        fileName,
+        loading: true,
+        mimeType: attachment.mimeType ?? null,
+        open: true,
+        previewUrl: null,
+      };
+    });
+
+    try {
+      const blob = await previewAchievementAttachment(apiClient, achievementId, attachment.id);
+      const previewUrl = createAttachmentPreviewObjectUrl(blob);
+      setPreviewState((current) => ({
+        ...current,
+        error: null,
+        loading: false,
+        mimeType: blob.type || attachment.mimeType || null,
+        previewUrl,
+      }));
+    } catch (error) {
+      setPreviewState((current) => ({
+        ...current,
+        error: mapAttachmentPreviewErrorToDisplay(normalizeError(error)),
+        loading: false,
+        previewUrl: null,
+      }));
+    } finally {
+      setPreviewingAttachmentId(null);
+    }
+  };
+
   return (
     <>
       <Divider orientation="left">附件</Divider>
@@ -2012,8 +2154,10 @@ function AttachmentMetadataSection({
             <AttachmentMetadataList
               attachments={items}
               downloadingAttachmentId={downloadingAttachmentId}
+              previewingAttachmentId={previewingAttachmentId}
               selectedAttachmentId={selectedAttachmentId}
               onDownload={(attachment) => void onDownload(attachment)}
+              onPreview={(attachment) => void onPreview(attachment)}
               onSelectAttachment={setSelectedAttachmentId}
             />
           </DataState>
@@ -2036,6 +2180,15 @@ function AttachmentMetadataSection({
           />
         ) : null}
       </Space>
+      <AttachmentPreviewModal
+        error={previewState.error}
+        fileName={previewState.fileName}
+        loading={previewState.loading}
+        mimeType={previewState.mimeType}
+        open={previewState.open}
+        previewUrl={previewState.previewUrl}
+        onClose={closePreview}
+      />
     </>
   );
 }
@@ -2131,13 +2284,17 @@ function AttachmentMetadataList({
   attachments,
   downloadingAttachmentId,
   onDownload,
+  onPreview,
   onSelectAttachment,
+  previewingAttachmentId,
   selectedAttachmentId,
 }: {
   attachments: AttachmentMetadata[];
   downloadingAttachmentId: string | null;
   onDownload: (attachment: AttachmentMetadata) => void;
+  onPreview: (attachment: AttachmentMetadata) => void;
   onSelectAttachment: (attachmentId: string) => void;
+  previewingAttachmentId: string | null;
   selectedAttachmentId: string | null;
 }) {
   return (
@@ -2176,6 +2333,19 @@ function AttachmentMetadataList({
                 >
                   下载
                 </Button>
+                {isPreviewableAttachment(attachment.mimeType) ? (
+                  <Button
+                    size="small"
+                    loading={previewingAttachmentId === attachment.id}
+                    onClick={() => onPreview(attachment)}
+                  >
+                    预览
+                  </Button>
+                ) : (
+                  <Button size="small" disabled>
+                    不可预览
+                  </Button>
+                )}
               </Space>
             </div>
             <div className="attachment-metadata-grid">

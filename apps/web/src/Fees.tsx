@@ -25,10 +25,12 @@ import {
   getAttachmentDownloadFileName,
   mapAttachmentDownloadErrorToDisplay,
   mapAttachmentMetadataErrorToDisplay,
+  mapAttachmentPreviewErrorToDisplay,
   mapAttachmentUploadErrorToDisplay,
   saveAttachmentBlob,
   validateAttachmentUploadFile,
 } from "./AchievementDetail";
+import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import {
   createApiClient,
   isApiError,
@@ -37,6 +39,12 @@ import {
   type ApiQuery,
   type AuthUser,
 } from "./api-client";
+import {
+  createAttachmentPreviewObjectUrl,
+  downloadAttachmentPreviewBlob,
+  isPreviewableAttachment,
+  revokeAttachmentPreviewObjectUrl,
+} from "./attachment-preview";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import { downloadCsvExport, downloadXlsxExport } from "./export-download";
 import type {
@@ -74,6 +82,15 @@ type Loadable<T> = {
   loading: boolean;
   data: T | null;
   error: ApiError | null;
+};
+
+type AttachmentPreviewState = {
+  error: ApiError | null;
+  fileName: string;
+  loading: boolean;
+  mimeType: string | null;
+  open: boolean;
+  previewUrl: string | null;
 };
 
 type FeesProps = {
@@ -194,6 +211,15 @@ const emptyLoadable = <T,>(): Loadable<T> => ({
   loading: false,
   data: null,
   error: null,
+});
+
+const emptyAttachmentPreviewState = (): AttachmentPreviewState => ({
+  error: null,
+  fileName: "",
+  loading: false,
+  mimeType: null,
+  open: false,
+  previewUrl: null,
 });
 
 const emptyMutationState = (): MutationState => ({
@@ -1530,6 +1556,9 @@ function FeeVoucherAttachmentSection({
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<ApiError | null>(null);
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | null>(null);
+  const [previewingAttachmentId, setPreviewingAttachmentId] = useState<string | null>(null);
+  const [previewState, setPreviewState] =
+    useState<AttachmentPreviewState>(emptyAttachmentPreviewState);
   const canLoadAttachments =
     shouldLoadFeeVoucherAttachments(demoUserId, feeRecordId) &&
     canReadFeeVoucherAttachments(authUser, mode);
@@ -1567,7 +1596,19 @@ function FeeVoucherAttachmentSection({
     setUploadError(null);
     setUploadSuccess(null);
     setDownloadError(null);
+    setPreviewingAttachmentId(null);
+    setPreviewState((current) => {
+      revokeAttachmentPreviewObjectUrl(current.previewUrl);
+      return emptyAttachmentPreviewState();
+    });
   }, [feeRecordId]);
+
+  useEffect(
+    () => () => {
+      revokeAttachmentPreviewObjectUrl(previewState.previewUrl);
+    },
+    [previewState.previewUrl],
+  );
 
   const items = attachments.data ?? [];
 
@@ -1629,6 +1670,50 @@ function FeeVoucherAttachmentSection({
     }
   };
 
+  const closePreview = () => {
+    setPreviewState((current) => {
+      revokeAttachmentPreviewObjectUrl(current.previewUrl);
+      return emptyAttachmentPreviewState();
+    });
+  };
+
+  const onPreview = async (attachment: AttachmentMetadata) => {
+    const fileName = getAttachmentDownloadFileName(attachment);
+    setPreviewingAttachmentId(attachment.id);
+    setPreviewState((current) => {
+      revokeAttachmentPreviewObjectUrl(current.previewUrl);
+      return {
+        error: null,
+        fileName,
+        loading: true,
+        mimeType: attachment.mimeType ?? null,
+        open: true,
+        previewUrl: null,
+      };
+    });
+
+    try {
+      const blob = await previewFeeVoucherAttachment(apiClient, feeRecordId, attachment.id);
+      const previewUrl = blob ? createAttachmentPreviewObjectUrl(blob) : null;
+      setPreviewState((current) => ({
+        ...current,
+        error: null,
+        loading: false,
+        mimeType: blob?.type || attachment.mimeType || null,
+        previewUrl,
+      }));
+    } catch (error) {
+      setPreviewState((current) => ({
+        ...current,
+        error: mapAttachmentPreviewErrorToDisplay(normalizeError(error)),
+        loading: false,
+        previewUrl: null,
+      }));
+    } finally {
+      setPreviewingAttachmentId(null);
+    }
+  };
+
   return (
     <>
       <Divider orientation="left">费用凭证附件</Divider>
@@ -1676,8 +1761,10 @@ function FeeVoucherAttachmentSection({
             <FeeVoucherAttachmentList
               attachments={items}
               downloadingAttachmentId={downloadingAttachmentId}
+              previewingAttachmentId={previewingAttachmentId}
               selectedAttachmentId={selectedAttachmentId}
               onDownload={(attachment) => void onDownload(attachment)}
+              onPreview={(attachment) => void onPreview(attachment)}
               onSelectAttachment={setSelectedAttachmentId}
             />
           </DataState>
@@ -1700,6 +1787,15 @@ function FeeVoucherAttachmentSection({
           />
         ) : null}
       </Space>
+      <AttachmentPreviewModal
+        error={previewState.error}
+        fileName={previewState.fileName}
+        loading={previewState.loading}
+        mimeType={previewState.mimeType}
+        open={previewState.open}
+        previewUrl={previewState.previewUrl}
+        onClose={closePreview}
+      />
     </>
   );
 }
@@ -1795,13 +1891,17 @@ function FeeVoucherAttachmentList({
   attachments,
   downloadingAttachmentId,
   onDownload,
+  onPreview,
   onSelectAttachment,
+  previewingAttachmentId,
   selectedAttachmentId,
 }: {
   attachments: AttachmentMetadata[];
   downloadingAttachmentId: string | null;
   onDownload: (attachment: AttachmentMetadata) => void;
+  onPreview: (attachment: AttachmentMetadata) => void;
   onSelectAttachment: (attachmentId: string) => void;
+  previewingAttachmentId: string | null;
   selectedAttachmentId: string | null;
 }) {
   return (
@@ -1840,6 +1940,19 @@ function FeeVoucherAttachmentList({
                 >
                   下载
                 </Button>
+                {isPreviewableAttachment(attachment.mimeType) ? (
+                  <Button
+                    size="small"
+                    loading={previewingAttachmentId === attachment.id}
+                    onClick={() => onPreview(attachment)}
+                  >
+                    预览
+                  </Button>
+                ) : (
+                  <Button size="small" disabled>
+                    不可预览
+                  </Button>
+                )}
               </Space>
             </div>
             <div className="attachment-metadata-grid">
@@ -2576,6 +2689,24 @@ export const downloadFeeVoucherAttachment = (
 
   return client.downloadBlob(
     `/fees/${trimmedFeeId}/voucher-attachments/${trimmedAttachmentId}/download`,
+  );
+};
+
+export const previewFeeVoucherAttachment = (
+  client: ApiClient,
+  feeRecordId: string | null | undefined,
+  attachmentId: string | null | undefined,
+): Promise<Blob | null> => {
+  const trimmedFeeId = feeRecordId?.trim();
+  const trimmedAttachmentId = attachmentId?.trim();
+
+  if (!trimmedFeeId || !trimmedAttachmentId) {
+    return Promise.resolve(null);
+  }
+
+  return downloadAttachmentPreviewBlob(
+    client,
+    `/fees/${trimmedFeeId}/voucher-attachments/${trimmedAttachmentId}/preview`,
   );
 };
 

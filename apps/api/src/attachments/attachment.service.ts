@@ -28,6 +28,7 @@ import {
 import {
   AttachmentAccessDeniedError,
   AttachmentNotFoundError,
+  AttachmentPreviewUnsupportedMediaTypeError,
   AttachmentStorageError,
   AttachmentUnsupportedRelationError,
   AttachmentVersionConflictError,
@@ -97,6 +98,10 @@ export type AttachmentDownloadDto = {
   sizeBytes: number | null;
   body: Uint8Array | null;
 };
+
+export type AttachmentPreviewDto = AttachmentDownloadDto;
+
+const previewMimeTypes = new Set(["application/pdf", "image/png", "image/jpeg"]);
 
 @Injectable()
 export class AttachmentService {
@@ -264,6 +269,59 @@ export class AttachmentService {
     };
   }
 
+  async previewAchievementAttachment(
+    context: UserContext,
+    achievementId: string,
+    attachmentId: string,
+  ): Promise<AttachmentPreviewDto> {
+    const record = await this.loadAchievementAttachmentRecord(achievementId, attachmentId);
+    this.assertPreviewable(record);
+    const parent = await this.attachmentRepository.findAchievementParentById(achievementId);
+    if (!parent) {
+      throw new AttachmentNotFoundError(achievementId);
+    }
+
+    const parentAccessDecision = await this.getBaseParentAccessDecision(
+      context,
+      achievementId,
+    );
+    const grants =
+      await this.attachmentRepository.findResourceGrantsForAchievementAndAttachment({
+        achievementId,
+        attachmentId: record.id,
+      });
+    const decision = this.attachmentAccessPolicy.canDownload(
+      context,
+      toAttachmentDescriptor(record),
+      this.toParentResource(parent),
+      parentAccessDecision,
+      grants,
+    );
+
+    if (decision.effect !== "ALLOW") {
+      throw new AttachmentAccessDeniedError(decision.reason);
+    }
+
+    const stored = await this.getObject(record.objectKey);
+    await this.auditService.recordEvent(
+      this.toAttachmentPreviewAuditEvent(
+        context,
+        this.toAchievementAuditParent(parent),
+        record,
+        "achievement",
+      ),
+    );
+
+    return {
+      id: record.id,
+      fileName: record.fileName,
+      version: record.version,
+      mimeType: record.mimeType,
+      sizeBytes: record.sizeBytes ?? stored.sizeBytes ?? null,
+      body: stored.body,
+    };
+  }
+
   async downloadFeeVoucherAttachment(
     context: UserContext,
     feeRecordId: string,
@@ -286,6 +344,41 @@ export class AttachmentService {
     const stored = await this.getObject(record.objectKey);
     await this.auditService.recordEvent(
       this.toAttachmentDownloadAuditEvent(context, parentAccess.auditParent, record),
+    );
+
+    return {
+      id: record.id,
+      fileName: record.fileName,
+      version: record.version,
+      mimeType: record.mimeType,
+      sizeBytes: record.sizeBytes ?? stored.sizeBytes ?? null,
+      body: stored.body,
+    };
+  }
+
+  async previewFeeVoucherAttachment(
+    context: UserContext,
+    feeRecordId: string,
+    attachmentId: string,
+  ): Promise<AttachmentPreviewDto> {
+    const record = await this.loadFeeVoucherAttachmentRecord(feeRecordId, attachmentId);
+    this.assertPreviewable(record);
+    const parentAccess = await this.loadReadableFeeParentAccess(context, feeRecordId, record.id);
+    const decision = this.attachmentAccessPolicy.canDownload(
+      context,
+      toAttachmentDescriptor(record),
+      parentAccess.parentResource,
+      parentAccess.parentAccessDecision,
+      parentAccess.grants,
+    );
+
+    if (decision.effect !== "ALLOW") {
+      throw new AttachmentAccessDeniedError(decision.reason);
+    }
+
+    const stored = await this.getObject(record.objectKey);
+    await this.auditService.recordEvent(
+      this.toAttachmentPreviewAuditEvent(context, parentAccess.auditParent, record, "feeVoucher"),
     );
 
     return {
@@ -853,6 +946,36 @@ export class AttachmentService {
     };
   }
 
+  private toAttachmentPreviewAuditEvent(
+    context: UserContext,
+    parent: AttachmentAuditParent,
+    record: AttachmentRecord,
+    relationType: "achievement" | "feeVoucher",
+  ): CreateAuditEventInput {
+    return {
+      actor: {
+        userId: context.userId,
+        departmentId: context.departmentId,
+      },
+      action: AuditActionCode.downloadAttachment,
+      target: {
+        type: AuditTargetTypeCode.attachment,
+        id: record.id,
+        departmentId: parent.departmentId,
+        secretLevel: record.secretLevel,
+      },
+      oldValue: null,
+      newValue: {
+        operation: "PREVIEW_ATTACHMENT",
+        relationType,
+        attachmentId: record.id,
+        fileName: record.fileName,
+        mimeType: record.mimeType ?? "",
+        sizeBytes: record.sizeBytes ?? 0,
+      },
+    };
+  }
+
   private toAttachmentAuditSummary(
     record: AttachmentRecord,
     action: AuditActionCode,
@@ -901,6 +1024,12 @@ export class AttachmentService {
       throw new AttachmentStorageError(
         error instanceof Error ? error.message : "unknown storage error",
       );
+    }
+  }
+
+  private assertPreviewable(record: AttachmentRecord): void {
+    if (!record.mimeType || !previewMimeTypes.has(record.mimeType)) {
+      throw new AttachmentPreviewUnsupportedMediaTypeError(record.mimeType);
     }
   }
 

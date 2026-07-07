@@ -54,6 +54,7 @@ import {
   mapFeeDetailErrorToDisplay,
   mapFeeReviewHistoryErrorToDisplay,
   mapFeeMutationErrorToDisplay,
+  previewFeeVoucherAttachment,
   refreshFeesAfterMutation,
   rejectFeeReview,
   rejectFeeReviewForDemoUser,
@@ -378,12 +379,33 @@ describe("fee voucher attachment client", () => {
     );
   });
 
+  it("previews fee voucher attachment blobs through the authenticated route", async () => {
+    const blob = new Blob(["synthetic"], { type: "image/png" });
+    const downloadBlob = vi.fn().mockResolvedValue(blob) as unknown as NonNullable<
+      ApiClient["downloadBlob"]
+    >;
+    const client: ApiClient = {
+      get: vi.fn(),
+      post: vi.fn(),
+      patch: vi.fn(),
+      downloadBlob,
+    };
+
+    await expect(
+      previewFeeVoucherAttachment(client, "fee-id", "attachment-id"),
+    ).resolves.toBe(blob);
+    expect(downloadBlob).toHaveBeenCalledWith(
+      "/fees/fee-id/voucher-attachments/attachment-id/preview",
+    );
+  });
+
   it("does not issue fee voucher attachment calls without required ids or demo user", async () => {
     const client = createClient([]);
 
     await expect(fetchFeeVoucherAttachments(client, "   ")).resolves.toEqual([]);
     await expect(fetchFeeVoucherAttachmentDetail(client, "fee-id", "   ")).resolves.toBeNull();
     await expect(downloadFeeVoucherAttachment(client, "fee-id", "")).resolves.toBeNull();
+    await expect(previewFeeVoucherAttachment(client, "fee-id", "")).resolves.toBeNull();
     expect(shouldLoadFeeVoucherAttachments(null, "fee-id")).toBe(false);
     expect(shouldLoadFeeVoucherAttachments("demo-user-id", "fee-id")).toBe(true);
     expect(

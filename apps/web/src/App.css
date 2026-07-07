@@ -918,6 +918,37 @@ body {
   min-width: 0;
 }
 
+.attachment-preview-body {
+  min-height: 420px;
+}
+
+.attachment-preview-loading {
+  display: flex;
+  min-height: 420px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.attachment-preview-frame {
+  width: 100%;
+  height: min(70vh, 720px);
+  min-height: 420px;
+  border: 1px solid #d9e2f2;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.attachment-preview-image {
+  display: block;
+  width: 100%;
+  max-height: min(70vh, 720px);
+  object-fit: contain;
+  border: 1px solid #d9e2f2;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
 .workflow-linked-achievement-alert .ant-alert-action {
   flex-shrink: 0;
 }

@@ -25,6 +25,8 @@ import {
   mapAttachmentDetailMetadataErrorToDisplay,
   mapAttachmentDownloadErrorToDisplay,
   mapAttachmentMetadataErrorToDisplay,
+  mapAttachmentPreviewErrorToDisplay,
+  previewAchievementAttachment,
   uploadAchievementAttachment,
   updateAchievementConversion,
   validateAttachmentUploadFile,
@@ -482,6 +484,47 @@ describe("Step 19A attachment metadata helpers", () => {
       "/achievements/achievement-id/attachments/attachment-id/download",
     );
     expect(result).toBe(blob);
+  });
+
+  it("previews attachment blobs through the authenticated backend route", async () => {
+    const blob = new Blob(["preview"], { type: "application/pdf" });
+    const downloadBlob = vi.fn().mockResolvedValue(blob);
+    const client: ApiClient = {
+      get: vi.fn(),
+      post: vi.fn(),
+      patch: vi.fn(),
+      downloadBlob,
+    };
+
+    const result = await previewAchievementAttachment(client, "achievement-id", "attachment-id");
+
+    expect(downloadBlob).toHaveBeenCalledWith(
+      "/achievements/achievement-id/attachments/attachment-id/preview",
+    );
+    expect(result).toBe(blob);
+  });
+
+  it("maps preview errors to safe user-facing copy", () => {
+    const unsupported = mapAttachmentPreviewErrorToDisplay({
+      kind: "unknown",
+      status: 415,
+      message: "Unsupported route /internal/object-key",
+      detail: "raw path /storage/object-key token password cookie",
+    });
+    const forbidden = mapAttachmentPreviewErrorToDisplay({
+      kind: "forbidden",
+      status: 403,
+      message: "Forbidden",
+      detail: "policy route detail",
+    });
+
+    expect(unsupported.message).toBe("附件格式暂不支持在线预览");
+    expect(unsupported.detail).toBe("当前仅支持 PDF、PNG、JPG。");
+    expect(forbidden.message).toBe("当前角色无附件预览权限");
+    expect(JSON.stringify([unsupported, forbidden]).toLowerCase()).not.toContain("token");
+    expect(JSON.stringify([unsupported, forbidden]).toLowerCase()).not.toContain("password");
+    expect(JSON.stringify([unsupported, forbidden]).toLowerCase()).not.toContain("cookie");
+    expect(JSON.stringify([unsupported, forbidden])).not.toContain("/internal/object-key");
   });
 
   it("gates attachment upload to the owner with update-own permission", () => {

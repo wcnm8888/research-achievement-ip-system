@@ -35,6 +35,7 @@ import {
   AttachmentAccessDeniedError,
   AttachmentInvalidPayloadError,
   AttachmentNotFoundError,
+  AttachmentPreviewUnsupportedMediaTypeError,
   AttachmentStorageError,
   AttachmentUnsupportedRelationError,
   AttachmentVersionConflictError,
@@ -169,6 +170,36 @@ export class AttachmentController {
       throw mapAttachmentServiceError(error);
     }
   }
+
+  @Get(":attachmentId/preview")
+  @RequirePermissions(PermissionCode.attachmentDownload)
+  async previewAchievementAttachment(
+    @CurrentUser() currentUser: UserContext,
+    @Param("achievementId", new ParseUUIDPipe({ version: "4" })) achievementId: string,
+    @Param("attachmentId", new ParseUUIDPipe({ version: "4" })) attachmentId: string,
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ): Promise<StreamableFile> {
+    try {
+      const preview = await this.attachmentService.previewAchievementAttachment(
+        currentUser,
+        achievementId,
+        attachmentId,
+      );
+      const body = Buffer.from(preview.body ?? []);
+
+      response.setHeader("Content-Type", preview.mimeType ?? "application/octet-stream");
+      response.setHeader("Content-Length", body.byteLength);
+      response.setHeader("X-Content-Type-Options", "nosniff");
+      response.setHeader(
+        "Content-Disposition",
+        `inline; filename="${toContentDispositionFileName(preview.fileName)}"`,
+      );
+
+      return new StreamableFile(body);
+    } catch (error) {
+      throw mapAttachmentServiceError(error);
+    }
+  }
 }
 
 @Controller("fees/:feeRecordId/voucher-attachments")
@@ -259,6 +290,36 @@ export class FeeVoucherAttachmentController {
       response.setHeader(
         "Content-Disposition",
         `attachment; filename="${toContentDispositionFileName(download.fileName)}"`,
+      );
+
+      return new StreamableFile(body);
+    } catch (error) {
+      throw mapAttachmentServiceError(error);
+    }
+  }
+
+  @Get(":attachmentId/preview")
+  @RequirePermissions(PermissionCode.attachmentDownload)
+  async previewFeeVoucherAttachment(
+    @CurrentUser() currentUser: UserContext,
+    @Param("feeRecordId", new ParseUUIDPipe({ version: "4" })) feeRecordId: string,
+    @Param("attachmentId", new ParseUUIDPipe({ version: "4" })) attachmentId: string,
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ): Promise<StreamableFile> {
+    try {
+      const preview = await this.attachmentService.previewFeeVoucherAttachment(
+        currentUser,
+        feeRecordId,
+        attachmentId,
+      );
+      const body = Buffer.from(preview.body ?? []);
+
+      response.setHeader("Content-Type", preview.mimeType ?? "application/octet-stream");
+      response.setHeader("Content-Length", body.byteLength);
+      response.setHeader("X-Content-Type-Options", "nosniff");
+      response.setHeader(
+        "Content-Disposition",
+        `inline; filename="${toContentDispositionFileName(preview.fileName)}"`,
       );
 
       return new StreamableFile(body);
@@ -376,6 +437,10 @@ const mapAttachmentServiceError = (error: unknown): Error => {
 
   if (error instanceof AttachmentNotFoundError) {
     return new NotFoundException(error.message);
+  }
+
+  if (error instanceof AttachmentPreviewUnsupportedMediaTypeError) {
+    return new UnsupportedMediaTypeException(error.message);
   }
 
   if (error instanceof AttachmentVersionConflictError) {

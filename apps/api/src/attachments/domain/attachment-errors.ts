@@ -48,3 +48,10 @@ export class AttachmentStorageError extends AttachmentDomainError {
     this.name = "AttachmentStorageError";
   }
 }
+
+export class AttachmentPreviewUnsupportedMediaTypeError extends AttachmentDomainError {
+  constructor(mimeType: string | null | undefined) {
+    super(`Attachment preview media type is not supported: ${mimeType ?? "unknown"}.`);
+    this.name = "AttachmentPreviewUnsupportedMediaTypeError";
+  }
+}

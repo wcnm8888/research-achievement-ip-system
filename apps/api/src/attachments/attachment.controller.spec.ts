@@ -13,6 +13,7 @@ import { AttachmentsModule } from "./attachments.module";
 import {
   AttachmentAccessDeniedError,
   AttachmentNotFoundError,
+  AttachmentPreviewUnsupportedMediaTypeError,
   AttachmentStorageError,
   AttachmentUnsupportedRelationError,
   AttachmentVersionConflictError,
@@ -35,10 +36,12 @@ type ServiceMock = {
   listAchievementMetadata: ReturnType<typeof vi.fn>;
   getAchievementAttachmentMetadata: ReturnType<typeof vi.fn>;
   downloadAchievementAttachment: ReturnType<typeof vi.fn>;
+  previewAchievementAttachment: ReturnType<typeof vi.fn>;
   createFeeVoucherAttachmentForUser: ReturnType<typeof vi.fn>;
   listFeeVoucherMetadata: ReturnType<typeof vi.fn>;
   getFeeVoucherAttachmentMetadata: ReturnType<typeof vi.fn>;
   downloadFeeVoucherAttachment: ReturnType<typeof vi.fn>;
+  previewFeeVoucherAttachment: ReturnType<typeof vi.fn>;
 };
 
 const metadata = {
@@ -72,6 +75,14 @@ const createServiceMock = (): ServiceMock => ({
     sizeBytes: 9,
     body: Buffer.from("fake body"),
   }),
+  previewAchievementAttachment: vi.fn().mockResolvedValue({
+    id: ids.attachment,
+    fileName: "paper.pdf",
+    version: 1,
+    mimeType: "application/pdf",
+    sizeBytes: 9,
+    body: Buffer.from("fake body"),
+  }),
   createFeeVoucherAttachmentForUser: vi.fn().mockResolvedValue({
     ...metadata,
     relationType: AttachmentRelationTypeCode.feeRecord,
@@ -93,6 +104,14 @@ const createServiceMock = (): ServiceMock => ({
     relationId: ids.feeRecord,
   }),
   downloadFeeVoucherAttachment: vi.fn().mockResolvedValue({
+    id: ids.attachment,
+    fileName: "voucher.pdf",
+    version: 1,
+    mimeType: "application/pdf",
+    sizeBytes: 9,
+    body: Buffer.from("fake body"),
+  }),
+  previewFeeVoucherAttachment: vi.fn().mockResolvedValue({
     id: ids.attachment,
     fileName: "voucher.pdf",
     version: 1,
@@ -361,6 +380,47 @@ describe("AttachmentController", () => {
     );
   });
 
+  it("previews achievement attachments inline through the download permission boundary", async () => {
+    await withAttachmentApp(
+      [PermissionCode.attachmentDownload],
+      async (app, service, context) => {
+        await request(app.getHttpServer() as Server)
+          .get(`/achievements/${ids.achievement}/attachments/${ids.attachment}/preview`)
+          .expect(200)
+          .expect((response) => {
+            expect(response.headers["content-type"]).toContain("application/pdf");
+            expect(response.headers["content-length"]).toBe("9");
+            expect(response.headers["x-content-type-options"]).toBe("nosniff");
+            expect(response.headers["content-disposition"]).toBe(
+              'inline; filename="paper.pdf"',
+            );
+            expect(Buffer.from(response.body).toString("utf8")).toBe("fake body");
+            expect(JSON.stringify(response.headers)).not.toMatch(
+              /objectKey|storageKey|checksum/,
+            );
+          });
+
+        expect(service.previewAchievementAttachment).toHaveBeenCalledWith(
+          context,
+          ids.achievement,
+          ids.attachment,
+        );
+      },
+    );
+  });
+
+  it("maps unsupported achievement preview media to 415", async () => {
+    await withAttachmentApp([PermissionCode.attachmentDownload], async (app, service) => {
+      service.previewAchievementAttachment.mockRejectedValueOnce(
+        new AttachmentPreviewUnsupportedMediaTypeError("application/msword"),
+      );
+
+      await request(app.getHttpServer() as Server)
+        .get(`/achievements/${ids.achievement}/attachments/${ids.attachment}/preview`)
+        .expect(415);
+    });
+  });
+
   it("uploads fee voucher attachments through the fee route", async () => {
     await withAttachmentApp(
       [PermissionCode.feeManageDepartment],
@@ -462,6 +522,49 @@ describe("AttachmentController", () => {
           ids.feeRecord,
           ids.attachment,
         );
+      },
+    );
+  });
+
+  it("previews fee voucher attachments inline through the download permission boundary", async () => {
+    await withAttachmentApp(
+      [PermissionCode.feeReadDepartment, PermissionCode.attachmentDownload],
+      async (app, service, context) => {
+        await request(app.getHttpServer() as Server)
+          .get(`/fees/${ids.feeRecord}/voucher-attachments/${ids.attachment}/preview`)
+          .expect(200)
+          .expect((response) => {
+            expect(response.headers["content-type"]).toContain("application/pdf");
+            expect(response.headers["content-length"]).toBe("9");
+            expect(response.headers["x-content-type-options"]).toBe("nosniff");
+            expect(response.headers["content-disposition"]).toBe(
+              'inline; filename="voucher.pdf"',
+            );
+            expect(JSON.stringify(response.headers)).not.toMatch(
+              /objectKey|storageKey|checksum/,
+            );
+          });
+
+        expect(service.previewFeeVoucherAttachment).toHaveBeenCalledWith(
+          context,
+          ids.feeRecord,
+          ids.attachment,
+        );
+      },
+    );
+  });
+
+  it("maps unsupported fee voucher preview media to 415", async () => {
+    await withAttachmentApp(
+      [PermissionCode.feeReadDepartment, PermissionCode.attachmentDownload],
+      async (app, service) => {
+        service.previewFeeVoucherAttachment.mockRejectedValueOnce(
+          new AttachmentPreviewUnsupportedMediaTypeError("text/html"),
+        );
+
+        await request(app.getHttpServer() as Server)
+          .get(`/fees/${ids.feeRecord}/voucher-attachments/${ids.attachment}/preview`)
+          .expect(415);
       },
     );
   });

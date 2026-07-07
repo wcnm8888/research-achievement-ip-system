@@ -23,6 +23,7 @@ import { AttachmentService } from "./attachment.service";
 import {
   AttachmentAccessDeniedError,
   AttachmentNotFoundError,
+  AttachmentPreviewUnsupportedMediaTypeError,
   AttachmentUnsupportedRelationError,
   AttachmentVersionConflictError,
 } from "./domain/attachment-errors";
@@ -416,7 +417,7 @@ describe("AttachmentService metadata access preparation", () => {
 });
 
 describe("AttachmentService fee voucher boundary", () => {
-  const feeRecord = () =>
+  const feeRecord = (overrides = {}) =>
     makeRecord({
       relationType: AttachmentRelationTypeCode.feeRecord,
       relationId: ids.feeRecord,
@@ -425,6 +426,7 @@ describe("AttachmentService fee voucher boundary", () => {
       fileName: "voucher.pdf",
       originalName: "voucher.pdf",
       storedName: "voucher.pdf",
+      ...overrides,
     });
 
   it("uploads voucher metadata for a scoped fee record without leaking fee or storage internals to audit", async () => {
@@ -569,6 +571,57 @@ describe("AttachmentService fee voucher boundary", () => {
     expect(serializedAudit).not.toMatch(
       /objectKey|storageKey|checksum|download body|internal-fee-voucher-object|hidden|amount|voucherNo|dueDate|paidDate|raw fee/i,
     );
+  });
+
+  it("previews fee voucher images with safe audit summary", async () => {
+    const { service, repository, storage, auditService } = createService();
+    vi.mocked(repository.findById).mockResolvedValueOnce(
+      feeRecord({
+        fileName: "voucher.png",
+        originalName: "voucher.png",
+        storedName: "voucher.png",
+        mimeType: "image/png",
+      }),
+    );
+    vi.mocked(storage.getObject).mockResolvedValueOnce({
+      objectKey: "internal-fee-preview-object",
+      body: Buffer.from("png preview body"),
+      checksum: "hidden",
+      sizeBytes: 16,
+    });
+
+    await expect(
+      service.previewFeeVoucherAttachment(context, ids.feeRecord, ids.attachment),
+    ).resolves.toEqual({
+      id: ids.attachment,
+      fileName: "voucher.png",
+      version: 4,
+      mimeType: "image/png",
+      sizeBytes: 128,
+      body: Buffer.from("png preview body"),
+    });
+
+    const serializedAudit = JSON.stringify(
+      vi.mocked(auditService.recordEvent).mock.calls[0]![0],
+    );
+    expect(serializedAudit).toContain("PREVIEW_ATTACHMENT");
+    expect(serializedAudit).toContain("feeVoucher");
+    expect(serializedAudit).not.toMatch(
+      /objectKey|storageKey|checksum|png preview body|internal-fee-preview-object|hidden|amount|voucherNo|dueDate|paidDate|raw fee/i,
+    );
+  });
+
+  it("rejects unsupported fee voucher preview media before storage reads", async () => {
+    const { service, repository, storage, auditService } = createService();
+    vi.mocked(repository.findById).mockResolvedValueOnce(
+      feeRecord({ mimeType: "application/vnd.ms-excel" }),
+    );
+
+    await expect(
+      service.previewFeeVoucherAttachment(context, ids.feeRecord, ids.attachment),
+    ).rejects.toBeInstanceOf(AttachmentPreviewUnsupportedMediaTypeError);
+    expect(storage.getObject).not.toHaveBeenCalled();
+    expect(auditService.recordEvent).not.toHaveBeenCalled();
   });
 });
 
@@ -774,6 +827,67 @@ describe("AttachmentService achievement HTTP boundary preparation", () => {
 
     await expect(
       service.downloadAchievementAttachment(context, ids.achievement, ids.attachment),
+    ).rejects.toBeInstanceOf(AttachmentAccessDeniedError);
+    expect(storage.getObject).not.toHaveBeenCalled();
+    expect(auditService.recordEvent).not.toHaveBeenCalled();
+  });
+
+  it("previews achievement PDF content with safe audit summary", async () => {
+    const { service, storage, auditService } = createService();
+    vi.mocked(storage.getObject).mockResolvedValueOnce({
+      objectKey: "internal-preview-object",
+      body: Buffer.from("%PDF preview body"),
+      checksum: "hidden-preview-checksum",
+      sizeBytes: 17,
+    });
+
+    await expect(
+      service.previewAchievementAttachment(context, ids.achievement, ids.attachment),
+    ).resolves.toEqual({
+      id: ids.attachment,
+      fileName: "paper.pdf",
+      version: 4,
+      mimeType: "application/pdf",
+      sizeBytes: 128,
+      body: Buffer.from("%PDF preview body"),
+    });
+
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AuditActionCode.downloadAttachment,
+        newValue: {
+          operation: "PREVIEW_ATTACHMENT",
+          relationType: "achievement",
+          attachmentId: ids.attachment,
+          fileName: "paper.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 128,
+        },
+      }),
+    );
+    expect(JSON.stringify(vi.mocked(auditService.recordEvent).mock.calls[0]![0]))
+      .not.toMatch(/objectKey|storageKey|checksum|preview body|internal-preview-object|hidden-preview-checksum/);
+  });
+
+  it("rejects unsupported achievement preview media before storage reads", async () => {
+    const { service, repository, storage, auditService } = createService();
+    vi.mocked(repository.findById).mockResolvedValueOnce(
+      makeRecord({ mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }),
+    );
+
+    await expect(
+      service.previewAchievementAttachment(context, ids.achievement, ids.attachment),
+    ).rejects.toBeInstanceOf(AttachmentPreviewUnsupportedMediaTypeError);
+    expect(storage.getObject).not.toHaveBeenCalled();
+    expect(auditService.recordEvent).not.toHaveBeenCalled();
+  });
+
+  it("keeps achievement preview behind the download policy", async () => {
+    const { service, accessPolicy, storage, auditService } = createService();
+    vi.mocked(accessPolicy.canDownload).mockReturnValueOnce(denyDecision("no preview"));
+
+    await expect(
+      service.previewAchievementAttachment(context, ids.achievement, ids.attachment),
     ).rejects.toBeInstanceOf(AttachmentAccessDeniedError);
     expect(storage.getObject).not.toHaveBeenCalled();
     expect(auditService.recordEvent).not.toHaveBeenCalled();
