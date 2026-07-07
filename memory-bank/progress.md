@@ -15107,3 +15107,44 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 140 - Active Web bundle client-facing freeze check
+
+- Status: DONE with blocker for freeze.
+- Goal:
+  - Verify whether the currently reachable local Web service reflects the
+    client-facing source cleanup, using the real running bundle rather than only
+    source files.
+- Service check:
+  - `http://127.0.0.1:14001/api/health`: 200 OK.
+  - `http://127.0.0.1:18081`: 200 OK.
+  - `http://127.0.0.1:3000/api/health`, `http://127.0.0.1:5173`, and
+    `http://127.0.0.1:5174`: not reachable.
+- Evidence archived:
+  - `.local-step140-client-facing-freeze-check/service-checks.txt`.
+  - `.local-step140-client-facing-freeze-check/active-bundle-text-scan.txt`.
+  - `.local-step140-client-facing-freeze-check/source-text-scan.txt`.
+  - Added `memory-bank/client-facing-active-bundle-freeze-check-step140.md`.
+- Finding:
+  - The active `18081` Web bundle still contains reviewer-facing old wording
+    such as `Phase 1 frontend`, `production auth`, `GET /`, `POST /`,
+    `X-Demo-User-Id`, `dryRun=true`, `Achievement CSV dry-run`, `Safe preview`,
+    `Network request failed`, `Custom Reports`, `Secret Authorization`,
+    `local/demo`, `not production`, `raw JSON`, and `debug`.
+  - The current `apps/web/src` targeted source scan does not show those same
+    screenshot-era phrases as ordinary page copy; remaining matches are mainly
+    internal variables, type names, or API-client header logic.
+- Conclusion:
+  - Do not freeze the project while the live demo Web entry still serves the old
+    bundle.
+  - Next priority is to rebuild or refresh the Web bundle used by `18081`, then
+    rerun browser screenshot acceptance.
+  - Only if the refreshed browser still shows these terms should further source
+    changes be made.
+- Explicitly not done:
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change in this Step.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

@@ -19000,6 +19000,57 @@
   - No real external-system call was performed.
   - No Docker operation was performed.
 
+## 2026-07-07 Step 140 - Active Web bundle freeze check evidence
+
+- Canonical state checked before active-bundle inspection:
+  - `git log -1 --oneline` -> `7cee76d docs: audit client-facing freeze readiness`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Tooling note:
+  - `npx --no-install playwright --version` could not run because Playwright was
+    not already installed in the local workspace; no package installation was
+    performed.
+  - The check therefore used read-only HTTP and text scanning of the currently
+    served Web assets.
+- Service evidence:
+  - `http://127.0.0.1:14001/api/health` returned 200 OK.
+  - `http://127.0.0.1:18081` returned 200 OK.
+  - `http://127.0.0.1:3000/api/health`, `http://127.0.0.1:5173`, and
+    `http://127.0.0.1:5174` were not reachable.
+- Active bundle evidence:
+  - The `18081` HTML referenced `/assets/index-DTUeQ4MR.js` and
+    `/assets/index-BbTB0B2E.css`.
+  - `.local-step140-client-facing-freeze-check/active-bundle-text-scan.txt`
+    found old reviewer-facing strings in the active bundle, including
+    `Phase 1 frontend`, `production auth`, `GET /`, `POST /`,
+    `X-Demo-User-Id`, `dryRun=true`, `Achievement CSV dry-run`, `Safe preview`,
+    `Network request failed`, `Custom Reports`, `Secret Authorization`,
+    `local/demo`, `not production`, `raw JSON`, and `debug`.
+- Source comparison evidence:
+  - `.local-step140-client-facing-freeze-check/source-text-scan.txt` scanned
+    `apps/web/src` excluding tests.
+  - The source scan did not show the screenshot-era phrases as ordinary rendered
+    page copy; remaining matches were mainly internal variable names, type
+    names, API-client header setup, or type definitions.
+- Files updated:
+  - Added `memory-bank/client-facing-active-bundle-freeze-check-step140.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Freeze conclusion:
+  - The project is still not ready for code freeze because the currently served
+    local Web entry is stale from a client-facing perspective.
+  - The next action should be rebuilding or refreshing the `18081` Web bundle and
+    rerunning browser screenshot acceptance before making additional source
+    changes.
+- Boundary evidence:
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No Docker operation was performed.
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change was made.
+
 ## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish evidence
 
 - Scope:
