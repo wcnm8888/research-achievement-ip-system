@@ -252,3 +252,83 @@
 - 不能把下一步账号生命周期 local/demo enhancement 等同于真实 HR/SSO、真实邮件短信、真实 token 交付、生产身份验收或生产安全验收。
 - 不能把 schema/migration 文件存在等同于生产 migration 已应用。
 - 不能把导入本地 apply 成功等同于真实生产数据导入已授权。
+# Project Requirement Completion Matrix
+
+Date: 2026-07-07
+
+This top section is the current authoritative final refresh for the local demo
+delivery closure. Older sections below are kept for history, but some early
+Chinese text was stored with display-encoding issues. Do not treat the older
+mojibake text as the final delivery wording.
+
+## Current Delivery Definition
+
+The project is complete for **local/demo/synthetic review and competition
+delivery**. It is not complete for production launch, VPS acceptance,
+production database acceptance, real external-system integration, production
+identity acceptance, or production authorization acceptance.
+
+Current HEAD at refresh: `2135330 chore: seed secret authorization demo coverage`.
+
+Tracked working tree at refresh start was clean. Existing untracked local
+evidence/artifact directories remain local and were not cleaned, moved,
+deleted, staged, or reclassified.
+
+## Requirement Coverage Summary
+
+| Requirement area from product brief | Final local/demo status | Evidence | Remaining boundary |
+| --- | --- | --- | --- |
+| Achievement registration for paper, patent, and software copyright | DONE - local/demo/synthetic | Achievement API/Web, Step 95 screenshots, import apply local lines | Not production workflow or real provider acceptance |
+| Basic approval flow: researcher submit, department review, admin archive | DONE with caveat | Phase-one final archive: 10 demo paths, workflow screenshots | No configurable workflow designer, countersign, transfer, or production identity proof |
+| RBAC and department isolation | DONE - local/demo/synthetic | Authorization module, guarded APIs, App/Web tests, local demo roles | Resource policy must remain explicit for any future API |
+| Secret authorization and restricted-data access | DONE with caveat | Step 120-131 safety plan, read-only API/Web, seeded authenticated UI acceptance | Read-only safe summary only; no grant create/revoke/approve/batch/export and no production authorization acceptance |
+| Fee ledger and local fee review path | DONE with caveat | Step 83/95/96 fee review loop and local demo screenshots | No real finance/payment/invoice/reconciliation integration |
+| Fee reminders and in-app notification foundation | DONE - local/demo/synthetic | ReminderTask, notification mock, dashboard/local demo paths | No production scheduler/cron/queue, real email, or SMS |
+| Search | DONE - local/demo/synthetic | Search API/Web, policy-filtered result design | No production Meilisearch operations or large-scale search acceptance |
+| Dashboard and fixed scoring summary | DONE with caveat | Dashboard summary, Step 87/95/96 evidence | Not complete BI, production monitoring, or raw drilldown platform |
+| Audit logs | DONE - local/demo/synthetic | Audit module, masked audit UI/API, attachment/fee/workflow audit summaries | No raw audit export, production retention proof, or unmasked audit access |
+| Attachment foundation | DONE with caveat | Attachment model/API/Web entry, metadata/download policy, audit integration | No real object storage, preview, encryption-at-rest proof, retention, or cleanup compensation |
+| External interface reservation/mock center | DONE with caveat | Settings/API integration pages and mock demo center | Mock/adapter only; no real DOI, literature, patent, HR, SSO, finance, email, or SMS calls |
+| Account lifecycle management | DONE with caveat | Step 115-118 API/Web/local acceptance, Step 129/131 related identity boundaries | No real HR/SSO, real mail/SMS, production token delivery, or production identity acceptance |
+| Import history and ImportJobItem safe row display | DONE - local/demo/synthetic | Step 111-113 safe Web display and closure archive | No retry, repair, rollback, export, raw CSV, raw JSON, or production import acceptance |
+| Custom reports / advanced report MVP | DONE with caveat | Step 102-106 read-only reports API/Web/local acceptance | Aggregate-only; no saved templates, scheduled delivery, export, full BI, or sensitive drilldown |
+| Achievement conversion deepening MVP | DONE with caveat | Step 107-110 schema/API/Web/local acceptance | Not real contract, legal, finance, payment, invoice, settlement, or production conversion acceptance |
+
+## Success Criteria Mapping
+
+| Product success criterion | Local delivery status | Notes |
+| --- | --- | --- |
+| Researchers can register paper/patent/software achievements and submit review | DONE with caveat | Demonstrated with local synthetic data and local demo personas |
+| Department secretaries can review department achievements and handle fee ledgers | DONE with caveat | Demonstrated locally; not real HR/SSO or finance acceptance |
+| System admins can archive achievements, read audits, and maintain configuration | DONE with caveat | Local admin persona and system:config flows covered |
+| Roles see only authorized data; cross-department, secret, and attachment access are controlled | DONE with caveat | Covered by RBAC/policy tests and local UI paths; future APIs must keep explicit guards |
+| Fee warnings can generate reminder tasks and support in-app notification/mock delivery | DONE with caveat | Mock/in-app only; no real email/SMS/scheduler production run |
+| Search and dashboard data are permission-filtered | DONE with caveat | Local/demo scope only |
+| Core writes generate audit records | DONE with caveat | Local audit integration and masked display covered |
+
+## Deferred / Not Claimed
+
+These remain explicitly deferred and must not be presented as complete:
+
+- Production/VPS/production DB acceptance.
+- Production migration execution, backup acceptance, restore drill, monitoring,
+  alerting, and disaster recovery exercise.
+- Real HR/SSO integration.
+- Real email/SMS delivery.
+- Real finance/payment/invoice/reconciliation integration.
+- Real DOI/literature database/patent platform integration.
+- Real object storage, production download headers, storage-key governance,
+  attachment encryption, preview, retention, and cleanup compensation.
+- Secret authorization mutation workflow: grant create/revoke/approve/batch.
+- Import retry/repair/delete/cleanup/rollback/download/export/raw JSON/raw CSV.
+- Full BI, saved report templates, scheduled report delivery, citation
+  analysis, and sensitive drilldown.
+- Complete mobile client or formal responsive acceptance.
+- Large-scale real-data load testing.
+
+## Final Recommendation
+
+For a one-day completion target, stop feature expansion and deliver this as a
+local/demo/synthetic review package. Any production, real-provider, or
+credentialed external-system work must start from a separate readiness plan and
+explicit authorization.
