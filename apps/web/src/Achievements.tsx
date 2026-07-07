@@ -535,7 +535,7 @@ export function AchievementImportDryRunPanel({
   return (
     <>
       <ImportDryRunPanelShell
-        className="shell-card achievement-import-dry-run-card"
+        className="shell-card achievement-import-precheck-card"
         title="成果导入预检"
         noticeMessage="上传 CSV 文件后，系统会先检查论文、专利和软件著作权数据。"
         noticeDescription="预检仅展示可安全呈现的校验结果；确认后才会按权限执行草稿导入。"

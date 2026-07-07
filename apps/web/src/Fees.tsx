@@ -1369,7 +1369,7 @@ function FeeReviewWorkflowTaskSection({
           loading={tasks.loading}
           error={tasks.error}
           empty={empty}
-          emptyText="No fee review workflow task is assigned to the current user."
+          emptyText="当前账号没有待处理的费用审核任务"
           onRetry={loadTasks}
         >
           <div className="fee-review-workflow-task-list">
@@ -3240,7 +3240,7 @@ export const mapFeeWorkflowTaskErrorToDisplay = (error: ApiError): ApiError => {
   if (error.kind === "forbidden" || error.kind === "unauthorized") {
     return {
       ...error,
-      message: "Current user cannot read fee review workflow tasks.",
+      message: "当前账号无法读取费用审核任务。",
       detail: error.detail ?? "Switch to a scoped fee reviewer context and retry.",
     };
   }

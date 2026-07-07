@@ -1001,7 +1001,7 @@ const buildApiError = async (response: Response): Promise<ApiError> => {
   return {
     ...mapped,
     status: response.status,
-    detail: readErrorDetail(body),
+    detail: response.status >= 500 ? undefined : readErrorDetail(body),
     body,
   };
 };

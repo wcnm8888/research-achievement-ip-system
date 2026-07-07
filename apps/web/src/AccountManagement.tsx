@@ -1150,7 +1150,7 @@ export function UserAccountImportDryRunPanel({
   return (
     <>
       <ImportDryRunPanelShell
-        className="shell-card user-account-import-dry-run-card"
+        className="shell-card user-account-import-precheck-card"
         title="账号导入预检"
         noticeMessage="上传 CSV 文件后，系统会先检查账号、部门、角色、范围和冲突信息。"
         noticeDescription="预检会拒绝凭证、会话、邀请链接和重置链接等敏感列。"

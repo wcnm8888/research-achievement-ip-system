@@ -19548,6 +19548,89 @@
   - This is local Docker production-like / synthetic browser evidence only, not
     production/VPS/real external-system acceptance.
 
+## 2026-07-07 Step 146 - Authenticated client-facing final acceptance and polish evidence
+
+- Starting state:
+  - `git log -1 --oneline` -> `c2a2de1 docs: archive final client-facing browser acceptance`.
+  - `git status --short` showed existing untracked local artifacts plus the new
+    Step 146 evidence directory before source fixes.
+  - `git diff --stat` -> empty before Step 146 source fixes.
+  - `git diff --cached --stat` -> empty before Step 146 source fixes.
+- User authentication boundary:
+  - The user manually logged in through the visible local browser.
+  - No password, Cookie, Token, session secret, connection string, or `.env`
+    content was read, displayed, logged, or committed.
+- Initial authenticated finding:
+  - The authenticated browser sweep reached the main system pages.
+  - Workbench and dashboard exposed `Internal server error` from
+    `/api/dashboard/summary`.
+  - Import precheck panels exposed `dry-run` through DOM class names.
+  - Audit logs exposed a visible `null` inside a masked summary.
+- Source fixes:
+  - `apps/web/src/api-client.ts`: suppresses raw backend detail for HTTP 500+
+    errors.
+  - `apps/web/src/components/StateBlocks.tsx`: renders server errors with a
+    fixed Chinese safe detail.
+  - `apps/web/src/Achievements.tsx`, `apps/web/src/AccountManagement.tsx`,
+    `apps/web/src/DepartmentManagement.tsx`: renamed import precheck DOM class
+    names from `dry-run` to `precheck`.
+  - `apps/web/src/Fees.tsx`: localized remaining fee-review task copy.
+  - `apps/web/src/AuditLogs.tsx`: renders masked null/undefined values as
+    `未返回`.
+  - `apps/api/src/dashboard/dashboard.repository.ts`: falls back to zero/empty
+    conversion metrics when a local old Docker DB is missing
+    `achievement_conversions`; other errors still propagate.
+  - `apps/api/src/dashboard/dashboard.repository.spec.ts`: added fallback
+    regression coverage.
+- Local Docker refresh:
+  - Rebuilt/replaced compose-managed `web` to serve `assets/index-7UX6IDF1.js`.
+  - Rebuilt/replaced compose-managed `api` so `14001` used the dashboard
+    repository fallback.
+  - Existing `postgres` and volume were reused.
+  - Docker reported orphan containers; they were recorded only and not cleaned.
+  - No prune, volume deletion, `down -v`, local file deletion, or new stack was
+    used.
+- Final service evidence:
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - `GET http://127.0.0.1:18081`: 200.
+  - Active Web bundle: `assets/index-7UX6IDF1.js`.
+  - Compose-managed `api`, `postgres`, and `web` were healthy.
+- Final authenticated browser evidence:
+  - Evidence directory:
+    `.local-step146-authenticated-client-facing-acceptance/`.
+  - Report:
+    `memory-bank/client-facing-authenticated-acceptance-step146.md`.
+  - Final page sweep:
+    `.local-step146-authenticated-client-facing-acceptance/api-fixed-authenticated-page-sweep.json`.
+  - Final request summary:
+    `.local-step146-authenticated-client-facing-acceptance/api-fixed-authenticated-request-summary.json`.
+  - Final response summary:
+    `.local-step146-authenticated-client-facing-acceptance/api-fixed-authenticated-response-summary.json`.
+  - Final screenshots:
+    `42-api-fixed-工作台.png` through `53-api-fixed-部门维护.png`.
+  - Final DOM and visible-text forbidden-term scan reported zero hits across all
+    12 authenticated pages.
+  - Final request methods observed: GET only.
+  - Final response statuses observed: 200 / 304 only.
+  - No POST/PUT/PATCH/DELETE, export, download, debug, or batch mutation request
+    was observed.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievements AccountManagement DepartmentManagement Dashboard Fees AuditLogs api-client`: PASS, 9 files / 233 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- dashboard`: PASS, 5 files / 42 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - Local final Web build scan: PASS for stale/developer-facing terms.
+- Boundary evidence:
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No Prisma schema or migration change was made.
+  - No migration was run.
+  - No secret, Token, Cookie, password, connection string, raw credential, or
+    sensitive browser storage value was recorded.
+  - This is local Docker production-like / synthetic acceptance only, not
+    production/VPS/real external-system acceptance.
+
 ## 2026-07-07 Step 135 - Client-facing requirement matrix cleanup evidence
 
 - Context checked:

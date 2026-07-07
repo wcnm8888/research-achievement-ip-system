@@ -61,21 +61,27 @@ export class DashboardRepository {
   async countConversions(
     achievementPolicyWhere: Prisma.AchievementWhereInput,
   ): Promise<number> {
-    return this.prisma.achievementConversion.count({
-      where: toConversionWhere(achievementPolicyWhere),
-    });
+    try {
+      return await this.prisma.achievementConversion.count({
+        where: toConversionWhere(achievementPolicyWhere),
+      });
+    } catch (error) {
+      return fallbackForMissingConversionTable(error, 0);
+    }
   }
 
   async sumConversionAmounts(
     achievementPolicyWhere: Prisma.AchievementWhereInput,
   ): Promise<{ contractTotal: string; revenueTotal: string }> {
-    const result = await this.prisma.achievementConversion.aggregate({
-      where: toConversionWhere(achievementPolicyWhere),
-      _sum: {
-        contractAmount: true,
-        revenueAmount: true,
-      },
-    });
+    const result = await withMissingConversionTableFallback(errorSafeZeroAmounts, () =>
+      this.prisma.achievementConversion.aggregate({
+        where: toConversionWhere(achievementPolicyWhere),
+        _sum: {
+          contractAmount: true,
+          revenueAmount: true,
+        },
+      }),
+    );
 
     return {
       contractTotal: result._sum.contractAmount?.toFixed(2) ?? "0.00",
@@ -86,88 +92,108 @@ export class DashboardRepository {
   async groupConversionsByStatus(
     achievementPolicyWhere: Prisma.AchievementWhereInput,
   ): Promise<DashboardBucket<AchievementConversionStatusCode>[]> {
-    const rows = await this.prisma.achievementConversion.groupBy({
-      by: ["status"],
-      where: toConversionWhere(achievementPolicyWhere),
-      _count: { _all: true },
-    });
+    try {
+      const rows = await this.prisma.achievementConversion.groupBy({
+        by: ["status"],
+        where: toConversionWhere(achievementPolicyWhere),
+        _count: { _all: true },
+      });
 
-    return rows.map((row) => ({
-      key: row.status as AchievementConversionStatusCode,
-      count: row._count._all,
-    }));
+      return rows.map((row) => ({
+        key: row.status as AchievementConversionStatusCode,
+        count: row._count._all,
+      }));
+    } catch (error) {
+      return fallbackForMissingConversionTable(error, []);
+    }
   }
 
   async groupConversionsByContractStatus(
     achievementPolicyWhere: Prisma.AchievementWhereInput,
   ): Promise<DashboardBucket<AchievementConversionContractStatusCode>[]> {
-    const rows = await this.prisma.achievementConversion.groupBy({
-      by: ["contractStatus"],
-      where: toConversionWhere(achievementPolicyWhere),
-      _count: { _all: true },
-    });
+    try {
+      const rows = await this.prisma.achievementConversion.groupBy({
+        by: ["contractStatus"],
+        where: toConversionWhere(achievementPolicyWhere),
+        _count: { _all: true },
+      });
 
-    return rows.map((row) => ({
-      key: row.contractStatus as AchievementConversionContractStatusCode,
-      count: row._count._all,
-    }));
+      return rows.map((row) => ({
+        key: row.contractStatus as AchievementConversionContractStatusCode,
+        count: row._count._all,
+      }));
+    } catch (error) {
+      return fallbackForMissingConversionTable(error, []);
+    }
   }
 
   async groupConversionsByRevenueStatus(
     achievementPolicyWhere: Prisma.AchievementWhereInput,
   ): Promise<DashboardBucket<AchievementConversionRevenueStatusCode>[]> {
-    const rows = await this.prisma.achievementConversion.groupBy({
-      by: ["revenueStatus"],
-      where: toConversionWhere(achievementPolicyWhere),
-      _count: { _all: true },
-    });
+    try {
+      const rows = await this.prisma.achievementConversion.groupBy({
+        by: ["revenueStatus"],
+        where: toConversionWhere(achievementPolicyWhere),
+        _count: { _all: true },
+      });
 
-    return rows.map((row) => ({
-      key: row.revenueStatus as AchievementConversionRevenueStatusCode,
-      count: row._count._all,
-    }));
+      return rows.map((row) => ({
+        key: row.revenueStatus as AchievementConversionRevenueStatusCode,
+        count: row._count._all,
+      }));
+    } catch (error) {
+      return fallbackForMissingConversionTable(error, []);
+    }
   }
 
   async countOverdueConversions(
     achievementPolicyWhere: Prisma.AchievementWhereInput,
     todayDateOnly: Date,
   ): Promise<number> {
-    return this.prisma.achievementConversion.count({
-      where: {
-        AND: [
-          toConversionWhere(achievementPolicyWhere),
-          {
-            OR: [
-              { revenueStatus: AchievementConversionRevenueStatusCode.overdue },
-              {
-                revenueStatus: {
-                  in: [
-                    AchievementConversionRevenueStatusCode.unpaid,
-                    AchievementConversionRevenueStatusCode.partial,
-                  ],
+    try {
+      return await this.prisma.achievementConversion.count({
+        where: {
+          AND: [
+            toConversionWhere(achievementPolicyWhere),
+            {
+              OR: [
+                { revenueStatus: AchievementConversionRevenueStatusCode.overdue },
+                {
+                  revenueStatus: {
+                    in: [
+                      AchievementConversionRevenueStatusCode.unpaid,
+                      AchievementConversionRevenueStatusCode.partial,
+                    ],
+                  },
+                  revenueDueDate: { lt: todayDateOnly },
                 },
-                revenueDueDate: { lt: todayDateOnly },
-              },
-            ],
-          },
-        ],
-      },
-    });
+              ],
+            },
+          ],
+        },
+      });
+    } catch (error) {
+      return fallbackForMissingConversionTable(error, 0);
+    }
   }
 
   async groupConversionsByEvaluationEffect(
     achievementPolicyWhere: Prisma.AchievementWhereInput,
   ): Promise<DashboardBucket<AchievementConversionEvaluationEffectCode>[]> {
-    const rows = await this.prisma.achievementConversion.groupBy({
-      by: ["evaluationEffect"],
-      where: toConversionWhere(achievementPolicyWhere),
-      _count: { _all: true },
-    });
+    try {
+      const rows = await this.prisma.achievementConversion.groupBy({
+        by: ["evaluationEffect"],
+        where: toConversionWhere(achievementPolicyWhere),
+        _count: { _all: true },
+      });
 
-    return rows.map((row) => ({
-      key: row.evaluationEffect as AchievementConversionEvaluationEffectCode,
-      count: row._count._all,
-    }));
+      return rows.map((row) => ({
+        key: row.evaluationEffect as AchievementConversionEvaluationEffectCode,
+        count: row._count._all,
+      }));
+    } catch (error) {
+      return fallbackForMissingConversionTable(error, []);
+    }
   }
 
   async groupAchievementsByDepartment(
@@ -351,3 +377,40 @@ const toConversionWhere = (
 ): Prisma.AchievementConversionWhereInput => ({
   achievement: achievementPolicyWhere,
 });
+
+const errorSafeZeroAmounts = {
+  _sum: {
+    contractAmount: null,
+    revenueAmount: null,
+  },
+};
+
+const withMissingConversionTableFallback = async <T>(
+  fallback: T,
+  query: () => Promise<T>,
+): Promise<T> => {
+  try {
+    return await query();
+  } catch (error) {
+    return fallbackForMissingConversionTable(error, fallback);
+  }
+};
+
+const fallbackForMissingConversionTable = <T>(error: unknown, fallback: T): T => {
+  if (isMissingConversionTableError(error)) {
+    return fallback;
+  }
+
+  throw error;
+};
+
+const isMissingConversionTableError = (error: unknown): boolean => {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const record = error as { code?: unknown; meta?: { table?: unknown } };
+  const table = typeof record.meta?.table === "string" ? record.meta.table : "";
+
+  return record.code === "P2021" && table.includes("achievement_conversions");
+};

@@ -68,13 +68,14 @@ type ErrorStateProps = {
 
 export function ErrorState({ error, onRetry }: ErrorStateProps) {
   const isPermissionError = error.kind === "forbidden" || error.kind === "unauthorized";
+  const safeDetail = getSafeErrorDetail(error);
 
   return (
     <Result
       className="state-result"
       status={isPermissionError ? "403" : "warning"}
       title={error.message}
-      subTitle={error.detail}
+      subTitle={safeDetail}
       extra={
         onRetry ? (
           <Button type="primary" onClick={onRetry}>
@@ -85,6 +86,14 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
     />
   );
 }
+
+const getSafeErrorDetail = (error: ApiError): string | undefined => {
+  if (error.kind === "server") {
+    return "请稍后重试，或联系管理员查看服务状态。";
+  }
+
+  return error.detail;
+};
 
 type PermissionHintProps = {
   title?: string;

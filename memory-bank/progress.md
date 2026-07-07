@@ -15399,3 +15399,53 @@
   - No Docker prune, volume deletion, `down -v`, orphan cleanup, local file
     deletion, or other stack creation.
   - Not production/VPS/real external-system acceptance.
+
+## 2026-07-07 Step 146 - Authenticated client-facing final acceptance and polish
+
+- Status: PASS.
+- Goal:
+  - Complete the previously blocked authenticated browser walkthrough after the
+    user manually logged in through a visible local browser.
+- Source fixes:
+  - Suppressed raw backend 500 detail in Web API error projection and the shared
+    `ErrorState` display.
+  - Renamed import precheck DOM class names so authenticated DOM scans no longer
+    expose `dry-run`.
+  - Localized remaining fee-review task copy.
+  - Rendered masked audit summary null/undefined values as `未返回`.
+  - Hardened Dashboard conversion aggregations so a local old Docker DB missing
+    `achievement_conversions` degrades conversion metrics to zero/empty instead
+    of failing the whole dashboard.
+- Local Docker refresh:
+  - Rebuilt and replaced compose-managed `web` and `api` containers only.
+  - Reused existing `postgres` and volume.
+  - No prune, volume deletion, `down -v`, orphan cleanup, local file deletion,
+    or new stack creation.
+- Acceptance:
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - `GET http://127.0.0.1:18081`: 200.
+  - Active Web bundle: `assets/index-7UX6IDF1.js`.
+  - Authenticated browser walkthrough covered workbench, achievements,
+    workflow, fees, search, dashboard, custom reports, audit logs, settings,
+    secret authorization, account management, and department management.
+  - Final DOM and visible-text forbidden-term scan: 0 hits across all 12 pages.
+  - Final request methods observed: GET only.
+  - Final response statuses observed: 200 / 304 only.
+- Evidence:
+  - Added `memory-bank/client-facing-authenticated-acceptance-step146.md`.
+  - Evidence directory:
+    `.local-step146-authenticated-client-facing-acceptance/`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievements AccountManagement DepartmentManagement Dashboard Fees AuditLogs api-client`: PASS, 9 files / 233 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- dashboard`: PASS, 5 files / 42 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, or secret was read, displayed,
+    logged, or committed; the user logged in manually in the visible browser.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Prisma schema change, migration addition, or migration execution.
+  - This is local Docker production-like / synthetic acceptance, not production
+    acceptance.

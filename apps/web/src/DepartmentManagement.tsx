@@ -962,7 +962,7 @@ export function DepartmentImportDryRunPanel({
   return (
     <>
       <ImportDryRunPanelShell
-        className="shell-card department-import-dry-run-card"
+        className="shell-card department-import-precheck-card"
         title="部门导入预检"
         noticeMessage="上传 CSV 文件后，系统会先检查部门编码、名称和上级部门关系。"
         noticeDescription="预检通过后可创建新的部门信息，不会执行更新、合并或删除操作。"

@@ -651,7 +651,7 @@ const toMaskedAuditLog = (value: unknown): MaskedAuditLog | null => {
 
 const sanitizeMaskedValue = (value: unknown, key: string | null = null): unknown => {
   if (value === null || value === undefined) {
-    return value;
+    return "未返回";
   }
 
   if (isSensitiveKey(key)) {

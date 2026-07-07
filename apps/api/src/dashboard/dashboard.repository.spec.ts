@@ -271,6 +271,37 @@ describe("DashboardRepository conversion aggregations", () => {
     });
   });
 
+  it("falls back to empty conversion metrics when the optional local conversion table is absent", async () => {
+    const { prisma, repository } = createRepository();
+    const missingConversionTableError = {
+      code: "P2021",
+      meta: { table: "public.achievement_conversions" },
+    };
+
+    prisma.achievementConversion.count.mockRejectedValue(missingConversionTableError);
+    prisma.achievementConversion.aggregate.mockRejectedValue(missingConversionTableError);
+    prisma.achievementConversion.groupBy.mockRejectedValue(missingConversionTableError);
+
+    await expect(repository.countConversions({ id: { in: [] } })).resolves.toBe(0);
+    await expect(repository.sumConversionAmounts({ id: { in: [] } })).resolves.toEqual({
+      contractTotal: "0.00",
+      revenueTotal: "0.00",
+    });
+    await expect(repository.groupConversionsByStatus({ id: { in: [] } })).resolves.toEqual([]);
+    await expect(repository.groupConversionsByContractStatus({ id: { in: [] } })).resolves.toEqual(
+      [],
+    );
+    await expect(repository.groupConversionsByRevenueStatus({ id: { in: [] } })).resolves.toEqual(
+      [],
+    );
+    await expect(
+      repository.countOverdueConversions({ id: { in: [] } }, new Date("2026-07-06T00:00:00.000Z")),
+    ).resolves.toBe(0);
+    await expect(repository.groupConversionsByEvaluationEffect({ id: { in: [] } })).resolves.toEqual(
+      [],
+    );
+  });
+
   it("ranks departments by visible achievement count without selecting achievement detail", async () => {
     const { prisma, repository } = createRepository();
     prisma.achievement.groupBy.mockResolvedValue([
