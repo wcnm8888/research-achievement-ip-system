@@ -533,7 +533,7 @@ export function ProductionLoginPanel({
     return (
       <div className="auth-login-panel">
         <Spin />
-        <Typography.Text type="secondary">Checking session</Typography.Text>
+        <Typography.Text type="secondary">正在检查登录状态</Typography.Text>
       </div>
     );
   }
@@ -542,33 +542,33 @@ export function ProductionLoginPanel({
     <div className="auth-login-panel">
       <Space direction="vertical" size={16} className="full-width">
         <div>
-          <Typography.Title level={3}>Production sign in</Typography.Title>
+          <Typography.Title level={3}>系统登录</Typography.Title>
           <Typography.Text type="secondary">
-            Sign in with a local production account. Demo user switching is disabled here.
+            请使用本地已授权账号登录；此模式不提供演示身份切换。
           </Typography.Text>
         </div>
         {authError ? <Alert type="error" showIcon message={authError} /> : null}
         <Form<LoginRequest> layout="vertical" onFinish={onLogin} requiredMark={false}>
           <Form.Item
-            label="Email"
+            label="邮箱"
             name="email"
-            rules={[{ required: true, type: "email", message: "Enter a valid email." }]}
+            rules={[{ required: true, type: "email", message: "请输入有效邮箱。" }]}
           >
             <Input autoComplete="username" />
           </Form.Item>
           <Form.Item
-            label="Password"
+            label="密码"
             name="password"
-            rules={[{ required: true, message: "Enter your password." }]}
+            rules={[{ required: true, message: "请输入密码。" }]}
           >
             <Input.Password autoComplete="current-password" />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={loading}>
-            Sign in
+            登录
           </Button>
           {onForgotPassword ? (
             <Button type="link" onClick={onForgotPassword}>
-              Forgot password
+              忘记密码
             </Button>
           ) : null}
         </Form>
@@ -581,9 +581,9 @@ function ProductionAuthBanner({ authUser }: { authUser: AuthUser | null }) {
   return (
     <div className="context-banner">
       <Space size={12} wrap>
-        <Tag color="green">session</Tag>
-        <Typography.Text strong>{authUser?.name ?? "Authenticated user"}</Typography.Text>
-        <Typography.Text type="secondary">{authUser?.email ?? "No active session"}</Typography.Text>
+        <Tag color="green">已登录</Tag>
+        <Typography.Text strong>{authUser?.name ?? "已认证用户"}</Typography.Text>
+        <Typography.Text type="secondary">{authUser?.email ?? "暂无登录信息"}</Typography.Text>
       </Space>
     </div>
   );

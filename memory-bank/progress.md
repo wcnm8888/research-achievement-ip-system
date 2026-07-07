@@ -15029,3 +15029,42 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 138 - Client-facing Web residual terminology cleanup
+
+- Status: DONE.
+- Trigger:
+  - Follow-up client-facing scan after Step 137 still found visible English or
+    engineering terminology in production login, import dry-run tables, account
+    creation forms, attachment summaries, fee voucher attachment summaries, and
+    external integration archive confirmation copy.
+- Web cleanup:
+  - Localized production login and authenticated session banner copy.
+  - Localized account import, department import, and achievement import dry-run
+    table labels and summary labels.
+  - Localized account creation drawer field labels, validation messages, role
+    card labels, and department placeholders.
+  - Replaced user-facing `metadata`, `storageKey`, `checksum`, and `detail
+    metadata` wording with Chinese business/security-summary wording while
+    preserving tests that ensure storage internals are not returned.
+  - Localized fee voucher attachment boundary copy and settings integration
+    archive/restore confirmation copy.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AchievementDetail AccountManagement DepartmentManagement Fees SettingsApiIntegrations`: PASS, 9 files / 208 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - Follow-up source scan for visible terms such as `Production sign in`,
+    `Forgot password`, `Safe preview`, `Candidate`, `Errors`, `Warnings`,
+    `detail metadata`, `GET /`, `POST /`, `Failed to fetch`, and `Network
+    request failed`: remaining matches are internal variable/type/class names or
+    safety filter constants, not ordinary rendered page copy.
+- Remaining caveat:
+  - Browser-level screenshot freeze is still required after rebuilding/reloading
+    the active local Web bundle.
+  - CSV column headers and backend issue codes may still appear as data values
+    because they describe uploaded file structure and safe validation codes.
+- Explicitly not done:
+  - No API, Prisma schema, migration, package, lockfile, or config change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

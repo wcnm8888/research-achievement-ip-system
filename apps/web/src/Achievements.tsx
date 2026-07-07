@@ -1191,36 +1191,36 @@ const getAchievementImportApplyErrorSummary = (
 
 const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["columns"] = [
   {
-    title: "Row",
+    title: "行号",
     dataIndex: "rowNumber",
     key: "rowNumber",
     width: 72,
   },
   {
-    title: "Safe preview",
+    title: "安全预览",
     key: "parsed",
     width: 390,
     render: (_, row) => (
       <Space direction="vertical" size={2}>
-        <Typography.Text>type: {row.parsed.type ?? "-"}</Typography.Text>
-        <Typography.Text>title: {row.parsed.title ?? "-"}</Typography.Text>
-        <Typography.Text>departmentCode: {row.parsed.departmentCode ?? "-"}</Typography.Text>
+        <Typography.Text>成果类型：{getAchievementImportTypeLabel(row.parsed.type)}</Typography.Text>
+        <Typography.Text>标题：{row.parsed.title ?? "-"}</Typography.Text>
+        <Typography.Text>部门编码：{row.parsed.departmentCode ?? "-"}</Typography.Text>
         <Typography.Text>
-          owner: {row.parsed.ownerEmail ?? row.parsed.ownerEmployeeNo ?? "-"}
+          负责人：{row.parsed.ownerEmail ?? row.parsed.ownerEmployeeNo ?? "-"}
         </Typography.Text>
-        <Typography.Text>status: {row.parsed.status ?? "-"}</Typography.Text>
-        <Typography.Text>secretLevel: {row.parsed.secretLevel ?? "-"}</Typography.Text>
+        <Typography.Text>状态：{getAchievementImportStatusLabel(row.parsed.status)}</Typography.Text>
+        <Typography.Text>密级：{getAchievementImportSecretLevelLabel(row.parsed.secretLevel)}</Typography.Text>
       </Space>
     ),
   },
   {
-    title: "Contributors",
+    title: "贡献人",
     key: "contributors",
     width: 330,
     render: (_, row) => renderContributorPreview(row),
   },
   {
-    title: "Normalized identifiers",
+    title: "规范化标识",
     key: "normalizedIdentifiers",
     width: 330,
     render: (_, row) => renderIdentifierList(row),
@@ -1235,13 +1235,14 @@ const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["co
     ),
   },
   {
-    title: "Candidate",
+    title: "候选动作",
     dataIndex: "candidateAction",
     key: "candidateAction",
     width: 152,
+    render: (value: string) => getAchievementImportCandidateActionLabel(value),
   },
   {
-    title: "Errors",
+    title: "错误",
     dataIndex: "errors",
     key: "errors",
     width: 310,
@@ -1249,7 +1250,7 @@ const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["co
       renderImportDryRunIssueList(issues, "error"),
   },
   {
-    title: "Warnings",
+    title: "警告",
     dataIndex: "warnings",
     key: "warnings",
     width: 310,
@@ -1296,7 +1297,7 @@ const renderIdentifierList = (row: AchievementImportDryRunRow) => {
         return (
           <span key={`${row.rowNumber}-${field}`}>
             <Tag color={hasFileDuplicate ? "red" : hasDbConflict ? "gold" : "blue"}>
-              {field}
+              {getAchievementImportIdentifierLabel(field)}
             </Tag>
             <Typography.Text>{value}</Typography.Text>
           </span>
@@ -1304,6 +1305,71 @@ const renderIdentifierList = (row: AchievementImportDryRunRow) => {
       })}
     </Space>
   );
+};
+
+const getAchievementImportStatusLabel = (value: string | null | undefined): string => {
+  if (!value) {
+    return "-";
+  }
+
+  const labels: Record<string, string> = {
+    DRAFT: "草稿",
+    SUBMITTED: "已提交",
+    APPROVED: "已通过",
+    REJECTED: "已驳回",
+    ARCHIVED: "已归档",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getAchievementImportTypeLabel = (value: string | null | undefined): string => {
+  if (!value) {
+    return "-";
+  }
+
+  const labels: Record<string, string> = {
+    PAPER: "论文",
+    SOFTWARE_COPYRIGHT: "软件著作权",
+    PATENT: "专利",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getAchievementImportSecretLevelLabel = (value: string | null | undefined): string => {
+  if (!value) {
+    return "-";
+  }
+
+  const labels: Record<string, string> = {
+    PUBLIC: "公开",
+    INTERNAL: "内部",
+    CONFIDENTIAL: "机密",
+    SECRET: "秘密",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getAchievementImportCandidateActionLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    CREATE_DRAFT: "创建草稿",
+    SKIP: "跳过",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getAchievementImportIdentifierLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    doi: "DOI",
+    applicationNo: "申请号",
+    patentNo: "授权号",
+    registrationNo: "登记号",
+  };
+
+  return labels[value] ?? value;
 };
 
 export const getAchievementDisplayTitle = (item: Pick<AchievementListItem, "title" | "isRedacted">) => {

@@ -1248,18 +1248,18 @@ function ApiIntegrationOperationModal({
           showIcon
           message={
             operation?.kind === "archive"
-              ? "Archive keeps metadata for history."
-              : "Restore only clears archived status."
+              ? "归档会保留历史记录。"
+              : "恢复只会清除归档状态。"
           }
           description={
             operation?.kind === "archive"
-              ? "The backend disables the integration and sets archivedAt. It does not delete records."
-              : "Restore does not enable the integration automatically if it was disabled."
+              ? "系统会停用该接口配置并记录归档时间，不会删除历史记录。"
+              : "如果该接口配置此前已停用，恢复归档状态不会自动启用。"
           }
         />
         {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
         <Form<ReasonFormValues> form={form} layout="vertical" requiredMark={false}>
-          <Form.Item label="Reason (optional)" name="reason">
+          <Form.Item label="原因（可选）" name="reason">
             <Input.TextArea maxLength={300} rows={3} />
           </Form.Item>
         </Form>

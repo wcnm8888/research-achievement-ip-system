@@ -399,9 +399,9 @@ describe("Step 19A attachment metadata helpers", () => {
       message: "Internal server error",
     });
 
-    expect(forbidden.message).toBe("当前角色无附件 metadata 读取权限");
-    expect(missing.message).toBe("成果附件 metadata 不存在或不可用");
-    expect(server.message).toBe("附件 metadata 服务暂不可用");
+    expect(forbidden.message).toBe("当前角色无附件安全摘要读取权限");
+    expect(missing.message).toBe("成果附件安全摘要不存在或不可用");
+    expect(server.message).toBe("附件安全摘要服务暂不可用");
   });
 
   it("builds display-safe metadata without storage internals", () => {
@@ -430,9 +430,9 @@ describe("Step 19A attachment metadata helpers", () => {
     expect(boundary.allowedRequest).toBe("附件列表");
     expect(boundary.allowedRequest).not.toContain("download");
     expect(boundary.title).toContain("附件管理");
-    expect(boundary.description).toContain("multipart");
-    expect(boundary.description).toContain("storageKey");
-    expect(boundary.description).toContain("checksum");
+    expect(boundary.description).toContain("按权限上传和下载");
+    expect(boundary.description).toContain("内部存储标识");
+    expect(boundary.description).toContain("校验值");
   });
 
   it("builds multipart upload payloads without storage internals", async () => {
@@ -641,10 +641,10 @@ describe("Step 21A attachment detail metadata helpers", () => {
       message: "Network request failed",
     });
 
-    expect(forbidden.message).toBe("当前角色无附件 detail metadata 读取权限");
-    expect(missing.message).toBe("附件 detail metadata 不存在或不可用");
-    expect(server.message).toBe("附件 detail metadata 服务暂不可用");
-    expect(network.message).toBe("附件 detail metadata 服务暂不可用");
+    expect(forbidden.message).toBe("当前角色无附件详情摘要读取权限");
+    expect(missing.message).toBe("附件详情摘要不存在或不可用");
+    expect(server.message).toBe("附件详情摘要服务暂不可用");
+    expect(network.message).toBe("附件详情摘要服务暂不可用");
   });
 
   it("builds display-safe detail metadata without storage internals or object body", () => {

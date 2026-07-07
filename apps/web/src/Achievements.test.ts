@@ -662,9 +662,9 @@ describe("achievement import dry-run UI", () => {
     expect(html).toContain("文件内重复");
     expect(html).toContain("系统内冲突");
     expect(html).toContain("NOT_AVAILABLE");
-    expect(html).toContain("PAPER");
-    expect(html).toContain("PATENT");
-    expect(html).toContain("SOFTWARE_COPYRIGHT");
+    expect(html).toContain("论文");
+    expect(html).toContain("专利");
+    expect(html).toContain("软件著作权");
     expect(html).toContain("10.1000/existing");
     expect(html).toContain("CN001");
     expect(html).toContain("SW001");

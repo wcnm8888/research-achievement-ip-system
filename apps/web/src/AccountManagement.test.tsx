@@ -585,13 +585,13 @@ describe("user account import dry-run UI", () => {
 
     expect(html).toContain("预检报告已生成");
     expect(html).toContain("总行数");
-    expect(html).toContain("Existing users");
-    expect(html).toContain("employeeNo DB conflict check: AVAILABLE");
-    expect(html).toContain("Existing employeeNo");
+    expect(html).toContain("已有账号行");
+    expect(html).toContain("工号冲突检查：可用");
+    expect(html).toContain("已有工号行");
     expect(html).toContain("NO_CREDENTIAL");
     expect(html).toContain("EXISTING_USER");
     expect(html).toContain("EXISTING_EMPLOYEE_NO");
-    expect(html).toContain("business identifier");
+    expect(html).toContain("业务标识");
     expect(html).toContain("DUPLICATE_IN_FILE");
     expect(html).not.toContain("login identity");
   });
@@ -601,10 +601,10 @@ describe("user account import dry-run UI", () => {
       <UserAccountImportDryRunResultView result={userAccountImportDryRunResult} />,
     );
 
-    expect(html).toContain("employeeNo DB conflict check: AVAILABLE");
-    expect(html).toContain("optional business identifier");
+    expect(html).toContain("工号冲突检查：可用");
+    expect(html).toContain("可选业务标识");
     expect(html).toContain("EXISTING_EMPLOYEE_NO");
-    expect(html).toContain("this row cannot create a new pending account");
+    expect(html).toContain("本行不能创建新的待激活账号");
     expect(html).not.toContain("existing.user@example.com matched by employeeNo");
     expect(html).not.toContain("employeeNoNormalized");
   });

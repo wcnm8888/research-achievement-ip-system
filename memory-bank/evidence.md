@@ -18988,6 +18988,42 @@
   - No Docker command or Docker cleanup operation.
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed evidence.
 
+## 2026-07-07 Step 138 - Client-facing Web residual terminology cleanup evidence
+
+- Scope:
+  - Web presentation only, continuing the client-facing freeze review.
+  - No backend, schema, migration, seed, package, lockfile, Docker, or
+    production/VPS change.
+- Changed presentation surfaces:
+  - Production login panel and authenticated banner.
+  - Achievement, user-account, and department import dry-run tables and
+    summaries.
+  - Account creation drawer labels, validation messages, role card labels, and
+    department selection placeholders.
+  - Achievement attachment and fee voucher attachment safety-summary copy.
+  - Settings API integration archive/restore confirmation modal.
+- Safety evidence:
+  - User-facing `metadata`, `storageKey`, `checksum`, and `detail metadata`
+    wording was replaced with Chinese safety-summary language.
+  - Tests still assert that storage internals and checksums are not included in
+    safe view models or serialized responses.
+  - Remaining English/code-like matches from source scans are internal variable
+    names, type names, CSS class names, CSV column identifiers, or safe issue
+    codes rather than ordinary page instructions.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AchievementDetail AccountManagement DepartmentManagement Fees SettingsApiIntegrations`: PASS, 9 files / 208 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Caveat:
+  - Source and tests are updated. The currently open browser may still show an
+    old Web bundle until the local service is rebuilt or refreshed.
+  - This remains local/demo/reviewer-package readiness evidence, not
+    production/VPS/real-provider acceptance.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation operation, production runbook, production migration, or production monitoring operation.
+  - No Docker command or Docker cleanup operation.
+
 ## 2026-07-07 Step 132 - Final local demo requirement closure evidence
 
 - Canonical state checked before documentation:

@@ -578,7 +578,7 @@ export const shouldLoadAttachmentDetailMetadata = (
 export const getAttachmentMetadataReadonlyBoundary = () => ({
   title: "附件管理",
   description:
-    "本区域接入附件 metadata 列表、multipart 上传和认证下载；不展示 storageKey、checksum、真实路径或文件内容。",
+    "本区域仅展示附件安全摘要，支持按权限上传和下载；不展示内部存储标识、校验值、真实路径或文件内容。",
   allowedRequest: "附件列表",
 });
 
@@ -594,22 +594,22 @@ export const mapAttachmentMetadataErrorToDisplay = (error: ApiError): ApiError =
     return {
       ...error,
       message: "请选择或切换演示用户",
-      detail: error.detail ?? "附件 metadata 需要有效用户上下文后才能读取。",
+      detail: error.detail ?? "附件安全摘要需要有效用户上下文后才能读取。",
     };
   }
 
   if (error.status === 403 || error.kind === "forbidden") {
     return {
       ...error,
-      message: "当前角色无附件 metadata 读取权限",
-      detail: error.detail ?? "附件 metadata 权限由后端控制，前端不会绕过授权策略。",
+      message: "当前角色无附件安全摘要读取权限",
+      detail: error.detail ?? "附件权限由后端控制，前端不会绕过授权策略。",
     };
   }
 
   if (error.status === 404) {
     return {
       ...error,
-      message: "成果附件 metadata 不存在或不可用",
+      message: "成果附件安全摘要不存在或不可用",
       detail: error.detail ?? "请确认成果仍在当前用户可读取范围内。",
     };
   }
@@ -617,7 +617,7 @@ export const mapAttachmentMetadataErrorToDisplay = (error: ApiError): ApiError =
   if (error.kind === "network" || error.kind === "server" || (error.status ?? 0) >= 500) {
     return {
       ...error,
-      message: "附件 metadata 服务暂不可用",
+      message: "附件安全摘要服务暂不可用",
       detail: error.detail ?? "请稍后重试；前端不会显示假附件数据。",
     };
   }
@@ -625,14 +625,14 @@ export const mapAttachmentMetadataErrorToDisplay = (error: ApiError): ApiError =
   if (error.kind === "bad-request" || error.status === 400 || error.status === 422) {
     return {
       ...error,
-      message: "附件 metadata 请求参数不正确",
+      message: "附件安全摘要请求参数不正确",
       detail: error.detail ?? "请检查成果 ID、状态筛选和 take 参数。",
     };
   }
 
   return {
     ...error,
-    message: error.message || "附件 metadata 读取失败",
+    message: error.message || "附件安全摘要读取失败",
   };
 };
 
@@ -643,23 +643,23 @@ export const mapAttachmentDetailMetadataErrorToDisplay = (
     return {
       ...error,
       message: "请选择或切换演示用户",
-      detail: error.detail ?? "附件 detail metadata 需要有效用户上下文后才能读取。",
+      detail: error.detail ?? "附件详情摘要需要有效用户上下文后才能读取。",
     };
   }
 
   if (error.status === 403 || error.kind === "forbidden") {
     return {
       ...error,
-      message: "当前角色无附件 detail metadata 读取权限",
+      message: "当前角色无附件详情摘要读取权限",
       detail:
-        error.detail ?? "附件 detail metadata 权限由后端控制，前端不会绕过授权策略。",
+        error.detail ?? "附件详情权限由后端控制，前端不会绕过授权策略。",
     };
   }
 
   if (error.status === 404) {
     return {
       ...error,
-      message: "附件 detail metadata 不存在或不可用",
+      message: "附件详情摘要不存在或不可用",
       detail: error.detail ?? "请确认附件仍属于当前成果且在当前用户可读取范围内。",
     };
   }
@@ -667,7 +667,7 @@ export const mapAttachmentDetailMetadataErrorToDisplay = (
   if (error.kind === "network" || error.kind === "server" || (error.status ?? 0) >= 500) {
     return {
       ...error,
-      message: "附件 detail metadata 服务暂不可用",
+      message: "附件详情摘要服务暂不可用",
       detail: error.detail ?? "请稍后重试；前端不会显示假附件详情。",
     };
   }
@@ -675,14 +675,14 @@ export const mapAttachmentDetailMetadataErrorToDisplay = (
   if (error.kind === "bad-request" || error.status === 400 || error.status === 422) {
     return {
       ...error,
-      message: "附件 detail metadata 请求参数不正确",
+      message: "附件详情摘要请求参数不正确",
       detail: error.detail ?? "请检查成果 ID 与附件 ID 是否完整。",
     };
   }
 
   return {
     ...error,
-    message: error.message || "附件 detail metadata 读取失败",
+    message: error.message || "附件详情摘要读取失败",
   };
 };
 
@@ -1976,7 +1976,7 @@ function AttachmentMetadataSection({
             message={readonly ? "只读附件视图" : "附件上传入口未开放"}
             description={
               readonly
-                ? "当前成果详情来自只读上下文，只展示后端允许读取的附件 metadata 与下载结果。"
+                ? "当前成果详情来自只读上下文，只展示后端允许读取的附件安全摘要与下载结果。"
                 : "当前用户缺少 achievement:update_own，或不是该成果负责人；前端不会显示上传入口。"
             }
           />
@@ -1993,7 +1993,7 @@ function AttachmentMetadataSection({
             loading={attachments.loading}
             error={attachments.error}
             empty={!attachments.loading && !attachments.error && items.length === 0}
-            emptyText="未返回附件 metadata"
+            emptyText="未返回附件安全摘要"
             onRetry={() => void loadAttachments()}
           >
             <AttachmentMetadataList
@@ -2154,7 +2154,7 @@ function AttachmentMetadataList({
                   type={selectedAttachmentId === attachment.id ? "primary" : "default"}
                   onClick={() => onSelectAttachment(attachment.id)}
                 >
-                  查看 metadata 详情
+                  查看详情摘要
                 </Button>
                 <Button
                   size="small"
@@ -2259,7 +2259,7 @@ function AttachmentDetailMetadataPanel({
             loading={detail.loading}
             error={detail.error}
             empty={!detail.loading && !detail.error && !detail.data}
-            emptyText="未返回附件 detail metadata"
+            emptyText="未返回附件详情摘要"
             onRetry={() => void loadDetail()}
           >
             {model ? <AttachmentDetailMetadataContent model={model} /> : null}

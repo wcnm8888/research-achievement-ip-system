@@ -580,7 +580,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="账号管理"
-          description="需要有效 session 上下文后才会请求账号管理 API。"
+          description="需要有效登录上下文后才会加载账号管理数据。"
         />
         <PermissionHint description="当前没有可用的业务上下文；前端不会发起账号管理请求。" />
       </Space>
@@ -1204,43 +1204,43 @@ export function UserAccountImportDryRunResultView({
   return (
     <ImportDryRunResultShell
       result={result}
-      writeSafetyDescription="no account writes, credential changes, or role assignments were requested."
+      writeSafetyDescription="预检阶段不会写入账号、修改凭证或分配角色。"
       extraAlerts={
         <Alert
           type={employeeNoDbCheckAvailable ? "success" : "info"}
           showIcon
-          message={`employeeNo DB conflict check: ${result.summary.employeeNoDbConflictCheck}`}
+          message={`工号冲突检查：${getEmployeeNoDbConflictCheckLabel(result.summary.employeeNoDbConflictCheck)}`}
           description={
             employeeNoDbCheckAvailable
-              ? "employeeNo is checked as an optional business identifier for existing-account conflicts. Account sign-in behavior is unchanged."
+              ? "系统会把工号作为可选业务标识检查已有账号冲突；账号登录行为不会改变。"
               : "当前仅检查上传文件内的工号重复情况。"
           }
         />
       }
       summaryItems={[
         {
-          label: "Create candidates",
+          label: "创建候选",
           value: result.summary.createCandidates,
         },
         {
-          label: "Existing users",
+          label: "已有账号行",
           value: result.summary.existingUserRows,
         },
         {
-          label: "Existing employeeNo",
+          label: "已有工号行",
           value: result.summary.existingEmployeeNoRows,
         },
         {
-          label: "Existing role assignments",
+          label: "已有角色绑定",
           value: result.summary.existingRoleAssignmentRows,
         },
         {
-          label: "Reactivation candidates",
+          label: "恢复候选",
           value: result.summary.reactivationCandidateRows,
         },
         {
-          label: "employeeNo DB check",
-          value: result.summary.employeeNoDbConflictCheck,
+          label: "工号冲突检查",
+          value: getEmployeeNoDbConflictCheckLabel(result.summary.employeeNoDbConflictCheck),
         },
       ]}
       tableColumns={userAccountImportDryRunColumns}
@@ -1249,6 +1249,9 @@ export function UserAccountImportDryRunResultView({
     />
   );
 }
+
+const getEmployeeNoDbConflictCheckLabel = (value: string): string =>
+  value === "AVAILABLE" ? "可用" : value === "NOT_AVAILABLE" ? "不可用" : value;
 
 function UserAccountImportApplyStatus({
   eligibility,
@@ -1408,13 +1411,13 @@ export function UserAccountImportApplyConfirmContent({
 
 const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["columns"] = [
   {
-    title: "Row",
+    title: "行号",
     dataIndex: "rowNumber",
     key: "rowNumber",
     width: 72,
   },
   {
-    title: "Safe preview",
+    title: "安全预览",
     key: "parsed",
     width: 360,
     render: (_, row) => (
@@ -1442,13 +1445,14 @@ const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["co
     ),
   },
   {
-    title: "Candidate",
+    title: "候选动作",
     dataIndex: "candidateAction",
     key: "candidateAction",
     width: 190,
+    render: (value: string) => getUserAccountImportCandidateActionLabel(value),
   },
   {
-    title: "Errors",
+    title: "错误",
     dataIndex: "errors",
     key: "errors",
     width: 300,
@@ -1456,7 +1460,7 @@ const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["co
       renderImportDryRunIssueList(toUserAccountImportDisplayIssues(issues), "error"),
   },
   {
-    title: "Warnings",
+    title: "警告",
     dataIndex: "warnings",
     key: "warnings",
     width: 300,
@@ -1473,10 +1477,21 @@ const toUserAccountImportDisplayIssues = (
       ? {
           ...issue,
           message:
-            "employeeNo is already registered as a business identifier; this row cannot create a new pending account.",
+            "该工号已作为业务标识登记，本行不能创建新的待激活账号。",
         }
       : issue,
   );
+
+const getUserAccountImportCandidateActionLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    CREATE_PENDING_USER: "创建待激活账号",
+    REVIEW_EXISTING_USER: "复核已有账号",
+    REACTIVATE_ROLE_REVIEW: "复核角色恢复",
+    SKIP: "跳过",
+  };
+
+  return labels[value] ?? value;
+};
 
 const toValidationError = (message: string | null): ApiError | null =>
   message
@@ -2273,33 +2288,33 @@ function CreateInviteDrawer({
           }}
         >
           <Form.Item
-            label="Email"
+            label="邮箱"
             name="email"
             rules={[
-              { required: true, message: "Enter an email." },
-              { type: "email", message: "Enter a valid email." },
+              { required: true, message: "请输入邮箱。" },
+              { type: "email", message: "请输入有效邮箱。" },
             ]}
           >
             <Input autoComplete="off" />
           </Form.Item>
           <Form.Item
-            label="Name"
+            label="姓名"
             name="name"
-            rules={[{ required: true, message: "Enter a name." }]}
+            rules={[{ required: true, message: "请输入姓名。" }]}
           >
             <Input autoComplete="off" />
           </Form.Item>
           <Form.Item
-            label="Primary department"
+            label="主部门"
             name="departmentId"
-            rules={[{ required: true, message: "Select a department." }]}
+            rules={[{ required: true, message: "请选择部门。" }]}
           >
             <DepartmentSelect
               departmentSelector={departmentSelector}
-              placeholder="Select active department"
+              placeholder="选择启用部门"
             />
           </Form.Item>
-          <Form.Item label="Reason" name="reason">
+          <Form.Item label="原因" name="reason">
             <Input.TextArea maxLength={300} rows={3} />
           </Form.Item>
           <Form.List name="roles">
@@ -2310,27 +2325,27 @@ function CreateInviteDrawer({
                     className="account-inline-card"
                     key={field.key}
                     size="small"
-                    title={`Role ${field.name + 1}`}
+                    title={`角色 ${field.name + 1}`}
                     extra={
                       fields.length > 1 ? (
                         <Button danger size="small" onClick={() => remove(field.name)}>
-                          Remove
+                          移除
                         </Button>
                       ) : null
                     }
                   >
                     <Space className="account-role-form-row" size={12} wrap>
                       <Form.Item
-                        label="Role"
+                        label="角色"
                         name={[field.name, "roleCode"]}
-                        rules={[{ required: true, message: "Select a role." }]}
+                        rules={[{ required: true, message: "请选择角色。" }]}
                       >
                         <Select className="account-form-select" options={roleOptions} />
                       </Form.Item>
                       <Form.Item
-                        label="Scope"
+                        label="授权范围"
                         name={[field.name, "scopeType"]}
-                        rules={[{ required: true, message: "Select a scope." }]}
+                        rules={[{ required: true, message: "请选择授权范围。" }]}
                       >
                         <Select
                           className="account-form-select"
@@ -2346,14 +2361,14 @@ function CreateInviteDrawer({
                         {() =>
                           form.getFieldValue(["roles", field.name, "scopeType"]) === "DEPARTMENT" ? (
                             <Form.Item
-                              label="Scope department"
+                              label="授权部门"
                               name={[field.name, "departmentId"]}
-                              rules={[{ required: true, message: "Select a scope department." }]}
+                              rules={[{ required: true, message: "请选择授权部门。" }]}
                             >
                               <DepartmentSelect
                                 className="account-form-input"
                                 departmentSelector={departmentSelector}
-                                placeholder="Select active department"
+                                placeholder="选择启用部门"
                               />
                             </Form.Item>
                           ) : null
@@ -2363,7 +2378,7 @@ function CreateInviteDrawer({
                   </Card>
                 ))}
                 <Button onClick={() => add({ roleCode: "RESEARCHER", scopeType: "DEPARTMENT" })}>
-                  Add role
+                  添加角色
                 </Button>
               </Space>
             )}

@@ -168,7 +168,7 @@ const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
 export const feeVoucherAttachmentBoundary = {
   title: "费用凭证附件",
   description:
-    "本区块接入后端费用凭证附件 API，绑定当前费用记录，可读取安全 metadata、上传多个文件并通过认证路由下载；权限、范围与脱敏仍以后端为准。",
+    "本区块绑定当前费用记录，可读取费用凭证附件安全摘要、上传多个文件并按权限下载；权限、范围与脱敏仍以后端为准。",
 };
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
@@ -1065,7 +1065,7 @@ function FeeDetailContent({
         description={
           mode === "search-readonly"
             ? "本区域只展示费用详情和可读附件摘要，不提供标记缴费、新增费用或其他写入入口。"
-            : "本区域只展示后端已返回字段与费用凭证附件 metadata；费用写入、附件下载和范围判断均以后端权限为准。"
+            : "本区域只展示后端已返回字段与费用凭证附件安全摘要；费用写入、附件下载和范围判断均以后端权限为准。"
         }
       />
       <Alert
@@ -1573,7 +1573,7 @@ function FeeVoucherAttachmentSection({
             message={mode === "search-readonly" ? "只读附件视图" : "附件上传入口未开放"}
             description={
               mode === "search-readonly"
-                ? "当前入口只展示后端允许读取的费用凭证附件 metadata，下载结果仍由后端权限判断。"
+                ? "当前入口只展示后端允许读取的费用凭证附件安全摘要，下载结果仍由后端权限判断。"
                 : "只有具备费用管理权限并处于对应范围内的用户才显示上传入口；审核用户默认只读。"
             }
           />
@@ -1583,14 +1583,14 @@ function FeeVoucherAttachmentSection({
             showIcon
             type="warning"
             message="等待可读上下文"
-            description="未选择演示用户或当前账号缺少费用可读权限时，不读取费用凭证附件 metadata。"
+            description="未选择演示用户或当前账号缺少费用可读权限时，不读取费用凭证附件安全摘要。"
           />
         ) : (
           <DataState
             loading={attachments.loading}
             error={attachments.error}
             empty={!attachments.loading && !attachments.error && items.length === 0}
-            emptyText="未返回费用凭证附件 metadata"
+            emptyText="未返回费用凭证附件安全摘要"
             onRetry={() => void loadAttachments()}
           >
             <FeeVoucherAttachmentList
@@ -1751,7 +1751,7 @@ function FeeVoucherAttachmentList({
                   type={selectedAttachmentId === attachment.id ? "primary" : "default"}
                   onClick={() => onSelectAttachment(attachment.id)}
                 >
-                  查看 metadata 详情
+                  查看详情摘要
                 </Button>
                 <Button
                   size="small"
@@ -1835,7 +1835,7 @@ function FeeVoucherAttachmentDetailPanel({
       <Space direction="vertical" size={12} className="full-width">
         <div className="attachment-detail-metadata-heading">
           <Space direction="vertical" size={2}>
-            <Typography.Text strong>费用凭证附件 metadata</Typography.Text>
+            <Typography.Text strong>费用凭证附件详情摘要</Typography.Text>
             <Typography.Text type="secondary">
               费用凭证附件详情
             </Typography.Text>
@@ -1849,14 +1849,14 @@ function FeeVoucherAttachmentDetailPanel({
             showIcon
             type="warning"
             message="等待可读上下文"
-            description="未选择演示用户或缺少附件 ID 时，不读取费用凭证附件 detail metadata。"
+            description="未选择演示用户或缺少附件 ID 时，不读取费用凭证附件详情摘要。"
           />
         ) : (
           <DataState
             loading={detail.loading}
             error={detail.error}
             empty={!detail.loading && !detail.error && !detail.data}
-            emptyText="未返回费用凭证附件 detail metadata"
+            emptyText="未返回费用凭证附件详情摘要"
             onRetry={() => void loadDetail()}
           >
             {model ? <FeeVoucherAttachmentDetailContent model={model} /> : null}

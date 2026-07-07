@@ -519,7 +519,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="部门维护"
-          description="需要有效 session 上下文后才会请求部门维护 API。"
+          description="需要有效登录上下文后才会加载部门维护数据。"
         />
         <PermissionHint description="当前没有可用的业务上下文；前端不会发起部门维护请求。" />
       </Space>
@@ -1014,14 +1014,14 @@ export function DepartmentImportDryRunResultView({
   return (
     <ImportDryRunResultShell
       result={result}
-      writeSafetyDescription="no database writes were requested."
+      writeSafetyDescription="预检阶段不会写入部门数据。"
       summaryItems={[
         {
-          label: "Create candidates",
+          label: "创建候选",
           value: result.summary.createCandidates,
         },
         {
-          label: "Existing code rows",
+          label: "已有编码行",
           value: result.summary.existingCodeRows,
         },
       ]}
@@ -1171,8 +1171,7 @@ export function DepartmentImportApplyConfirmContent({
         </Descriptions.Item>
       </Descriptions>
       <Typography.Text type="secondary">
-        The backend re-parses and revalidates the uploaded CSV before writing. Local
-        页面仅展示本次导入的安全摘要。
+        系统会在写入前重新解析并校验上传的 CSV 文件；页面仅展示本次导入的安全摘要。
       </Typography.Text>
     </Space>
   );
@@ -1180,20 +1179,20 @@ export function DepartmentImportApplyConfirmContent({
 
 const departmentImportDryRunColumns: TableProps<DepartmentImportDryRunRow>["columns"] = [
   {
-    title: "Row",
+    title: "行号",
     dataIndex: "rowNumber",
     key: "rowNumber",
     width: 72,
   },
   {
-    title: "Parsed fields",
+    title: "安全预览",
     key: "parsed",
     width: 260,
     render: (_, row) => (
       <Space direction="vertical" size={2}>
-        <Typography.Text>code: {row.parsed.code ?? "-"}</Typography.Text>
-        <Typography.Text>name: {row.parsed.name ?? "-"}</Typography.Text>
-        <Typography.Text>parentCode: {row.parsed.parentCode ?? "-"}</Typography.Text>
+        <Typography.Text>部门编码：{row.parsed.code ?? "-"}</Typography.Text>
+        <Typography.Text>部门名称：{row.parsed.name ?? "-"}</Typography.Text>
+        <Typography.Text>上级部门编码：{row.parsed.parentCode ?? "-"}</Typography.Text>
       </Space>
     ),
   },
@@ -1207,13 +1206,14 @@ const departmentImportDryRunColumns: TableProps<DepartmentImportDryRunRow>["colu
     ),
   },
   {
-    title: "Candidate",
+    title: "候选动作",
     dataIndex: "candidateAction",
     key: "candidateAction",
     width: 152,
+    render: (value: string) => getDepartmentImportCandidateActionLabel(value),
   },
   {
-    title: "Errors",
+    title: "错误",
     dataIndex: "errors",
     key: "errors",
     width: 260,
@@ -1221,7 +1221,7 @@ const departmentImportDryRunColumns: TableProps<DepartmentImportDryRunRow>["colu
       renderImportDryRunIssueList(issues, "error"),
   },
   {
-    title: "Warnings",
+    title: "警告",
     dataIndex: "warnings",
     key: "warnings",
     width: 260,
@@ -1229,6 +1229,16 @@ const departmentImportDryRunColumns: TableProps<DepartmentImportDryRunRow>["colu
       renderImportDryRunIssueList(issues, "warning"),
   },
 ];
+
+const getDepartmentImportCandidateActionLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    CREATE: "创建部门",
+    REVIEW_EXISTING: "复核已有部门",
+    SKIP: "跳过",
+  };
+
+  return labels[value] ?? value;
+};
 
 const toValidationError = (message: string | null): ApiError | null =>
   message
