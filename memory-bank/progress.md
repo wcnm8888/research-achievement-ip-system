@@ -15148,3 +15148,43 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 141 - Latest source build client-facing readiness check
+
+- Status: DONE with remaining deployment/browser freeze gate.
+- Goal:
+  - Determine whether the latest source still contains the screenshot-era
+    client-facing wording, without operating Docker or overwriting the default
+    Web build output.
+- Build evidence:
+  - Ran `corepack pnpm --filter @research-ip/web exec vite build --outDir ../../.local-step141-client-facing-latest-build/dist --emptyOutDir false`.
+  - Build result: PASS.
+  - Latest local evidence build JS: `.local-step141-client-facing-latest-build/dist/assets/index-BuMvpDXh.js`.
+  - Current active `18081` HTML still references `/assets/index-DTUeQ4MR.js`.
+- Text scan evidence:
+  - `.local-step141-client-facing-latest-build/latest-build-text-scan.txt`
+    found zero matches for the key screenshot-era visible strings:
+    `Phase 1 frontend`, `production auth`, `GET /`, `POST /`, `dryRun=true`,
+    `Achievement CSV dry-run`, `Safe preview`, `Failed to fetch`,
+    `Network request failed`, `Custom Reports`, `Secret Authorization`,
+    `local/demo`, `not production`, `raw JSON`, and `batch mutation`.
+  - Remaining scan matches such as `X-Demo-User-Id`, `Candidate`, `Errors`,
+    `Warnings`, `metadata`, `checksum`, `debug`, and `session` are still to be
+    verified by browser screenshots, but source context indicates they are
+    mainly internal header names, variable/type names, CSS class names, audit
+    filter fields, or safety filtering constants rather than ordinary page copy.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AccountManagement DepartmentManagement SecretAuthorization CustomReports Fees SettingsApiIntegrations`: PASS, 11 files / 226 tests.
+- Conclusion:
+  - The latest source/build output is ready for a refreshed demo bundle check.
+  - The freeze blocker is now the stale active `18081` bundle and missing final
+    browser screenshot acceptance, not a proven need for more broad source
+    rewrites.
+- Explicitly not done:
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change in this Step.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

@@ -19051,6 +19051,52 @@
   - No app source, API, Prisma schema, migration, package, lockfile, or config
     change was made.
 
+## 2026-07-07 Step 141 - Latest source build readiness evidence
+
+- Canonical state checked before latest-build inspection:
+  - `git log -1 --oneline` -> `40ea0d8 docs: record active bundle freeze blocker`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+- Build evidence:
+  - Ran `corepack pnpm --filter @research-ip/web exec vite build --outDir ../../.local-step141-client-facing-latest-build/dist --emptyOutDir false`.
+  - Build result: PASS.
+  - Output directory: `.local-step141-client-facing-latest-build/dist`.
+  - Output JS bundle: `.local-step141-client-facing-latest-build/dist/assets/index-BuMvpDXh.js`.
+  - The active `18081` HTML from Step 140 still referenced `/assets/index-DTUeQ4MR.js`, showing the running entry had not yet picked up the latest build.
+- Latest-build text scan:
+  - Evidence file: `.local-step141-client-facing-latest-build/latest-build-text-scan.txt`.
+  - Zero matches in the latest build for `Phase 1 frontend`,
+    `production auth`, `GET /`, `POST /`, `dryRun=true`,
+    `Achievement CSV dry-run`, `Safe preview`, `Failed to fetch`,
+    `Network request failed`, `Custom Reports`, `Secret Authorization`,
+    `local/demo`, `not production`, `raw JSON`, and `batch mutation`.
+  - Remaining string matches (`X-Demo-User-Id`, `Candidate`, `Errors`,
+    `Warnings`, `metadata`, `checksum`, `debug`, `session`) require final
+    browser confirmation but source context indicates they are internal request
+    headers, variable/type names, CSS class names, audit filtering fields, or
+    safety constants rather than ordinary page copy.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AccountManagement DepartmentManagement SecretAuthorization CustomReports Fees SettingsApiIntegrations`: PASS, 11 files / 226 tests.
+- Files updated:
+  - Added `memory-bank/client-facing-latest-build-readiness-step141.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Freeze conclusion:
+  - Latest source/build is ready for refreshed-bundle browser acceptance.
+  - Code freeze remains blocked until the actual demo Web entry is rebuilt or
+    refreshed and real browser screenshots prove the client-facing pages no
+    longer show stale implementation wording.
+- Boundary evidence:
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No Docker operation was performed.
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change was made.
+  - The build output was written only to a new local evidence directory and did
+    not overwrite the default Web output directory.
+
 ## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish evidence
 
 - Scope:
