@@ -27,7 +27,7 @@ import {
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import { sanitizeBusinessTitle } from "./display-text";
-import { downloadCsvExport } from "./export-download";
+import { downloadCsvExport, downloadXlsxExport } from "./export-download";
 import { ImportJobHistoryPanel, type ImportJobHistoryFilters } from "./ImportJobHistoryPanel";
 import {
   ImportDryRunPanelShell,
@@ -59,6 +59,21 @@ type AchievementFilters = {
   status?: AchievementStatusCode;
   type?: AchievementTypeCode;
 };
+
+type AchievementExportField =
+  | "id"
+  | "type"
+  | "title"
+  | "status"
+  | "secretLevel"
+  | "departmentId"
+  | "createdAt"
+  | "updatedAt"
+  | "submittedAt"
+  | "archivedAt"
+  | "voidedAt"
+  | "isRestricted"
+  | "isRedacted";
 
 type AchievementsProps = {
   demoUserId: string | null;
@@ -147,6 +162,9 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
     loading: false,
     error: null,
   });
+  const [exportFields, setExportFields] = useState<AchievementExportField[]>(
+    defaultAchievementExportFields,
+  );
   const [formRequest, setFormRequest] = useState<FormRequest | null>(null);
   const [detailItem, setDetailItem] = useState<AchievementListItem | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -198,9 +216,9 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
     setPageSize(defaultPageSize);
   };
 
-  const exportCsv = () => {
+  const exportLedger = (format: AchievementExportFormat) => {
     setExportState({ loading: true, error: null });
-    void exportAchievementCsv(apiClient, appliedFilters)
+    void exportAchievementLedger(apiClient, appliedFilters, format, exportFields)
       .then(() => setExportState({ loading: false, error: null }))
       .catch((error: unknown) =>
         setExportState({ loading: false, error: normalizeError(error) }),
@@ -420,8 +438,20 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           </Button>
           <Button onClick={resetFilters}>重置</Button>
           <Button onClick={loadAchievements}>刷新</Button>
-          <Button onClick={exportCsv} loading={exportState.loading}>
+          <Select<AchievementExportField[]>
+            mode="multiple"
+            className="achievement-filter-select"
+            placeholder="导出字段"
+            maxTagCount="responsive"
+            options={achievementExportFieldOptions}
+            value={exportFields}
+            onChange={(value) => setExportFields(value.length > 0 ? value : defaultAchievementExportFields)}
+          />
+          <Button onClick={() => exportLedger("csv")} loading={exportState.loading}>
             导出 CSV
+          </Button>
+          <Button onClick={() => exportLedger("xlsx")} loading={exportState.loading}>
+            导出 Excel
           </Button>
         </Space>
       </Card>
@@ -1282,6 +1312,26 @@ const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["co
   },
 ];
 
+const achievementExportFieldOptions: Array<{ label: string; value: AchievementExportField }> = [
+  { label: "ID", value: "id" },
+  { label: "成果类型", value: "type" },
+  { label: "标题", value: "title" },
+  { label: "状态", value: "status" },
+  { label: "密级", value: "secretLevel" },
+  { label: "部门 ID", value: "departmentId" },
+  { label: "创建时间", value: "createdAt" },
+  { label: "更新时间", value: "updatedAt" },
+  { label: "提交时间", value: "submittedAt" },
+  { label: "归档时间", value: "archivedAt" },
+  { label: "作废时间", value: "voidedAt" },
+  { label: "受限标记", value: "isRestricted" },
+  { label: "脱敏标记", value: "isRedacted" },
+];
+
+const defaultAchievementExportFields = achievementExportFieldOptions.map(
+  (option) => option.value,
+);
+
 const renderContributorPreview = (row: AchievementImportDryRunRow) => {
   if (row.parsed.contributors.length === 0) {
     return <Typography.Text type="secondary">无</Typography.Text>;
@@ -1453,13 +1503,46 @@ const fetchAchievementList = async (
 export const exportAchievementCsv = async (
   client: Pick<ApiClient, "downloadBlob">,
   filters: AchievementFilters,
+  fields: readonly AchievementExportField[] = defaultAchievementExportFields,
 ): Promise<void> =>
-  downloadCsvExport(
-    client,
-    "/achievements/export.csv",
-    trimFilters(filters) as ApiQuery,
-    "achievements.csv",
-  );
+  exportAchievementLedger(client, filters, "csv", fields);
+
+export const exportAchievementXlsx = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  filters: AchievementFilters,
+  fields: readonly AchievementExportField[] = defaultAchievementExportFields,
+): Promise<void> =>
+  exportAchievementLedger(client, filters, "xlsx", fields);
+
+export const exportAchievementLedger = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  filters: AchievementFilters,
+  format: AchievementExportFormat,
+  fields: readonly AchievementExportField[] = defaultAchievementExportFields,
+): Promise<void> => {
+  const path = `/achievements/export.${format}`;
+  const fileName = `achievements.${format}`;
+  const query = {
+    ...trimFilters(filters),
+    fields: serializeExportFields(fields),
+  } as ApiQuery;
+
+  if (format === "xlsx") {
+    await downloadXlsxExport(client, path, query, fileName);
+    return;
+  }
+
+  await downloadCsvExport(client, path, query, fileName);
+};
+
+type AchievementExportFormat = "csv" | "xlsx";
+
+export const serializeAchievementExportFields = (
+  fields: readonly AchievementExportField[],
+): string => serializeExportFields(fields);
+
+const serializeExportFields = (fields: readonly string[]): string =>
+  [...new Set(fields)].join(",");
 
 const trimFilters = (filters: AchievementFilters): AchievementFilters => {
   const keyword = filters.keyword?.trim();

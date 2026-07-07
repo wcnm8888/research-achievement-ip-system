@@ -18,6 +18,7 @@ import { UserContext } from "../identity/user-context";
 import { AuditService } from "./audit.service";
 import { AuditAccessDeniedError } from "./domain/audit-errors";
 import {
+  AuditExportEventQueryDto,
   AuditMaskedQueryDto,
   toAuditMaskedQueryInput,
 } from "./dto/audit-query.dto";
@@ -32,6 +33,10 @@ const auditValidationPipe = new ValidationPipe(auditValidationOptions);
 const auditMaskedQueryValidationPipe = new ValidationPipe({
   ...auditValidationOptions,
   expectedType: AuditMaskedQueryDto,
+});
+const auditExportEventQueryValidationPipe = new ValidationPipe({
+  ...auditValidationOptions,
+  expectedType: AuditExportEventQueryDto,
 });
 
 @Controller("audit-logs")
@@ -72,6 +77,19 @@ export class AuditController {
         currentUser,
         toAuditMaskedQueryInput(query),
       );
+    } catch (error) {
+      throw mapAuditServiceError(error);
+    }
+  }
+
+  @Get("export-events")
+  @RequirePermissions(PermissionCode.auditReadMasked)
+  async listExportEvents(
+    @CurrentUser() currentUser: UserContext,
+    @Query(auditExportEventQueryValidationPipe) query: AuditExportEventQueryDto = {},
+  ) {
+    try {
+      return await this.auditService.listExportEvents(currentUser, query);
     } catch (error) {
       throw mapAuditServiceError(error);
     }

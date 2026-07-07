@@ -32,6 +32,7 @@ import {
   downloadFeeVoucherAttachment,
   feeVoucherAttachmentBoundary,
   exportFeeCsv,
+  exportFeeXlsx,
   fetchFeeDetail,
   fetchFeeRecords,
   fetchFeeReviewHistory,
@@ -208,12 +209,35 @@ describe("fee CSV export", () => {
         feeType: "PATENT_ANNUAL",
         payStatus: "OVERDUE",
       },
+      ["payStatus", "id", "amount"],
     );
 
     expect(downloadBlob).toHaveBeenCalledWith("/fees/export.csv", {
       achievementId: "achievement-id",
       feeType: "PATENT_ANNUAL",
       payStatus: "OVERDUE",
+      fields: "payStatus,id,amount",
+    });
+  });
+
+  it("downloads the fee ledger Excel with applied filters only", async () => {
+    const downloadBlob = vi.fn(async () => new Blob(["xlsx"]));
+
+    await exportFeeXlsx(
+      { downloadBlob },
+      {
+        achievementId: " achievement-id ",
+        feeType: "PATENT_ANNUAL",
+        payStatus: "OVERDUE",
+      },
+      ["id", "payStatus"],
+    );
+
+    expect(downloadBlob).toHaveBeenCalledWith("/fees/export.xlsx", {
+      achievementId: "achievement-id",
+      feeType: "PATENT_ANNUAL",
+      payStatus: "OVERDUE",
+      fields: "id,payStatus",
     });
   });
 });

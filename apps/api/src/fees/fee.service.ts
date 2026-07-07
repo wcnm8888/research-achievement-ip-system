@@ -10,7 +10,9 @@ import { SecretLevelCode } from "../authorization/constants/secret-level-code";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
 import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { PrismaService } from "../database/prisma.service";
-import { createCsv } from "../export/csv";
+import { createCsv, CsvColumn } from "../export/csv";
+import { selectExportColumns } from "../export/fields";
+import { createXlsx } from "../export/xlsx";
 import { UserContext } from "../identity/user-context";
 import { WorkflowService } from "../workflow/workflow.service";
 import { WorkflowTransactionClient } from "../workflow/workflow.repository";
@@ -73,6 +75,39 @@ export type FeeWarningSummary = {
   items: FeeWarningRecord[];
 };
 
+type ExportFormat = "CSV" | "XLSX";
+
+type FeeExportDataset = {
+  columns: CsvColumn<FeeRecordRecord>[];
+  rows: FeeRecordRecord[];
+};
+
+const feeExportColumns: readonly CsvColumn<FeeRecordRecord>[] = [
+  { key: "id", header: "ID" },
+  { key: "achievementId", header: "Achievement ID" },
+  { key: "departmentId", header: "Department ID" },
+  { key: "feeType", header: "Fee type" },
+  { key: "fundSource", header: "Fund source" },
+  { key: "amount", header: "Amount" },
+  { key: "dueDate", header: "Due date", value: (row) => toExportDate(row.dueDate) },
+  { key: "paidDate", header: "Paid date", value: (row) => toExportDate(row.paidDate) },
+  { key: "payStatus", header: "Pay status" },
+  { key: "voucherNo", header: "Voucher no" },
+  { key: "reviewStatus", header: "Review status" },
+  {
+    key: "reviewedAt",
+    header: "Reviewed at",
+    value: (row) => toExportDate(row.reviewedAt),
+  },
+  { key: "createdAt", header: "Created at", value: (row) => toExportDate(row.createdAt) },
+  { key: "updatedAt", header: "Updated at", value: (row) => toExportDate(row.updatedAt) },
+  {
+    key: "archivedAt",
+    header: "Archived at",
+    value: (row) => toExportDate(row.archivedAt),
+  },
+];
+
 @Injectable()
 export class FeeService {
   constructor(
@@ -117,41 +152,46 @@ export class FeeService {
     context: UserContext,
     query: FeeQueryDto = {},
   ): Promise<string> {
+    const dataset = await this.buildExportDataset(context, query);
+
+    await this.recordExportEvent(context, dataset, "CSV");
+
+    return createCsv(dataset.columns, dataset.rows);
+  }
+
+  async exportXlsx(
+    context: UserContext,
+    query: FeeQueryDto = {},
+  ): Promise<Buffer> {
+    const dataset = await this.buildExportDataset(context, query);
+
+    await this.recordExportEvent(context, dataset, "XLSX");
+
+    return createXlsx(dataset.columns, dataset.rows, "Fees");
+  }
+
+  private async buildExportDataset(
+    context: UserContext,
+    query: FeeQueryDto,
+  ): Promise<FeeExportDataset> {
     const rows = (
       await this.listFees(context, {
         ...query,
         take: exportRowLimit,
       })
     ).slice(0, exportRowLimit);
-    const csv = createCsv(
-      [
-        { key: "id", header: "ID" },
-        { key: "achievementId", header: "Achievement ID" },
-        { key: "departmentId", header: "Department ID" },
-        { key: "feeType", header: "Fee type" },
-        { key: "fundSource", header: "Fund source" },
-        { key: "amount", header: "Amount" },
-        { key: "dueDate", header: "Due date", value: (row) => toExportDate(row.dueDate) },
-        { key: "paidDate", header: "Paid date", value: (row) => toExportDate(row.paidDate) },
-        { key: "payStatus", header: "Pay status" },
-        { key: "voucherNo", header: "Voucher no" },
-        { key: "reviewStatus", header: "Review status" },
-        {
-          key: "reviewedAt",
-          header: "Reviewed at",
-          value: (row) => toExportDate(row.reviewedAt),
-        },
-        { key: "createdAt", header: "Created at", value: (row) => toExportDate(row.createdAt) },
-        { key: "updatedAt", header: "Updated at", value: (row) => toExportDate(row.updatedAt) },
-        {
-          key: "archivedAt",
-          header: "Archived at",
-          value: (row) => toExportDate(row.archivedAt),
-        },
-      ],
-      rows,
-    );
 
+    return {
+      columns: selectExportColumns(feeExportColumns, query.fields),
+      rows,
+    };
+  }
+
+  private async recordExportEvent(
+    context: UserContext,
+    dataset: FeeExportDataset,
+    format: ExportFormat,
+  ): Promise<void> {
     await this.auditService.recordEvent({
       actor: {
         userId: context.userId,
@@ -163,14 +203,12 @@ export class FeeService {
       },
       oldValue: null,
       newValue: {
-        operation: "EXPORT_CSV",
+        operation: `EXPORT_${format}`,
         exportType: "FEE_LEDGER",
-        rowCount: rows.length,
+        rowCount: dataset.rows.length,
         rowLimit: exportRowLimit,
       },
     });
-
-    return csv;
   }
 
   async getFee(context: UserContext, feeRecordId: string): Promise<FeeRecordRecord> {

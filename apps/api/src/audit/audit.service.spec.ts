@@ -276,4 +276,74 @@ describe("AuditService.listMasked", () => {
       }),
     );
   });
+
+  it("returns only safe export event summaries", async () => {
+    const { service, repository } = createService();
+    vi.mocked(repository.findMany).mockResolvedValueOnce([
+      {
+        ...makeAuditLogRecord(),
+        id: "90000000-0000-4000-8000-000000000002",
+        action: AuditActionCode.configUpdate,
+        newValue: {
+          operation: "EXPORT_XLSX",
+          exportType: "FEE_LEDGER",
+          templateId: "template-001",
+          rowCount: 12,
+          rowLimit: 1000,
+          token: "raw-token",
+          password: "raw-password",
+        },
+      },
+      {
+        ...makeAuditLogRecord(),
+        id: "90000000-0000-4000-8000-000000000003",
+        action: AuditActionCode.configUpdate,
+        newValue: {
+          operation: "CONFIG_UPDATE",
+          exportType: "NOT_EXPORT",
+          rowCount: 1,
+          rowLimit: 1,
+        },
+      },
+    ]);
+
+    const result = await service.listExportEvents(context, { take: 20 });
+
+    expect(repository.findMany).toHaveBeenCalledWith({
+      action: AuditActionCode.configUpdate,
+      take: 20,
+    });
+    expect(result.items).toEqual([
+      {
+        id: "90000000-0000-4000-8000-000000000002",
+        actorUserId: ids.actor,
+        actorDepartmentId: ids.department,
+        operation: "EXPORT_XLSX",
+        exportType: "FEE_LEDGER",
+        templateId: "template-001",
+        rowCount: 12,
+        rowLimit: 1000,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    ]);
+    expect(result.items[0]).not.toHaveProperty("oldValue");
+    expect(result.items[0]).not.toHaveProperty("newValue");
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("raw-token");
+    expect(serialized).not.toContain("raw-password");
+    expect(serialized).not.toContain("cookie");
+    expect(serialized).not.toContain("raw");
+  });
+
+  it("requires masked audit read permission before listing export events", async () => {
+    const { service, repository, readPolicy } = createService();
+    vi.mocked(readPolicy.canReadMaskedAudit).mockReturnValueOnce(
+      denyDecision("missing permission", [PermissionCode.auditReadMasked]),
+    );
+
+    await expect(service.listExportEvents(context, {})).rejects.toBeInstanceOf(
+      AuditAccessDeniedError,
+    );
+    expect(repository.findMany).not.toHaveBeenCalled();
+  });
 });

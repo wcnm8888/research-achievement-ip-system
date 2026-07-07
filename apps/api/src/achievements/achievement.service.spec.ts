@@ -9,6 +9,7 @@ import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory
 import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { SecretAccessPolicyService } from "../authorization/policy/secret-access-policy.service";
 import { PrismaService } from "../database/prisma.service";
+import { ExportFieldSelectionError } from "../export/fields";
 import { UserContext } from "../identity/user-context";
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
@@ -443,6 +444,93 @@ describe("AchievementService.list", () => {
         }),
       }),
     );
+  });
+
+  it("exports a safe achievement ledger XLSX through the readable policy", async () => {
+    const { auditService, repository, service } = createService();
+    repository.list.mockResolvedValueOnce({
+      total: 1,
+      items: [
+        makeListRecord({
+          secretLevel: SecretLevelCode.secret,
+        }),
+      ],
+    });
+
+    const xlsx = await service.exportXlsx(makeContext([PermissionCode.userContextRead]), {
+      keyword: "Paper",
+    });
+    const serialized = xlsx.toString("utf8");
+
+    expect(repository.list).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 1,
+        pageSize: 1000,
+        filters: expect.objectContaining({ keyword: "Paper" }),
+      }),
+    );
+    expect(xlsx.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(serialized).toContain("Secret level");
+    expect(serialized).toContain("Paper draft");
+    expect(serialized).not.toContain("password");
+    expect(serialized).not.toContain("token");
+    expect(serialized).not.toContain("cookie");
+    expect(serialized).not.toContain("raw");
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "EXPORT_XLSX",
+          exportType: "ACHIEVEMENT_LEDGER",
+          rowLimit: 1000,
+        }),
+      }),
+    );
+  });
+
+  it("limits achievement CSV export to requested safe fields in request order", async () => {
+    const { repository, service } = createService();
+    repository.list.mockResolvedValueOnce({
+      total: 1,
+      items: [makeListRecord({ secretLevel: SecretLevelCode.internal })],
+    });
+
+    const csv = await service.exportCsv(makeContext([PermissionCode.userContextRead]), {
+      fields: "status,id,title",
+    });
+
+    expect(csv).toContain("Status,ID,Title\r\nDRAFT,");
+    expect(csv).not.toContain("Secret level");
+    expect(csv).not.toContain("Department ID");
+    expect(csv).not.toContain("password");
+    expect(csv).not.toContain("token");
+  });
+
+  it("limits achievement XLSX export to requested safe fields", async () => {
+    const { repository, service } = createService();
+    repository.list.mockResolvedValueOnce({
+      total: 1,
+      items: [makeListRecord({ secretLevel: SecretLevelCode.internal })],
+    });
+
+    const xlsx = await service.exportXlsx(makeContext([PermissionCode.userContextRead]), {
+      fields: "id,status",
+    });
+    const serialized = xlsx.toString("utf8");
+
+    expect(serialized).toContain("ID");
+    expect(serialized).toContain("Status");
+    expect(serialized).not.toContain("Secret level");
+    expect(serialized).not.toContain("Department ID");
+  });
+
+  it("rejects unsupported achievement export fields", async () => {
+    const { service } = createService();
+
+    await expect(
+      service.exportCsv(makeContext([PermissionCode.userContextRead]), {
+        fields: "id,password",
+      }),
+    ).rejects.toBeInstanceOf(ExportFieldSelectionError);
   });
 });
 

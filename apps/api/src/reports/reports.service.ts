@@ -12,7 +12,9 @@ import {
   AchievementTypeCode,
 } from "../achievements/domain/achievement-domain.types";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
-import { createCsv } from "../export/csv";
+import { createCsv, CsvColumn } from "../export/csv";
+import { createSimplePdf } from "../export/pdf";
+import { createXlsx } from "../export/xlsx";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { UserContext } from "../identity/user-context";
 import { WorkflowTaskStatusCode } from "../workflow/domain/workflow-domain.types";
@@ -91,36 +93,35 @@ export class ReportsService {
     templateId: string,
     options: CustomReportRunOptions = {},
   ): Promise<string> {
-    const report = await this.runTemplate(context, templateId, options);
-    const rows = report.rows.slice(0, exportRowLimit);
-    const csv = createCsv(
-      report.columns.map((column) => ({
-        key: column.key,
-        header: column.label,
-      })),
-      rows,
-    );
+    const dataset = await this.buildTemplateExportDataset(context, templateId, options);
 
-    await this.auditService.recordEvent({
-      actor: {
-        userId: context.userId,
-        departmentId: context.departmentId,
-      },
-      action: AuditActionCode.configUpdate,
-      target: {
-        type: AuditTargetTypeCode.systemConfig,
-      },
-      oldValue: null,
-      newValue: {
-        operation: "EXPORT_CSV",
-        exportType: "CUSTOM_REPORT",
-        templateId: report.metadata.templateId,
-        rowCount: rows.length,
-        rowLimit: exportRowLimit,
-      },
-    });
+    await this.recordTemplateExportEvent(context, dataset, "CSV");
 
-    return csv;
+    return createCsv(dataset.columns, dataset.rows);
+  }
+
+  async exportTemplateXlsx(
+    context: UserContext,
+    templateId: string,
+    options: CustomReportRunOptions = {},
+  ): Promise<Buffer> {
+    const dataset = await this.buildTemplateExportDataset(context, templateId, options);
+
+    await this.recordTemplateExportEvent(context, dataset, "XLSX");
+
+    return createXlsx(dataset.columns, dataset.rows, "Custom Report");
+  }
+
+  async exportTemplatePdf(
+    context: UserContext,
+    templateId: string,
+    options: CustomReportRunOptions = {},
+  ): Promise<Buffer> {
+    const dataset = await this.buildTemplateExportDataset(context, templateId, options);
+
+    await this.recordTemplateExportEvent(context, dataset, "PDF");
+
+    return createSimplePdf("Custom Report Export", dataset.columns, dataset.rows);
   }
 
   private async runAchievementDistribution(
@@ -342,7 +343,57 @@ export class ReportsService {
       throw new CustomReportAccessDeniedError();
     }
   }
+
+  private async buildTemplateExportDataset(
+    context: UserContext,
+    templateId: string,
+    options: CustomReportRunOptions,
+  ): Promise<CustomReportExportDataset> {
+    const report = await this.runTemplate(context, templateId, options);
+
+    return {
+      templateId: report.metadata.templateId,
+      columns: report.columns.map((column) => ({
+        key: column.key,
+        header: column.label,
+      })),
+      rows: report.rows.slice(0, exportRowLimit),
+    };
+  }
+
+  private async recordTemplateExportEvent(
+    context: UserContext,
+    dataset: CustomReportExportDataset,
+    format: ExportFormat,
+  ): Promise<void> {
+    await this.auditService.recordEvent({
+      actor: {
+        userId: context.userId,
+        departmentId: context.departmentId,
+      },
+      action: AuditActionCode.configUpdate,
+      target: {
+        type: AuditTargetTypeCode.systemConfig,
+      },
+      oldValue: null,
+      newValue: {
+        operation: `EXPORT_${format}`,
+        exportType: "CUSTOM_REPORT",
+        templateId: dataset.templateId,
+        rowCount: dataset.rows.length,
+        rowLimit: exportRowLimit,
+      },
+    });
+  }
 }
+
+type ExportFormat = "CSV" | "XLSX" | "PDF";
+
+type CustomReportExportDataset = {
+  templateId: CustomReportTemplateId;
+  columns: CsvColumn<CustomReportRunResult["rows"][number]>[];
+  rows: CustomReportRunResult["rows"];
+};
 
 type NormalizedOptions = Omit<CustomReportRunOptions, "status"> & {
   status?: CustomReportRunFilters["status"];

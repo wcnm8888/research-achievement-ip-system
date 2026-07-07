@@ -38,7 +38,7 @@ import {
   type AuthUser,
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
-import { downloadCsvExport } from "./export-download";
+import { downloadCsvExport, downloadXlsxExport } from "./export-download";
 import type {
   ApproveFeeReviewInput,
   AttachmentDetailMetadata,
@@ -88,6 +88,23 @@ type FeeFilters = {
   feeType?: FeeTypeCode;
   payStatus?: PayStatusCode;
 };
+
+type FeeExportField =
+  | "id"
+  | "achievementId"
+  | "departmentId"
+  | "feeType"
+  | "fundSource"
+  | "amount"
+  | "dueDate"
+  | "paidDate"
+  | "payStatus"
+  | "voucherNo"
+  | "reviewStatus"
+  | "reviewedAt"
+  | "createdAt"
+  | "updatedAt"
+  | "archivedAt";
 
 export type CreateFeeFormValues = {
   achievementId: string;
@@ -230,6 +247,26 @@ const reviewStatusOptions: Array<{ label: string; value: FeeReviewStatusCode }> 
   { label: "已拒绝", value: "REJECTED" },
 ];
 
+const feeExportFieldOptions: Array<{ label: string; value: FeeExportField }> = [
+  { label: "ID", value: "id" },
+  { label: "成果 ID", value: "achievementId" },
+  { label: "部门 ID", value: "departmentId" },
+  { label: "费用类型", value: "feeType" },
+  { label: "经费来源", value: "fundSource" },
+  { label: "金额", value: "amount" },
+  { label: "应缴日期", value: "dueDate" },
+  { label: "缴费日期", value: "paidDate" },
+  { label: "缴费状态", value: "payStatus" },
+  { label: "凭证号", value: "voucherNo" },
+  { label: "审核状态", value: "reviewStatus" },
+  { label: "审核时间", value: "reviewedAt" },
+  { label: "创建时间", value: "createdAt" },
+  { label: "更新时间", value: "updatedAt" },
+  { label: "归档时间", value: "archivedAt" },
+];
+
+const defaultFeeExportFields = feeExportFieldOptions.map((option) => option.value);
+
 const reviewStatusLabels = Object.fromEntries(
   reviewStatusOptions.map((option) => [option.value, option.label]),
 ) as Record<FeeReviewStatusCode, string>;
@@ -290,6 +327,9 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
     loading: false,
     error: null,
   });
+  const [exportFields, setExportFields] = useState<FeeExportField[]>(
+    defaultFeeExportFields,
+  );
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
   const query = useMemo(() => buildFeeQuery(appliedFilters), [appliedFilters]);
   const canManageFees = canManageDepartmentFees(authUser);
@@ -352,9 +392,9 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
     setAppliedFilters({});
   };
 
-  const exportCsv = () => {
+  const exportLedger = (format: FeeExportFormat) => {
     setExportState({ loading: true, error: null });
-    void exportFeeCsv(apiClient, appliedFilters)
+    void exportFeeLedger(apiClient, appliedFilters, format, exportFields)
       .then(() => setExportState({ loading: false, error: null }))
       .catch((error: unknown) =>
         setExportState({ loading: false, error: normalizeError(error) }),
@@ -804,8 +844,20 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           </Button>
           <Button onClick={resetFilters}>重置</Button>
           <Button onClick={loadFees}>刷新</Button>
-          <Button onClick={exportCsv} loading={exportState.loading}>
+          <Select<FeeExportField[]>
+            mode="multiple"
+            className="fee-filter-select"
+            placeholder="导出字段"
+            maxTagCount="responsive"
+            options={feeExportFieldOptions}
+            value={exportFields}
+            onChange={(value) => setExportFields(value.length > 0 ? value : defaultFeeExportFields)}
+          />
+          <Button onClick={() => exportLedger("csv")} loading={exportState.loading}>
             导出 CSV
+          </Button>
+          <Button onClick={() => exportLedger("xlsx")} loading={exportState.loading}>
+            导出 Excel
           </Button>
         </Space>
       </Card>
@@ -2335,13 +2387,44 @@ export const buildFeeQuery = (filters: FeeFilters): FeeQuery => ({
 export const exportFeeCsv = async (
   client: Pick<ApiClient, "downloadBlob">,
   filters: FeeFilters,
+  fields: readonly FeeExportField[] = defaultFeeExportFields,
 ): Promise<void> =>
-  downloadCsvExport(
-    client,
-    "/fees/export.csv",
-    trimFeeFilters(filters) as ApiQuery,
-    "fees.csv",
-  );
+  exportFeeLedger(client, filters, "csv", fields);
+
+export const exportFeeXlsx = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  filters: FeeFilters,
+  fields: readonly FeeExportField[] = defaultFeeExportFields,
+): Promise<void> => exportFeeLedger(client, filters, "xlsx", fields);
+
+export const exportFeeLedger = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  filters: FeeFilters,
+  format: FeeExportFormat,
+  fields: readonly FeeExportField[] = defaultFeeExportFields,
+): Promise<void> => {
+  const path = `/fees/export.${format}`;
+  const fileName = `fees.${format}`;
+  const query = {
+    ...trimFeeFilters(filters),
+    fields: serializeExportFields(fields),
+  } as ApiQuery;
+
+  if (format === "xlsx") {
+    await downloadXlsxExport(client, path, query, fileName);
+    return;
+  }
+
+  await downloadCsvExport(client, path, query, fileName);
+};
+
+type FeeExportFormat = "csv" | "xlsx";
+
+export const serializeFeeExportFields = (fields: readonly FeeExportField[]): string =>
+  serializeExportFields(fields);
+
+const serializeExportFields = (fields: readonly string[]): string =>
+  [...new Set(fields)].join(",");
 
 export const fetchFeeRecords = async (
   client: ApiClient,

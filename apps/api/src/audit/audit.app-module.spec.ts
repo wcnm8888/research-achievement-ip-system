@@ -11,7 +11,11 @@ import { SecretLevelCode } from "../authorization/constants/secret-level-code";
 import { PrismaService } from "../database/prisma.service";
 import { IDENTITY_ADAPTER } from "../identity/identity-adapter.token";
 import { UserContext } from "../identity/user-context";
-import { AuditService, MaskedAuditListResult } from "./audit.service";
+import {
+  AuditExportEventListResult,
+  AuditService,
+  MaskedAuditListResult,
+} from "./audit.service";
 import { AuditActionCode } from "./domain/audit-action-code";
 import { AuditTargetTypeCode } from "./domain/audit-target-type-code";
 
@@ -26,6 +30,7 @@ const ids = {
 type AuditServiceMock = {
   listMasked: ReturnType<typeof vi.fn>;
   exportMaskedCsv: ReturnType<typeof vi.fn>;
+  listExportEvents: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -86,9 +91,26 @@ const makeMaskedAuditResult = (): MaskedAuditListResult => ({
   ],
 });
 
+const makeExportEventResult = (): AuditExportEventListResult => ({
+  items: [
+    {
+      id: "90000000-0000-4000-8000-000000000002",
+      actorUserId: ids.actor,
+      actorDepartmentId: ids.department,
+      operation: "EXPORT_XLSX",
+      exportType: "ACHIEVEMENT_LEDGER",
+      templateId: null,
+      rowCount: 12,
+      rowLimit: 1000,
+      createdAt: new Date("2026-06-21T00:00:00.000Z"),
+    },
+  ],
+});
+
 const createServiceMock = (): AuditServiceMock => ({
   listMasked: vi.fn().mockResolvedValue(makeMaskedAuditResult()),
   exportMaskedCsv: vi.fn().mockResolvedValue("ID,Has old value\r\naudit-1,true\r\n"),
+  listExportEvents: vi.fn().mockResolvedValue(makeExportEventResult()),
 });
 
 describe("Audit routes through AppModule", () => {
@@ -198,6 +220,7 @@ describe("Audit routes through AppModule", () => {
       expect(response.body.message).toBe("Required permissions are missing.");
       expect(service.listMasked).not.toHaveBeenCalled();
       expect(service.exportMaskedCsv).not.toHaveBeenCalled();
+      expect(service.listExportEvents).not.toHaveBeenCalled();
     });
   });
 
@@ -232,6 +255,42 @@ describe("Audit routes through AppModule", () => {
           take: 25,
         }),
       );
+    });
+  });
+
+  it("lists export event summaries without raw audit JSON", async () => {
+    await withAppModule([PermissionCode.auditReadMasked], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/audit-logs/export-events")
+        .set("X-Demo-User-Id", ids.actor)
+        .query({ take: "20" })
+        .expect(200);
+
+      expect(service.listExportEvents).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.actor,
+          departmentId: ids.department,
+        }),
+        { take: 20 },
+      );
+      expect(response.body.items).toEqual([
+        expect.objectContaining({
+          id: "90000000-0000-4000-8000-000000000002",
+          actorUserId: ids.actor,
+          actorDepartmentId: ids.department,
+          operation: "EXPORT_XLSX",
+          exportType: "ACHIEVEMENT_LEDGER",
+          rowCount: 12,
+          rowLimit: 1000,
+        }),
+      ]);
+      expect(response.body.items[0]).not.toHaveProperty("oldValue");
+      expect(response.body.items[0]).not.toHaveProperty("newValue");
+      const serialized = JSON.stringify(response.body);
+      expect(serialized).not.toContain("token");
+      expect(serialized).not.toContain("password");
+      expect(serialized).not.toContain("cookie");
+      expect(serialized).not.toContain("raw");
     });
   });
 

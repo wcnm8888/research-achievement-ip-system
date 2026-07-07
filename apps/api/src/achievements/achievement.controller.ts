@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   ConflictException,
   Controller,
   ForbiddenException,
@@ -12,6 +13,8 @@ import {
   Patch,
   Post,
   Query,
+  Res,
+  StreamableFile,
   UnprocessableEntityException,
   UseGuards,
   UsePipes,
@@ -26,6 +29,7 @@ import {
 import { PermissionGuard } from "../authorization/guards/permission.guard";
 import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import { UserContext } from "../identity/user-context";
+import { ExportFieldSelectionError } from "../export/fields";
 import { AchievementService } from "./achievement.service";
 import {
   AchievementAccessDeniedError,
@@ -64,6 +68,10 @@ const voidAchievementValidationPipe = new ValidationPipe({
   ...achievementValidationOptions,
   expectedType: VoidAchievementDto,
 });
+
+type HeaderResponse = {
+  setHeader(name: string, value: string | number): void;
+};
 
 @Controller("achievements")
 @UseGuards(UserContextGuard, PermissionGuard)
@@ -110,6 +118,23 @@ export class AchievementController {
   ) {
     try {
       return await this.achievementService.exportCsv(currentUser, query);
+    } catch (error) {
+      throw mapAchievementServiceError(error);
+    }
+  }
+
+  @Get("export.xlsx")
+  @RequirePermissions(PermissionCode.userContextRead)
+  async exportXlsx(
+    @CurrentUser() currentUser: UserContext,
+    @Query(achievementListQueryValidationPipe) query: AchievementListQueryDto,
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ): Promise<StreamableFile> {
+    try {
+      const body = await this.achievementService.exportXlsx(currentUser, query);
+      setDownloadHeaders(response, "achievements.xlsx", body);
+
+      return new StreamableFile(body);
     } catch (error) {
       throw mapAchievementServiceError(error);
     }
@@ -187,6 +212,10 @@ export class AchievementController {
 }
 
 const mapAchievementServiceError = (error: unknown): Error => {
+  if (error instanceof ExportFieldSelectionError) {
+    return new BadRequestException("unsupported export fields");
+  }
+
   if (
     error instanceof AchievementPermissionDeniedError ||
     error instanceof AchievementAccessDeniedError
@@ -213,4 +242,17 @@ const mapAchievementServiceError = (error: unknown): Error => {
   }
 
   return error instanceof Error ? error : new Error("Unknown achievement service error.");
+};
+
+const setDownloadHeaders = (
+  response: HeaderResponse,
+  fileName: string,
+  body: Buffer,
+): void => {
+  response.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  response.setHeader("Content-Length", body.byteLength);
+  response.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 };

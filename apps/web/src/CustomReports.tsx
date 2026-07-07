@@ -23,7 +23,11 @@ import {
   type ApiQuery,
 } from "./api-client";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
-import { downloadCsvExport } from "./export-download";
+import {
+  downloadCsvExport,
+  downloadPdfExport,
+  downloadXlsxExport,
+} from "./export-download";
 import type {
   CustomReportColumn,
   CustomReportRow,
@@ -49,6 +53,8 @@ type CustomReportsProps = {
   apiClient?: CustomReportsClient;
 };
 
+type CustomReportExportFormat = "csv" | "xlsx" | "pdf";
+
 type CustomReportsViewProps = {
   templates: Loadable<CustomReportTemplate[]>;
   report: Loadable<CustomReportRunResponse>;
@@ -60,7 +66,9 @@ type CustomReportsViewProps = {
     value: CustomReportRunQuery[K] | undefined,
   ) => void;
   onRun?: () => void;
-  onExport?: () => void;
+  onExportCsv?: () => void;
+  onExportXlsx?: () => void;
+  onExportPdf?: () => void;
   onReloadTemplates?: () => void;
   exporting?: boolean;
   exportError?: ApiError | null;
@@ -224,17 +232,18 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       );
   }, [demoUserId, filters, reportsClient, selectedTemplateId]);
 
-  const exportReport = useCallback(() => {
+  const exportReport = useCallback((format: CustomReportExportFormat) => {
     if (!hasDemoUser(demoUserId) || !selectedTemplateId) {
       return;
     }
 
     setExportState({ loading: true, error: null });
-    void exportCustomReportCsvForDemoUser(
+    void exportCustomReportForDemoUser(
       reportsClient,
       demoUserId,
       selectedTemplateId,
       buildCustomReportRunQuery(selectedTemplateId, filters),
+      format,
     )
       .then(() => setExportState({ loading: false, error: null }))
       .catch((error: unknown) =>
@@ -269,7 +278,9 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       onTemplateChange={changeTemplate}
       onFilterChange={changeFilter}
       onRun={runReport}
-      onExport={exportReport}
+      onExportCsv={() => exportReport("csv")}
+      onExportXlsx={() => exportReport("xlsx")}
+      onExportPdf={() => exportReport("pdf")}
       onReloadTemplates={loadTemplates}
       exporting={exportState.loading}
       exportError={exportState.error}
@@ -307,16 +318,53 @@ export const exportCustomReportCsvForDemoUser = async (
   templateId: string,
   query: CustomReportRunQuery,
 ): Promise<void> => {
+  await exportCustomReportForDemoUser(client, demoUserId, templateId, query, "csv");
+};
+
+export const exportCustomReportXlsxForDemoUser = async (
+  client: CustomReportsClient,
+  demoUserId: string | null,
+  templateId: string,
+  query: CustomReportRunQuery,
+): Promise<void> => {
+  await exportCustomReportForDemoUser(client, demoUserId, templateId, query, "xlsx");
+};
+
+export const exportCustomReportPdfForDemoUser = async (
+  client: CustomReportsClient,
+  demoUserId: string | null,
+  templateId: string,
+  query: CustomReportRunQuery,
+): Promise<void> => {
+  await exportCustomReportForDemoUser(client, demoUserId, templateId, query, "pdf");
+};
+
+export const exportCustomReportForDemoUser = async (
+  client: CustomReportsClient,
+  demoUserId: string | null,
+  templateId: string,
+  query: CustomReportRunQuery,
+  format: CustomReportExportFormat,
+): Promise<void> => {
   if (!hasDemoUser(demoUserId)) {
     return;
   }
 
-  await downloadCsvExport(
-    client,
-    `/reports/templates/${encodeURIComponent(templateId)}/export.csv`,
-    query as ApiQuery,
-    `${templateId}.csv`,
-  );
+  const encodedTemplateId = encodeURIComponent(templateId);
+  const exportPath = `/reports/templates/${encodedTemplateId}/export.${format}`;
+  const fileName = `${templateId}.${format}`;
+
+  if (format === "xlsx") {
+    await downloadXlsxExport(client, exportPath, query as ApiQuery, fileName);
+    return;
+  }
+
+  if (format === "pdf") {
+    await downloadPdfExport(client, exportPath, query as ApiQuery, fileName);
+    return;
+  }
+
+  await downloadCsvExport(client, exportPath, query as ApiQuery, fileName);
 };
 
 export const buildCustomReportRunQuery = (
@@ -397,7 +445,9 @@ export function CustomReportsView({
   onTemplateChange,
   onFilterChange,
   onRun,
-  onExport,
+  onExportCsv,
+  onExportXlsx,
+  onExportPdf,
   onReloadTemplates,
   exporting = false,
   exportError = null,
@@ -423,8 +473,14 @@ export function CustomReportsView({
             <Button type="primary" onClick={onRun} loading={report.loading} disabled={!selectedTemplateId}>
               生成报表
             </Button>
-            <Button onClick={onExport} loading={exporting} disabled={!selectedTemplateId}>
+            <Button onClick={onExportCsv} loading={exporting} disabled={!selectedTemplateId}>
               导出 CSV
+            </Button>
+            <Button onClick={onExportXlsx} loading={exporting} disabled={!selectedTemplateId}>
+              导出 Excel
+            </Button>
+            <Button onClick={onExportPdf} loading={exporting} disabled={!selectedTemplateId}>
+              导出 PDF
             </Button>
           </Space>
         }

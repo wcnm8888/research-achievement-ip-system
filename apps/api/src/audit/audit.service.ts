@@ -11,10 +11,26 @@ import { AuditJsonValue, CreateAuditEventInput } from "./domain/audit-event.type
 import { toAuditLogLike } from "./domain/audit-prisma.mapper";
 import { AuditLogRecord } from "./domain/audit-repository.types";
 import { AuditTargetTypeCode } from "./domain/audit-target-type-code";
-import { AuditMaskedQueryInput } from "./dto/audit-query.dto";
+import { AuditExportEventQueryInput, AuditMaskedQueryInput } from "./dto/audit-query.dto";
 
 export type MaskedAuditListResult = {
   items: MaskedAuditLog[];
+};
+
+export type AuditExportEventSummary = {
+  id: string;
+  actorUserId: string | null;
+  actorDepartmentId: string | null;
+  operation: string;
+  exportType: string | null;
+  templateId: string | null;
+  rowCount: number | null;
+  rowLimit: number | null;
+  createdAt: Date | string;
+};
+
+export type AuditExportEventListResult = {
+  items: AuditExportEventSummary[];
 };
 
 const auditSummaryScalarKeys = new Set([
@@ -139,6 +155,27 @@ export class AuditService {
     return csv;
   }
 
+  async listExportEvents(
+    context: UserContext | null | undefined,
+    query: AuditExportEventQueryInput = {},
+  ): Promise<AuditExportEventListResult> {
+    const decision = this.auditReadPolicy.canReadMaskedAudit(context);
+    if (decision.effect !== "ALLOW") {
+      throw new AuditAccessDeniedError(decision.reason);
+    }
+
+    const records = await this.auditRepository.findMany({
+      action: AuditActionCode.configUpdate,
+      take: query.take ?? 50,
+    });
+
+    return {
+      items: records
+        .map(toExportEventSummary)
+        .filter((item): item is AuditExportEventSummary => item !== null),
+    };
+  }
+
   private sanitizeEventInput(input: CreateAuditEventInput): CreateAuditEventInput {
     return {
       ...input,
@@ -193,3 +230,35 @@ const toExportDate = (value: Date | string): string =>
 
 const hasMaskedValue = (value: unknown): boolean =>
   value !== null && value !== undefined;
+
+const toExportEventSummary = (record: AuditLogRecord): AuditExportEventSummary | null => {
+  const newValue = asRecord(record.newValue);
+  const operation = readString(newValue.operation);
+
+  if (!operation?.startsWith("EXPORT_")) {
+    return null;
+  }
+
+  return {
+    id: record.id,
+    actorUserId: record.actorUserId,
+    actorDepartmentId: record.actorDepartmentId,
+    operation,
+    exportType: readString(newValue.exportType),
+    templateId: readString(newValue.templateId),
+    rowCount: readNumber(newValue.rowCount),
+    rowLimit: readNumber(newValue.rowLimit),
+    createdAt: record.createdAt,
+  };
+};
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const readString = (value: unknown): string | null =>
+  typeof value === "string" ? value : null;
+
+const readNumber = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;

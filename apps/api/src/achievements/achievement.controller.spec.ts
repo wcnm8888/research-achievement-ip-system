@@ -7,6 +7,7 @@ import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
 import { PrismaService } from "../database/prisma.service";
+import { ExportFieldSelectionError } from "../export/fields";
 import { UserContext } from "../identity/user-context";
 import { AchievementService } from "./achievement.service";
 import { AchievementsModule } from "./achievements.module";
@@ -269,6 +270,7 @@ describe("AchievementController HTTP", () => {
           status: AchievementStatusCode.draft,
           type: AchievementTypeCode.paper,
           keyword: "Paper",
+          fields: "id,title,status",
         })
         .set("X-Demo-User-Id", ids.user)
         .expect(200);
@@ -280,8 +282,23 @@ describe("AchievementController HTTP", () => {
         status: AchievementStatusCode.draft,
         type: AchievementTypeCode.paper,
         keyword: "Paper",
+        fields: "id,title,status",
       }));
       expect(service.getDetail).not.toHaveBeenCalled();
+    });
+  });
+
+  it("maps unsupported achievement export fields to 400", async () => {
+    await withTestApp([PermissionCode.userContextRead], async (app, service) => {
+      service.exportCsv.mockRejectedValueOnce(new ExportFieldSelectionError(["password"]));
+
+      const response = await request(app.getHttpServer() as Server)
+        .get("/achievements/export.csv")
+        .set("X-Demo-User-Id", ids.user)
+        .query({ fields: "id,password" })
+        .expect(400);
+
+      expect(response.body.message).toBe("unsupported export fields");
     });
   });
 

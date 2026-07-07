@@ -16,7 +16,9 @@ import {
   isRestrictedSecretLevel,
 } from "../authorization/policy/secret-access-policy.service";
 import { PrismaService } from "../database/prisma.service";
-import { createCsv } from "../export/csv";
+import { createCsv, CsvColumn } from "../export/csv";
+import { selectExportColumns } from "../export/fields";
+import { createXlsx } from "../export/xlsx";
 import { UserContext } from "../identity/user-context";
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
@@ -77,6 +79,41 @@ import { UpdateAchievementDto } from "./dto/update-achievement.dto";
 
 const exportRowLimit = 1000;
 
+type ExportFormat = "CSV" | "XLSX";
+
+type AchievementExportDataset = {
+  columns: CsvColumn<AchievementListItem>[];
+  rows: AchievementListItem[];
+};
+
+const achievementExportColumns: readonly CsvColumn<AchievementListItem>[] = [
+  { key: "id", header: "ID" },
+  { key: "type", header: "Type" },
+  { key: "title", header: "Title" },
+  { key: "status", header: "Status" },
+  { key: "secretLevel", header: "Secret level" },
+  { key: "departmentId", header: "Department ID" },
+  { key: "createdAt", header: "Created at", value: (row) => toExportDate(row.createdAt) },
+  { key: "updatedAt", header: "Updated at", value: (row) => toExportDate(row.updatedAt) },
+  {
+    key: "submittedAt",
+    header: "Submitted at",
+    value: (row) => toExportDate(row.submittedAt),
+  },
+  {
+    key: "archivedAt",
+    header: "Archived at",
+    value: (row) => toExportDate(row.archivedAt),
+  },
+  {
+    key: "voidedAt",
+    header: "Voided at",
+    value: (row) => toExportDate(row.voidedAt),
+  },
+  { key: "isRestricted", header: "Restricted" },
+  { key: "isRedacted", header: "Redacted" },
+];
+
 @Injectable()
 export class AchievementService {
   constructor(
@@ -134,43 +171,46 @@ export class AchievementService {
     context: UserContext,
     query: AchievementListQueryDto = {},
   ): Promise<string> {
+    const dataset = await this.buildExportDataset(context, query);
+
+    await this.recordExportEvent(context, dataset, "CSV");
+
+    return createCsv(dataset.columns, dataset.rows);
+  }
+
+  async exportXlsx(
+    context: UserContext,
+    query: AchievementListQueryDto = {},
+  ): Promise<Buffer> {
+    const dataset = await this.buildExportDataset(context, query);
+
+    await this.recordExportEvent(context, dataset, "XLSX");
+
+    return createXlsx(dataset.columns, dataset.rows, "Achievements");
+  }
+
+  private async buildExportDataset(
+    context: UserContext,
+    query: AchievementListQueryDto,
+  ): Promise<AchievementExportDataset> {
     const result = await this.list(context, {
       ...query,
       page: 1,
       pageSize: exportRowLimit,
     });
     const rows = result.items.slice(0, exportRowLimit);
-    const csv = createCsv(
-      [
-        { key: "id", header: "ID" },
-        { key: "type", header: "Type" },
-        { key: "title", header: "Title" },
-        { key: "status", header: "Status" },
-        { key: "secretLevel", header: "Secret level" },
-        { key: "departmentId", header: "Department ID" },
-        { key: "createdAt", header: "Created at", value: (row) => toExportDate(row.createdAt) },
-        { key: "updatedAt", header: "Updated at", value: (row) => toExportDate(row.updatedAt) },
-        {
-          key: "submittedAt",
-          header: "Submitted at",
-          value: (row) => toExportDate(row.submittedAt),
-        },
-        {
-          key: "archivedAt",
-          header: "Archived at",
-          value: (row) => toExportDate(row.archivedAt),
-        },
-        {
-          key: "voidedAt",
-          header: "Voided at",
-          value: (row) => toExportDate(row.voidedAt),
-        },
-        { key: "isRestricted", header: "Restricted" },
-        { key: "isRedacted", header: "Redacted" },
-      ],
-      rows,
-    );
 
+    return {
+      columns: selectExportColumns(achievementExportColumns, query.fields),
+      rows,
+    };
+  }
+
+  private async recordExportEvent(
+    context: UserContext,
+    dataset: AchievementExportDataset,
+    format: ExportFormat,
+  ): Promise<void> {
     await this.auditService.recordEvent({
       actor: {
         userId: context.userId,
@@ -182,14 +222,12 @@ export class AchievementService {
       },
       oldValue: null,
       newValue: {
-        operation: "EXPORT_CSV",
+        operation: `EXPORT_${format}`,
         exportType: "ACHIEVEMENT_LEDGER",
-        rowCount: rows.length,
+        rowCount: dataset.rows.length,
         rowLimit: exportRowLimit,
       },
     });
-
-    return csv;
   }
 
   async createDraft(

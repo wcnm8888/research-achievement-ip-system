@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from "class-validator";
+import { IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from "class-validator";
 import { FeeTypeCode, PayStatusCode } from "../domain/fee-domain.types";
 
 export class FeeQueryDto {
@@ -31,6 +31,11 @@ export class FeeQueryDto {
   @Type(() => Boolean)
   @IsBoolean()
   includeArchived?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  fields?: string;
 
   @IsOptional()
   @Type(() => Number)

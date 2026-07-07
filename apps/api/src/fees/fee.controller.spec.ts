@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { RoleCode } from "../authorization/constants/role-code";
 import { ScopeType } from "../authorization/constants/scope-type";
+import { ExportFieldSelectionError } from "../export/fields";
 import { IDENTITY_ADAPTER } from "../identity/identity-adapter.token";
 import { UserContext } from "../identity/user-context";
 import { PrismaService } from "../database/prisma.service";
@@ -323,6 +324,7 @@ describe("FeeController HTTP", () => {
           achievementId: ids.achievement,
           feeType: FeeTypeCode.patentAnnual,
           payStatus: PayStatusCode.pending,
+          fields: "id,amount,payStatus",
         })
         .expect(200);
 
@@ -338,9 +340,24 @@ describe("FeeController HTTP", () => {
           achievementId: ids.achievement,
           feeType: FeeTypeCode.patentAnnual,
           payStatus: PayStatusCode.pending,
+          fields: "id,amount,payStatus",
         }),
       );
       expect(service.getFee).not.toHaveBeenCalled();
+    });
+  });
+
+  it("maps unsupported fee export fields to 400", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
+      service.exportCsv.mockRejectedValueOnce(new ExportFieldSelectionError(["createdById"]));
+
+      const response = await request(app.getHttpServer() as Server)
+        .get("/fees/export.csv")
+        .set("X-Demo-User-Id", ids.user)
+        .query({ fields: "id,createdById" })
+        .expect(400);
+
+      expect(response.body.message).toBe("unsupported export fields");
     });
   });
 

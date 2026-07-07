@@ -11,6 +11,8 @@ import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./comp
 import { downloadCsvExport } from "./export-download";
 import type {
   AuditActionCode,
+  AuditExportEventListResult,
+  AuditExportEventSummary,
   AuditLogListResult,
   AuditLogQuery,
   AuditTargetTypeCode,
@@ -133,6 +135,8 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
   const [draftFilters, setDraftFilters] = useState<AuditLogFilters>(defaultAuditFilters);
   const [appliedFilters, setAppliedFilters] = useState<AuditLogFilters>(defaultAuditFilters);
   const [auditState, setAuditState] = useState<Loadable<AuditLogListResult>>(emptyLoadable);
+  const [exportEventState, setExportEventState] =
+    useState<Loadable<AuditExportEventListResult>>(emptyLoadable);
   const [exportState, setExportState] = useState<{ loading: boolean; error: ApiError | null }>({
     loading: false,
     error: null,
@@ -163,9 +167,28 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
       );
   }, [apiClient, demoUserId, queryResult]);
 
+  const loadExportEvents = useCallback(() => {
+    if (!hasDemoUser(demoUserId)) {
+      setExportEventState(emptyLoadable);
+      return;
+    }
+
+    setExportEventState({ loading: true, data: null, error: null });
+    void fetchAuditExportEvents(apiClient, { take: 20 })
+      .then((data) => setExportEventState({ loading: false, data, error: null }))
+      .catch((error: unknown) =>
+        setExportEventState({
+          loading: false,
+          data: null,
+          error: mapAuditLogErrorToDisplay(normalizeError(error)),
+        }),
+      );
+  }, [apiClient, demoUserId]);
+
   useEffect(() => {
     loadAuditLogs();
-  }, [loadAuditLogs]);
+    loadExportEvents();
+  }, [loadAuditLogs, loadExportEvents]);
 
   const applyFilters = () => {
     setAppliedFilters(trimAuditLogFilters(draftFilters));
@@ -210,6 +233,12 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
 
   const stateKind = getAuditLogListState(auditState.loading, auditState.error, auditState.data);
   const items = auditState.data?.items ?? [];
+  const exportEvents = exportEventState.data?.items ?? [];
+  const exportEventStateKind = getAuditLogListState(
+    exportEventState.loading,
+    exportEventState.error,
+    exportEventState.data,
+  );
   const filterSummary = buildAuditLogFilterSummary(appliedFilters);
 
   return (
@@ -219,7 +248,13 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
         description="只读展示经脱敏处理的审计列表，权限和范围由系统统一控制。"
         extra={
           <Space size={8} wrap>
-            <Button onClick={loadAuditLogs} loading={auditState.loading}>
+            <Button
+              onClick={() => {
+                loadAuditLogs();
+                loadExportEvents();
+              }}
+              loading={auditState.loading || exportEventState.loading}
+            >
               刷新
             </Button>
             <Button onClick={exportCsv} loading={exportState.loading}>
@@ -310,6 +345,31 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
             description={queryResult.error.detail}
           />
         ) : null}
+      </Card>
+
+      <Card
+        className="shell-card"
+        title="最近导出记录"
+        extra={
+          <Space size={8} wrap>
+            <Tag color={exportEventStateKind === "ready" ? "green" : "default"}>
+              {exportEvents.length} 条
+            </Tag>
+            <Button onClick={loadExportEvents} loading={exportEventState.loading}>
+              刷新
+            </Button>
+          </Space>
+        }
+      >
+        <DataState
+          loading={exportEventStateKind === "loading"}
+          error={exportEventState.error}
+          empty={exportEventStateKind === "empty"}
+          emptyText="暂无导出记录"
+          onRetry={loadExportEvents}
+        >
+          <ExportEventList items={exportEvents} />
+        </DataState>
       </Card>
 
       <Card
@@ -409,6 +469,23 @@ export const fetchAuditLogs = async (
   return { items };
 };
 
+export const fetchAuditExportEvents = async (
+  client: ApiClient,
+  query: Pick<AuditLogQuery, "take"> = { take: 20 },
+): Promise<AuditExportEventListResult> => {
+  const result = await client.get<Partial<AuditExportEventListResult>>(
+    "/audit-logs/export-events",
+    query,
+  );
+  const items = Array.isArray(result.items)
+    ? result.items
+        .map(toAuditExportEvent)
+        .filter((item): item is AuditExportEventSummary => item !== null)
+    : [];
+
+  return { items };
+};
+
 export const loadAuditLogsForDemoUser = async (
   client: ApiClient,
   demoUserId: string | null,
@@ -460,7 +537,7 @@ export const exportAuditLogsCsv = async (
 export const getAuditLogListState = (
   loading: boolean,
   error: ApiError | null,
-  result: AuditLogListResult | null,
+  result: { items: readonly unknown[] } | null,
 ): AuditLogListStateKind => {
   if (loading) {
     return "loading";
@@ -593,6 +670,30 @@ const AuditLogList = ({ items }: { items: MaskedAuditLog[] }) => (
   </div>
 );
 
+const ExportEventList = ({ items }: { items: AuditExportEventSummary[] }) => (
+  <div className="audit-log-list">
+    {items.map((item) => (
+      <article className="audit-log-card" key={item.id}>
+        <div className="audit-log-main">
+          <Space size={8} wrap>
+            <Tag color="green">{item.exportType ?? "UNKNOWN_EXPORT"}</Tag>
+            <Tag>{item.operation}</Tag>
+          </Space>
+          <Typography.Title level={5}>{item.id}</Typography.Title>
+          <div className="audit-meta-grid">
+            <MetaLine label="操作人" value={item.actorUserId ?? "未返回"} />
+            <MetaLine label="部门" value={item.actorDepartmentId ?? "未返回"} />
+            <MetaLine label="模板" value={item.templateId ?? "无"} />
+            <MetaLine label="行数" value={formatCount(item.rowCount)} />
+            <MetaLine label="上限" value={formatCount(item.rowLimit)} />
+            <MetaLine label="时间" value={formatDateTime(item.createdAt)} />
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+);
+
 const AuditLogCard = ({ log }: { log: MaskedAuditLog }) => {
   const display = buildAuditDisplayModel(log);
 
@@ -699,6 +800,33 @@ const toMaskedAuditLog = (value: unknown): MaskedAuditLog | null => {
   };
 };
 
+const toAuditExportEvent = (value: unknown): AuditExportEventSummary | null => {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const id = readString(record.id);
+  const operation = readString(record.operation);
+  const createdAt = readString(record.createdAt);
+
+  if (!id || !operation?.startsWith("EXPORT_") || !createdAt) {
+    return null;
+  }
+
+  return {
+    id,
+    operation,
+    createdAt,
+    actorUserId: readNullableString(record.actorUserId) ?? null,
+    actorDepartmentId: readNullableString(record.actorDepartmentId) ?? null,
+    exportType: readNullableString(record.exportType) ?? null,
+    templateId: readNullableString(record.templateId) ?? null,
+    rowCount: readNullableNumber(record.rowCount),
+    rowLimit: readNullableNumber(record.rowLimit),
+  };
+};
+
 const sanitizeMaskedValue = (value: unknown, key: string | null = null): unknown => {
   if (value === null || value === undefined) {
     return "未返回";
@@ -799,6 +927,12 @@ const readNullableString = (value: unknown): string | null | undefined => {
 
   return readOptionalString(value);
 };
+
+const readNullableNumber = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+
+const formatCount = (value: number | null | undefined): string =>
+  typeof value === "number" ? String(value) : "未返回";
 
 const formatDateTime = (value: string | null | undefined): string => {
   if (!value) {

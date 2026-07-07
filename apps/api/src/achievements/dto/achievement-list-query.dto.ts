@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsEnum, IsInt, IsOptional, IsString, Length, Max, Min } from "class-validator";
+import { IsEnum, IsInt, IsOptional, IsString, Length, Max, MaxLength, Min } from "class-validator";
 import {
   AchievementStatusCode,
   AchievementTypeCode,
@@ -18,6 +18,11 @@ export class AchievementListQueryDto {
   @IsString()
   @Length(1, 120)
   keyword?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  fields?: string;
 
   @IsOptional()
   @Type(() => Number)

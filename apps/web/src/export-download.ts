@@ -6,8 +6,36 @@ export const downloadCsvExport = async (
   query: ApiQuery | undefined,
   fileName: string,
 ): Promise<void> => {
+  await downloadFileExport(client, path, query, fileName, "CSV");
+};
+
+export const downloadXlsxExport = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  path: string,
+  query: ApiQuery | undefined,
+  fileName: string,
+): Promise<void> => {
+  await downloadFileExport(client, path, query, fileName, "Excel");
+};
+
+export const downloadPdfExport = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  path: string,
+  query: ApiQuery | undefined,
+  fileName: string,
+): Promise<void> => {
+  await downloadFileExport(client, path, query, fileName, "PDF");
+};
+
+const downloadFileExport = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  path: string,
+  query: ApiQuery | undefined,
+  fileName: string,
+  label: string,
+): Promise<void> => {
   if (!client.downloadBlob) {
-    throw new Error("CSV export requires blob API client support.");
+    throw new Error(`${label} export requires blob API client support.`);
   }
 
   const blob = await client.downloadBlob(path, query);

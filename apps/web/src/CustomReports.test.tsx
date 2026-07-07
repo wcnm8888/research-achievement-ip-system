@@ -6,6 +6,8 @@ import {
   CustomReports,
   CustomReportsView,
   exportCustomReportCsvForDemoUser,
+  exportCustomReportPdfForDemoUser,
+  exportCustomReportXlsxForDemoUser,
   getDefaultCustomReportTemplateId,
   loadCustomReportTemplatesForDemoUser,
   mapCustomReportErrorToDisplay,
@@ -192,6 +194,34 @@ describe("CustomReports request boundaries", () => {
       },
     );
   });
+
+  it("exports custom reports through Excel and PDF endpoints with current filters", async () => {
+    const client = makeClient();
+
+    await exportCustomReportXlsxForDemoUser(client, "demo-user-id", "achievement-trend", {
+      dateFrom: "2026-01-01",
+      groupBy: "month",
+    });
+    await exportCustomReportPdfForDemoUser(client, "demo-user-id", "achievement-trend", {
+      dateFrom: "2026-01-01",
+      groupBy: "month",
+    });
+
+    expect(client.downloadBlob).toHaveBeenCalledWith(
+      "/reports/templates/achievement-trend/export.xlsx",
+      {
+        dateFrom: "2026-01-01",
+        groupBy: "month",
+      },
+    );
+    expect(client.downloadBlob).toHaveBeenCalledWith(
+      "/reports/templates/achievement-trend/export.pdf",
+      {
+        dateFrom: "2026-01-01",
+        groupBy: "month",
+      },
+    );
+  });
 });
 
 describe("CustomReportsView display states", () => {
@@ -213,6 +243,8 @@ describe("CustomReportsView display states", () => {
     expect(html).toContain("achievement-distribution");
     expect(html).toContain("报表模板");
     expect(html).toContain("导出 CSV");
+    expect(html).toContain("导出 Excel");
+    expect(html).toContain("导出 PDF");
     expect(html).toContain("汇总指标");
     expect(html).toContain("Department code");
     expect(html).toContain("BIO");

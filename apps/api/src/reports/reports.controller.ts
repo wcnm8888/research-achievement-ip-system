@@ -7,6 +7,8 @@ import {
   NotFoundException,
   Param,
   Query,
+  Res,
+  StreamableFile,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -38,6 +40,10 @@ const customReportRunQueryValidationPipe = new ValidationPipe({
   ...reportsValidationOptions,
   expectedType: CustomReportRunQueryDto,
 });
+
+type HeaderResponse = {
+  setHeader(name: string, value: string | number): void;
+};
 
 @Controller("reports")
 @UseGuards(UserContextGuard, PermissionGuard)
@@ -105,4 +111,78 @@ export class ReportsController {
       throw error;
     }
   }
+
+  @Get("templates/:templateId/export.xlsx")
+  async exportTemplateXlsx(
+    @CurrentUser() currentUser: UserContext,
+    @Param("templateId") templateId: string,
+    @Query(customReportRunQueryValidationPipe) query: CustomReportRunQueryDto,
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ): Promise<StreamableFile> {
+    try {
+      const body = await this.reportsService.exportTemplateXlsx(
+        currentUser,
+        templateId,
+        toCustomReportRunOptions(query),
+      );
+      setDownloadHeaders(
+        response,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "custom-report.xlsx",
+        body,
+      );
+
+      return new StreamableFile(body);
+    } catch (error) {
+      if (error instanceof CustomReportTemplateNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof CustomReportInvalidQueryError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get("templates/:templateId/export.pdf")
+  async exportTemplatePdf(
+    @CurrentUser() currentUser: UserContext,
+    @Param("templateId") templateId: string,
+    @Query(customReportRunQueryValidationPipe) query: CustomReportRunQueryDto,
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ): Promise<StreamableFile> {
+    try {
+      const body = await this.reportsService.exportTemplatePdf(
+        currentUser,
+        templateId,
+        toCustomReportRunOptions(query),
+      );
+      setDownloadHeaders(response, "application/pdf", "custom-report.pdf", body);
+
+      return new StreamableFile(body);
+    } catch (error) {
+      if (error instanceof CustomReportTemplateNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof CustomReportInvalidQueryError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
 }
+
+const setDownloadHeaders = (
+  response: HeaderResponse,
+  contentType: string,
+  fileName: string,
+  body: Buffer,
+): void => {
+  response.setHeader("Content-Type", contentType);
+  response.setHeader("Content-Length", body.byteLength);
+  response.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+};

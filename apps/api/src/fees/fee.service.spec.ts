@@ -9,6 +9,7 @@ import { SecretLevelCode } from "../authorization/constants/secret-level-code";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
 import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { PrismaService } from "../database/prisma.service";
+import { ExportFieldSelectionError } from "../export/fields";
 import { UserContext } from "../identity/user-context";
 import {
   WorkflowActionTypeCode,
@@ -303,6 +304,82 @@ describe("FeeService.listFees", () => {
         }),
       }),
     );
+  });
+
+  it("exports a safe fee ledger XLSX through the readable policy", async () => {
+    const { auditService, repository, service } = createService();
+
+    const xlsx = await service.exportXlsx(makeContext([PermissionCode.feeReadDepartment]), {
+      payStatus: PayStatusCode.pending,
+    });
+    const serialized = xlsx.toString("utf8");
+
+    expect(repository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: feeReadableWhere,
+        payStatus: PayStatusCode.pending,
+        take: 1000,
+      }),
+    );
+    expect(xlsx.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(serialized).toContain("Achievement ID");
+    expect(serialized).toContain("PATENT_ANNUAL");
+    expect(serialized).not.toContain("createdById");
+    expect(serialized).not.toContain("updatedById");
+    expect(serialized).not.toContain("reviewedById");
+    expect(serialized).not.toContain("password");
+    expect(serialized).not.toContain("token");
+    expect(serialized).not.toContain("cookie");
+    expect(serialized).not.toContain("raw");
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "EXPORT_XLSX",
+          exportType: "FEE_LEDGER",
+          rowLimit: 1000,
+        }),
+      }),
+    );
+  });
+
+  it("limits fee CSV export to requested safe fields in request order", async () => {
+    const { service } = createService();
+
+    const csv = await service.exportCsv(makeContext([PermissionCode.feeReadDepartment]), {
+      fields: "payStatus,id,amount",
+    });
+
+    expect(csv).toContain("Pay status,ID,Amount\r\nPENDING,");
+    expect(csv).not.toContain("Achievement ID");
+    expect(csv).not.toContain("createdById");
+    expect(csv).not.toContain("updatedById");
+    expect(csv).not.toContain("reviewedById");
+  });
+
+  it("limits fee XLSX export to requested safe fields", async () => {
+    const { service } = createService();
+
+    const xlsx = await service.exportXlsx(makeContext([PermissionCode.feeReadDepartment]), {
+      fields: "id,payStatus",
+    });
+    const serialized = xlsx.toString("utf8");
+
+    expect(serialized).toContain("ID");
+    expect(serialized).toContain("Pay status");
+    expect(serialized).not.toContain("Achievement ID");
+    expect(serialized).not.toContain("createdById");
+    expect(serialized).not.toContain("updatedById");
+    expect(serialized).not.toContain("reviewedById");
+  });
+
+  it("rejects unsupported fee export fields", async () => {
+    const { service } = createService();
+
+    await expect(
+      service.exportCsv(makeContext([PermissionCode.feeReadDepartment]), {
+        fields: "id,createdById",
+      }),
+    ).rejects.toBeInstanceOf(ExportFieldSelectionError);
   });
 });
 

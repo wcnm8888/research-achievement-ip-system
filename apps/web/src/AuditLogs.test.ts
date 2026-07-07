@@ -6,6 +6,7 @@ import {
   buildAuditLogQuery,
   buildAuditLogQueryResult,
   exportAuditLogsCsv,
+  fetchAuditExportEvents,
   fetchAuditLogs,
   formatMaskedValue,
   getAuditLogListState,
@@ -191,6 +192,57 @@ describe("audit log readonly loading", () => {
 
     await expect(fetchAuditLogs(client, { take: 50 })).resolves.toEqual({ items: [] });
     await expect(fetchAuditLogs(malformedClient, { take: 50 })).resolves.toEqual({ items: [] });
+  });
+
+  it("requests export event summaries without exposing raw audit JSON", async () => {
+    const client = createClient({
+      items: [
+        {
+          id: "90000000-0000-4000-8000-000000000002",
+          actorUserId: "40000000-0000-4000-8000-000000000003",
+          actorDepartmentId: "10000000-0000-4000-8000-000000000001",
+          operation: "EXPORT_XLSX",
+          exportType: "FEE_LEDGER",
+          templateId: null,
+          rowCount: 12,
+          rowLimit: 1000,
+          createdAt: "2026-06-21T08:30:00.000Z",
+          oldValue: { token: "raw-token" },
+          newValue: { password: "raw-password" },
+        },
+        {
+          id: "90000000-0000-4000-8000-000000000003",
+          operation: "CONFIG_UPDATE",
+          exportType: "NOT_EXPORT",
+          rowCount: 1,
+          rowLimit: 1,
+          createdAt: "2026-06-21T09:00:00.000Z",
+        },
+      ],
+    });
+
+    const result = await fetchAuditExportEvents(client, { take: 20 });
+
+    expect(client.get).toHaveBeenCalledWith("/audit-logs/export-events", { take: 20 });
+    expect(result.items).toEqual([
+      {
+        id: "90000000-0000-4000-8000-000000000002",
+        actorUserId: "40000000-0000-4000-8000-000000000003",
+        actorDepartmentId: "10000000-0000-4000-8000-000000000001",
+        operation: "EXPORT_XLSX",
+        exportType: "FEE_LEDGER",
+        templateId: null,
+        rowCount: 12,
+        rowLimit: 1000,
+        createdAt: "2026-06-21T08:30:00.000Z",
+      },
+    ]);
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("oldValue");
+    expect(serialized).not.toContain("newValue");
+    expect(serialized).not.toContain("raw-token");
+    expect(serialized).not.toContain("raw-password");
+    expect(serialized).not.toContain("cookie");
   });
 
   it("exports masked audit logs with validated filters", async () => {

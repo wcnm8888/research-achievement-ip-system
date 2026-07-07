@@ -59,6 +59,15 @@ export class AuditMaskedQueryDto {
   take?: number;
 }
 
+export class AuditExportEventQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  take?: number;
+}
+
 export type AuditMaskedQueryInput = {
   actorUserId?: string;
   actorDepartmentId?: string;
@@ -69,6 +78,10 @@ export type AuditMaskedQueryInput = {
   traceId?: string;
   createdFrom?: Date;
   createdTo?: Date;
+  take?: number;
+};
+
+export type AuditExportEventQueryInput = {
   take?: number;
 };
 

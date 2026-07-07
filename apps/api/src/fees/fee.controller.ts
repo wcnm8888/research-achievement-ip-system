@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   ConflictException,
   Controller,
   ForbiddenException,
@@ -12,6 +13,8 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  Res,
+  StreamableFile,
   UnprocessableEntityException,
   UseGuards,
   UsePipes,
@@ -23,6 +26,7 @@ import { RequirePermissions } from "../authorization/decorators/require-permissi
 import { PermissionGuard } from "../authorization/guards/permission.guard";
 import { UserContextGuard } from "../authorization/guards/user-context.guard";
 import { UserContext } from "../identity/user-context";
+import { ExportFieldSelectionError } from "../export/fields";
 import { ChangeFeeStatusDto } from "./dto/change-fee-status.dto";
 import { CreateFeeRecordDto } from "./dto/create-fee-record.dto";
 import { FeeQueryDto } from "./dto/fee-query.dto";
@@ -75,6 +79,10 @@ const rejectFeeReviewValidationPipe = new ValidationPipe({
   expectedType: RejectFeeReviewDto,
 });
 
+type HeaderResponse = {
+  setHeader(name: string, value: string | number): void;
+};
+
 @Controller("fees")
 @UseGuards(UserContextGuard, PermissionGuard)
 @UsePipes(feeValidationPipe)
@@ -107,6 +115,23 @@ export class FeeController {
   ) {
     try {
       return await this.feeService.exportCsv(currentUser, query);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
+
+  @Get("export.xlsx")
+  @RequirePermissions(PermissionCode.feeReadDepartment)
+  async exportXlsx(
+    @CurrentUser() currentUser: UserContext,
+    @Query(feeQueryValidationPipe) query: FeeQueryDto = {},
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ): Promise<StreamableFile> {
+    try {
+      const body = await this.feeService.exportXlsx(currentUser, query);
+      setDownloadHeaders(response, "fees.xlsx", body);
+
+      return new StreamableFile(body);
     } catch (error) {
       throw mapFeeServiceError(error);
     }
@@ -255,6 +280,10 @@ export class FeeController {
 }
 
 const mapFeeServiceError = (error: unknown): Error => {
+  if (error instanceof ExportFieldSelectionError) {
+    return new BadRequestException("unsupported export fields");
+  }
+
   if (
     error instanceof FeeAccessDeniedError ||
     error instanceof FeePermissionDeniedError
@@ -278,4 +307,17 @@ const mapFeeServiceError = (error: unknown): Error => {
   }
 
   return error instanceof Error ? error : new Error("Unknown fee service error.");
+};
+
+const setDownloadHeaders = (
+  response: HeaderResponse,
+  fileName: string,
+  body: Buffer,
+): void => {
+  response.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  response.setHeader("Content-Length", body.byteLength);
+  response.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 };

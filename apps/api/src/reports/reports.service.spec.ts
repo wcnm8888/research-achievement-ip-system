@@ -419,4 +419,49 @@ describe("ReportsService", () => {
       }),
     );
   });
+
+  it("exports custom report XLSX and PDF with safe columns and audit summaries", async () => {
+    const { auditService, service } = createService();
+
+    const xlsx = await service.exportTemplateXlsx(
+      context,
+      CustomReportTemplateIdCode.achievementDistribution,
+    );
+    const pdf = await service.exportTemplatePdf(
+      context,
+      CustomReportTemplateIdCode.achievementDistribution,
+    );
+    const xlsxText = xlsx.toString("utf8");
+    const pdfText = pdf.toString("utf8");
+
+    expect(xlsx.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(xlsxText).toContain("Department code");
+    expect(pdfText.startsWith("%PDF-1.4")).toBe(true);
+    expect(pdfText).toContain("Custom Report Export");
+
+    for (const serialized of [xlsxText, pdfText]) {
+      expect(serialized).not.toContain("token");
+      expect(serialized).not.toContain("password");
+      expect(serialized).not.toContain("raw");
+    }
+
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "EXPORT_XLSX",
+          exportType: "CUSTOM_REPORT",
+          rowLimit: 1000,
+        }),
+      }),
+    );
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "EXPORT_PDF",
+          exportType: "CUSTOM_REPORT",
+          rowLimit: 1000,
+        }),
+      }),
+    );
+  });
 });

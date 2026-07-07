@@ -330,6 +330,7 @@ export type AchievementListQuery = {
   status?: AchievementStatusCode;
   type?: AchievementTypeCode;
   keyword?: string;
+  fields?: string;
   page: number;
   pageSize: number;
 };
@@ -530,6 +531,7 @@ export type FeeQuery = {
   achievementId?: string;
   feeType?: FeeTypeCode;
   payStatus?: PayStatusCode;
+  fields?: string;
   take?: number;
 };
 
@@ -689,6 +691,22 @@ export type MaskedAuditLog = {
 
 export type AuditLogListResult = {
   items: MaskedAuditLog[];
+};
+
+export type AuditExportEventSummary = {
+  id: string;
+  actorUserId: string | null;
+  actorDepartmentId: string | null;
+  operation: string;
+  exportType: string | null;
+  templateId: string | null;
+  rowCount: number | null;
+  rowLimit: number | null;
+  createdAt: string;
+};
+
+export type AuditExportEventListResult = {
+  items: AuditExportEventSummary[];
 };
 
 export type AuditLogQuery = {

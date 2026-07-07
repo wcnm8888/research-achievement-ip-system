@@ -17,6 +17,7 @@ import {
   canEditAchievementDraft,
   dryRunAchievementImport,
   exportAchievementCsv,
+  exportAchievementXlsx,
   getAchievementImportApplyEligibility,
   getAchievementDisplayTitle,
   hasAchievementImportDryRunPermission,
@@ -516,12 +517,35 @@ describe("achievement CSV export", () => {
         status: "ARCHIVED",
         type: "PATENT",
       },
+      ["status", "id", "title"],
     );
 
     expect(downloadBlob).toHaveBeenCalledWith("/achievements/export.csv", {
       keyword: "neural interface",
       status: "ARCHIVED",
       type: "PATENT",
+      fields: "status,id,title",
+    });
+  });
+
+  it("downloads the achievement ledger Excel with applied filters only", async () => {
+    const downloadBlob = vi.fn(async () => new Blob(["xlsx"]));
+
+    await exportAchievementXlsx(
+      { downloadBlob },
+      {
+        keyword: "  neural interface  ",
+        status: "ARCHIVED",
+        type: "PATENT",
+      },
+      ["id", "status"],
+    );
+
+    expect(downloadBlob).toHaveBeenCalledWith("/achievements/export.xlsx", {
+      keyword: "neural interface",
+      status: "ARCHIVED",
+      type: "PATENT",
+      fields: "id,status",
     });
   });
 });
