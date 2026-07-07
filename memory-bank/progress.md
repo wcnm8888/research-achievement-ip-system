@@ -15068,3 +15068,42 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 139 - Client-facing freeze readiness audit
+
+- Status: DONE.
+- Goal:
+  - Re-check the project from a client/reviewer perspective after the Step 134-138
+    frontend wording cleanup and document whether the project is ready for code
+    freeze.
+- Documentation updates:
+  - Added `memory-bank/client-facing-freeze-readiness-audit-step139.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix-client-facing-step135.md`
+    to reflect the Step 138 terminology cleanup and the remaining browser-level
+    freeze gate.
+- Requirement conclusion:
+  - The phase-one requirements and Route B enhancements are presentable as a
+    local/demo/synthetic reviewer package with caveats.
+  - The project must not be described as production/VPS/production DB/real
+    external-system acceptance.
+- Frontend conclusion:
+  - Source and automated tests are close to local demo freeze after Step 138.
+  - Code freeze still requires a real browser walkthrough with the latest Web
+    bundle because prior screenshots showed stale visible text such as
+    implementation labels, API route hints, and English import wording.
+- Remaining P0 before freeze:
+  - Rebuild or refresh the active Web bundle.
+  - Capture browser screenshots for login, workbench, achievements/import,
+    workflow, fees, search, dashboard, custom reports, audit logs, settings,
+    secret authorization, account management, and department management.
+  - Confirm no reviewer-facing `GET /...`, `POST /...`, `X-Demo-User-Id`,
+    `Step`, `dryRun=true`, `local/demo`, `not production`, raw network error,
+    `session`, `production auth`, `Phase 1 frontend`, raw JSON, debug, export,
+    download, or batch mutation wording appears as ordinary page copy.
+- Explicitly not done:
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change in this Step.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

@@ -18953,6 +18953,53 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-07 Step 139 - Client-facing freeze readiness audit evidence
+
+- Canonical state checked before the docs-only audit:
+  - `git log -1 --oneline` -> `9e31d63 feat: polish remaining client-facing terminology`.
+  - `git status --short` showed only existing untracked local artifacts before
+    the Step 139 docs changes.
+  - `git diff --stat` -> empty before the Step 139 docs changes.
+  - `git diff --cached --stat` -> empty before the Step 139 docs changes.
+- Context reviewed:
+  - `memory-bank/project-requirement-completion-matrix-client-facing-step135.md`.
+  - `memory-bank/final-local-demo-delivery-closure.md`.
+  - Recent Step 136-138 entries in `memory-bank/progress.md`.
+  - Recent supporting entries in `memory-bank/evidence.md`.
+- Files updated:
+  - Added `memory-bank/client-facing-freeze-readiness-audit-step139.md`.
+  - Updated `memory-bank/project-requirement-completion-matrix-client-facing-step135.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Audit conclusion:
+  - The project can be presented as a local/demo/synthetic reviewer package
+    covering the phase-one requirements and Route B enhancements with caveats.
+  - It is not ready to be frozen or described as production acceptance.
+  - Final code freeze still requires a real browser walkthrough and screenshots
+    after the active Web bundle is rebuilt or refreshed.
+- Client-facing freeze checklist recorded:
+  - Login, workbench, achievements/import, workflow, fees, search, dashboard,
+    custom reports, audit logs, settings, secret authorization, account
+    management, and department management must be checked in a browser.
+  - Ordinary page copy must not show API route hints, demo headers, Step labels,
+    `dryRun=true`, raw network errors, raw JSON/debug/export/download/batch
+    mutation controls, or engineering status tags such as `session`,
+    `production auth`, and `Phase 1 frontend`.
+- Most recent source/test evidence carried forward from Step 138:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AchievementDetail AccountManagement DepartmentManagement Fees SettingsApiIntegrations`: PASS, 9 files / 208 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - Follow-up source scan after Step 138 found remaining targeted terminology
+    only in internal variable/type/class names or safety constants, not ordinary
+    rendered page copy.
+- Boundary evidence:
+  - Step 139 is docs-only.
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change was made.
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No Docker operation was performed.
+
 ## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish evidence
 
 - Scope:
