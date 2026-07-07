@@ -1585,12 +1585,14 @@ function AchievementConversionSection({
             </Space>
           </div>
         ) : (
-          <Alert
-            showIcon
-            type="info"
-            message="Conversion ledger is read-only for this context"
-            description="Creating or updating conversion records requires a demo user with department achievement read permission and an archived achievement."
-          />
+          <div className="business-note">
+            <Typography.Text strong className="business-note-title">
+              转化记录只读
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              当前成果状态或账号职责暂不支持新增、编辑转化记录。
+            </Typography.Text>
+          </div>
         )}
       </Space>
     </>
@@ -1729,8 +1731,8 @@ const mapConversionErrorToDisplay = (error: ApiError): ApiError => {
   if (error.kind === "forbidden" || error.status === 403) {
     return {
       ...error,
-      message: "Current role cannot access the conversion ledger",
-      detail: error.detail ?? "The backend enforces department-scoped achievement permissions.",
+      message: "当前账号无权查看转化记录",
+      detail: error.detail ?? "该成果的转化记录按部门职责范围开放。",
     };
   }
 
@@ -1981,16 +1983,16 @@ function AttachmentMetadataSection({
             onUpload={() => void onUpload()}
           />
         ) : (
-          <Alert
-            showIcon
-            type="info"
-            message={readonly ? "只读附件视图" : "附件上传入口未开放"}
-            description={
-              readonly
-                ? "当前成果详情来自只读入口，仅展示可查看的附件信息。"
-                : "当前账号不可维护该成果附件，上传入口未开放。"
-            }
-          />
+          <div className="business-note">
+            <Typography.Text strong className="business-note-title">
+              {readonly ? "附件信息" : "附件维护"}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              {readonly
+                ? "当前视图展示可查看的附件信息。"
+                : "当前账号暂不可维护该成果附件。"}
+            </Typography.Text>
+          </div>
         )}
         {!canLoadAttachments ? (
           <Alert

@@ -1154,12 +1154,14 @@ function ApiIntegrationFormDrawer({
     >
       <Space direction="vertical" size={16} className="full-width">
         {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
-        <Alert
-          type="warning"
-          showIcon
-          message="不要输入敏感值"
-          description="配置引用是非敏感引用名称，例如 provider.profile.default；这里不是填写凭证的位置。"
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            配置引用
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            仅填写配置引用名称，例如 provider.profile.default。
+          </Typography.Text>
+        </div>
         <Form<ApiIntegrationFormValues>
           form={form}
           layout="vertical"

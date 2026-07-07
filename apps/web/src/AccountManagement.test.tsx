@@ -817,7 +817,7 @@ describe("user account import dry-run UI", () => {
 
     expect(html).toContain("开始预检");
     expect(html).toContain("创建待激活账号");
-    expect(html).toContain("暂不能创建待激活账号");
+    expect(html).toContain("预检通过后可创建待激活账号");
     expect(html).not.toContain("Execute import");
     expect(html).not.toContain("Run import");
     expect(html).not.toContain("Create accounts");

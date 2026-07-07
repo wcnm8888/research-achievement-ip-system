@@ -1141,38 +1141,42 @@ function FeeDetailContent({
           }
         />
       ) : mode === "search-readonly" ? (
-        <Alert
-          showIcon
-          type="info"
-          message="只读查看"
-          description="本视图仅用于查看费用详情；标记缴费、创建费用和状态变更请进入费用管理。"
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            费用信息
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            当前视图用于查看费用详情。
+          </Typography.Text>
+        </div>
       ) : (
-        <Alert
-          showIcon
-          type="info"
-          message="终态只读"
-          description="已缴、已减免和已取消记录不展示标记缴费入口。"
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            当前状态无需缴费操作
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            已缴、已减免和已取消记录不显示标记缴费入口。
+          </Typography.Text>
+        </div>
       )}
 
       {showStatusActions ? (
-        <Alert
-          showIcon
-          type="info"
-          message="可变更为减免或取消"
-          description="仅待缴或逾期费用可执行减免或取消；提交时需要填写原因。"
-          action={
-            <Space>
-              <Button size="small" onClick={() => onOpenStatusAction?.("waive", record)}>
-                减免
-              </Button>
-              <Button size="small" danger onClick={() => onOpenStatusAction?.("cancel", record)}>
-                取消
-              </Button>
-            </Space>
-          }
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            状态调整
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            待缴或逾期费用可申请减免或取消，提交时需要填写原因。
+          </Typography.Text>
+          <Space>
+            <Button size="small" onClick={() => onOpenStatusAction?.("waive", record)}>
+              减免
+            </Button>
+            <Button size="small" danger onClick={() => onOpenStatusAction?.("cancel", record)}>
+              取消
+            </Button>
+          </Space>
+        </div>
       ) : null}
 
       <Divider orientation="left">审计字段</Divider>
@@ -1245,12 +1249,12 @@ function FeeReviewHistorySection({
     <>
       <Divider orientation="left">审核历史</Divider>
       <Space direction="vertical" size={12} className="full-width">
-        <Alert
-          showIcon
-          type="info"
-          message="只读审核历史"
-          description="展示审核动作、状态变化、原因、审核人和时间。"
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            审核历史
+          </Typography.Text>
+          <Typography.Text type="secondary">展示审核动作、状态变化、原因、审核人和时间。</Typography.Text>
+        </div>
         <DataState
           loading={history.loading}
           error={history.error}
@@ -1570,16 +1574,16 @@ function FeeVoucherAttachmentSection({
             onUpload={() => void onUpload()}
           />
         ) : (
-          <Alert
-            showIcon
-            type="info"
-            message={mode === "search-readonly" ? "只读附件视图" : "附件上传入口未开放"}
-            description={
-              mode === "search-readonly"
-                ? "当前入口只展示可查看的费用凭证附件信息。"
-                : "只有具备费用管理权限并处于对应范围内的用户才显示上传入口；审核用户默认只读。"
-            }
-          />
+          <div className="business-note">
+            <Typography.Text strong className="business-note-title">
+              凭证附件
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              {mode === "search-readonly"
+                ? "当前视图展示可查看的费用凭证附件信息。"
+                : "当前账号暂不可维护该费用凭证附件。"}
+            </Typography.Text>
+          </div>
         )}
         {!canLoadAttachments ? (
           <Alert
@@ -2149,7 +2153,7 @@ function FeeStatusActionDrawer({
             <Typography.Text strong className="business-note-title">
               {canManageFees && canWaiveOrCancelFee(record)
                 ? "可变更缴费状态"
-                : "暂不可变更为减免或取消"}
+                : "当前状态暂不支持调整"}
             </Typography.Text>
             <Typography.Text type="secondary">
               当前缴费状态：{getPayStatusLabel(record.payStatus)}

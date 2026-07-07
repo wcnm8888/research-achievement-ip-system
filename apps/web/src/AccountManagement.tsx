@@ -1267,16 +1267,12 @@ function UserAccountImportApplyStatus({
 }) {
   return (
     <Space direction="vertical" size={8} className="full-width">
-      <Alert
-        type={eligibility.canApply ? "success" : "info"}
-        showIcon
-        message={
-          eligibility.canApply
-            ? "可以创建待激活账号"
-            : "暂不能创建待激活账号"
-        }
-        description={eligibility.reason}
-      />
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          {eligibility.canApply ? "可以创建待激活账号" : "预检通过后可创建待激活账号"}
+        </Typography.Text>
+        <Typography.Text type="secondary">{eligibility.reason}</Typography.Text>
+      </div>
       {error ? (
         <Alert
           type="error"

@@ -19,6 +19,7 @@ import {
 } from "./api-client";
 import { hasSystemConfigPermission } from "./AccountManagement";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { sanitizeBusinessTitle } from "./display-text";
 import type {
   CountMap,
   SecretAuthorizationAuditSummary,
@@ -360,17 +361,19 @@ export function SecretAuthorizationResourceDetailPanel({
 
   return (
     <Space direction="vertical" size={16} className="full-width secret-authorization-detail">
-      <Alert
-        type="info"
-        showIcon
-        message="安全详情投影"
-        description={`授权摘要最多展示 ${detail.limits?.grantRows ?? 0} 行；审计摘要最多展示 ${detail.limits?.auditRows ?? 0} 行。`}
-      />
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          授权详情
+        </Typography.Text>
+        <Typography.Text type="secondary">
+          授权摘要最多展示 {detail.limits?.grantRows ?? 0} 行；审计摘要最多展示 {detail.limits?.auditRows ?? 0} 行。
+        </Typography.Text>
+      </div>
 
       <Card className="shell-card" title="已选涉密资源">
         <Descriptions bordered size="small" column={1}>
           <Descriptions.Item label="资源类型">{getSecretResourceTypeLabel(detail.resource.resourceType)}</Descriptions.Item>
-          <Descriptions.Item label="安全名称">{safeText(detail.resource.safeResourceLabel)}</Descriptions.Item>
+          <Descriptions.Item label="资源名称">{formatSecretResourceLabel(detail.resource.safeResourceLabel)}</Descriptions.Item>
           <Descriptions.Item label="部门">{safeText(detail.resource.departmentId, "无部门")}</Descriptions.Item>
           <Descriptions.Item label="密级">{getSecretLevelLabel(detail.resource.secretLevel)}</Descriptions.Item>
           <Descriptions.Item label="标记">
@@ -383,7 +386,7 @@ export function SecretAuthorizationResourceDetailPanel({
               </Tag>
             </Space>
           </Descriptions.Item>
-          <Descriptions.Item label="提示">
+          <Descriptions.Item label="说明">
             {formatList([...(detail.resource.caveats ?? []), ...(detail.caveats ?? [])], "未返回投影提示。")}
           </Descriptions.Item>
         </Descriptions>
@@ -433,7 +436,7 @@ const resourceColumns: TableProps<SecretAuthorizationResourceSummary>["columns"]
     width: 260,
     render: (_, resource) => (
       <Space direction="vertical" size={2}>
-        <Typography.Text strong>{safeText(resource.safeResourceLabel)}</Typography.Text>
+        <Typography.Text strong>{formatSecretResourceLabel(resource.safeResourceLabel)}</Typography.Text>
         <Typography.Text type="secondary">{getSecretResourceTypeLabel(resource.resourceType)}</Typography.Text>
       </Space>
     ),
@@ -462,7 +465,7 @@ const resourceColumns: TableProps<SecretAuthorizationResourceSummary>["columns"]
           {resource.isRestricted ? "受限" : "开放"}
         </Tag>
         <Tag color={resource.contentRedacted ? "orange" : "default"}>
-          {resource.contentRedacted ? "已脱敏" : "安全摘要"}
+          {resource.contentRedacted ? "已脱敏" : "摘要"}
         </Tag>
       </Space>
     ),
@@ -630,6 +633,24 @@ const safeText = (
   return String(value);
 };
 
+const formatSecretResourceLabel = (value: string | null | undefined): string => {
+  const text = safeText(value, "涉密资源");
+
+  if (/^Restricted\s+PATENT\s+achievement$/i.test(text)) {
+    return "受限专利成果";
+  }
+
+  if (/^Restricted\s+ACHIEVEMENT\s+attachment metadata$/i.test(text)) {
+    return "受限成果附件";
+  }
+
+  if (/^Restricted\s+ACHIEVEMENT\b/i.test(text)) {
+    return "受限科研成果";
+  }
+
+  return sanitizeBusinessTitle(text, "涉密资源");
+};
+
 const getSafeNumber = (value: number | null | undefined): number =>
   typeof value === "number" && Number.isFinite(value) ? value : 0;
 
@@ -723,7 +744,20 @@ const formatCountMap = (counts: CountMap | null | undefined): string => {
 const formatList = (values: string[] | null | undefined, emptyText: string): string => {
   const safeValues = (values ?? []).filter((value) => value.trim().length > 0);
 
-  return safeValues.length > 0 ? safeValues.join(", ") : emptyText;
+  return safeValues.length > 0 ? safeValues.map(formatCaveatLabel).join("，") : emptyText;
+};
+
+const formatCaveatLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    LOCAL_DEMO_SYNTHETIC_ONLY: "当前为本地样例数据",
+    READ_ONLY_SAFE_PROJECTION: "仅展示授权摘要",
+    LOCAL_DEMO_SYNTHETIC_NOT_PRODUCTION_AUTHORIZATION: "本地样例授权数据",
+    GRANT_MUTATION_NOT_IMPLEMENTED: "授权变更入口未开放",
+    RESOURCE_CONTENT_REDACTED: "资源内容已脱敏",
+    AUDIT_SUMMARY_BOUNDED: "审计摘要已限制条数",
+  };
+
+  return labels[value] ?? value;
 };
 
 const formatDateTime = (value: string | null | undefined): string => {

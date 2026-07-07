@@ -739,7 +739,7 @@ function BoundaryPage({ item }: { item: NavItem }) {
       <SectionHeader title={item.label} description={item.description} />
       <BoundaryNotice
         title={`${item.label}暂不可用`}
-        description="当前账号暂不能访问该功能，请联系系统管理员确认权限或功能开通状态。"
+        description="当前账号没有访问该功能的权限，请联系系统管理员确认授权范围或功能开通状态。"
         step={item.label}
       />
       <PermissionHint description="系统已按当前账号权限展示可访问的数据和操作。" />

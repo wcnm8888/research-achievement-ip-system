@@ -695,25 +695,23 @@ function AchievementImportApplyStatus({
   return (
     <Space direction="vertical" size={8} className="full-width">
       {result && !eligibility.eligible ? (
-        <Alert
-          type="warning"
-          showIcon
-          message="暂不能导入"
-          description={eligibility.reason}
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            预检通过后可导入为草稿
+          </Typography.Text>
+          <Typography.Text type="secondary">{eligibility.reason}</Typography.Text>
+        </div>
       ) : null}
       {result && eligibility.eligible && eligibility.applyType ? (
-        <Alert
-          type="info"
-          showIcon
-          message="可以导入"
-          description={
-            <Space size={6} wrap>
-              <Tag color="blue">{eligibility.applyType}</Tag>
-              <Typography.Text>{eligibility.reason}</Typography.Text>
-            </Space>
-          }
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            可以导入为草稿
+          </Typography.Text>
+          <Space size={6} wrap>
+            <Tag color="blue">{eligibility.applyType}</Tag>
+            <Typography.Text type="secondary">{eligibility.reason}</Typography.Text>
+          </Space>
+        </div>
       ) : null}
       {error ? <AchievementImportApplyErrorView error={error} /> : null}
       {applyResult ? <AchievementImportApplyResultView result={applyResult} /> : null}

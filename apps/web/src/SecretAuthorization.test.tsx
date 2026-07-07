@@ -188,7 +188,7 @@ describe("secret authorization safe projection display", () => {
     expect(html).toContain("已撤销/已过期");
     expect(html).toContain("即将到期");
     expect(html).toContain("科研成果: 1");
-    expect(html).toContain("LOCAL_DEMO_SYNTHETIC_ONLY");
+    expect(html).toContain("当前为本地样例数据");
     expect(html).not.toContain("undefined");
     expect(html).not.toContain("null");
   });
@@ -209,13 +209,13 @@ describe("secret authorization safe projection display", () => {
   it("renders bounded grant and audit summaries using safe fields only", () => {
     const html = renderToStaticMarkup(<SecretAuthorizationResourceDetailPanel detail={detail} />);
 
-    expect(html).toContain("安全详情投影");
+    expect(html).toContain("授权详情");
     expect(html).toContain("授权摘要最多展示 5 行");
     expect(html).toContain("User grant holder");
     expect(html).toContain("READ_METADATA");
     expect(html).toContain("RESOURCE_GRANT_VIEWED");
     expect(html).toContain("已填写");
-    expect(html).toContain("AUDIT_SUMMARY_BOUNDED");
+    expect(html).toContain("审计摘要已限制条数");
     expectNoForbiddenTerms(html);
   });
 
