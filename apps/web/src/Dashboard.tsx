@@ -98,15 +98,15 @@ export function Dashboard({ demoUserId }: DashboardProps) {
           title="统计看板"
           description="请选择本地演示用户后读取本地评分口径 dashboard summary。"
         />
-        <PermissionHint description="当前没有 X-Demo-User-Id，统计看板不会发起业务请求。选择或输入演示用户后，只读请求会统一带上本地演示上下文 header；这不是正式 SSO。" />
+        <PermissionHint description="当前没有可用的业务用户，统计看板不会加载业务数据。请选择有权限的用户后继续。" />
         <Card className="shell-card">
           <Space direction="vertical" size={8}>
             <Typography.Text strong>等待演示上下文</Typography.Text>
             <Typography.Text type="secondary">
-              没有演示用户时不调用 GET /dashboard/summary。
+              未选择用户时不会加载统计摘要。
             </Typography.Text>
             <Typography.Text type="secondary">
-              选择演示用户后，页面只读取本地/演示评分口径摘要；这不是 production monitoring。
+              选择用户后，页面会展示当前权限范围内的统计摘要。
             </Typography.Text>
           </Space>
         </Card>
@@ -118,7 +118,7 @@ export function Dashboard({ demoUserId }: DashboardProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="统计看板"
-        description="本页展示本地/演示评分口径摘要，用于快速查看成果规模、费用风险、审批效率、转化漏斗和 mock 接口调用概览。"
+        description="快速查看成果规模、费用风险、审批效率、转化趋势和接口调用概览。"
         extra={
           <Button onClick={loadDashboard} loading={dashboard.loading}>
             刷新
@@ -126,7 +126,7 @@ export function Dashboard({ demoUserId }: DashboardProps) {
         }
       />
 
-      <PermissionHint description="权限裁剪以后端 Dashboard policy where 为准；本页不是完整 BI、自定义报表平台或生产监控，不提供钻取、导出、原始日志、真实财务凭证、密钥、连接串、token、cookie 或 raw request/response。" />
+      <PermissionHint description="统计范围由当前账号权限决定；本页只展示聚合摘要，不展示原始日志、凭证、密钥或连接信息。" />
 
       <DashboardControls dueSoonDays={dueSoonDays} onDueSoonDaysChange={setDueSoonDays} />
 
@@ -419,7 +419,6 @@ const DashboardSummaryCard = ({
       title="评分摘要"
       extra={
         <Space size={8} wrap>
-          <Tag color="processing">GET /dashboard/summary</Tag>
           <Tag>{dueSoonDays} 天</Tag>
         </Space>
       }
@@ -494,7 +493,7 @@ const DashboardSummaryCard = ({
 
         <div className="summary-meta dashboard-scope-meta">
           <Typography.Text type="secondary">
-            成果转化深化指标为 local/demo summary，不是 production monitoring 或真实财务状态。
+            成果转化指标为当前权限范围内的统计摘要。
           </Typography.Text>
           <Typography.Text type="secondary">
             生成时间：{formatDashboardDateTime(summary?.generatedAt)}

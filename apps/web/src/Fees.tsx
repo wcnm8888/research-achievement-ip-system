@@ -642,11 +642,11 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           title="费用管理"
           description="选择本地演示用户后，前端才会请求后端费用台账。"
         />
-        <PermissionHint description="当前没有 X-Demo-User-Id，费用管理不会发起业务请求。选择科研秘书或具备费用读取权限的演示上下文后，列表会统一由后端权限策略裁剪。" />
+        <PermissionHint description="当前没有可用的业务用户，费用管理不会加载业务数据。请选择具备费用权限的用户后继续。" />
         <BoundaryNotice
           title="等待演示上下文"
           description="当前无用户时不发业务请求，也不触发费用写入或凭证附件请求；选择具备费用权限的上下文后才读取后端数据。"
-          step="Step 56C"
+          step="费用管理"
         />
       </Space>
     );
@@ -662,7 +662,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="费用管理"
-        description="读取后端 GET /fees 的真实费用台账；权限、范围和字段以后端返回为准。"
+        description="查看当前权限范围内的费用台账、缴费状态和预警摘要。"
         extra={
           <Space wrap>
             {canManageFees ? (
@@ -674,7 +674,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           </Space>
         }
       />
-      <PermissionHint description="费用台账、详情、凭证附件与前端派生预警均以后端返回和权限范围为准；独立 warnings API 与生产验收不在本步范围内。" />
+      <PermissionHint description="费用台账、详情、凭证附件与预警摘要均按当前账号权限展示。" />
 
       <Card className="shell-card" title="基础预警摘要" extra={<Tag>前端派生</Tag>}>
         <Row gutter={[16, 16]}>
@@ -696,13 +696,13 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           </Col>
         </Row>
         <Typography.Paragraph type="secondary" className="card-note">
-          摘要仅基于当前 GET /fees 列表结果计算：待缴或逾期状态会参与风险判断，已缴、已减免、已取消不作为到期风险。
+          摘要基于当前权限范围内的费用列表计算：待缴或逾期状态会参与风险判断，已缴、已减免、已取消不作为到期风险。
         </Typography.Paragraph>
       </Card>
 
       <Card className="shell-card" title="预警列表 / 分组" extra={<Tag>前端派生</Tag>}>
         <Typography.Paragraph type="secondary" className="card-note">
-          分组仅基于当前 GET /fees 列表的 dueDate / payStatus 计算，不代表独立 warnings API；列表之外的数据仍以后端实际返回为准。
+          分组基于当前费用列表的截止日期和缴费状态计算。
         </Typography.Paragraph>
         <div className="fee-warning-groups">
           {warningGroups.map((group) => (
@@ -786,7 +786,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         </Space>
       </Card>
 
-      <Card className="shell-card" title="费用台账" extra={<Tag>GET /fees</Tag>}>
+      <Card className="shell-card" title="费用台账">
         <DataState
           loading={fees.loading}
           error={fees.error}
@@ -812,7 +812,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
       <BoundaryNotice
         title={feeVoucherAttachmentBoundary.title}
         description={feeVoucherAttachmentBoundary.description}
-        step="Step 56C: backend API integrated in Web"
+        step="费用凭证"
       />
       <FeeDetailDrawer
         apiClient={apiClient}
@@ -1064,7 +1064,7 @@ function FeeDetailContent({
         message={mode === "search-readonly" ? "检索中心只读费用详情" : "只读费用详情"}
         description={
           mode === "search-readonly"
-            ? "本区域只展示 GET /fees/:id 已返回字段与可读附件 metadata；不会提供标记缴费、新增费用、warnings API 或任何写入口。"
+            ? "本区域只展示费用详情和可读附件摘要，不提供标记缴费、新增费用或其他写入入口。"
             : "本区域只展示后端已返回字段与费用凭证附件 metadata；费用写入、附件下载和范围判断均以后端权限为准。"
         }
       />
@@ -1407,18 +1407,18 @@ function FeeReviewWorkflowTaskCard({ task }: { task: WorkflowTask }) {
           value={getWorkflowTaskStatusLabel(task.status)}
         />
         <FeeVoucherMetadataLine
-          label="Assignee"
+          label="处理人"
           value={formatReviewerDisplay(task.assigneeId)}
         />
-        <FeeVoucherMetadataLine label="Created" value={formatDateTime(task.createdAt)} />
-        <FeeVoucherMetadataLine label="Updated" value={formatDateTime(task.updatedAt)} />
-        <FeeVoucherMetadataLine label="Completed" value={formatDateTime(task.completedAt)} />
+        <FeeVoucherMetadataLine label="创建时间" value={formatDateTime(task.createdAt)} />
+        <FeeVoucherMetadataLine label="更新时间" value={formatDateTime(task.updatedAt)} />
+        <FeeVoucherMetadataLine label="完成时间" value={formatDateTime(task.completedAt)} />
         <FeeVoucherMetadataLine
-          label="Target"
-          value={instance ? getWorkflowTargetTypeLabel(instance.targetType) : "Not returned"}
+          label="目标"
+          value={instance ? getWorkflowTargetTypeLabel(instance.targetType) : "未返回"}
         />
         <FeeVoucherMetadataLine
-          label="Current step"
+          label="当前步骤"
           value={getWorkflowStepLabel(instance?.currentStep)}
         />
       </div>
@@ -1837,7 +1837,7 @@ function FeeVoucherAttachmentDetailPanel({
           <Space direction="vertical" size={2}>
             <Typography.Text strong>费用凭证附件 metadata</Typography.Text>
             <Typography.Text type="secondary">
-              GET /fees/:feeRecordId/voucher-attachments/:attachmentId
+              费用凭证附件详情
             </Typography.Text>
           </Space>
           <Button size="small" onClick={onClose}>
@@ -1939,8 +1939,8 @@ function CreateFeeDrawer({
         <Alert
           showIcon
           type="warning"
-          message="本轮不做真实写入验收"
-          description="此表单按现有 POST /fees 契约塑造 payload；浏览器验收只打开、校验和关闭，不点击最终提交。"
+          message="请确认费用信息"
+          description="提交前请确认成果、费用类型、金额和截止日期等信息。"
         />
         <Alert
           showIcon
@@ -2048,8 +2048,8 @@ function MarkFeePaidDrawer({
         <Alert
           showIcon
           type="warning"
-          message="本轮不做真实写入验收"
-          description="此表单按现有 POST /fees/:id/mark-paid 契约塑造 payload；浏览器验收只打开、校验和关闭，不点击最终标记缴费。"
+          message="请确认缴费信息"
+          description="提交前请确认缴费日期、凭证和备注信息。"
         />
         <Alert
           showIcon
@@ -3248,22 +3248,22 @@ export const mapFeeWorkflowTaskErrorToDisplay = (error: ApiError): ApiError => {
   if (error.status === 404) {
     return {
       ...error,
-      message: "Fee review workflow task was not found.",
-      detail: error.detail ?? "The task may be completed, cancelled, or outside scope.",
+      message: "未找到费用审批任务",
+      detail: error.detail ?? "该任务可能已完成、已取消，或不在当前账号可处理范围内。",
     };
   }
 
   if (error.kind === "network" || error.kind === "server" || (error.status ?? 0) >= 500) {
     return {
       ...error,
-      message: "Fee review workflow task service is unavailable.",
-      detail: error.detail ?? "Retry after the workflow task endpoint is available.",
+      message: "费用审批任务服务暂不可用",
+      detail: error.detail ?? "请稍后在任务服务恢复后重试。",
     };
   }
 
   return {
     ...error,
-    message: error.message || "Fee review workflow task request failed.",
+    message: error.message || "费用审批任务请求失败",
   };
 };
 

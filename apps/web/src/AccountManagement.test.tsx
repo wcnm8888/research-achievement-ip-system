@@ -373,17 +373,17 @@ describe("account management permission helpers", () => {
       />,
     );
 
-    expect(adminHtml).toContain("User account CSV dry-run");
-    expect(adminHtml).toContain("POST /users/import/dry-run");
-    expect(adminHtml).toContain("Sensitive credential, session, invite-link, and reset-link columns are rejected.");
-    expect(adminHtml).toContain("User account import history");
+    expect(adminHtml).toContain("账号导入预检");
+    expect(adminHtml).not.toContain("POST /users/import/dry-run");
+    expect(adminHtml).toContain("预检会拒绝凭证");
+    expect(adminHtml).toContain("账号导入记录");
     expect(userAccountImportHistoryFilters).toEqual({
       family: "USER_ACCOUNT",
       mode: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
     });
-    expect(auditorHtml).not.toContain("User account CSV dry-run");
+    expect(auditorHtml).not.toContain("账号导入预检");
     expect(auditorHtml).not.toContain("/users/import/dry-run");
-    expect(auditorHtml).not.toContain("User account import history");
+    expect(auditorHtml).not.toContain("账号导入记录");
   });
 
   it("renders dedicated lifecycle permission reasons without exposing disabled actions", () => {
@@ -394,8 +394,8 @@ describe("account management permission helpers", () => {
       />,
     );
 
-    expect(html).toContain("Invite actions hidden: missing account:invite");
-    expect(html).toContain("Password reset actions hidden: missing account:reset_password");
+    expect(html).toContain("缺少账号邀请权限，邀请入口已隐藏");
+    expect(html).toContain("缺少密码重置权限，重置入口已隐藏");
     expect(html).not.toContain("Invite user");
   });
 });
@@ -449,10 +449,10 @@ describe("account management safe lifecycle projections", () => {
     );
 
     expect(html).toContain("Lifecycle history summary");
-    expect(html).toContain("Role change summary");
+    expect(html).toContain("角色变更摘要");
     expect(html).toContain("USER_ROLE_ASSIGN");
     expect(html).toContain("RESEARCHER");
-    expect(html).toContain("Provided");
+    expect(html).toContain("已填写");
     expect(html).not.toContain("sessionId");
     expect(html).not.toContain("session hash");
     expect(html).not.toContain("cookie");
@@ -533,7 +533,7 @@ describe("user account import dry-run UI", () => {
         size: 1024,
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       }),
-    ).toContain("Only .csv");
+    ).toContain("仅支持上传 CSV 文件");
     expect(
       validateUserAccountImportCsvFile({
         name: "users.csv",
@@ -583,9 +583,8 @@ describe("user account import dry-run UI", () => {
       <UserAccountImportDryRunResultView result={userAccountImportDryRunResult} />,
     );
 
-    expect(html).toContain("Dry-run report ready");
-    expect(html).toContain("USER_ACCOUNT");
-    expect(html).toContain("Total rows");
+    expect(html).toContain("预检报告已生成");
+    expect(html).toContain("总行数");
     expect(html).toContain("Existing users");
     expect(html).toContain("employeeNo DB conflict check: AVAILABLE");
     expect(html).toContain("Existing employeeNo");
@@ -724,7 +723,7 @@ describe("user account import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "Resolve dry-run warnings before pending no-credential apply.",
+      reason: "请先处理预检警告。",
     });
 
     expect(
@@ -758,7 +757,7 @@ describe("user account import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "Only CREATE_ONLY_PENDING_NO_CREDENTIAL user account import apply is supported.",
+      reason: "当前仅支持创建待激活且无登录凭证的账号。",
     });
 
     expect(
@@ -801,7 +800,7 @@ describe("user account import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "The selected file changed after dry-run. Run dry-run again.",
+      reason: "已选择的文件发生变化，请重新预检。",
     });
   });
 
@@ -817,9 +816,9 @@ describe("user account import dry-run UI", () => {
       />,
     );
 
-    expect(html).toContain("Run dry-run");
-    expect(html).toContain("Apply pending no-credential");
-    expect(html).toContain("Pending no-credential apply is disabled");
+    expect(html).toContain("开始预检");
+    expect(html).toContain("创建待激活账号");
+    expect(html).toContain("暂不能创建待激活账号");
     expect(html).not.toContain("Execute import");
     expect(html).not.toContain("Run import");
     expect(html).not.toContain("Create accounts");
@@ -850,26 +849,25 @@ describe("user account import dry-run UI", () => {
       />,
     );
 
-    expect(html).toContain("Apply pending no-credential");
-    expect(html).toContain("Pending no-credential apply is available");
-    expect(html).toContain("User account apply summary");
-    expect(html).toContain("Created users");
-    expect(html).toContain("Created roles");
+    expect(html).toContain("创建待激活账号");
+    expect(html).toContain("可以创建待激活账号");
+    expect(html).toContain("账号导入结果");
+    expect(html).toContain("已创建账号");
+    expect(html).toContain("已创建角色");
     expect(html).toContain("USER_ACCOUNT_IMPORT_CREATE_PENDING_NO_CREDENTIAL");
-    expect(html).toContain("PENDING_ACTIVATION");
-    expect(html).toContain("no credential");
-    expect(html).toContain("Rejected/error summary: none.");
+    expect(html).toContain("待激活");
+    expect(html).toContain("无拒绝或错误摘要。");
 
     const confirmHtml = renderToStaticMarkup(
       <UserAccountImportApplyConfirmContent result={validUserAccountImportDryRunResult} />,
     );
-    expect(confirmHtml).toContain("This will create pending user account records.");
-    expect(confirmHtml).toContain("POST /users/import/apply");
-    expect(confirmHtml).toContain("CREATE_ONLY_PENDING_NO_CREDENTIAL");
-    expect(confirmHtml).toContain("PENDING_ACTIVATION");
-    expect(confirmHtml).toContain("Department-scoped UserRole only");
-    expect(confirmHtml).toContain("No UserCredential");
-    expect(confirmHtml).toContain("No UserCredential, password generation/reset, session");
+    expect(confirmHtml).toContain("确认创建待激活账号");
+    expect(confirmHtml).not.toContain("POST /users/import/apply");
+    expect(confirmHtml).not.toContain("CREATE_ONLY_PENDING_NO_CREDENTIAL");
+    expect(confirmHtml).toContain("待激活");
+    expect(confirmHtml).toContain("仅创建部门范围内的用户角色");
+    expect(confirmHtml).toContain("不创建登录凭证");
+    expect(confirmHtml).toContain("不创建登录凭证、密码、会话");
   });
 
   it("renders sanitized apply errors for rejected, unauthorized, forbidden, and network cases", () => {

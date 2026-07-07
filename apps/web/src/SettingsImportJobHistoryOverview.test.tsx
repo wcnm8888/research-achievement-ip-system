@@ -104,8 +104,8 @@ describe("SettingsImportJobHistoryOverview permission boundary", () => {
       />,
     );
 
-    expect(html).toContain("Import history overview");
-    expect(html).toContain("read-only index");
+    expect(html).toContain("导入记录概览");
+    expect(html).toContain("只读索引");
   });
 
   it("does not render or request import jobs without system config", () => {
@@ -203,7 +203,7 @@ describe("SettingsImportJobHistoryOverview display safety", () => {
         pageSize={20}
       />,
     );
-    expect(loadingHtml).toContain("Loading import history overview");
+    expect(loadingHtml).toContain("正在加载导入记录概览");
 
     const emptyHtml = renderToStaticMarkup(
       <SettingsImportJobHistoryOverviewView
@@ -231,7 +231,7 @@ describe("SettingsImportJobHistoryOverview display safety", () => {
         pageSize={20}
       />,
     );
-    expect(errorHtml).toContain("Import history overview unavailable");
+    expect(errorHtml).toContain("导入记录概览暂不可用");
     expect(errorHtml).toContain("Read failed.");
 
     const listHtml = renderToStaticMarkup(
@@ -265,7 +265,7 @@ describe("SettingsImportJobHistoryOverview display safety", () => {
       <ImportJobHistoryDetailView detail={{ loading: false, data: detail, error: null }} />,
     );
 
-    expect(html).toContain("Safe summary");
+    expect(html).toContain("安全摘要");
     expect(html).toContain("Run status");
     expect(html).toContain("auditCount");
     expect(html).toContain("createdBusinessCount");

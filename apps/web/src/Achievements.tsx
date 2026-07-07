@@ -308,11 +308,11 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           title="成果管理"
           description="选择本地演示用户后，前端才会请求后端成果列表。"
         />
-        <PermissionHint description="当前没有 X-Demo-User-Id，成果管理不会发起业务请求。选择科研人员、科研秘书或系统管理员演示上下文后，列表会统一由后端权限策略裁剪。" />
+        <PermissionHint description="当前没有可用的业务用户，成果管理不会加载业务数据。请选择有权限的用户后继续。" />
         <BoundaryNotice
           title="等待演示上下文"
-          description="Step 12D 已提供真实详情和动作入口；选择演示上下文后才能读取后端业务数据。"
-          step="Step 12D"
+          description="选择用户后即可查看权限范围内的成果列表和操作入口。"
+          step="成果管理"
         />
       </Space>
     );
@@ -322,7 +322,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="成果管理"
-        description="读取后端 GET /achievements 的真实成果列表；筛选、分页和脱敏结果均以后端返回为准。"
+        description="查看当前账号权限范围内的成果列表，支持筛选、分页和安全摘要展示。"
         extra={
           canCreateAchievementDraft(authUser) ? (
             <Button type="primary" onClick={() => setFormRequest({ mode: "create" })}>
@@ -331,7 +331,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           ) : undefined
         }
       />
-      <PermissionHint description="最终读取权限以后端策略为准。前端只负责传递 X-Demo-User-Id、展示后端返回的列表和脱敏状态，不在浏览器端承担最终鉴权。" />
+      <PermissionHint description="系统会根据当前账号权限展示可访问的数据和操作。" />
 
       {canUseImportDryRun ? (
         <>
@@ -353,7 +353,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           />
           <ImportJobHistoryPanel
             apiClient={apiClient}
-            title="Achievement import history"
+            title="成果导入记录"
             filters={achievementImportHistoryFilters}
             achievementTypeFilter
           />
@@ -401,7 +401,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
         </Space>
       </Card>
 
-      <Card className="shell-card" title="成果列表" extra={<Tag>GET /achievements</Tag>}>
+      <Card className="shell-card" title="成果列表">
         <DataState
           loading={achievements.loading}
           error={achievements.error}
@@ -504,7 +504,7 @@ export function AchievementImportDryRunPanel({
   result,
   applyEligibility = {
     eligible: false,
-    reason: "Run a successful dry-run before applying.",
+    reason: "请先完成导入预检。",
     applyType: null,
   },
   applySubmitting = false,
@@ -536,16 +536,15 @@ export function AchievementImportDryRunPanel({
     <>
       <ImportDryRunPanelShell
         className="shell-card achievement-import-dry-run-card"
-        title="Achievement CSV dry-run"
-        endpoint="POST /achievements/import/dry-run"
-        noticeMessage="dryRun=true; CSV-only; validates PAPER, PATENT, and SOFTWARE_COPYRIGHT rows without writing achievements."
-        noticeDescription="Attachments, fees, workflow, audit logging, and real import execution are outside this dry-run. The preview only shows sanitized fields returned by the API."
-        fileAriaLabel="Achievement CSV file"
+        title="成果导入预检"
+        noticeMessage="上传 CSV 文件后，系统会先检查论文、专利和软件著作权数据。"
+        noticeDescription="预检仅展示可安全呈现的校验结果；确认后才会按权限执行草稿导入。"
+        fileAriaLabel="成果 CSV 文件"
         file={file}
         loading={loading}
         error={error}
         result={result}
-        emptyHint="Select one .csv file to preview achievement validation results."
+        emptyHint="请选择一个 CSV 文件进行导入预检。"
         onFileChange={onFileChange}
         onRunDryRun={onRunDryRun}
         renderResult={(dryRunResult) => (
@@ -559,7 +558,7 @@ export function AchievementImportDryRunPanel({
               disabled={!applyEligibility.eligible}
               onClick={onOpenApplyConfirm}
             >
-              Apply draft-only import
+              导入为草稿
             </Button>
           ) : null
         }
@@ -573,10 +572,10 @@ export function AchievementImportDryRunPanel({
         }
       />
       <Modal
-        title={`Confirm draft-only ${formatAchievementImportApplyType(applyEligibility.applyType)} import`}
+        title={`确认导入${formatAchievementImportApplyType(applyEligibility.applyType)}草稿`}
         open={applyConfirmOpen}
         okText={getAchievementImportApplyConfirmButtonText(applyEligibility.applyType)}
-        cancelText="Cancel"
+        cancelText="取消"
         confirmLoading={applySubmitting}
         onOk={onConfirmApply}
         onCancel={onCancelApplyConfirm}
@@ -595,30 +594,30 @@ export function AchievementImportDryRunResultView({
   return (
     <ImportDryRunResultShell
       result={result}
-      writeSafetyDescription="no achievement, detail, contributor, attachment, fee, workflow, or audit writes were requested."
+      writeSafetyDescription="预检阶段不会写入成果、附件、费用或审批数据。"
       extraAlerts={
         <Alert
           type="info"
           showIcon
-          message="ownerEmployeeNo lookup: NOT_AVAILABLE"
-          description="Use ownerEmail for owner resolution in this dry-run. ownerEmployeeNo is recognized only as an unsupported lookup boundary."
+          message="工号匹配暂不可用"
+          description="当前预检使用负责人邮箱进行匹配，工号仅作为文件内校验参考。"
         />
       }
       summaryItems={[
         {
-          label: "Draft candidates",
+          label: "草稿候选",
           value: result.summary.createDraftCandidates,
         },
         {
-          label: "File duplicate conflicts",
+          label: "文件内重复",
           value: result.summary.duplicateIdentifierRows,
         },
         {
-          label: "DB conflicts",
+          label: "系统内冲突",
           value: result.summary.dbConflictRows,
         },
         {
-          label: "ownerEmployeeNo lookup",
+          label: "工号匹配",
           value: result.summary.ownerEmployeeNoLookup,
         },
       ]}
@@ -641,39 +640,32 @@ export function AchievementImportApplyConfirmation({
   return (
     <Space direction="vertical" size={8}>
       <Typography.Paragraph>
-        This creates DRAFT {typeLabel} achievements and {detailLabel} with mode
-        CREATE_DRAFT_ONLY.
+        系统将创建{typeLabel}成果草稿，并写入{detailLabel}。
       </Typography.Paragraph>
       <Typography.Paragraph>
-        The backend will re-read and validate the CSV before writing. The browser dry-run
-        result is not trusted as an apply source of truth.
+        导入前会重新校验 CSV 文件，确保实际写入结果以系统校验为准。
       </Typography.Paragraph>
       <Typography.Paragraph>
-        The duplicate-apply boundary is the {boundaryLabel} from the uploaded CSV.
+        重复导入判断将使用上传文件中的{boundaryLabel}。
       </Typography.Paragraph>
       <Typography.Paragraph>
-        It will not submit for approval, create workflow, attachment/storage, fee,
-        reminder, notification, search, resource grant, or import job records.
+        本次操作只创建草稿，不会自动提交审批、创建附件、费用、提醒或授权记录。
       </Typography.Paragraph>
       {applyType === "SOFTWARE_COPYRIGHT" ? (
         <Typography.Paragraph>
-          Software copyright fees and reminders are intentionally not created by this
-          draft-only import.
+          软件著作权费用和提醒不会在草稿导入时自动创建。
         </Typography.Paragraph>
       ) : null}
       {applyType === "PATENT" ? (
         <>
           <Typography.Paragraph>
-            PatentDetail rows, contributors, and safe audit evidence are created for
-            DRAFT PATENT achievements only.
+            专利明细、贡献人和安全审计摘要仅会随专利草稿创建。
           </Typography.Paragraph>
           <Typography.Paragraph>
-            grantNoNormalized is only an optional second conflict boundary when
-            applicationNoNormalized is present.
+            授权号仅作为申请号存在时的辅助冲突判断依据。
           </Typography.Paragraph>
           <Typography.Paragraph>
-            nextFeeDate and feeAmount are not imported, written, or used to create fee
-            or reminder records by this draft-only import.
+            下次缴费日期和费用金额不会在草稿导入时写入，也不会自动生成费用或提醒记录。
           </Typography.Paragraph>
         </>
       ) : null}
@@ -702,7 +694,7 @@ function AchievementImportApplyStatus({
         <Alert
           type="warning"
           showIcon
-          message="Apply is disabled"
+          message="暂不能导入"
           description={eligibility.reason}
         />
       ) : null}
@@ -710,7 +702,7 @@ function AchievementImportApplyStatus({
         <Alert
           type="info"
           showIcon
-          message="Apply is ready"
+          message="可以导入"
           description={
             <Space size={6} wrap>
               <Tag color="blue">{eligibility.applyType}</Tag>
@@ -782,12 +774,12 @@ export function AchievementImportApplyResultView({
             </Descriptions.Item>
           </Descriptions>
           <Space size={6} wrap>
-            <Tag>DRAFT only</Tag>
-            <Tag>No workflow</Tag>
-            <Tag>No attachment/storage</Tag>
-            <Tag>No fee/reminder</Tag>
-            <Tag>No notification/search/resource grant</Tag>
-            <Tag>No import job</Tag>
+            <Tag>仅生成草稿</Tag>
+            <Tag>不触发审批流</Tag>
+            <Tag>不处理附件或存储</Tag>
+            <Tag>不处理费用或提醒</Tag>
+            <Tag>不触发通知、检索或资源授权</Tag>
+            <Tag>不创建导入任务</Tag>
           </Space>
         </Space>
       }
@@ -975,7 +967,7 @@ export const getAchievementImportApplyEligibility = ({
   if (!file) {
     return {
       eligible: false,
-      reason: "Select the same CSV file used for dry-run.",
+      reason: "请选择与预检一致的 CSV 文件。",
       applyType: null,
     };
   }
@@ -983,7 +975,7 @@ export const getAchievementImportApplyEligibility = ({
   if (!result) {
     return {
       eligible: false,
-      reason: "Run a successful dry-run before applying.",
+      reason: "请先完成导入预检。",
       applyType: null,
     };
   }
@@ -991,7 +983,7 @@ export const getAchievementImportApplyEligibility = ({
   if (!isAchievementImportFileFingerprintMatch(file, result, fingerprint)) {
     return {
       eligible: false,
-      reason: "Selected file changed after dry-run.",
+      reason: "文件已变更，请重新预检。",
       applyType: null,
     };
   }
@@ -1183,7 +1175,7 @@ const getAchievementImportApplyErrorSummary = (
       : "The backend rejected the apply request.";
 
   return {
-    message: "Apply rejected",
+    message: "导入被拒绝",
     description: `${countText} Safe error codes are shown when provided.`,
     codes,
   };
@@ -1226,7 +1218,7 @@ const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["co
     render: (_, row) => renderIdentifierList(row),
   },
   {
-    title: "Status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
     width: 120,
@@ -1260,7 +1252,7 @@ const achievementImportDryRunColumns: TableProps<AchievementImportDryRunRow>["co
 
 const renderContributorPreview = (row: AchievementImportDryRunRow) => {
   if (row.parsed.contributors.length === 0) {
-    return <Typography.Text type="secondary">None</Typography.Text>;
+    return <Typography.Text type="secondary">无</Typography.Text>;
   }
 
   return (
@@ -1280,7 +1272,7 @@ const renderIdentifierList = (row: AchievementImportDryRunRow) => {
   );
 
   if (entries.length === 0) {
-    return <Typography.Text type="secondary">None</Typography.Text>;
+    return <Typography.Text type="secondary">无</Typography.Text>;
   }
 
   return (

@@ -49,78 +49,74 @@ export const navItems: NavItem[] = [
   {
     key: "workbench",
     label: "工作台",
-    step: "Step 11",
+    step: "工作台",
     description: "工作台是本轮唯一主要内容，读取 summary 和我的审批待办。",
   },
   {
     key: "achievements",
     label: "成果管理",
-    step: "Step 12",
-    description: "Step 12 提供真实成果列表、登记/编辑、详情查看和提交/作废/归档入口。",
+    step: "成果管理",
+    description: "登记、查看、编辑并提交论文、专利和软件著作权等科研成果。",
   },
   {
     key: "workflow",
     label: "审批管理",
-    step: "Step 13",
-    description: "Step 13 已提供我的审批待办列表、任务详情以及通过/驳回处理入口。",
+    step: "审批管理",
+    description: "查看待办审批任务，并按权限完成通过或驳回处理。",
   },
   {
     key: "fees",
     label: "费用管理",
-    step: "Step 15A",
-    description: "Step 15A 提供只读费用台账、状态筛选和前端派生预警摘要。",
+    step: "费用管理",
+    description: "查看费用台账、缴费状态和预警摘要。",
   },
   {
     key: "search",
     label: "检索中心",
-    step: "Step 16",
-    description: "Step 16 已完成只读检索、高级筛选、结果摘要、成果详情和费用详情联动，复用后端 GET /search、GET /achievements/:id 与 GET /fees/:id。",
+    step: "检索中心",
+    description: "按权限检索成果和费用记录，查看筛选后的安全摘要。",
   },
   {
     key: "dashboard",
     label: "统计看板",
-    step: "Step 17",
-    description:
-      "Step 17 提供只读 dashboard summary 前端闭环，展示基础摘要、五组分布和 7/30/90 天窗口，不伪造完整报表能力。",
+    step: "统计看板",
+    description: "展示成果、审批、费用和风险的汇总指标。",
   },
   {
     key: "custom-reports",
-    label: "Custom Reports",
-    step: "Step 104-B",
-    description:
-      "Step 104-B 提供自定义报表 MVP Web 页面，只消费 /reports/templates 和 /reports/templates/:templateId/run，不提供导出、保存模板、定时推送、raw JSON 或敏感钻取。",
+    label: "自定义报表",
+    step: "自定义报表",
+    description: "按模板查看权限范围内的聚合统计报表。",
   },
   {
     key: "audit",
     label: "审计日志",
-    step: "Step 18B",
-    description:
-      "Step 18B 提供 masked readonly 审计日志前端页面，只调用 GET /audit-logs，不提供导出、unmasked 或写入入口。",
+    step: "审计日志",
+    description: "查看经脱敏处理的关键操作记录。",
   },
   {
     key: "settings",
     label: "系统配置",
-    step: "Step 51E",
-    description: "Step 51E provides API integrations metadata management through system:config.",
+    step: "系统配置",
+    description: "维护系统参数和外部接口配置摘要。",
   },
   {
     key: "secret-authorization",
-    label: "Secret Authorization",
-    step: "Step 122",
-    description:
-      "Step 122 provides local/demo/synthetic read-only secret authorization safe summaries through system:config.",
+    label: "涉密授权管理",
+    step: "涉密授权管理",
+    description: "查看涉密资源和授权状态的安全摘要。",
   },
   {
     key: "account-management",
     label: "账号管理",
-    step: "Step 36E-2",
-    description: "Step 36E-2 提供账号列表和详情只读 UI，不提供创建、禁用启用、角色或部门写入操作。",
+    step: "账号管理",
+    description: "维护账号状态、角色、部门和生命周期安全摘要。",
   },
   {
     key: "department-management",
     label: "部门维护",
-    step: "Step 37E",
-    description: "Step 37E 提供部门列表、树形展示、创建、编辑、启用和停用 UI，权限由 system:config 收敛。",
+    step: "部门维护",
+    description: "维护部门列表、层级关系和启停状态。",
   },
 ];
 
@@ -349,7 +345,7 @@ export function App() {
       <Header className="app-header">
         <div className="brand-block">
           <Typography.Title level={4}>{appName}</Typography.Title>
-          <Typography.Text type="secondary">Phase 1 frontend</Typography.Text>
+          <Typography.Text type="secondary">科研成果与知识产权管理平台</Typography.Text>
         </div>
         {shouldShowDemoIdentityControls(productionAuthMode) ? (
           <DemoIdentityControls
@@ -389,16 +385,16 @@ export function App() {
         <Layout className="main-layout">
           <Sider width={232} className="app-sider" breakpoint="lg" collapsedWidth={0}>
             <div className="user-panel">
-              <Typography.Text type="secondary">Current user</Typography.Text>
+              <Typography.Text type="secondary">当前用户</Typography.Text>
               <Typography.Text strong ellipsis>
                 {productionAuthMode
-                  ? authUser?.name ?? "Not signed in"
-                  : activeUser?.label ?? (demoUserId ? "Custom demo user" : "Not selected")}
+                  ? authUser?.name ?? "未登录"
+                  : activeUser?.label ?? (demoUserId ? "自定义用户" : "未选择")}
               </Typography.Text>
               <Typography.Text type="secondary" ellipsis>
                 {productionAuthMode
-                  ? authUser?.email ?? "Please sign in"
-                  : activeUser?.department ?? demoUserId ?? "Select demo context"}
+                  ? authUser?.email ?? "请先登录"
+                  : activeUser?.department ?? demoUserId ?? "请选择用户"}
               </Typography.Text>
             </div>
             <Menu
@@ -468,11 +464,11 @@ function DemoIdentityControls({
 }) {
   return (
     <div className="identity-bar">
-      <Tag color="gold">demo/staging identity</Tag>
+      <Tag color="gold">演示身份</Tag>
       <Select
         className="demo-user-select"
         allowClear
-        placeholder="Select demo user"
+        placeholder="选择用户"
         value={demoUserId ?? undefined}
         onChange={(value) => onDemoUserChange(value ?? null)}
         options={demoUserPresets.map((preset) => ({
@@ -482,13 +478,13 @@ function DemoIdentityControls({
       />
       <Input.Search
         className="demo-user-input"
-        placeholder="X-Demo-User-Id"
-        enterButton="Apply"
+        placeholder="输入用户标识"
+        enterButton="应用"
         value={customUserId}
         onChange={(event) => onCustomUserIdChange(event.target.value)}
         onSearch={onApplyCustomUser}
       />
-      {demoUserId ? <Button onClick={() => onDemoUserChange(null)}>Clear</Button> : null}
+      {demoUserId ? <Button onClick={() => onDemoUserChange(null)}>清除</Button> : null}
     </div>
   );
 }
@@ -504,16 +500,16 @@ function ProductionIdentityControls({
 }) {
   return (
     <div className="identity-bar">
-      <Tag color={authStatus === "authenticated" ? "green" : "blue"}>production auth</Tag>
+      <Tag color={authStatus === "authenticated" ? "green" : "blue"}>已登录</Tag>
       {authUser ? (
         <>
           <Typography.Text strong>{authUser.name}</Typography.Text>
           <Typography.Text type="secondary">{authUser.email}</Typography.Text>
-          <Button onClick={onLogout}>Logout</Button>
+          <Button onClick={onLogout}>退出登录</Button>
         </>
       ) : (
         <Typography.Text type="secondary">
-          {authStatus === "checking" ? "Checking session" : "Please sign in"}
+          {authStatus === "checking" ? "正在检查登录状态" : "请先登录"}
         </Typography.Text>
       )}
     </div>
@@ -615,7 +611,7 @@ function LegacyDemoApp() {
       <Header className="app-header">
         <div className="brand-block">
           <Typography.Title level={4}>{appName}</Typography.Title>
-          <Typography.Text type="secondary">一期前端基座 / Step 11</Typography.Text>
+          <Typography.Text type="secondary">科研成果与知识产权管理平台</Typography.Text>
         </div>
         <div className="identity-bar">
           <Tag color="gold">本地演示上下文 / 非真实 SSO</Tag>
@@ -632,7 +628,7 @@ function LegacyDemoApp() {
           />
           <Input.Search
             className="demo-user-input"
-            placeholder="输入 X-Demo-User-Id"
+            placeholder="输入用户标识"
             enterButton="应用"
             value={customUserId}
             onChange={(event) => setCustomUserId(event.target.value)}
@@ -696,18 +692,18 @@ function DemoContextBanner({ demoUserId }: { demoUserId: string | null }) {
 
   if (!demoUserId) {
     return (
-      <PermissionHint description="请选择科研人员、科研秘书或系统管理员演示用户。未选择时不会访问后端业务接口。" />
+      <PermissionHint description="请选择当前业务用户。未选择用户时，页面不会加载业务数据。" />
     );
   }
 
   return (
     <div className="context-banner">
       <Space size={12} wrap>
-        <Tag color="blue">X-Demo-User-Id</Tag>
-        <Typography.Text copyable>{demoUserId}</Typography.Text>
+        <Tag color="blue">当前用户</Tag>
+        <Typography.Text>{preset?.label ?? demoUserId}</Typography.Text>
         {preset ? <Tag>{preset.role}</Tag> : <Tag color="default">CUSTOM</Tag>}
         <Typography.Text type="secondary">
-          {preset?.note ?? "自定义演示用户将直接透传给后端 dev/test 身份适配器。"}
+          {preset?.department ?? "自定义用户"}
         </Typography.Text>
       </Space>
     </div>
@@ -719,11 +715,11 @@ function BoundaryPage({ item }: { item: NavItem }) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader title={item.label} description={item.description} />
       <BoundaryNotice
-        title={`${item.label}未在 Step 11 实现`}
-        description="当前页面只提供导航入口、权限边界说明和后续计划提示，不伪装为已完成业务能力。"
-        step={item.step}
+        title={`${item.label}暂不可用`}
+        description="当前账号暂不能访问该功能，请联系系统管理员确认权限或功能开通状态。"
+        step={item.label}
       />
-      <PermissionHint description="列表、详情、搜索、看板、附件下载和审计查询的最终权限裁剪必须依赖后端策略层，前端不承担最终鉴权。" />
+      <PermissionHint description="系统会根据当前账号权限展示可访问的数据和操作。" />
     </Space>
   );
 }

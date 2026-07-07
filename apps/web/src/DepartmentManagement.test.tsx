@@ -219,13 +219,13 @@ describe("department management permission boundary", () => {
     expect(html).toContain("权限 scope 仍是精确 departmentId");
     expect(html).toContain("department-management-page");
     expect(html).toContain("department-filter-bar");
-    expect(html).toContain("Department CSV dry-run");
-    expect(html).toContain("dryRun=true");
-    expect(html).toContain("CSV-only");
-    expect(html).toContain("before optional CREATE_ONLY apply");
-    expect(html).toContain("POST /imports/departments/dry-run");
-    expect(html).toContain("Department import history");
-    expect(html).toContain("Read-only history");
+    expect(html).toContain("部门导入预检");
+    expect(html).toContain("上传 CSV 文件后");
+    expect(html).toContain("创建新的部门信息");
+    expect(html).not.toContain("dryRun=true");
+    expect(html).not.toContain("POST /imports/departments/dry-run");
+    expect(html).toContain("部门导入记录");
+    expect(html).toContain("只读导入记录");
     expect(departmentImportHistoryFilters).toEqual({
       family: "DEPARTMENT",
       mode: "CREATE_ONLY",
@@ -354,7 +354,7 @@ describe("department import dry-run UI", () => {
         size: 1024,
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       }),
-    ).toContain("Only .csv");
+    ).toContain("仅支持上传 CSV 文件");
     expect(
       validateDepartmentImportCsvFile({
         name: "departments.csv",
@@ -369,9 +369,8 @@ describe("department import dry-run UI", () => {
       <DepartmentImportDryRunResultView result={departmentImportDryRunResult} />,
     );
 
-    expect(html).toContain("Dry-run report ready");
-    expect(html).toContain("DEPARTMENT_METADATA");
-    expect(html).toContain("Total rows");
+    expect(html).toContain("预检报告已生成");
+    expect(html).toContain("总行数");
     expect(html).toContain("3");
     expect(html).toContain("EXISTING_CODE");
     expect(html).toContain("UNKNOWN_PARENT");
@@ -411,7 +410,7 @@ describe("department import dry-run UI", () => {
       />,
     );
 
-    expect(html).toContain("Run dry-run");
+    expect(html).toContain("开始预检");
     expect(html).not.toContain("Execute import");
     expect(html).not.toContain("Confirm import");
     expect(html).not.toContain("Run import");
@@ -446,7 +445,7 @@ describe("department import dry-run UI", () => {
         submitting: false,
         fingerprint,
       }),
-    ).toMatchObject({ canApply: false, reason: "Resolve dry-run errors before apply." });
+    ).toMatchObject({ canApply: false, reason: "请先处理预检错误。" });
 
     expect(
       getDepartmentImportApplyEligibility({
@@ -461,7 +460,7 @@ describe("department import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "Resolve dry-run warnings before create-only apply.",
+      reason: "请先处理预检警告。",
     });
 
     expect(
@@ -492,7 +491,7 @@ describe("department import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "Only CREATE_ONLY department import apply is supported.",
+      reason: "当前仅支持创建新部门。",
     });
 
     expect(
@@ -533,17 +532,18 @@ describe("department import dry-run UI", () => {
       />,
     );
 
-    expect(html).toContain("Apply create-only");
-    expect(html).toContain("CREATE_ONLY apply is available");
-    expect(html).toContain("Department apply summary");
-    expect(html).toContain("Created rows");
+    expect(html).toContain("创建部门");
+    expect(html).toContain("可以创建部门");
+    expect(html).toContain("部门导入结果");
+    expect(html).toContain("已创建行");
     expect(html).toContain("DEPARTMENT_IMPORT_CREATE");
     const confirmHtml = renderToStaticMarkup(
       <DepartmentImportApplyConfirmContent result={validDepartmentImportDryRunResult} />,
     );
-    expect(confirmHtml).toContain("This will create department metadata.");
-    expect(confirmHtml).toContain("This action does not update, upsert, delete");
-    expect(confirmHtml).toContain("POST /imports/departments/apply");
+    expect(confirmHtml).toContain("确认创建部门信息");
+    expect(confirmHtml).toContain("不会更新、合并、删除");
+    expect(confirmHtml).toContain("仅创建新部门");
+    expect(confirmHtml).not.toContain("POST /imports/departments/apply");
   });
 
   it("renders sanitized apply errors for rejected, unauthorized, forbidden, and network cases", () => {

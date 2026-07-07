@@ -117,8 +117,8 @@ describe("production auth mode helpers", () => {
       }).some((item) => item.key === customReportsNavigationKey),
     ).toBe(true);
     expect(navItems.find((item) => item.key === customReportsNavigationKey)).toMatchObject({
-      label: "Custom Reports",
-      step: "Step 104-B",
+      label: "自定义报表",
+      step: "自定义报表",
     });
   });
 
@@ -163,8 +163,8 @@ describe("production auth mode helpers", () => {
       ),
     ).toBe(false);
     expect(navItems.find((item) => item.key === secretAuthorizationNavigationKey)).toMatchObject({
-      label: "Secret Authorization",
-      step: "Step 122",
+      label: "涉密授权管理",
+      step: "涉密授权管理",
     });
   });
 

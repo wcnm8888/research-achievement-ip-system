@@ -362,7 +362,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
     if (!importFile) {
       setImportError({
         kind: "bad-request",
-        message: "Select a CSV file before running dry-run.",
+        message: "请先选择一个 CSV 文件。",
       });
       return;
     }
@@ -385,7 +385,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
       const result = await dryRunDepartmentImport(apiClient, importFile);
       setImportResult(result);
       setImportFileFingerprint(buildDepartmentImportFileFingerprint(importFile, result));
-      message.success("Department CSV dry-run completed.");
+      message.success("部门导入预检已完成。");
     } catch (error) {
       setImportError(normalizeError(error));
     } finally {
@@ -562,7 +562,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
 
       <ImportJobHistoryPanel
         apiClient={apiClient}
-        title="Department import history"
+        title="部门导入记录"
         filters={departmentImportHistoryFilters}
       />
 
@@ -614,7 +614,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
       </Card>
 
       {viewMode === "list" ? (
-        <Card className="shell-card" title="部门列表" extra={<Tag>GET /departments</Tag>}>
+        <Card className="shell-card" title="部门列表">
           <DataState
             loading={departments.loading}
             error={departments.error}
@@ -648,7 +648,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
           </DataState>
         </Card>
       ) : (
-        <Card className="shell-card" title="部门树" extra={<Tag>GET /departments/tree</Tag>}>
+        <Card className="shell-card" title="部门树">
           <DataState
             loading={tree.loading}
             error={tree.error}
@@ -777,7 +777,7 @@ export const getDepartmentImportApplyEligibility = ({
   }
 
   if (mode !== departmentImportApplyMode) {
-    return { canApply: false, reason: "Only CREATE_ONLY department import apply is supported." };
+    return { canApply: false, reason: "当前仅支持创建新部门。" };
   }
 
   if (!file) {
@@ -785,15 +785,15 @@ export const getDepartmentImportApplyEligibility = ({
   }
 
   if (!result) {
-    return { canApply: false, reason: "Run department CSV dry-run before apply." };
+    return { canApply: false, reason: "请先完成部门导入预检。" };
   }
 
   if (!isSameDepartmentImportFile(file, fingerprint)) {
-    return { canApply: false, reason: "The selected file changed after dry-run. Run dry-run again." };
+    return { canApply: false, reason: "已选择的文件发生变化，请重新预检。" };
   }
 
   if (result.importType !== "DEPARTMENT_METADATA" || result.dryRun !== true) {
-    return { canApply: false, reason: "Only department dry-run results can be applied here." };
+    return { canApply: false, reason: "当前结果不能用于部门导入。" };
   }
 
   if (result.summary.totalRows <= 0) {
@@ -801,11 +801,11 @@ export const getDepartmentImportApplyEligibility = ({
   }
 
   if (result.summary.errorRows > 0) {
-    return { canApply: false, reason: "Resolve dry-run errors before apply." };
+    return { canApply: false, reason: "请先处理预检错误。" };
   }
 
   if (result.summary.warningRows > 0) {
-    return { canApply: false, reason: "Resolve dry-run warnings before create-only apply." };
+    return { canApply: false, reason: "请先处理预检警告。" };
   }
 
   if (result.summary.createCandidates !== result.summary.totalRows) {
@@ -820,7 +820,7 @@ export const getDepartmentImportApplyEligibility = ({
     return { canApply: false, reason: "All department import actions must be CREATE." };
   }
 
-  return { canApply: true, reason: "Ready for CREATE_ONLY department apply." };
+  return { canApply: true, reason: "已通过预检，可以创建部门。" };
 };
 
 export const mapDepartmentImportApplyErrorToDisplay = (error: ApiError): ApiError => {
@@ -828,7 +828,7 @@ export const mapDepartmentImportApplyErrorToDisplay = (error: ApiError): ApiErro
     return {
       ...error,
       message: "Department import apply needs an active session.",
-      detail: "Sign in again and rerun dry-run before applying.",
+      detail: "请重新登录并重新预检后再导入。",
     };
   }
 
@@ -933,7 +933,7 @@ export function DepartmentImportDryRunPanel({
   loading,
   applySubmitting = false,
   applyConfirmOpen = false,
-  applyEligibility = { canApply: false, reason: "Run department CSV dry-run before apply." },
+  applyEligibility = { canApply: false, reason: "请先完成部门导入预检。" },
   applyResult = null,
   applyError = null,
   error,
@@ -963,17 +963,16 @@ export function DepartmentImportDryRunPanel({
     <>
       <ImportDryRunPanelShell
         className="shell-card department-import-dry-run-card"
-        title="Department CSV dry-run"
-        endpoint="POST /imports/departments/dry-run"
-        noticeMessage="dryRun=true; CSV-only; validates structure and data before optional CREATE_ONLY apply."
-        noticeDescription="Accepted headers are code and name, with optional parentCode. Apply creates department metadata only; update, upsert, delete, merge, and reactivation are not supported."
-        fileAriaLabel="Department CSV file"
+        title="部门导入预检"
+        noticeMessage="上传 CSV 文件后，系统会先检查部门编码、名称和上级部门关系。"
+        noticeDescription="预检通过后可创建新的部门信息，不会执行更新、合并或删除操作。"
+        fileAriaLabel="部门 CSV 文件"
         file={file}
         loading={loading}
         controlsDisabled={applySubmitting}
         error={error}
         result={result}
-        emptyHint="Select one .csv file to preview validation results."
+        emptyHint="请选择一个 CSV 文件进行部门导入预检。"
         onFileChange={onFileChange}
         onRunDryRun={onRunDryRun}
         extraActions={
@@ -982,7 +981,7 @@ export function DepartmentImportDryRunPanel({
             disabled={!applyEligibility.canApply || loading || applySubmitting}
             onClick={onOpenApplyConfirm}
           >
-            Apply create-only
+            创建部门
           </Button>
         }
         renderResult={(dryRunResult) => (
@@ -1048,8 +1047,8 @@ function DepartmentImportApplyStatus({
         showIcon
         message={
           eligibility.canApply
-            ? "CREATE_ONLY apply is available"
-            : "CREATE_ONLY apply is disabled"
+            ? "可以创建部门"
+            : "暂不能创建部门"
         }
         description={eligibility.reason}
       />
@@ -1074,29 +1073,29 @@ function DepartmentImportApplyResultView({
   const errorCodes = [...new Set(result.errors.map((error) => error.code))];
 
   return (
-    <Card size="small" title="Department apply result">
+    <Card size="small" title="部门导入结果">
       <Space direction="vertical" size={10} className="full-width">
         <Alert
           type={result.summary.errorCount > 0 ? "warning" : "success"}
           showIcon
-          message="Department apply summary"
-          description="Result is sanitized. Audit rows are written by the backend in the same transaction as department creation."
+          message="部门导入结果"
+          description="结果已脱敏展示。审计记录由后端在部门创建事务中同步写入。"
         />
         <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
-          <Descriptions.Item label="Mode">{result.mode}</Descriptions.Item>
-          <Descriptions.Item label="Created rows">
+          <Descriptions.Item label="执行模式">{result.mode}</Descriptions.Item>
+          <Descriptions.Item label="已创建行">
             {result.summary.createdRows}
           </Descriptions.Item>
-          <Descriptions.Item label="Skipped rows">
+          <Descriptions.Item label="跳过行">
             {result.summary.skippedRows}
           </Descriptions.Item>
-          <Descriptions.Item label="Failed rows">
+          <Descriptions.Item label="失败行">
             {result.summary.failedRows}
           </Descriptions.Item>
           <Descriptions.Item label="Error count">
             {result.summary.errorCount}
           </Descriptions.Item>
-          <Descriptions.Item label="Audit operation">
+          <Descriptions.Item label="审计操作">
             {departmentImportApplyAuditOperation}
           </Descriptions.Item>
         </Descriptions>
@@ -1110,7 +1109,7 @@ function DepartmentImportApplyResultView({
             ))}
           </Space>
         ) : (
-          <Typography.Text type="secondary">Rejected/error summary: none.</Typography.Text>
+          <Typography.Text type="secondary">无拒绝或错误摘要。</Typography.Text>
         )}
       </Space>
     </Card>
@@ -1132,10 +1131,10 @@ function DepartmentImportApplyConfirmModal({
 }) {
   return (
     <Modal
-      title="Apply department CSV create-only"
+      title="创建部门"
       open={open}
-      okText="Apply create-only"
-      cancelText="Cancel"
+      okText="创建部门"
+      cancelText="取消"
       confirmLoading={submitting}
       okButtonProps={{ disabled: submitting }}
       cancelButtonProps={{ disabled: submitting }}
@@ -1159,24 +1158,21 @@ export function DepartmentImportApplyConfirmContent({
       <Alert
         type="warning"
         showIcon
-        message="This will create department metadata."
-        description="Mode is CREATE_ONLY. This action does not update, upsert, delete, merge, disable, enable, or reactivate departments."
+        message="确认创建部门信息"
+        description="本次操作仅创建新部门，不会更新、合并、删除、停用、启用或重新激活部门。"
       />
       <Descriptions bordered size="small" column={1}>
-        <Descriptions.Item label="Endpoint">
-          POST /imports/departments/apply
-        </Descriptions.Item>
-        <Descriptions.Item label="Mode">{departmentImportApplyMode}</Descriptions.Item>
+        <Descriptions.Item label="导入方式">仅创建新部门</Descriptions.Item>
         <Descriptions.Item label="Rows requested">
           {result?.summary.createCandidates ?? 0}
         </Descriptions.Item>
-        <Descriptions.Item label="Audit operation">
+        <Descriptions.Item label="审计操作">
           {departmentImportApplyAuditOperation}
         </Descriptions.Item>
       </Descriptions>
       <Typography.Text type="secondary">
         The backend re-parses and revalidates the uploaded CSV before writing. Local
-        production-like acceptance is not production/VPS readiness.
+        页面仅展示本次导入的安全摘要。
       </Typography.Text>
     </Space>
   );
@@ -1202,7 +1198,7 @@ const departmentImportDryRunColumns: TableProps<DepartmentImportDryRunRow>["colu
     ),
   },
   {
-    title: "Status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
     width: 120,

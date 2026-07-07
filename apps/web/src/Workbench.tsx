@@ -69,7 +69,7 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
           title="工作台"
           description="请选择本地演示用户后加载后端工作台摘要和个人待办。"
         />
-        <PermissionHint description="当前没有 X-Demo-User-Id，前端不会发起业务请求。选择或输入演示用户后，请求会统一带上本地演示上下文 header；这不是正式 SSO。" />
+        <PermissionHint description="当前没有可用的业务用户，页面不会加载业务数据。请选择有权限的用户后继续。" />
         <WorkbenchSkeletonBoundary onNavigate={onNavigate} />
       </Space>
     );
@@ -195,7 +195,6 @@ function TaskCard({
     <Card
       className="shell-card"
       title="我的审批待办"
-      extra={<Tag color="processing">GET /workflow/tasks/my</Tag>}
     >
       <DataState
         loading={tasks.loading}
@@ -243,12 +242,12 @@ function MyAchievementsCard({ onNavigate }: { onNavigate: (key: string) => void 
     <Card className="shell-card" title="我的成果">
       <Space direction="vertical" size={12}>
         <Typography.Text>
-          Step 12 已接入真实成果列表、登记/编辑、详情查看和提交/作废/归档入口。
+          可在成果管理中登记、查看、编辑并提交科研成果。
         </Typography.Text>
         <BoundaryNotice
           title="成果管理入口"
           description="进入成果管理可查看后端返回的数据并执行当前状态允许的动作；审批、附件和费用工作流仍留到后续 Step。"
-          step="Step 12"
+          step="成果管理"
         />
         <Button onClick={() => onNavigate("achievements")}>查看成果列表</Button>
       </Space>
@@ -292,7 +291,7 @@ function SystemMessagesCard() {
         type="info"
         showIcon
         message="站内消息边界"
-        description="Step 11 仅展示本地页面提示，不连接真实邮件、短信、通知队列或外部服务。"
+        description="系统消息用于展示站内提醒和业务通知摘要。"
       />
     </Card>
   );
@@ -306,7 +305,7 @@ function WorkbenchSkeletonBoundary({ onNavigate }: { onNavigate: (key: string) =
           <BoundaryNotice
             title="等待演示上下文"
             description="选择用户后再请求 dashboard summary。"
-            step="Step 11"
+            step="工作台"
           />
         </Card>
       </Col>
@@ -315,7 +314,7 @@ function WorkbenchSkeletonBoundary({ onNavigate }: { onNavigate: (key: string) =
           <BoundaryNotice
             title="下一步入口"
             description="成果列表和表单不在本轮实现。"
-            step="Step 12"
+            step="成果管理"
           />
           <Button className="boundary-action" onClick={() => onNavigate("achievements")}>
             查看边界
@@ -327,7 +326,7 @@ function WorkbenchSkeletonBoundary({ onNavigate }: { onNavigate: (key: string) =
           <BoundaryNotice
             title="待办入口"
             description="选择科研秘书后可进入审批管理查看我的待办列表。"
-            step="Step 13B"
+            step="审批管理"
           />
           <Button className="boundary-action" onClick={() => onNavigate(getWorkbenchWorkflowNavKey())}>
             进入审批管理

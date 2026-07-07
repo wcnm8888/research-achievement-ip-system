@@ -58,8 +58,8 @@ describe("settings api integrations permission boundary", () => {
       <SettingsApiIntegrations demoUserId="auditor-user-id" authUser={auditorUser} />,
     );
 
-    expect(html).toContain("Current account cannot access Settings.");
-    expect(html).toContain("does not request /settings/api-integrations");
+    expect(html).toContain("当前账号无权访问系统接口配置。");
+    expect(html).toContain("没有权限时，前端不会请求接口配置数据");
     expect(fetchMock).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();
@@ -71,12 +71,12 @@ describe("settings api integrations permission boundary", () => {
     );
 
     expect(html).toContain("settings-api-page");
-    expect(html).toContain("Import history overview");
-    expect(html).toContain("read-only index");
-    expect(html).toContain("API integrations");
-    expect(html).toContain("External interface mock demo center");
-    expect(html).toContain("Mock demo only / 非真实外部联调");
-    expect(html).toContain("Config reference is a non-sensitive reference name");
+    expect(html).toContain("导入记录概览");
+    expect(html).toContain("只读索引");
+    expect(html).toContain("接口集成配置");
+    expect(html).toContain("外部接口模拟联调中心");
+    expect(html).toContain("模拟环境");
+    expect(html).toContain("配置引用只是非敏感名称");
     expect(html).not.toContain("API key");
   });
 });

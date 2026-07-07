@@ -271,7 +271,7 @@ export function AchievementForm({
           description={
             isEdit
               ? "当前后端只支持编辑 DRAFT 草稿，且 PATCH 不支持更新 contributors；贡献人信息仅作只读展示。"
-              : "创建草稿会调用 POST /achievements；departmentId 由后端根据当前演示上下文确定。"
+              : "创建草稿时，所属部门由系统根据当前用户上下文确定。"
           }
         />
         {loadError ? <Alert showIcon type="error" message={loadError.message} description={loadError.detail} /> : null}

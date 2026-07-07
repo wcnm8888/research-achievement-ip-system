@@ -46,19 +46,19 @@ export const parsePublicLifecycleIntent = (url: string): PublicLifecycleIntent =
 
 export const getSafeLifecycleErrorMessage = (error: unknown): string => {
   if (!isApiError(error)) {
-    return "Request failed. Please try again later.";
+    return "请求失败，请稍后重试。";
   }
 
   if (error.status === 401 || error.status === 409) {
-    return "This link is invalid or expired. Request a new link from the sign-in page or an administrator.";
+    return "该链接无效或已过期，请从登录页或管理员处重新获取链接。";
   }
 
   if (error.kind === "forbidden") {
-    return "This operation is not available for the current account state.";
+    return "当前账号状态不支持该操作。";
   }
 
   if (error.kind === "network" || error.kind === "server") {
-    return "Service is temporarily unavailable. Please try again later.";
+    return "服务暂不可用，请稍后重试。";
   }
 
   return error.message;
@@ -155,32 +155,32 @@ function ForgotPasswordPanel({
 
   return (
     <LifecyclePanel
-      title="Reset access"
-      description="Enter your work email. If the account can receive a reset, the next step will be delivered through the configured channel."
+      title="重置登录权限"
+      description="请输入工作邮箱；如账号符合重置条件，系统会通过配置的交付渠道发送下一步指引。"
       onBackToLogin={onBackToLogin}
     >
       {status === "success" ? (
         <Alert
           type="success"
           showIcon
-          message="Request accepted"
-          description="If the account is eligible, reset instructions will be delivered. Return to sign in after setting a new password."
+          message="请求已受理"
+          description="如账号符合条件，重置指引会被交付；设置新密码后请返回登录。"
         />
       ) : null}
       {error ? <Alert type="error" showIcon message={getSafeLifecycleErrorMessage(error)} /> : null}
       <Form<PasswordResetRequestInput> layout="vertical" requiredMark={false} onFinish={submit}>
         <Form.Item
-          label="Email"
+          label="邮箱"
           name="email"
           rules={[
-            { required: true, message: "Enter your email." },
-            { type: "email", message: "Enter a valid email." },
+            { required: true, message: "请输入邮箱。" },
+            { type: "email", message: "请输入有效邮箱。" },
           ]}
         >
           <Input autoComplete="email" disabled={status === "submitting"} />
         </Form.Item>
         <Button type="primary" htmlType="submit" loading={status === "submitting"}>
-          Send reset request
+          发送重置请求
         </Button>
       </Form>
     </LifecyclePanel>
@@ -219,16 +219,16 @@ function ResetPasswordPanel({
 
   return (
     <LifecyclePanel
-      title="Set a new password"
-      description="Use the reset token once, then sign in again with the new password."
+      title="设置新密码"
+      description="重置凭据只能使用一次，完成后请使用新密码重新登录。"
       onBackToLogin={onBackToLogin}
     >
       {status === "success" ? (
         <Alert
           type="success"
           showIcon
-          message="Password updated"
-          description="Your active sessions were refreshed. Return to sign in with the new password."
+          message="密码已更新"
+          description="当前会话状态已刷新，请返回登录并使用新密码。"
         />
       ) : null}
       {error ? <Alert type="error" showIcon message={getSafeLifecycleErrorMessage(error)} /> : null}
@@ -240,14 +240,14 @@ function ResetPasswordPanel({
       >
         <TokenFormItem hasInitialToken={Boolean(initialToken)} />
         <Form.Item
-          label="New password"
+          label="新密码"
           name="newPassword"
-          rules={[{ required: true, min: 12, message: "Use at least 12 characters." }]}
+          rules={[{ required: true, min: 12, message: "请至少输入 12 个字符。" }]}
         >
           <Input.Password autoComplete="new-password" disabled={status === "submitting"} />
         </Form.Item>
         <Button type="primary" htmlType="submit" loading={status === "submitting"}>
-          Update password
+          更新密码
         </Button>
       </Form>
     </LifecyclePanel>
@@ -286,16 +286,16 @@ function InviteAcceptPanel({
 
   return (
     <LifecyclePanel
-      title="Accept invitation"
-      description="Create your password to activate the pending account, then sign in from the main panel. In this demo, invitation delivery is local/simulated and not a production email or SMS acceptance."
+      title="接受邀请"
+      description="请创建登录密码以激活待开通账号，完成后返回主登录面板。"
       onBackToLogin={onBackToLogin}
     >
       {status === "success" ? (
         <Alert
           type="success"
           showIcon
-          message="Invitation accepted"
-          description="Your account is active for the local demo flow. Return to sign in with the password you set."
+          message="邀请已接受"
+          description="账号已完成激活，请返回登录并使用刚设置的密码。"
         />
       ) : null}
       {error ? <Alert type="error" showIcon message={getSafeLifecycleErrorMessage(error)} /> : null}
@@ -307,14 +307,14 @@ function InviteAcceptPanel({
       >
         <TokenFormItem hasInitialToken={Boolean(initialToken)} />
         <Form.Item
-          label="Password"
+          label="密码"
           name="password"
-          rules={[{ required: true, min: 12, message: "Use at least 12 characters." }]}
+          rules={[{ required: true, min: 12, message: "请至少输入 12 个字符。" }]}
         >
           <Input.Password autoComplete="new-password" disabled={status === "submitting"} />
         </Form.Item>
         <Button type="primary" htmlType="submit" loading={status === "submitting"}>
-          Activate account
+          激活账号
         </Button>
       </Form>
     </LifecyclePanel>
@@ -324,7 +324,7 @@ function InviteAcceptPanel({
 function TokenFormItem({ hasInitialToken }: { hasInitialToken: boolean }) {
   return (
     <Form.Item
-      label="Token"
+      label="凭据"
       name="token"
       rules={[
         {
@@ -336,7 +336,7 @@ function TokenFormItem({ hasInitialToken }: { hasInitialToken: boolean }) {
             if (token.length >= 20) {
               return Promise.resolve();
             }
-            return Promise.reject(new Error("Enter the token from the delivered link."));
+            return Promise.reject(new Error("请输入交付链接中的凭据。"));
           },
         },
       ]}
@@ -370,7 +370,7 @@ function LifecyclePanel({
         </div>
         {children}
         <Button type="link" onClick={onBackToLogin}>
-          Back to sign in
+          返回登录
         </Button>
       </Space>
     </div>
@@ -382,6 +382,6 @@ const normalizeLifecycleError = (error: unknown): ApiError =>
     ? error
     : {
         kind: "unknown",
-        message: "Request failed.",
+        message: "请求失败。",
         detail: error instanceof Error ? error.message : undefined,
       };

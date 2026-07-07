@@ -70,7 +70,7 @@ export const customReportTemplateIds: readonly CustomReportTemplateId[] = [
 ];
 
 export const customReportBoundaryText =
-  "local/demo/custom report summary; not full BI; not production monitoring; not production acceptance; no raw export; no sensitive drilldown; no real external-system evidence.";
+  "本页面仅展示权限范围内的聚合报表摘要，不展示明细敏感数据或原始记录。";
 
 const emptyTemplates: Loadable<CustomReportTemplate[]> = {
   loading: false,
@@ -219,10 +219,10 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
     return (
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
-          title="Custom Reports"
-          description="Select a local demo user before loading custom report templates."
+          title="自定义报表"
+          description="请选择当前业务用户后查看可用报表模板。"
         />
-        <PermissionHint description="No X-Demo-User-Id is selected, so this page does not call /reports/templates or run custom report summaries. This is not SSO or production acceptance." />
+        <PermissionHint description="当前没有可用的业务用户，页面不会加载报表数据。" />
       </Space>
     );
   }
@@ -313,26 +313,26 @@ export const getDefaultCustomReportTemplateId = (
 
 export const mapCustomReportErrorToDisplay = (error: ApiError): ApiError => {
   if (error.kind === "unauthorized") {
-    return { ...error, message: "Select or switch a demo user before running reports.", detail: undefined };
+    return { ...error, message: "请先选择或切换有权限的用户。", detail: undefined };
   }
 
   if (error.kind === "forbidden") {
-    return { ...error, message: "Current role cannot read custom reports.", detail: undefined };
+    return { ...error, message: "当前角色无权查看自定义报表。", detail: undefined };
   }
 
   if (error.kind === "bad-request") {
-    return { ...error, message: "Custom report filters are invalid.", detail: undefined };
+    return { ...error, message: "报表筛选条件无效。", detail: undefined };
   }
 
   if (error.kind === "server") {
-    return { ...error, message: "Custom report service is unavailable.", detail: undefined };
+    return { ...error, message: "报表服务暂不可用。", detail: undefined };
   }
 
   if (error.kind === "network") {
-    return { ...error, message: "Cannot reach custom report service.", detail: undefined };
+    return { ...error, message: "无法连接报表服务。", detail: undefined };
   }
 
-  return { ...error, message: "Custom report request failed.", detail: undefined };
+  return { ...error, message: "报表请求失败。", detail: undefined };
 };
 
 export function CustomReportsView({
@@ -356,15 +356,15 @@ export function CustomReportsView({
   return (
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
-        title="Custom Reports"
-        description="Run read-only aggregate report templates against the current local demo scope."
+        title="自定义报表"
+        description="按模板查看当前权限范围内的聚合统计结果。"
         extra={
           <Space size={8} wrap>
             <Button onClick={onReloadTemplates} loading={templates.loading}>
-              Refresh templates
+              刷新模板
             </Button>
             <Button type="primary" onClick={onRun} loading={report.loading} disabled={!selectedTemplateId}>
-              Run
+              生成报表
             </Button>
           </Space>
         }
@@ -376,16 +376,16 @@ export function CustomReportsView({
         loading={templates.loading}
         error={templates.error}
         empty={templateItems.length === 0}
-        emptyText="No custom report templates are available."
+        emptyText="暂无可用报表模板。"
         onRetry={onReloadTemplates}
       >
-        <Card className="shell-card" title="Templates">
+        <Card className="shell-card" title="报表模板">
           <Space direction="vertical" size={12} className="full-width">
             <Select
               className="full-width"
               aria-label="Report template"
               value={selectedTemplateId ?? undefined}
-              placeholder="Select report template"
+              placeholder="选择报表模板"
               options={templateItems.map((template) => ({
                 label: `${template.templateId} - ${template.name}`,
                 value: template.templateId,

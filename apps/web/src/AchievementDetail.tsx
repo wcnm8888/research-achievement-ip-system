@@ -576,17 +576,17 @@ export const shouldLoadAttachmentDetailMetadata = (
   Boolean(demoUserId?.trim() && achievementId?.trim() && attachmentId?.trim());
 
 export const getAttachmentMetadataReadonlyBoundary = () => ({
-  title: "Step 45C-3 附件本地 UI",
+  title: "附件管理",
   description:
     "本区域接入附件 metadata 列表、multipart 上传和认证下载；不展示 storageKey、checksum、真实路径或文件内容。",
-  allowedRequest: "GET /achievements/:achievementId/attachments",
+  allowedRequest: "附件列表",
 });
 
 export const getAttachmentDetailMetadataReadonlyBoundary = () => ({
-  title: "Step 21A 附件 detail metadata 只读",
+  title: "附件详情只读",
   description:
-    "本详情只读取 GET /achievements/:achievementId/attachments/:attachmentId 返回的安全 metadata 字段；不提供上传、下载、删除、归档、版本变更、对象存储、费用凭证附件或文件内容能力。",
-  allowedRequest: "GET /achievements/:achievementId/attachments/:attachmentId",
+    "本详情只展示附件安全摘要字段；不提供删除、归档、版本变更、对象存储路径或文件内容能力。",
+  allowedRequest: "附件详情",
 });
 
 export const mapAttachmentMetadataErrorToDisplay = (error: ApiError): ApiError => {
@@ -962,7 +962,7 @@ function DetailContent({
         description={
           isReadonly
             ? readonlyLabels.boundaryDescription
-            : "workflow 审批处理、费用 CRUD、搜索中心、统计看板和审计日志均不在 Step 12D 范围内。附件上传下载为当前本地 UI 接入范围。"
+            : "审批处理、费用管理、搜索中心、统计看板和审计日志请在对应功能中处理。"
         }
       />
     </Space>
@@ -992,7 +992,7 @@ const getDetailContentReadonlyLabels = (mode: DetailContentMode) => {
       noticeMessage: "检索中心只读",
       noticeDescription:
         "本视图不提供成果提交、作废或归档动作；检索结果只负责打开当前用户可读取的成果详情。",
-      boundaryMessage: "Step 16C 边界",
+      boundaryMessage: "只读详情边界",
       boundaryDescription:
         "本视图只补齐检索中心成果结果的只读详情联动，不实现费用详情联动、搜索日志、外部搜索引擎、附件、统计看板或审计日志。",
     };
@@ -1005,7 +1005,7 @@ const getDetailContentReadonlyLabels = (mode: DetailContentMode) => {
       noticeMessage: "审批上下文只读",
       noticeDescription:
         "本视图不提供成果提交、作废或归档动作；审批处理仍在审批待办详情中完成。",
-      boundaryMessage: "Step 14B 边界",
+      boundaryMessage: "审批上下文边界",
       boundaryDescription:
         "本视图只补齐审批任务联动成果详情的只读基础，不实现审批历史、审计日志、附件、费用、搜索或看板。",
     };
@@ -1193,13 +1193,13 @@ function AchievementConversionSection({
                         {conversionStatusLabels[item.status] ?? item.status}
                       </Tag>
                       <Tag color={getConversionContractStatusTagColor(item.contractStatus)}>
-                        Contract: {conversionContractStatusLabels[item.contractStatus] ?? item.contractStatus}
+                        合同：{conversionContractStatusLabels[item.contractStatus] ?? item.contractStatus}
                       </Tag>
                       <Tag color={getConversionRevenueStatusTagColor(item.revenueStatus)}>
-                        Revenue: {conversionRevenueStatusLabels[item.revenueStatus] ?? item.revenueStatus}
+                        收入：{conversionRevenueStatusLabels[item.revenueStatus] ?? item.revenueStatus}
                       </Tag>
                       <Tag color={getConversionEvaluationEffectTagColor(item.evaluationEffect)}>
-                        Evaluation: {conversionEvaluationEffectLabels[item.evaluationEffect] ?? item.evaluationEffect}
+                        后评估：{conversionEvaluationEffectLabels[item.evaluationEffect] ?? item.evaluationEffect}
                       </Tag>
                       <Tag>{conversionTypeLabels[item.conversionType] ?? item.conversionType}</Tag>
                       <Typography.Text strong>{item.counterpartyName}</Typography.Text>
@@ -1244,7 +1244,7 @@ function AchievementConversionSection({
                     <Descriptions.Item label="Benefit summary" span={2}>
                       {formatValue(item.benefitDistributionSummary)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Remarks" span={2}>
+                    <Descriptions.Item label="备注" span={2}>
                       {formatValue(item.remarks)}
                     </Descriptions.Item>
                   </Descriptions>
@@ -1254,7 +1254,7 @@ function AchievementConversionSection({
                       setForm(toConversionForm(item));
                       setSaveError(null);
                     }}>
-                      Edit record
+                      编辑记录
                     </Button>
                   ) : null}
                 </Space>
@@ -1268,7 +1268,7 @@ function AchievementConversionSection({
             <Space direction="vertical" size={10} className="full-width">
               <Space size={8} wrap>
                 <Typography.Text strong>
-                  {editingId ? "Edit conversion record" : "Create conversion record"}
+                  {editingId ? "编辑转化记录" : "新增转化记录"}
                 </Typography.Text>
                 {editingId ? (
                   <Button size="small" onClick={() => {
@@ -1276,7 +1276,7 @@ function AchievementConversionSection({
                     setForm(emptyConversionForm());
                     setSaveError(null);
                   }}>
-                    New record
+                    新建记录
                   </Button>
                 ) : null}
               </Space>
@@ -1808,7 +1808,7 @@ export const formatBenefitDistributionJson = (
   items: AchievementConversionBenefitDistributionItem[] | null | undefined,
 ): string => {
   if (!items?.length) {
-    return "Not returned";
+    return "未返回";
   }
 
   return items
@@ -1829,7 +1829,7 @@ export const formatBenefitDistributionJson = (
 };
 
 const formatMoney = (value: string | null | undefined): string =>
-  value ? new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format(Number(value)) : "Not returned";
+  value ? new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format(Number(value)) : "未返回";
 
 function AttachmentMetadataSection({
   achievementId,
@@ -1986,7 +1986,7 @@ function AttachmentMetadataSection({
             showIcon
             type="warning"
             message="等待演示用户"
-            description="未选择 X-Demo-User-Id 时不读取附件 metadata，也不会发起任何附件业务请求。"
+            description="未选择业务用户时不读取附件摘要，也不会发起任何附件业务请求。"
           />
         ) : (
           <DataState
@@ -2252,7 +2252,7 @@ function AttachmentDetailMetadataPanel({
             showIcon
             type="warning"
             message="等待演示用户"
-            description="未选择 X-Demo-User-Id 或附件 ID 缺失时不读取附件 detail metadata。"
+            description="未选择业务用户或附件 ID 缺失时不读取附件详情摘要。"
           />
         ) : (
           <DataState
@@ -2527,7 +2527,7 @@ const getStatusBoundaryNotice = (status: AchievementStatusCode): React.ReactNode
         showIcon
         type="info"
         message="等待院系审核"
-        description="Step 12D 不实现审批通过或驳回；审批动作留到后续 Step 单独确认。"
+        description="审批通过或驳回请在审批管理中处理。"
       />
     );
   }

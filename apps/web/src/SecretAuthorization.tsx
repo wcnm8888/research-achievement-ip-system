@@ -54,7 +54,7 @@ const emptyLoadable = <T,>(): Loadable<T> => ({
   error: null,
 });
 
-const noValue = "Not returned";
+const noValue = "未返回";
 
 export function SecretAuthorization({
   demoUserId,
@@ -156,16 +156,15 @@ export function SecretAuthorization({
     return (
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
-          title="Secret authorization"
-          description="Read-only secret authorization management is available only to system:config users."
+          title="涉密授权管理"
+          description="涉密授权摘要仅对具备系统配置权限的账号开放。"
         />
         <DataState
           error={{
             kind: "forbidden",
             status: 403,
-            message: "Current account cannot access secret authorization management.",
-            detail:
-              "Use an administrator with system:config. Without that permission, the frontend does not request /secret-authorization APIs.",
+            message: "当前账号无权访问涉密授权管理。",
+            detail: "请联系系统管理员确认账号权限。",
           }}
         >
           <span />
@@ -178,10 +177,10 @@ export function SecretAuthorization({
     return (
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
-          title="Secret authorization"
-          description="A valid session context is required before secret authorization APIs are requested."
+          title="涉密授权管理"
+          description="请先登录或选择当前业务用户，再查看涉密授权摘要。"
         />
-        <PermissionHint description="No active business context is available. The page will not request secret authorization summaries until a session is present." />
+        <PermissionHint description="当前没有可用的业务用户，页面不会加载涉密授权数据。" />
       </Space>
     );
   }
@@ -189,12 +188,12 @@ export function SecretAuthorization({
   return (
     <Space direction="vertical" size={16} className="page-stack secret-authorization-page">
       <SectionHeader
-        title="Secret authorization"
-        description="Local/demo/synthetic read-only management view. This is not production authorization acceptance."
-        extra={<Button onClick={refresh}>Refresh</Button>}
+        title="涉密授权管理"
+        description="查看涉密资源、授权状态、近期授权记录和审计摘要。"
+        extra={<Button onClick={refresh}>刷新</Button>}
       />
 
-      <PermissionHint description="This page shows safe summaries only: counts, redaction flags, bounded grant rows, bounded audit rows, and caveats. It does not expose protected content, storage identifiers, credential material, or write actions." />
+      <PermissionHint description="本页面仅展示安全摘要，不展示涉密正文、存储标识、凭证材料或写入操作。" />
 
       <DataState loading={overview.loading} error={overview.error} onRetry={loadOverview}>
         {overview.data ? (
@@ -204,12 +203,12 @@ export function SecretAuthorization({
         )}
       </DataState>
 
-      <Card className="shell-card" title="Restricted resources" extra={<Tag>GET /secret-authorization/resources</Tag>}>
+      <Card className="shell-card" title="涉密资源">
         <DataState
           loading={resources.loading}
           error={resources.error}
           empty={!resources.loading && !resources.error && resourceItems.length === 0}
-          emptyText="No restricted resources returned."
+          emptyText="暂无涉密资源。"
           onRetry={loadResources}
         >
           <SecretAuthorizationResourceTable
@@ -220,7 +219,7 @@ export function SecretAuthorization({
         </DataState>
       </Card>
 
-      <Card className="shell-card" title="Resource detail">
+      <Card className="shell-card" title="资源详情">
         {selectedResource ? (
           <DataState
             loading={detail.loading}
@@ -230,11 +229,11 @@ export function SecretAuthorization({
             {detail.data ? (
               <SecretAuthorizationResourceDetailPanel detail={detail.data} />
             ) : (
-              <Typography.Text type="secondary">Select a restricted resource to load safe grant and audit summaries.</Typography.Text>
+              <Typography.Text type="secondary">请选择涉密资源查看授权和审计摘要。</Typography.Text>
             )}
           </DataState>
         ) : (
-          <Typography.Text type="secondary">No restricted resource is selected.</Typography.Text>
+          <Typography.Text type="secondary">尚未选择涉密资源。</Typography.Text>
         )}
       </Card>
     </Space>
@@ -279,31 +278,31 @@ export function SecretAuthorizationOverviewCards({
   return (
     <Space direction="vertical" size={12} className="full-width secret-authorization-overview">
       <Space size={12} wrap>
-        <MetricCard title="Restricted resources" value={overview.restrictedResourceCount} />
-        <MetricCard title="Active grants" value={overview.activeGrantCount} />
-        <MetricCard title="Revoked / expired grants" value={revokedOrExpiredCount} />
-        <MetricCard title="Expiring soon" value={overview.expiringSoonCount} />
+        <MetricCard title="涉密资源" value={overview.restrictedResourceCount} />
+        <MetricCard title="有效授权" value={overview.activeGrantCount} />
+        <MetricCard title="已撤销/已过期" value={revokedOrExpiredCount} />
+        <MetricCard title="即将到期" value={overview.expiringSoonCount} />
       </Space>
-      <Card className="shell-card" title="Overview breakdown">
+      <Card className="shell-card" title="授权概览">
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="By resource type">
+          <Descriptions.Item label="按资源类型">
             {formatCountMap(overview.restrictedResourceCountsByType)}
           </Descriptions.Item>
-          <Descriptions.Item label="By secret level">
+          <Descriptions.Item label="按密级">
             {formatCountMap(overview.restrictedResourceCountsBySecretLevel)}
           </Descriptions.Item>
-          <Descriptions.Item label="Grant status">
+          <Descriptions.Item label="授权状态">
             {formatCountMap(overview.grantCountsByStatus)}
           </Descriptions.Item>
-          <Descriptions.Item label="Grant type">
+          <Descriptions.Item label="授权类型">
             {formatCountMap(overview.grantCountsByType)}
           </Descriptions.Item>
-          <Descriptions.Item label="Grantee type">
+          <Descriptions.Item label="授权对象">
             {formatCountMap(overview.grantCountsByGranteeType)}
           </Descriptions.Item>
-          <Descriptions.Item label="Generated">{formatDateTime(overview.generatedAt)}</Descriptions.Item>
-          <Descriptions.Item label="Caveats">
-            {formatList(overview.caveats, "No projection caveats returned.")}
+          <Descriptions.Item label="生成时间">{formatDateTime(overview.generatedAt)}</Descriptions.Item>
+          <Descriptions.Item label="提示">
+            {formatList(overview.caveats, "暂无额外提示。")}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -315,7 +314,7 @@ export function SecretAuthorizationOverviewEmpty() {
   return (
     <Card className="shell-card">
       <Typography.Text type="secondary">
-        No overview returned. Safe empty state is shown with stable fallback values.
+        暂无涉密授权概览。
       </Typography.Text>
     </Card>
   );
@@ -508,42 +507,42 @@ const grantColumns: TableProps<SecretAuthorizationGrantSummary>["columns"] = [
     ),
   },
   {
-    title: "Grant type",
+    title: "授权类型",
     dataIndex: "grantType",
     key: "grantType",
     width: 180,
     render: (grantType: string) => safeText(grantType),
   },
   {
-    title: "Status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
     width: 120,
     render: (status: string) => <Tag>{safeText(status)}</Tag>,
   },
   {
-    title: "Starts",
+    title: "开始时间",
     dataIndex: "startsAt",
     key: "startsAt",
     width: 176,
     render: (value: string | null) => formatDateTime(value),
   },
   {
-    title: "Expires",
+    title: "到期时间",
     dataIndex: "expiresAt",
     key: "expiresAt",
     width: 176,
     render: (value: string | null) => formatDateTime(value),
   },
   {
-    title: "Revoked",
+    title: "撤销时间",
     dataIndex: "revokedAt",
     key: "revokedAt",
     width: 176,
     render: (value: string | null) => formatDateTime(value),
   },
   {
-    title: "Created",
+    title: "创建时间",
     dataIndex: "createdAt",
     key: "createdAt",
     width: 176,
@@ -553,49 +552,49 @@ const grantColumns: TableProps<SecretAuthorizationGrantSummary>["columns"] = [
 
 const auditColumns: TableProps<SecretAuthorizationAuditSummary>["columns"] = [
   {
-    title: "Operation",
+    title: "操作",
     dataIndex: "operation",
     key: "operation",
     width: 220,
     render: (operation: string) => safeText(operation),
   },
   {
-    title: "Resource type",
+    title: "资源类型",
     dataIndex: "resourceType",
     key: "resourceType",
     width: 160,
     render: (resourceType: string) => safeText(resourceType),
   },
   {
-    title: "Secret level",
+    title: "密级",
     dataIndex: "targetSecretLevel",
     key: "targetSecretLevel",
     width: 140,
-    render: (secretLevel: string | null) => safeText(secretLevel, "No level"),
+    render: (secretLevel: string | null) => safeText(secretLevel, "未返回密级"),
   },
   {
-    title: "Grant type",
+    title: "授权类型",
     dataIndex: "grantType",
     key: "grantType",
     width: 160,
-    render: (grantType: string | null) => safeText(grantType, "No grant type"),
+    render: (grantType: string | null) => safeText(grantType, "未返回授权类型"),
   },
   {
-    title: "Grantee type",
+    title: "授权对象类型",
     dataIndex: "granteeType",
     key: "granteeType",
     width: 160,
-    render: (granteeType: string | null) => safeText(granteeType, "No grantee"),
+    render: (granteeType: string | null) => safeText(granteeType, "未返回授权对象"),
   },
   {
-    title: "Reason",
+    title: "是否填写原因",
     dataIndex: "reasonProvided",
     key: "reasonProvided",
     width: 120,
-    render: (reasonProvided: boolean) => (reasonProvided ? "Provided" : "Not provided"),
+    render: (reasonProvided: boolean) => (reasonProvided ? "已填写" : "未填写"),
   },
   {
-    title: "Created",
+    title: "创建时间",
     dataIndex: "createdAt",
     key: "createdAt",
     width: 176,
@@ -635,7 +634,7 @@ const formatCountMap = (counts: CountMap | null | undefined): string => {
   const entries = Object.entries(counts ?? {}).filter(([, value]) => Number.isFinite(value));
 
   if (entries.length === 0) {
-    return "No counts returned";
+    return "未返回计数";
   }
 
   return entries.map(([key, value]) => `${key}: ${value}`).join(", ");
@@ -649,7 +648,7 @@ const formatList = (values: string[] | null | undefined, emptyText: string): str
 
 const formatDateTime = (value: string | null | undefined): string => {
   if (!value) {
-    return "No timestamp returned";
+    return "未返回时间";
   }
 
   const date = new Date(value);
@@ -658,7 +657,7 @@ const formatDateTime = (value: string | null | undefined): string => {
     return value;
   }
 
-  return date.toLocaleString("en-GB", { hour12: false });
+  return date.toLocaleString("zh-CN", { hour12: false });
 };
 
 const normalizeError = (error: unknown): ApiError => {
@@ -668,7 +667,7 @@ const normalizeError = (error: unknown): ApiError => {
 
   return {
     kind: "unknown",
-    message: "Secret authorization request failed.",
+    message: "涉密授权请求失败。",
     detail: error instanceof Error ? error.message : undefined,
   };
 };

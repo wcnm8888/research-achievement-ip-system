@@ -581,15 +581,15 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(adminHtml).toContain("Achievement CSV dry-run");
-    expect(adminHtml).toContain("Achievement import history");
-    expect(adminHtml).toContain("All achievement types");
+    expect(adminHtml).toContain("成果导入预检");
+    expect(adminHtml).toContain("成果导入记录");
+    expect(adminHtml).toContain("全部成果类型");
     expect(achievementImportHistoryFilters).toEqual({
       family: "ACHIEVEMENT",
       mode: "CREATE_DRAFT_ONLY",
     });
-    expect(researcherHtml).not.toContain("Achievement CSV dry-run");
-    expect(researcherHtml).not.toContain("Achievement import history");
+    expect(researcherHtml).not.toContain("成果导入预检");
+    expect(researcherHtml).not.toContain("成果导入记录");
   });
 
   it("validates CSV-only file selection before dry-run submission", () => {
@@ -606,7 +606,7 @@ describe("achievement import dry-run UI", () => {
         size: 1024,
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       }),
-    ).toContain("Only .csv");
+    ).toContain("仅支持上传 CSV 文件");
     expect(
       validateAchievementImportCsvFile({
         name: "achievements.csv",
@@ -656,12 +656,11 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(html).toContain("Dry-run report ready");
-    expect(html).toContain("ACHIEVEMENT");
-    expect(html).toContain("Total rows");
-    expect(html).toContain("Draft candidates");
-    expect(html).toContain("File duplicate conflicts");
-    expect(html).toContain("DB conflicts");
+    expect(html).toContain("预检报告已生成");
+    expect(html).toContain("总行数");
+    expect(html).toContain("草稿候选");
+    expect(html).toContain("文件内重复");
+    expect(html).toContain("系统内冲突");
     expect(html).toContain("NOT_AVAILABLE");
     expect(html).toContain("PAPER");
     expect(html).toContain("PATENT");
@@ -709,7 +708,7 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(html).toContain("Run dry-run");
+    expect(html).toContain("开始预检");
     expect(html).not.toContain("Confirm import");
     expect(html).not.toContain("Apply draft-only PAPER import");
     expect(html).not.toContain("Apply draft-only import");
@@ -757,7 +756,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("changed");
+    ).toContain("重新预检");
   });
 
   it("enables SOFTWARE_COPYRIGHT and PATENT apply while keeping PAPER eligibility unchanged", () => {
@@ -1114,17 +1113,15 @@ describe("achievement import dry-run UI", () => {
       createElement(AchievementImportApplyConfirmation, { applyType: "PAPER" }),
     );
 
-    expect(panelHtml).toContain("Apply draft-only import");
+    expect(panelHtml).toContain("导入为草稿");
     expect(panelHtml).not.toContain("disabled");
-    expect(confirmationHtml).toContain("CREATE_DRAFT_ONLY");
-    expect(confirmationHtml).toContain("DRAFT PAPER");
+    expect(confirmationHtml).toContain("创建PAPER成果草稿");
     expect(confirmationHtml).toContain("paper detail rows");
     expect(confirmationHtml).toContain("normalized DOI");
-    expect(confirmationHtml).toContain("will not submit");
-    expect(confirmationHtml).toContain("workflow");
-    expect(confirmationHtml).toContain("attachment/storage");
-    expect(confirmationHtml).toContain("resource grant");
-    expect(confirmationHtml).toContain("re-read and validate");
+    expect(confirmationHtml).toContain("不会自动提交审批");
+    expect(confirmationHtml).toContain("创建附件");
+    expect(confirmationHtml).toContain("授权记录");
+    expect(confirmationHtml).toContain("重新校验 CSV 文件");
   });
 
   it("renders SOFTWARE_COPYRIGHT confirmation copy with registration and side-effect boundaries", () => {
@@ -1134,20 +1131,15 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(confirmationHtml).toContain("CREATE_DRAFT_ONLY");
-    expect(confirmationHtml).toContain("DRAFT SOFTWARE_COPYRIGHT");
+    expect(confirmationHtml).toContain("创建SOFTWARE_COPYRIGHT成果草稿");
     expect(confirmationHtml).toContain("software copyright detail rows");
     expect(confirmationHtml).toContain("normalized software registration number");
-    expect(confirmationHtml).toContain("will not submit");
-    expect(confirmationHtml).toContain("workflow");
-    expect(confirmationHtml).toContain("attachment/storage");
-    expect(confirmationHtml).toContain("fee");
-    expect(confirmationHtml).toContain("reminder");
-    expect(confirmationHtml).toContain("notification");
-    expect(confirmationHtml).toContain("search");
-    expect(confirmationHtml).toContain("resource grant");
-    expect(confirmationHtml).toContain("import job");
-    expect(confirmationHtml).toContain("re-read and validate");
+    expect(confirmationHtml).toContain("不会自动提交审批");
+    expect(confirmationHtml).toContain("创建附件");
+    expect(confirmationHtml).toContain("费用");
+    expect(confirmationHtml).toContain("提醒");
+    expect(confirmationHtml).toContain("授权记录");
+    expect(confirmationHtml).toContain("重新校验 CSV 文件");
   });
 
   it("renders PATENT confirmation copy with application boundary and fee reminder exclusions", () => {
@@ -1157,24 +1149,18 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(confirmationHtml).toContain("CREATE_DRAFT_ONLY");
-    expect(confirmationHtml).toContain("DRAFT PATENT");
-    expect(confirmationHtml).toContain("PatentDetail rows");
-    expect(confirmationHtml).toContain("safe audit evidence");
+    expect(confirmationHtml).toContain("创建PATENT成果草稿");
+    expect(confirmationHtml).toContain("专利明细");
+    expect(confirmationHtml).toContain("安全审计摘要");
     expect(confirmationHtml).toContain("applicationNoNormalized");
-    expect(confirmationHtml).toContain("grantNoNormalized");
-    expect(confirmationHtml).toContain("nextFeeDate");
-    expect(confirmationHtml).toContain("feeAmount");
-    expect(confirmationHtml).toContain("not imported");
-    expect(confirmationHtml).toContain("workflow");
-    expect(confirmationHtml).toContain("attachment/storage");
-    expect(confirmationHtml).toContain("fee");
-    expect(confirmationHtml).toContain("reminder");
-    expect(confirmationHtml).toContain("notification");
-    expect(confirmationHtml).toContain("search");
-    expect(confirmationHtml).toContain("resource grant");
-    expect(confirmationHtml).toContain("import job");
-    expect(confirmationHtml).toContain("re-read and validate");
+    expect(confirmationHtml).toContain("授权号仅作为申请号存在时的辅助冲突判断依据");
+    expect(confirmationHtml).toContain("下次缴费日期");
+    expect(confirmationHtml).toContain("费用金额");
+    expect(confirmationHtml).toContain("不会自动生成费用或提醒记录");
+    expect(confirmationHtml).toContain("不会自动提交审批");
+    expect(confirmationHtml).toContain("创建附件");
+    expect(confirmationHtml).toContain("授权记录");
+    expect(confirmationHtml).toContain("重新校验 CSV 文件");
   });
 
   it("renders safe apply success and rejection summaries without raw row values", () => {
@@ -1214,16 +1200,16 @@ describe("achievement import dry-run UI", () => {
     expect(successHtml).toContain("Created contributors");
     expect(successHtml).toContain("Created audit events");
     expect(successHtml).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
-    expect(successHtml).toContain("DRAFT only");
-    expect(successHtml).toContain("No workflow");
-    expect(successHtml).toContain("No attachment/storage");
-    expect(successHtml).toContain("No fee/reminder");
-    expect(successHtml).toContain("No notification/search/resource grant");
-    expect(successHtml).toContain("No import job");
+    expect(successHtml).toContain("仅生成草稿");
+    expect(successHtml).toContain("不触发审批流");
+    expect(successHtml).toContain("不处理附件或存储");
+    expect(successHtml).toContain("不处理费用或提醒");
+    expect(successHtml).toContain("不触发通知、检索或资源授权");
+    expect(successHtml).toContain("不创建导入任务");
     expect(successHtml).not.toContain("10.2000/s68e");
     expect(successHtml).not.toContain("Eligible Paper");
 
-    expect(errorHtml).toContain("Apply rejected");
+    expect(errorHtml).toContain("导入被拒绝");
     expect(errorHtml).toContain("DB_CONFLICT");
     expect(errorHtml).toContain("Rejected rows: 1");
     expect(errorHtml).toContain("warnings: 0");
@@ -1245,12 +1231,12 @@ describe("achievement import dry-run UI", () => {
     expect(html).not.toContain("Created paper details");
     expect(html).toContain("Created contributors");
     expect(html).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
-    expect(html).toContain("DRAFT only");
-    expect(html).toContain("No workflow");
-    expect(html).toContain("No attachment/storage");
-    expect(html).toContain("No fee/reminder");
-    expect(html).toContain("No notification/search/resource grant");
-    expect(html).toContain("No import job");
+    expect(html).toContain("仅生成草稿");
+    expect(html).toContain("不触发审批流");
+    expect(html).toContain("不处理附件或存储");
+    expect(html).toContain("不处理费用或提醒");
+    expect(html).toContain("不触发通知、检索或资源授权");
+    expect(html).toContain("不创建导入任务");
     expect(html).not.toContain("SW-69F-001");
     expect(html).not.toContain("SW69F001");
     expect(html).not.toContain("Eligible Software");
@@ -1274,12 +1260,12 @@ describe("achievement import dry-run UI", () => {
     expect(html).toContain("Created contributors");
     expect(html).toContain("Created audit events");
     expect(html).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
-    expect(html).toContain("DRAFT only");
-    expect(html).toContain("No workflow");
-    expect(html).toContain("No attachment/storage");
-    expect(html).toContain("No fee/reminder");
-    expect(html).toContain("No notification/search/resource grant");
-    expect(html).toContain("No import job");
+    expect(html).toContain("仅生成草稿");
+    expect(html).toContain("不触发审批流");
+    expect(html).toContain("不处理附件或存储");
+    expect(html).toContain("不处理费用或提醒");
+    expect(html).toContain("不触发通知、检索或资源授权");
+    expect(html).toContain("不创建导入任务");
     expect(html).not.toContain("APP-S70E-001");
     expect(html).not.toContain("APPS70E001");
     expect(html).not.toContain("GRANT-S70E-001");

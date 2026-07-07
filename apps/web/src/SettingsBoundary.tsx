@@ -65,7 +65,7 @@ export const settingsCapabilities: SettingsCapability[] = [
 export const getStep20BSettingsBoundary = (): SettingsBoundary => ({
   title: "系统配置边界 / 只读能力盘点",
   apiStatus: "none",
-  permissionSignal: "system:config is a permission-code signal, not a settings/config API.",
+  permissionSignal: "系统配置权限只是访问边界信号，不代表已经提供完整配置 API。",
   requestPolicy: "NO_BUSINESS_API_REQUEST",
   unavailableActions: [
     "创建",
@@ -78,14 +78,14 @@ export const getStep20BSettingsBoundary = (): SettingsBoundary => ({
     "下载",
   ],
   excludedRoutes: [
-    "settings/config API",
+    "系统配置 API",
     "角色/部门/字典/预警规则/接口配置 CRUD",
-    "附件 upload/download/detail",
+    "附件上传、下载和详情取回",
     "费用凭证附件",
-    "warnings API",
-    "search_logs 写入",
-    "Meilisearch / 外部搜索引擎同步",
-    "seed/migrate/data cleanup",
+    "预警 API",
+    "检索日志写入",
+    "外部搜索引擎同步",
+    "种子数据、迁移或数据清理",
   ],
 });
 
@@ -103,12 +103,11 @@ export function SettingsBoundary({ demoUserId }: { demoUserId: string | null }) 
     <Space direction="vertical" size={16} className="page-stack settings-boundary-page">
       <SectionHeader
         title={boundary.title}
-        description="Step 20B 只盘点一期系统配置能力与边界；当前页面不读取后端业务接口，也不提供配置管理入口。"
+        description="展示系统配置能力边界和当前可用配置入口。"
         extra={
           <Space size={8} wrap>
-            <Tag color="gold">NO API</Tag>
-            <Tag>Step 20B</Tag>
-            <Tag color="default">settings boundary</Tag>
+            <Tag color="gold">配置边界</Tag>
+            <Tag color="default">权限控制</Tag>
           </Space>
         }
       />
@@ -142,7 +141,7 @@ export function SettingsBoundary({ demoUserId }: { demoUserId: string | null }) 
       <BoundaryNotice
         title="真实配置管理需要后续单独计划确认"
         description="角色权限、部门、字典、预警规则、接口 adapter 的读取和写入契约都不能由本页面推断为已完成。"
-        step="Step 20C 归档后续 Step"
+        step="系统配置"
       />
     </Space>
   );

@@ -186,35 +186,35 @@ export function ImportJobHistoryPanelView({
             <Select
               allowClear
               className="import-job-history-achievement-type"
-              placeholder="All achievement types"
+              placeholder="全部成果类型"
               value={selectedAchievementType}
               options={achievementTypeOptions}
               onChange={onAchievementTypeChange}
             />
           ) : null}
-          <Button onClick={onRefresh}>Refresh</Button>
+          <Button onClick={onRefresh}>刷新</Button>
         </Space>
       }
     >
       <Space direction="vertical" size={12} className="import-job-history-stack">
         <Typography.Text type="secondary">
-          Read-only history. Backend system:config guard remains authoritative.
+          只读导入记录。系统配置权限仍由后端校验。
         </Typography.Text>
 
         {list.loading ? (
-          <Alert type="info" showIcon message="Loading import history" />
+          <Alert type="info" showIcon message="正在加载导入记录" />
         ) : null}
 
         {list.error ? (
           <Alert
             type="error"
             showIcon
-            message="Import history unavailable"
+            message="导入记录暂不可用"
             description={list.error.detail ?? list.error.message}
           />
         ) : null}
 
-        {isEmpty ? <Empty description="No import history yet" /> : null}
+        {isEmpty ? <Empty description="暂无导入记录" /> : null}
 
         {items.length > 0 ? (
           <Table
@@ -228,7 +228,7 @@ export function ImportJobHistoryPanelView({
       </Space>
 
       <Drawer
-        title="Import job detail"
+        title="导入任务详情"
         width={720}
         open={detailOpen}
         onClose={onCloseDetail}
@@ -248,7 +248,7 @@ export function ImportJobHistoryDetailView({
   itemHistoryClient?: ImportJobItemHistoryClient;
 }) {
   if (detail.loading) {
-    return <Alert type="info" showIcon message="Loading import job detail" />;
+    return <Alert type="info" showIcon message="正在加载导入任务详情" />;
   }
 
   if (detail.error) {
@@ -256,14 +256,14 @@ export function ImportJobHistoryDetailView({
       <Alert
         type="error"
         showIcon
-        message="Import job detail unavailable"
+        message="导入任务详情暂不可用"
         description={detail.error.detail ?? detail.error.message}
       />
     );
   }
 
   if (!detail.data) {
-    return <Empty description="No import job selected" />;
+    return <Empty description="未选择导入任务" />;
   }
 
   const summaryRows = collectSafeSummaryRows(detail.data.safeSummary);
@@ -272,27 +272,27 @@ export function ImportJobHistoryDetailView({
   return (
     <Space direction="vertical" size={16} className="import-job-history-detail">
       <Descriptions size="small" bordered column={2}>
-        <Descriptions.Item label="family">{detail.data.family}</Descriptions.Item>
-        <Descriptions.Item label="mode">{detail.data.mode}</Descriptions.Item>
-        <Descriptions.Item label="achievementType">
-          {detail.data.achievementType ?? "N/A"}
+        <Descriptions.Item label="导入类型">{detail.data.family}</Descriptions.Item>
+        <Descriptions.Item label="执行模式">{detail.data.mode}</Descriptions.Item>
+        <Descriptions.Item label="成果类型">
+          {detail.data.achievementType ?? "未返回"}
         </Descriptions.Item>
-        <Descriptions.Item label="status">{detail.data.status}</Descriptions.Item>
-        <Descriptions.Item label="acceptedRowCount">
+        <Descriptions.Item label="状态">{detail.data.status}</Descriptions.Item>
+        <Descriptions.Item label="受理行数">
           {detail.data.acceptedRowCount}
         </Descriptions.Item>
-        <Descriptions.Item label="createdBusinessCount">
+        <Descriptions.Item label="创建业务记录数">
           {detail.data.createdBusinessCount}
         </Descriptions.Item>
-        <Descriptions.Item label="createdCompanionCount">
+        <Descriptions.Item label="创建伴随记录数">
           {detail.data.createdCompanionCount}
         </Descriptions.Item>
-        <Descriptions.Item label="auditCount">{detail.data.auditCount}</Descriptions.Item>
-        <Descriptions.Item label="safeErrorCode" span={2}>
+        <Descriptions.Item label="审计记录数">{detail.data.auditCount}</Descriptions.Item>
+        <Descriptions.Item label="安全错误码" span={2}>
           {renderSafeErrorCodes(detail.data)}
         </Descriptions.Item>
-        <Descriptions.Item label="createdAt">{formatImportJobTimestamp(detail.data.createdAt)}</Descriptions.Item>
-        <Descriptions.Item label="completedAt">
+        <Descriptions.Item label="创建时间">{formatImportJobTimestamp(detail.data.createdAt)}</Descriptions.Item>
+        <Descriptions.Item label="完成时间">
           {formatImportJobTimestamp(detail.data.completedAt)}
         </Descriptions.Item>
       </Descriptions>
@@ -300,11 +300,11 @@ export function ImportJobHistoryDetailView({
       <Alert
         type="info"
         showIcon
-        message="Status explanation"
+        message="状态说明"
         description={getImportJobStatusExplanation(detail.data.status)}
       />
 
-      <Card size="small" title="Safe summary">
+      <Card size="small" title="安全摘要">
         {summaryRows.length > 0 ? (
           <Table
             size="small"
@@ -457,63 +457,62 @@ export function ImportJobItemHistoryPanelView({
   const isEmpty = !itemList.loading && !itemList.error && rows.length === 0;
 
   return (
-    <Card size="small" title="Safe row history">
+    <Card size="small" title="导入行记录">
       <Space direction="vertical" size={12} className="import-job-history-stack">
         <Space size={8} wrap>
-          <Tag>GET /import-jobs/:id/items</Tag>
-          <Tag>route-scoped</Tag>
-          <Button onClick={onRefresh}>Refresh items</Button>
+          <Tag>安全摘要</Tag>
+          <Button onClick={onRefresh}>刷新明细</Button>
         </Space>
 
         <Alert
           className="safe-row-history-boundary"
           type="info"
           showIcon
-          message="Local/demo safe row view only"
-          description="Shows only row number, planned action, status, safe code, and target type. It is not raw CSV, not raw JSON, not production import acceptance, not retry, rollback, cleanup, export, or business-object drilldown."
+          message="仅展示导入行安全摘要"
+          description="页面只展示行号、计划动作、状态、安全代码和目标类型，不展示原始 CSV 或原始明细内容。"
         />
 
         <Space size={8} wrap>
           <Input
             className="import-job-history-item-filter"
             aria-label="item status"
-            placeholder="Status"
+            placeholder="状态"
             value={filters.status}
             onChange={(event) => onFilterChange?.("status", event.target.value)}
           />
           <Input
             className="import-job-history-item-filter"
             aria-label="item planned action"
-            placeholder="Planned action"
+            placeholder="计划动作"
             value={filters.plannedAction}
             onChange={(event) => onFilterChange?.("plannedAction", event.target.value)}
           />
           <Input
             className="import-job-history-item-filter"
             aria-label="item target type"
-            placeholder="Target type"
+            placeholder="目标类型"
             value={filters.targetType}
             onChange={(event) => onFilterChange?.("targetType", event.target.value)}
           />
           <Input
             className="import-job-history-item-filter"
             aria-label="item safe code"
-            placeholder="Safe code"
+            placeholder="安全代码"
             value={filters.safeCode}
             onChange={(event) => onFilterChange?.("safeCode", event.target.value)}
           />
-          <Button onClick={onResetFilters}>Reset filters</Button>
+          <Button onClick={onResetFilters}>重置筛选</Button>
         </Space>
 
         {itemList.loading ? (
-          <Alert type="info" showIcon message="Loading safe row history" />
+          <Alert type="info" showIcon message="正在加载导入行记录" />
         ) : null}
 
         {itemList.error ? (
           <Alert
             type="error"
             showIcon
-            message="Safe row history unavailable"
+            message="导入行记录暂不可用"
             description={getSafeImportJobItemErrorMessage(itemList.error)}
           />
         ) : null}
@@ -523,11 +522,10 @@ export function ImportJobItemHistoryPanelView({
             description={
               <Space direction="vertical" size={4}>
                 <Typography.Text>
-                  No safe row history returned for this import job.
+                  当前导入任务暂无安全行记录。
                 </Typography.Text>
                 <Typography.Text type="secondary">
-                  This does not imply raw source rows are unavailable; raw source data is
-                  outside this Web boundary.
+                  这不代表原始源行不存在；原始数据不在当前页面展示边界内。
                 </Typography.Text>
               </Space>
             }
@@ -545,7 +543,7 @@ export function ImportJobItemHistoryPanelView({
               pageSize: itemList.data?.pageSize ?? pageSize,
               total: itemList.data?.total ?? 0,
               showSizeChanger: true,
-              showTotal: (total) => `${total} safe rows`,
+              showTotal: (total) => `共 ${total} 条安全行记录`,
               onChange: (nextPage, nextPageSize) => {
                 onPageChange?.(nextPage, nextPageSize);
               },
@@ -722,7 +720,7 @@ export const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] =
     render: formatImportJobTimestamp,
   },
   {
-    title: "auditCount",
+    title: "审计记录数",
     dataIndex: "auditCount",
     key: "auditCount",
   },
@@ -730,29 +728,29 @@ export const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] =
 
 export const importJobItemHistoryColumns: TableProps<ImportJobItemHistoryRow>["columns"] = [
   {
-    title: "Row",
+    title: "行号",
     dataIndex: "rowNumber",
     key: "rowNumber",
   },
   {
-    title: "Planned action",
+    title: "计划动作",
     dataIndex: "plannedAction",
     key: "plannedAction",
   },
   {
-    title: "Status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
     render: (value: string) => <Tag color={getStatusTagColor(value)}>{value}</Tag>,
   },
   {
-    title: "Safe code",
+    title: "安全错误码",
     dataIndex: "safeCode",
     key: "safeCode",
-    render: (value?: string | null) => value ?? "Not returned",
+    render: (value?: string | null) => value ?? "未返回",
   },
   {
-    title: "Target type",
+    title: "目标类型",
     dataIndex: "targetType",
     key: "targetType",
   },
@@ -913,26 +911,26 @@ const buildSafeImportJobItemRowKey = (row: ImportJobItemHistoryRow): string =>
 
 export const getSafeImportJobItemErrorMessage = (error: ApiError): string => {
   if (error.status === 401 || error.kind === "unauthorized") {
-    return "Select or switch demo user.";
+    return "请选择或切换当前业务用户。";
   }
 
   if (error.status === 403 || error.kind === "forbidden") {
-    return "Current role cannot read safe import item history.";
+    return "当前角色无权读取安全导入行记录。";
   }
 
   if (error.status === 404) {
-    return "Import job not found or not visible to this route.";
+    return "未找到导入任务，或当前页面不可见该任务。";
   }
 
   if (error.status === 400 || error.status === 422 || error.kind === "bad-request") {
-    return "Item filter parameters are invalid.";
+    return "导入行筛选参数无效。";
   }
 
   if (error.kind === "server" || error.kind === "network") {
-    return "Safe import item history service unavailable.";
+    return "安全导入行记录服务暂不可用。";
   }
 
-  return "Safe import item history request failed.";
+  return "安全导入行记录请求失败。";
 };
 
 const normalizeApiError = (error: unknown): ApiError => {

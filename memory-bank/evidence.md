@@ -19005,6 +19005,124 @@
   - No password, cookie, token, session value, connection string, key, provider
     credential, or raw sensitive payload was recorded.
 
+## 2026-07-07 Step 133 - Client-facing requirement and UI gap audit evidence
+
+- Starting checks:
+  - `git log -1 --oneline` -> `02dbcce docs: finalize local demo requirement closure`.
+  - `git status --short` showed only existing untracked local evidence/artifact
+    directories and files.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Read-only evidence gathered:
+  - `rg` found current requirement coverage conclusions in
+    `memory-bank/project-requirement-completion-matrix.md`, including the
+    later authoritative sections and deferred production boundaries.
+  - `rg` found visible Web UI strings exposing API endpoints, Step labels,
+    demo headers, local/demo disclaimers, and English labels in
+    `apps/web/src/App.tsx`, `Achievements.tsx`, `WorkflowTasks.tsx`,
+    `Workbench.tsx`, `CustomReports.tsx`, `SecretAuthorization.tsx`,
+    `ImportJobHistoryPanel.tsx`, `AccountManagement.tsx`,
+    `DepartmentManagement.tsx`, and `importDryRunUi.tsx`.
+  - The first lines of `memory-bank/project-requirement-completion-matrix.md`
+    still show garbled legacy Chinese content before the newer final matrix
+    section, so it is not yet clean client-facing delivery material.
+- Added:
+  - `memory-bank/client-facing-requirement-and-ui-gap-audit-step133.md`.
+- Classification:
+  - Docs-only audit.
+  - Client-facing code freeze is not recommended yet.
+- Boundary:
+  - No application source, schema, migration, package, lockfile, or config
+    change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.
+
+## 2026-07-07 Step 134 - Web client-facing terminology cleanup evidence
+
+- Implementation evidence:
+  - Updated Web UI source and corresponding Web tests only.
+  - Main cleanup targets included `App.tsx`, shared import preview UI,
+    Achievements, Account/Department management, Secret Authorization, Custom
+    Reports, ImportJob history, Workbench, WorkflowTasks, Search, Audit Logs,
+    Dashboard, Fees, Settings API Integrations, Achievement detail/form, and
+    related tests.
+- P0 source scan:
+  - `rg -n "GET /|POST /|X-Demo-User-Id|Step [0-9]|local/demo|not production|production acceptance|dryRun=true|Custom Reports|Secret Authorization|production auth|Phase 1 frontend" apps/web/src --glob "*.tsx" --glob "!*.test.tsx"`
+    returned no matches.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AccountManagement DepartmentManagement SecretAuthorization CustomReports ImportJobHistoryPanel WorkflowTasks Search AuditLogs Dashboard Fees SettingsApiIntegrations`:
+    PASS, 16 files / 308 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundary:
+  - No API source, Prisma schema, migration, package, lockfile, or config
+    change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.
+
+## 2026-07-07 Step 135 - Client-facing requirement matrix cleanup evidence
+
+- Context checked:
+  - `git log -1 --oneline` -> `02dbcce docs: finalize local demo requirement closure`.
+  - `git status --short` showed the current Step 134 Web cleanup diff plus
+    existing untracked local evidence/artifact directories.
+  - Reviewed `memory-bank/product-brief.md` phase-one scope, phase-two scope,
+    first-version non-scope, and success criteria.
+  - Reviewed current local closure and Step 133/134 evidence.
+- Added:
+  - `memory-bank/project-requirement-completion-matrix-client-facing-step135.md`.
+- Evidence classification:
+  - Docs-only requirement matrix addition for the client-facing completion
+    claim.
+  - Existing legacy `memory-bank/project-requirement-completion-matrix.md`
+    remains untouched as historical working material; the new Step 135 document
+    is the cleaner client-facing entry point.
+- Boundary:
+  - No API source, Prisma schema, migration, package, lockfile, or config
+    change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.
+
+## 2026-07-07 Step 136 - Client-facing Web Chinese copy completion evidence
+
+- Context checked:
+  - Continued from Step 134/135 working tree.
+  - Used source scans and Web test failures to identify remaining visible
+    English/developer wording after the first cleanup pass.
+- Changed:
+  - `apps/web/src/AccountLifecycleAccess.tsx`: public reset/invite lifecycle
+    panels and safe errors localized.
+  - `apps/web/src/AccountManagement.tsx`: lifecycle cards, actions, permission
+    reasons, delivery summaries, role-change summaries, and import apply result
+    labels localized.
+  - `apps/web/src/Achievements.tsx`, `apps/web/src/AchievementDetail.tsx`,
+    `apps/web/src/DepartmentManagement.tsx`, `apps/web/src/Fees.tsx`,
+    `apps/web/src/ImportJobHistoryPanel.tsx`,
+    `apps/web/src/SecretAuthorization.tsx`,
+    `apps/web/src/SettingsApiIntegrations.tsx`,
+    `apps/web/src/SettingsImportJobHistoryOverview.tsx`, and
+    `apps/web/src/importDryRunUi.tsx`: additional visible table headings,
+    fallbacks, buttons, empty/error states, and safety labels localized.
+  - Updated corresponding Web tests for the new Chinese/business-facing copy.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AccountManagement DepartmentManagement SecretAuthorization CustomReports ImportJobHistoryPanel WorkflowTasks Search AuditLogs Dashboard Fees SettingsApiIntegrations`: PASS, 16 files / 308 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `rg -n 'GET /|POST /|X-Demo-User-Id|Step [0-9]|local/demo|not production|production acceptance|dryRun=true|Custom Reports|Secret Authorization|production auth|Phase 1 frontend' apps\\web\\src --glob '*.tsx' --glob '!*.test.tsx'`: no matches.
+  - `rg -n 'title=\"[A-Za-z]|message=\"[A-Za-z]|description=\"[A-Za-z]|placeholder=\"[A-Za-z]|emptyText=\"[A-Za-z]' apps\\web\\src --glob '*.tsx' --glob '!*.test.tsx'`: no matches.
+- Boundaries:
+  - No API source, Prisma schema, migration, package, lockfile, or config
+    change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.
+  - Existing untracked local artifacts were not touched.
+
 ## 2026-07-07 Step 130 - Secret authorization local synthetic demo data coverage evidence
 
 - Canonical state checked before implementation:

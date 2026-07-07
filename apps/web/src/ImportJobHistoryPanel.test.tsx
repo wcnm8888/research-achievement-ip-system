@@ -134,7 +134,7 @@ describe("ImportJobHistoryPanel", () => {
         onRefresh={vi.fn()}
       />,
     );
-    expect(loadingHtml).toContain("Loading import history");
+    expect(loadingHtml).toContain("正在加载导入记录");
 
     const emptyHtml = renderToStaticMarkup(
       <ImportJobHistoryPanelView
@@ -146,7 +146,7 @@ describe("ImportJobHistoryPanel", () => {
         onRefresh={vi.fn()}
       />,
     );
-    expect(emptyHtml).toContain("No import history yet");
+    expect(emptyHtml).toContain("暂无导入记录");
 
     const errorHtml = renderToStaticMarkup(
       <ImportJobHistoryPanelView
@@ -162,7 +162,7 @@ describe("ImportJobHistoryPanel", () => {
         onRefresh={vi.fn()}
       />,
     );
-    expect(errorHtml).toContain("Import history unavailable");
+    expect(errorHtml).toContain("导入记录暂不可用");
     expect(errorHtml).toContain("Read API failed.");
 
     const listHtml = renderToStaticMarkup(
@@ -194,9 +194,9 @@ describe("ImportJobHistoryPanel", () => {
       />,
     );
 
-    expect(html).toContain("Safe summary");
+    expect(html).toContain("安全摘要");
     expect(html).toContain("Run status");
-    expect(html).toContain("auditCount");
+    expect(html).toContain("审计记录数");
     expect(html).toContain("createdAchievementsCount");
     expect(html).toContain("warningCount");
     expect(html).toContain("Replay:");
@@ -253,12 +253,11 @@ describe("ImportJobHistoryPanel", () => {
         pageSize={10}
       />,
     );
-    expect(loadingHtml).toContain("Safe row history");
-    expect(loadingHtml).toContain("Loading safe row history");
-    expect(loadingHtml).toContain("GET /import-jobs/:id/items");
-    expect(loadingHtml).toContain("not raw CSV");
-    expect(loadingHtml).toContain("not raw JSON");
-    expect(loadingHtml).toContain("not production import acceptance");
+    expect(loadingHtml).toContain("导入行记录");
+    expect(loadingHtml).toContain("正在加载导入行记录");
+    expect(loadingHtml).toContain("仅展示导入行安全摘要");
+    expect(loadingHtml).not.toContain("GET /import-jobs/:id/items");
+    expect(loadingHtml).not.toContain("not production import acceptance");
 
     const emptyHtml = renderToStaticMarkup(
       <ImportJobItemHistoryPanelView
@@ -272,8 +271,8 @@ describe("ImportJobHistoryPanel", () => {
         pageSize={10}
       />,
     );
-    expect(emptyHtml).toContain("No safe row history returned for this import job.");
-    expect(emptyHtml).toContain("raw source data is outside this Web boundary");
+    expect(emptyHtml).toContain("当前导入任务暂无安全行记录。");
+    expect(emptyHtml).toContain("原始数据不在当前页面展示边界内");
 
     const errorHtml = renderToStaticMarkup(
       <ImportJobItemHistoryPanelView
@@ -292,8 +291,8 @@ describe("ImportJobHistoryPanel", () => {
         pageSize={10}
       />,
     );
-    expect(errorHtml).toContain("Safe row history unavailable");
-    expect(errorHtml).toContain("Current role cannot read safe import item history.");
+    expect(errorHtml).toContain("导入行记录暂不可用");
+    expect(errorHtml).toContain("当前角色无权读取安全导入行记录。");
     expect(errorHtml).not.toContain("raw payload token DATABASE_URL");
 
     const listHtml = renderToStaticMarkup(
@@ -310,17 +309,17 @@ describe("ImportJobHistoryPanel", () => {
       />,
     );
 
-    expect(listHtml).toContain("Row");
-    expect(listHtml).toContain("Planned action");
-    expect(listHtml).toContain("Status");
-    expect(listHtml).toContain("Safe code");
-    expect(listHtml).toContain("Target type");
+    expect(listHtml).toContain("行号");
+    expect(listHtml).toContain("计划动作");
+    expect(listHtml).toContain("状态");
+    expect(listHtml).toContain("安全错误码");
+    expect(listHtml).toContain("目标类型");
     expect(listHtml).toContain("CREATE_DRAFT");
     expect(listHtml).toContain("SUCCESS");
-    expect(listHtml).toContain("Not returned");
+    expect(listHtml).toContain("未返回");
     expect(listHtml).toContain("SAFE_VALIDATION_ERROR");
     expect(listHtml).toContain("ACHIEVEMENT");
-    expect(listHtml).toContain("12 safe rows");
+    expect(listHtml).toContain("共 12 条安全行记录");
   });
 
   it("does not expose forbidden safe row fields or action controls outside boundary copy", () => {
@@ -378,7 +377,7 @@ describe("ImportJobHistoryPanel", () => {
         status: 401,
         message: "Unauthorized",
       }),
-    ).toBe("Select or switch demo user.");
+    ).toBe("请选择或切换当前业务用户。");
     expect(
       getSafeImportJobItemErrorMessage({
         kind: "bad-request",
@@ -386,12 +385,12 @@ describe("ImportJobHistoryPanel", () => {
         message: "Invalid",
         detail: "raw request body",
       }),
-    ).toBe("Item filter parameters are invalid.");
+    ).toBe("导入行筛选参数无效。");
     expect(
       getSafeImportJobItemErrorMessage({
         kind: "network",
         message: "Network failed",
       }),
-    ).toBe("Safe import item history service unavailable.");
+    ).toBe("安全导入行记录服务暂不可用。");
   });
 });

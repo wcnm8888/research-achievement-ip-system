@@ -172,11 +172,11 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
           title="审计日志"
           description="选择本地演示用户后，前端才会请求后端 masked readonly 审计日志接口。"
         />
-        <PermissionHint description="当前没有 X-Demo-User-Id，审计日志页面不会发起 GET /audit-logs 业务请求。审计日志的最终读取权限由后端 audit:read_masked 决定。" />
+        <PermissionHint description="当前没有可用的业务用户，审计日志页面不会加载业务数据。" />
         <BoundaryNotice
           title="等待演示上下文"
-          description="Step 18B 只接入 masked readonly 前端页面；未选择演示用户时保持静默，不伪造审计数据，也不发起任何写请求。"
-          step="Step 18B"
+          description="选择有权限的用户后，可查看经脱敏处理的审计记录。"
+          step="审计日志"
         />
       </Space>
     );
@@ -190,7 +190,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="审计日志"
-        description="Step 18B 只读展示 GET /audit-logs 返回的 masked 审计列表；权限、脱敏与范围裁剪以后端为准。"
+        description="只读展示经脱敏处理的审计列表，权限和范围由系统统一控制。"
         extra={
           <Button onClick={loadAuditLogs} loading={auditState.loading}>
             刷新
@@ -264,8 +264,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
           </Button>
           <Button onClick={resetFilters}>重置</Button>
           <Button onClick={loadAuditLogs}>刷新</Button>
-          <Tag>GET /audit-logs</Tag>
-          <Tag color="gold">masked only</Tag>
+          <Tag color="gold">脱敏展示</Tag>
           <Tag>take 1-100</Tag>
         </Space>
         {!queryResult.valid ? (

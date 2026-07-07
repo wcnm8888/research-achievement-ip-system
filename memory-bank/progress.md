@@ -14858,3 +14858,139 @@
     cleanup, or local file deletion.
   - No authenticated browser login rerun in this Step; Step 131 remains the
     latest committed authenticated Secret Authorization detail evidence.
+
+## 2026-07-07 Step 133 - Client-facing requirement and UI gap audit
+
+- Status: DONE, docs-only audit.
+- Trigger:
+  - User reviewed the local Web UI screenshot and challenged the previous
+    "freeze / no more code changes" direction from a client-facing perspective.
+- Finding:
+  - The local/demo/synthetic backend and Route B feature closure remain useful,
+    but the Web UI still exposes development, API, Step, local-demo, and English
+    wording in ordinary business pages.
+  - Therefore, the project should not be frozen yet for client-facing delivery.
+- Added:
+  - `memory-bank/client-facing-requirement-and-ui-gap-audit-step133.md`.
+- Main P0 recommendations:
+  - Remove visible API endpoint tags, `Step` labels, `X-Demo-User-Id`, and
+    local/demo production-disclaimer language from normal pages.
+  - Translate visible English UI labels into Chinese business terminology.
+  - Rework import `dry-run` panels into `导入预检` business flows.
+  - Rewrite `memory-bank/project-requirement-completion-matrix.md` into a clean
+    Chinese final matrix because the file still starts with garbled legacy
+    content and the current conclusion appears later.
+- Explicitly not done:
+  - No `apps/**`, `prisma/**`, schema, migration, package, lockfile, or config
+    source change in this audit step.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.
+
+## 2026-07-07 Step 134 - Web client-facing terminology cleanup
+
+- Status: DONE.
+- Goal:
+  - Address the user's client-facing concern that the Web UI still looked like
+    an engineering/demo acceptance screen rather than a Chinese business
+    system.
+- Web cleanup:
+  - Replaced visible English navigation and page labels such as `Custom
+    Reports`, `Secret Authorization`, `Phase 1 frontend`, and `production auth`
+    with Chinese business wording.
+  - Removed normal-page API endpoint badges and request strings such as
+    `GET /...`, `POST /...`, and `X-Demo-User-Id` from the main Web source
+    surfaces reviewed in this step.
+  - Reframed import `dry-run` UI into `导入预检`, including shared import panel
+    controls, result summaries, account import, department import, and
+    achievement import surfaces.
+  - Reworded local/demo/not-production disclaimers into neutral business
+    permission and safety summaries.
+  - Cleaned related pages: App shell, Achievements, Achievement detail/form,
+    Account Management, Department Management, Secret Authorization, Custom
+    Reports, ImportJob history, Workbench, WorkflowTasks, Search, Audit Logs,
+    Dashboard, Fees, Settings API Integrations, and Settings Boundary.
+- Tests:
+  - Updated Web tests to assert the new Chinese/business-facing copy and to
+    preserve negative assertions for old endpoint/production-disclaimer text.
+- Remaining caveat:
+  - This step improves client-facing Web presentation only. It does not convert
+    the project into production/VPS/real-provider acceptance.
+  - Some internal constants, enum values, and test data can still contain
+    English codes because they are API/domain codes, not ordinary business copy.
+- Explicitly not done:
+  - No `apps/api/**` change.
+  - No `prisma/**`, schema, migration, package, lockfile, or config change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.
+
+## 2026-07-07 Step 135 - Client-facing requirement matrix cleanup
+
+- Status: DONE, docs-only addition on top of Step 134 Web cleanup.
+- Goal:
+  - Answer from a client-facing perspective whether the product brief
+    requirements are implemented and what still blocks code freeze.
+- Added:
+  - `memory-bank/project-requirement-completion-matrix-client-facing-step135.md`.
+- Matrix conclusion:
+  - Current delivery is suitable for local/demo/synthetic review and
+    competition judging, not production launch.
+  - Phase-one core workflows are largely covered for local demonstration.
+  - Route B enhancements are covered with caveats.
+  - Production/VPS/production DB, real HR/SSO, real email/SMS, real finance,
+    real DOI/literature/patent providers, real object storage, mobile, full BI,
+    production monitoring, DR, and large-scale load testing remain deferred.
+- Freeze recommendation:
+  - Do not freeze as production delivery.
+  - After Step 134, the project is close to freezing as a local demo/reviewer
+    package, but still needs final browser UI acceptance screenshots and
+    evidence.
+- Explicitly not done:
+  - No additional app source change in this Step beyond the existing Step 134
+    Web cleanup already in the working tree.
+  - No API, Prisma schema, migration, package, lockfile, or config change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.
+
+## 2026-07-07 Step 136 - Client-facing Web Chinese copy completion
+
+- Status: DONE.
+- Goal:
+  - Continue the client-facing freeze audit after Step 134/135 and remove
+    additional visible English/developer wording found by source scans and
+    tests.
+- Web cleanup:
+  - Localized account lifecycle public panels, account management lifecycle
+    actions, role-change summaries, import apply summaries, import job history,
+    safe row history, secret authorization tables, settings API integration
+    metadata, settings import history overview, conversion ledger controls, and
+    fee workflow metadata labels.
+  - Replaced common visible fallback text such as `Not returned`, `None`,
+    `Status`, `Refresh`, `View`, `Edit`, `Provided`, and `Request failed`
+    where those strings appeared in ordinary user-facing Web surfaces.
+  - Kept domain/API enum codes where they are data values or identifiers rather
+    than marketing/ordinary UI copy.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AccountManagement DepartmentManagement SecretAuthorization CustomReports ImportJobHistoryPanel WorkflowTasks Search AuditLogs Dashboard Fees SettingsApiIntegrations`: PASS, 16 files / 308 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - Source scan for `GET /`, `POST /`, `X-Demo-User-Id`, `Step [0-9]`,
+    `local/demo`, `not production`, `dryRun=true`, `Custom Reports`, `Secret
+    Authorization`, `production auth`, and `Phase 1 frontend` in non-test Web
+    TSX files: no matches.
+  - Source scan for English `title/message/description/placeholder/emptyText`
+    JSX attributes in non-test Web TSX files: no matches.
+- Remaining caveat:
+  - Final browser screenshot acceptance is still recommended before declaring a
+    local demo/reviewer freeze.
+  - This is not production/VPS/real-provider acceptance.
+- Explicitly not done:
+  - No API, Prisma schema, migration, package, lockfile, or config change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

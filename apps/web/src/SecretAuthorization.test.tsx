@@ -148,8 +148,8 @@ describe("secret authorization permission boundary", () => {
       />,
     );
 
-    expect(html).toContain("Current account cannot access secret authorization management.");
-    expect(html).toContain("does not request /secret-authorization APIs");
+    expect(html).toContain("当前账号无权访问涉密授权管理");
+    expect(html).toContain("请联系系统管理员确认账号权限");
     expect(fetchMock).not.toHaveBeenCalled();
     expect(client.getSecretAuthorizationOverview).not.toHaveBeenCalled();
     expect(client.listSecretAuthorizationResources).not.toHaveBeenCalled();
@@ -171,9 +171,11 @@ describe("secret authorization permission boundary", () => {
     );
 
     expect(html).toContain("secret-authorization-page");
-    expect(html).toContain("Local/demo/synthetic read-only management view");
-    expect(html).toContain("not production authorization acceptance");
-    expect(html).toContain("GET /secret-authorization/resources");
+    expect(html).toContain("涉密授权管理");
+    expect(html).toContain("涉密资源");
+    expect(html).not.toContain("Local/demo/synthetic");
+    expect(html).not.toContain("not production authorization acceptance");
+    expect(html).not.toContain("GET /secret-authorization/resources");
   });
 });
 
@@ -181,10 +183,10 @@ describe("secret authorization safe projection display", () => {
   it("renders overview cards and caveats from safe summary fields", () => {
     const html = renderToStaticMarkup(<SecretAuthorizationOverviewCards overview={overview} />);
 
-    expect(html).toContain("Restricted resources");
-    expect(html).toContain("Active grants");
-    expect(html).toContain("Revoked / expired grants");
-    expect(html).toContain("Expiring soon");
+    expect(html).toContain("涉密资源");
+    expect(html).toContain("有效授权");
+    expect(html).toContain("已撤销/已过期");
+    expect(html).toContain("即将到期");
     expect(html).toContain("ACHIEVEMENT: 1");
     expect(html).toContain("LOCAL_DEMO_SYNTHETIC_ONLY");
     expect(html).not.toContain("undefined");
@@ -212,7 +214,7 @@ describe("secret authorization safe projection display", () => {
     expect(html).toContain("User grant holder");
     expect(html).toContain("READ_METADATA");
     expect(html).toContain("RESOURCE_GRANT_VIEWED");
-    expect(html).toContain("Provided");
+    expect(html).toContain("已填写");
     expect(html).toContain("AUDIT_SUMMARY_BOUNDED");
     expectNoForbiddenTerms(html);
   });
@@ -237,7 +239,7 @@ describe("secret authorization safe projection display", () => {
       renderToStaticMarkup(<SecretAuthorizationResourceDetailPanel detail={emptyDetail} />),
     ].join("");
 
-    expect(html).toContain("No overview returned");
+    expect(html).toContain("暂无涉密授权概览");
     expect(html).toContain("No safe grant summaries returned.");
     expect(html).toContain("No safe audit summaries returned.");
     expect(html).toContain("No department");

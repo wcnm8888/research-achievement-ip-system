@@ -427,9 +427,9 @@ describe("Step 19A attachment metadata helpers", () => {
   it("states the Step 45C-3 local UI boundary without storage internals", () => {
     const boundary = getAttachmentMetadataReadonlyBoundary();
 
-    expect(boundary.allowedRequest).toBe("GET /achievements/:achievementId/attachments");
+    expect(boundary.allowedRequest).toBe("附件列表");
     expect(boundary.allowedRequest).not.toContain("download");
-    expect(boundary.title).toContain("Step 45C-3");
+    expect(boundary.title).toContain("附件管理");
     expect(boundary.description).toContain("multipart");
     expect(boundary.description).toContain("storageKey");
     expect(boundary.description).toContain("checksum");
@@ -675,12 +675,10 @@ describe("Step 21A attachment detail metadata helpers", () => {
     const boundary = getAttachmentDetailMetadataReadonlyBoundary();
     const serialized = JSON.stringify(boundary).toLowerCase();
 
-    expect(boundary.allowedRequest).toBe(
-      "GET /achievements/:achievementId/attachments/:attachmentId",
-    );
+    expect(boundary.allowedRequest).toBe("附件详情");
     expect(boundary.allowedRequest).not.toContain("/download");
-    expect(boundary.description).toContain("只读取");
-    expect(boundary.description).toContain("不提供上传、下载、删除");
+    expect(boundary.description).toContain("只展示附件安全摘要");
+    expect(boundary.description).toContain("不提供删除、归档");
     expect(serialized).not.toContain("post ");
     expect(serialized).not.toContain("patch ");
     expect(serialized).not.toContain("delete ");

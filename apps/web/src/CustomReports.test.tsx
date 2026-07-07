@@ -84,9 +84,9 @@ const runResponse: CustomReportRunResponse = {
     count: 2,
   },
   caveats: [
-    "local/demo/custom report summary",
-    "not full BI",
-    "not production monitoring",
+    "仅展示聚合摘要",
+    "不展示明细敏感数据",
+    "不展示原始记录",
   ],
 };
 
@@ -108,8 +108,8 @@ describe("CustomReports request boundaries", () => {
       <CustomReports demoUserId={null} apiClient={client} />,
     );
 
-    expect(html).toContain("Custom Reports");
-    expect(html).toContain("does not call /reports/templates");
+    expect(html).toContain("自定义报表");
+    expect(html).toContain("当前没有可用的业务用户");
     expect(client.listCustomReportTemplates).not.toHaveBeenCalled();
     expect(client.runCustomReport).not.toHaveBeenCalled();
   });
@@ -182,14 +182,14 @@ describe("CustomReportsView display states", () => {
       expect(html).toContain(template.templateId);
     }
 
-    expect(html).toContain("Custom Reports");
-    expect(html).toContain("local/demo/custom report summary");
-    expect(html).toContain("not full BI");
-    expect(html).toContain("not production monitoring");
-    expect(html).toContain("not production acceptance");
-    expect(html).toContain("no raw export");
-    expect(html).toContain("no sensitive drilldown");
-    expect(html).toContain("no real external-system evidence");
+    expect(html).toContain("自定义报表");
+    expect(html).toContain("仅展示权限范围内的聚合报表摘要");
+    expect(html).toContain("仅展示聚合摘要");
+    expect(html).toContain("不展示明细敏感数据");
+    expect(html).toContain("不展示原始记录");
+    expect(html).not.toContain("local/demo");
+    expect(html).not.toContain("not production");
+    expect(html).not.toContain("raw export");
     expect(html).toContain("achievement-distribution");
     expect(html).toContain("templateId");
     expect(html).toContain("totals");
@@ -219,7 +219,7 @@ describe("CustomReportsView display states", () => {
     expect(html).toContain("No aggregate rows match these filters.");
   });
 
-  it("renders conversion-funnel Step 109 aggregate-only rows and totals", () => {
+  it("renders conversion-funnel aggregate-only rows and totals", () => {
     const html = renderView("conversion-funnel", {
       ...runResponse,
       metadata: {
@@ -246,9 +246,9 @@ describe("CustomReportsView display states", () => {
         evaluated: 2,
       },
       caveats: [
-        "local/demo/custom report summary",
-        "aggregate-only conversion deepening totals",
-        "not real finance status",
+        "仅展示聚合摘要",
+        "转化数据按汇总口径展示",
+        "财务状态以授权数据为准",
       ],
     });
 
@@ -259,7 +259,7 @@ describe("CustomReportsView display states", () => {
     expect(html).toContain("evaluationEffect");
     expect(html).toContain("localOverdue");
     expect(html).toContain("evaluated");
-    expect(html).toContain("aggregate-only conversion deepening totals");
+    expect(html).toContain("转化数据按汇总口径展示");
 
     for (const forbidden of ["Export", "Download", "Raw JSON"]) {
       expect(html).not.toContain(forbidden);
@@ -289,7 +289,7 @@ describe("CustomReportsView display states", () => {
       />,
     );
 
-    expect(html).toContain("Custom report service is unavailable.");
+    expect(html).toContain("报表服务暂不可用。");
     for (const forbidden of ["raw payload", "token", "cookie", "password", "connection string"]) {
       expect(html).not.toContain(forbidden);
     }

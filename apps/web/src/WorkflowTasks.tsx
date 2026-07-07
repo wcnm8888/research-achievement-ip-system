@@ -317,11 +317,11 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
           title="审批管理"
           description="选择本地演示用户后，前端才会请求我的审批待办。"
         />
-        <PermissionHint description="当前没有 X-Demo-User-Id，审批管理不会发起业务请求。选择科研秘书演示上下文后，待办列表会统一由后端权限策略裁剪。" />
+        <PermissionHint description="当前没有可用的业务用户，审批管理不会加载待办数据。请选择有审批权限的用户后继续。" />
         <BoundaryNotice
           title="等待演示上下文"
           description="选择演示用户后，本页可查看我的审批待办列表、任务详情，并在后端允许时执行通过或驳回。"
-          step="Step 13"
+          step="审批管理"
         />
       </Space>
     );
@@ -345,7 +345,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
         description="展示当前演示用户的审批待办。权限过滤、状态流转和可处理范围以后端为准。"
         extra={<Button onClick={() => void loadTasks()}>刷新</Button>}
       />
-      <PermissionHint description="Step 13 支持在我的待办列表内查看单条任务详情，并在后端允许时执行通过/驳回；最终权限和状态以后端为准。" />
+      <PermissionHint description="可在待办列表内查看单条任务详情，并在权限允许时执行通过或驳回。" />
 
       <Card className="shell-card">
         <Space className="workflow-filter-bar" size={12} wrap>
@@ -362,7 +362,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
           <Select
             allowClear
             className="workflow-filter-select"
-            placeholder="Target type"
+            placeholder="目标类型"
             options={targetTypeOptions}
             value={draftFilters.targetType}
             onChange={(value) =>
@@ -391,8 +391,8 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
           <Input.Search
             allowClear
             className="workflow-target-input"
-            enterButton="Filter"
-            placeholder="Filter by fee record ID"
+            enterButton="筛选"
+            placeholder="按费用记录 ID 筛选"
             value={draftFilters.feeRecordId}
             onChange={(event) =>
               setDraftFilters((current) => ({
@@ -410,7 +410,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
         </Space>
       </Card>
 
-      <Card className="shell-card" title="我的待办列表" extra={<Tag>GET /workflow/tasks/my</Tag>}>
+      <Card className="shell-card" title="我的待办列表">
         {tasks.loading ? (
           <div className="state-box">
             <Typography.Text type="secondary">正在加载审批待办...</Typography.Text>
@@ -791,7 +791,7 @@ function WorkflowTaskDetailContent({
             showIcon
             type="info"
             message="可查看关联科研成果"
-            description="成果详情通过现有 GET /achievements/:id 读取；审批上下文仅提供只读查看，不提供提交、作废或归档动作。"
+            description="审批上下文仅提供成果详情只读查看，不提供提交、作废或归档动作。"
             action={
               <Button
                 type="primary"
@@ -807,7 +807,7 @@ function WorkflowTaskDetailContent({
       <Alert
         showIcon
         type="warning"
-        message="Step 14B 边界"
+        message="操作边界"
         description="本抽屉仅提供关联成果只读入口，不展示审批历史或审计日志。"
       />
     </Space>

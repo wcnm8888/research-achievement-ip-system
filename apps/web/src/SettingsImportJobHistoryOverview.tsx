@@ -263,26 +263,25 @@ export function SettingsImportJobHistoryOverviewView({
   return (
     <Card
       className="shell-card settings-import-history-overview"
-      title="Import history overview"
+      title="导入记录概览"
       extra={
         <Space size={8} wrap>
           <Tag>system:config</Tag>
-          <Tag>read-only index</Tag>
-          <Button onClick={onRefresh}>Refresh history</Button>
+          <Tag>只读索引</Tag>
+          <Button onClick={onRefresh}>刷新记录</Button>
         </Space>
       }
     >
       <Space direction="vertical" size={12} className="full-width">
         <Typography.Text type="secondary">
-          Secondary read-only index for import job history. Backend guards remain
-          authoritative.
+          这里展示导入任务历史的只读索引，后端权限校验仍是最终边界。
         </Typography.Text>
 
         <Space className="settings-import-history-filter-bar" size={12} wrap>
           <Select
             allowClear
             className="settings-api-filter-select"
-            placeholder="Family"
+            placeholder="导入类型"
             options={familyOptions}
             value={filters.family}
             onChange={(value) => onFilterChange?.("family", value)}
@@ -290,7 +289,7 @@ export function SettingsImportJobHistoryOverviewView({
           <Select
             allowClear
             className="settings-api-filter-select"
-            placeholder="Mode"
+            placeholder="执行模式"
             options={modeOptions}
             value={filters.mode}
             onChange={(value) => onFilterChange?.("mode", value)}
@@ -298,7 +297,7 @@ export function SettingsImportJobHistoryOverviewView({
           <Select
             allowClear
             className="settings-api-filter-select"
-            placeholder="Achievement type"
+            placeholder="成果类型"
             options={achievementTypeOptions}
             value={filters.achievementType}
             onChange={(value) => onFilterChange?.("achievementType", value)}
@@ -306,7 +305,7 @@ export function SettingsImportJobHistoryOverviewView({
           <Select
             allowClear
             className="settings-api-filter-select"
-            placeholder="Status"
+            placeholder="状态"
             options={statusOptions}
             value={filters.status}
             onChange={(value) => onFilterChange?.("status", value)}
@@ -325,23 +324,23 @@ export function SettingsImportJobHistoryOverviewView({
             value={filters.createdTo}
             onChange={(event) => onFilterChange?.("createdTo", event.target.value)}
           />
-          <Button onClick={onResetFilters}>Reset filters</Button>
+          <Button onClick={onResetFilters}>重置筛选</Button>
         </Space>
 
         {list.loading ? (
-          <Alert type="info" showIcon message="Loading import history overview" />
+          <Alert type="info" showIcon message="正在加载导入记录概览" />
         ) : null}
 
         {list.error ? (
           <Alert
             type="error"
             showIcon
-            message="Import history overview unavailable"
+            message="导入记录概览暂不可用"
             description={list.error.detail ?? list.error.message}
           />
         ) : null}
 
-        {isEmpty ? <Empty description="No import history records" /> : null}
+        {isEmpty ? <Empty description="暂无导入记录" /> : null}
 
         {hasRows ? (
           <Table<ImportJobHistoryListItem>
@@ -355,7 +354,7 @@ export function SettingsImportJobHistoryOverviewView({
               pageSize: list.data?.pageSize ?? pageSize,
               total: list.data?.total ?? 0,
               showSizeChanger: true,
-              showTotal: (total) => `${total} import jobs`,
+              showTotal: (total) => `共 ${total} 条导入记录`,
               onChange: (nextPage, nextPageSize) => {
                 onPageChange?.(nextPage, nextPageSize);
               },
@@ -366,7 +365,7 @@ export function SettingsImportJobHistoryOverviewView({
       </Space>
 
       <Drawer
-        title="Import job detail"
+        title="导入任务详情"
         width={720}
         open={detailOpen}
         onClose={onCloseDetail}
@@ -428,84 +427,84 @@ const createSettingsImportJobHistoryColumns = (
   onOpenDetail?: (jobId: string) => void,
 ): TableProps<ImportJobHistoryListItem>["columns"] => [
   {
-    title: "family",
+    title: "导入类型",
     dataIndex: "family",
     key: "family",
     width: 140,
     render: (value: string) => <Tag>{value}</Tag>,
   },
   {
-    title: "mode",
+    title: "执行模式",
     dataIndex: "mode",
     key: "mode",
     width: 240,
   },
   {
-    title: "achievementType",
+    title: "成果类型",
     dataIndex: "achievementType",
     key: "achievementType",
     width: 180,
-    render: (value?: string | null) => value ?? "N/A",
+    render: (value?: string | null) => value ?? "未返回",
   },
   {
-    title: "status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
     width: 112,
     render: (value: string) => <Tag color={getStatusTagColor(value)}>{value}</Tag>,
   },
   {
-    title: "acceptedRowCount",
+    title: "受理行数",
     dataIndex: "acceptedRowCount",
     key: "acceptedRowCount",
     width: 150,
   },
   {
-    title: "createdBusinessCount",
+    title: "创建业务记录数",
     dataIndex: "createdBusinessCount",
     key: "createdBusinessCount",
     width: 180,
   },
   {
-    title: "createdCompanionCount",
+    title: "创建伴随记录数",
     dataIndex: "createdCompanionCount",
     key: "createdCompanionCount",
     width: 190,
   },
   {
-    title: "auditCount",
+    title: "审计记录数",
     dataIndex: "auditCount",
     key: "auditCount",
     width: 120,
   },
   {
-    title: "safe error code",
+    title: "安全错误码",
     key: "safeErrorCode",
     width: 180,
     render: (_, row) => renderSafeErrorCodes(row),
   },
   {
-    title: "createdAt",
+    title: "创建时间",
     dataIndex: "createdAt",
     key: "createdAt",
     width: 210,
     render: formatImportJobTimestamp,
   },
   {
-    title: "completedAt",
+    title: "完成时间",
     dataIndex: "completedAt",
     key: "completedAt",
     width: 210,
     render: formatImportJobTimestamp,
   },
   {
-    title: "detail",
+    title: "详情",
     key: "detail",
     fixed: "right",
     width: 96,
     render: (_, row) => (
       <Button size="small" onClick={() => onOpenDetail?.(row.id)}>
-        View
+        查看
       </Button>
     ),
   },

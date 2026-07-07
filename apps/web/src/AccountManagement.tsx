@@ -165,7 +165,7 @@ export const accountResetPasswordPermissionCode = "account:reset_password";
 
 const statusOptions: Array<{ label: string; value: AccountUserStatus }> = [
   { label: "启用", value: "ACTIVE" },
-  { label: "Pending activation", value: "PENDING_ACTIVATION" },
+  { label: "待激活", value: "PENDING_ACTIVATION" },
   { label: "禁用", value: "DISABLED" },
   { label: "归档", value: "ARCHIVED" },
 ];
@@ -383,7 +383,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
 
     try {
       const issue = await createInviteFromForm(apiClient, values);
-      message.success(`Invite queued: ${issue.deliveryStatus}`);
+      message.success(`邀请交付已加入队列：${issue.deliveryStatus}`);
       closeCreateInvite();
       loadUsers();
       loadDetail(issue.userId);
@@ -407,7 +407,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
 
   const handleUserImportDryRun = async () => {
     if (!importFile) {
-      setImportError(toValidationError("Select one .csv file before running dry-run."));
+      setImportError(toValidationError("请先选择一个 CSV 文件。"));
       return;
     }
 
@@ -428,7 +428,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
       const result = await dryRunUserAccountImport(apiClient, importFile);
       setImportResult(result);
       setImportFileFingerprint(buildUserAccountImportFileFingerprint(importFile, result));
-      message.success("User account CSV dry-run completed.");
+      message.success("账号导入预检已完成。");
     } catch (error) {
       setImportError(normalizeError(error));
     } finally {
@@ -628,27 +628,26 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
 
       <ImportJobHistoryPanel
         apiClient={apiClient}
-        title="User account import history"
+        title="账号导入记录"
         filters={userAccountImportHistoryFilters}
       />
 
-      <Card className="shell-card" title="Account lifecycle">
+      <Card className="shell-card" title="账号生命周期">
         <Space size={12} wrap>
           {canInviteAccounts ? (
             <Button type="primary" onClick={openCreateInvite}>
-              Invite user
+              邀请用户
             </Button>
           ) : (
-            <Tag>Invite actions hidden: missing account:invite</Tag>
+            <Tag>缺少账号邀请权限，邀请入口已隐藏</Tag>
           )}
           {canResetPasswords ? (
-            <Tag color="blue">account:reset_password enabled</Tag>
+            <Tag color="blue">已具备密码重置权限</Tag>
           ) : (
-            <Tag>Password reset actions hidden: missing account:reset_password</Tag>
+            <Tag>缺少密码重置权限，重置入口已隐藏</Tag>
           )}
           <Typography.Text type="secondary">
-            Local demo lifecycle only: simulated delivery status is shown, but delivery links,
-            credential material, and session material are never displayed.
+            页面仅展示账号生命周期安全摘要，不展示交付链接、登录凭证材料或会话材料。
           </Typography.Text>
         </Space>
       </Card>
@@ -703,7 +702,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
         </Space>
       </Card>
 
-      <Card className="shell-card" title="用户列表" extra={<Tag>GET /account-management/users</Tag>}>
+      <Card className="shell-card" title="用户列表">
         <DataState
           loading={users.loading}
           error={users.error}
@@ -910,7 +909,7 @@ export const getUserAccountImportApplyEligibility = ({
   if (mode !== userAccountImportApplyMode) {
     return {
       canApply: false,
-      reason: "Only CREATE_ONLY_PENDING_NO_CREDENTIAL user account import apply is supported.",
+      reason: "当前仅支持创建待激活且无登录凭证的账号。",
     };
   }
 
@@ -919,15 +918,15 @@ export const getUserAccountImportApplyEligibility = ({
   }
 
   if (!result) {
-    return { canApply: false, reason: "Run user account CSV dry-run before apply." };
+    return { canApply: false, reason: "请先完成账号导入预检。" };
   }
 
   if (!isSameUserAccountImportFile(file, fingerprint)) {
-    return { canApply: false, reason: "The selected file changed after dry-run. Run dry-run again." };
+    return { canApply: false, reason: "已选择的文件发生变化，请重新预检。" };
   }
 
   if (result.importType !== "USER_ACCOUNT" || result.dryRun !== true) {
-    return { canApply: false, reason: "Only user account dry-run results can be applied here." };
+    return { canApply: false, reason: "当前结果不能用于账号导入。" };
   }
 
   if (result.summary.totalRows <= 0) {
@@ -942,13 +941,13 @@ export const getUserAccountImportApplyEligibility = ({
   }
 
   if (result.summary.errorRows > 0) {
-    return { canApply: false, reason: "Resolve dry-run errors before apply." };
+    return { canApply: false, reason: "请先处理预检错误。" };
   }
 
   if (result.summary.warningRows > 0) {
     return {
       canApply: false,
-      reason: "Resolve dry-run warnings before pending no-credential apply.",
+      reason: "请先处理预检警告。",
     };
   }
 
@@ -999,7 +998,7 @@ export const mapUserAccountImportApplyErrorToDisplay = (error: ApiError): ApiErr
     return {
       ...error,
       message: "User account import apply needs an active session.",
-      detail: "Sign in again and rerun dry-run before applying.",
+      detail: "请重新登录并重新预检后再导入。",
     };
   }
 
@@ -1122,7 +1121,7 @@ export function UserAccountImportDryRunPanel({
   loading,
   applySubmitting = false,
   applyConfirmOpen = false,
-  applyEligibility = { canApply: false, reason: "Run user account CSV dry-run before apply." },
+  applyEligibility = { canApply: false, reason: "请先完成账号导入预检。" },
   applyResult = null,
   applyError = null,
   error,
@@ -1152,17 +1151,16 @@ export function UserAccountImportDryRunPanel({
     <>
       <ImportDryRunPanelShell
         className="shell-card user-account-import-dry-run-card"
-        title="User account CSV dry-run"
-        endpoint="POST /users/import/dry-run"
-        noticeMessage="dryRun=true; CSV-only; validates users, departments, roles, scopes, and conflicts before optional pending no-credential apply."
-        noticeDescription="Required headers are email, displayName, departmentCode, and roleCode; optional headers are employeeNo, scopeType, scopeDepartmentCode, and status. Sensitive credential, session, invite-link, and reset-link columns are rejected."
-        fileAriaLabel="User account CSV file"
+        title="账号导入预检"
+        noticeMessage="上传 CSV 文件后，系统会先检查账号、部门、角色、范围和冲突信息。"
+        noticeDescription="预检会拒绝凭证、会话、邀请链接和重置链接等敏感列。"
+        fileAriaLabel="账号 CSV 文件"
         file={file}
         loading={loading}
         controlsDisabled={applySubmitting}
         error={error}
         result={result}
-        emptyHint="Select one .csv file to preview account validation results."
+        emptyHint="请选择一个 CSV 文件进行账号导入预检。"
         onFileChange={onFileChange}
         onRunDryRun={onRunDryRun}
         extraActions={
@@ -1171,7 +1169,7 @@ export function UserAccountImportDryRunPanel({
             disabled={!applyEligibility.canApply || loading || applySubmitting}
             onClick={onOpenApplyConfirm}
           >
-            Apply pending no-credential
+            创建待激活账号
           </Button>
         }
         renderResult={(dryRunResult) => (
@@ -1215,7 +1213,7 @@ export function UserAccountImportDryRunResultView({
           description={
             employeeNoDbCheckAvailable
               ? "employeeNo is checked as an optional business identifier for existing-account conflicts. Account sign-in behavior is unchanged."
-              : "Current schema does not persist employeeNo for account users, so the dry-run only checks employeeNo duplicates within the uploaded file."
+              : "当前仅检查上传文件内的工号重复情况。"
           }
         />
       }
@@ -1268,8 +1266,8 @@ function UserAccountImportApplyStatus({
         showIcon
         message={
           eligibility.canApply
-            ? "Pending no-credential apply is available"
-            : "Pending no-credential apply is disabled"
+            ? "可以创建待激活账号"
+            : "暂不能创建待激活账号"
         }
         description={eligibility.reason}
       />
@@ -1294,35 +1292,34 @@ function UserAccountImportApplyResultView({
   const errorCodes = [...new Set(result.errors.map((error) => error.code))];
 
   return (
-    <Card size="small" title="User account apply result">
+    <Card size="small" title="账号导入结果">
       <Space direction="vertical" size={10} className="full-width">
         <Alert
           type={result.summary.errorCount > 0 ? "warning" : "success"}
           showIcon
-          message="User account apply summary"
-          description="Result is sanitized. Created users remain PENDING_ACTIVATION, have no credential, and cannot log in."
+          message="账号导入结果"
+          description="结果已脱敏展示。新建账号保持待激活状态，不创建凭证，不能直接登录。"
         />
         <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
-          <Descriptions.Item label="Mode">{result.mode}</Descriptions.Item>
-          <Descriptions.Item label="Created users">
+          <Descriptions.Item label="执行模式">{result.mode}</Descriptions.Item>
+          <Descriptions.Item label="已创建账号">
             {result.summary.createdUsersCount}
           </Descriptions.Item>
-          <Descriptions.Item label="Created roles">
+          <Descriptions.Item label="已创建角色">
             {result.summary.createdRolesCount}
           </Descriptions.Item>
-          <Descriptions.Item label="Skipped rows">
+          <Descriptions.Item label="跳过行">
             {result.summary.skippedRows}
           </Descriptions.Item>
-          <Descriptions.Item label="Failed rows">
+          <Descriptions.Item label="失败行">
             {result.summary.failedRows}
           </Descriptions.Item>
-          <Descriptions.Item label="Audit operation">
+          <Descriptions.Item label="审计操作">
             {result.summary.auditOperation}
           </Descriptions.Item>
         </Descriptions>
         <Typography.Text type="secondary">
-          Pending/no-credential status: PENDING_ACTIVATION users with department-scoped initial
-          roles; no login activation is created.
+          新建账号保持待激活状态，仅创建部门范围内的初始角色，不开通登录。
         </Typography.Text>
         {errorCodes.length > 0 ? (
           <Space size={[6, 6]} wrap>
@@ -1334,7 +1331,7 @@ function UserAccountImportApplyResultView({
             ))}
           </Space>
         ) : (
-          <Typography.Text type="secondary">Rejected/error summary: none.</Typography.Text>
+          <Typography.Text type="secondary">无拒绝或错误摘要。</Typography.Text>
         )}
       </Space>
     </Card>
@@ -1356,10 +1353,10 @@ function UserAccountImportApplyConfirmModal({
 }) {
   return (
     <Modal
-      title="Apply user account CSV pending no-credential"
+      title="创建待激活账号"
       open={open}
-      okText="Apply pending no-credential"
-      cancelText="Cancel"
+      okText="创建待激活账号"
+      cancelText="取消"
       confirmLoading={submitting}
       okButtonProps={{ disabled: submitting }}
       cancelButtonProps={{ disabled: submitting }}
@@ -1383,29 +1380,27 @@ export function UserAccountImportApplyConfirmContent({
       <Alert
         type="warning"
         showIcon
-        message="This will create pending user account records."
-        description="Mode is CREATE_ONLY_PENDING_NO_CREDENTIAL. This action does not update existing users, activate login, invite users, or reset passwords."
+        message="确认创建待激活账号"
+        description="本次操作仅创建待激活账号，不会更新既有账号、开通登录、发送邀请或重置密码。"
       />
       <Descriptions bordered size="small" column={1}>
-        <Descriptions.Item label="Endpoint">POST /users/import/apply</Descriptions.Item>
-        <Descriptions.Item label="Mode">{userAccountImportApplyMode}</Descriptions.Item>
-        <Descriptions.Item label="Users requested">
+        <Descriptions.Item label="导入方式">创建待激活账号</Descriptions.Item>
+        <Descriptions.Item label="申请创建账号">
           {result?.summary.createCandidates ?? 0}
         </Descriptions.Item>
-        <Descriptions.Item label="Audit operation">
+        <Descriptions.Item label="审计操作">
           {userAccountImportApplyAuditOperation}
         </Descriptions.Item>
-        <Descriptions.Item label="Created user status">
-          PENDING_ACTIVATION
+        <Descriptions.Item label="创建后状态">
+          待激活
         </Descriptions.Item>
-        <Descriptions.Item label="Initial role scope">
-          Department-scoped UserRole only
+        <Descriptions.Item label="初始角色范围">
+          仅创建部门范围内的用户角色
         </Descriptions.Item>
       </Descriptions>
       <Typography.Text type="secondary">
-        No UserCredential, password generation/reset, session, invite/reset lifecycle material,
-        email, or login activation will be created by this apply. The backend re-parses and
-        revalidates the uploaded CSV before writing.
+        不创建登录凭证、密码、会话、邀请或重置材料，
+        系统会在写入前重新解析并校验上传的 CSV 文件。
       </Typography.Text>
     </Space>
   );
@@ -1424,21 +1419,21 @@ const userAccountImportDryRunColumns: TableProps<UserAccountImportDryRunRow>["co
     width: 360,
     render: (_, row) => (
       <Space direction="vertical" size={2}>
-        <Typography.Text>email: {row.parsed.email ?? "-"}</Typography.Text>
-        <Typography.Text>displayName: {row.parsed.displayName ?? "-"}</Typography.Text>
-        <Typography.Text>employeeNo: {row.parsed.employeeNo ?? "-"}</Typography.Text>
-        <Typography.Text>departmentCode: {row.parsed.departmentCode ?? "-"}</Typography.Text>
-        <Typography.Text>roleCode: {row.parsed.roleCode ?? "-"}</Typography.Text>
+        <Typography.Text>邮箱：{row.parsed.email ?? "-"}</Typography.Text>
+        <Typography.Text>姓名：{row.parsed.displayName ?? "-"}</Typography.Text>
+        <Typography.Text>工号：{row.parsed.employeeNo ?? "-"}</Typography.Text>
+        <Typography.Text>部门编码：{row.parsed.departmentCode ?? "-"}</Typography.Text>
+        <Typography.Text>角色编码：{row.parsed.roleCode ?? "-"}</Typography.Text>
         <Typography.Text>
-          scope: {row.parsed.scopeType ?? "-"} / {row.parsed.scopeDepartmentCode ?? "-"}
+          授权范围：{row.parsed.scopeType ?? "-"} / {row.parsed.scopeDepartmentCode ?? "-"}
         </Typography.Text>
-        <Typography.Text>status: {row.parsed.status ?? "-"}</Typography.Text>
-        <Typography.Text>credentialAction: {row.parsed.credentialAction}</Typography.Text>
+        <Typography.Text>账号状态：{row.parsed.status ?? "-"}</Typography.Text>
+        <Typography.Text>凭证处理：{row.parsed.credentialAction}</Typography.Text>
       </Space>
     ),
   },
   {
-    title: "Status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
     width: 120,
@@ -1768,7 +1763,7 @@ const accountRoleChangeAuditColumns: TableProps<AccountRoleChangeAuditRow>["colu
     dataIndex: "reasonProvided",
     key: "reasonProvided",
     width: 120,
-    render: (reasonProvided: boolean) => (reasonProvided ? "Provided" : "Not provided"),
+    render: (reasonProvided: boolean) => (reasonProvided ? "已填写" : "未填写"),
   },
   {
     title: "Created",
@@ -1792,32 +1787,32 @@ export function AccountLifecycleProjectionSummary({ user }: { user: AccountUserS
           <Descriptions.Item label="Latest lifecycle action">
             {formatDateTime(lifecycleSummary.latestActionAt)}
           </Descriptions.Item>
-          <Descriptions.Item label="Disable / enable counts">
-            {lifecycleSummary.disabledCount ?? 0} disabled / {lifecycleSummary.enabledCount ?? 0} enabled
+          <Descriptions.Item label="禁用/启用次数">
+            禁用 {lifecycleSummary.disabledCount ?? 0} 次 / 启用 {lifecycleSummary.enabledCount ?? 0} 次
           </Descriptions.Item>
-          <Descriptions.Item label="Invite counts">
-            {lifecycleSummary.inviteCreatedCount ?? 0} issued / {lifecycleSummary.inviteResentCount ?? 0} resent
+          <Descriptions.Item label="邀请次数">
+            创建 {lifecycleSummary.inviteCreatedCount ?? 0} 次 / 重发 {lifecycleSummary.inviteResentCount ?? 0} 次
           </Descriptions.Item>
-          <Descriptions.Item label="Reset counts">
-            {lifecycleSummary.resetRequestedCount ?? 0} issued / {lifecycleSummary.resetRevokedCount ?? 0} revoked
+          <Descriptions.Item label="重置次数">
+            发起 {lifecycleSummary.resetRequestedCount ?? 0} 次 / 撤销 {lifecycleSummary.resetRevokedCount ?? 0} 次
           </Descriptions.Item>
-          <Descriptions.Item label="Latest delivery">
-            {(lifecycleSummary.latestDeliveryStatus ?? "No delivery status returned") +
+          <Descriptions.Item label="最近交付">
+            {(lifecycleSummary.latestDeliveryStatus ?? "未返回交付状态") +
               " / " +
-              (lifecycleSummary.latestDeliveryAdapter ?? "No adapter returned")}
+              (lifecycleSummary.latestDeliveryAdapter ?? "未返回交付方式")}
           </Descriptions.Item>
-          <Descriptions.Item label="Projection caveat">{caveatText}</Descriptions.Item>
+          <Descriptions.Item label="投影提示">{caveatText}</Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Card className="shell-card" title="Role change summary">
+      <Card className="shell-card" title="角色变更摘要">
         <Space direction="vertical" size={12} className="full-width">
           <Descriptions bordered size="small" column={1}>
-            <Descriptions.Item label="Latest role change">
+            <Descriptions.Item label="最近角色变更">
               {formatDateTime(roleSummary.latestRoleChangeAt)}
             </Descriptions.Item>
-            <Descriptions.Item label="Assign / revoke counts">
-              {roleSummary.assignedCount ?? 0} assigned / {roleSummary.revokedCount ?? 0} revoked
+            <Descriptions.Item label="分配/撤销次数">
+              分配 {roleSummary.assignedCount ?? 0} 次 / 撤销 {roleSummary.revokedCount ?? 0} 次
             </Descriptions.Item>
           </Descriptions>
           {recentRoleChanges.length > 0 ? (
@@ -1832,7 +1827,7 @@ export function AccountLifecycleProjectionSummary({ user }: { user: AccountUserS
               scroll={{ x: 920 }}
             />
           ) : (
-            <Typography.Text type="secondary">No recent safe role changes.</Typography.Text>
+            <Typography.Text type="secondary">暂无近期安全角色变更。</Typography.Text>
           )}
         </Space>
       </Card>
@@ -1996,38 +1991,37 @@ function AccountUserDetailView({
         <Descriptions.Item label="更新时间">{formatDateTime(user.updatedAt)}</Descriptions.Item>
       </Descriptions>
       <AccountLifecycleProjectionSummary user={user} />
-      <Card className="shell-card" title="Lifecycle actions">
+      <Card className="shell-card" title="生命周期操作">
         <Space direction="vertical" size={8} className="full-width">
           <Space size={8} wrap>
             {permissions.canInvite && user.status === "PENDING_ACTIVATION" ? (
               <Button onClick={() => onOperation({ kind: "resend-invite", user })}>
-                Resend invite
+                重新发送邀请
               </Button>
             ) : null}
             {permissions.canResetPassword && user.status === "ACTIVE" ? (
               <>
                 <Button onClick={() => onOperation({ kind: "admin-password-reset", user })}>
-                  Issue reset
+                  发起重置
                 </Button>
                 <Button onClick={() => onOperation({ kind: "revoke-password-reset", user })}>
-                  Revoke reset links
+                  撤销重置链接
                 </Button>
               </>
             ) : null}
           </Space>
           {!permissions.canInvite ? (
-            <Tag>Invite actions hidden: missing account:invite</Tag>
+            <Tag>缺少账号邀请权限，邀请入口已隐藏</Tag>
           ) : user.status !== "PENDING_ACTIVATION" ? (
-            <Tag>Invite resend only for pending activation accounts</Tag>
+            <Tag>仅待激活账号可重新发送邀请</Tag>
           ) : null}
           {!permissions.canResetPassword ? (
-            <Tag>Password reset actions hidden: missing account:reset_password</Tag>
+            <Tag>缺少密码重置权限，重置入口已隐藏</Tag>
           ) : user.status !== "ACTIVE" ? (
-            <Tag>Password reset only for active accounts</Tag>
+            <Tag>仅启用账号可发起密码重置</Tag>
           ) : null}
           <Typography.Text type="secondary">
-            Local demo delivery only. The admin UI shows delivery status, adapter, current account,
-            and masked email; delivery links, credential material, and session material are never shown.
+            页面仅展示交付状态、交付方式、当前账号和脱敏邮箱；不会展示交付链接、登录凭证材料或会话材料。
           </Typography.Text>
         </Space>
       </Card>
@@ -2252,9 +2246,9 @@ function CreateInviteDrawer({
       destroyOnClose
       extra={
         <Space>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>取消</Button>
           <Button type="primary" loading={submitting} onClick={() => form.submit()}>
-            Send invite
+            发送邀请
           </Button>
         </Space>
       }
@@ -2264,7 +2258,7 @@ function CreateInviteDrawer({
         <Alert
           type="info"
           showIcon
-          message="This step uses the local/simulated lifecycle delivery adapter for demo review. It is not a real email or SMS send, and this UI never displays generated delivery material or full links."
+          message="本页面只创建模拟交付记录，不发送真实邮件或短信，也不会展示生成的交付材料或完整链接。"
         />
         <DepartmentSelectorBoundary error={departmentSelector.error} />
         <Form<CreateInviteFormValues>
@@ -2440,15 +2434,15 @@ const getOperationTitle = (operation: OperationRequest): string => {
   }
 
   if (operation.kind === "resend-invite") {
-    return `Resend invite: ${operation.user.name}`;
+    return `重新发送邀请：${operation.user.name}`;
   }
 
   if (operation.kind === "admin-password-reset") {
-    return `Issue password reset: ${operation.user.name}`;
+    return `发起密码重置：${operation.user.name}`;
   }
 
   if (operation.kind === "revoke-password-reset") {
-    return `Revoke password reset links: ${operation.user.name}`;
+    return `撤销密码重置：${operation.user.name}`;
   }
 
   if (operation.kind === "assign-role") {
@@ -2472,15 +2466,15 @@ const getOperationSuccessMessage = (kind: OperationRequest["kind"]): string => {
   }
 
   if (kind === "resend-invite") {
-    return "Invite delivery queued";
+    return "邀请交付已加入队列";
   }
 
   if (kind === "admin-password-reset") {
-    return "Password reset delivery queued";
+    return "密码重置交付已加入队列";
   }
 
   if (kind === "revoke-password-reset") {
-    return "Password reset links revoked";
+    return "密码重置链接已撤销";
   }
 
   if (kind === "assign-role") {
@@ -2500,7 +2494,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="warning"
         showIcon
-        message="禁用用户会禁用 active credential，并撤销 active sessions。"
+        message="禁用用户会同步禁用当前可用凭证，并撤销当前有效会话。"
       />
     );
   }
@@ -2510,7 +2504,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="info"
         showIcon
-        message="启用用户不会自动恢复已禁用 credential。"
+        message="启用用户不会自动恢复之前已禁用的登录凭证。"
       />
     );
   }
@@ -2520,7 +2514,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="info"
         showIcon
-        message="A new local/simulated invite delivery will be queued. This is not a real email or SMS send; the UI will not display private delivery values or full invitation links."
+        message="系统会创建一条模拟邀请交付记录；页面不会展示私密交付值或完整邀请链接。"
       />
     );
   }
@@ -2530,7 +2524,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="warning"
         showIcon
-        message="A local/simulated password reset delivery will be queued. This is not a real email or SMS send; the user must sign in again after completing the reset."
+        message="系统会创建一条模拟密码重置交付记录；页面不会展示私密交付值或完整重置链接。"
       />
     );
   }
@@ -2540,7 +2534,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="warning"
         showIcon
-        message="Active password reset links for this user will be revoked."
+        message="将撤销该用户当前有效的密码重置链接。"
       />
     );
   }
@@ -2560,7 +2554,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="warning"
         showIcon
-        message="部门变更不会迁移历史成果、费用、审批，也不会自动迁移 scoped roles。"
+        message="部门变更不会迁移历史成果、费用、审批，也不会自动迁移部门范围角色。"
       />
     );
   }
@@ -2743,13 +2737,13 @@ const renderLifecycleDeliverySummary = (
         <Tag>{delivery.purpose}</Tag>
       </Space>
       <Typography.Text type="secondary">
-        {delivery.maskedEmail} / target current user
+        {delivery.maskedEmail} / 当前用户
       </Typography.Text>
       <Typography.Text type="secondary">
-        state {delivery.tokenStatus}; failure {delivery.failureCategory ?? "not persisted"}
+        令牌状态：{delivery.tokenStatus}；失败分类：{delivery.failureCategory ?? "未记录"}
       </Typography.Text>
       <Typography.Text type="secondary">
-        updated {formatDateTime(delivery.updatedAt)}
+        更新时间：{formatDateTime(delivery.updatedAt)}
       </Typography.Text>
     </Space>
   );

@@ -52,11 +52,11 @@ export const validateImportDryRunCsvFile = (
   const fileName = file.name.trim().toLowerCase();
 
   if (!fileName.endsWith(".csv")) {
-    return "Only .csv files are supported for this dry-run.";
+    return "仅支持上传 CSV 文件。";
   }
 
   if (file.size > importDryRunCsvFileSizeLimitBytes) {
-    return "CSV file must be 1 MB or smaller.";
+    return "CSV 文件大小不能超过 1 MB。";
   }
 
   return null;
@@ -90,7 +90,13 @@ export const getImportDryRunStatusColor = (status: ImportDryRunRowStatus) => {
 };
 
 export function ImportDryRunStatusTag({ status }: { status: ImportDryRunRowStatus }) {
-  return <Tag color={getImportDryRunStatusColor(status)}>{status}</Tag>;
+  const labelByStatus: Record<ImportDryRunRowStatus, string> = {
+    VALID: "通过",
+    WARNING: "需确认",
+    ERROR: "有错误",
+  };
+
+  return <Tag color={getImportDryRunStatusColor(status)}>{labelByStatus[status]}</Tag>;
 }
 
 export function renderImportDryRunIssueList(
@@ -98,7 +104,7 @@ export function renderImportDryRunIssueList(
   tone: ImportDryRunIssueTone,
 ) {
   if (issues.length === 0) {
-    return <Typography.Text type="secondary">None</Typography.Text>;
+    return <Typography.Text type="secondary">无</Typography.Text>;
   }
 
   return (
@@ -116,7 +122,6 @@ export function renderImportDryRunIssueList(
 export function ImportDryRunPanelShell<TResult>({
   className,
   title,
-  endpoint,
   noticeMessage,
   noticeDescription,
   fileAriaLabel,
@@ -134,7 +139,6 @@ export function ImportDryRunPanelShell<TResult>({
 }: {
   className: string;
   title: string;
-  endpoint: string;
   noticeMessage: ReactNode;
   noticeDescription: ReactNode;
   fileAriaLabel: string;
@@ -151,7 +155,7 @@ export function ImportDryRunPanelShell<TResult>({
   afterResult?: ReactNode;
 }) {
   return (
-    <Card className={className} title={title} extra={<Tag>{endpoint}</Tag>}>
+    <Card className={className} title={title}>
       <Space direction="vertical" size={12} className="full-width">
         <Alert type="info" showIcon message={noticeMessage} description={noticeDescription} />
         <Space size={10} wrap>
@@ -168,11 +172,11 @@ export function ImportDryRunPanelShell<TResult>({
             disabled={!file || loading || controlsDisabled}
             onClick={onRunDryRun}
           >
-            Run dry-run
+            开始预检
           </Button>
           {extraActions}
           <Tag color={file ? "processing" : "default"}>
-            {file ? `${file.name} (${formatImportDryRunFileSize(file.size)})` : "No CSV selected"}
+            {file ? `${file.name} (${formatImportDryRunFileSize(file.size)})` : "未选择 CSV 文件"}
           </Tag>
         </Space>
         {!file && !result && !error ? (
@@ -210,20 +214,20 @@ export function ImportDryRunResultShell<TRow>({
       <Alert
         type={result.summary.errorRows > 0 ? "warning" : "success"}
         showIcon
-        message="Dry-run report ready"
-        description={`importType=${result.importType}; dryRun=${String(result.dryRun)}; ${writeSafetyDescription}`}
+        message="预检报告已生成"
+        description={writeSafetyDescription}
       />
       {extraAlerts}
       <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
-        <Descriptions.Item label="File">{result.file.name}</Descriptions.Item>
-        <Descriptions.Item label="Size">
+        <Descriptions.Item label="文件">{result.file.name}</Descriptions.Item>
+        <Descriptions.Item label="大小">
           {formatImportDryRunFileSize(result.file.size)}
         </Descriptions.Item>
-        <Descriptions.Item label="Encoding">{result.file.encoding}</Descriptions.Item>
-        <Descriptions.Item label="Total rows">{result.summary.totalRows}</Descriptions.Item>
-        <Descriptions.Item label="Valid rows">{result.summary.validRows}</Descriptions.Item>
-        <Descriptions.Item label="Error rows">{result.summary.errorRows}</Descriptions.Item>
-        <Descriptions.Item label="Warning rows">{result.summary.warningRows}</Descriptions.Item>
+        <Descriptions.Item label="编码">{result.file.encoding}</Descriptions.Item>
+        <Descriptions.Item label="总行数">{result.summary.totalRows}</Descriptions.Item>
+        <Descriptions.Item label="可导入行">{result.summary.validRows}</Descriptions.Item>
+        <Descriptions.Item label="错误行">{result.summary.errorRows}</Descriptions.Item>
+        <Descriptions.Item label="警告行">{result.summary.warningRows}</Descriptions.Item>
         {summaryItems.map((item, index) => (
           <Descriptions.Item key={`${String(item.label)}-${index}`} label={item.label}>
             {item.value}
@@ -231,17 +235,17 @@ export function ImportDryRunResultShell<TRow>({
         ))}
       </Descriptions>
       <Space size={[6, 6]} wrap>
-        <Typography.Text strong>Required</Typography.Text>
+        <Typography.Text strong>必填列</Typography.Text>
         {result.columns.required.map((column) => (
           <Tag key={`required-${column}`} color="blue">
             {column}
           </Tag>
         ))}
-        <Typography.Text strong>Optional</Typography.Text>
+        <Typography.Text strong>可选列</Typography.Text>
         {result.columns.optional.map((column) => (
           <Tag key={`optional-${column}`}>{column}</Tag>
         ))}
-        <Typography.Text strong>Received</Typography.Text>
+        <Typography.Text strong>已识别列</Typography.Text>
         {result.columns.received.map((column) => (
           <Tag key={`received-${column}`} color={receivedColumnColor?.(column) ?? "geekblue"}>
             {column}

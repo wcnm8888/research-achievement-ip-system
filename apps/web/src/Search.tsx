@@ -256,11 +256,11 @@ export function Search({ demoUserId }: SearchProps) {
           title="检索中心"
           description="选择本地演示用户后，前端才会请求后端检索接口。"
         />
-        <PermissionHint description="当前没有 X-Demo-User-Id，检索中心不会发起 GET /search 业务请求。选择演示上下文后，搜索结果统一由后端权限策略裁剪。" />
+        <PermissionHint description="当前没有可用的业务用户，检索中心不会加载业务数据。请选择有权限的用户后继续。" />
         <BoundaryNotice
           title="等待演示上下文"
-          description="Step 16 检索中心已归档为只读前端闭环；未选择演示用户时不会请求 GET /search、GET /achievements/:id 或 GET /fees/:id，也不会触发费用写入、附件或任何写接口。"
-          step="Step 16"
+          description="选择用户后即可查看权限范围内的检索结果。"
+          step="检索中心"
         />
       </Space>
     );
@@ -270,9 +270,9 @@ export function Search({ demoUserId }: SearchProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="检索中心"
-        description="读取后端 GET /search 的真实只读结果；关键词、类型筛选和脱敏显示均以后端返回为准。"
+        description="按关键词和类型筛选当前权限范围内的成果与费用记录。"
       />
-      <PermissionHint description="最终检索范围以后端权限策略为准。前端只传递 X-Demo-User-Id 和现有 GET /search 支持的只读筛选，不承担最终鉴权，也不写入检索日志。" />
+      <PermissionHint description="系统会根据当前账号权限展示可检索的数据范围。" />
 
       <Card className="shell-card">
         <Space className="search-filter-bar" size={12} wrap>
@@ -392,7 +392,6 @@ export function Search({ demoUserId }: SearchProps) {
         title="检索结果"
         extra={
           <Space size={8} wrap>
-            <Tag>GET /search</Tag>
             <Tag color={stateKind === "ready" ? "blue" : "default"}>
               total {searchState.data?.total ?? 0}
             </Tag>
@@ -405,7 +404,7 @@ export function Search({ demoUserId }: SearchProps) {
           type="info"
           showIcon
           message="只读详情边界"
-          description="Step 16 已完成成果与费用结果的只读详情联动；费用详情仅调用 GET /fees/:id，不暴露标记缴费、创建费用、凭证附件、warnings API、search_logs 或后端搜索改造。"
+          description="检索结果可联动查看只读详情，不在检索页提供费用写入、附件操作或系统日志入口。"
         />
         <DataState
           loading={searchState.loading}

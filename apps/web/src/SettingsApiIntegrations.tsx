@@ -109,13 +109,13 @@ export const apiIntegrationProviderOptions: Array<{
   value: ApiIntegrationProvider;
 }> = [
   { label: "DOI", value: "DOI" },
-  { label: "Email", value: "EMAIL" },
+  { label: "邮件", value: "EMAIL" },
   { label: "HR", value: "HR" },
-  { label: "Finance", value: "FINANCE" },
-  { label: "Patent", value: "PATENT" },
-  { label: "Storage", value: "STORAGE" },
-  { label: "Search", value: "SEARCH" },
-  { label: "Other", value: "OTHER" },
+  { label: "财务", value: "FINANCE" },
+  { label: "专利", value: "PATENT" },
+  { label: "存储", value: "STORAGE" },
+  { label: "检索", value: "SEARCH" },
+  { label: "其他", value: "OTHER" },
 ];
 
 const providerLabels = Object.fromEntries(
@@ -127,18 +127,18 @@ const mockScenarioOptions: Array<{
   value: ApiIntegrationMockScenario;
   provider: ApiIntegrationProvider;
 }> = [
-  { label: "DOI lookup mock", value: "DOI_LOOKUP", provider: "DOI" },
+  { label: "DOI 查询模拟", value: "DOI_LOOKUP", provider: "DOI" },
   {
-    label: "Patent status sync mock",
+    label: "专利状态同步模拟",
     value: "PATENT_STATUS_SYNC",
     provider: "PATENT",
   },
   {
-    label: "Finance callback/reconcile mock",
+    label: "财务回调与对账模拟",
     value: "FINANCE_RECONCILE",
     provider: "FINANCE",
   },
-  { label: "HR sync mock", value: "HR_SYNC", provider: "HR" },
+  { label: "HR 同步模拟", value: "HR_SYNC", provider: "HR" },
 ];
 
 const mockScenarioProviderMap = Object.fromEntries(
@@ -149,9 +149,9 @@ const mockResultModeOptions: Array<{
   label: string;
   value: ApiIntegrationMockResultMode;
 }> = [
-  { label: "Success", value: "SUCCESS" },
-  { label: "Failure", value: "FAILURE" },
-  { label: "Degraded", value: "DEGRADED" },
+  { label: "成功", value: "SUCCESS" },
+  { label: "失败", value: "FAILURE" },
+  { label: "降级", value: "DEGRADED" },
 ];
 
 export function SettingsApiIntegrations({
@@ -381,7 +381,7 @@ export function SettingsApiIntegrations({
     try {
       const result = await runApiIntegrationMockDemo(apiClient, mockDemoValues);
       setMockDemoRun({ loading: false, data: result, error: null });
-      message.success("Mock demo completed.");
+      message.success("模拟调用已完成。");
       loadApiCallLogs();
     } catch (error) {
       setMockDemoRun({ loading: false, data: null, error: normalizeError(error) });
@@ -395,16 +395,16 @@ export function SettingsApiIntegrations({
     return (
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
-          title="Settings"
-          description="API integration metadata management is available only to system:config users."
+          title="系统接口配置"
+          description="接口配置元数据管理仅对具备系统配置权限的账号开放。"
         />
         <DataState
           error={{
             kind: "forbidden",
             status: 403,
-            message: "Current account cannot access Settings.",
+            message: "当前账号无权访问系统接口配置。",
             detail:
-              "Use an administrator with system:config. Without that permission, the frontend does not request /settings/api-integrations.",
+              "请使用具备系统配置权限的管理员账号；没有权限时，前端不会请求接口配置数据。",
           }}
         >
           <span />
@@ -417,10 +417,10 @@ export function SettingsApiIntegrations({
     return (
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
-          title="Settings"
-          description="A valid session context is required before Settings APIs are requested."
+          title="系统接口配置"
+          description="需要有效登录会话后才能查看接口配置元数据。"
         />
-        <PermissionHint description="No active business context is available. The page will not request API integration metadata until a session is present." />
+        <PermissionHint description="当前没有可用业务上下文；会话建立前页面不会请求接口配置元数据。" />
       </Space>
     );
   }
@@ -428,19 +428,19 @@ export function SettingsApiIntegrations({
   return (
     <Space direction="vertical" size={16} className="page-stack settings-api-page">
       <SectionHeader
-        title="Settings"
-        description="Manage API integration metadata only. Config reference is a non-sensitive reference name, not a secret value."
+        title="系统接口配置"
+        description="管理外部接口配置元数据；配置引用只是非敏感名称，不是密钥值。"
         extra={
           <Space size={8} wrap>
-            <Button onClick={refresh}>Refresh</Button>
+            <Button onClick={refresh}>刷新</Button>
             <Button type="primary" onClick={openCreate}>
-              New integration
+              新增接口配置
             </Button>
           </Space>
         }
       />
 
-      <PermissionHint description="This page stores metadata only: code, provider, enabled flag, timeout and config reference name. It does not read environment files, store provider credentials, or switch runtime adapters." />
+      <PermissionHint description="本页面仅维护接口编码、供应商、启用状态、超时设置和配置引用名称；不读取环境文件，不保存供应商凭证，也不切换运行时适配器。" />
 
       <SettingsImportJobHistoryOverview demoUserId={demoUserId} authUser={authUser} />
 
@@ -465,8 +465,8 @@ export function SettingsApiIntegrations({
           <Input.Search
             allowClear
             className="settings-api-keyword"
-            placeholder="Search code or config reference"
-            enterButton="Search"
+            placeholder="搜索编码或配置引用"
+            enterButton="查询"
             value={draftFilters.keyword}
             onChange={(event) =>
               setDraftFilters((current) => ({ ...current, keyword: event.target.value }))
@@ -476,7 +476,7 @@ export function SettingsApiIntegrations({
           <Select
             allowClear
             className="settings-api-filter-select"
-            placeholder="Provider"
+            placeholder="供应商"
             options={apiIntegrationProviderOptions}
             value={draftFilters.provider}
             onChange={(value) =>
@@ -486,10 +486,10 @@ export function SettingsApiIntegrations({
           <Select
             allowClear
             className="settings-api-filter-select"
-            placeholder="Enabled"
+            placeholder="启用状态"
             options={[
-              { label: "Enabled", value: true },
-              { label: "Disabled", value: false },
+              { label: "已启用", value: true },
+              { label: "已停用", value: false },
             ]}
             value={draftFilters.enabled}
             onChange={(value) =>
@@ -506,25 +506,24 @@ export function SettingsApiIntegrations({
                 }))
               }
             />
-            <Typography.Text>Include archived</Typography.Text>
+            <Typography.Text>包含已归档</Typography.Text>
           </Space>
           <Button type="primary" onClick={applyFilters}>
-            Search
+            查询
           </Button>
-          <Button onClick={resetFilters}>Reset</Button>
+          <Button onClick={resetFilters}>重置</Button>
         </Space>
       </Card>
 
       <Card
         className="shell-card"
-        title="API integrations"
-        extra={<Tag>GET /settings/api-integrations</Tag>}
+        title="接口集成配置"
       >
         <DataState
           loading={integrations.loading}
           error={integrations.error}
           empty={!integrations.loading && !integrations.error && rows.length === 0}
-          emptyText={hasFilters ? "No matching integrations." : "No integrations yet."}
+          emptyText={hasFilters ? "没有匹配的接口配置。" : "暂无接口配置。"}
           onRetry={loadIntegrations}
         >
           <Table<ApiIntegrationMetadata>
@@ -541,7 +540,7 @@ export function SettingsApiIntegrations({
               pageSize: integrations.data?.pageSize ?? pageSize,
               total: integrations.data?.total ?? 0,
               showSizeChanger: true,
-              showTotal: (total) => `${total} integrations`,
+              showTotal: (total) => `共 ${total} 条`,
               onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage);
                 setPageSize(nextPageSize);
@@ -554,7 +553,7 @@ export function SettingsApiIntegrations({
 
       <Drawer
         className="settings-api-detail-drawer"
-        title="API integration detail"
+        title="接口集成详情"
         width={640}
         open={Boolean(detailIntegrationId)}
         onClose={() => {
@@ -783,7 +782,7 @@ const createApiIntegrationColumns = ({
   onViewDetail: (integrationId: string) => void;
 }): TableProps<ApiIntegrationMetadata>["columns"] => [
   {
-    title: "Integration",
+    title: "接口配置",
     key: "integration",
     width: 240,
     render: (_, integration) => (
@@ -794,7 +793,7 @@ const createApiIntegrationColumns = ({
     ),
   },
   {
-    title: "Provider",
+    title: "供应商",
     dataIndex: "provider",
     key: "provider",
     width: 112,
@@ -803,44 +802,44 @@ const createApiIntegrationColumns = ({
     ),
   },
   {
-    title: "State",
+    title: "状态",
     key: "state",
     width: 160,
     render: (_, integration) => renderIntegrationState(integration),
   },
   {
-    title: "Timeout",
+    title: "超时时间",
     dataIndex: "timeoutMs",
     key: "timeoutMs",
     width: 112,
     render: (timeoutMs: number) => `${timeoutMs} ms`,
   },
   {
-    title: "Config reference",
+    title: "配置引用",
     dataIndex: "configRef",
     key: "configRef",
     width: 260,
-    render: (configRef: string | null) => configRef || "Not configured",
+    render: (configRef: string | null) => configRef || "未配置",
   },
   {
-    title: "Updated",
+    title: "更新时间",
     dataIndex: "updatedAt",
     key: "updatedAt",
     width: 176,
     render: (value: string) => formatDateTime(value),
   },
   {
-    title: "Actions",
+    title: "操作",
     key: "actions",
     fixed: "right",
     width: 260,
     render: (_, integration) => (
       <Space size={8} wrap>
         <Button size="small" onClick={() => onViewDetail(integration.id)}>
-          View
+          查看
         </Button>
         <Button size="small" onClick={() => onEdit(integration)}>
-          Edit
+          编辑
         </Button>
         {integration.archivedAt ? (
           <Button
@@ -891,15 +890,15 @@ function ApiIntegrationMockDemoCenter({
   return (
     <Card
       className="shell-card settings-api-mock-demo"
-      title="External interface mock demo center"
-      extra={<Tag color="orange">Mock demo only / 非真实外部联调</Tag>}
+      title="外部接口模拟联调中心"
+      extra={<Tag color="orange">模拟环境</Tag>}
     >
       <Space direction="vertical" size={16} className="full-width">
         <Alert
           type="warning"
           showIcon
-          message="Mock demo only / 非真实外部联调"
-          description="Runs use synthetic adapter responses only. They do not call DOI, literature, patent, finance, HR, SSO, email, SMS, production, or VPS systems, and they do not create real payments, invoices, accounts, credentials, or business updates."
+          message="模拟接口调用"
+          description="本区域用于展示外部接口适配器的模拟调用结果，不会创建付款、账号、凭证或其他业务写入。"
         />
 
         <Space size={12} wrap>
@@ -924,17 +923,17 @@ function ApiIntegrationMockDemoCenter({
             onChange={onResultModeChange}
           />
           <Button type="primary" loading={submitting} onClick={onRun}>
-            Run mock
+            运行模拟
           </Button>
-          <Button onClick={onReloadLogs}>Reload logs</Button>
+          <Button onClick={onReloadLogs}>刷新日志</Button>
         </Space>
 
         {providerMismatch ? (
           <Alert
             type="error"
             showIcon
-            message="Provider/scenario mismatch"
-            description={`Selected scenario expects ${expectedProvider}. The backend will reject mismatched mock demo requests before logging.`}
+            message="接口类型与场景不匹配"
+            description={`当前场景需要 ${expectedProvider} 类型接口，请调整后重试。`}
           />
         ) : null}
 
@@ -944,14 +943,13 @@ function ApiIntegrationMockDemoCenter({
 
         <Card
           className="shell-card"
-          title="Recent safe API call logs"
-          extra={<Tag>GET /settings/api-integrations/mock-demo/logs</Tag>}
+          title="近期安全调用日志"
         >
           <DataState
             loading={logs.loading}
             error={logs.error}
             empty={!logs.loading && !logs.error && callLogRows.length === 0}
-            emptyText="No API call logs yet."
+            emptyText="暂无接口调用日志。"
             onRetry={onReloadLogs}
           >
             <Table<ApiCallLogSummary>
@@ -973,29 +971,29 @@ function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse 
   return (
     <Card
       className="shell-card"
-      title="Mock run result"
+      title="模拟调用结果"
       extra={renderMockRunStatus(result.runStatus)}
     >
       <Space direction="vertical" size={12} className="full-width">
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="Scenario">{result.scenario}</Descriptions.Item>
-          <Descriptions.Item label="Provider">{result.provider}</Descriptions.Item>
-          <Descriptions.Item label="Requested mode">
+          <Descriptions.Item label="场景">{result.scenario}</Descriptions.Item>
+          <Descriptions.Item label="接口类型">{result.provider}</Descriptions.Item>
+          <Descriptions.Item label="请求模式">
             {result.requestedResultMode}
           </Descriptions.Item>
-          <Descriptions.Item label="Integration">
+          <Descriptions.Item label="接口配置">
             {result.integration
-              ? `${result.integration.code} (${result.integration.enabled ? "enabled" : "disabled"})`
-              : "Missing integration metadata"}
+              ? `${result.integration.code} (${result.integration.enabled ? "已启用" : "已停用"})`
+              : "缺少接口配置"}
           </Descriptions.Item>
-          <Descriptions.Item label="Synthetic subject">
-            {result.syntheticSubject}
+          <Descriptions.Item label="模拟对象">
+            {result.syntheticSubject.replace(/^Synthetic\s+/i, "模拟")}
           </Descriptions.Item>
-          <Descriptions.Item label="Summary">{result.summary}</Descriptions.Item>
-          <Descriptions.Item label="Call log">
+          <Descriptions.Item label="摘要">{result.summary}</Descriptions.Item>
+          <Descriptions.Item label="调用日志">
             {result.callLog
               ? `${result.callLog.integrationCode} / ${result.callLog.requestId}`
-              : "No log was written"}
+              : "未写入日志"}
           </Descriptions.Item>
         </Descriptions>
 
@@ -1015,41 +1013,41 @@ function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse 
 
 const apiCallLogColumns: TableProps<ApiCallLogSummary>["columns"] = [
   {
-    title: "Integration",
+    title: "接口配置",
     dataIndex: "integrationCode",
     key: "integrationCode",
     width: 180,
   },
   {
-    title: "Request ID",
+    title: "请求编号",
     dataIndex: "requestId",
     key: "requestId",
     width: 260,
   },
   {
-    title: "Status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
     width: 120,
     render: (status: ApiCallLogSummary["status"]) => renderApiCallStatus(status),
   },
   {
-    title: "Duration",
+    title: "耗时",
     dataIndex: "durationMs",
     key: "durationMs",
     width: 120,
     render: (durationMs: number | null) =>
-      durationMs === null ? "Not returned" : `${durationMs} ms`,
+      durationMs === null ? "未返回" : `${durationMs} ms`,
   },
   {
-    title: "Error summary",
+    title: "错误摘要",
     dataIndex: "errorSummary",
     key: "errorSummary",
     width: 280,
-    render: (errorSummary: string | null) => errorSummary || "None",
+    render: (errorSummary: string | null) => errorSummary || "无",
   },
   {
-    title: "Created",
+    title: "创建时间",
     dataIndex: "createdAt",
     key: "createdAt",
     width: 176,
@@ -1070,24 +1068,24 @@ function ApiIntegrationDetailView({
     <Space direction="vertical" size={16} className="full-width">
       <Descriptions bordered size="small" column={1}>
         <Descriptions.Item label="ID">{integration.id}</Descriptions.Item>
-        <Descriptions.Item label="Code">{integration.code}</Descriptions.Item>
-        <Descriptions.Item label="Provider">
+        <Descriptions.Item label="编码">{integration.code}</Descriptions.Item>
+        <Descriptions.Item label="供应商">
           {providerLabels[integration.provider] ?? integration.provider}
         </Descriptions.Item>
-        <Descriptions.Item label="State">
+        <Descriptions.Item label="状态">
           {renderIntegrationState(integration)}
         </Descriptions.Item>
-        <Descriptions.Item label="Timeout">{integration.timeoutMs} ms</Descriptions.Item>
-        <Descriptions.Item label="Config reference name">
-          {integration.configRef || "Not configured"}
+        <Descriptions.Item label="超时时间">{integration.timeoutMs} ms</Descriptions.Item>
+        <Descriptions.Item label="配置引用名称">
+          {integration.configRef || "未配置"}
         </Descriptions.Item>
-        <Descriptions.Item label="Created">
+        <Descriptions.Item label="创建时间">
           {formatDateTime(integration.createdAt)}
         </Descriptions.Item>
-        <Descriptions.Item label="Updated">
+        <Descriptions.Item label="更新时间">
           {formatDateTime(integration.updatedAt)}
         </Descriptions.Item>
-        <Descriptions.Item label="Archived">
+        <Descriptions.Item label="归档时间">
           {formatDateTime(integration.archivedAt)}
         </Descriptions.Item>
       </Descriptions>
@@ -1095,20 +1093,20 @@ function ApiIntegrationDetailView({
       <Alert
         type="info"
         showIcon
-        message="Metadata only"
-        description="Config reference is a lookup label for backend runtime configuration. Do not enter provider credentials or runtime keys here."
+        message="仅维护元数据"
+        description="配置引用是后端运行配置的查找名称，请勿在此输入供应商凭证或运行密钥。"
       />
 
-      <Card className="shell-card" title="Actions">
+      <Card className="shell-card" title="操作">
         <Space size={8} wrap>
-          <Button onClick={() => onEdit(integration)}>Edit metadata</Button>
+          <Button onClick={() => onEdit(integration)}>编辑元数据</Button>
           {integration.archivedAt ? (
             <Button onClick={() => onOperation({ kind: "restore", integration })}>
-              Restore
+              恢复
             </Button>
           ) : (
             <Button danger onClick={() => onOperation({ kind: "archive", integration })}>
-              Archive
+              归档
             </Button>
           )}
         </Space>
@@ -1137,16 +1135,16 @@ function ApiIntegrationFormDrawer({
   return (
     <Drawer
       className="settings-api-form-drawer"
-      title={isEdit ? "Edit API integration" : "New API integration"}
+      title={isEdit ? "编辑接口配置" : "新增接口配置"}
       width={560}
       open={Boolean(mode)}
       onClose={onClose}
       destroyOnClose
       extra={
         <Space>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>取消</Button>
           <Button type="primary" loading={submitting} onClick={() => form.submit()}>
-            Save
+            保存
           </Button>
         </Space>
       }
@@ -1156,8 +1154,8 @@ function ApiIntegrationFormDrawer({
         <Alert
           type="warning"
           showIcon
-          message="Do not enter sensitive values"
-          description="Config reference is a non-sensitive reference name, for example provider.profile.default. It is not a place for credentials."
+          message="不要输入敏感值"
+          description="配置引用是非敏感引用名称，例如 provider.profile.default；这里不是填写凭证的位置。"
         />
         <Form<ApiIntegrationFormValues>
           form={form}
@@ -1166,47 +1164,47 @@ function ApiIntegrationFormDrawer({
           onFinish={onFinish}
         >
           <Form.Item
-            label="Code"
+            label="编码"
             name="code"
             rules={[
-              { required: true, message: "Enter an integration code." },
+              { required: true, message: "请输入接口配置编码。" },
               {
                 pattern: /^[A-Z0-9_:-]+$/,
-                message: "Use uppercase letters, numbers, underscore, colon, or dash.",
+                message: "请使用大写字母、数字、下划线、冒号或短横线。",
               },
             ]}
           >
             <Input autoComplete="off" placeholder="DOI_LOOKUP" />
           </Form.Item>
           <Form.Item
-            label="Provider"
+            label="供应商"
             name="provider"
-            rules={[{ required: true, message: "Select a provider." }]}
+            rules={[{ required: true, message: "请选择供应商。" }]}
           >
-            <Select options={apiIntegrationProviderOptions} placeholder="Provider" />
+            <Select options={apiIntegrationProviderOptions} placeholder="选择供应商" />
           </Form.Item>
           <Form.Item
-            label="Enabled"
+            label="是否启用"
             name="enabled"
             valuePropName="checked"
           >
             <Switch />
           </Form.Item>
           <Form.Item
-            label="Timeout"
+            label="超时时间"
             name="timeoutMs"
-            rules={[{ required: true, message: "Enter a timeout." }]}
+            rules={[{ required: true, message: "请输入超时时间。" }]}
           >
             <InputNumber min={100} max={120000} addonAfter="ms" className="full-width" />
           </Form.Item>
           <Form.Item
-            label="Config reference name"
+            label="配置引用名称"
             name="configRef"
-            extra="Non-sensitive reference name only. Leave blank if no backend reference is assigned."
+            extra="仅填写非敏感引用名称；如未分配后端引用可留空。"
             rules={[
               {
                 pattern: /^[A-Za-z0-9_.:/-]+$/,
-                message: "Use letters, numbers, underscore, dot, colon, slash, or dash.",
+                message: "请使用字母、数字、下划线、点、冒号、斜杠或短横线。",
               },
             ]}
           >
@@ -1237,8 +1235,8 @@ function ApiIntegrationOperationModal({
     <Modal
       title={operation ? getOperationTitle(operation) : ""}
       open={Boolean(operation)}
-      okText="Confirm"
-      cancelText="Cancel"
+      okText="确认"
+      cancelText="取消"
       confirmLoading={submitting}
       onCancel={onCancel}
       onOk={onOk}
@@ -1273,9 +1271,9 @@ function ApiIntegrationOperationModal({
 const renderIntegrationState = (integration: ApiIntegrationMetadata) => (
   <Space size={6} wrap>
     <Tag color={integration.enabled ? "green" : "default"}>
-      {integration.enabled ? "Enabled" : "Disabled"}
+      {integration.enabled ? "已启用" : "已停用"}
     </Tag>
-    {integration.archivedAt ? <Tag color="orange">Archived</Tag> : <Tag>Active</Tag>}
+    {integration.archivedAt ? <Tag color="orange">已归档</Tag> : <Tag>正常</Tag>}
   </Space>
 );
 
@@ -1308,11 +1306,11 @@ const formatSafeResultValue = (value: unknown): string => {
   }
 
   if (typeof value === "boolean") {
-    return value ? "true" : "false";
+    return value ? "是" : "否";
   }
 
   if (value === null || value === undefined) {
-    return "Not returned";
+    return "未返回";
   }
 
   return String(value);
@@ -1320,8 +1318,8 @@ const formatSafeResultValue = (value: unknown): string => {
 
 const getOperationTitle = (operation: ApiIntegrationOperation): string =>
   operation.kind === "archive"
-    ? `Archive ${operation.integration.code}`
-    : `Restore ${operation.integration.code}`;
+    ? `归档 ${operation.integration.code}`
+    : `恢复 ${operation.integration.code}`;
 
 const normalizeError = (error: unknown): ApiError => {
   if (isApiError(error)) {
@@ -1330,14 +1328,14 @@ const normalizeError = (error: unknown): ApiError => {
 
   return {
     kind: "unknown",
-    message: "Request failed.",
+    message: "请求失败。",
     detail: error instanceof Error ? error.message : undefined,
   };
 };
 
 const formatDateTime = (value: string | null | undefined): string => {
   if (!value) {
-    return "Not returned";
+    return "未返回";
   }
 
   const date = new Date(value);
