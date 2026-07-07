@@ -179,11 +179,11 @@ describe("ImportJobHistoryPanel", () => {
       />,
     );
     expect(listHtml).toContain("Achievement import history");
-    expect(listHtml).toContain("ACHIEVEMENT");
-    expect(listHtml).toContain("CREATE_DRAFT_ONLY");
-    expect(listHtml).toContain("PAPER");
-    expect(listHtml).toContain("SUCCESS");
-    expect(listHtml).toContain("created counts");
+    expect(listHtml).toContain("成果导入");
+    expect(listHtml).toContain("创建草稿");
+    expect(listHtml).toContain("论文");
+    expect(listHtml).toContain("成功");
+    expect(listHtml).toContain("创建计数");
     expect(listHtml).toContain("2026-07-04T00:00:03.000Z");
   });
 
@@ -195,11 +195,11 @@ describe("ImportJobHistoryPanel", () => {
     );
 
     expect(html).toContain("安全摘要");
-    expect(html).toContain("Run status");
+    expect(html).toContain("执行记录");
     expect(html).toContain("审计记录数");
     expect(html).toContain("createdAchievementsCount");
     expect(html).toContain("warningCount");
-    expect(html).toContain("Replay:");
+    expect(html).toContain("已成功完成");
     expect(html).not.toContain(blockedAuditReferenceKey);
     expect(html).not.toContain(blockedAuditReferenceValue);
     expect(html).not.toContain(blockedAtValue);
@@ -215,10 +215,10 @@ describe("ImportJobHistoryPanel", () => {
       getImportJobStatusExplanation("FAILED"),
     ].join(" ");
 
-    expect(text).toContain("Replay:");
-    expect(text).toContain("In-flight:");
-    expect(text).toContain("Rejected:");
-    expect(text).toContain("Failed:");
+    expect(text).toContain("已成功完成");
+    expect(text).toContain("正在执行");
+    expect(text).toContain("安全规则拦截");
+    expect(text).toContain("执行失败");
     expect(text).not.toMatch(/\b(retry|delete|cleanup|rollback|download)\b/i);
   });
 
@@ -318,7 +318,7 @@ describe("ImportJobHistoryPanel", () => {
     expect(listHtml).toContain("SUCCESS");
     expect(listHtml).toContain("未返回");
     expect(listHtml).toContain("SAFE_VALIDATION_ERROR");
-    expect(listHtml).toContain("ACHIEVEMENT");
+    expect(listHtml).toContain("成果导入");
     expect(listHtml).toContain("共 12 条安全行记录");
   });
 

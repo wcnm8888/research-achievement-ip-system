@@ -250,6 +250,7 @@ export type AuthClient = {
 };
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(/\/$/, "");
+const networkErrorDetail = "无法连接本地服务，请确认服务已启动且当前访问地址被服务允许。";
 
 export const mapApiErrorMessage = (status?: number): Pick<ApiError, "kind" | "message"> => {
   if (status === 401) {
@@ -827,7 +828,7 @@ const request = async (
     throw {
       kind: "network",
       message: "服务不可用",
-      detail: error instanceof Error ? error.message : "Network request failed.",
+      detail: networkErrorDetail,
     } satisfies ApiError;
   }
 };
@@ -871,7 +872,7 @@ const requestForm = async (
     throw {
       kind: "network",
       message: "服务不可用",
-      detail: error instanceof Error ? error.message : "Network request failed.",
+      detail: networkErrorDetail,
     } satisfies ApiError;
   }
 };
@@ -909,7 +910,7 @@ const requestBlob = async (
     throw {
       kind: "network",
       message: "服务不可用",
-      detail: error instanceof Error ? error.message : "Network request failed.",
+      detail: networkErrorDetail,
     } satisfies ApiError;
   }
 };

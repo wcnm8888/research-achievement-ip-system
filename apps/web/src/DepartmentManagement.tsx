@@ -498,14 +498,14 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="部门维护"
-          description="部门维护入口只对具备 system:config 权限的管理员开放。"
+          description="部门维护入口只对具备系统配置权限的管理员开放。"
         />
         <DataState
           error={{
             kind: "forbidden",
             status: 403,
             message: "当前账号无权访问部门维护。",
-            detail: "请使用具备 system:config 权限的管理员账号进入；无权限时不会请求 /departments。",
+            detail: "请使用具备系统配置权限的管理员账号进入；无权限时不会请求部门维护服务。",
           }}
         >
           <span />
@@ -530,7 +530,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
     <Space direction="vertical" size={16} className="page-stack department-management-page">
       <SectionHeader
         title="部门维护"
-        description="维护部门 code、name、parentId 和启停状态；所有写入以后端 system:config 校验与审计为准。"
+        description="维护部门编码、名称、上级部门和启停状态；所有写入以后端系统配置权限校验与审计为准。"
         extra={
           <Space size={8} wrap>
             <Button onClick={refreshAll}>刷新</Button>
@@ -541,7 +541,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
         }
       />
 
-      <PermissionHint description="parentId 只表示组织结构；部门权限 scope 仍是精确 departmentId，父部门不会自动拥有子部门权限，也不支持级联停用。" />
+      <PermissionHint description="上级部门只表示组织结构；部门权限范围仍精确匹配当前部门，父部门不会自动拥有子部门权限，也不支持级联停用。" />
 
       <DepartmentImportDryRunPanel
         file={importFile}
@@ -773,7 +773,7 @@ export const getDepartmentImportApplyEligibility = ({
   fingerprint: DepartmentImportFileFingerprint | null;
 }): DepartmentImportApplyEligibility => {
   if (submitting) {
-    return { canApply: false, reason: "Department import apply is already running." };
+    return { canApply: false, reason: "部门导入正在执行，请等待当前操作完成。" };
   }
 
   if (mode !== departmentImportApplyMode) {
@@ -781,7 +781,7 @@ export const getDepartmentImportApplyEligibility = ({
   }
 
   if (!file) {
-    return { canApply: false, reason: "Select one department CSV file first." };
+    return { canApply: false, reason: "请先选择一个部门 CSV 文件。" };
   }
 
   if (!result) {
@@ -797,7 +797,7 @@ export const getDepartmentImportApplyEligibility = ({
   }
 
   if (result.summary.totalRows <= 0) {
-    return { canApply: false, reason: "Department import apply requires at least one row." };
+    return { canApply: false, reason: "部门导入至少需要一行有效数据。" };
   }
 
   if (result.summary.errorRows > 0) {
@@ -809,15 +809,15 @@ export const getDepartmentImportApplyEligibility = ({
   }
 
   if (result.summary.createCandidates !== result.summary.totalRows) {
-    return { canApply: false, reason: "All rows must be CREATE candidates." };
+    return { canApply: false, reason: "所有行都必须是创建候选记录。" };
   }
 
   if (result.rows.some((row) => row.status !== "VALID")) {
-    return { canApply: false, reason: "All department import rows must be VALID." };
+    return { canApply: false, reason: "所有部门导入行都必须通过预检。" };
   }
 
   if (result.rows.some((row) => row.candidateAction !== "CREATE")) {
-    return { canApply: false, reason: "All department import actions must be CREATE." };
+    return { canApply: false, reason: "所有部门导入行都必须是创建动作。" };
   }
 
   return { canApply: true, reason: "已通过预检，可以创建部门。" };
@@ -827,7 +827,7 @@ export const mapDepartmentImportApplyErrorToDisplay = (error: ApiError): ApiErro
   if (error.status === 401 || error.kind === "unauthorized") {
     return {
       ...error,
-      message: "Department import apply needs an active session.",
+      message: "部门导入需要有效登录状态",
       detail: "请重新登录并重新预检后再导入。",
     };
   }
@@ -835,15 +835,15 @@ export const mapDepartmentImportApplyErrorToDisplay = (error: ApiError): ApiErro
   if (error.status === 403 || error.kind === "forbidden") {
     return {
       ...error,
-      message: "Department import apply requires system:config.",
-      detail: "Use an administrator with system:config. The backend permission check remains authoritative.",
+      message: "部门导入需要系统配置权限",
+      detail: "请使用具备系统配置权限的管理员账号；最终权限校验仍以后端为准。",
     };
   }
 
   if (error.status === 400 || error.kind === "bad-request") {
     return {
       ...error,
-      message: "Department import apply was rejected.",
+      message: "部门导入被业务规则拒绝",
       detail: buildRejectedApplyErrorDetail(error),
     };
   }
@@ -851,14 +851,14 @@ export const mapDepartmentImportApplyErrorToDisplay = (error: ApiError): ApiErro
   if (error.kind === "network" || (error.status ?? 0) >= 500) {
     return {
       ...error,
-      message: "Department import apply service is unavailable.",
-      detail: "Retry after the local API is available. No department apply result was recorded by the Web client.",
+      message: "部门导入服务暂不可用",
+      detail: "请在本地服务可用后重试；当前页面不会记录部门导入结果。",
     };
   }
 
   return {
     ...error,
-    message: error.message || "Department import apply failed.",
+    message: error.message || "部门导入失败",
   };
 };
 
@@ -1521,7 +1521,7 @@ function DepartmentDetailView({
         type="info"
         showIcon
         message="层级边界"
-        description="parentId 只表示组织结构；权限 scope 精确匹配当前 departmentId，不从父部门继承到子部门。"
+        description="上级部门只表示组织结构；权限范围精确匹配当前部门，不从父部门继承到子部门。"
       />
 
       <Card className="shell-card" title="部门操作">

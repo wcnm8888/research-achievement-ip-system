@@ -23,6 +23,10 @@ import {
 } from "./api-client";
 import {
   formatImportJobTimestamp,
+  getAchievementTypeLabel,
+  getImportFamilyLabel,
+  getImportModeLabel,
+  getImportStatusLabel,
   getStatusTagColor,
   ImportJobHistoryDetailView,
   renderSafeErrorCodes,
@@ -87,32 +91,32 @@ export const settingsImportJobHistoryDefaultPage = 1;
 export const settingsImportJobHistoryDefaultPageSize = 20;
 
 const familyOptions: SelectProps<ImportJobHistoryFamily>["options"] = [
-  { label: "DEPARTMENT", value: "DEPARTMENT" },
-  { label: "USER_ACCOUNT", value: "USER_ACCOUNT" },
-  { label: "ACHIEVEMENT", value: "ACHIEVEMENT" },
+  { label: getImportFamilyLabel("DEPARTMENT"), value: "DEPARTMENT" },
+  { label: getImportFamilyLabel("USER_ACCOUNT"), value: "USER_ACCOUNT" },
+  { label: getImportFamilyLabel("ACHIEVEMENT"), value: "ACHIEVEMENT" },
 ];
 
 const modeOptions: SelectProps<string>["options"] = [
-  { label: "CREATE_ONLY", value: "CREATE_ONLY" },
+  { label: getImportModeLabel("CREATE_ONLY"), value: "CREATE_ONLY" },
   {
-    label: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
+    label: getImportModeLabel("CREATE_ONLY_PENDING_NO_CREDENTIAL"),
     value: "CREATE_ONLY_PENDING_NO_CREDENTIAL",
   },
-  { label: "CREATE_DRAFT_ONLY", value: "CREATE_DRAFT_ONLY" },
+  { label: getImportModeLabel("CREATE_DRAFT_ONLY"), value: "CREATE_DRAFT_ONLY" },
 ];
 
 const achievementTypeOptions: SelectProps<AchievementTypeCode>["options"] = [
-  { label: "PAPER", value: "PAPER" },
-  { label: "SOFTWARE_COPYRIGHT", value: "SOFTWARE_COPYRIGHT" },
-  { label: "PATENT", value: "PATENT" },
+  { label: getAchievementTypeLabel("PAPER"), value: "PAPER" },
+  { label: getAchievementTypeLabel("SOFTWARE_COPYRIGHT"), value: "SOFTWARE_COPYRIGHT" },
+  { label: getAchievementTypeLabel("PATENT"), value: "PATENT" },
 ];
 
 const statusOptions: SelectProps<ImportJobHistoryStatus>["options"] = [
-  { label: "PENDING", value: "PENDING" },
-  { label: "RUNNING", value: "RUNNING" },
-  { label: "SUCCESS", value: "SUCCESS" },
-  { label: "FAILED", value: "FAILED" },
-  { label: "REJECTED", value: "REJECTED" },
+  { label: getImportStatusLabel("PENDING"), value: "PENDING" },
+  { label: getImportStatusLabel("RUNNING"), value: "RUNNING" },
+  { label: getImportStatusLabel("SUCCESS"), value: "SUCCESS" },
+  { label: getImportStatusLabel("FAILED"), value: "FAILED" },
+  { label: getImportStatusLabel("REJECTED"), value: "REJECTED" },
 ];
 
 const emptyListLoadable: Loadable<ImportJobHistoryListResponse> = {
@@ -266,7 +270,7 @@ export function SettingsImportJobHistoryOverviewView({
       title="导入记录概览"
       extra={
         <Space size={8} wrap>
-          <Tag>system:config</Tag>
+          <Tag>系统配置权限</Tag>
           <Tag>只读索引</Tag>
           <Button onClick={onRefresh}>刷新记录</Button>
         </Space>
@@ -431,27 +435,28 @@ const createSettingsImportJobHistoryColumns = (
     dataIndex: "family",
     key: "family",
     width: 140,
-    render: (value: string) => <Tag>{value}</Tag>,
+    render: (value: string) => <Tag>{getImportFamilyLabel(value)}</Tag>,
   },
   {
     title: "执行模式",
     dataIndex: "mode",
     key: "mode",
     width: 240,
+    render: (value: string) => getImportModeLabel(value),
   },
   {
     title: "成果类型",
     dataIndex: "achievementType",
     key: "achievementType",
     width: 180,
-    render: (value?: string | null) => value ?? "未返回",
+    render: (value?: string | null) => value ? getAchievementTypeLabel(value) : "未返回",
   },
   {
     title: "状态",
     dataIndex: "status",
     key: "status",
     width: 112,
-    render: (value: string) => <Tag color={getStatusTagColor(value)}>{value}</Tag>,
+    render: (value: string) => <Tag color={getStatusTagColor(value)}>{getImportStatusLabel(value)}</Tag>,
   },
   {
     title: "受理行数",
@@ -547,7 +552,7 @@ const normalizeImportHistoryError = (error: unknown): ApiError => {
 
   return {
     kind: "unknown",
-    message: "Import history request failed.",
-    detail: error instanceof Error ? error.message : undefined,
+    message: "导入记录请求失败。",
+    detail: "页面未能完成请求，请确认本地服务可用后重试。",
   };
 };

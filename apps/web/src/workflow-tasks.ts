@@ -209,7 +209,7 @@ export const getWorkflowTaskLinkedAchievementState = (
     achievementId: targetId,
     message: "可查看关联科研成果",
     description:
-      "成果详情通过现有 GET /achievements/:id 读取；审批上下文仅提供只读查看，不提供提交、作废或归档动作。",
+      "审批上下文仅提供关联成果的只读查看，不提供提交、作废或归档动作。",
   };
 };
 

@@ -191,8 +191,8 @@ describe("CustomReportsView display states", () => {
     expect(html).not.toContain("not production");
     expect(html).not.toContain("raw export");
     expect(html).toContain("achievement-distribution");
-    expect(html).toContain("templateId");
-    expect(html).toContain("totals");
+    expect(html).toContain("报表模板");
+    expect(html).toContain("汇总指标");
     expect(html).toContain("Department code");
     expect(html).toContain("BIO");
     expect(html).toContain("PAPER");
@@ -203,9 +203,9 @@ describe("CustomReportsView display states", () => {
     const trendHtml = renderView("achievement-trend", null);
     const feeHtml = renderView("fee-risk-summary", null);
 
-    expect(trendHtml).toContain("groupBy");
-    expect(trendHtml).toContain("month");
-    expect(feeHtml).toContain("dueSoonDays");
+    expect(trendHtml).toContain("统计粒度");
+    expect(trendHtml).toContain("按月");
+    expect(feeHtml).toContain("临近天数");
     expect(feeHtml).toContain("30");
   });
 
@@ -216,7 +216,7 @@ describe("CustomReportsView display states", () => {
       totals: { count: 0 },
     });
 
-    expect(html).toContain("No aggregate rows match these filters.");
+    expect(html).toContain("当前筛选条件下没有汇总行。");
   });
 
   it("renders conversion-funnel aggregate-only rows and totals", () => {

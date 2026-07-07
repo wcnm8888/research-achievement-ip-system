@@ -405,10 +405,10 @@ export function CustomReportsView({
           </Space>
         </Card>
 
-        <Card className="shell-card" title="Filters">
+        <Card className="shell-card" title="筛选条件">
           <Row gutter={[12, 12]}>
             <Col xs={24} md={8}>
-              <FilterLabel label="dateFrom">
+              <FilterLabel label="开始日期">
                 <Input
                   type="date"
                   value={filters.dateFrom}
@@ -417,7 +417,7 @@ export function CustomReportsView({
               </FilterLabel>
             </Col>
             <Col xs={24} md={8}>
-              <FilterLabel label="dateTo">
+              <FilterLabel label="结束日期">
                 <Input
                   type="date"
                   value={filters.dateTo}
@@ -426,10 +426,10 @@ export function CustomReportsView({
               </FilterLabel>
             </Col>
             <Col xs={24} md={8}>
-              <FilterLabel label="departmentId">
+              <FilterLabel label="所属部门">
                 <Input
                   value={filters.departmentId}
-                  placeholder="UUID"
+                  placeholder="输入部门标识"
                   onChange={(event) =>
                     onFilterChange?.("departmentId", event.target.value || undefined)
                   }
@@ -437,7 +437,7 @@ export function CustomReportsView({
               </FilterLabel>
             </Col>
             <Col xs={24} md={8}>
-              <FilterLabel label="achievementType">
+              <FilterLabel label="成果类型">
                 <Select
                   className="full-width"
                   allowClear
@@ -448,7 +448,7 @@ export function CustomReportsView({
               </FilterLabel>
             </Col>
             <Col xs={24} md={8}>
-              <FilterLabel label="status">
+              <FilterLabel label="状态">
                 <Select
                   className="full-width"
                   allowClear
@@ -460,13 +460,13 @@ export function CustomReportsView({
             </Col>
             {isTrend ? (
               <Col xs={24} md={8}>
-                <FilterLabel label="groupBy">
+                <FilterLabel label="统计粒度">
                   <Select
                     className="full-width"
                     value={filters.groupBy ?? "month"}
                     options={[
-                      { label: "year", value: "year" },
-                      { label: "month", value: "month" },
+                      { label: "按年", value: "year" },
+                      { label: "按月", value: "month" },
                     ]}
                     onChange={(value) => onFilterChange?.("groupBy", value)}
                   />
@@ -475,7 +475,7 @@ export function CustomReportsView({
             ) : null}
             {isFeeRisk ? (
               <Col xs={24} md={8}>
-                <FilterLabel label="dueSoonDays">
+                <FilterLabel label="临近天数">
                   <InputNumber
                     className="full-width"
                     min={1}
@@ -506,42 +506,42 @@ const CustomReportResult = ({
   rows: CustomReportRow[];
   onRetry?: () => void;
 }) => (
-  <Card className="shell-card" title="Aggregate result">
+  <Card className="shell-card" title="汇总结果">
     <DataState
       loading={report.loading}
       error={report.error}
       empty={!report.data}
-      emptyText="Select filters and run a template to show aggregate rows."
+      emptyText="请选择筛选条件并运行报表模板。"
       onRetry={onRetry}
     >
       {report.data ? (
         <Space direction="vertical" size={16} className="full-width">
           <Descriptions size="small" bordered column={1}>
-            <Descriptions.Item label="templateId">
+            <Descriptions.Item label="报表模板">
               {report.data.metadata.templateId}
             </Descriptions.Item>
-            <Descriptions.Item label="name">{report.data.metadata.name}</Descriptions.Item>
-            <Descriptions.Item label="generatedAt">
+            <Descriptions.Item label="模板名称">{report.data.metadata.name}</Descriptions.Item>
+            <Descriptions.Item label="生成时间">
               {formatCustomReportDateTime(report.data.metadata.generatedAt)}
             </Descriptions.Item>
-            <Descriptions.Item label="scope user">
+            <Descriptions.Item label="当前用户">
               {report.data.scopeSummary.userId}
             </Descriptions.Item>
-            <Descriptions.Item label="scope departments">
-              {report.data.scopeSummary.departmentScope.departmentIds.join(", ") || "none"}
+            <Descriptions.Item label="部门范围">
+              {report.data.scopeSummary.departmentScope.departmentIds.join(", ") || "无部门范围"}
             </Descriptions.Item>
-            <Descriptions.Item label="policy">
+            <Descriptions.Item label="权限策略">
               {report.data.scopeSummary.policy}
             </Descriptions.Item>
           </Descriptions>
 
-          <KeyValueBlock title="filters" values={report.data.filters} />
-          <KeyValueBlock title="totals" values={report.data.totals} />
+          <KeyValueBlock title="已用筛选" values={report.data.filters} />
+          <KeyValueBlock title="汇总指标" values={report.data.totals} />
 
           {rows.length === 0 ? (
             <div className="state-box">
               <Typography.Text type="secondary">
-                No aggregate rows match these filters.
+                当前筛选条件下没有汇总行。
               </Typography.Text>
             </div>
           ) : (
@@ -581,7 +581,7 @@ const KeyValueBlock = ({
     <Typography.Text strong>{title}</Typography.Text>
     <div className="summary-meta">
       {Object.entries(values).length === 0 ? (
-        <Typography.Text type="secondary">none</Typography.Text>
+        <Typography.Text type="secondary">暂无</Typography.Text>
       ) : (
         Object.entries(values).map(([key, value]) => (
           <Tag key={key}>

@@ -18953,6 +18953,41 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish evidence
+
+- Scope:
+  - Web presentation only, driven by browser screenshot review after the local
+    demo delivery closure.
+  - No backend/API behavior, database schema, migration, seed, package, lockfile,
+    Docker, production/VPS, or external-provider change.
+- Changed presentation surfaces:
+  - App navigation/login status, achievement import dry-run/apply summaries,
+    account management import/lifecycle/role summaries, department import
+    boundary copy, import job history panels, secret authorization summaries,
+    custom report filters/results, settings boundary copy, and workflow linked
+    achievement explanation.
+- Safety evidence:
+  - Replaced raw browser/network fallback details with a safe Chinese local
+    service availability message.
+  - Replaced ordinary visible permission/API/code-style labels with Chinese
+    business labels where they were page copy.
+  - Kept technical identifiers only where they are data identifiers or internal
+    test fixtures, not ordinary page instructions.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AccountManagement DepartmentManagement SecretAuthorization ImportJobHistoryPanel SettingsImportJobHistoryOverview CustomReports WorkflowTasks api-client`: PASS, 13 files / 242 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Caveat:
+  - Source/test is updated. If a browser still shows the old bundle, rebuild or
+    reload the local Web service before taking final freeze screenshots.
+  - This evidence supports local/demo/reviewer-package readiness only and must
+    not be described as production/VPS/real-provider acceptance.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, real finance/payment/invoice/reconciliation operation, production runbook, production migration, or production monitoring operation.
+  - No Docker command or Docker cleanup operation.
+  - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in committed evidence.
+
 ## 2026-07-07 Step 132 - Final local demo requirement closure evidence
 
 - Canonical state checked before documentation:

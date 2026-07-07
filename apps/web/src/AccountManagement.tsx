@@ -175,7 +175,7 @@ const roleOptions: Array<{ label: string; value: AccountRoleCode }> = [
   { label: "科研秘书", value: "RESEARCH_SECRETARY" },
   { label: "部门管理员", value: "DEPARTMENT_ADMIN" },
   { label: "系统管理员", value: "SYSTEM_ADMIN" },
-  { label: "Finance Reviewer", value: "FINANCE_REVIEWER" },
+  { label: "财务审核员", value: "FINANCE_REVIEWER" },
   { label: "审计员", value: "AUDITOR" },
   { label: "负责人", value: "LEADER" },
   { label: "保密员", value: "SECRET_MANAGER" },
@@ -559,14 +559,14 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="账号管理"
-          description="账号管理入口只对具备 system:config 权限的管理员开放。"
+          description="账号管理入口只对具备系统配置权限的管理员开放。"
         />
         <DataState
           error={{
             kind: "forbidden",
             status: 403,
             message: "当前账号无权访问账号管理。",
-            detail: "请使用具备 system:config 权限的 production 管理员账号进入。",
+            detail: "请使用具备系统配置权限的管理员账号进入。",
           }}
         >
           <span />
@@ -591,15 +591,15 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="账号管理"
-        description="管理本地账号创建、状态、角色和部门绑定；所有操作以后端 system:config 权限校验为准。"
+        description="管理本地账号创建、状态、角色和部门绑定；所有操作以后端系统配置权限校验为准。"
         extra={
           <Button type="primary" onClick={openCreateUser}>
             创建用户
           </Button>
         }
       />
-      <PermissionHint description="账号管理权限最终以后端 system:config 校验为准；前端只做入口收敛和只读展示，不展示或缓存任何密码、会话材料、连接材料或凭证材料。" />
-      <PermissionHint description="部门选择器只用于账号绑定和角色部门 scope 绑定，不提供部门创建或编辑；部门 scope 仍精确匹配所选 departmentId，父部门不包含子部门权限。" />
+      <PermissionHint description="账号管理权限最终以后端系统配置权限校验为准；前端只做入口收敛和只读展示，不展示或缓存任何密码、会话材料、连接材料或凭证材料。" />
+      <PermissionHint description="部门选择器只用于账号绑定和角色部门范围绑定，不提供部门创建或编辑；部门范围仍精确匹配所选部门，父部门不包含子部门权限。" />
       {departments.error ? (
         <Alert
           type="warning"
@@ -903,7 +903,7 @@ export const getUserAccountImportApplyEligibility = ({
   fingerprint: UserAccountImportFileFingerprint | null;
 }): UserAccountImportApplyEligibility => {
   if (submitting) {
-    return { canApply: false, reason: "User account import apply is already running." };
+    return { canApply: false, reason: "账号导入正在执行，请等待当前操作完成。" };
   }
 
   if (mode !== userAccountImportApplyMode) {
@@ -914,7 +914,7 @@ export const getUserAccountImportApplyEligibility = ({
   }
 
   if (!file) {
-    return { canApply: false, reason: "Select one user account CSV file first." };
+    return { canApply: false, reason: "请先选择一个账号 CSV 文件。" };
   }
 
   if (!result) {
@@ -930,13 +930,13 @@ export const getUserAccountImportApplyEligibility = ({
   }
 
   if (result.summary.totalRows <= 0) {
-    return { canApply: false, reason: "User account import apply requires at least one row." };
+    return { canApply: false, reason: "账号导入至少需要一行有效数据。" };
   }
 
   if (result.summary.existingEmployeeNoRows > 0) {
     return {
       canApply: false,
-      reason: "Resolve employeeNo business identifier conflicts before apply.",
+      reason: "请先处理工号等业务标识冲突。",
     };
   }
 
@@ -952,25 +952,25 @@ export const getUserAccountImportApplyEligibility = ({
   }
 
   if (result.summary.createCandidates !== result.summary.totalRows) {
-    return { canApply: false, reason: "All rows must be pending create candidates." };
+    return { canApply: false, reason: "所有行都必须是待创建候选记录。" };
   }
 
   if (result.summary.existingUserRows > 0 || result.summary.existingRoleAssignmentRows > 0) {
-    return { canApply: false, reason: "Existing users or role assignments cannot be applied." };
+    return { canApply: false, reason: "已存在用户或已存在角色绑定的行不能导入。" };
   }
 
   if (result.summary.reactivationCandidateRows > 0) {
-    return { canApply: false, reason: "Revoked role reactivation candidates cannot be applied." };
+    return { canApply: false, reason: "已撤销角色的恢复候选行不能导入。" };
   }
 
   if (result.rows.some((row) => row.status !== "VALID")) {
-    return { canApply: false, reason: "All user account import rows must be VALID." };
+    return { canApply: false, reason: "所有账号导入行都必须通过预检。" };
   }
 
   if (result.rows.some((row) => row.candidateAction !== "CREATE_PENDING_USER")) {
     return {
       canApply: false,
-      reason: "All user account import actions must be CREATE_PENDING_USER.",
+      reason: "所有账号导入行都必须是创建待激活账号。",
     };
   }
 
@@ -986,18 +986,18 @@ export const getUserAccountImportApplyEligibility = ({
     return {
       canApply: false,
       reason:
-        "Rows must stay pending activation, no-credential, department-scoped, and non-SYSTEM_ADMIN.",
+        "所有行都必须保持待激活、无本地凭证、部门范围角色，且不能创建系统管理员。",
     };
   }
 
-  return { canApply: true, reason: "Ready for pending no-credential user account apply." };
+  return { canApply: true, reason: "可以创建待激活且无本地凭证的账号。" };
 };
 
 export const mapUserAccountImportApplyErrorToDisplay = (error: ApiError): ApiError => {
   if (error.status === 401 || error.kind === "unauthorized") {
     return {
       ...error,
-      message: "User account import apply needs an active session.",
+      message: "账号导入需要有效登录状态",
       detail: "请重新登录并重新预检后再导入。",
     };
   }
@@ -1005,15 +1005,15 @@ export const mapUserAccountImportApplyErrorToDisplay = (error: ApiError): ApiErr
   if (error.status === 403 || error.kind === "forbidden") {
     return {
       ...error,
-      message: "User account import apply requires system:config.",
-      detail: "Use an administrator with system:config. The backend permission check remains authoritative.",
+      message: "账号导入需要系统配置权限",
+      detail: "请使用具备系统配置权限的管理员账号；最终权限校验仍以后端为准。",
     };
   }
 
   if (error.status === 400 || error.kind === "bad-request") {
     return {
       ...error,
-      message: "User account import apply was rejected.",
+      message: "账号导入被业务规则拒绝",
       detail: buildRejectedUserAccountApplyErrorDetail(error),
     };
   }
@@ -1021,14 +1021,14 @@ export const mapUserAccountImportApplyErrorToDisplay = (error: ApiError): ApiErr
   if (error.kind === "network" || (error.status ?? 0) >= 500) {
     return {
       ...error,
-      message: "User account import apply service is unavailable.",
-      detail: "Retry after the local API is available. No user account apply result was recorded by the Web client.",
+      message: "账号导入服务暂不可用",
+      detail: "请在本地服务可用后重试；当前页面不会记录账号导入结果。",
     };
   }
 
   return {
     ...error,
-    message: error.message || "User account import apply failed.",
+    message: error.message || "账号导入失败",
   };
 };
 
@@ -1733,40 +1733,42 @@ type AccountRoleChangeAuditRow =
 
 const accountRoleChangeAuditColumns: TableProps<AccountRoleChangeAuditRow>["columns"] = [
   {
-    title: "Operation",
+    title: "操作",
     dataIndex: "operation",
     key: "operation",
     width: 160,
+    render: (operation: string) => getRoleAuditOperationLabel(operation),
   },
   {
-    title: "Role",
+    title: "角色",
     dataIndex: "roleCode",
     key: "roleCode",
     width: 120,
-    render: (roleCode: string) => roleCode || "No role returned",
+    render: (roleCode: string) => getRoleLabel(roleCode) || "未返回角色",
   },
   {
-    title: "Scope",
+    title: "范围",
     dataIndex: "scopeType",
     key: "scopeType",
     width: 120,
+    render: (scopeType: string) => getScopeTypeLabel(scopeType),
   },
   {
-    title: "Department",
+    title: "部门",
     dataIndex: "departmentId",
     key: "departmentId",
     width: 220,
-    render: (departmentId: string | null) => departmentId ?? "No department scope",
+    render: (departmentId: string | null) => departmentId ?? "无部门范围",
   },
   {
-    title: "Reason",
+    title: "原因",
     dataIndex: "reasonProvided",
     key: "reasonProvided",
     width: 120,
     render: (reasonProvided: boolean) => (reasonProvided ? "已填写" : "未填写"),
   },
   {
-    title: "Created",
+    title: "创建时间",
     dataIndex: "createdAt",
     key: "createdAt",
     width: 176,
@@ -1778,13 +1780,13 @@ export function AccountLifecycleProjectionSummary({ user }: { user: AccountUserS
   const lifecycleSummary = user.lifecycleActionSummary;
   const roleSummary = user.roleChangeAuditSummary;
   const recentRoleChanges = roleSummary.recentRoleChanges ?? [];
-  const caveatText = safeSummaryText(lifecycleSummary.caveats ?? [], "No projection caveats returned");
+  const caveatText = safeSummaryText(lifecycleSummary.caveats ?? [], "未返回投影提示");
 
   return (
     <Space direction="vertical" size={16} className="full-width">
-      <Card className="shell-card" title="Lifecycle history summary">
+      <Card className="shell-card" title="生命周期摘要">
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="Latest lifecycle action">
+          <Descriptions.Item label="最近生命周期动作">
             {formatDateTime(lifecycleSummary.latestActionAt)}
           </Descriptions.Item>
           <Descriptions.Item label="禁用/启用次数">
@@ -2700,6 +2702,31 @@ const renderRoleTag = (code: AccountRoleCode | string, id: string) => (
 const getRoleLabel = (code: AccountRoleCode | string): string =>
   roleLabels[code as AccountRoleCode] ?? code;
 
+const getScopeTypeLabel = (scopeType: string): string =>
+  scopeTypeOptions.find((option) => option.value === scopeType)?.label ?? scopeType;
+
+const getRoleAuditOperationLabel = (operation: string): string => {
+  if (
+    operation === "ASSIGN" ||
+    operation === "ROLE_ASSIGN" ||
+    operation === "USER_ROLE_ASSIGN" ||
+    operation === "ASSIGNED"
+  ) {
+    return "分配角色";
+  }
+
+  if (
+    operation === "REVOKE" ||
+    operation === "ROLE_REVOKE" ||
+    operation === "USER_ROLE_REVOKE" ||
+    operation === "REVOKED"
+  ) {
+    return "撤销角色";
+  }
+
+  return operation || "未返回操作";
+};
+
 const getCredentialAccessLabel = (user: AccountUserSummary): string => {
   if (user.loginEligibility) {
     return user.loginEligibility.reasonLabel;
@@ -2775,7 +2802,7 @@ const normalizeError = (error: unknown): ApiError => {
   return {
     kind: "unknown",
     message: "请求失败",
-    detail: error instanceof Error ? error.message : undefined,
+    detail: "页面未能完成请求，请确认本地服务可用后重试。",
   };
 };
 

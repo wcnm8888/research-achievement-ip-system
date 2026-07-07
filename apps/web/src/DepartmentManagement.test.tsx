@@ -201,7 +201,7 @@ describe("department management permission boundary", () => {
     );
 
     expect(html).toContain("当前账号无权访问部门维护");
-    expect(html).toContain("不会请求 /departments");
+    expect(html).toContain("不会请求部门维护服务");
     expect(html).not.toContain("/imports/departments/dry-run");
     expect(html).not.toContain("Department import history");
     expect(fetchMock).not.toHaveBeenCalled();
@@ -215,8 +215,8 @@ describe("department management permission boundary", () => {
     );
 
     expect(html).toContain("部门维护");
-    expect(html).toContain("parentId 只表示组织结构");
-    expect(html).toContain("权限 scope 仍是精确 departmentId");
+    expect(html).toContain("上级部门只表示组织结构");
+    expect(html).toContain("权限范围仍精确匹配当前部门");
     expect(html).toContain("department-management-page");
     expect(html).toContain("department-filter-bar");
     expect(html).toContain("部门导入预检");
@@ -479,7 +479,7 @@ describe("department import dry-run UI", () => {
         submitting: false,
         fingerprint,
       }),
-    ).toMatchObject({ canApply: false, reason: "All department import actions must be CREATE." });
+    ).toMatchObject({ canApply: false, reason: "所有部门导入行都必须是创建动作。" });
 
     expect(
       getDepartmentImportApplyEligibility({
@@ -504,7 +504,7 @@ describe("department import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "Department import apply is already running.",
+      reason: "部门导入正在执行，请等待当前操作完成。",
     });
   });
 
@@ -579,11 +579,11 @@ describe("department import dry-run UI", () => {
       message: "Network request failed.",
     });
 
-    expect(rejected.message).toBe("Department import apply was rejected.");
+    expect(rejected.message).toBe("部门导入被业务规则拒绝");
     expect(rejected.detail).toContain("codes=EXISTING_CODE");
     expect(unauthorized.detail).not.toContain("cookie");
-    expect(forbidden.detail).toContain("system:config");
-    expect(network.message).toBe("Department import apply service is unavailable.");
+    expect(forbidden.detail).toContain("系统配置权限");
+    expect(network.message).toBe("部门导入服务暂不可用");
   });
 });
 

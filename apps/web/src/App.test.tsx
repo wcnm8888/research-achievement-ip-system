@@ -84,7 +84,7 @@ describe("production auth mode helpers", () => {
 
     expect(mapLoginErrorMessage(unauthorized)).toBe("邮箱或密码错误。");
     expect(mapLoginErrorMessage(forbidden)).toBe("当前角色无权限");
-    expect(mapLoginErrorMessage(new Error("network"))).toBe("Login failed.");
+    expect(mapLoginErrorMessage(new Error("network"))).toBe("登录失败，请稍后重试。");
   });
 
   it("shows account management navigation only to system config users", () => {

@@ -739,7 +739,7 @@ describe("achievement import dry-run UI", () => {
       }),
     ).toEqual({
       eligible: true,
-      reason: "Ready to create DRAFT PAPER achievements.",
+      reason: "可以创建论文草稿成果。",
       applyType: "PAPER",
     });
 
@@ -788,7 +788,7 @@ describe("achievement import dry-run UI", () => {
       }),
     ).toEqual({
       eligible: true,
-      reason: "Ready to create DRAFT PAPER achievements.",
+      reason: "可以创建论文草稿成果。",
       applyType: "PAPER",
     });
 
@@ -803,7 +803,7 @@ describe("achievement import dry-run UI", () => {
       }),
     ).toEqual({
       eligible: true,
-      reason: "Ready to create DRAFT SOFTWARE_COPYRIGHT achievements.",
+      reason: "可以创建软件著作权草稿成果。",
       applyType: "SOFTWARE_COPYRIGHT",
     });
 
@@ -818,7 +818,7 @@ describe("achievement import dry-run UI", () => {
       }),
     ).toEqual({
       eligible: true,
-      reason: "Ready to create DRAFT PATENT achievements.",
+      reason: "可以创建专利草稿成果。",
       applyType: "PATENT",
     });
   });
@@ -863,7 +863,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("warnings");
+    ).toContain("警告");
 
     const patentResult: AchievementImportDryRunResult = {
       ...eligibleAchievementImportDryRunResult,
@@ -887,7 +887,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("PATENT");
+    ).toContain("专利");
 
     const grantOnlyPatentResult: AchievementImportDryRunResult = {
       ...eligiblePatentImportDryRunResult,
@@ -918,7 +918,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("grant-only");
+    ).toContain("专利授权行");
 
     const mixedResult: AchievementImportDryRunResult = {
       ...eligibleAchievementImportDryRunResult,
@@ -946,7 +946,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("Mixed achievement type");
+    ).toContain("不同成果类型");
 
     const paperPatentMixedResult: AchievementImportDryRunResult = {
       ...eligibleAchievementImportDryRunResult,
@@ -977,7 +977,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("Mixed achievement type");
+    ).toContain("不同成果类型");
 
     const missingDoiResult: AchievementImportDryRunResult = {
       ...eligibleAchievementImportDryRunResult,
@@ -1007,7 +1007,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("normalized DOI");
+    ).toContain("规范化 DOI");
 
     const missingRegistrationResult: AchievementImportDryRunResult = {
       ...eligibleSoftwareCopyrightImportDryRunResult,
@@ -1038,7 +1038,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("normalized software registration number");
+    ).toContain("规范化登记号");
 
     const missingApplicationResult: AchievementImportDryRunResult = {
       ...eligiblePatentImportDryRunResult,
@@ -1069,7 +1069,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: false,
       }).reason,
-    ).toContain("normalized application number");
+    ).toContain("规范化申请号");
 
     expect(
       getAchievementImportApplyEligibility({
@@ -1080,7 +1080,7 @@ describe("achievement import dry-run UI", () => {
         dryRunLoading: false,
         applySubmitting: true,
       }).reason,
-    ).toContain("in progress");
+    ).toContain("正在执行");
   });
 
   it("renders the apply entry and PAPER confirmation copy only for an eligible action", () => {
@@ -1115,9 +1115,9 @@ describe("achievement import dry-run UI", () => {
 
     expect(panelHtml).toContain("导入为草稿");
     expect(panelHtml).not.toContain("disabled");
-    expect(confirmationHtml).toContain("创建PAPER成果草稿");
-    expect(confirmationHtml).toContain("paper detail rows");
-    expect(confirmationHtml).toContain("normalized DOI");
+    expect(confirmationHtml).toContain("创建论文成果草稿");
+    expect(confirmationHtml).toContain("论文明细");
+    expect(confirmationHtml).toContain("标准化 DOI");
     expect(confirmationHtml).toContain("不会自动提交审批");
     expect(confirmationHtml).toContain("创建附件");
     expect(confirmationHtml).toContain("授权记录");
@@ -1131,9 +1131,9 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(confirmationHtml).toContain("创建SOFTWARE_COPYRIGHT成果草稿");
-    expect(confirmationHtml).toContain("software copyright detail rows");
-    expect(confirmationHtml).toContain("normalized software registration number");
+    expect(confirmationHtml).toContain("创建软件著作权成果草稿");
+    expect(confirmationHtml).toContain("软件著作权明细");
+    expect(confirmationHtml).toContain("标准化软件登记号");
     expect(confirmationHtml).toContain("不会自动提交审批");
     expect(confirmationHtml).toContain("创建附件");
     expect(confirmationHtml).toContain("费用");
@@ -1149,10 +1149,10 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(confirmationHtml).toContain("创建PATENT成果草稿");
+    expect(confirmationHtml).toContain("创建专利成果草稿");
     expect(confirmationHtml).toContain("专利明细");
     expect(confirmationHtml).toContain("安全审计摘要");
-    expect(confirmationHtml).toContain("applicationNoNormalized");
+    expect(confirmationHtml).toContain("标准化申请号");
     expect(confirmationHtml).toContain("授权号仅作为申请号存在时的辅助冲突判断依据");
     expect(confirmationHtml).toContain("下次缴费日期");
     expect(confirmationHtml).toContain("费用金额");
@@ -1194,12 +1194,13 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(successHtml).toContain("Created achievements");
-    expect(successHtml).toContain("Created paper details");
-    expect(successHtml).not.toContain("Created software copyright details");
-    expect(successHtml).toContain("Created contributors");
-    expect(successHtml).toContain("Created audit events");
-    expect(successHtml).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
+    expect(successHtml).toContain("论文草稿导入已完成");
+    expect(successHtml).toContain("创建成果数");
+    expect(successHtml).toContain("论文明细数");
+    expect(successHtml).not.toContain("软件著作权明细数");
+    expect(successHtml).toContain("贡献人记录数");
+    expect(successHtml).toContain("审计记录数");
+    expect(successHtml).toContain("创建成果草稿");
     expect(successHtml).toContain("仅生成草稿");
     expect(successHtml).toContain("不触发审批流");
     expect(successHtml).toContain("不处理附件或存储");
@@ -1211,8 +1212,8 @@ describe("achievement import dry-run UI", () => {
 
     expect(errorHtml).toContain("导入被拒绝");
     expect(errorHtml).toContain("DB_CONFLICT");
-    expect(errorHtml).toContain("Rejected rows: 1");
-    expect(errorHtml).toContain("warnings: 0");
+    expect(errorHtml).toContain("被拒绝行数：1");
+    expect(errorHtml).toContain("警告：0");
     expect(errorHtml).not.toContain("10.2000/s68e");
     expect(errorHtml).not.toContain(ownerEmail);
     expect(errorHtml).not.toContain("Contributor");
@@ -1225,12 +1226,12 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(html).toContain("Draft-only SOFTWARE_COPYRIGHT import applied");
-    expect(html).toContain("Created achievements");
-    expect(html).toContain("Created software copyright details");
-    expect(html).not.toContain("Created paper details");
-    expect(html).toContain("Created contributors");
-    expect(html).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
+    expect(html).toContain("软件著作权草稿导入已完成");
+    expect(html).toContain("创建成果数");
+    expect(html).toContain("软件著作权明细数");
+    expect(html).not.toContain("论文明细数");
+    expect(html).toContain("贡献人记录数");
+    expect(html).toContain("创建成果草稿");
     expect(html).toContain("仅生成草稿");
     expect(html).toContain("不触发审批流");
     expect(html).toContain("不处理附件或存储");
@@ -1252,14 +1253,14 @@ describe("achievement import dry-run UI", () => {
       }),
     );
 
-    expect(html).toContain("Draft-only PATENT import applied");
-    expect(html).toContain("Created achievements");
-    expect(html).toContain("Created patent details");
-    expect(html).not.toContain("Created paper details");
-    expect(html).not.toContain("Created software copyright details");
-    expect(html).toContain("Created contributors");
-    expect(html).toContain("Created audit events");
-    expect(html).toContain("ACHIEVEMENT_IMPORT_CREATE_DRAFT");
+    expect(html).toContain("专利草稿导入已完成");
+    expect(html).toContain("创建成果数");
+    expect(html).toContain("专利明细数");
+    expect(html).not.toContain("论文明细数");
+    expect(html).not.toContain("软件著作权明细数");
+    expect(html).toContain("贡献人记录数");
+    expect(html).toContain("审计记录数");
+    expect(html).toContain("创建成果草稿");
     expect(html).toContain("仅生成草稿");
     expect(html).toContain("不触发审批流");
     expect(html).toContain("不处理附件或存储");

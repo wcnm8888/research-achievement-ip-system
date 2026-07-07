@@ -62,9 +62,9 @@ const defaultPageSize = 10;
 const defaultItemPageSize = 10;
 
 const achievementTypeOptions: SelectProps<AchievementTypeCode>["options"] = [
-  { label: "PAPER", value: "PAPER" },
-  { label: "SOFTWARE_COPYRIGHT", value: "SOFTWARE_COPYRIGHT" },
-  { label: "PATENT", value: "PATENT" },
+  { label: "论文", value: "PAPER" },
+  { label: "软件著作权", value: "SOFTWARE_COPYRIGHT" },
+  { label: "专利", value: "PATENT" },
 ];
 
 const emptyListLoadable: Loadable<ImportJobHistoryListResponse> = {
@@ -180,8 +180,8 @@ export function ImportJobHistoryPanelView({
       title={title}
       extra={
         <Space size={8} wrap>
-          <Tag>{filters.family}</Tag>
-          <Tag>{filters.mode}</Tag>
+          <Tag>{getImportFamilyLabel(filters.family)}</Tag>
+          <Tag>{getImportModeLabel(filters.mode)}</Tag>
           {achievementTypeFilter ? (
             <Select
               allowClear
@@ -272,12 +272,12 @@ export function ImportJobHistoryDetailView({
   return (
     <Space direction="vertical" size={16} className="import-job-history-detail">
       <Descriptions size="small" bordered column={2}>
-        <Descriptions.Item label="导入类型">{detail.data.family}</Descriptions.Item>
-        <Descriptions.Item label="执行模式">{detail.data.mode}</Descriptions.Item>
+        <Descriptions.Item label="导入类型">{getImportFamilyLabel(detail.data.family)}</Descriptions.Item>
+        <Descriptions.Item label="执行模式">{getImportModeLabel(detail.data.mode)}</Descriptions.Item>
         <Descriptions.Item label="成果类型">
-          {detail.data.achievementType ?? "未返回"}
+          {detail.data.achievementType ? getAchievementTypeLabel(detail.data.achievementType) : "未返回"}
         </Descriptions.Item>
-        <Descriptions.Item label="状态">{detail.data.status}</Descriptions.Item>
+        <Descriptions.Item label="状态">{getImportStatusLabel(detail.data.status)}</Descriptions.Item>
         <Descriptions.Item label="受理行数">
           {detail.data.acceptedRowCount}
         </Descriptions.Item>
@@ -314,11 +314,11 @@ export function ImportJobHistoryDetailView({
             columns={safeSummaryColumns}
           />
         ) : (
-          <Empty description="No safe summary fields" />
+          <Empty description="暂无安全摘要字段" />
         )}
       </Card>
 
-      <Card size="small" title="Run status">
+      <Card size="small" title="执行记录">
         <Table
           size="small"
           rowKey={(run) => String(run.attemptNo)}
@@ -582,79 +582,80 @@ export const buildImportJobItemHistoryPanelQuery = (
 
 export const getImportJobStatusExplanation = (status: string): string => {
   if (status === "SUCCESS") {
-    return "Replay: this request already completed successfully. Stored safe counts are shown; no new write was started for the same request.";
+    return "该请求已成功完成。页面只展示已保存的安全计数，不会为同一请求再次发起写入。";
   }
 
   if (status === "RUNNING" || status === "PENDING") {
-    return "In-flight: this request is running or was claimed recently. No second write was started; check again later.";
+    return "该请求正在执行或刚被受理。页面不会发起第二次写入，请稍后刷新查看。";
   }
 
   if (status === "REJECTED") {
-    return "Rejected: validation or safety rules blocked the request. Only safe reason codes and counts are shown.";
+    return "该请求被校验或安全规则拦截。页面只展示安全原因码和计数。";
   }
 
   if (status === "FAILED") {
-    return "Failed: the claimed attempt ended with an error. This read-only view does not start a new write.";
+    return "该请求执行失败。当前只读视图不会发起新的写入。";
   }
 
-  return "This import job is shown as read-only history.";
+  return "该导入任务仅作为只读历史展示。";
 };
 
 const buildImportJobHistoryColumns = (
   onOpenDetail?: (jobId: string) => void,
 ): TableProps<ImportJobHistoryListItem>["columns"] => [
   {
-    title: "family",
+    title: "导入类型",
     dataIndex: "family",
     key: "family",
-    render: (value: string) => <Tag>{value}</Tag>,
+    render: (value: string) => <Tag>{getImportFamilyLabel(value)}</Tag>,
   },
   {
-    title: "mode",
+    title: "执行模式",
     dataIndex: "mode",
     key: "mode",
+    render: (value: string) => getImportModeLabel(value),
   },
   {
-    title: "achievementType",
+    title: "成果类型",
     dataIndex: "achievementType",
     key: "achievementType",
-    render: (value?: string | null) => value ?? "N/A",
+    render: (value?: string | null) => value ? getAchievementTypeLabel(value) : "未返回",
   },
   {
-    title: "status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
-    render: (value: string) => <Tag color={getStatusTagColor(value)}>{value}</Tag>,
+    render: (value: string) => <Tag color={getStatusTagColor(value)}>{getImportStatusLabel(value)}</Tag>,
   },
   {
-    title: "created counts",
+    title: "创建计数",
     key: "createdCounts",
     render: (_, row) =>
-      `accepted ${row.acceptedRowCount} / business ${row.createdBusinessCount} / companion ${row.createdCompanionCount} / audit ${row.auditCount}`,
+      `受理 ${row.acceptedRowCount} / 业务 ${row.createdBusinessCount} / 伴随 ${row.createdCompanionCount} / 审计 ${row.auditCount}`,
   },
   {
-    title: "safe error code",
+    title: "安全错误码",
     key: "safeErrorCode",
     render: (_, row) => renderSafeErrorCodes(row),
   },
   {
-    title: "createdAt",
+    title: "创建时间",
     dataIndex: "createdAt",
     key: "createdAt",
     render: formatImportJobTimestamp,
   },
   {
-    title: "completedAt",
+    title: "完成时间",
     dataIndex: "completedAt",
     key: "completedAt",
     render: formatImportJobTimestamp,
   },
   {
-    title: "detail",
+    title: "详情",
     key: "detail",
     render: (_, row) => (
       <Button size="small" onClick={() => onOpenDetail?.(row.id)}>
-        Details
+        查看
       </Button>
     ),
   },
@@ -662,12 +663,12 @@ const buildImportJobHistoryColumns = (
 
 export const safeSummaryColumns: TableProps<SafeSummaryRow>["columns"] = [
   {
-    title: "field",
+    title: "字段",
     dataIndex: "key",
     key: "key",
   },
   {
-    title: "value",
+    title: "值",
     dataIndex: "value",
     key: "value",
   },
@@ -675,46 +676,46 @@ export const safeSummaryColumns: TableProps<SafeSummaryRow>["columns"] = [
 
 export const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] = [
   {
-    title: "attemptNo",
+    title: "尝试次数",
     dataIndex: "attemptNo",
     key: "attemptNo",
   },
   {
-    title: "trigger",
+    title: "触发方式",
     dataIndex: "trigger",
     key: "trigger",
   },
   {
-    title: "status",
+    title: "状态",
     dataIndex: "status",
     key: "status",
   },
   {
-    title: "failureCode",
+    title: "失败代码",
     dataIndex: "failureCode",
     key: "failureCode",
-    render: (value?: string | null) => value ?? "N/A",
+    render: (value?: string | null) => value ?? "未返回",
   },
   {
-    title: "failureStage",
+    title: "失败阶段",
     dataIndex: "failureStage",
     key: "failureStage",
-    render: (value?: string | null) => value ?? "N/A",
+    render: (value?: string | null) => value ?? "未返回",
   },
   {
-    title: "startedAt",
+    title: "开始时间",
     dataIndex: "startedAt",
     key: "startedAt",
     render: formatImportJobTimestamp,
   },
   {
-    title: "finishedAt",
+    title: "结束时间",
     dataIndex: "finishedAt",
     key: "finishedAt",
     render: formatImportJobTimestamp,
   },
   {
-    title: "completedBusinessTransactionAt",
+    title: "业务事务完成时间",
     dataIndex: "completedBusinessTransactionAt",
     key: "completedBusinessTransactionAt",
     render: formatImportJobTimestamp,
@@ -741,7 +742,7 @@ export const importJobItemHistoryColumns: TableProps<ImportJobItemHistoryRow>["c
     title: "状态",
     dataIndex: "status",
     key: "status",
-    render: (value: string) => <Tag color={getStatusTagColor(value)}>{value}</Tag>,
+    render: (value: string) => <Tag color={getStatusTagColor(value)}>{getImportStatusLabel(value)}</Tag>,
   },
   {
     title: "安全错误码",
@@ -753,6 +754,7 @@ export const importJobItemHistoryColumns: TableProps<ImportJobItemHistoryRow>["c
     title: "目标类型",
     dataIndex: "targetType",
     key: "targetType",
+    render: (value: string) => getImportFamilyLabel(value),
   },
 ];
 
@@ -822,7 +824,7 @@ const toSafeSummaryDisplayValue = (value: unknown): string | null => {
   }
 
   if (value === null) {
-    return "null";
+    return "未返回";
   }
 
   if (typeof value === "string") {
@@ -886,8 +888,51 @@ export const getStatusTagColor = (status: string): string | undefined => {
 };
 
 export function formatImportJobTimestamp(value?: string | null): string {
-  return value ?? "N/A";
+  return value ?? "未返回";
 }
+
+export const getImportFamilyLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    DEPARTMENT: "部门导入",
+    USER_ACCOUNT: "账号导入",
+    ACHIEVEMENT: "成果导入",
+    FEE_RECORD: "费用记录",
+  };
+
+  return labels[value] ?? value;
+};
+
+export const getImportModeLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    CREATE_ONLY: "仅创建",
+    CREATE_ONLY_PENDING_NO_CREDENTIAL: "创建待激活账号",
+    CREATE_DRAFT_ONLY: "创建草稿",
+  };
+
+  return labels[value] ?? value;
+};
+
+export const getAchievementTypeLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    PAPER: "论文",
+    SOFTWARE_COPYRIGHT: "软件著作权",
+    PATENT: "专利",
+  };
+
+  return labels[value] ?? value;
+};
+
+export const getImportStatusLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    PENDING: "待处理",
+    RUNNING: "执行中",
+    SUCCESS: "成功",
+    FAILED: "失败",
+    REJECTED: "已拒绝",
+  };
+
+  return labels[value] ?? value;
+};
 
 const normalizeItemFilterValue = <T extends string | undefined>(
   value: T,
@@ -940,7 +985,7 @@ const normalizeApiError = (error: unknown): ApiError => {
 
   return {
     kind: "unknown",
-    message: "Import history request failed.",
-    detail: error instanceof Error ? error.message : undefined,
+    message: "导入记录请求失败。",
+    detail: "页面未能完成请求，请确认本地服务可用后重试。",
   };
 };

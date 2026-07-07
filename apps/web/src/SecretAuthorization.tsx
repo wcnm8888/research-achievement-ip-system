@@ -360,33 +360,33 @@ export function SecretAuthorizationResourceDetailPanel({
       <Alert
         type="info"
         showIcon
-        message="Safe detail projection"
-        description={`Grant rows are bounded to ${detail.limits?.grantRows ?? 0}; audit rows are bounded to ${detail.limits?.auditRows ?? 0}.`}
+        message="安全详情投影"
+        description={`授权摘要最多展示 ${detail.limits?.grantRows ?? 0} 行；审计摘要最多展示 ${detail.limits?.auditRows ?? 0} 行。`}
       />
 
-      <Card className="shell-card" title="Selected resource">
+      <Card className="shell-card" title="已选涉密资源">
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="Resource type">{safeText(detail.resource.resourceType)}</Descriptions.Item>
-          <Descriptions.Item label="Safe label">{safeText(detail.resource.safeResourceLabel)}</Descriptions.Item>
-          <Descriptions.Item label="Department">{safeText(detail.resource.departmentId, "No department")}</Descriptions.Item>
-          <Descriptions.Item label="Secret level">{safeText(detail.resource.secretLevel)}</Descriptions.Item>
-          <Descriptions.Item label="Flags">
+          <Descriptions.Item label="资源类型">{getSecretResourceTypeLabel(detail.resource.resourceType)}</Descriptions.Item>
+          <Descriptions.Item label="安全名称">{safeText(detail.resource.safeResourceLabel)}</Descriptions.Item>
+          <Descriptions.Item label="部门">{safeText(detail.resource.departmentId, "无部门")}</Descriptions.Item>
+          <Descriptions.Item label="密级">{getSecretLevelLabel(detail.resource.secretLevel)}</Descriptions.Item>
+          <Descriptions.Item label="标记">
             <Space size={4} wrap>
               <Tag color={detail.resource.isRestricted ? "red" : "default"}>
-                {detail.resource.isRestricted ? "Restricted" : "Not restricted"}
+                {detail.resource.isRestricted ? "受限" : "未受限"}
               </Tag>
               <Tag color={detail.resource.contentRedacted ? "orange" : "default"}>
-                {detail.resource.contentRedacted ? "Redacted" : "No redaction flag"}
+                {detail.resource.contentRedacted ? "已脱敏" : "无脱敏标记"}
               </Tag>
             </Space>
           </Descriptions.Item>
-          <Descriptions.Item label="Caveats">
-            {formatList([...(detail.resource.caveats ?? []), ...(detail.caveats ?? [])], "No projection caveats returned.")}
+          <Descriptions.Item label="提示">
+            {formatList([...(detail.resource.caveats ?? []), ...(detail.caveats ?? [])], "未返回投影提示。")}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Card className="shell-card" title="Grant summaries">
+      <Card className="shell-card" title="授权摘要">
         {grants.length > 0 ? (
           <Table<SecretAuthorizationGrantSummary>
             size="small"
@@ -399,11 +399,11 @@ export function SecretAuthorizationResourceDetailPanel({
             scroll={{ x: 1120 }}
           />
         ) : (
-          <Typography.Text type="secondary">No safe grant summaries returned.</Typography.Text>
+          <Typography.Text type="secondary">暂无可展示的安全授权摘要。</Typography.Text>
         )}
       </Card>
 
-      <Card className="shell-card" title="Audit summaries">
+      <Card className="shell-card" title="审计摘要">
         {audits.length > 0 ? (
           <Table<SecretAuthorizationAuditSummary>
             size="small"
@@ -416,7 +416,7 @@ export function SecretAuthorizationResourceDetailPanel({
             scroll={{ x: 920 }}
           />
         ) : (
-          <Typography.Text type="secondary">No safe audit summaries returned.</Typography.Text>
+          <Typography.Text type="secondary">暂无可展示的安全审计摘要。</Typography.Text>
         )}
       </Card>
     </Space>
@@ -425,68 +425,68 @@ export function SecretAuthorizationResourceDetailPanel({
 
 const resourceColumns: TableProps<SecretAuthorizationResourceSummary>["columns"] = [
   {
-    title: "Resource",
+    title: "资源",
     key: "resource",
     width: 260,
     render: (_, resource) => (
       <Space direction="vertical" size={2}>
         <Typography.Text strong>{safeText(resource.safeResourceLabel)}</Typography.Text>
-        <Typography.Text type="secondary">{safeText(resource.resourceType)}</Typography.Text>
+        <Typography.Text type="secondary">{getSecretResourceTypeLabel(resource.resourceType)}</Typography.Text>
       </Space>
     ),
   },
   {
-    title: "Department",
+    title: "部门",
     dataIndex: "departmentId",
     key: "departmentId",
     width: 220,
-    render: (departmentId: string | null) => safeText(departmentId, "No department"),
+    render: (departmentId: string | null) => safeText(departmentId, "无部门"),
   },
   {
-    title: "Secret level",
+    title: "密级",
     dataIndex: "secretLevel",
     key: "secretLevel",
     width: 140,
-    render: (secretLevel: string) => <Tag>{safeText(secretLevel)}</Tag>,
+    render: (secretLevel: string) => <Tag>{getSecretLevelLabel(secretLevel)}</Tag>,
   },
   {
-    title: "Flags",
+    title: "标记",
     key: "flags",
     width: 190,
     render: (_, resource) => (
       <Space size={4} wrap>
         <Tag color={resource.isRestricted ? "red" : "default"}>
-          {resource.isRestricted ? "Restricted" : "Open"}
+          {resource.isRestricted ? "受限" : "开放"}
         </Tag>
         <Tag color={resource.contentRedacted ? "orange" : "default"}>
-          {resource.contentRedacted ? "Redacted" : "Safe summary"}
+          {resource.contentRedacted ? "已脱敏" : "安全摘要"}
         </Tag>
       </Space>
     ),
   },
   {
-    title: "Active grants",
+    title: "有效授权",
     dataIndex: "activeGrantCount",
     key: "activeGrantCount",
     width: 120,
     render: (count: number) => getSafeNumber(count),
   },
   {
-    title: "Grant type counts",
+    title: "授权类型计数",
     dataIndex: "grantCountsByType",
     key: "grantCountsByType",
     width: 220,
     render: (counts: CountMap) => formatCountMap(counts),
   },
   {
-    title: "Grantee counts",
+    title: "授权对象计数",
     dataIndex: "grantCountsByGranteeType",
     key: "grantCountsByGranteeType",
     width: 220,
     render: (counts: CountMap) => formatCountMap(counts),
   },
   {
-    title: "Nearest expiry",
+    title: "最近到期",
     dataIndex: "nearestGrantExpiresAt",
     key: "nearestGrantExpiresAt",
     width: 176,
@@ -496,13 +496,13 @@ const resourceColumns: TableProps<SecretAuthorizationResourceSummary>["columns"]
 
 const grantColumns: TableProps<SecretAuthorizationGrantSummary>["columns"] = [
   {
-    title: "Grantee",
+    title: "授权对象",
     key: "grantee",
     width: 240,
     render: (_, grant) => (
       <Space direction="vertical" size={2}>
         <Typography.Text>{safeText(grant.granteeSafeLabel)}</Typography.Text>
-        <Typography.Text type="secondary">{safeText(grant.granteeType)}</Typography.Text>
+        <Typography.Text type="secondary">{getGranteeTypeLabel(grant.granteeType)}</Typography.Text>
       </Space>
     ),
   },
@@ -511,14 +511,14 @@ const grantColumns: TableProps<SecretAuthorizationGrantSummary>["columns"] = [
     dataIndex: "grantType",
     key: "grantType",
     width: 180,
-    render: (grantType: string) => safeText(grantType),
+    render: (grantType: string) => getGrantTypeLabel(grantType),
   },
   {
     title: "状态",
     dataIndex: "status",
     key: "status",
     width: 120,
-    render: (status: string) => <Tag>{safeText(status)}</Tag>,
+    render: (status: string) => <Tag>{getGrantStatusLabel(status)}</Tag>,
   },
   {
     title: "开始时间",
@@ -556,35 +556,35 @@ const auditColumns: TableProps<SecretAuthorizationAuditSummary>["columns"] = [
     dataIndex: "operation",
     key: "operation",
     width: 220,
-    render: (operation: string) => safeText(operation),
+    render: (operation: string) => getSecretAuditOperationLabel(operation),
   },
   {
     title: "资源类型",
     dataIndex: "resourceType",
     key: "resourceType",
     width: 160,
-    render: (resourceType: string) => safeText(resourceType),
+    render: (resourceType: string) => getSecretResourceTypeLabel(resourceType),
   },
   {
     title: "密级",
     dataIndex: "targetSecretLevel",
     key: "targetSecretLevel",
     width: 140,
-    render: (secretLevel: string | null) => safeText(secretLevel, "未返回密级"),
+    render: (secretLevel: string | null) => secretLevel ? getSecretLevelLabel(secretLevel) : "未返回密级",
   },
   {
     title: "授权类型",
     dataIndex: "grantType",
     key: "grantType",
     width: 160,
-    render: (grantType: string | null) => safeText(grantType, "未返回授权类型"),
+    render: (grantType: string | null) => grantType ? getGrantTypeLabel(grantType) : "未返回授权类型",
   },
   {
     title: "授权对象类型",
     dataIndex: "granteeType",
     key: "granteeType",
     width: 160,
-    render: (granteeType: string | null) => safeText(granteeType, "未返回授权对象"),
+    render: (granteeType: string | null) => granteeType ? getGranteeTypeLabel(granteeType) : "未返回授权对象",
   },
   {
     title: "是否填写原因",
@@ -630,6 +630,83 @@ const safeText = (
 const getSafeNumber = (value: number | null | undefined): number =>
   typeof value === "number" && Number.isFinite(value) ? value : 0;
 
+const getSecretResourceTypeLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    ACHIEVEMENT: "科研成果",
+    ATTACHMENT: "附件",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getSecretLevelLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    PUBLIC: "公开",
+    INTERNAL: "内部",
+    CONFIDENTIAL: "秘密",
+    SECRET: "机密",
+    TOP_SECRET: "绝密",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getGrantTypeLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    READ: "读取",
+    DOWNLOAD: "下载",
+    ATTACHMENT_DOWNLOAD: "附件下载",
+    MANAGE: "管理",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getGranteeTypeLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    USER: "用户",
+    ROLE: "角色",
+    DEPARTMENT: "部门",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getGrantStatusLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    ACTIVE: "有效",
+    EXPIRED: "已过期",
+    REVOKED: "已撤销",
+    FUTURE_DATED: "未生效",
+    EXPIRING_SOON: "即将到期",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getSecretAuditOperationLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    RESOURCE_GRANT_CREATE: "创建授权",
+    RESOURCE_GRANT_REVOKE: "撤销授权",
+    RESOURCE_GRANT_EXPIRE: "授权过期",
+    RESOURCE_ACCESS_CHECK: "访问校验",
+  };
+
+  return labels[value] ?? value;
+};
+
+const getSecretCountKeyLabel = (value: string): string => {
+  const labeled = [
+    getSecretResourceTypeLabel,
+    getSecretLevelLabel,
+    getGrantTypeLabel,
+    getGranteeTypeLabel,
+    getGrantStatusLabel,
+  ].reduce((current, labeler) => labeler(current), value);
+
+  return labeled;
+};
+
 const formatCountMap = (counts: CountMap | null | undefined): string => {
   const entries = Object.entries(counts ?? {}).filter(([, value]) => Number.isFinite(value));
 
@@ -637,7 +714,7 @@ const formatCountMap = (counts: CountMap | null | undefined): string => {
     return "未返回计数";
   }
 
-  return entries.map(([key, value]) => `${key}: ${value}`).join(", ");
+  return entries.map(([key, value]) => `${getSecretCountKeyLabel(key)}: ${value}`).join(", ");
 };
 
 const formatList = (values: string[] | null | undefined, emptyText: string): string => {
@@ -668,6 +745,6 @@ const normalizeError = (error: unknown): ApiError => {
   return {
     kind: "unknown",
     message: "涉密授权请求失败。",
-    detail: error instanceof Error ? error.message : undefined,
+    detail: "页面未能完成请求，请确认本地服务可用后重试。",
   };
 };

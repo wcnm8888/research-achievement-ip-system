@@ -24,7 +24,7 @@ export const settingsCapabilities: SettingsCapability[] = [
     key: "roles-permissions",
     title: "角色权限",
     designGoal: "系统管理员配置角色、权限边界和授权策略，支撑部门隔离与涉密访问控制。",
-    currentSignal: "`system:config` 目前只是权限码线索；已有业务页面仍以后端策略层做最终权限裁剪。",
+    currentSignal: "系统配置权限目前只是访问边界线索；已有业务页面仍以后端策略层做最终权限裁剪。",
     missingContract: "尚未确认 settings/config 只读 API，也没有角色权限 CRUD 后端契约。",
     futureConfirmation: "真实角色权限管理、permission seed、授权变更审计需要单独 Step 确认。",
   },
@@ -32,7 +32,7 @@ export const settingsCapabilities: SettingsCapability[] = [
     key: "departments",
     title: "部门",
     designGoal: "维护研究院组织结构，用于成果、费用、审批、看板和审计的部门范围判断。",
-    currentSignal: "现有业务数据和演示用户中已有 departmentId/部门范围概念。",
+    currentSignal: "现有业务数据和演示用户中已有部门范围概念。",
     missingContract: "尚未提供部门配置列表、详情、启停或层级维护的 settings 后端契约。",
     futureConfirmation: "真实部门维护会影响权限和历史数据展示，需要独立设计和验收。",
   },
@@ -112,7 +112,7 @@ export function SettingsBoundary({ demoUserId }: { demoUserId: string | null }) 
         }
       />
 
-      <PermissionHint description="system:config 目前只是权限码或未来配置边界线索，不等于已完成 settings/config 后端 API；最终权限裁剪仍以后端策略层为准。" />
+      <PermissionHint description="系统配置权限目前只是权限码或未来配置边界线索，不等于已完成配置管理后端 API；最终权限裁剪仍以后端策略层为准。" />
 
       <Alert
         className="settings-boundary-alert"
@@ -140,7 +140,7 @@ export function SettingsBoundary({ demoUserId }: { demoUserId: string | null }) 
 
       <BoundaryNotice
         title="真实配置管理需要后续单独计划确认"
-        description="角色权限、部门、字典、预警规则、接口 adapter 的读取和写入契约都不能由本页面推断为已完成。"
+        description="角色权限、部门、字典、预警规则、接口适配器的读取和写入契约都不能由本页面推断为已完成。"
         step="系统配置"
       />
     </Space>

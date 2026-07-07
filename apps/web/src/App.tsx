@@ -226,7 +226,7 @@ export const mapLoginErrorMessage = (error: unknown): string => {
     return "邮箱或密码错误。";
   }
 
-  return isApiError(error) ? error.message : "Login failed.";
+  return isApiError(error) ? error.message : "登录失败，请稍后重试。";
 };
 
 export const logoutAndClearCurrentUser = async (authClient: AuthClient): Promise<null> => {

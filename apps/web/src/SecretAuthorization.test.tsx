@@ -187,7 +187,7 @@ describe("secret authorization safe projection display", () => {
     expect(html).toContain("有效授权");
     expect(html).toContain("已撤销/已过期");
     expect(html).toContain("即将到期");
-    expect(html).toContain("ACHIEVEMENT: 1");
+    expect(html).toContain("科研成果: 1");
     expect(html).toContain("LOCAL_DEMO_SYNTHETIC_ONLY");
     expect(html).not.toContain("undefined");
     expect(html).not.toContain("null");
@@ -200,17 +200,17 @@ describe("secret authorization safe projection display", () => {
 
     expect(html).toContain("Achievement restricted summary");
     expect(html).toContain("department-1");
-    expect(html).toContain("SECRET");
-    expect(html).toContain("Restricted");
-    expect(html).toContain("Redacted");
+    expect(html).toContain("机密");
+    expect(html).toContain("受限");
+    expect(html).toContain("已脱敏");
     expectNoForbiddenTerms(html);
   });
 
   it("renders bounded grant and audit summaries using safe fields only", () => {
     const html = renderToStaticMarkup(<SecretAuthorizationResourceDetailPanel detail={detail} />);
 
-    expect(html).toContain("Safe detail projection");
-    expect(html).toContain("Grant rows are bounded to 5");
+    expect(html).toContain("安全详情投影");
+    expect(html).toContain("授权摘要最多展示 5 行");
     expect(html).toContain("User grant holder");
     expect(html).toContain("READ_METADATA");
     expect(html).toContain("RESOURCE_GRANT_VIEWED");
@@ -240,9 +240,9 @@ describe("secret authorization safe projection display", () => {
     ].join("");
 
     expect(html).toContain("暂无涉密授权概览");
-    expect(html).toContain("No safe grant summaries returned.");
-    expect(html).toContain("No safe audit summaries returned.");
-    expect(html).toContain("No department");
+    expect(html).toContain("暂无可展示的安全授权摘要。");
+    expect(html).toContain("暂无可展示的安全审计摘要。");
+    expect(html).toContain("无部门");
     expect(html).not.toContain("undefined");
     expect(html).not.toContain(">null<");
   });

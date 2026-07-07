@@ -14994,3 +14994,38 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish
+
+- Status: DONE.
+- Trigger:
+  - A browser screenshot still showed reviewer-facing implementation wording such
+    as production/demo status tags, API route hints, English import labels,
+    enum-like import summaries, raw network fallback wording, and technical
+    permission/code labels.
+- Web changes:
+  - Replaced remaining ordinary user-facing English/developer copy in the
+    account management, achievement import, department import, import history,
+    secret authorization, custom reports, system settings, workflow detail, and
+    login/network-error surfaces with Chinese business wording.
+  - Kept API/domain enum values only where they remain data identifiers or test
+    fixtures rather than primary page copy.
+  - Changed generic network fallback errors to a safe Chinese local-service
+    availability message instead of surfacing browser/CORS/raw error text.
+  - Updated Web tests to assert the Chinese business copy and keep negative
+    checks against raw/debug/export/download/mutation-style UI.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievement AccountManagement DepartmentManagement SecretAuthorization ImportJobHistoryPanel SettingsImportJobHistoryOverview CustomReports WorkflowTasks api-client`: PASS, 13 files / 242 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Remaining caveat:
+  - This is client-facing source/test hardening. A running Docker/Vite browser
+    bundle may still need rebuild/reload before the screenshot reflects the new
+    copy.
+  - This is still local/demo/reviewer-package readiness work, not production,
+    VPS, production DB, or real external-provider acceptance.
+- Explicitly not done:
+  - No API, Prisma schema, migration, package, lockfile, or config change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

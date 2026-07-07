@@ -737,40 +737,42 @@ export function AchievementImportApplyResultView({
     <Alert
       type="success"
       showIcon
-      message={`Draft-only ${formatAchievementImportApplyType(applyType)} import applied`}
+      message={`${formatAchievementImportApplyType(applyType)}草稿导入已完成`}
       description={
         <Space direction="vertical" size={8} className="full-width">
           <Descriptions size="small" column={2}>
-            <Descriptions.Item label="Mode">{result.mode}</Descriptions.Item>
-            <Descriptions.Item label="Total rows">
+            <Descriptions.Item label="执行模式">
+              {getAchievementImportModeLabel(result.mode)}
+            </Descriptions.Item>
+            <Descriptions.Item label="总行数">
               {result.summary.totalRows}
             </Descriptions.Item>
-            <Descriptions.Item label="Created achievements">
+            <Descriptions.Item label="创建成果数">
               {result.summary.createdAchievementsCount}
             </Descriptions.Item>
             {showPaperCount ? (
-              <Descriptions.Item label="Created paper details">
+              <Descriptions.Item label="论文明细数">
                 {result.summary.createdPaperDetailsCount}
               </Descriptions.Item>
             ) : null}
             {showSoftwareCount ? (
-              <Descriptions.Item label="Created software copyright details">
+              <Descriptions.Item label="软件著作权明细数">
                 {result.summary.createdSoftwareCopyrightDetailsCount}
               </Descriptions.Item>
             ) : null}
             {showPatentCount ? (
-              <Descriptions.Item label="Created patent details">
+              <Descriptions.Item label="专利明细数">
                 {result.summary.createdPatentDetailsCount}
               </Descriptions.Item>
             ) : null}
-            <Descriptions.Item label="Created contributors">
+            <Descriptions.Item label="贡献人记录数">
               {result.summary.createdContributorsCount}
             </Descriptions.Item>
-            <Descriptions.Item label="Created audit events">
+            <Descriptions.Item label="审计记录数">
               {createdAuditEventsCount}
             </Descriptions.Item>
-            <Descriptions.Item label="Audit operation">
-              {result.summary.auditOperation}
+            <Descriptions.Item label="审计动作">
+              {getAchievementImportAuditOperationLabel(result.summary.auditOperation)}
             </Descriptions.Item>
           </Descriptions>
           <Space size={6} wrap>
@@ -817,56 +819,62 @@ const formatAchievementImportApplyType = (
   applyType: AchievementImportApplyEligibleType | null,
 ): string => {
   if (applyType === "PAPER") {
-    return "PAPER";
+    return "论文";
   }
 
   if (applyType === "SOFTWARE_COPYRIGHT") {
-    return "SOFTWARE_COPYRIGHT";
+    return "软件著作权";
   }
 
   if (applyType === "PATENT") {
-    return "PATENT";
+    return "专利";
   }
 
-  return "achievement";
+  return "成果";
 };
 
 const getAchievementImportApplyConfirmButtonText = (
   applyType: AchievementImportApplyEligibleType | null,
 ): string =>
   applyType === "SOFTWARE_COPYRIGHT"
-    ? "Create DRAFT software copyright achievements"
+    ? "创建软件著作权草稿"
     : applyType === "PATENT"
-      ? "Create DRAFT patent achievements"
-    : "Create DRAFT PAPER achievements";
+      ? "创建专利草稿"
+    : "创建论文草稿";
 
 const getAchievementImportApplyDetailLabel = (
   applyType: AchievementImportApplyEligibleType | null,
 ): string => {
   if (applyType === "SOFTWARE_COPYRIGHT") {
-    return "software copyright detail rows";
+    return "软件著作权明细";
   }
 
   if (applyType === "PATENT") {
-    return "PatentDetail rows";
+    return "专利明细";
   }
 
-  return "paper detail rows";
+  return "论文明细";
 };
 
 const getAchievementImportApplyBoundaryLabel = (
   applyType: AchievementImportApplyEligibleType | null,
 ): string => {
   if (applyType === "SOFTWARE_COPYRIGHT") {
-    return "normalized software registration number";
+    return "标准化软件登记号";
   }
 
   if (applyType === "PATENT") {
-    return "applicationNoNormalized";
+    return "标准化申请号";
   }
 
-  return "normalized DOI";
+  return "标准化 DOI";
 };
+
+const getAchievementImportModeLabel = (mode: AchievementImportApplyResult["mode"]): string =>
+  mode === "CREATE_DRAFT_ONLY" ? "仅创建草稿" : mode;
+
+const getAchievementImportAuditOperationLabel = (operation: string): string =>
+  operation === "ACHIEVEMENT_IMPORT_CREATE_DRAFT" ? "创建成果草稿" : operation;
 
 const getAchievementImportApplyResultType = (
   result: AchievementImportApplyResult,
@@ -959,7 +967,7 @@ export const getAchievementImportApplyEligibility = ({
   if (!hasAchievementImportDryRunPermission(authUser)) {
     return {
       eligible: false,
-      reason: "system:config permission is required.",
+      reason: "需要系统配置权限。",
       applyType: null,
     };
   }
@@ -991,7 +999,7 @@ export const getAchievementImportApplyEligibility = ({
   if (dryRunLoading || applySubmitting) {
     return {
       eligible: false,
-      reason: "An import request is already in progress.",
+      reason: "导入请求正在执行，请等待当前操作完成。",
       applyType: null,
     };
   }
@@ -1004,7 +1012,7 @@ export const getAchievementImportApplyEligibility = ({
   ) {
     return {
       eligible: false,
-      reason: "Dry-run did not produce an all-valid result.",
+      reason: "导入预检未产生全部有效的结果。",
       applyType: null,
     };
   }
@@ -1012,7 +1020,7 @@ export const getAchievementImportApplyEligibility = ({
   if (result.summary.errorRows > 0 || result.rows.some((row) => row.errors.length > 0)) {
     return {
       eligible: false,
-      reason: "Dry-run errors must be fixed before apply.",
+      reason: "请先修复导入预检错误。",
       applyType: null,
     };
   }
@@ -1025,7 +1033,7 @@ export const getAchievementImportApplyEligibility = ({
   ) {
     return {
       eligible: false,
-      reason: "Dry-run warnings or DB_CONFLICT rows must be fixed before apply.",
+      reason: "请先处理导入预检警告或数据库冲突行。",
       applyType: null,
     };
   }
@@ -1036,7 +1044,7 @@ export const getAchievementImportApplyEligibility = ({
   ) {
     return {
       eligible: false,
-      reason: "Only CREATE_DRAFT candidates can be applied.",
+      reason: "只能导入创建草稿候选行。",
       applyType: null,
     };
   }
@@ -1049,7 +1057,7 @@ export const getAchievementImportApplyEligibility = ({
   if (applyTypes.size !== 1) {
     return {
       eligible: false,
-      reason: "Mixed achievement type batches must be split before apply.",
+      reason: "不同成果类型需要拆分为不同批次后再导入。",
       applyType: null,
     };
   }
@@ -1058,14 +1066,14 @@ export const getAchievementImportApplyEligibility = ({
     if (result.rows.some((row) => !row.parsed.normalizedIdentifiers.doi)) {
       return {
         eligible: false,
-        reason: "Every PAPER row must have a normalized DOI.",
+        reason: "每一行论文都必须具备规范化 DOI。",
         applyType: null,
       };
     }
 
     return {
       eligible: true,
-      reason: "Ready to create DRAFT PAPER achievements.",
+      reason: "可以创建论文草稿成果。",
       applyType: "PAPER",
     };
   }
@@ -1075,14 +1083,14 @@ export const getAchievementImportApplyEligibility = ({
       return {
         eligible: false,
         reason:
-          "Every SOFTWARE_COPYRIGHT row must have a normalized software registration number.",
+          "每一行软件著作权都必须具备规范化登记号。",
         applyType: null,
       };
     }
 
     return {
       eligible: true,
-      reason: "Ready to create DRAFT SOFTWARE_COPYRIGHT achievements.",
+      reason: "可以创建软件著作权草稿成果。",
       applyType: "SOFTWARE_COPYRIGHT",
     };
   }
@@ -1097,7 +1105,7 @@ export const getAchievementImportApplyEligibility = ({
     ) {
       return {
         eligible: false,
-        reason: "PATENT grant-only rows must include a normalized application number before apply.",
+        reason: "专利授权行必须先具备规范化申请号。",
         applyType: null,
       };
     }
@@ -1105,21 +1113,21 @@ export const getAchievementImportApplyEligibility = ({
     if (result.rows.some((row) => !row.parsed.normalizedIdentifiers.applicationNo)) {
       return {
         eligible: false,
-        reason: "Every PATENT row must have a normalized application number.",
+        reason: "每一行专利都必须具备规范化申请号。",
         applyType: null,
       };
     }
 
     return {
       eligible: true,
-      reason: "Ready to create DRAFT PATENT achievements.",
+      reason: "可以创建专利草稿成果。",
       applyType: "PATENT",
     };
   }
 
   return {
     eligible: false,
-    reason: "Only all-PAPER, all-SOFTWARE_COPYRIGHT, or all-PATENT batches can be applied.",
+    reason: "每次只能导入同一类成果。",
     applyType: null,
   };
 };
@@ -1149,16 +1157,16 @@ const getAchievementImportApplyErrorSummary = (
 
   if (error.kind === "unauthorized") {
     return {
-      message: "Session required",
-      description: "Select or refresh the demo user session before applying.",
+      message: "需要有效登录状态",
+      description: "请先选择或刷新当前业务用户后再导入。",
       codes,
     };
   }
 
   if (error.kind === "forbidden") {
     return {
-      message: "Permission denied",
-      description: "system:config permission is required for this apply action.",
+      message: "当前角色无权导入",
+      description: "该导入操作需要系统配置权限。",
       codes,
     };
   }
@@ -1171,12 +1179,12 @@ const getAchievementImportApplyErrorSummary = (
     typeof body?.summary?.warningCount === "number" ? body.summary.warningCount : null;
   const countText =
     failedRows !== null || errorCount !== null || warningCount !== null
-      ? `Rejected rows: ${failedRows ?? "unknown"}; errors: ${errorCount ?? "unknown"}; warnings: ${warningCount ?? "unknown"}.`
-      : "The backend rejected the apply request.";
+      ? `被拒绝行数：${failedRows ?? "未返回"}；错误：${errorCount ?? "未返回"}；警告：${warningCount ?? "未返回"}。`
+      : "后端拒绝了本次导入请求。";
 
   return {
     message: "导入被拒绝",
-    description: `${countText} Safe error codes are shown when provided.`,
+    description: `${countText} 如后端返回安全错误码，页面会一并展示。`,
     codes,
   };
 };

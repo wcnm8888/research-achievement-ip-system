@@ -340,9 +340,9 @@ describe("account management permission helpers", () => {
       <AccountManagement demoUserId="admin-user-id" authUser={adminUser} />,
     );
 
-    expect(html).toContain("部门选择器只用于账号绑定和角色部门 scope 绑定");
+    expect(html).toContain("部门选择器只用于账号绑定和角色部门范围绑定");
     expect(html).toContain("不提供部门创建或编辑");
-    expect(html).toContain("部门 scope 仍精确匹配所选 departmentId");
+    expect(html).toContain("部门范围仍精确匹配所选部门");
   });
 
   it("does not request account-management or departments when the user lacks system config", () => {
@@ -448,10 +448,10 @@ describe("account management safe lifecycle projections", () => {
       />,
     );
 
-    expect(html).toContain("Lifecycle history summary");
+    expect(html).toContain("生命周期摘要");
     expect(html).toContain("角色变更摘要");
-    expect(html).toContain("USER_ROLE_ASSIGN");
-    expect(html).toContain("RESEARCHER");
+    expect(html).toContain("分配角色");
+    expect(html).toContain("科研人员");
     expect(html).toContain("已填写");
     expect(html).not.toContain("sessionId");
     expect(html).not.toContain("session hash");
@@ -673,7 +673,7 @@ describe("user account import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "Resolve employeeNo business identifier conflicts before apply.",
+      reason: "请先处理工号等业务标识冲突。",
     });
 
     expect(
@@ -707,7 +707,7 @@ describe("user account import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "Resolve employeeNo business identifier conflicts before apply.",
+      reason: "请先处理工号等业务标识冲突。",
     });
 
     expect(
@@ -744,7 +744,7 @@ describe("user account import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "All user account import actions must be CREATE_PENDING_USER.",
+      reason: "所有账号导入行都必须是创建待激活账号。",
     });
 
     expect(
@@ -770,7 +770,7 @@ describe("user account import dry-run UI", () => {
       }),
     ).toMatchObject({
       canApply: false,
-      reason: "User account import apply is already running.",
+      reason: "账号导入正在执行，请等待当前操作完成。",
     });
   });
 
@@ -836,7 +836,7 @@ describe("user account import dry-run UI", () => {
         loading={false}
         applyEligibility={{
           canApply: true,
-          reason: "Ready for pending no-credential user account apply.",
+          reason: "可以创建待激活且无本地凭证的账号。",
         }}
         applyResult={userAccountImportApplyResult}
         error={null}
@@ -922,17 +922,17 @@ describe("user account import dry-run UI", () => {
       },
     });
 
-    expect(rejected.message).toBe("User account import apply was rejected.");
+    expect(rejected.message).toBe("账号导入被业务规则拒绝");
     expect(rejected.detail).toContain("codes=EXISTING_USER");
     expect(rejected.detail).toContain("createdUsers=0");
-    expect(employeeNoRejected.message).toBe("User account import apply was rejected.");
+    expect(employeeNoRejected.message).toBe("账号导入被业务规则拒绝");
     expect(employeeNoRejected.detail).toContain("codes=EXISTING_EMPLOYEE_NO");
     expect(employeeNoRejected.detail).toContain("business identifier already exists");
     expect(employeeNoRejected.detail).not.toContain("E001");
     expect(employeeNoRejected.detail).not.toContain("existing.user@example.com");
     expect(unauthorized.detail).not.toContain("cookie");
-    expect(forbidden.detail).toContain("system:config");
-    expect(network.message).toBe("User account import apply service is unavailable.");
+    expect(forbidden.detail).toContain("系统配置权限");
+    expect(network.message).toBe("账号导入服务暂不可用");
   });
 });
 
