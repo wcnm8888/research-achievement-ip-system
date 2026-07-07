@@ -14581,3 +14581,40 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No source, schema, or migration change.
+
+## 2026-07-07 Step 126 - Non-Docker local dev server startup and Secret Authorization acceptance
+
+- Status: BLOCKED.
+- Acceptance classification:
+  - Local/demo/synthetic Secret Authorization UI acceptance with authorized
+    non-Docker local dev server startup.
+  - This is not production authorization acceptance.
+- Starting point:
+  - HEAD at task start: `6efd080 docs: rerun secret authorization local acceptance`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Evidence directory:
+  - `.local-step126-secret-authorization-dev-acceptance/`.
+- Startup result:
+  - API dev server startup was attempted under this Step.
+  - API health at `http://127.0.0.1:3000/api/health` did not become available.
+  - API failed before binding the expected port because required local database
+    runtime configuration was missing from this process context.
+  - Web dev server was not started because the API readiness gate failed first.
+- Process cleanup:
+  - Only the API process tree started by this Step was stopped.
+  - No listeners remained on ports `3000`, `5173`, or `5174` after cleanup.
+- Log handling:
+  - Raw API logs were written locally in the Step 126 evidence directory.
+  - Raw logs were scanned and excluded from Git by a directory `.gitignore`.
+  - Only sanitized summaries were staged for commit.
+- Acceptance not completed:
+  - Live navigation, page rendering, and network observation were not performed.
+  - No DOM, console, or screenshot evidence was captured.
+- Explicitly not done:
+  - No Docker operation.
+  - No environment-file content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No source, schema, or migration change.

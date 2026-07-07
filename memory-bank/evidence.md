@@ -19190,6 +19190,59 @@
   - No real external-system call.
   - No source, schema, or migration file was modified.
 
+## 2026-07-07 Step 126 - Non-Docker local dev server startup and Secret Authorization acceptance evidence
+
+- Classification:
+  - Authorized non-Docker local dev server startup plus local/demo/synthetic
+    Secret Authorization UI acceptance attempt.
+  - Result: BLOCKED.
+  - This is not production authorization acceptance.
+- Canonical state checked before startup:
+  - `git log -1 --oneline` -> `6efd080 docs: rerun secret authorization local acceptance`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/local-service-readiness-diagnosis-step124.md`.
+  - `memory-bank/progress.md` Step 125 latest section.
+  - `memory-bank/evidence.md` Step 125 latest section.
+  - `.local-step125-secret-authorization-rerun-acceptance/service-checks.txt`.
+  - root `package.json`, `apps/api/package.json`, and
+    `apps/web/package.json` script snippets.
+- Evidence directory:
+  - `.local-step126-secret-authorization-dev-acceptance/`.
+  - `acceptance-report.md`: sanitized BLOCKED report.
+  - `service-checks.txt`: sanitized local service check summary.
+  - `stopped-pids.txt`: process ids stopped from this Step's API process tree.
+  - `.gitignore`: excludes raw logs from Git.
+- Startup evidence:
+  - API dev server startup was attempted by this Step.
+  - API health at `127.0.0.1:3000` remained unavailable.
+  - API failed before binding the expected port because required local database
+    runtime configuration was missing from this process context.
+  - Web dev server was not started because the API readiness gate failed first.
+- Cleanup evidence:
+  - Only the API process tree started by this Step was stopped.
+  - No expected listeners remained on ports `3000`, `5173`, or `5174` after
+    cleanup.
+- Log handling evidence:
+  - Raw API logs were written locally under the Step 126 evidence directory.
+  - Raw logs were scanned before staging and excluded from Git.
+  - Staged evidence contains only sanitized summaries.
+- Acceptance coverage not completed:
+  - Live system-config navigation visibility was not verified.
+  - Live non-system-config navigation hiding and no-call behavior were not
+    verified.
+  - Live overview cards, resource table, resource detail, DOM, console,
+    screenshot, and browser network evidence were not captured.
+- Boundaries observed:
+  - No Docker command was run.
+  - No environment-file content was read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No source, schema, or migration file was modified.
+
 ## 2026-07-06 Step 117 - Account lifecycle Web management enhancement evidence
 
 - Canonical state checked before implementation:

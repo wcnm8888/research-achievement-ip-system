@@ -1,0 +1,9 @@
+Step 126 local service checks
+
+api_start_attempted: yes
+api_health_http_127_0_0_1_3000: unavailable
+web_start_attempted: no
+web_start_skipped_reason: API readiness gate failed first
+expected_ports_after_cleanup: no listeners on 3000, 5173, 5174
+acceptance_result: BLOCKED
+blocker: required local database runtime configuration was missing from this process context
