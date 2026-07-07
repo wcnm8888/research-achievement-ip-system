@@ -15348,3 +15348,54 @@
   - No Docker operation in this prompt-prep step.
   - Future Step 145 must not run prune, `down -v`, volume deletion, orphan
     cleanup, file deletion, or production/VPS access.
+
+## 2026-07-07 Step 145 - Final client-facing browser acceptance after Web refresh
+
+- Status: PASS with caveat.
+- Goal:
+  - Refresh the existing local Docker Web entry after explicit user
+    authorization and verify that the served `18081` entry uses the latest
+    client-facing bundle.
+- Authorized Docker operation:
+  - Ran `docker compose -f docker-compose.production.yml build web`.
+  - Ran `docker compose -f docker-compose.production.yml up -d --no-deps web`.
+  - Docker reported existing orphan containers; they were recorded only and not
+    cleaned.
+- Result:
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - `GET http://127.0.0.1:18081`: 200.
+  - Active Web entry changed from `assets/index-DTUeQ4MR.js` to
+    `assets/index-BDGa5WnL.js`.
+  - Unauthenticated browser scan showed the login page with `未登录`,
+    `请先登录`, `系统登录`, `邮箱`, and `密码`; `已登录` was not shown.
+  - Unauthenticated DOM/HTML scan reported zero matches for the tracked
+    stale/developer-facing terms such as `Phase 1 frontend`, `production auth`,
+    `GET /`, `POST /`, `X-Demo-User-Id`, `dryRun=true`, `dry-run`,
+    `Achievement CSV dry-run`, `Custom Reports`, `Secret Authorization`,
+    `local/demo`, `not production`, `raw JSON`, `batch mutation`,
+    `Rejected codes`, `Error count`, `dashboard summary`, `warnings API`, and
+    `Task ID`.
+  - Network requests observed during the unauthenticated scan were GET-only:
+    `/`, the latest JS/CSS assets, and `/api/auth/me`.
+- Caveat:
+  - The browser context had no authenticated session.
+  - No password, Cookie, Token, or credential was read, guessed, displayed, or
+    recorded.
+  - Authenticated page-by-page screenshots across the full application were not
+    completed, so full UI/code freeze is still not proven.
+  - The active bundle text scan still contains internal `X-Demo-User-Id` and
+    `dry-run` strings as request-header/route internals; authenticated DOM and
+    screenshots must still confirm these are not ordinary visible page copy.
+- Evidence:
+  - Added `memory-bank/client-facing-final-browser-acceptance-step145.md`.
+  - Evidence directory:
+    `.local-step145-final-client-facing-browser-acceptance/`.
+- Explicitly not done:
+  - No `apps/**` source change.
+  - No `prisma/**`, schema, migration, package, lockfile, or config change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker prune, volume deletion, `down -v`, orphan cleanup, local file
+    deletion, or other stack creation.
+  - Not production/VPS/real external-system acceptance.

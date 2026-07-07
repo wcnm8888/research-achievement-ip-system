@@ -19471,6 +19471,83 @@
   - No real external-system call.
   - No Docker operation.
 
+## 2026-07-07 Step 145 - Final client-facing browser acceptance after Web refresh evidence
+
+- Canonical state checked before the authorized refresh:
+  - `git log -1 --oneline` -> `51f73e2 docs: prepare final client-facing acceptance prompt`.
+  - `git status --short` showed existing untracked local artifacts plus the new
+    Step 145 evidence directory/report.
+  - `git diff --stat` -> empty before Step 145 documentation updates.
+  - `git diff --cached --stat` -> empty before Step 145 documentation updates.
+- Baseline local service evidence:
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - `GET http://127.0.0.1:18081`: 200.
+  - Before refresh, the active Web entry referenced
+    `assets/index-DTUeQ4MR.js`.
+- Authorized Docker evidence:
+  - Ran `docker compose -f docker-compose.production.yml build web`: PASS.
+  - Ran `docker compose -f docker-compose.production.yml up -d --no-deps web`:
+    PASS.
+  - Existing `api` and `postgres` containers were reused.
+  - Docker reported orphan containers during `up`; they were not cleaned.
+  - No prune, volume deletion, `down -v`, orphan cleanup, local file deletion,
+    or other stack creation was performed.
+- Post-refresh local service evidence:
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - `GET http://127.0.0.1:18081`: 200.
+  - Compose-managed `api`, `postgres`, and `web` were healthy.
+  - After refresh, the active Web entry referenced
+    `assets/index-BDGa5WnL.js`.
+- Browser evidence:
+  - Evidence directory:
+    `.local-step145-final-client-facing-browser-acceptance/`.
+  - Added report:
+    `memory-bank/client-facing-final-browser-acceptance-step145.md`.
+  - Screenshot:
+    `.local-step145-final-client-facing-browser-acceptance/01-login-page-after-web-refresh.png`.
+  - Auth-state screenshot:
+    `.local-step145-final-client-facing-browser-acceptance/02-auth-state-check.png`.
+  - Text/scan artifacts:
+    `.local-step145-final-client-facing-browser-acceptance/unauth-browser-text.txt`,
+    `.local-step145-final-client-facing-browser-acceptance/unauth-browser-scan.json`,
+    `.local-step145-final-client-facing-browser-acceptance/auth-state-check.txt`,
+    `.local-step145-final-client-facing-browser-acceptance/auth-state-requests.json`,
+    `.local-step145-final-client-facing-browser-acceptance/active-18081-bundle-text-scan.txt`.
+- Scan results:
+  - Unauthenticated DOM/HTML scan reported zero matches for the tracked stale
+    or developer-facing terms, including `Phase 1 frontend`, `production auth`,
+    `GET /`, `POST /`, `X-Demo-User-Id`, `dryRun=true`, `dry-run`,
+    `Achievement CSV dry-run`, `Safe preview`, raw network fallback wording,
+    `Custom Reports`, `Secret Authorization`, `local/demo`, `not production`,
+    `raw JSON`, `batch mutation`, `Rejected codes`, `Error count`,
+    `Achievement conversion ledger`, `Fee review workflow task`,
+    `dashboard summary`, `warnings API`, and `Task ID`.
+  - Unauthenticated page text contained `未登录`, `请先登录`, `系统登录`,
+    `邮箱`, and `密码`; it did not contain `已登录`.
+  - Active bundle text scan still contained internal `X-Demo-User-Id` and
+    `dry-run` strings as request-header/route internals, so authenticated
+    DOM/screenshot confirmation remains required before full freeze.
+- Request boundary:
+  - Observed unauthenticated browser requests were GET-only: `/`, latest
+    JS/CSS assets, and `/api/auth/me`.
+  - No POST/PUT/PATCH/DELETE, export, download, debug, or batch mutation
+    request was observed.
+- Remaining caveat:
+  - The browser context did not have an authenticated session.
+  - No local account password, Cookie, Token, credential, or connection string
+    was read, guessed, displayed, or recorded.
+  - Authenticated page-by-page screenshots for the full application remain
+    incomplete; full UI/code freeze must not be claimed yet.
+- Boundary evidence:
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No `apps/**` source change was made.
+  - No `prisma/**`, schema, migration, package, lockfile, or config change was
+    made.
+  - This is local Docker production-like / synthetic browser evidence only, not
+    production/VPS/real external-system acceptance.
+
 ## 2026-07-07 Step 135 - Client-facing requirement matrix cleanup evidence
 
 - Context checked:
