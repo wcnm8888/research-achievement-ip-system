@@ -19243,6 +19243,55 @@
   - No real external-system call.
   - No source, schema, or migration file was modified.
 
+## 2026-07-07 Step 127 - Local API config recovery handbook evidence
+
+- Classification:
+  - Docs-only/read-only recovery handbook.
+  - No service recovery and no local UI acceptance rerun.
+- Canonical state checked before documentation:
+  - `git log -1 --oneline` -> `4689787 docs: accept secret authorization with local dev servers`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/local-service-readiness-diagnosis-step124.md`.
+  - `memory-bank/progress.md` Step 123 through Step 126 sections.
+  - `memory-bank/evidence.md` Step 123 through Step 126 sections.
+  - `.local-step123-secret-authorization-acceptance/service-checks.txt`.
+  - `.local-step125-secret-authorization-rerun-acceptance/service-checks.txt`.
+  - `.local-step126-secret-authorization-dev-acceptance/acceptance-report.md`.
+  - root `package.json`, `apps/api/package.json`, and
+    `apps/web/package.json` script snippets.
+- Output:
+  - Added `memory-bank/local-api-config-recovery-handbook-step127.md`.
+- Handbook evidence:
+  - Records that Secret Authorization live UI acceptance is still BLOCKED.
+  - Records Step 123 no-service blocker.
+  - Records Step 124 read-only diagnosis and expected API/Web script topology.
+  - Records Step 125 rerun still unavailable.
+  - Records Step 126 authorized non-Docker API startup failure before readiness
+    because required local database runtime configuration was missing from the
+    process context.
+  - Explicitly states the BLOCKED state must not be converted to PASS or PASS
+    with caveat.
+- Recovery options documented:
+  - Manual user restore followed by acceptance rerun.
+  - Separately authorized local environment configuration read/set Step.
+  - Return to product development with the live local UI acceptance remaining
+    BLOCKED.
+- Safety boundaries documented:
+  - Do not paste or record secret values in chat or docs.
+  - Do not commit local runtime configuration.
+  - Do not include raw logs or secret-bearing values in evidence.
+- Boundaries observed:
+  - No service was started, stopped, restarted, or modified.
+  - No Docker command was run.
+  - No environment-file content was read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No source, schema, or migration file was modified.
+
 ## 2026-07-06 Step 117 - Account lifecycle Web management enhancement evidence
 
 - Canonical state checked before implementation:

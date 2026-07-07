@@ -14618,3 +14618,37 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No source, schema, or migration change.
+
+## 2026-07-07 Step 127 - Local API config recovery handbook
+
+- Status: DONE, docs-only/read-only.
+- Starting point:
+  - HEAD at task start: `4689787 docs: accept secret authorization with local dev servers`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/local-api-config-recovery-handbook-step127.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Handbook conclusion:
+  - Secret Authorization live UI acceptance remains BLOCKED.
+  - Step 123, Step 125, and Step 126 must not be reported as PASS or PASS with
+    caveat.
+  - Evidence chain records Step 123 no-service blocker, Step 124 read-only
+    diagnosis, Step 125 rerun still unavailable, and Step 126 non-Docker API
+    startup failing before readiness because required local database runtime
+    configuration was missing from the process context.
+- Recovery options documented:
+  - A: user manually restores local API/Web and then reruns local acceptance.
+  - B: user separately authorizes a local environment configuration read/set
+    Step with explicit risk boundaries.
+  - C: return to product development and keep Secret Authorization local UI
+    acceptance BLOCKED.
+- Explicitly not done:
+  - No service start/stop/restart.
+  - No Docker operation.
+  - No environment-file content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No source, schema, or migration change.
