@@ -215,13 +215,13 @@ describe("department management permission boundary", () => {
     );
 
     expect(html).toContain("部门维护");
-    expect(html).toContain("上级部门只表示组织结构");
-    expect(html).toContain("权限范围仍精确匹配当前部门");
+    expect(html).toContain("上级部门仅表示组织结构");
+    expect(html).toContain("父部门不会自动包含子部门权限");
     expect(html).toContain("department-management-page");
     expect(html).toContain("department-filter-bar");
     expect(html).toContain("部门导入预检");
     expect(html).toContain("上传 CSV 文件后");
-    expect(html).toContain("创建新的部门信息");
+    expect(html).toContain("预检通过后，可创建部门");
     expect(html).not.toContain("dryRun=true");
     expect(html).not.toContain("POST /imports/departments/dry-run");
     expect(html).toContain("部门导入记录");

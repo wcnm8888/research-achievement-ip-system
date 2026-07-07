@@ -172,7 +172,10 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
           title="审计日志"
           description="选择本地演示用户后，前端才会请求后端脱敏只读审计日志。"
         />
-        <PermissionHint description="当前没有可用的业务用户，审计日志页面不会加载业务数据。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，审计日志页面不会加载业务数据。"
+        />
         <BoundaryNotice
           title="等待演示上下文"
           description="选择有权限的用户后，可查看经脱敏处理的审计记录。"
@@ -198,7 +201,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
         }
       />
 
-      <PermissionHint description="本页不提供导出、下载、未脱敏查看或写入入口。页面只渲染变更前后脱敏摘要、脱敏 IP、脱敏浏览器信息与安全摘要字段。" />
+      <PermissionHint description="审计记录已脱敏展示，当前页面只提供只读查询。" />
 
       <Card className="shell-card">
         <Space className="audit-filter-bar" size={12} wrap>

@@ -582,7 +582,10 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
           title="账号管理"
           description="需要有效登录上下文后才会加载账号管理数据。"
         />
-        <PermissionHint description="当前没有可用的业务上下文；前端不会发起账号管理请求。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务上下文；账号管理不会加载业务数据。"
+        />
       </Space>
     );
   }
@@ -591,15 +594,15 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="账号管理"
-        description="管理本地账号创建、状态、角色和部门绑定；所有操作以后端系统配置权限校验为准。"
+        description="管理账号创建、状态、角色和部门绑定。"
         extra={
           <Button type="primary" onClick={openCreateUser}>
             创建用户
           </Button>
         }
       />
-      <PermissionHint description="账号管理权限最终以后端系统配置权限校验为准；前端只做入口收敛和只读展示，不展示或缓存任何密码、会话材料、连接材料或凭证材料。" />
-      <PermissionHint description="部门选择器只用于账号绑定和角色部门范围绑定，不提供部门创建或编辑；部门范围仍精确匹配所选部门，父部门不包含子部门权限。" />
+      <PermissionHint description="系统按当前账号权限展示可管理的账号数据，不展示密码、会话或连接材料。" />
+      <PermissionHint description="部门选择器仅用于账号和角色范围绑定，父部门不会自动包含子部门。" />
       {departments.error ? (
         <Alert
           type="warning"
@@ -1152,8 +1155,8 @@ export function UserAccountImportDryRunPanel({
       <ImportDryRunPanelShell
         className="shell-card user-account-import-precheck-card"
         title="账号导入预检"
-        noticeMessage="上传 CSV 文件后，系统会先检查账号、部门、角色、范围和冲突信息。"
-        noticeDescription="预检会拒绝凭证、会话、邀请链接和重置链接等敏感列。"
+        noticeMessage="上传 CSV 文件后，系统会先校验账号、部门、角色和重复记录。"
+        noticeDescription="预检通过后，可创建账号草稿。"
         fileAriaLabel="账号 CSV 文件"
         file={file}
         loading={loading}

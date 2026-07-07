@@ -180,7 +180,10 @@ export function SecretAuthorization({
           title="涉密授权管理"
           description="请先登录或选择当前业务用户，再查看涉密授权摘要。"
         />
-        <PermissionHint description="当前没有可用的业务用户，页面不会加载涉密授权数据。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，页面不会加载涉密授权数据。"
+        />
       </Space>
     );
   }
@@ -193,7 +196,7 @@ export function SecretAuthorization({
         extra={<Button onClick={refresh}>刷新</Button>}
       />
 
-      <PermissionHint description="本页面仅展示安全摘要，不展示涉密正文、存储标识、凭证材料或写入操作。" />
+      <PermissionHint description="本页展示涉密资源和授权状态摘要，不展示涉密正文。" />
 
       <DataState loading={overview.loading} error={overview.error} onRetry={loadOverview}>
         {overview.data ? (

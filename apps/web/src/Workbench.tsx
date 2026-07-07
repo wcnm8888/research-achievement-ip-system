@@ -67,9 +67,12 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="工作台"
-          description="请选择本地演示用户后加载后端工作台摘要和个人待办。"
+          description="请选择业务用户后加载工作台摘要和个人待办。"
         />
-        <PermissionHint description="当前没有可用的业务用户，页面不会加载业务数据。请选择有权限的用户后继续。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，页面不会加载业务数据。请选择有权限的用户后继续。"
+        />
         <WorkbenchSkeletonBoundary onNavigate={onNavigate} />
       </Space>
     );
@@ -79,7 +82,7 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="工作台"
-        description="一期仅展示后端已提供的摘要、我的待办和明确边界入口。权限过滤以服务端为准。"
+        description="集中查看摘要、待办和常用业务入口。"
         extra={
           <Button
             onClick={() => {
@@ -246,7 +249,7 @@ function MyAchievementsCard({ onNavigate }: { onNavigate: (key: string) => void 
         </Typography.Text>
         <BoundaryNotice
           title="成果管理入口"
-          description="进入成果管理可查看后端返回的数据并执行当前状态允许的动作；审批、附件和费用工作流仍留到后续阶段。"
+          description="进入成果管理可查看成果数据，并执行当前状态允许的操作。"
           step="成果管理"
         />
         <Button onClick={() => onNavigate("achievements")}>查看成果列表</Button>
@@ -290,7 +293,7 @@ function SystemMessagesCard() {
       <Alert
         type="info"
         showIcon
-        message="站内消息边界"
+        message="站内消息"
         description="系统消息用于展示站内提醒和业务通知摘要。"
       />
     </Card>

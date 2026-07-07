@@ -315,12 +315,15 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="审批管理"
-          description="选择本地演示用户后，前端才会请求我的审批待办。"
+          description="请选择业务用户后查看审批待办。"
         />
-        <PermissionHint description="当前没有可用的业务用户，审批管理不会加载待办数据。请选择有审批权限的用户后继续。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，审批管理不会加载待办数据。请选择有审批权限的用户后继续。"
+        />
         <BoundaryNotice
-          title="等待演示上下文"
-          description="选择演示用户后，本页可查看我的审批待办列表、任务详情，并在后端允许时执行通过或驳回。"
+          title="等待业务用户"
+          description="选择用户后，本页可查看待办列表、任务详情，并在权限允许时执行通过或驳回。"
           step="审批管理"
         />
       </Space>
@@ -342,10 +345,10 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="审批管理"
-        description="展示当前演示用户的审批待办。权限过滤、状态流转和可处理范围以后端为准。"
+        description="展示当前账号可处理的审批事项，并支持按状态和对象筛选。"
         extra={<Button onClick={() => void loadTasks()}>刷新</Button>}
       />
-      <PermissionHint description="可在待办列表内查看单条任务详情，并在权限允许时执行通过或驳回。" />
+      <PermissionHint description="当前账号仅显示可处理的审批事项。" />
 
       <Card className="shell-card">
         <Space className="workflow-filter-bar" size={12} wrap>
@@ -505,8 +508,8 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
         <Space direction="vertical" size={12} className="full-width">
           <Typography.Paragraph>
             {activeAction === "reject"
-              ? "驳回意见为必填，提交后最终状态流转以后端为准。"
-              : "通过意见可选；空意见不会发送 comment 字段，最终状态流转以后端为准。"}
+              ? "驳回意见为必填，提交后系统会更新审批状态。"
+              : "通过意见可选；提交后系统会更新审批状态。"}
           </Typography.Paragraph>
           <Input.TextArea
             maxLength={1000}
@@ -734,7 +737,7 @@ function WorkflowTaskDetailContent({
 }) {
   return (
     <Space direction="vertical" size={16} className="full-width">
-      <PermissionHint description="前端只做可处理状态的体验保护；任务读取、权限判断和状态流转最终以后端为准。" />
+      <PermissionHint description="系统会根据任务状态和当前账号权限展示可用操作。" />
 
       {viewModel.actionPresentation.readonlyReason ? (
         <Alert
@@ -748,7 +751,7 @@ function WorkflowTaskDetailContent({
           showIcon
           type="success"
           message="当前待办可处理"
-          description="可在本抽屉中执行通过或驳回；提交结果仍以后端权限和状态机为准。"
+          description="可在本抽屉中执行通过或驳回。"
         />
       )}
 
@@ -807,8 +810,8 @@ function WorkflowTaskDetailContent({
       <Alert
         showIcon
         type="warning"
-        message="操作边界"
-        description="本抽屉仅提供关联成果只读入口，不展示审批历史或审计日志。"
+        message="操作说明"
+        description="本抽屉提供关联成果查看入口。"
       />
     </Space>
   );

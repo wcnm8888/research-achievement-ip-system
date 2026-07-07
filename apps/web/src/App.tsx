@@ -712,7 +712,10 @@ function DemoContextBanner({ demoUserId }: { demoUserId: string | null }) {
 
   if (!demoUserId) {
     return (
-      <PermissionHint description="请选择当前业务用户。未选择用户时，页面不会加载业务数据。" />
+      <PermissionHint
+        variant="alert"
+        description="请选择当前业务用户。未选择用户时，页面不会加载业务数据。"
+      />
     );
   }
 
@@ -739,7 +742,7 @@ function BoundaryPage({ item }: { item: NavItem }) {
         description="当前账号暂不能访问该功能，请联系系统管理员确认权限或功能开通状态。"
         step={item.label}
       />
-      <PermissionHint description="系统会根据当前账号权限展示可访问的数据和操作。" />
+      <PermissionHint description="系统已按当前账号权限展示可访问的数据和操作。" />
     </Space>
   );
 }

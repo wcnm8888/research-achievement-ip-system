@@ -642,7 +642,10 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           title="费用管理"
           description="选择本地演示用户后，前端才会请求后端费用台账。"
         />
-        <PermissionHint description="当前没有可用的业务用户，费用管理不会加载业务数据。请选择具备费用权限的用户后继续。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，费用管理不会加载业务数据。请选择具备费用权限的用户后继续。"
+        />
         <BoundaryNotice
           title="等待演示上下文"
           description="当前无用户时不发业务请求，也不触发费用写入或凭证附件请求；选择具备费用权限的上下文后才读取后端数据。"
@@ -674,7 +677,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           </Space>
         }
       />
-      <PermissionHint description="费用台账、详情、凭证附件与预警摘要均按当前账号权限展示。" />
+      <PermissionHint description="当前账号可查看费用台账、凭证附件和预警摘要。" />
 
       <Card className="shell-card" title="基础预警摘要" extra={<Tag>前端派生</Tag>}>
         <Row gutter={[16, 16]}>

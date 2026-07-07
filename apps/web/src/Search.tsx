@@ -256,7 +256,10 @@ export function Search({ demoUserId }: SearchProps) {
           title="检索中心"
           description="选择本地演示用户后，前端才会请求后端检索接口。"
         />
-        <PermissionHint description="当前没有可用的业务用户，检索中心不会加载业务数据。请选择有权限的用户后继续。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，检索中心不会加载业务数据。请选择有权限的用户后继续。"
+        />
         <BoundaryNotice
           title="等待演示上下文"
           description="选择用户后即可查看权限范围内的检索结果。"
@@ -272,7 +275,7 @@ export function Search({ demoUserId }: SearchProps) {
         title="检索中心"
         description="按关键词和类型筛选当前权限范围内的成果与费用记录。"
       />
-      <PermissionHint description="系统会根据当前账号权限展示可检索的数据范围。" />
+      <PermissionHint description="系统已按当前账号权限过滤可检索的数据范围。" />
 
       <Card className="shell-card">
         <Space className="search-filter-bar" size={12} wrap>

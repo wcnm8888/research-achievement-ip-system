@@ -340,9 +340,8 @@ describe("account management permission helpers", () => {
       <AccountManagement demoUserId="admin-user-id" authUser={adminUser} />,
     );
 
-    expect(html).toContain("部门选择器只用于账号绑定和角色部门范围绑定");
-    expect(html).toContain("不提供部门创建或编辑");
-    expect(html).toContain("部门范围仍精确匹配所选部门");
+    expect(html).toContain("部门选择器仅用于账号和角色范围绑定");
+    expect(html).toContain("父部门不会自动包含子部门");
   });
 
   it("does not request account-management or departments when the user lacks system config", () => {
@@ -375,7 +374,7 @@ describe("account management permission helpers", () => {
 
     expect(adminHtml).toContain("账号导入预检");
     expect(adminHtml).not.toContain("POST /users/import/dry-run");
-    expect(adminHtml).toContain("预检会拒绝凭证");
+    expect(adminHtml).toContain("系统会先校验账号、部门、角色和重复记录");
     expect(adminHtml).toContain("账号导入记录");
     expect(userAccountImportHistoryFilters).toEqual({
       family: "USER_ACCOUNT",

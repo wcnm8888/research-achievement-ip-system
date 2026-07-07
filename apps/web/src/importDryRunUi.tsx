@@ -157,7 +157,13 @@ export function ImportDryRunPanelShell<TResult>({
   return (
     <Card className={className} title={title}>
       <Space direction="vertical" size={12} className="full-width">
-        <Alert type="info" showIcon message={noticeMessage} description={noticeDescription} />
+        <div className="import-precheck-note">
+          <Space direction="vertical" size={4}>
+            <Typography.Text strong>导入说明</Typography.Text>
+            <Typography.Text>{noticeMessage}</Typography.Text>
+            <Typography.Text type="secondary">{noticeDescription}</Typography.Text>
+          </Space>
+        </div>
         <Space size={10} wrap>
           <input
             aria-label={fileAriaLabel}

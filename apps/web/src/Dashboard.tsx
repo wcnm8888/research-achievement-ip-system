@@ -98,7 +98,10 @@ export function Dashboard({ demoUserId }: DashboardProps) {
           title="统计看板"
           description="请选择本地演示用户后读取本地评分口径统计摘要。"
         />
-        <PermissionHint description="当前没有可用的业务用户，统计看板不会加载业务数据。请选择有权限的用户后继续。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，统计看板不会加载业务数据。请选择有权限的用户后继续。"
+        />
         <Card className="shell-card">
           <Space direction="vertical" size={8}>
             <Typography.Text strong>等待演示上下文</Typography.Text>
@@ -126,7 +129,7 @@ export function Dashboard({ demoUserId }: DashboardProps) {
         }
       />
 
-      <PermissionHint description="统计范围由当前账号权限决定；本页只展示聚合摘要，不展示原始日志、凭证、密钥或连接信息。" />
+      <PermissionHint description="统计范围已按当前账号权限过滤。" />
 
       <DashboardControls dueSoonDays={dueSoonDays} onDueSoonDaysChange={setDueSoonDays} />
 

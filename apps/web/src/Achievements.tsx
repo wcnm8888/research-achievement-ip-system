@@ -308,7 +308,10 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           title="成果管理"
           description="选择本地演示用户后，前端才会请求后端成果列表。"
         />
-        <PermissionHint description="当前没有可用的业务用户，成果管理不会加载业务数据。请选择有权限的用户后继续。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，成果管理不会加载业务数据。请选择有权限的用户后继续。"
+        />
         <BoundaryNotice
           title="等待演示上下文"
           description="选择用户后即可查看权限范围内的成果列表和操作入口。"
@@ -331,7 +334,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           ) : undefined
         }
       />
-      <PermissionHint description="系统会根据当前账号权限展示可访问的数据和操作。" />
+      <PermissionHint description="系统已按当前账号权限过滤成果数据。" />
 
       {canUseImportDryRun ? (
         <>
@@ -538,7 +541,7 @@ export function AchievementImportDryRunPanel({
         className="shell-card achievement-import-precheck-card"
         title="成果导入预检"
         noticeMessage="上传 CSV 文件后，系统会先检查论文、专利和软件著作权数据。"
-        noticeDescription="预检仅展示可安全呈现的校验结果；确认后才会按权限执行草稿导入。"
+        noticeDescription="预检通过后，可导入为草稿。"
         fileAriaLabel="成果 CSV 文件"
         file={file}
         loading={loading}

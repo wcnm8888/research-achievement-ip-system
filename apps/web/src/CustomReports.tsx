@@ -222,7 +222,10 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
           title="自定义报表"
           description="请选择当前业务用户后查看可用报表模板。"
         />
-        <PermissionHint description="当前没有可用的业务用户，页面不会加载报表数据。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务用户，页面不会加载报表数据。"
+        />
       </Space>
     );
   }

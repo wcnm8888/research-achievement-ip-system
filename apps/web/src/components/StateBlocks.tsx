@@ -98,9 +98,22 @@ const getSafeErrorDetail = (error: ApiError): string | undefined => {
 type PermissionHintProps = {
   title?: string;
   description: string;
+  variant?: "inline" | "alert";
 };
 
-export function PermissionHint({ title = "权限与边界提示", description }: PermissionHintProps) {
+export function PermissionHint({
+  title = "权限提示",
+  description,
+  variant = "inline",
+}: PermissionHintProps) {
+  if (variant === "inline") {
+    return (
+      <div className="permission-hint-inline">
+        <Typography.Text type="secondary">{description}</Typography.Text>
+      </div>
+    );
+  }
+
   return (
     <Alert
       className="permission-hint"

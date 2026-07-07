@@ -15449,3 +15449,57 @@
   - No Prisma schema change, migration addition, or migration execution.
   - This is local Docker production-like / synthetic acceptance, not production
     acceptance.
+
+## 2026-07-07 Step 147 - Client-facing hint polish
+
+- Status: PASS.
+- Goal:
+  - Soften ordinary page guidance from large acceptance/debug-style panels into
+    lightweight business-system hints.
+- Web changes:
+  - Added `PermissionHint` variants so ordinary pages can render inline guidance
+    while no-user/no-context/permission states can still use warning alerts.
+  - Replaced the large import precheck info block with a compact `导入说明`
+    block.
+  - Updated main page copy across workbench, achievements, workflow, fees,
+    search, dashboard, custom reports, audit logs, settings, secret
+    authorization, account management, and department management.
+  - Kept permission checks, API calls, guards, safe projections, and business
+    behavior unchanged.
+- Local Docker refresh:
+  - Rebuilt and replaced compose-managed `web` only.
+  - Active web assets on `http://127.0.0.1:18081`: `index-BH7dkdba.js` and
+    `index-DFsEfUiS.css`.
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - Existing orphan-container warning was recorded but not cleaned.
+- Browser acceptance:
+  - After manual user login, checked 成果管理, 审批管理, 账号管理, 部门维护, and 涉密授权管理.
+  - Large `权限与边界提示` title no longer appeared on checked business pages.
+  - Import panels showed compact `导入说明` where applicable.
+  - Visible-text scan found no `dry-run`, `Internal server error`,
+    `undefined`, `null`, API path, debug, export, download, or batch mutation
+    copy on checked pages.
+  - Observed mutation requests during the authenticated scan were only the
+    manual login request; no business mutation/export/download/debug/batch
+    request was observed while navigating checked pages.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievements WorkflowTasks Fees Search Dashboard CustomReports AuditLogs SettingsApiIntegrations SecretAuthorization AccountManagement DepartmentManagement`: PASS, 13 files / 262 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, only Windows LF-to-CRLF warnings.
+  - `git diff --cached --check`: PASS.
+- Evidence:
+  - Added `memory-bank/client-facing-hint-polish-step147.md`.
+  - Evidence directory:
+    `.local-step147-client-facing-hint-polish/`.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, or secret was read, displayed,
+    logged, or committed; the user logged in manually in the visible browser.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Prisma schema change, migration addition, migration execution, API
+    behavior change, or permission relaxation.
+  - No Docker prune, volume deletion, `down -v`, orphan cleanup, or local file
+    deletion.
+  - This is local Docker production-like / synthetic UI polish acceptance, not
+    production acceptance.

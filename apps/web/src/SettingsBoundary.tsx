@@ -112,14 +112,14 @@ export function SettingsBoundary({ demoUserId }: { demoUserId: string | null }) 
         }
       />
 
-      <PermissionHint description="系统配置权限目前只是权限码或未来配置边界线索，不等于已完成配置管理后端 API；最终权限裁剪仍以后端策略层为准。" />
+      <PermissionHint description="当前账号可查看已开放的系统配置入口。" />
 
       <Alert
         className="settings-boundary-alert"
         type="info"
         showIcon
-        message="当前不是配置管理实现"
-        description="本页面不创建、不编辑、不删除、不保存、不同步、不导入、不导出、不下载配置；也不读取环境文件、密钥、令牌、浏览器凭证、证书、私钥或完整连接串。"
+        message="配置功能说明"
+        description="本页用于查看已开放的配置入口，暂不提供配置导入、导出或下载。"
       />
 
       <div className="settings-capability-grid">

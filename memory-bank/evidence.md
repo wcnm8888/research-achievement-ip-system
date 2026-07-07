@@ -18953,6 +18953,53 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-07 Step 147 - Client-facing hint polish evidence
+
+- Result: PASS.
+- Source scope:
+  - Web-only UI copy and style polish.
+  - No API behavior, permission guard, Prisma schema, migration, or seed change.
+- Key implementation evidence:
+  - `apps/web/src/components/StateBlocks.tsx` now supports lightweight inline
+    `PermissionHint` rendering while retaining alert rendering for blocking or
+    risk states.
+  - `apps/web/src/importDryRunUi.tsx` now renders compact `导入说明` guidance
+    instead of a large blue alert panel.
+  - Main page copy was softened across the client-facing navigation surfaces.
+- Verification evidence:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievements WorkflowTasks Fees Search Dashboard CustomReports AuditLogs SettingsApiIntegrations SecretAuthorization AccountManagement DepartmentManagement`: PASS, 13 files / 262 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, only Windows LF-to-CRLF warnings.
+  - `git diff --cached --check`: PASS.
+- Local Docker evidence:
+  - `docker compose -f docker-compose.production.yml build web`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d --no-deps web`: PASS.
+  - `GET http://127.0.0.1:18081`: 200.
+  - Active assets: `index-BH7dkdba.js`, `index-DFsEfUiS.css`.
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - Docker orphan warning was observed and not cleaned.
+- Browser evidence:
+  - User manually logged in through the visible local browser.
+  - Checked pages: 成果管理, 审批管理, 账号管理, 部门维护, 涉密授权管理.
+  - Visible-text scan found no `权限与边界提示`, `dry-run`,
+    `Internal server error`, `undefined`, `null`, API path, `debug`, `export`,
+    `download`, or `batch mutation` copy on checked pages.
+  - No business mutation/export/download/debug/batch request was observed while
+    navigating the checked pages; observed mutation requests were only the
+    manual login request.
+  - Screenshot evidence directory:
+    `.local-step147-client-facing-hint-polish/`.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, API key, secret, or browser
+    credential was read, displayed, logged, or committed.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker prune, volume deletion, `down -v`, orphan cleanup, local file
+    deletion, or untracked artifact cleanup.
+  - This is local Docker production-like / synthetic UI polish acceptance, not
+    production acceptance.
+
 ## 2026-07-07 Step 139 - Client-facing freeze readiness audit evidence
 
 - Canonical state checked before the docs-only audit:

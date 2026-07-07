@@ -420,7 +420,10 @@ export function SettingsApiIntegrations({
           title="系统接口配置"
           description="需要有效登录会话后才能查看接口配置元数据。"
         />
-        <PermissionHint description="当前没有可用业务上下文；会话建立前页面不会请求接口配置元数据。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用业务上下文；系统接口配置不会加载业务数据。"
+        />
       </Space>
     );
   }
@@ -440,7 +443,7 @@ export function SettingsApiIntegrations({
         }
       />
 
-      <PermissionHint description="本页面仅维护接口编码、供应商、启用状态、超时设置和配置引用名称；不读取环境文件，不保存供应商凭证，也不切换运行时适配器。" />
+      <PermissionHint description="本页维护接口编码、供应商、启用状态、超时设置和配置引用名称。" />
 
       <SettingsImportJobHistoryOverview demoUserId={demoUserId} authUser={authUser} />
 

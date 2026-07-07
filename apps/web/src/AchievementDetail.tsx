@@ -892,7 +892,7 @@ function DetailContent({
         description={
           isReadonly
             ? readonlyLabels.permissionDescription
-            : "详情读取和动作执行最终以后端权限与状态机为准。前端只展示后端返回的数据，不补造 workflow、附件或费用信息。"
+            : "系统会根据当前账号权限和成果状态展示可用操作。"
         }
       />
 
@@ -900,8 +900,8 @@ function DetailContent({
         <Alert
           showIcon
           type="warning"
-          message="后端脱敏"
-          description="当前列表项被后端标记为脱敏；详情内容只展示本次详情接口实际返回的字段。"
+          message="内容已脱敏"
+          description="当前成果存在访问限制，页面仅展示可查看字段。"
         />
       ) : null}
 

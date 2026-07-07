@@ -521,7 +521,10 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
           title="部门维护"
           description="需要有效登录上下文后才会加载部门维护数据。"
         />
-        <PermissionHint description="当前没有可用的业务上下文；前端不会发起部门维护请求。" />
+        <PermissionHint
+          variant="alert"
+          description="当前没有可用的业务上下文；部门维护不会加载业务数据。"
+        />
       </Space>
     );
   }
@@ -530,7 +533,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
     <Space direction="vertical" size={16} className="page-stack department-management-page">
       <SectionHeader
         title="部门维护"
-        description="维护部门编码、名称、上级部门和启停状态；所有写入以后端系统配置权限校验与审计为准。"
+        description="维护部门编码、名称、上级部门和启停状态。"
         extra={
           <Space size={8} wrap>
             <Button onClick={refreshAll}>刷新</Button>
@@ -541,7 +544,7 @@ export function DepartmentManagement({ demoUserId, authUser }: DepartmentManagem
         }
       />
 
-      <PermissionHint description="上级部门只表示组织结构；部门权限范围仍精确匹配当前部门，父部门不会自动拥有子部门权限，也不支持级联停用。" />
+      <PermissionHint description="上级部门仅表示组织结构，父部门不会自动包含子部门权限。" />
 
       <DepartmentImportDryRunPanel
         file={importFile}
@@ -965,7 +968,7 @@ export function DepartmentImportDryRunPanel({
         className="shell-card department-import-precheck-card"
         title="部门导入预检"
         noticeMessage="上传 CSV 文件后，系统会先检查部门编码、名称和上级部门关系。"
-        noticeDescription="预检通过后可创建新的部门信息，不会执行更新、合并或删除操作。"
+        noticeDescription="预检通过后，可创建部门。"
         fileAriaLabel="部门 CSV 文件"
         file={file}
         loading={loading}
