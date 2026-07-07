@@ -1162,11 +1162,11 @@ export function DepartmentImportApplyConfirmContent({
         type="warning"
         showIcon
         message="确认创建部门信息"
-        description="本次操作仅创建新部门，不会更新、合并、删除、停用、启用或重新激活部门。"
+        description="本次操作仅创建新部门，既有部门信息保持不变。"
       />
       <Descriptions bordered size="small" column={1}>
         <Descriptions.Item label="导入方式">仅创建新部门</Descriptions.Item>
-        <Descriptions.Item label="Rows requested">
+        <Descriptions.Item label="待创建部门数">
           {result?.summary.createCandidates ?? 0}
         </Descriptions.Item>
         <Descriptions.Item label="审计操作">
@@ -1174,7 +1174,7 @@ export function DepartmentImportApplyConfirmContent({
         </Descriptions.Item>
       </Descriptions>
       <Typography.Text type="secondary">
-        系统会在写入前重新解析并校验上传的 CSV 文件；页面仅展示本次导入的安全摘要。
+        系统会在写入前重新解析并校验上传的 CSV 文件；页面展示本次导入的处理摘要。
       </Typography.Text>
     </Space>
   );
@@ -1530,12 +1530,14 @@ function DepartmentDetailView({
         <Descriptions.Item label="停用时间">{formatDateTime(department.archivedAt)}</Descriptions.Item>
       </Descriptions>
 
-      <Alert
-        type="info"
-        showIcon
-        message="层级边界"
-        description="上级部门只表示组织结构；权限范围精确匹配当前部门，不从父部门继承到子部门。"
-      />
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          层级说明
+        </Typography.Text>
+        <Typography.Text type="secondary">
+          上级部门用于表示组织结构，授权范围按具体部门配置。
+        </Typography.Text>
+      </div>
 
       <Card className="shell-card" title="部门操作">
         <Space size={8} wrap>
@@ -1593,12 +1595,14 @@ function DepartmentFormDrawer({
     >
       <Space direction="vertical" size={16} className="full-width">
         {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
-        <Alert
-          type="info"
-          showIcon
-          message="父部门只用于组织层级"
-          description="只允许选择启用中的父部门；不能选择自身；不会扩大权限 scope。"
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            父部门
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            请选择启用中的父部门，且不能选择当前部门自身。
+          </Typography.Text>
+        </div>
         <Form<DepartmentFormValues>
           form={form}
           layout="vertical"

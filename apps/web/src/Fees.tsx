@@ -166,9 +166,9 @@ const amountPattern = /^\d+(?:\.\d{1,2})?$/;
 const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
 
 export const feeVoucherAttachmentBoundary = {
-  title: "费用凭证附件",
+  title: "凭证附件",
   description:
-    "本区块展示当前费用记录关联的凭证附件，可查看附件信息并在权限允许时上传或下载。",
+    "可在费用详情中查看和维护当前记录关联的凭证附件。",
 };
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
@@ -647,7 +647,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           description="当前没有可用的业务用户，费用管理不会加载业务数据。请选择具备费用权限的用户后继续。"
         />
         <BoundaryNotice
-          title="等待演示上下文"
+          title="请选择业务用户"
           description="选择具备费用权限的用户后即可查看费用台账。"
           step="费用管理"
         />
@@ -1939,18 +1939,20 @@ function CreateFeeDrawer({
       }
     >
       <Space direction="vertical" size={16} className="full-width">
-        <Alert
-          showIcon
-          type="warning"
-          message="请确认费用信息"
-          description="提交前请确认成果、费用类型、金额和截止日期等信息。"
-        />
-        <Alert
-          showIcon
-          type="info"
-          message={feeVoucherAttachmentBoundary.title}
-          description={feeVoucherAttachmentBoundary.description}
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            费用信息
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            提交前请确认成果、费用类型、金额和截止日期等信息。
+          </Typography.Text>
+        </div>
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            {feeVoucherAttachmentBoundary.title}
+          </Typography.Text>
+          <Typography.Text type="secondary">{feeVoucherAttachmentBoundary.description}</Typography.Text>
+        </div>
         <MutationStateAlert state={status} />
         <div className="fee-form-grid">
           <FormField label="成果 ID" error={errors.achievementId} required>
@@ -1998,7 +2000,7 @@ function CreateFeeDrawer({
             <Input
               value={values.voucherNo}
               maxLength={120}
-              placeholder="仅登记 voucherNo 凭证编号，不上传或下载附件"
+              placeholder="填写已取得的凭证编号"
               onChange={(event) => onChange({ voucherNo: event.target.value })}
             />
           </FormField>
@@ -2048,29 +2050,27 @@ function MarkFeePaidDrawer({
       }
     >
       <Space direction="vertical" size={16} className="full-width">
-        <Alert
-          showIcon
-          type="warning"
-          message="请确认缴费信息"
-          description="提交前请确认缴费日期、凭证和备注信息。"
-        />
-        <Alert
-          showIcon
-          type="info"
-          message={feeVoucherAttachmentBoundary.title}
-          description={feeVoucherAttachmentBoundary.description}
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            缴费信息
+          </Typography.Text>
+          <Typography.Text type="secondary">提交前请确认缴费日期、凭证和备注信息。</Typography.Text>
+        </div>
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            {feeVoucherAttachmentBoundary.title}
+          </Typography.Text>
+          <Typography.Text type="secondary">{feeVoucherAttachmentBoundary.description}</Typography.Text>
+        </div>
         {record ? (
-          <Alert
-            showIcon
-            type={canManageFees && canMarkFeePaid(record) ? "info" : "warning"}
-            message={
-              canManageFees && canMarkFeePaid(record)
-                ? "当前费用可标记缴费"
-                : "当前费用不可标记缴费"
-            }
-            description={`费用 ${record.id} 当前状态：${getPayStatusLabel(record.payStatus)}`}
-          />
+          <div className="business-note">
+            <Typography.Text strong className="business-note-title">
+              {canManageFees && canMarkFeePaid(record) ? "可标记缴费" : "暂不可标记缴费"}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              当前缴费状态：{getPayStatusLabel(record.payStatus)}
+            </Typography.Text>
+          </div>
         ) : null}
         <MutationStateAlert state={status} />
         <div className="fee-form-grid fee-form-grid-single">
@@ -2085,7 +2085,7 @@ function MarkFeePaidDrawer({
             <Input
               value={values.voucherNo}
               maxLength={120}
-              placeholder="仅登记 voucherNo 凭证编号，不上传或下载附件"
+              placeholder="填写已取得的凭证编号"
               onChange={(event) => onChange({ voucherNo: event.target.value })}
             />
           </FormField>
@@ -2145,16 +2145,16 @@ function FeeStatusActionDrawer({
     >
       <Space direction="vertical" size={16} className="full-width">
         {record ? (
-          <Alert
-            showIcon
-            type={canManageFees && canWaiveOrCancelFee(record) ? "info" : "warning"}
-            message={
-              canManageFees && canWaiveOrCancelFee(record)
-                ? "当前费用可变更状态"
-                : "当前费用不可变更为减免或取消"
-            }
-            description={`费用 ${record.id} 当前状态：${getPayStatusLabel(record.payStatus)}`}
-          />
+          <div className="business-note">
+            <Typography.Text strong className="business-note-title">
+              {canManageFees && canWaiveOrCancelFee(record)
+                ? "可变更缴费状态"
+                : "暂不可变更为减免或取消"}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              当前缴费状态：{getPayStatusLabel(record.payStatus)}
+            </Typography.Text>
+          </div>
         ) : null}
         <MutationStateAlert state={status} />
         <div className="fee-form-grid fee-form-grid-single">
@@ -2225,16 +2225,14 @@ function FeeReviewActionDrawer({
     >
       <Space direction="vertical" size={16} className="full-width">
         {record ? (
-          <Alert
-            showIcon
-            type={canReviewFees && canReviewFee(record) ? "info" : "warning"}
-            message={
-              canReviewFees && canReviewFee(record)
-                ? "当前费用可审核"
-                : "当前费用不可重复审核"
-            }
-            description={`费用 ${record.id} 当前审核状态：${getFeeReviewStatusLabel(record.reviewStatus)}。审核不会改变缴费状态、缴费日期、凭证编号或归档状态。`}
-          />
+          <div className="business-note">
+            <Typography.Text strong className="business-note-title">
+              {canReviewFees && canReviewFee(record) ? "可审核费用" : "暂不可重复审核"}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              当前审核状态：{getFeeReviewStatusLabel(record.reviewStatus)}。
+            </Typography.Text>
+          </div>
         ) : null}
         <MutationStateAlert state={status} />
         <div className="fee-form-grid fee-form-grid-single">

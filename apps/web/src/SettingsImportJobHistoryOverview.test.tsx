@@ -105,7 +105,7 @@ describe("SettingsImportJobHistoryOverview permission boundary", () => {
     );
 
     expect(html).toContain("导入记录概览");
-    expect(html).toContain("只读索引");
+    expect(html).toContain("记录索引");
   });
 
   it("does not render or request import jobs without system config", () => {
@@ -250,9 +250,9 @@ describe("SettingsImportJobHistoryOverview display safety", () => {
     expect(listHtml).toContain("专利");
     expect(listHtml).toContain("失败");
     expect(listHtml).toContain("受理行数");
-    expect(listHtml).toContain("创建业务记录数");
-    expect(listHtml).toContain("创建伴随记录数");
-    expect(listHtml).toContain("审计记录数");
+    expect(listHtml).toContain("创建记录数");
+    expect(listHtml).toContain("关联记录数");
+    expect(listHtml).toContain("操作记录数");
     expect(listHtml).toContain("SAFE_VALIDATION_ERROR");
     expect(listHtml).toContain("IMPORT_APPLY_FAILED");
     expect(listHtml).toContain("2026-07-04T01:00:00.000Z");
@@ -265,12 +265,12 @@ describe("SettingsImportJobHistoryOverview display safety", () => {
       <ImportJobHistoryDetailView detail={{ loading: false, data: detail, error: null }} />,
     );
 
-    expect(html).toContain("安全摘要");
-    expect(html).toContain("执行记录");
-    expect(html).toContain("审计记录数");
-    expect(html).toContain("createdBusinessCount");
-    expect(html).toContain("acceptedRowCount");
-    expect(html).toContain("执行失败");
+    expect(html).toContain("处理概览");
+    expect(html).toContain("处理记录");
+    expect(html).toContain("操作记录数");
+    expect(html).toContain("创建记录数");
+    expect(html).toContain("受理行数");
+    expect(html).toContain("处理失败");
     expect(html).not.toContain("auditLogIds");
     expect(html).not.toContain(blockedAuditId);
     expect(html).not.toContain(blockedAtValue);

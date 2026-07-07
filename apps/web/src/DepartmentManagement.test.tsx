@@ -225,7 +225,7 @@ describe("department management permission boundary", () => {
     expect(html).not.toContain("dryRun=true");
     expect(html).not.toContain("POST /imports/departments/dry-run");
     expect(html).toContain("部门导入记录");
-    expect(html).toContain("只读导入记录");
+    expect(html).toContain("展示当前账号可查看的导入任务记录");
     expect(departmentImportHistoryFilters).toEqual({
       family: "DEPARTMENT",
       mode: "CREATE_ONLY",
@@ -541,7 +541,7 @@ describe("department import dry-run UI", () => {
       <DepartmentImportApplyConfirmContent result={validDepartmentImportDryRunResult} />,
     );
     expect(confirmHtml).toContain("确认创建部门信息");
-    expect(confirmHtml).toContain("不会更新、合并、删除");
+    expect(confirmHtml).toContain("既有部门信息保持不变");
     expect(confirmHtml).toContain("仅创建新部门");
     expect(confirmHtml).not.toContain("POST /imports/departments/apply");
   });

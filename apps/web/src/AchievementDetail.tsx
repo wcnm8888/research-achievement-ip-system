@@ -18,6 +18,7 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isApiError, type ApiClient, type ApiError, type AuthUser } from "./api-client";
 import { DataState, PermissionHint } from "./components/StateBlocks";
+import { sanitizeBusinessTitle } from "./display-text";
 import type {
   AchievementContributor,
   AchievementConversionBenefitCategoryCode,
@@ -892,7 +893,7 @@ function DetailContent({
         description={
           isReadonly
             ? readonlyLabels.permissionDescription
-            : "系统会根据当前账号权限和成果状态展示可用操作。"
+            : "可用操作会随账号职责和成果状态自动调整。"
         }
       />
 
@@ -906,12 +907,12 @@ function DetailContent({
       ) : null}
 
       {isReadonly ? (
-        <Alert
-          showIcon
-          type="info"
-          message={readonlyLabels.noticeMessage}
-          description={readonlyLabels.noticeDescription}
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            {readonlyLabels.noticeMessage}
+          </Typography.Text>
+          <Typography.Text type="secondary">{readonlyLabels.noticeDescription}</Typography.Text>
+        </div>
       ) : (
         getStatusBoundaryNotice(detail.status)
       )}
@@ -955,16 +956,16 @@ function DetailContent({
         readonly={isReadonly}
       />
 
-      <Alert
-        showIcon
-        type="info"
-        message={readonlyLabels.boundaryMessage}
-        description={
-          isReadonly
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          {readonlyLabels.boundaryMessage}
+        </Typography.Text>
+        <Typography.Text type="secondary">
+          {isReadonly
             ? readonlyLabels.boundaryDescription
-            : "审批处理、费用管理、搜索中心、统计看板和审计日志请在对应功能中处理。"
-        }
-      />
+            : "审批、费用、检索、统计和日志请进入对应功能处理。"}
+        </Typography.Text>
+      </div>
     </Space>
   );
 }
@@ -987,24 +988,22 @@ const getReadonlyAchievementContextLabels = (context: ReadonlyAchievementDetailC
 const getDetailContentReadonlyLabels = (mode: DetailContentMode) => {
   if (mode === "search-readonly") {
     return {
-      permissionDescription:
-        "检索中心可查看当前账号权限范围内的成果详情。",
-      noticeMessage: "检索中心只读",
+      permissionDescription: "当前为检索结果详情视图。",
+      noticeMessage: "只读详情",
       noticeDescription:
-        "本视图不提供成果提交、作废或归档动作；检索结果只负责打开当前用户可读取的成果详情。",
+        "本视图用于查看成果信息，不提供提交、作废或归档操作。",
       boundaryMessage: "详情查看",
       boundaryDescription:
-        "本视图用于查看成果详情；费用、日志和统计请进入对应功能。",
+        "费用、日志和统计请进入对应功能。",
     };
   }
 
   if (mode === "approval-readonly") {
     return {
-      permissionDescription:
-        "审批上下文可查看当前账号权限范围内的关联成果。",
-      noticeMessage: "审批上下文只读",
+      permissionDescription: "当前为审批关联成果视图。",
+      noticeMessage: "关联成果详情",
       noticeDescription:
-        "本视图不提供成果提交、作废或归档动作；审批处理仍在审批待办详情中完成。",
+        "本视图用于查看关联成果信息，审批处理仍在审批待办详情中完成。",
       boundaryMessage: "关联成果",
       boundaryDescription:
         "本视图用于查看审批任务关联成果；审批处理仍在待办详情中完成。",
@@ -1015,7 +1014,7 @@ const getDetailContentReadonlyLabels = (mode: DetailContentMode) => {
     permissionDescription: "",
     noticeMessage: "",
     noticeDescription: "",
-    boundaryMessage: "后续模块边界",
+    boundaryMessage: "相关功能",
     boundaryDescription: "",
   };
 };
@@ -1170,20 +1169,32 @@ function AchievementConversionSection({
     <>
       <Divider orientation="left">成果转化台账</Divider>
       <Space direction="vertical" size={12} className="full-width">
-        <Alert
-          showIcon
-          type="info"
-          message="成果转化记录"
-          description="此处展示转化状态、收入状态、收益分配摘要和后评估备注。"
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            转化记录
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            展示转化状态、收入状态、收益分配摘要和后评估备注。
+          </Typography.Text>
+        </div>
 
-        <DataState
-          loading={conversions.loading}
-          error={conversions.error}
-          empty={!conversions.loading && !conversions.error && items.length === 0}
-          emptyText="暂无转化记录"
-          onRetry={() => void loadConversions()}
-        >
+        {conversions.loading ? (
+          <DataState loading>{null}</DataState>
+        ) : conversions.error ? (
+          <div className="business-note">
+            <Typography.Text strong className="business-note-title">
+              转化记录暂不可用
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              请稍后刷新，或联系管理员查看服务状态。
+            </Typography.Text>
+            <Button size="small" onClick={() => void loadConversions()}>
+              重试
+            </Button>
+          </div>
+        ) : items.length === 0 ? (
+          <Empty description="暂无转化记录" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        ) : (
           <div className="conversion-ledger-list">
             {items.map((item) => (
               <div className="conversion-ledger-card" key={item.id}>
@@ -1205,13 +1216,13 @@ function AchievementConversionSection({
                       <Typography.Text strong>{item.counterpartyName}</Typography.Text>
                     </Space>
                   <Descriptions bordered column={2} size="small">
-                    <Descriptions.Item label="Related achievement">
+                    <Descriptions.Item label="关联成果">
                       {item.achievementId}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Date">
+                    <Descriptions.Item label="转化日期">
                       {formatDate(item.conversionDate)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Contract status">
+                    <Descriptions.Item label="合同状态">
                       {conversionContractStatusLabels[item.contractStatus] ?? item.contractStatus}
                     </Descriptions.Item>
                     <Descriptions.Item label="收入状态">
@@ -1261,7 +1272,7 @@ function AchievementConversionSection({
               </div>
             ))}
           </div>
-        </DataState>
+        )}
 
         {canManage ? (
           <div className="conversion-ledger-form">
@@ -1437,7 +1448,7 @@ function AchievementConversionSection({
               </Space>
               <Space direction="vertical" size={8} className="full-width">
                 <Space size={8} wrap>
-                  <Typography.Text strong>收益分配安全明细</Typography.Text>
+                  <Typography.Text strong>收益分配明细</Typography.Text>
                   <Button
                     size="small"
                     disabled={form.benefitDistributionJson.length >= conversionBenefitAllocationMaxRows}
@@ -1993,7 +2004,7 @@ function AttachmentMetadataSection({
             loading={attachments.loading}
             error={attachments.error}
             empty={!attachments.loading && !attachments.error && items.length === 0}
-            emptyText="未返回附件安全摘要"
+            emptyText="暂无附件摘要"
             onRetry={() => void loadAttachments()}
           >
             <AttachmentMetadataList
@@ -2416,7 +2427,7 @@ export const getDetailDisplayTitle = (
   item: Pick<AchievementListItem, "title" | "isRedacted"> | null | undefined,
 ): string => {
   if (item?.title) {
-    return item.title;
+    return sanitizeBusinessTitle(item.title, "成果记录");
   }
 
   if (item?.isRedacted) {
@@ -2517,29 +2528,36 @@ const getBaseFields = (detail: AchievementDetailType): DetailDisplayField[] => [
 const getStatusBoundaryNotice = (status: AchievementStatusCode): React.ReactNode => {
   if (status === "DEPARTMENT_REJECTED") {
     return (
-      <Alert
-        showIcon
-        type="info"
-        message="当前状态只读"
-        description="院系驳回状态当前不支持编辑、提交、作废或归档。"
-      />
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          当前状态只读
+        </Typography.Text>
+        <Typography.Text type="secondary">
+          院系驳回状态当前不支持编辑、提交、作废或归档。
+        </Typography.Text>
+      </div>
     );
   }
 
   if (status === "PENDING_DEPARTMENT_REVIEW") {
     return (
-      <Alert
-        showIcon
-        type="info"
-        message="等待院系审核"
-        description="审批通过或驳回请在审批管理中处理。"
-      />
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          等待院系审核
+        </Typography.Text>
+        <Typography.Text type="secondary">审批通过或驳回请在审批管理中处理。</Typography.Text>
+      </div>
     );
   }
 
   if (status === "ARCHIVED" || status === "VOIDED") {
     return (
-      <Alert showIcon type="info" message="只读状态" description="该成果当前只读。" />
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          当前状态只读
+        </Typography.Text>
+        <Typography.Text type="secondary">该成果当前只读。</Typography.Text>
+      </div>
     );
   }
 

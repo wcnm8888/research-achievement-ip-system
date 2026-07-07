@@ -1103,10 +1103,9 @@ describe("fee write visibility", () => {
 
 describe("voucher attachment boundary", () => {
   it("states the fee voucher attachment API integration boundary", () => {
-    expect(feeVoucherAttachmentBoundary.title).toBe("费用凭证附件");
-    expect(feeVoucherAttachmentBoundary.description).toContain("当前费用记录关联的凭证附件");
-    expect(feeVoucherAttachmentBoundary.description).toContain("查看附件信息");
-    expect(feeVoucherAttachmentBoundary.description).toContain("权限允许时上传或下载");
+    expect(feeVoucherAttachmentBoundary.title).toBe("凭证附件");
+    expect(feeVoucherAttachmentBoundary.description).toContain("当前记录关联的凭证附件");
+    expect(feeVoucherAttachmentBoundary.description).toContain("查看和维护");
   });
 
   it("keeps the boundary copy free of fake local-only capability claims", () => {

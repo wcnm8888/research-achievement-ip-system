@@ -72,7 +72,7 @@ describe("settings api integrations permission boundary", () => {
 
     expect(html).toContain("settings-api-page");
     expect(html).toContain("导入记录概览");
-    expect(html).toContain("只读索引");
+    expect(html).toContain("记录索引");
     expect(html).toContain("接口集成配置");
     expect(html).toContain("外部接口模拟联调中心");
     expect(html).toContain("模拟环境");

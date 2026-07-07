@@ -74,7 +74,7 @@ export const navItems: NavItem[] = [
     key: "search",
     label: "检索中心",
     step: "检索中心",
-    description: "按权限检索成果和费用记录，查看筛选后的安全摘要。",
+    description: "按权限检索成果和费用记录，查看筛选后的摘要。",
   },
   {
     key: "dashboard",
@@ -104,13 +104,13 @@ export const navItems: NavItem[] = [
     key: "secret-authorization",
     label: "涉密授权管理",
     step: "涉密授权管理",
-    description: "查看涉密资源和授权状态的安全摘要。",
+    description: "查看涉密资源和授权状态摘要。",
   },
   {
     key: "account-management",
     label: "账号管理",
     step: "账号管理",
-    description: "维护账号状态、角色、部门和生命周期安全摘要。",
+    description: "维护账号状态、角色、部门和生命周期摘要。",
   },
   {
     key: "department-management",
@@ -665,7 +665,7 @@ function LegacyDemoApp() {
               {activeUser?.label ?? (demoUserId ? "自定义业务用户" : "未选择")}
             </Typography.Text>
             <Typography.Text type="secondary" ellipsis>
-              {activeUser?.department ?? demoUserId ?? "请选择演示上下文"}
+              {activeUser?.department ?? demoUserId ?? "请选择业务用户"}
             </Typography.Text>
           </div>
           <Menu
@@ -714,7 +714,7 @@ function DemoContextBanner({ demoUserId }: { demoUserId: string | null }) {
     return (
       <PermissionHint
         variant="alert"
-        description="请选择当前业务用户。未选择用户时，页面不会加载业务数据。"
+        description="请选择当前业务用户。未选择用户时，页面暂不加载业务数据。"
       />
     );
   }

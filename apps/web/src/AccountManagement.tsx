@@ -650,7 +650,7 @@ export function AccountManagement({ demoUserId, authUser }: AccountManagementPro
             <Tag>缺少密码重置权限，重置入口已隐藏</Tag>
           )}
           <Typography.Text type="secondary">
-            页面仅展示账号生命周期安全摘要，不展示交付链接、登录凭证材料或会话材料。
+            页面展示账号生命周期摘要、交付状态和登录状态。
           </Typography.Text>
         </Space>
       </Card>
@@ -1207,7 +1207,7 @@ export function UserAccountImportDryRunResultView({
   return (
     <ImportDryRunResultShell
       result={result}
-      writeSafetyDescription="预检阶段不会写入账号、修改凭证或分配角色。"
+      writeSafetyDescription="预检阶段只校验账号、部门、角色和重复记录。"
       extraAlerts={
         <Alert
           type={employeeNoDbCheckAvailable ? "success" : "info"}
@@ -2041,7 +2041,7 @@ function AccountUserDetailView({
             <Tag>仅启用账号可发起密码重置</Tag>
           ) : null}
           <Typography.Text type="secondary">
-            页面仅展示交付状态、交付方式、当前账号和脱敏邮箱；不会展示交付链接、登录凭证材料或会话材料。
+            展示交付状态、交付方式、当前账号和脱敏邮箱。
           </Typography.Text>
         </Space>
       </Card>
@@ -2275,11 +2275,14 @@ function CreateInviteDrawer({
     >
       <Space direction="vertical" size={16} className="full-width">
         {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
-        <Alert
-          type="info"
-          showIcon
-          message="本页面只创建模拟交付记录，不发送真实邮件或短信，也不会展示生成的交付材料或完整链接。"
-        />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            邀请交付
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            创建邀请交付记录后，可在账号详情中查看交付状态。
+          </Typography.Text>
+        </div>
         <DepartmentSelectorBoundary error={departmentSelector.error} />
         <Form<CreateInviteFormValues>
           form={form}
@@ -2524,7 +2527,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="info"
         showIcon
-        message="启用用户不会自动恢复之前已禁用的登录凭证。"
+        message="启用用户后，登录凭证状态仍按原记录保持。"
       />
     );
   }
@@ -2534,7 +2537,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="info"
         showIcon
-        message="系统会创建一条模拟邀请交付记录；页面不会展示私密交付值或完整邀请链接。"
+        message="系统会创建邀请交付记录，交付状态可在账号详情中查看。"
       />
     );
   }
@@ -2544,7 +2547,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="warning"
         showIcon
-        message="系统会创建一条模拟密码重置交付记录；页面不会展示私密交付值或完整重置链接。"
+        message="系统会创建密码重置交付记录，交付状态可在账号详情中查看。"
       />
     );
   }
@@ -2574,7 +2577,7 @@ function OperationWarning({ operation }: { operation: OperationRequest }) {
       <Alert
         type="warning"
         showIcon
-        message="部门变更不会迁移历史成果、费用、审批，也不会自动迁移部门范围角色。"
+        message="部门变更仅更新账号当前所属部门，历史业务记录保持原归属。"
       />
     );
   }
@@ -2769,7 +2772,7 @@ const renderLifecycleDeliverySummary = (
   delivery: AccountLifecycleDeliverySummary | null,
 ) => {
   if (!delivery) {
-    return <Tag>无模拟交付记录</Tag>;
+    return <Tag>暂无交付记录</Tag>;
   }
 
   return (

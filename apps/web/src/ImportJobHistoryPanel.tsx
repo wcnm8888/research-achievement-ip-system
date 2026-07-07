@@ -2,6 +2,7 @@ import { Alert, Button, Card, Descriptions, Drawer, Empty, Input, Select, Space,
 import type { SelectProps, TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isApiError, type AccountManagementApiClient, type ApiError } from "./api-client";
+import { formatSafeCountLabel } from "./display-text";
 import type {
   AchievementTypeCode,
   ImportJobHistoryDetail,
@@ -197,9 +198,7 @@ export function ImportJobHistoryPanelView({
       }
     >
       <Space direction="vertical" size={12} className="import-job-history-stack">
-        <Typography.Text type="secondary">
-          只读导入记录。当前账号仅可查看权限范围内的导入任务。
-        </Typography.Text>
+        <Typography.Text type="secondary">展示当前账号可查看的导入任务记录。</Typography.Text>
 
         {list.loading ? (
           <Alert type="info" showIcon message="正在加载导入记录" />
@@ -281,13 +280,13 @@ export function ImportJobHistoryDetailView({
         <Descriptions.Item label="受理行数">
           {detail.data.acceptedRowCount}
         </Descriptions.Item>
-        <Descriptions.Item label="创建业务记录数">
+        <Descriptions.Item label="创建记录数">
           {detail.data.createdBusinessCount}
         </Descriptions.Item>
-        <Descriptions.Item label="创建伴随记录数">
+        <Descriptions.Item label="关联记录数">
           {detail.data.createdCompanionCount}
         </Descriptions.Item>
-        <Descriptions.Item label="审计记录数">{detail.data.auditCount}</Descriptions.Item>
+        <Descriptions.Item label="操作记录数">{detail.data.auditCount}</Descriptions.Item>
         <Descriptions.Item label="处理代码" span={2}>
           {renderSafeErrorCodes(detail.data)}
         </Descriptions.Item>
@@ -297,14 +296,16 @@ export function ImportJobHistoryDetailView({
         </Descriptions.Item>
       </Descriptions>
 
-      <Alert
-        type="info"
-        showIcon
-        message="状态说明"
-        description={getImportJobStatusExplanation(detail.data.status)}
-      />
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          处理状态
+        </Typography.Text>
+        <Typography.Text type="secondary">
+          {getImportJobStatusExplanation(detail.data.status)}
+        </Typography.Text>
+      </div>
 
-      <Card size="small" title="安全摘要">
+      <Card size="small" title="处理概览">
         {summaryRows.length > 0 ? (
           <Table
             size="small"
@@ -314,11 +315,11 @@ export function ImportJobHistoryDetailView({
             columns={safeSummaryColumns}
           />
         ) : (
-          <Empty description="暂无安全摘要字段" />
+          <Empty description="暂无处理概览" />
         )}
       </Card>
 
-      <Card size="small" title="执行记录">
+      <Card size="small" title="处理记录">
         <Table
           size="small"
           rowKey={(run) => String(run.attemptNo)}
@@ -460,17 +461,18 @@ export function ImportJobItemHistoryPanelView({
     <Card size="small" title="导入行记录">
       <Space direction="vertical" size={12} className="import-job-history-stack">
         <Space size={8} wrap>
-          <Tag>安全摘要</Tag>
+          <Tag>行记录</Tag>
           <Button onClick={onRefresh}>刷新明细</Button>
         </Space>
 
-        <Alert
-          className="safe-row-history-boundary"
-          type="info"
-          showIcon
-          message="仅展示导入行安全摘要"
-          description="页面只展示行号、计划动作、状态、安全代码和目标类型，不展示原始 CSV 或原始明细内容。"
-        />
+        <div className="business-note safe-row-history-boundary">
+          <Typography.Text strong className="business-note-title">
+            导入行概览
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            展示行号、计划动作、状态、处理代码和目标类型。
+          </Typography.Text>
+        </div>
 
         <Space size={8} wrap>
           <Input
@@ -497,7 +499,7 @@ export function ImportJobItemHistoryPanelView({
           <Input
             className="import-job-history-item-filter"
             aria-label="item safe code"
-            placeholder="安全代码"
+            placeholder="处理代码"
             value={filters.safeCode}
             onChange={(event) => onFilterChange?.("safeCode", event.target.value)}
           />
@@ -522,10 +524,10 @@ export function ImportJobItemHistoryPanelView({
             description={
               <Space direction="vertical" size={4}>
                 <Typography.Text>
-                  当前导入任务暂无安全行记录。
+                  当前导入任务暂无行记录。
                 </Typography.Text>
                 <Typography.Text type="secondary">
-                  这不代表原始源行不存在；原始数据不在当前页面展示边界内。
+                  如需查看文件内容，请通过正式档案流程查询。
                 </Typography.Text>
               </Space>
             }
@@ -543,7 +545,7 @@ export function ImportJobItemHistoryPanelView({
               pageSize: itemList.data?.pageSize ?? pageSize,
               total: itemList.data?.total ?? 0,
               showSizeChanger: true,
-              showTotal: (total) => `共 ${total} 条安全行记录`,
+              showTotal: (total) => `共 ${total} 条行记录`,
               onChange: (nextPage, nextPageSize) => {
                 onPageChange?.(nextPage, nextPageSize);
               },
@@ -582,22 +584,22 @@ export const buildImportJobItemHistoryPanelQuery = (
 
 export const getImportJobStatusExplanation = (status: string): string => {
   if (status === "SUCCESS") {
-    return "该请求已成功完成。页面只展示已保存的安全计数，不会为同一请求再次发起写入。";
+    return "该导入任务已完成，详情如下。";
   }
 
   if (status === "RUNNING" || status === "PENDING") {
-    return "该请求正在执行或刚被受理。页面不会发起第二次写入，请稍后刷新查看。";
+    return "该导入任务正在处理或刚被受理，请稍后刷新查看。";
   }
 
   if (status === "REJECTED") {
-    return "该请求被校验或安全规则拦截。页面只展示安全原因码和计数。";
+    return "该导入任务未通过校验，请查看处理代码和计数。";
   }
 
   if (status === "FAILED") {
-    return "该请求执行失败。当前只读视图不会发起新的写入。";
+    return "该导入任务处理失败，请查看处理记录。";
   }
 
-  return "该导入任务仅作为只读历史展示。";
+  return "该导入任务记录如下。";
 };
 
 const buildImportJobHistoryColumns = (
@@ -628,10 +630,10 @@ const buildImportJobHistoryColumns = (
     render: (value: string) => <Tag color={getStatusTagColor(value)}>{getImportStatusLabel(value)}</Tag>,
   },
   {
-    title: "创建计数",
+    title: "处理计数",
     key: "createdCounts",
     render: (_, row) =>
-      `受理 ${row.acceptedRowCount} / 业务 ${row.createdBusinessCount} / 伴随 ${row.createdCompanionCount} / 审计 ${row.auditCount}`,
+      `受理 ${row.acceptedRowCount} / 创建 ${row.createdBusinessCount} / 关联 ${row.createdCompanionCount} / 记录 ${row.auditCount}`,
   },
   {
     title: "处理代码",
@@ -663,7 +665,7 @@ const buildImportJobHistoryColumns = (
 
 export const safeSummaryColumns: TableProps<SafeSummaryRow>["columns"] = [
   {
-    title: "字段",
+    title: "项目",
     dataIndex: "key",
     key: "key",
   },
@@ -676,7 +678,7 @@ export const safeSummaryColumns: TableProps<SafeSummaryRow>["columns"] = [
 
 export const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] = [
   {
-    title: "尝试次数",
+    title: "序号",
     dataIndex: "attemptNo",
     key: "attemptNo",
   },
@@ -691,13 +693,13 @@ export const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] =
     key: "status",
   },
   {
-    title: "失败代码",
+    title: "处理代码",
     dataIndex: "failureCode",
     key: "failureCode",
     render: (value?: string | null) => value ?? "未返回",
   },
   {
-    title: "失败阶段",
+    title: "处理阶段",
     dataIndex: "failureStage",
     key: "failureStage",
     render: (value?: string | null) => value ?? "未返回",
@@ -715,13 +717,13 @@ export const runSummaryColumns: TableProps<ImportRunHistorySummary>["columns"] =
     render: formatImportJobTimestamp,
   },
   {
-    title: "业务事务完成时间",
+    title: "完成时间",
     dataIndex: "completedBusinessTransactionAt",
     key: "completedBusinessTransactionAt",
     render: formatImportJobTimestamp,
   },
   {
-    title: "审计记录数",
+    title: "操作记录数",
     dataIndex: "auditCount",
     key: "auditCount",
   },
@@ -780,7 +782,7 @@ export const collectSafeSummaryRows = (summary: unknown, prefix = ""): SafeSumma
     }
 
     const displayValue = toSafeSummaryDisplayValue(value);
-    return displayValue === null ? [] : [{ key: rowKey, value: displayValue }];
+    return displayValue === null ? [] : [{ key: formatSafeCountLabel(rowKey), value: displayValue }];
   });
 };
 

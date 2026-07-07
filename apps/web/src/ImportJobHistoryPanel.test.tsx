@@ -183,7 +183,7 @@ describe("ImportJobHistoryPanel", () => {
     expect(listHtml).toContain("创建草稿");
     expect(listHtml).toContain("论文");
     expect(listHtml).toContain("成功");
-    expect(listHtml).toContain("创建计数");
+    expect(listHtml).toContain("处理计数");
     expect(listHtml).toContain("2026-07-04T00:00:03.000Z");
   });
 
@@ -194,12 +194,12 @@ describe("ImportJobHistoryPanel", () => {
       />,
     );
 
-    expect(html).toContain("安全摘要");
-    expect(html).toContain("执行记录");
-    expect(html).toContain("审计记录数");
-    expect(html).toContain("createdAchievementsCount");
-    expect(html).toContain("warningCount");
-    expect(html).toContain("已成功完成");
+    expect(html).toContain("处理概览");
+    expect(html).toContain("处理记录");
+    expect(html).toContain("操作记录数");
+    expect(html).toContain("创建成果数");
+    expect(html).toContain("提醒行数");
+    expect(html).toContain("已完成");
     expect(html).not.toContain(blockedAuditReferenceKey);
     expect(html).not.toContain(blockedAuditReferenceValue);
     expect(html).not.toContain(blockedAtValue);
@@ -215,10 +215,10 @@ describe("ImportJobHistoryPanel", () => {
       getImportJobStatusExplanation("FAILED"),
     ].join(" ");
 
-    expect(text).toContain("已成功完成");
-    expect(text).toContain("正在执行");
-    expect(text).toContain("安全规则拦截");
-    expect(text).toContain("执行失败");
+    expect(text).toContain("已完成");
+    expect(text).toContain("正在处理");
+    expect(text).toContain("未通过校验");
+    expect(text).toContain("处理失败");
     expect(text).not.toMatch(/\b(retry|delete|cleanup|rollback|download)\b/i);
   });
 
@@ -255,7 +255,7 @@ describe("ImportJobHistoryPanel", () => {
     );
     expect(loadingHtml).toContain("导入行记录");
     expect(loadingHtml).toContain("正在加载导入行记录");
-    expect(loadingHtml).toContain("仅展示导入行安全摘要");
+    expect(loadingHtml).toContain("导入行概览");
     expect(loadingHtml).not.toContain("GET /import-jobs/:id/items");
     expect(loadingHtml).not.toContain("not production import acceptance");
 
@@ -271,8 +271,8 @@ describe("ImportJobHistoryPanel", () => {
         pageSize={10}
       />,
     );
-    expect(emptyHtml).toContain("当前导入任务暂无安全行记录。");
-    expect(emptyHtml).toContain("原始数据不在当前页面展示边界内");
+    expect(emptyHtml).toContain("当前导入任务暂无行记录。");
+    expect(emptyHtml).toContain("正式档案流程");
 
     const errorHtml = renderToStaticMarkup(
       <ImportJobItemHistoryPanelView
@@ -319,7 +319,7 @@ describe("ImportJobHistoryPanel", () => {
     expect(listHtml).toContain("未返回");
     expect(listHtml).toContain("SAFE_VALIDATION_ERROR");
     expect(listHtml).toContain("成果导入");
-    expect(listHtml).toContain("共 12 条安全行记录");
+    expect(listHtml).toContain("共 12 条行记录");
   });
 
   it("does not expose forbidden safe row fields or action controls outside boundary copy", () => {

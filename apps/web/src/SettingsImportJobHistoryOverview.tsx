@@ -271,14 +271,14 @@ export function SettingsImportJobHistoryOverviewView({
       extra={
         <Space size={8} wrap>
           <Tag>系统配置权限</Tag>
-          <Tag>只读索引</Tag>
+          <Tag>记录索引</Tag>
           <Button onClick={onRefresh}>刷新记录</Button>
         </Space>
       }
     >
       <Space direction="vertical" size={12} className="full-width">
         <Typography.Text type="secondary">
-          这里展示导入任务历史的只读索引，当前账号仅可查看权限范围内的记录。
+          这里展示导入任务历史记录，当前账号仅可查看授权范围内的记录。
         </Typography.Text>
 
         <Space className="settings-import-history-filter-bar" size={12} wrap>
@@ -465,19 +465,19 @@ const createSettingsImportJobHistoryColumns = (
     width: 150,
   },
   {
-    title: "创建业务记录数",
+    title: "创建记录数",
     dataIndex: "createdBusinessCount",
     key: "createdBusinessCount",
     width: 180,
   },
   {
-    title: "创建伴随记录数",
+    title: "关联记录数",
     dataIndex: "createdCompanionCount",
     key: "createdCompanionCount",
     width: 190,
   },
   {
-    title: "审计记录数",
+    title: "操作记录数",
     dataIndex: "auditCount",
     key: "auditCount",
     width: 120,

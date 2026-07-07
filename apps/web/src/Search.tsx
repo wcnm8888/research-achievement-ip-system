@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReadonlyAchievementDetail } from "./AchievementDetail";
 import { createApiClient, isApiError, type ApiClient, type ApiError } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { sanitizeBusinessTitle } from "./display-text";
 import { ReadonlyFeeDetailDrawer } from "./Fees";
 import type {
   AchievementStatusCode,
@@ -261,7 +262,7 @@ export function Search({ demoUserId }: SearchProps) {
           description="当前没有可用的业务用户，检索中心不会加载业务数据。请选择有权限的用户后继续。"
         />
         <BoundaryNotice
-          title="等待演示上下文"
+          title="请选择业务用户"
           description="选择用户后即可查看权限范围内的检索结果。"
           step="检索中心"
         />
@@ -575,7 +576,7 @@ export const buildAchievementDisplayModel = (
 ): SearchAchievementDisplayModel => ({
   kind: "achievement",
   id: item.id,
-  title: item.redacted ? null : item.title,
+  title: item.redacted ? null : sanitizeBusinessTitle(item.title, "成果记录"),
   redacted: item.redacted,
   identifiers: item.redacted ? [] : formatIdentifiers(item.identifiers),
 });

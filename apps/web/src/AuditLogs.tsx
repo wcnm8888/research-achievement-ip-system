@@ -177,7 +177,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
           description="当前没有可用的业务用户，审计日志页面不会加载业务数据。"
         />
         <BoundaryNotice
-          title="等待演示上下文"
+          title="请选择业务用户"
           description="选择有权限的用户后，可查看经脱敏处理的审计记录。"
           step="审计日志"
         />

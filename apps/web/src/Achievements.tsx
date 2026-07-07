@@ -25,6 +25,7 @@ import {
   type AuthUser,
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { sanitizeBusinessTitle } from "./display-text";
 import { ImportJobHistoryPanel, type ImportJobHistoryFilters } from "./ImportJobHistoryPanel";
 import {
   ImportDryRunPanelShell,
@@ -313,7 +314,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           description="当前没有可用的业务用户，成果管理不会加载业务数据。请选择有权限的用户后继续。"
         />
         <BoundaryNotice
-          title="等待演示上下文"
+          title="请选择业务用户"
           description="选择用户后即可查看权限范围内的成果列表和操作入口。"
           step="成果管理"
         />
@@ -325,7 +326,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="成果管理"
-        description="查看当前账号权限范围内的成果列表，支持筛选、分页和安全摘要展示。"
+        description="查看当前账号权限范围内的成果列表，支持筛选、分页和摘要展示。"
         extra={
           canCreateAchievementDraft(authUser) ? (
             <Button type="primary" onClick={() => setFormRequest({ mode: "create" })}>
@@ -597,7 +598,7 @@ export function AchievementImportDryRunResultView({
   return (
     <ImportDryRunResultShell
       result={result}
-      writeSafetyDescription="预检阶段不会写入成果、附件、费用或审批数据。"
+      writeSafetyDescription="预检阶段只校验文件内容，暂不写入成果、附件、费用或审批数据。"
       extraAlerts={
         <Alert
           type="info"
@@ -1377,7 +1378,7 @@ const getAchievementImportIdentifierLabel = (value: string): string => {
 
 export const getAchievementDisplayTitle = (item: Pick<AchievementListItem, "title" | "isRedacted">) => {
   if (item.title) {
-    return item.title;
+    return sanitizeBusinessTitle(item.title, "成果记录");
   }
 
   return item.isRedacted ? "已脱敏成果" : "未命名成果";

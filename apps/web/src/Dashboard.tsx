@@ -104,7 +104,7 @@ export function Dashboard({ demoUserId }: DashboardProps) {
         />
         <Card className="shell-card">
           <Space direction="vertical" size={8}>
-            <Typography.Text strong>等待演示上下文</Typography.Text>
+            <Typography.Text strong>请选择业务用户</Typography.Text>
             <Typography.Text type="secondary">
               未选择用户时不会加载统计摘要。
             </Typography.Text>

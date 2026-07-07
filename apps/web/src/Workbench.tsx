@@ -306,7 +306,7 @@ function WorkbenchSkeletonBoundary({ onNavigate }: { onNavigate: (key: string) =
       <Col xs={24} md={8}>
         <Card className="shell-card" title="工作台摘要">
           <BoundaryNotice
-            title="等待演示上下文"
+            title="请选择业务用户"
             description="选择用户后再读取统计摘要。"
             step="工作台"
           />
@@ -316,11 +316,11 @@ function WorkbenchSkeletonBoundary({ onNavigate }: { onNavigate: (key: string) =
         <Card className="shell-card" title="成果管理">
           <BoundaryNotice
             title="下一步入口"
-            description="成果列表和表单不在本轮实现。"
+            description="可进入成果管理查看列表和表单。"
             step="成果管理"
           />
           <Button className="boundary-action" onClick={() => onNavigate("achievements")}>
-            查看边界
+            查看说明
           </Button>
         </Card>
       </Col>
