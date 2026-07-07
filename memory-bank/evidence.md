@@ -19147,6 +19147,49 @@
   - No real external-system call.
   - No source, schema, migration, package, or lockfile change.
 
+## 2026-07-07 Step 125 - Secret authorization local UI acceptance rerun evidence
+
+- Classification:
+  - Localhost/local-demo/synthetic Secret Authorization UI acceptance rerun.
+  - Result: BLOCKED.
+  - This is not production authorization acceptance.
+- Canonical state checked before rerun:
+  - `git log -1 --oneline` -> `aa71f72 docs: diagnose local service readiness blocker`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Evidence directory:
+  - `.local-step125-secret-authorization-rerun-acceptance/`.
+  - `acceptance-rerun-report.md`: BLOCKED rerun report.
+  - `service-checks.txt`: local service check summary.
+- Read-only service checks:
+  - API health request to `127.0.0.1:3000`: unavailable.
+  - API health request to `localhost:3000`: unavailable.
+  - Web requests to `5173`, `5174`, `4173`, and `4174`: unavailable.
+  - TCP listener check found no listener on `3000`, `5173`, or `5174`.
+  - Relevant process summary found no active project API/Web dev process.
+- Blocker:
+  - The user-stated restored-service precondition was not observable from this
+    session.
+  - Live acceptance could not proceed because local API/Web endpoints were not
+    reachable and this Step forbids starting, stopping, or restarting services.
+- Acceptance coverage not completed:
+  - Live system-config navigation visibility was not verified.
+  - Live non-system-config navigation hiding and no-call behavior were not
+    verified.
+  - Live overview cards, resource table, resource detail, and network traffic
+    were not observed.
+  - Because no page was reachable, no DOM, console, screenshot, or browser
+    network evidence was captured.
+- Boundaries observed:
+  - No service was started, stopped, restarted, or modified.
+  - No Docker command was run.
+  - No `.env` or secret content was read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No source, schema, or migration file was modified.
+
 ## 2026-07-06 Step 117 - Account lifecycle Web management enhancement evidence
 
 - Canonical state checked before implementation:

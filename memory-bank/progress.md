@@ -14545,3 +14545,39 @@
   - No Docker command.
   - No `.env` or secret content read.
   - No source, schema, migration, or package change.
+
+## 2026-07-07 Step 125 - Secret authorization local UI acceptance rerun
+
+- Status: BLOCKED.
+- Acceptance classification:
+  - Localhost/local-demo/synthetic Secret Authorization UI acceptance rerun.
+  - This is not production authorization acceptance.
+- Starting point:
+  - HEAD at task start: `aa71f72 docs: diagnose local service readiness blocker`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Evidence directory:
+  - `.local-step125-secret-authorization-rerun-acceptance/`.
+- Readiness result:
+  - API health on `127.0.0.1:3000` and `localhost:3000` was unavailable.
+  - Web checks on `5173`, `5174`, `4173`, and `4174` were unavailable.
+  - No listener existed on expected ports `3000`, `5173`, or `5174`.
+  - Relevant process summary found no active project API/Web dev process.
+- Blocker:
+  - The user-stated precondition was not observable from this session.
+  - The rerun could not proceed because the local API/Web endpoints were not
+    reachable, and this Step forbids starting, stopping, or restarting services.
+- Acceptance not completed:
+  - Live system-config navigation visibility was not verified.
+  - Live non-system-config navigation hiding and no-call behavior were not
+    verified.
+  - Live overview cards, resource table, resource detail, and network traffic
+    were not observed.
+- Explicitly not done:
+  - No service start/stop/restart.
+  - No Docker operation.
+  - No `.env` or secret content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No source, schema, or migration change.

@@ -1,0 +1,12 @@
+Step 125 local service checks
+
+api_health_http_127_0_0_1_3000: unavailable
+api_health_http_localhost_3000: unavailable
+web_http_127_0_0_1_5173: unavailable
+web_http_127_0_0_1_5174: unavailable
+web_http_127_0_0_1_4173: unavailable
+web_http_127_0_0_1_4174: unavailable
+expected_ports_with_listener: none for 3000, 5173, 5174
+project_api_web_processes_seen: no
+acceptance_result: BLOCKED
+blocker: local API/Web endpoints unavailable from this session; service start/stop is outside Step 125 boundary
