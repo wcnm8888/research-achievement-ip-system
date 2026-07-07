@@ -15188,3 +15188,43 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 142 - Client-facing code-freeze punch list
+
+- Status: DONE.
+- Goal:
+  - Convert the Step 139-141 client/reviewer findings into an actionable
+    freeze-before-delivery punch list.
+- Documentation:
+  - Added `memory-bank/client-facing-code-freeze-punch-list-step142.md`.
+- Summary for freeze decision:
+  - Phase-one requirements and Route B enhancements are substantially covered
+    for a local/demo/synthetic reviewer package.
+  - They must not be represented as production/VPS/production DB/real external
+    system acceptance.
+  - Latest source/build has cleared the key screenshot-era wording.
+  - The active `18081` demo entry remains stale and must be rebuilt/refreshed
+    before browser screenshot acceptance.
+- Remaining P0:
+  - Refresh or rebuild the active demo Web bundle.
+  - Verify the browser loads the latest bundle.
+  - Run page-by-page screenshot acceptance across login, workbench,
+    achievements/import, workflow, fees, search, dashboard, custom reports,
+    audit logs, settings, secret authorization, account management, and
+    department management.
+  - If refreshed browser pages still show API routes, demo headers,
+    `dryRun=true`, raw network errors, production/demo engineering labels, raw
+    JSON/debug/export/download/batch controls, then make targeted Web source
+    fixes.
+- Next route options recorded:
+  - Route A: explicitly authorized Docker Web refresh for existing
+    `docker-compose.production.yml` web container only.
+  - Route B: non-Docker local preview/proxy of the latest build.
+  - Route C: docs-only freeze with UI freeze explicitly not claimed.
+- Explicitly not done:
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change in this Step.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

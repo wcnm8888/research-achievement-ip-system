@@ -19097,6 +19097,44 @@
   - The build output was written only to a new local evidence directory and did
     not overwrite the default Web output directory.
 
+## 2026-07-07 Step 142 - Client-facing code-freeze punch list evidence
+
+- Canonical state checked before punch-list documentation:
+  - `git log -1 --oneline` -> `f2d77f4 docs: verify latest client-facing web build`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+- Context reviewed:
+  - `memory-bank/client-facing-freeze-readiness-audit-step139.md`.
+  - `memory-bank/client-facing-active-bundle-freeze-check-step140.md`.
+  - `memory-bank/client-facing-latest-build-readiness-step141.md`.
+- Files updated:
+  - Added `memory-bank/client-facing-code-freeze-punch-list-step142.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Punch-list evidence:
+  - Confirms phase-one and Route B capabilities can be described only as
+    local/demo/synthetic reviewer coverage with caveats.
+  - Confirms production/VPS/production DB/real external-system acceptance must
+    not be claimed.
+  - Confirms the latest source/build has cleared the key screenshot-era visible
+    wording from the build artifact.
+  - Confirms the active `18081` entry still needs refresh/rebuild and browser
+    screenshot acceptance before any UI/code-freeze claim.
+- Next-step options recorded:
+  - Route A: user-authorized Docker Web refresh limited to the existing
+    compose-managed web container, with no env-content read, no volume deletion,
+    no prune, no `down -v`, no orphan cleanup, and no production/VPS access.
+  - Route B: non-Docker local preview/proxy of the latest build, then stop only
+    the Step-started local process.
+  - Route C: docs-only freeze with UI freeze explicitly not claimed.
+- Boundary evidence:
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No Docker operation was performed.
+  - No app source, API, Prisma schema, migration, package, lockfile, or config
+    change was made.
+
 ## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish evidence
 
 - Scope:
