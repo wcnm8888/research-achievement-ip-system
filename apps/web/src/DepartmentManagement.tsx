@@ -839,7 +839,7 @@ export const mapDepartmentImportApplyErrorToDisplay = (error: ApiError): ApiErro
     return {
       ...error,
       message: "部门导入需要系统配置权限",
-      detail: "请使用具备系统配置权限的管理员账号；最终权限校验仍以后端为准。",
+      detail: "请使用具备系统配置权限的管理员账号。",
     };
   }
 
@@ -1082,7 +1082,7 @@ function DepartmentImportApplyResultView({
           type={result.summary.errorCount > 0 ? "warning" : "success"}
           showIcon
           message="部门导入结果"
-          description="结果已脱敏展示。审计记录由后端在部门创建事务中同步写入。"
+          description="结果已脱敏展示，并已记录本次部门创建操作。"
         />
         <Descriptions bordered size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
           <Descriptions.Item label="执行模式">{result.mode}</Descriptions.Item>
@@ -1687,7 +1687,7 @@ function DepartmentOperationModal({
         )}
         {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
         {result?.kind === "disable" ? (
-          <Alert type="success" showIcon message="后端已返回停用影响摘要。" />
+          <Alert type="success" showIcon message="已生成停用影响摘要。" />
         ) : null}
         {isDisable ? <ImpactSummaryView summary={result?.kind === "disable" ? result.impactSummary : null} /> : null}
         <ReasonForm form={form} disabled={Boolean(result)} />
@@ -1720,7 +1720,7 @@ function ImpactSummaryView({ summary }: { summary: DepartmentImpactSummary | nul
           <div className="department-impact-item" key={item.key}>
             <Typography.Text type="secondary">{item.label}</Typography.Text>
             <Typography.Text strong>
-              {summary ? summary[item.key] : "等待后端检查"}
+              {summary ? summary[item.key] : "等待检查"}
             </Typography.Text>
             {item.blocked ? <Tag color="orange">可能阻塞</Tag> : <Tag>历史保留</Tag>}
           </div>

@@ -17,17 +17,17 @@ const forbiddenActionWords = ["创建", "编辑", "删除", "保存", "同步", 
 describe("Step 20B settings boundary", () => {
   it("defines a readonly capability inventory without a settings/config API claim", () => {
     expect(getStep20BSettingsBoundary()).toEqual({
-      title: "系统配置边界 / 只读能力盘点",
+      title: "系统配置能力概览",
       apiStatus: "none",
-      permissionSignal: "系统配置权限只是访问边界信号，不代表已经提供完整配置 API。",
+      permissionSignal: "系统配置权限用于控制配置入口可见性。",
       requestPolicy: "NO_BUSINESS_API_REQUEST",
       unavailableActions: forbiddenActionWords,
       excludedRoutes: [
-        "系统配置业务接口",
-        "角色/部门/字典/预警规则/接口配置维护",
+        "系统配置维护入口",
+        "角色/部门/字典/预警规则维护",
         "附件上传、下载和详情取回",
         "费用凭证附件",
-        "预警业务接口",
+        "预警规则写入",
         "检索日志写入",
         "外部搜索引擎同步",
         "种子数据、迁移或数据清理",
@@ -60,8 +60,8 @@ describe("Step 20B settings boundary", () => {
     settingsCapabilities.forEach((capability) => {
       expect(capability.designGoal.length).toBeGreaterThan(0);
       expect(capability.currentSignal.length).toBeGreaterThan(0);
-      expect(capability.missingContract).toMatch(/尚未/);
-      expect(capability.futureConfirmation).toMatch(/单独|独立|显式/);
+      expect(capability.missingContract.length).toBeGreaterThan(0);
+      expect(capability.futureConfirmation).toMatch(/单独|后续|专门/);
     });
   });
 
@@ -71,9 +71,9 @@ describe("Step 20B settings boundary", () => {
     forbiddenActionWords.forEach((word) => {
       expect(boundary.unavailableActions).toContain(word);
     });
-    expect(boundary.excludedRoutes.join(" ")).toContain("接口配置维护");
+    expect(boundary.excludedRoutes.join(" ")).toContain("系统配置维护入口");
     expect(boundary.excludedRoutes.join(" ")).toContain("附件上传、下载和详情取回");
-    expect(boundary.excludedRoutes.join(" ")).toContain("预警业务接口");
+    expect(boundary.excludedRoutes.join(" ")).toContain("预警规则写入");
     expect(boundary.excludedRoutes.join(" ")).toContain("外部搜索引擎同步");
   });
 
@@ -87,7 +87,7 @@ describe("Step 20B settings boundary", () => {
     expect(serialized).not.toContain("GET /config");
     expect(serialized).not.toContain("已完成 settings/config");
     expect(serialized).not.toContain("真实配置管理已完成");
-    expect(serialized).toContain("不读取环境配置");
+    expect(serialized).toContain("不展示环境配置");
     expect(serialized).toContain("密钥");
   });
 });

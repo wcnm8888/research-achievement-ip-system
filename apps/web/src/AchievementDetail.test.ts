@@ -104,7 +104,7 @@ describe("getReadonlyAchievementErrorState", () => {
     expect(state).toMatchObject({
       kind: "unauthorized",
       status: 401,
-      message: "请选择或切换演示用户",
+      message: "请选择或切换业务用户",
       detail: "检索中心需要有效用户后才能读取成果详情。",
     });
     expect(state.detail).not.toContain("审批上下文");
@@ -430,7 +430,7 @@ describe("Step 19A attachment metadata helpers", () => {
     expect(boundary.allowedRequest).toBe("附件列表");
     expect(boundary.allowedRequest).not.toContain("download");
     expect(boundary.title).toContain("附件管理");
-    expect(boundary.description).toContain("按权限上传和下载");
+    expect(boundary.description).toContain("权限允许时上传和下载");
     expect(boundary.description).toContain("内部存储标识");
     expect(boundary.description).toContain("校验值");
   });
@@ -675,9 +675,9 @@ describe("Step 21A attachment detail metadata helpers", () => {
     const boundary = getAttachmentDetailMetadataReadonlyBoundary();
     const serialized = JSON.stringify(boundary).toLowerCase();
 
-    expect(boundary.allowedRequest).toBe("附件详情");
+    expect(boundary.allowedRequest).toBe("基础信息");
     expect(boundary.allowedRequest).not.toContain("/download");
-    expect(boundary.description).toContain("只展示附件安全摘要");
+    expect(boundary.description).toContain("展示附件基础信息");
     expect(boundary.description).toContain("不提供删除、归档");
     expect(serialized).not.toContain("post ");
     expect(serialized).not.toContain("patch ");

@@ -306,7 +306,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="成果管理"
-          description="选择本地演示用户后，前端才会请求后端成果列表。"
+          description="请选择业务用户后查看成果列表。"
         />
         <PermissionHint
           variant="alert"
@@ -1183,11 +1183,11 @@ const getAchievementImportApplyErrorSummary = (
   const countText =
     failedRows !== null || errorCount !== null || warningCount !== null
       ? `被拒绝行数：${failedRows ?? "未返回"}；错误：${errorCount ?? "未返回"}；警告：${warningCount ?? "未返回"}。`
-      : "后端拒绝了本次导入请求。";
+      : "本次导入请求未通过。";
 
   return {
     message: "导入被拒绝",
-    description: `${countText} 如后端返回安全错误码，页面会一并展示。`,
+    description: `${countText} 如有校验代码，页面会一并展示。`,
     codes,
   };
 };
@@ -1458,7 +1458,7 @@ const createColumns = (
         <Typography.Text strong={!isAchievementTitleRedacted(item)}>
           {getAchievementDisplayTitle(item)}
         </Typography.Text>
-        {item.isRedacted ? <Tag color="warning">后端脱敏</Tag> : null}
+        {item.isRedacted ? <Tag color="warning">已脱敏</Tag> : null}
       </Space>
     ),
   },
@@ -1545,7 +1545,7 @@ const renderEditAction = (
 
   if (canSeeRejectedDraftEditBoundary(authUser, item)) {
     return (
-      <Tooltip title="当前后端暂不支持驳回后编辑">
+      <Tooltip title="当前状态暂不支持编辑">
         <Button disabled size="small" type="link">
           编辑
         </Button>

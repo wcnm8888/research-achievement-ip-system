@@ -180,7 +180,7 @@ export const getWorkflowTaskLinkedAchievementState = (
       available: false,
       achievementId: null,
       message: "未返回流程目标信息",
-      description: "后端未返回流程实例目标，当前审批任务不能打开关联成果详情。",
+      description: "当前审批任务缺少关联目标，不能打开关联成果详情。",
     };
   }
 
@@ -200,7 +200,7 @@ export const getWorkflowTaskLinkedAchievementState = (
       available: false,
       achievementId: null,
       message: "缺少关联成果 ID",
-      description: "后端未返回可用 targetId，前端不会构造或猜测成果 ID。",
+      description: "当前审批任务缺少可用目标，不能打开关联成果详情。",
     };
   }
 
@@ -251,7 +251,7 @@ export const mapWorkflowErrorToDisplay = (error: unknown): WorkflowErrorDisplay 
   }
 
   if (apiError.status === 401) {
-    return { title: "请选择或切换演示用户", description: apiError.detail };
+    return { title: "请选择或切换业务用户", description: apiError.detail };
   }
 
   if (apiError.status === 403) {

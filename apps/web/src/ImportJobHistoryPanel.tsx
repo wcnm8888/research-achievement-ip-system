@@ -198,7 +198,7 @@ export function ImportJobHistoryPanelView({
     >
       <Space direction="vertical" size={12} className="import-job-history-stack">
         <Typography.Text type="secondary">
-          只读导入记录。系统配置权限仍由后端校验。
+          只读导入记录。当前账号仅可查看权限范围内的导入任务。
         </Typography.Text>
 
         {list.loading ? (
@@ -288,7 +288,7 @@ export function ImportJobHistoryDetailView({
           {detail.data.createdCompanionCount}
         </Descriptions.Item>
         <Descriptions.Item label="审计记录数">{detail.data.auditCount}</Descriptions.Item>
-        <Descriptions.Item label="安全错误码" span={2}>
+        <Descriptions.Item label="处理代码" span={2}>
           {renderSafeErrorCodes(detail.data)}
         </Descriptions.Item>
         <Descriptions.Item label="创建时间">{formatImportJobTimestamp(detail.data.createdAt)}</Descriptions.Item>
@@ -634,7 +634,7 @@ const buildImportJobHistoryColumns = (
       `受理 ${row.acceptedRowCount} / 业务 ${row.createdBusinessCount} / 伴随 ${row.createdCompanionCount} / 审计 ${row.auditCount}`,
   },
   {
-    title: "安全错误码",
+    title: "处理代码",
     key: "safeErrorCode",
     render: (_, row) => renderSafeErrorCodes(row),
   },
@@ -745,7 +745,7 @@ export const importJobItemHistoryColumns: TableProps<ImportJobItemHistoryRow>["c
     render: (value: string) => <Tag color={getStatusTagColor(value)}>{getImportStatusLabel(value)}</Tag>,
   },
   {
-    title: "安全错误码",
+    title: "处理代码",
     dataIndex: "safeCode",
     key: "safeCode",
     render: (value?: string | null) => value ?? "未返回",

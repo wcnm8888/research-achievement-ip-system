@@ -170,7 +170,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="审计日志"
-          description="选择本地演示用户后，前端才会请求后端脱敏只读审计日志。"
+          description="请选择业务用户后查看脱敏审计日志。"
         />
         <PermissionHint
           variant="alert"
@@ -430,7 +430,7 @@ export const getAuditLogListState = (
 
 export const mapAuditLogErrorToDisplay = (error: ApiError): ApiError => {
   if (error.status === 401 || error.kind === "unauthorized") {
-    return { ...error, message: "请选择或切换演示用户" };
+    return { ...error, message: "请选择或切换业务用户" };
   }
 
   if (error.status === 403 || error.kind === "forbidden") {

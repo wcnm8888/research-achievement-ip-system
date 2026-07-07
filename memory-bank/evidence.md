@@ -19000,6 +19000,49 @@
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
 
+## 2026-07-07 Step 148 - Authenticated deep UI copy polish evidence
+
+- Result: PASS with caveat.
+- Source scope:
+  - Web-only copy/style/test updates.
+  - No API behavior, permission guard, Prisma schema, migration, or seed change.
+- Key implementation evidence:
+  - Added `.business-note` for compact business guidance.
+  - Reworded fees, search, achievement detail/form, import history, account,
+    department, audit, dashboard, and settings surfaces from development or
+    acceptance language to client-facing business language.
+  - Changed visible import-history `安全错误码` labels to `处理代码`.
+- Verification evidence:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievements AchievementDetail AchievementForm WorkflowTasks Fees Search Dashboard AuditLogs SettingsApiIntegrations SettingsBoundary ImportJobHistoryPanel AccountManagement DepartmentManagement`: PASS, 15 files / 296 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Local Docker evidence:
+  - `docker compose -f docker-compose.production.yml build web`: PASS.
+  - `docker compose -f docker-compose.production.yml up -d --no-deps web`: PASS.
+  - `GET http://127.0.0.1:18081`: 200.
+  - Active assets: `index-CN6K6Z45.js`, `index-CAZwwqOa.css`.
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - Docker orphan warning was observed and not cleaned.
+- Browser evidence:
+  - User manually logged in through the visible local browser.
+  - Screenshot sweep captured workbench, achievements, achievement form/detail,
+    workflow, fees, fee detail, search, search detail, dashboard, custom
+    reports, audit logs, settings, secret authorization, account management,
+    account create/detail, and department management.
+  - Screenshot evidence directory:
+    `.local-step148-client-facing-deep-polish/`.
+  - Caveat: the automated browser sweep timed out before writing JSON summary;
+    screenshots were still produced.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, API key, secret, or browser
+    credential was read, displayed, logged, or committed.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker prune, volume deletion, `down -v`, orphan cleanup, local file
+    deletion, or untracked artifact cleanup.
+  - This is local Docker production-like / synthetic UI polish acceptance, not
+    production acceptance.
+
 ## 2026-07-07 Step 139 - Client-facing freeze readiness audit evidence
 
 - Canonical state checked before the docs-only audit:

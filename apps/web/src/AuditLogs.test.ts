@@ -206,7 +206,7 @@ describe("audit log display boundary", () => {
 
   it("maps 401, 403, 400, 500, and network errors to page-specific copy", () => {
     const cases: Array<[ApiError, string]> = [
-      [{ kind: "unauthorized", status: 401, message: "请选择用户" }, "请选择或切换演示用户"],
+      [{ kind: "unauthorized", status: 401, message: "请选择用户" }, "请选择或切换业务用户"],
       [{ kind: "forbidden", status: 403, message: "无权限" }, "当前角色无审计日志读取权限"],
       [{ kind: "bad-request", status: 400, message: "参数错误" }, "审计日志筛选条件格式不正确"],
       [{ kind: "server", status: 500, message: "服务不可用" }, "审计日志服务暂不可用"],

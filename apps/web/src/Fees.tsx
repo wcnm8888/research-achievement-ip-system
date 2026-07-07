@@ -168,7 +168,7 @@ const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
 export const feeVoucherAttachmentBoundary = {
   title: "费用凭证附件",
   description:
-    "本区块绑定当前费用记录，可读取费用凭证附件安全摘要、上传多个文件并按权限下载；权限、范围与脱敏仍以后端为准。",
+    "本区块展示当前费用记录关联的凭证附件，可查看附件信息并在权限允许时上传或下载。",
 };
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
@@ -431,7 +431,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
             loading: false,
             error: mapFeeMutationErrorToDisplay({
               kind: "unauthorized",
-              message: "请选择演示用户后再创建费用",
+              message: "请选择业务用户后再创建费用",
             }),
             successMessage: null,
           });
@@ -476,7 +476,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
             loading: false,
             error: mapFeeMutationErrorToDisplay({
               kind: "unauthorized",
-              message: "请选择演示用户后再标记缴费",
+              message: "请选择业务用户后再标记缴费",
             }),
             successMessage: null,
           });
@@ -525,7 +525,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
             loading: false,
             error: mapFeeMutationErrorToDisplay({
               kind: "unauthorized",
-              message: "请选择演示用户后再变更费用状态",
+              message: "请选择业务用户后再变更费用状态",
             }),
             successMessage: null,
           });
@@ -587,7 +587,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
             loading: false,
             error: mapFeeMutationErrorToDisplay({
               kind: "unauthorized",
-              message: "请选择演示用户后再执行费用审核",
+              message: "请选择业务用户后再执行费用审核",
             }),
             successMessage: null,
           });
@@ -640,7 +640,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="费用管理"
-          description="选择本地演示用户后，前端才会请求后端费用台账。"
+          description="请选择业务用户后查看费用台账。"
         />
         <PermissionHint
           variant="alert"
@@ -648,7 +648,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         />
         <BoundaryNotice
           title="等待演示上下文"
-          description="当前无用户时不发业务请求，也不触发费用写入或凭证附件请求；选择具备费用权限的上下文后才读取后端数据。"
+          description="选择具备费用权限的用户后即可查看费用台账。"
           step="费用管理"
         />
       </Space>
@@ -679,7 +679,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
       />
       <PermissionHint description="当前账号可查看费用台账、凭证附件和预警摘要。" />
 
-      <Card className="shell-card" title="基础预警摘要" extra={<Tag>前端派生</Tag>}>
+      <Card className="shell-card" title="基础预警摘要" extra={<Tag>页面摘要</Tag>}>
         <Row gutter={[16, 16]}>
           <Col xs={12} lg={6}>
             <Statistic title="当前列表" value={summary.total} suffix="条" />
@@ -703,7 +703,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         </Typography.Paragraph>
       </Card>
 
-      <Card className="shell-card" title="预警列表 / 分组" extra={<Tag>前端派生</Tag>}>
+      <Card className="shell-card" title="预警列表 / 分组" extra={<Tag>页面摘要</Tag>}>
         <Typography.Paragraph type="secondary" className="card-note">
           分组基于当前费用列表的截止日期和缴费状态计算。
         </Typography.Paragraph>
@@ -1061,22 +1061,22 @@ function FeeDetailContent({
 
   return (
     <Space direction="vertical" size={16} className="full-width">
-      <Alert
-        showIcon
-        type="info"
-        message={mode === "search-readonly" ? "检索中心只读费用详情" : "只读费用详情"}
-        description={
-          mode === "search-readonly"
-            ? "本区域只展示费用详情和可读附件摘要，不提供标记缴费、新增费用或其他写入入口。"
-            : "本区域只展示后端已返回字段与费用凭证附件安全摘要；费用写入、附件下载和范围判断均以后端权限为准。"
-        }
-      />
-      <Alert
-        showIcon
-        type="info"
-        message={feeVoucherAttachmentBoundary.title}
-        description={feeVoucherAttachmentBoundary.description}
-      />
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          {mode === "search-readonly" ? "费用详情" : "费用详情"}
+        </Typography.Text>
+        <Typography.Text type="secondary">
+          {mode === "search-readonly"
+            ? "本区域展示费用详情和可读附件信息；如需办理缴费或状态变更，请进入费用管理。"
+            : "本区域展示费用基础信息、审核记录和凭证附件；可用操作会按当前账号权限展示。"}
+        </Typography.Text>
+      </div>
+      <div className="business-note">
+        <Typography.Text strong className="business-note-title">
+          {feeVoucherAttachmentBoundary.title}
+        </Typography.Text>
+        <Typography.Text type="secondary">{feeVoucherAttachmentBoundary.description}</Typography.Text>
+      </div>
       <Divider orientation="left">基础字段</Divider>
       <Descriptions bordered column={2} size="small">
         <Descriptions.Item label="费用 ID">{record.id}</Descriptions.Item>
@@ -1133,7 +1133,7 @@ function FeeDetailContent({
           showIcon
           type="warning"
           message="可标记缴费"
-          description="该费用当前处于待缴或逾期状态，可打开标记缴费表单；真实提交由用户显式操作触发，附件能力在上方独立区块处理。"
+          description="该费用当前处于待缴或逾期状态，可打开标记缴费表单。"
           action={
             <Button size="small" onClick={() => onOpenMarkPaid?.(record)}>
               标记缴费
@@ -1144,8 +1144,8 @@ function FeeDetailContent({
         <Alert
           showIcon
           type="info"
-          message="检索中心只读边界"
-          description="本视图只补齐费用检索结果的只读详情联动；标记缴费、创建费用、预警接口、审计日志和系统配置均不在本步范围内。"
+          message="只读查看"
+          description="本视图仅用于查看费用详情；标记缴费、创建费用和状态变更请进入费用管理。"
         />
       ) : (
         <Alert
@@ -1161,7 +1161,7 @@ function FeeDetailContent({
           showIcon
           type="info"
           message="可变更为减免或取消"
-          description="仅待缴或逾期费用可执行减免/取消；原因必填，状态变更会写入审计 payload。"
+          description="仅待缴或逾期费用可执行减免或取消；提交时需要填写原因。"
           action={
             <Space>
               <Button size="small" onClick={() => onOpenStatusAction?.("waive", record)}>
@@ -1249,7 +1249,7 @@ function FeeReviewHistorySection({
           showIcon
           type="info"
           message="只读审核历史"
-          description="展示审核动作、状态变化、原因、审核人和时间；历史由后端审核流程自动写入。"
+          description="展示审核动作、状态变化、原因、审核人和时间。"
         />
         <DataState
           loading={history.loading}
@@ -1348,7 +1348,7 @@ function FeeReviewWorkflowTaskSection({
           }
           description={
             showReviewActions
-              ? "通过和驳回仍复用现有费用审核能力；后端会在同一事务内完成对应流程任务。"
+              ? "通过和驳回将同步完成对应审批任务。"
               : "只有当前用户拥有该费用记录的待处理费用审核任务时，才显示审核操作。"
           }
           action={
@@ -1576,7 +1576,7 @@ function FeeVoucherAttachmentSection({
             message={mode === "search-readonly" ? "只读附件视图" : "附件上传入口未开放"}
             description={
               mode === "search-readonly"
-                ? "当前入口只展示后端允许读取的费用凭证附件安全摘要，下载结果仍由后端权限判断。"
+                ? "当前入口只展示可查看的费用凭证附件信息。"
                 : "只有具备费用管理权限并处于对应范围内的用户才显示上传入口；审核用户默认只读。"
             }
           />
@@ -1586,14 +1586,14 @@ function FeeVoucherAttachmentSection({
             showIcon
             type="warning"
             message="等待可读上下文"
-            description="未选择演示用户或当前账号缺少费用可读权限时，不读取费用凭证附件安全摘要。"
+            description="未选择业务用户或当前账号缺少费用查看权限时，不读取费用凭证附件信息。"
           />
         ) : (
           <DataState
             loading={attachments.loading}
             error={attachments.error}
             empty={!attachments.loading && !attachments.error && items.length === 0}
-            emptyText="未返回费用凭证附件安全摘要"
+            emptyText="暂无费用凭证附件"
             onRetry={() => void loadAttachments()}
           >
             <FeeVoucherAttachmentList
@@ -1692,7 +1692,7 @@ function FeeVoucherAttachmentUploadPanel({
           </Button>
         </Space>
         <Typography.Text type="secondary">
-          支持 PDF、PNG、JPG、DOC、DOCX、XLS、XLSX；单个文件不超过 10 MB。前端预检仅改善交互，最终以后端校验为准。
+          支持 PDF、PNG、JPG、DOC、DOCX、XLS、XLSX；单个文件不超过 10 MB。上传前会先检查文件格式和大小。
         </Typography.Text>
         {file ? (
           <Typography.Text type={fileValidation?.ok ? "secondary" : "danger"}>
@@ -1840,7 +1840,7 @@ function FeeVoucherAttachmentDetailPanel({
           <Space direction="vertical" size={2}>
             <Typography.Text strong>费用凭证附件详情摘要</Typography.Text>
             <Typography.Text type="secondary">
-              费用凭证附件详情
+              附件基础信息
             </Typography.Text>
           </Space>
           <Button size="small" onClick={onClose}>
@@ -1852,14 +1852,14 @@ function FeeVoucherAttachmentDetailPanel({
             showIcon
             type="warning"
             message="等待可读上下文"
-            description="未选择演示用户或缺少附件 ID 时，不读取费用凭证附件详情摘要。"
+            description="未选择业务用户或缺少附件 ID 时，不读取费用凭证附件详情。"
           />
         ) : (
           <DataState
             loading={detail.loading}
             error={detail.error}
             empty={!detail.loading && !detail.error && !detail.data}
-            emptyText="未返回费用凭证附件详情摘要"
+            emptyText="暂无费用凭证附件详情"
             onRetry={() => void loadDetail()}
           >
             {model ? <FeeVoucherAttachmentDetailContent model={model} /> : null}
@@ -2995,7 +2995,7 @@ export const groupFeeWarnings = (
     {
       key: "overdue",
       title: "逾期",
-      description: "后端状态为逾期，或待缴且截止日期早于今天。",
+      description: "费用已逾期，或处于待缴且截止日期早于今天。",
       records: grouped.overdue,
       color: "error",
     },
@@ -3182,7 +3182,7 @@ export const mapFeeDetailErrorToDisplay = (error: ApiError): ApiError => {
     return {
       ...error,
       message: "当前用户无权查看该费用详情",
-      detail: error.detail ?? "请切换具备费用读取权限的演示用户后重试。",
+      detail: error.detail ?? "请切换具备费用读取权限的业务用户后重试。",
     };
   }
 
@@ -3213,7 +3213,7 @@ export const mapFeeReviewHistoryErrorToDisplay = (error: ApiError): ApiError => 
     return {
       ...error,
       message: "当前用户无权查看审核历史",
-      detail: error.detail ?? "请切换到具备费用读取、管理或审核权限的演示用户后重试。",
+      detail: error.detail ?? "请切换到具备费用读取、管理或审核权限的业务用户后重试。",
     };
   }
 
@@ -3283,7 +3283,7 @@ export const mapFeeMutationErrorToDisplay = (error: ApiError): ApiError => {
     return {
       ...error,
       message: "当前用户无权执行费用写操作",
-      detail: error.detail ?? "请切换具备费用管理权限的演示用户后重试。",
+      detail: error.detail ?? "请切换具备费用管理权限的业务用户后重试。",
     };
   }
 

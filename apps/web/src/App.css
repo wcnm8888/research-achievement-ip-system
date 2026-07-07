@@ -152,6 +152,18 @@ body {
   border-radius: 6px;
 }
 
+.business-note {
+  padding: 10px 12px;
+  background: #f7fafc;
+  border: 1px solid #e6ebf0;
+  border-radius: 6px;
+}
+
+.business-note-title {
+  display: block;
+  margin-bottom: 4px;
+}
+
 .boundary-notice {
   padding: 14px;
   background: #ffffff;

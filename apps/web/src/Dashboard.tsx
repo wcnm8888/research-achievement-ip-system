@@ -96,7 +96,7 @@ export function Dashboard({ demoUserId }: DashboardProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="统计看板"
-          description="请选择本地演示用户后读取本地评分口径统计摘要。"
+          description="请选择业务用户后查看统计摘要。"
         />
         <PermissionHint
           variant="alert"

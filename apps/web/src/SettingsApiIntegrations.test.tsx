@@ -59,7 +59,7 @@ describe("settings api integrations permission boundary", () => {
     );
 
     expect(html).toContain("当前账号无权访问系统接口配置。");
-    expect(html).toContain("没有权限时，前端不会请求接口配置数据");
+    expect(html).toContain("请使用具备系统配置权限的管理员账号。");
     expect(fetchMock).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();

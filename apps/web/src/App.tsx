@@ -634,11 +634,11 @@ function LegacyDemoApp() {
           <Typography.Text type="secondary">科研成果与知识产权管理平台</Typography.Text>
         </div>
         <div className="identity-bar">
-          <Tag color="gold">本地演示上下文 / 非真实 SSO</Tag>
+          <Tag color="gold">业务用户上下文</Tag>
           <Select
             className="demo-user-select"
             allowClear
-            placeholder="选择演示用户"
+            placeholder="选择业务用户"
             value={demoUserId ?? undefined}
             onChange={(value) => updateDemoUser(value ?? null)}
             options={demoUserPresets.map((preset) => ({
@@ -662,7 +662,7 @@ function LegacyDemoApp() {
           <div className="user-panel">
             <Typography.Text type="secondary">当前用户</Typography.Text>
             <Typography.Text strong ellipsis>
-              {activeUser?.label ?? (demoUserId ? "自定义演示用户" : "未选择")}
+              {activeUser?.label ?? (demoUserId ? "自定义业务用户" : "未选择")}
             </Typography.Text>
             <Typography.Text type="secondary" ellipsis>
               {activeUser?.department ?? demoUserId ?? "请选择演示上下文"}

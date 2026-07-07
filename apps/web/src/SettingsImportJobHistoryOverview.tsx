@@ -278,7 +278,7 @@ export function SettingsImportJobHistoryOverviewView({
     >
       <Space direction="vertical" size={12} className="full-width">
         <Typography.Text type="secondary">
-          这里展示导入任务历史的只读索引，后端权限校验仍是最终边界。
+          这里展示导入任务历史的只读索引，当前账号仅可查看权限范围内的记录。
         </Typography.Text>
 
         <Space className="settings-import-history-filter-bar" size={12} wrap>
@@ -483,7 +483,7 @@ const createSettingsImportJobHistoryColumns = (
     width: 120,
   },
   {
-    title: "安全错误码",
+    title: "处理代码",
     key: "safeErrorCode",
     width: 180,
     render: (_, row) => renderSafeErrorCodes(row),

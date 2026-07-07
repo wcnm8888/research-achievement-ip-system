@@ -404,7 +404,7 @@ export function SettingsApiIntegrations({
             status: 403,
             message: "当前账号无权访问系统接口配置。",
             detail:
-              "请使用具备系统配置权限的管理员账号；没有权限时，前端不会请求接口配置数据。",
+              "请使用具备系统配置权限的管理员账号。",
           }}
         >
           <span />
@@ -1097,7 +1097,7 @@ function ApiIntegrationDetailView({
         type="info"
         showIcon
         message="仅维护元数据"
-        description="配置引用是后端运行配置的查找名称，请勿在此输入供应商凭证或运行密钥。"
+        description="配置引用用于匹配运行配置，请勿在此输入供应商凭证或运行密钥。"
       />
 
       <Card className="shell-card" title="操作">
@@ -1203,7 +1203,7 @@ function ApiIntegrationFormDrawer({
           <Form.Item
             label="配置引用名称"
             name="configRef"
-            extra="仅填写非敏感引用名称；如未分配后端引用可留空。"
+            extra="仅填写非敏感引用名称；如未分配引用可留空。"
             rules={[
               {
                 pattern: /^[A-Za-z0-9_.:/-]+$/,

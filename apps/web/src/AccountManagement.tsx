@@ -1009,7 +1009,7 @@ export const mapUserAccountImportApplyErrorToDisplay = (error: ApiError): ApiErr
     return {
       ...error,
       message: "账号导入需要系统配置权限",
-      detail: "请使用具备系统配置权限的管理员账号；最终权限校验仍以后端为准。",
+      detail: "请使用具备系统配置权限的管理员账号。",
     };
   }
 
@@ -2602,7 +2602,7 @@ function DepartmentSelectorBoundary({ error }: { error: ApiError | null }) {
       type="warning"
       showIcon
       message="无法加载启用部门选项"
-      description="账号绑定仍由后端校验；请稍后刷新后再选择部门。"
+      description="账号绑定暂不可用；请稍后刷新后再选择部门。"
     />
   );
 }

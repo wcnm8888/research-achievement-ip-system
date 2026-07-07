@@ -254,7 +254,7 @@ export function Search({ demoUserId }: SearchProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="检索中心"
-          description="选择本地演示用户后，前端才会请求后端检索接口。"
+          description="请选择业务用户后使用检索中心。"
         />
         <PermissionHint
           variant="alert"
@@ -402,13 +402,14 @@ export function Search({ demoUserId }: SearchProps) {
         }
       >
         <SearchSummaryPanel summary={summary} filters={filterSummary} />
-        <Alert
-          className="search-detail-boundary"
-          type="info"
-          showIcon
-          message="只读详情边界"
-          description="检索结果可联动查看只读详情，不在检索页提供费用写入、附件操作或系统日志入口。"
-        />
+        <div className="business-note search-detail-boundary">
+          <Typography.Text strong className="business-note-title">
+            详情查看
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            可从检索结果打开成果或费用详情；办理缴费、附件维护和日志查询请进入对应功能。
+          </Typography.Text>
+        </div>
         <DataState
           loading={searchState.loading}
           error={searchState.error}
@@ -551,7 +552,7 @@ export const mapSearchErrorToDisplay = (error: ApiError): ApiError => {
   }
 
   if (error.status === 401 || error.kind === "unauthorized") {
-    return { ...error, message: "请选择或切换演示用户" };
+    return { ...error, message: "请选择或切换业务用户" };
   }
 
   if (error.status === 403 || error.kind === "forbidden") {
@@ -627,7 +628,7 @@ export const buildSearchFilterSummary = (filters: SearchFilters): string[] => {
   const labels = [
     trimmed.keyword ? `关键词：${trimmed.keyword}` : "关键词：全部",
     `结果类型：${getTargetTypesSummaryLabel(targetTypes)}`,
-    targetTypes && targetTypes.length > 1 ? "目标类型：前端 request shaping，不证明后端搜索语义" : null,
+    targetTypes && targetTypes.length > 1 ? "目标类型：多类型组合" : null,
     trimmed.achievementType
       ? `成果类型：${achievementTypeLabels[trimmed.achievementType] ?? trimmed.achievementType}`
       : null,
@@ -772,14 +773,14 @@ const AchievementResultCard = ({
           <Tag>{achievementTypeLabels[item.type] ?? item.type}</Tag>
           <Tag>{achievementStatusLabels[item.status] ?? item.status}</Tag>
           <Tag>{secretLevelLabels[item.secretLevel] ?? item.secretLevel}</Tag>
-          {item.redacted ? <Tag color="warning">后端脱敏</Tag> : null}
+          {item.redacted ? <Tag color="warning">已脱敏</Tag> : null}
         </Space>
         {display.redacted ? (
           <Alert
             className="search-redacted-alert"
             type="warning"
             showIcon
-            message="成果标题和标识符已由后端脱敏"
+            message="成果标题和标识符已脱敏"
           />
         ) : (
           <Typography.Title level={5}>{display.title ?? "未返回标题"}</Typography.Title>
@@ -825,7 +826,7 @@ const FeeResultCard = ({
         </Space>
         <Typography.Title level={5}>费用记录 {display.id}</Typography.Title>
         <Typography.Text type="secondary">
-          费用检索结果仅展示后端返回的只读索引字段。
+          费用检索结果仅展示可查看的索引字段。
         </Typography.Text>
       </div>
       <div className="search-result-meta">

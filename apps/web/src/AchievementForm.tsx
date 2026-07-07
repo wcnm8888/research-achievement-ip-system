@@ -267,10 +267,10 @@ export function AchievementForm({
         <Alert
           showIcon
           type="info"
-          message="表单边界"
+          message="填写说明"
           description={
             isEdit
-              ? "当前后端只支持编辑 DRAFT 草稿，且 PATCH 不支持更新 contributors；贡献人信息仅作只读展示。"
+              ? "当前仅支持修改草稿基础信息；贡献人信息在编辑时只读展示。"
               : "创建草稿时，所属部门由系统根据当前用户上下文确定。"
           }
         />
@@ -433,7 +433,7 @@ function ContributorFields({ readonly }: { readonly: boolean }) {
               showIcon
               type="warning"
               message="贡献人只读"
-              description="当前后端 PATCH 不支持更新 contributors，本表单不会提交贡献人变更。"
+              description="编辑草稿时贡献人信息只读展示，本次保存不会变更贡献人。"
             />
           ) : null}
           {fields.map((field) => (

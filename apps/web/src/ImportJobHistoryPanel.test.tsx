@@ -312,7 +312,7 @@ describe("ImportJobHistoryPanel", () => {
     expect(listHtml).toContain("行号");
     expect(listHtml).toContain("计划动作");
     expect(listHtml).toContain("状态");
-    expect(listHtml).toContain("安全错误码");
+    expect(listHtml).toContain("处理代码");
     expect(listHtml).toContain("目标类型");
     expect(listHtml).toContain("CREATE_DRAFT");
     expect(listHtml).toContain("SUCCESS");

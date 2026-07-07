@@ -256,7 +256,7 @@ export const mapApiErrorMessage = (status?: number): Pick<ApiError, "kind" | "me
   if (status === 401) {
     return {
       kind: "unauthorized",
-      message: "请选择或切换演示用户",
+      message: "请选择或切换业务用户",
     };
   }
 

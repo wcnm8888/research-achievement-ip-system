@@ -15503,3 +15503,51 @@
     deletion.
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
+
+## 2026-07-07 Step 148 - Authenticated deep UI copy polish
+
+- Status: PASS with caveat.
+- Goal:
+  - Continue Step 147 by polishing authenticated deep UI surfaces: drawers,
+    detail panels, import history, selected forms, and selected modal guidance.
+- Web changes:
+  - Added compact `.business-note` guidance styling.
+  - Reworked fee detail, voucher attachment, search detail, achievement detail,
+    achievement form, import history, account, department, audit, dashboard, and
+    settings copy to remove ordinary development/acceptance wording.
+  - Renamed visible import-history `安全错误码` labels to `处理代码`.
+  - Updated affected Web tests to assert the new client-facing copy.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App Achievements AchievementDetail AchievementForm WorkflowTasks Fees Search Dashboard AuditLogs SettingsApiIntegrations SettingsBoundary ImportJobHistoryPanel AccountManagement DepartmentManagement`: PASS, 15 files / 296 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Local Docker refresh:
+  - Rebuilt and replaced compose-managed `web` only.
+  - Active web assets on `http://127.0.0.1:18081`: `index-CN6K6Z45.js` and
+    `index-CAZwwqOa.css`.
+  - `GET http://127.0.0.1:14001/api/health`: 200.
+  - Existing Docker orphan warning was recorded but not cleaned.
+- Browser evidence:
+  - User manually logged in through the visible local browser.
+  - Screenshot sweep captured workbench, achievements, achievement form/detail,
+    workflow, fees, fee detail, search, search detail, dashboard, custom
+    reports, audit logs, settings, secret authorization, account management,
+    account create/detail, and department management.
+  - Evidence directory:
+    `.local-step148-client-facing-deep-polish/`.
+- Caveat:
+  - The automated browser sweep timed out before writing a JSON summary, though
+    screenshots were produced.
+  - This does not prove every possible validation error, paginated row, or nested
+    modal in the whole app is exhaustively polished.
+- Boundary:
+  - No API behavior, guards, permissions, Prisma schema, migration, or seed data
+    changed.
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, or secret was read, displayed,
+    logged, or committed.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker prune, volume deletion, `down -v`, orphan cleanup, or local file
+    deletion.
+  - This is local Docker production-like / synthetic UI polish acceptance, not
+    production acceptance.

@@ -578,22 +578,22 @@ export const shouldLoadAttachmentDetailMetadata = (
 export const getAttachmentMetadataReadonlyBoundary = () => ({
   title: "附件管理",
   description:
-    "本区域仅展示附件安全摘要，支持按权限上传和下载；不展示内部存储标识、校验值、真实路径或文件内容。",
+    "本区域展示附件基础信息，可在权限允许时上传和下载；不展示内部存储标识、校验值、真实路径或文件内容。",
   allowedRequest: "附件列表",
 });
 
 export const getAttachmentDetailMetadataReadonlyBoundary = () => ({
-  title: "附件详情只读",
+  title: "附件详情",
   description:
-    "本详情只展示附件安全摘要字段；不提供删除、归档、版本变更、对象存储路径或文件内容能力。",
-  allowedRequest: "附件详情",
+    "本详情展示附件基础信息；不提供删除、归档、版本变更、对象存储路径或文件内容。",
+  allowedRequest: "基础信息",
 });
 
 export const mapAttachmentMetadataErrorToDisplay = (error: ApiError): ApiError => {
   if (error.status === 401 || error.kind === "unauthorized") {
     return {
       ...error,
-      message: "请选择或切换演示用户",
+      message: "请选择或切换业务用户",
       detail: error.detail ?? "附件安全摘要需要有效用户上下文后才能读取。",
     };
   }
@@ -602,7 +602,7 @@ export const mapAttachmentMetadataErrorToDisplay = (error: ApiError): ApiError =
     return {
       ...error,
       message: "当前角色无附件安全摘要读取权限",
-      detail: error.detail ?? "附件权限由后端控制，前端不会绕过授权策略。",
+      detail: error.detail ?? "当前账号没有查看该附件信息的权限。",
     };
   }
 
@@ -618,7 +618,7 @@ export const mapAttachmentMetadataErrorToDisplay = (error: ApiError): ApiError =
     return {
       ...error,
       message: "附件安全摘要服务暂不可用",
-      detail: error.detail ?? "请稍后重试；前端不会显示假附件数据。",
+      detail: error.detail ?? "请稍后重试。",
     };
   }
 
@@ -642,7 +642,7 @@ export const mapAttachmentDetailMetadataErrorToDisplay = (
   if (error.status === 401 || error.kind === "unauthorized") {
     return {
       ...error,
-      message: "请选择或切换演示用户",
+      message: "请选择或切换业务用户",
       detail: error.detail ?? "附件详情摘要需要有效用户上下文后才能读取。",
     };
   }
@@ -652,7 +652,7 @@ export const mapAttachmentDetailMetadataErrorToDisplay = (
       ...error,
       message: "当前角色无附件详情摘要读取权限",
       detail:
-        error.detail ?? "附件详情权限由后端控制，前端不会绕过授权策略。",
+        error.detail ?? "当前账号没有查看该附件详情的权限。",
     };
   }
 
@@ -668,7 +668,7 @@ export const mapAttachmentDetailMetadataErrorToDisplay = (
     return {
       ...error,
       message: "附件详情摘要服务暂不可用",
-      detail: error.detail ?? "请稍后重试；前端不会显示假附件详情。",
+      detail: error.detail ?? "请稍后重试。",
     };
   }
 
@@ -772,7 +772,7 @@ export const mapAttachmentDownloadErrorToDisplay = (error: ApiError): ApiError =
   if (error.status === 401 || error.kind === "unauthorized") {
     return {
       ...error,
-      message: "请选择或切换演示用户",
+      message: "请选择或切换业务用户",
       detail: error.detail ?? "附件下载需要有效用户上下文。",
     };
   }
@@ -781,7 +781,7 @@ export const mapAttachmentDownloadErrorToDisplay = (error: ApiError): ApiError =
     return {
       ...error,
       message: "当前角色无附件下载权限",
-      detail: error.detail ?? "下载权限由后端控制，前端不会绕过授权策略。",
+      detail: error.detail ?? "当前账号没有下载该附件的权限。",
     };
   }
 
@@ -821,7 +821,7 @@ export const getReadonlyAchievementErrorState = (
     return {
       kind: error.kind,
       status: error.status,
-      message: "请选择或切换演示用户",
+      message: "请选择或切换业务用户",
       detail: `${labels.sourceName}需要有效用户后才能读取成果详情。`,
     };
   }
@@ -831,7 +831,7 @@ export const getReadonlyAchievementErrorState = (
       kind: error.kind,
       status: error.status,
       message: `当前账号无权查看${labels.shortObjectName}`,
-      detail: "权限与脱敏由后端控制，前端不会绕过授权策略。",
+      detail: "当前账号没有查看该成果详情的权限。",
     };
   }
 
@@ -849,7 +849,7 @@ export const getReadonlyAchievementErrorState = (
       kind: error.kind,
       status: error.status,
       message: "成果详情服务暂不可用",
-      detail: "请稍后重试；前端不会显示假数据或本地拼装详情。",
+      detail: "请稍后重试。",
     };
   }
 
@@ -866,7 +866,7 @@ export const getReadonlyAchievementErrorState = (
     kind: error.kind,
     status: error.status,
     message: `无法读取${labels.shortObjectName}详情`,
-    detail: "请稍后重试，或联系管理员查看后端服务状态。",
+    detail: "请稍后重试，或联系管理员查看服务状态。",
   };
 };
 
@@ -988,26 +988,26 @@ const getDetailContentReadonlyLabels = (mode: DetailContentMode) => {
   if (mode === "search-readonly") {
     return {
       permissionDescription:
-        "检索中心只读查看成果详情；权限、脱敏和返回字段均以后端详情接口为准。",
+        "检索中心可查看当前账号权限范围内的成果详情。",
       noticeMessage: "检索中心只读",
       noticeDescription:
         "本视图不提供成果提交、作废或归档动作；检索结果只负责打开当前用户可读取的成果详情。",
-      boundaryMessage: "只读详情边界",
+      boundaryMessage: "详情查看",
       boundaryDescription:
-        "本视图只补齐检索中心成果结果的只读详情联动，不实现费用详情联动、搜索日志、外部搜索引擎、附件、统计看板或审计日志。",
+        "本视图用于查看成果详情；费用、日志和统计请进入对应功能。",
     };
   }
 
   if (mode === "approval-readonly") {
     return {
       permissionDescription:
-        "审批上下文只读查看关联成果；权限、脱敏和返回字段均以后端详情接口为准。",
+        "审批上下文可查看当前账号权限范围内的关联成果。",
       noticeMessage: "审批上下文只读",
       noticeDescription:
         "本视图不提供成果提交、作废或归档动作；审批处理仍在审批待办详情中完成。",
-      boundaryMessage: "审批上下文边界",
+      boundaryMessage: "关联成果",
       boundaryDescription:
-        "本视图只补齐审批任务联动成果详情的只读基础，不实现审批历史、审计日志、附件、费用、搜索或看板。",
+        "本视图用于查看审批任务关联成果；审批处理仍在待办详情中完成。",
     };
   }
 
@@ -1173,8 +1173,8 @@ function AchievementConversionSection({
         <Alert
           showIcon
           type="info"
-          message="成果转化本地演示记录"
-          description="此处展示转化状态、收入状态、收益分配安全摘要和后评估备注；不代表真实合同、法务、付款、发票、结算、财务系统或外部系统验收。"
+          message="成果转化记录"
+          description="此处展示转化状态、收入状态、收益分配摘要和后评估备注。"
         />
 
         <DataState
@@ -1976,8 +1976,8 @@ function AttachmentMetadataSection({
             message={readonly ? "只读附件视图" : "附件上传入口未开放"}
             description={
               readonly
-                ? "当前成果详情来自只读上下文，只展示后端允许读取的附件安全摘要与下载结果。"
-                : "当前用户缺少 achievement:update_own，或不是该成果负责人；前端不会显示上传入口。"
+                ? "当前成果详情来自只读入口，仅展示可查看的附件信息。"
+                : "当前账号不可维护该成果附件，上传入口未开放。"
             }
           />
         )}
@@ -1985,7 +1985,7 @@ function AttachmentMetadataSection({
           <Alert
             showIcon
             type="warning"
-            message="等待演示用户"
+            message="等待业务用户"
             description="未选择业务用户时不读取附件摘要，也不会发起任何附件业务请求。"
           />
         ) : (
@@ -2092,7 +2092,7 @@ function AttachmentUploadPanel({
           </Button>
         </Space>
         <Typography.Text type="secondary">
-          支持 PDF、PNG、JPG、DOC、DOCX、XLS、XLSX；单个文件不超过 10 MB。前端预检仅用于体验，后端校验仍是准入标准。
+          支持 PDF、PNG、JPG、DOC、DOCX、XLS、XLSX；单个文件不超过 10 MB。上传前会先检查文件格式和大小。
         </Typography.Text>
         {file ? (
           <Typography.Text type={fileValidation?.ok ? "secondary" : "danger"}>
@@ -2246,12 +2246,17 @@ function AttachmentDetailMetadataPanel({
             关闭详情
           </Button>
         </div>
-        <Alert showIcon type="info" message="只读详情边界" description={boundary.description} />
+        <div className="business-note">
+          <Typography.Text strong className="business-note-title">
+            附件详情
+          </Typography.Text>
+          <Typography.Text type="secondary">{boundary.description}</Typography.Text>
+        </div>
         {!canLoadDetail ? (
           <Alert
             showIcon
             type="warning"
-            message="等待演示用户"
+            message="等待业务用户"
             description="未选择业务用户或附件 ID 缺失时不读取附件详情摘要。"
           />
         ) : (
@@ -2374,21 +2379,21 @@ export const getActionConfirmConfig = (action: AchievementAction) => {
   > = {
     submit: {
       buttonLabel: "提交审批",
-      description: "提交后将进入院系审核流程；最终是否成功以后端权限、状态和审批人配置为准。",
+      description: "提交后将进入院系审核流程；是否成功取决于当前状态和审批配置。",
       okText: "提交",
       successMessage: "提交审批",
       title: "确认提交审批",
     },
     void: {
       buttonLabel: "作废",
-      description: "作废仅支持当前后端契约允许的草稿状态，请填写作废原因。",
+      description: "作废仅支持草稿状态，请填写作废原因。",
       okText: "作废",
       successMessage: "作废",
       title: "确认作废成果",
     },
     archive: {
       buttonLabel: "归档",
-      description: "归档仅支持待归档状态；最终是否成功以后端权限和 workflow 状态为准。",
+      description: "归档仅支持待归档状态；是否成功取决于当前权限和流程状态。",
       okText: "归档",
       successMessage: "归档",
       title: "确认归档成果",
@@ -2516,7 +2521,7 @@ const getStatusBoundaryNotice = (status: AchievementStatusCode): React.ReactNode
         showIcon
         type="info"
         message="当前状态只读"
-        description="当前后端契约不支持院系驳回状态的编辑、提交、作废或归档动作。"
+        description="院系驳回状态当前不支持编辑、提交、作废或归档。"
       />
     );
   }

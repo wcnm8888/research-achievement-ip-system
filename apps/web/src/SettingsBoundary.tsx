@@ -23,49 +23,49 @@ export const settingsCapabilities: SettingsCapability[] = [
   {
     key: "roles-permissions",
     title: "角色权限",
-    designGoal: "系统管理员配置角色、权限边界和授权策略，支撑部门隔离与涉密访问控制。",
-    currentSignal: "系统配置权限目前只是访问边界线索；已有业务页面仍以后端策略层做最终权限裁剪。",
-    missingContract: "尚未确认系统配置只读能力，也没有完整角色权限维护后端契约。",
-    futureConfirmation: "真实角色权限管理、权限初始化和授权变更审计需要单独阶段确认。",
+    designGoal: "系统管理员配置角色、权限范围和授权策略，支撑部门隔离与涉密访问控制。",
+    currentSignal: "当前已通过业务页面体现角色权限和部门范围控制。",
+    missingContract: "角色权限维护入口暂未开放。",
+    futureConfirmation: "角色权限初始化、授权变更审计和批量维护需要后续单独开放。",
   },
   {
     key: "departments",
     title: "部门",
     designGoal: "维护研究院组织结构，用于成果、费用、审批、看板和审计的部门范围判断。",
-    currentSignal: "现有业务数据和演示用户中已有部门范围概念。",
-    missingContract: "尚未提供部门配置列表、详情、启停或层级维护的 settings 后端契约。",
-    futureConfirmation: "真实部门维护会影响权限和历史数据展示，需要独立设计和验收。",
+    currentSignal: "现有业务数据中已有部门范围概念。",
+    missingContract: "部门配置列表、详情、启停和层级维护请进入部门维护页面处理。",
+    futureConfirmation: "部门维护会影响权限和历史数据展示，需要在专门页面执行。",
   },
   {
     key: "dictionaries",
     title: "字典",
     designGoal: "统一成果类型、状态、费用类型、密级、提醒级别等枚举展示和业务口径。",
-    currentSignal: "前后端已有多组固定枚举和展示映射，可支撑当前一期页面。",
-    missingContract: "尚未提供可配置字典读取或写入 API，当前不是字典管理后台。",
+    currentSignal: "当前已内置多组固定枚举和展示映射。",
+    missingContract: "可配置字典维护入口暂未开放。",
     futureConfirmation: "动态字典、兼容旧数据、枚举迁移和审计记录需要单独确认。",
   },
   {
     key: "reminder-rules",
     title: "预警规则",
     designGoal: "配置专利/软著费用 30/15/7 天及逾期提醒规则和站内通知策略。",
-    currentSignal: "费用页和看板已有前端派生预警展示，后端已有 reminder 概念。",
-    missingContract: "尚未提供独立预警读取能力或预警规则配置能力。",
-    futureConfirmation: "真实规则编辑、提醒任务生成、通知发送和数据回填必须拆成独立阶段。",
+    currentSignal: "费用页和看板已展示预警摘要。",
+    missingContract: "独立预警规则配置入口暂未开放。",
+    futureConfirmation: "规则编辑、提醒任务生成、通知发送和数据回填需要后续单独开放。",
   },
   {
     key: "interface-adapters",
     title: "外部接口适配",
     designGoal: "为 DOI、邮件、HR/SSO、财务、专利状态、对象存储等外部能力预留替换点。",
-    currentSignal: "一期文档要求隔离外部依赖，并避免真实外部接口联调。",
-    missingContract: "尚未提供接口配置读取能力；本页面不读取环境配置、密钥、令牌或完整连接串。",
-    futureConfirmation: "真实 SSO、对象存储、Meilisearch、邮件/财务联调都需要用户显式确认。",
+    currentSignal: "外部接口能力已作为独立配置入口管理。",
+    missingContract: "本页面只展示配置入口，不展示环境配置、密钥、令牌或完整连接串。",
+    futureConfirmation: "SSO、对象存储、检索引擎、邮件和财务联调需要后续单独确认。",
   },
 ];
 
 export const getStep20BSettingsBoundary = (): SettingsBoundary => ({
-  title: "系统配置边界 / 只读能力盘点",
+  title: "系统配置能力概览",
   apiStatus: "none",
-  permissionSignal: "系统配置权限只是访问边界信号，不代表已经提供完整配置 API。",
+  permissionSignal: "系统配置权限用于控制配置入口可见性。",
   requestPolicy: "NO_BUSINESS_API_REQUEST",
   unavailableActions: [
     "创建",
@@ -78,11 +78,11 @@ export const getStep20BSettingsBoundary = (): SettingsBoundary => ({
     "下载",
   ],
   excludedRoutes: [
-    "系统配置业务接口",
-    "角色/部门/字典/预警规则/接口配置维护",
+    "系统配置维护入口",
+    "角色/部门/字典/预警规则维护",
     "附件上传、下载和详情取回",
     "费用凭证附件",
-    "预警业务接口",
+    "预警规则写入",
     "检索日志写入",
     "外部搜索引擎同步",
     "种子数据、迁移或数据清理",
@@ -103,10 +103,10 @@ export function SettingsBoundary({ demoUserId }: { demoUserId: string | null }) 
     <Space direction="vertical" size={16} className="page-stack settings-boundary-page">
       <SectionHeader
         title={boundary.title}
-        description="展示系统配置能力边界和当前可用配置入口。"
+        description="展示当前可用配置入口和后续可扩展能力。"
         extra={
           <Space size={8} wrap>
-            <Tag color="gold">配置边界</Tag>
+            <Tag color="gold">配置概览</Tag>
             <Tag color="default">权限控制</Tag>
           </Space>
         }
@@ -128,7 +128,7 @@ export function SettingsBoundary({ demoUserId }: { demoUserId: string | null }) 
         ))}
       </div>
 
-      <Card className="shell-card settings-boundary-card" title="本轮明确排除">
+      <Card className="shell-card settings-boundary-card" title="暂未开放">
         <div className="settings-boundary-list">
           {boundary.excludedRoutes.map((route) => (
             <Tag color="default" key={route}>
@@ -139,8 +139,8 @@ export function SettingsBoundary({ demoUserId }: { demoUserId: string | null }) 
       </Card>
 
       <BoundaryNotice
-        title="真实配置管理需要后续单独计划确认"
-        description="角色权限、部门、字典、预警规则、接口适配器的读取和写入契约都不能由本页面推断为已完成。"
+        title="后续配置维护"
+        description="角色权限、字典、预警规则和接口适配器的维护能力需要后续单独开放。"
         step="系统配置"
       />
     </Space>
@@ -151,10 +151,10 @@ function SettingsCapabilityCard({ capability }: { capability: SettingsCapability
   return (
     <Card className="shell-card settings-capability-card" title={capability.title}>
       <Space direction="vertical" size={10}>
-        <SettingsCapabilityLine label="一期设计目标" value={capability.designGoal} />
-        <SettingsCapabilityLine label="当前线索/边界" value={capability.currentSignal} />
-        <SettingsCapabilityLine label="缺失契约" value={capability.missingContract} />
-        <SettingsCapabilityLine label="后续确认" value={capability.futureConfirmation} />
+        <SettingsCapabilityLine label="设计目标" value={capability.designGoal} />
+        <SettingsCapabilityLine label="当前状态" value={capability.currentSignal} />
+        <SettingsCapabilityLine label="开放情况" value={capability.missingContract} />
+        <SettingsCapabilityLine label="后续计划" value={capability.futureConfirmation} />
       </Space>
     </Card>
   );
