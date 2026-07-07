@@ -18953,6 +18953,149 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-07 Step 130 - Secret authorization local synthetic demo data coverage evidence
+
+- Canonical state checked before implementation:
+  - `git log -1 --oneline` -> `b7f2190 docs: archive secret authorization authenticated acceptance`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Context reviewed:
+  - Step 129 Secret Authorization authenticated acceptance notes in
+    `memory-bank/progress.md`.
+  - Step 129 evidence in `memory-bank/evidence.md`.
+  - `memory-bank/secret-authorization-authenticated-ui-acceptance-step129.md`,
+    specifically the `resources.total=0` caveat.
+  - `prisma/seed.cjs` local seed structure.
+  - `prisma/schema.prisma` small model/enum excerpts for
+    `ResourceAccessGrant`, `Achievement`, `Attachment`, and `AuditLog`.
+  - `apps/api/src/secret-authorization/secret-authorization.repository.ts`
+    and `secret-authorization.service.ts` safe projection aggregation.
+- Implementation evidence:
+  - Updated `prisma/seed.cjs` only.
+  - Added deterministic local synthetic Secret Authorization grant IDs and
+    audit IDs.
+  - Seeded demo patent achievement is now `CONFIDENTIAL` for restricted
+    achievement resource coverage.
+  - Existing seeded patent attachment remains `SECRET` for restricted
+    attachment resource coverage.
+  - Added local synthetic grants for active, expiring-soon, expired, revoked,
+    and future-dated states.
+  - Added local synthetic audit rows using safe summary metadata only.
+  - Updated seed summary to report resource access grant count and the count of
+    seed-owned Secret Authorization audit rows.
+  - Seed role and permission upserts now reuse existing local rows by unique
+    `code` and carry persisted IDs forward for relation rows.
+  - Conversion ledger seed is skipped with a non-sensitive warning when the
+    target local DB volume lacks the conversion table.
+- Verification:
+  - `node --check prisma/seed.cjs`: PASS.
+  - `corepack pnpm test:seed:foundation`: PASS, 7 tests.
+  - `corepack pnpm prisma:validate`: initially failed because the current
+    process had no `DATABASE_URL`; no environment file was read.
+  - `corepack pnpm prisma:validate` with a one-time dummy process-local
+    `DATABASE_URL`: PASS.
+  - `corepack pnpm --filter @research-ip/api test -- secret-authorization`:
+    PASS, 2 files / 9 tests.
+- Boundaries observed:
+  - No seed execution against any database in this Step.
+  - No Docker operation.
+  - No Prisma schema or migration change.
+  - No API/Web source change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No password, cookie, token, session value, real connection string, key,
+    object payload, file body, private attachment content, raw permission graph,
+    raw audit JSON, debug/export/download control, or production credential was
+    recorded.
+
+## 2026-07-07 Step 131 - Secret authorization seeded authenticated Docker UI acceptance evidence
+
+- Canonical state checked before execution:
+  - `git log -1 --oneline` -> `b7f2190 docs: archive secret authorization authenticated acceptance`.
+  - `git status --short` showed tracked changes only in `prisma/seed.cjs`,
+    `memory-bank/progress.md`, and `memory-bank/evidence.md`, plus existing
+    long-lived untracked local artifacts.
+  - `git diff --stat` showed the same three tracked files.
+  - `git diff --cached --stat` was empty.
+  - `docker compose -f docker-compose.production.yml ps` showed local
+    production-like `api`, `web`, and `postgres` services healthy.
+- Seed execution evidence:
+  - `node --check prisma/seed.cjs`: PASS before seed execution.
+  - Container `/app/prisma/seed.cjs` was checked and did not contain the Step
+    130 Secret Authorization seed function.
+  - The current working-tree seed was executed inside the existing `api`
+    container via stdin, using compose-provided local environment without
+    displaying environment values.
+  - First execution exposed a local idempotency issue for pre-existing role
+    codes; `prisma/seed.cjs` was updated to reuse existing roles/permissions by
+    unique `code`.
+  - Second execution exposed that the older local Docker volume lacks the
+    conversion table; `prisma/seed.cjs` was updated to skip only that optional
+    conversion seed path when the table is unavailable.
+  - Final seed execution completed successfully.
+  - Final seed summary included `resourceAccessGrants=6` and
+    `secretAuthorizationAuditLogs=3`.
+- Readiness evidence:
+  - `GET http://127.0.0.1:14001/api/health` -> `200`.
+  - `GET http://127.0.0.1:18081` -> `200`.
+  - Unauthenticated `GET /api/secret-authorization/overview` -> `401`.
+- Authenticated browser evidence:
+  - Browser session: `step131-secret-auth`.
+  - Used the user-authorized existing local Docker account credential only for
+    this acceptance.
+  - Login succeeded.
+  - `Secret Authorization` navigation was visible.
+  - The page rendered local/demo/synthetic read-only wording.
+  - The safe-summary boundary alert was visible.
+- API/UI result evidence:
+  - `GET /api/secret-authorization/overview` -> `200`.
+  - `GET /api/secret-authorization/resources` -> `200`.
+  - `GET /api/secret-authorization/resources/:resourceType/:resourceId/grants`
+    -> `200`.
+  - Overview showed `restrictedResourceCount=2`, `activeGrantCount=3`,
+    `expiredGrantCount=1`, `revokedGrantCount=1`,
+    `futureDatedGrantCount=1`, and `expiringSoonCount=1`.
+  - Resources showed `total=2` and `items.length=2`.
+  - Live selected resource detail returned keys `audits`, `caveats`, `grants`,
+    `limits`, and `resource`.
+  - Live detail contained `2` bounded grant rows and `1` bounded audit row.
+  - The page DOM contained no `undefined` or `null` text.
+- Network boundary evidence:
+  - Observed Secret Authorization traffic was only `GET`.
+  - No `POST`, `PUT`, `PATCH`, or `DELETE` was observed for
+    `/api/secret-authorization/*`.
+  - No grant mutation, batch mutation, export, debug, download URL, or file
+    retrieval request was observed.
+  - A dashboard summary request returned `500` after login before the Secret
+    Authorization path; it is unrelated to the Secret Authorization acceptance.
+- Sensitive-field evidence:
+  - Exact DOM scan found no high-risk sensitive field/value hits.
+  - Broad `download` text was traced to the safe aggregate enum value
+    `ATTACHMENT_DOWNLOAD`, not to a link, button, URL, export, or file
+    retrieval.
+  - A transient Playwright login-page snapshot briefly included the local
+    password field value; it was immediately redacted in place.
+  - Targeted scan of Step 131 local artifacts found no local password literal.
+  - Current Step 131 artifact scan found only benign UI labels such as the
+    login form password label and session heading, not credential/session
+    values.
+- Local artifacts:
+  - Screenshot:
+    `.local-step131-secret-authorization-seeded-acceptance/secret-authorization-seeded-authenticated.png`.
+- Boundaries observed:
+  - No `prisma/schema.prisma` change.
+  - No migration added or run.
+  - No `apps/api/**` or `apps/web/**` source change.
+  - No `.env` or `.env.production` content read or displayed.
+  - No production/VPS/production DB access.
+  - No real external provider call, real email/SMS, real HR/SSO, storage, or
+    third-party system call.
+  - No Docker prune, volume delete, compose down with volumes, orphan cleanup,
+    stack rename, reset, restore, checkout, clean, or local file deletion.
+
 ## 2026-07-07 Step 129 - Secret authorization authenticated Docker UI acceptance evidence
 
 - Canonical state checked before acceptance:

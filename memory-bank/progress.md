@@ -14705,3 +14705,117 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No source, schema, or migration change.
+
+## 2026-07-07 Step 130 - Secret authorization local synthetic demo data coverage
+
+- Status: DONE, implementation-only seed coverage.
+- Scope:
+  - Added local/demo/synthetic Secret Authorization seed coverage in
+    `prisma/seed.cjs`.
+  - This is not production authorization acceptance and not production/VPS
+    acceptance.
+- Starting point:
+  - HEAD at task start:
+    `b7f2190 docs: archive secret authorization authenticated acceptance`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Seed coverage added:
+  - The seeded demo patent is now a restricted `CONFIDENTIAL` achievement
+    resource for Secret Authorization resource-table coverage.
+  - Existing seeded patent attachment remains a restricted `SECRET` attachment
+    resource.
+  - Added deterministic local synthetic `ResourceAccessGrant` rows covering
+    active, expiring-soon, expired, revoked, and future-dated grant states.
+  - Added deterministic local synthetic `AuditLog` rows with bounded safe
+    grant metadata only: operation, target type, target secret level,
+    grant type, grantee type, and reason-present signal.
+  - Seed role and permission upserts now reuse existing local rows by unique
+    `code` and carry the persisted IDs forward for relationship rows, so older
+    local Docker volumes with pre-existing role IDs can still be seeded.
+  - Conversion ledger seed is skipped with a non-sensitive warning if the local
+    database volume does not have the optional conversion table available.
+  - Updated seed summary with resource-grant count and Secret Authorization
+    synthetic audit-log count.
+- Security boundary:
+  - No涉密正文、附件正文、私密备注、download URL、object key、storage key,
+    checksum, raw permission graph, raw audit JSON, actor email, credential,
+    session, cookie, password, token, API key, or connection-string material was
+    added to the new Secret Authorization seed rows.
+  - Existing attachment storage metadata fields were not expanded or used as
+    Web-facing evidence.
+- Explicitly not done:
+  - No Prisma schema or migration change.
+  - No API/Web source change.
+  - No database seed execution in this Step.
+  - No Docker operation.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+- Follow-up:
+  - In an explicitly authorized local/Docker environment, run the standard
+    project seed against the local synthetic database, then rerun Secret
+    Authorization authenticated UI acceptance to verify `resources.total > 0`
+    and live resource detail/grant/audit rows.
+
+## 2026-07-07 Step 131 - Secret authorization seeded authenticated Docker UI acceptance
+
+- Status: PASS.
+- Acceptance classification:
+  - Local Docker production-like synthetic DB acceptance.
+  - This is not production/VPS acceptance and not production authorization
+    acceptance.
+- Starting point:
+  - HEAD at task start:
+    `b7f2190 docs: archive secret authorization authenticated acceptance`.
+  - Existing tracked diff contained only `prisma/seed.cjs`,
+    `memory-bank/progress.md`, and `memory-bank/evidence.md`.
+  - Docker compose services `api`, `web`, and `postgres` were already healthy.
+- Seed execution:
+  - Container `/app/prisma/seed.cjs` did not contain the Step 130 seed changes,
+    so running the container file directly would have used stale seed logic.
+  - The current working-tree `prisma/seed.cjs` was executed inside the existing
+    `api` container through stdin, reusing compose-provided local environment
+    and the existing local Postgres volume without displaying environment
+    values.
+  - Seed completed successfully against the local Docker synthetic DB.
+  - Seed summary included `resourceAccessGrants=6` and
+    `secretAuthorizationAuditLogs=3`.
+  - The conversion ledger seed was skipped because this older local volume does
+    not have the conversion table; no migration was run.
+- Authenticated UI acceptance:
+  - `GET http://127.0.0.1:14001/api/health` returned `200`.
+  - `GET http://127.0.0.1:18081` returned `200`.
+  - Unauthenticated `GET /api/secret-authorization/overview` returned `401`.
+  - Used the user-authorized local Docker account credential for login without
+    recording the credential in committed docs.
+  - `Secret Authorization` navigation was visible after login.
+  - The page displayed local/demo/synthetic read-only semantics.
+  - `GET /api/secret-authorization/overview` returned `200`.
+  - `GET /api/secret-authorization/resources` returned `200`.
+  - `GET /api/secret-authorization/resources/:resourceType/:resourceId/grants`
+    returned `200` for a live restricted resource row.
+  - `resources.total=2` and `items.length=2`.
+  - Live detail returned `2` bounded grant rows, `1` bounded audit row, and
+    caveats.
+  - Page DOM had no `undefined` or `null` text.
+- Network and sensitive-field boundary:
+  - Observed Secret Authorization traffic was only `GET`.
+  - No Secret Authorization mutation, grant create/revoke, batch, export,
+    download URL, debug, or file retrieval request was observed.
+  - Exact DOM forbidden-field scan found no high-risk sensitive field/value
+    hits.
+  - A broad `download` text hit was traced to the safe aggregate enum
+    `ATTACHMENT_DOWNLOAD`, not a link, button, URL, export, or file retrieval.
+  - A transient Playwright login-page snapshot briefly contained the local
+    password field value; it was immediately redacted in place and subsequent
+    targeted artifact scan found no password literal.
+- Explicitly not done:
+  - No `prisma/schema.prisma` change.
+  - No migration added or run.
+  - No `apps/api/**` or `apps/web/**` source change.
+  - No `.env` or `.env.production` content read or displayed.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker prune, volume delete, compose down with volumes, orphan cleanup,
+    stack rename, or local file deletion.

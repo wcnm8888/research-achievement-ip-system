@@ -103,9 +103,23 @@ const ids = {
   conversions: {
     paperLicense: "93000000-0000-4000-8000-000000000001",
   },
+  resourceAccessGrants: {
+    patentDepartmentActive: "94000000-0000-4000-8000-000000000001",
+    patentSecretManagerExpiring: "94000000-0000-4000-8000-000000000002",
+    patentAttachmentExpired: "94000000-0000-4000-8000-000000000003",
+    patentAttachmentRevoked: "94000000-0000-4000-8000-000000000004",
+    patentAttachmentFuture: "94000000-0000-4000-8000-000000000005",
+  },
+  auditLogs: {
+    patentGrantCreated: "95000000-0000-4000-8000-000000000001",
+    patentAttachmentGrantRevoked: "95000000-0000-4000-8000-000000000002",
+    patentAttachmentGrantExpired: "95000000-0000-4000-8000-000000000003",
+  },
 };
 
 const dateOnly = (value) => new Date(`${value}T00:00:00.000Z`);
+const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+const isMissingTableError = (error) => error?.code === "P2021";
 
 async function seedDepartments() {
   await prisma.department.upsert({
@@ -145,22 +159,23 @@ async function seedDepartments() {
 
 async function seedRolesAndPermissions() {
   const roles = [
-    { id: ids.roles.researcher, code: "RESEARCHER", name: "Demo Researcher" },
-    { id: ids.roles.secretary, code: "RESEARCH_SECRETARY", name: "Demo Research Secretary" },
-    { id: ids.roles.departmentAdmin, code: "DEPARTMENT_ADMIN", name: "Demo Department Admin" },
-    { id: ids.roles.systemAdmin, code: "SYSTEM_ADMIN", name: "Demo System Admin" },
-    { id: ids.roles.financeReviewer, code: "FINANCE_REVIEWER", name: "Demo Finance Reviewer" },
-    { id: ids.roles.auditor, code: "AUDITOR", name: "Demo Auditor" },
-    { id: ids.roles.leader, code: "LEADER", name: "Demo Leader" },
-    { id: ids.roles.secretManager, code: "SECRET_MANAGER", name: "Demo Secret Manager" },
+    { key: "researcher", id: ids.roles.researcher, code: "RESEARCHER", name: "Demo Researcher" },
+    { key: "secretary", id: ids.roles.secretary, code: "RESEARCH_SECRETARY", name: "Demo Research Secretary" },
+    { key: "departmentAdmin", id: ids.roles.departmentAdmin, code: "DEPARTMENT_ADMIN", name: "Demo Department Admin" },
+    { key: "systemAdmin", id: ids.roles.systemAdmin, code: "SYSTEM_ADMIN", name: "Demo System Admin" },
+    { key: "financeReviewer", id: ids.roles.financeReviewer, code: "FINANCE_REVIEWER", name: "Demo Finance Reviewer" },
+    { key: "auditor", id: ids.roles.auditor, code: "AUDITOR", name: "Demo Auditor" },
+    { key: "leader", id: ids.roles.leader, code: "LEADER", name: "Demo Leader" },
+    { key: "secretManager", id: ids.roles.secretManager, code: "SECRET_MANAGER", name: "Demo Secret Manager" },
   ];
 
   for (const role of roles) {
-    await prisma.role.upsert({
-      where: { id: role.id },
+    const persisted = await prisma.role.upsert({
+      where: { code: role.code },
       update: { code: role.code, name: role.name, status: "ACTIVE" },
-      create: { ...role, status: "ACTIVE" },
+      create: { id: role.id, code: role.code, name: role.name, status: "ACTIVE" },
     });
+    ids.roles[role.key] = persisted.id;
   }
 
   const permissions = [
@@ -190,12 +205,17 @@ async function seedRolesAndPermissions() {
     [ids.permissions.accountResetPassword, "account:reset_password", "account", "reset_password", "Reset account passwords", "ACTIVE"],
   ];
 
+  const permissionKeysById = Object.fromEntries(
+    Object.entries(ids.permissions).map(([key, id]) => [id, key]),
+  );
+
   for (const [id, code, resource, action, name, status] of permissions) {
-    await prisma.permission.upsert({
-      where: { id },
+    const persisted = await prisma.permission.upsert({
+      where: { code },
       update: { code, resource, action, name, status },
       create: { id, code, resource, action, name, status },
     });
+    ids.permissions[permissionKeysById[id]] = persisted.id;
   }
 
   const rolePermissions = [
@@ -336,7 +356,7 @@ async function seedAchievements() {
     update: {
       title: "Demo Patent for Data Governance Method",
       status: "PENDING_ARCHIVE",
-      secretLevel: "INTERNAL",
+      secretLevel: "CONFIDENTIAL",
       departmentId: ids.departments.ai,
       ownerUserId: ids.users.researcher,
       submittedById: ids.users.researcher,
@@ -346,7 +366,7 @@ async function seedAchievements() {
       type: "PATENT",
       title: "Demo Patent for Data Governance Method",
       status: "PENDING_ARCHIVE",
-      secretLevel: "INTERNAL",
+      secretLevel: "CONFIDENTIAL",
       departmentId: ids.departments.ai,
       ownerUserId: ids.users.researcher,
       submittedById: ids.users.researcher,
@@ -671,38 +691,231 @@ async function seedDemoWorkflowsAndConversions() {
     },
   });
 
-  await prisma.achievementConversion.upsert({
-    where: { id: ids.conversions.paperLicense },
-    update: {
-      achievementId: ids.achievements.paper,
-      departmentId: ids.departments.ai,
-      conversionType: "LICENSE",
-      counterpartyName: "Demo Local Partner",
-      contractAmount: "100000.00",
-      revenueAmount: "60000.00",
-      status: "SIGNED",
-      conversionDate: dateOnly("2026-07-01"),
-      benefitDistributionSummary: "Local demo split summary; not a real contract or payment.",
-      remarks: "Seeded local conversion ledger evidence.",
+  try {
+    await prisma.achievementConversion.upsert({
+      where: { id: ids.conversions.paperLicense },
+      update: {
+        achievementId: ids.achievements.paper,
+        departmentId: ids.departments.ai,
+        conversionType: "LICENSE",
+        counterpartyName: "Demo Local Partner",
+        contractAmount: "100000.00",
+        revenueAmount: "60000.00",
+        status: "SIGNED",
+        conversionDate: dateOnly("2026-07-01"),
+        benefitDistributionSummary: "Local demo split summary; not a real contract or payment.",
+        remarks: "Seeded local conversion ledger evidence.",
+        createdById: ids.users.admin,
+        updatedById: ids.users.admin,
+      },
+      create: {
+        id: ids.conversions.paperLicense,
+        achievementId: ids.achievements.paper,
+        departmentId: ids.departments.ai,
+        conversionType: "LICENSE",
+        counterpartyName: "Demo Local Partner",
+        contractAmount: "100000.00",
+        revenueAmount: "60000.00",
+        status: "SIGNED",
+        conversionDate: dateOnly("2026-07-01"),
+        benefitDistributionSummary: "Local demo split summary; not a real contract or payment.",
+        remarks: "Seeded local conversion ledger evidence.",
+        createdById: ids.users.admin,
+        updatedById: ids.users.admin,
+      },
+    });
+  } catch (error) {
+    if (!isMissingTableError(error)) {
+      throw error;
+    }
+    console.warn("Skipped conversion ledger seed because the local database table is unavailable.");
+  }
+}
+
+async function seedSecretAuthorizationDemoData() {
+  const grants = [
+    {
+      id: ids.resourceAccessGrants.patentDepartmentActive,
+      resourceType: "ACHIEVEMENT",
+      resourceId: ids.achievements.patent,
+      granteeType: "DEPARTMENT",
+      granteeId: ids.departments.ai,
+      grantType: "SECRET_READ",
+      status: "ACTIVE",
+      startsAt: daysFromNow(-7),
+      expiresAt: daysFromNow(180),
       createdById: ids.users.admin,
-      updatedById: ids.users.admin,
+      createdAt: daysFromNow(-7),
+      revokedAt: null,
     },
-    create: {
-      id: ids.conversions.paperLicense,
-      achievementId: ids.achievements.paper,
-      departmentId: ids.departments.ai,
-      conversionType: "LICENSE",
-      counterpartyName: "Demo Local Partner",
-      contractAmount: "100000.00",
-      revenueAmount: "60000.00",
-      status: "SIGNED",
-      conversionDate: dateOnly("2026-07-01"),
-      benefitDistributionSummary: "Local demo split summary; not a real contract or payment.",
-      remarks: "Seeded local conversion ledger evidence.",
+    {
+      id: ids.resourceAccessGrants.patentSecretManagerExpiring,
+      resourceType: "ACHIEVEMENT",
+      resourceId: ids.achievements.patent,
+      granteeType: "ROLE",
+      granteeId: ids.roles.secretManager,
+      grantType: "SECRET_READ",
+      status: "ACTIVE",
+      startsAt: daysFromNow(-6),
+      expiresAt: daysFromNow(14),
       createdById: ids.users.admin,
-      updatedById: ids.users.admin,
+      createdAt: daysFromNow(-6),
+      revokedAt: null,
     },
-  });
+    {
+      id: ids.resourceAccessGrants.patentAttachmentExpired,
+      resourceType: "ATTACHMENT",
+      resourceId: ids.attachments.patent,
+      granteeType: "USER",
+      granteeId: ids.users.leader,
+      grantType: "ATTACHMENT_DOWNLOAD",
+      status: "EXPIRED",
+      startsAt: daysFromNow(-60),
+      expiresAt: daysFromNow(-20),
+      createdById: ids.users.admin,
+      createdAt: daysFromNow(-60),
+      revokedAt: null,
+    },
+    {
+      id: ids.resourceAccessGrants.patentAttachmentRevoked,
+      resourceType: "ATTACHMENT",
+      resourceId: ids.attachments.patent,
+      granteeType: "USER",
+      granteeId: ids.users.auditor,
+      grantType: "ATTACHMENT_DOWNLOAD",
+      status: "REVOKED",
+      startsAt: daysFromNow(-20),
+      expiresAt: daysFromNow(60),
+      createdById: ids.users.admin,
+      createdAt: daysFromNow(-20),
+      revokedAt: daysFromNow(-3),
+    },
+    {
+      id: ids.resourceAccessGrants.patentAttachmentFuture,
+      resourceType: "ATTACHMENT",
+      resourceId: ids.attachments.patent,
+      granteeType: "USER",
+      granteeId: ids.users.secretManager,
+      grantType: "ATTACHMENT_DOWNLOAD",
+      status: "ACTIVE",
+      startsAt: daysFromNow(14),
+      expiresAt: daysFromNow(60),
+      createdById: ids.users.admin,
+      createdAt: daysFromNow(-1),
+      revokedAt: null,
+    },
+  ];
+
+  for (const grant of grants) {
+    await prisma.resourceAccessGrant.upsert({
+      where: { id: grant.id },
+      update: {
+        resourceType: grant.resourceType,
+        resourceId: grant.resourceId,
+        granteeType: grant.granteeType,
+        granteeId: grant.granteeId,
+        grantType: grant.grantType,
+        status: grant.status,
+        startsAt: grant.startsAt,
+        expiresAt: grant.expiresAt,
+        createdById: grant.createdById,
+        createdAt: grant.createdAt,
+        revokedAt: grant.revokedAt,
+      },
+      create: grant,
+    });
+  }
+
+  const auditLogs = [
+    {
+      id: ids.auditLogs.patentGrantCreated,
+      actorUserId: ids.users.admin,
+      actorDepartmentId: ids.departments.admin,
+      action: "CONFIG_UPDATE",
+      targetType: "ACHIEVEMENT",
+      targetId: ids.achievements.patent,
+      targetDepartmentId: ids.departments.ai,
+      targetSecretLevel: "CONFIDENTIAL",
+      oldValue: null,
+      newValue: {
+        grantType: "SECRET_READ",
+        granteeType: "DEPARTMENT",
+        reason: "Local synthetic demo grant coverage.",
+      },
+      traceId: "seed-secret-authorization-achievement-grant-created",
+      createdAt: daysFromNow(-7),
+    },
+    {
+      id: ids.auditLogs.patentAttachmentGrantRevoked,
+      actorUserId: ids.users.admin,
+      actorDepartmentId: ids.departments.admin,
+      action: "CONFIG_UPDATE",
+      targetType: "ATTACHMENT",
+      targetId: ids.attachments.patent,
+      targetDepartmentId: ids.departments.ai,
+      targetSecretLevel: "SECRET",
+      oldValue: {
+        grantType: "ATTACHMENT_DOWNLOAD",
+        granteeType: "USER",
+        reason: "Local synthetic demo grant coverage.",
+      },
+      newValue: {
+        grantType: "ATTACHMENT_DOWNLOAD",
+        granteeType: "USER",
+        reason: "Local synthetic demo revoke coverage.",
+      },
+      traceId: "seed-secret-authorization-attachment-grant-revoked",
+      createdAt: daysFromNow(-3),
+    },
+    {
+      id: ids.auditLogs.patentAttachmentGrantExpired,
+      actorUserId: ids.users.admin,
+      actorDepartmentId: ids.departments.admin,
+      action: "CONFIG_UPDATE",
+      targetType: "ATTACHMENT",
+      targetId: ids.attachments.patent,
+      targetDepartmentId: ids.departments.ai,
+      targetSecretLevel: "SECRET",
+      oldValue: {
+        grantType: "ATTACHMENT_DOWNLOAD",
+        granteeType: "USER",
+        reason: "Local synthetic demo grant coverage.",
+      },
+      newValue: {
+        grantType: "ATTACHMENT_DOWNLOAD",
+        granteeType: "USER",
+        reason: "Local synthetic demo expiry coverage.",
+      },
+      traceId: "seed-secret-authorization-attachment-grant-expired",
+      createdAt: daysFromNow(-20),
+    },
+  ];
+
+  for (const auditLog of auditLogs) {
+    await prisma.auditLog.upsert({
+      where: { id: auditLog.id },
+      update: {
+        actorUserId: auditLog.actorUserId,
+        actorDepartmentId: auditLog.actorDepartmentId,
+        action: auditLog.action,
+        targetType: auditLog.targetType,
+        targetId: auditLog.targetId,
+        targetDepartmentId: auditLog.targetDepartmentId,
+        targetSecretLevel: auditLog.targetSecretLevel,
+        oldValue: auditLog.oldValue,
+        newValue: auditLog.newValue,
+        ipAddress: null,
+        userAgent: "local-synthetic-seed",
+        traceId: auditLog.traceId,
+        createdAt: auditLog.createdAt,
+      },
+      create: {
+        ...auditLog,
+        ipAddress: null,
+        userAgent: "local-synthetic-seed",
+      },
+    });
+  }
 }
 
 async function getSeedSummary() {
@@ -722,6 +935,8 @@ async function getSeedSummary() {
     workflowTasks,
     workflowActions,
     conversions,
+    resourceAccessGrants,
+    secretAuthorizationAuditLogs,
   ] = await Promise.all([
     prisma.department.count(),
     prisma.role.count(),
@@ -737,7 +952,16 @@ async function getSeedSummary() {
     prisma.workflowInstance.count(),
     prisma.workflowTask.count(),
     prisma.workflowAction.count(),
-    prisma.achievementConversion.count(),
+    prisma.achievementConversion.count().catch((error) => {
+      if (!isMissingTableError(error)) {
+        throw error;
+      }
+      return 0;
+    }),
+    prisma.resourceAccessGrant.count(),
+    prisma.auditLog.count({
+      where: { traceId: { startsWith: "seed-secret-authorization" } },
+    }),
   ]);
 
   return {
@@ -756,6 +980,8 @@ async function getSeedSummary() {
     workflowTasks,
     workflowActions,
     conversions,
+    resourceAccessGrants,
+    secretAuthorizationAuditLogs,
   };
 }
 
@@ -767,6 +993,7 @@ async function main() {
   await seedContributors();
   await seedFeesRemindersAndAttachments();
   await seedDemoWorkflowsAndConversions();
+  await seedSecretAuthorizationDemoData();
 
   const summary = await getSeedSummary();
   console.log("Seed completed:", JSON.stringify(summary));
