@@ -14506,3 +14506,42 @@
   - No real external-system call.
   - No Docker operation.
   - No environment-file content read.
+
+## 2026-07-07 Step 124 - Local service readiness read-only diagnosis
+
+- Status: DONE, docs-only/read-only diagnosis.
+- Starting point:
+  - HEAD at task start: `8bf4988 docs: archive secret authorization local acceptance`.
+  - `git status --short` showed existing long-lived untracked local artifacts
+    only.
+  - `git diff --stat` and `git diff --cached --stat` were empty.
+- Scope completed:
+  - Added `memory-bank/local-service-readiness-diagnosis-step124.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Readiness result:
+  - API `http://127.0.0.1:3000/api/health` remained unavailable.
+  - Web `http://127.0.0.1:5173` and `http://127.0.0.1:5174` remained
+    unavailable.
+  - No listeners were found on ports `3000`, `5173`, or `5174`.
+  - Relevant process summary showed only Codex runtime `node_repl` processes;
+    no project API/Web `node`, `pnpm`, `vite`, or `tsx watch` process was
+    active at diagnosis time.
+- Diagnosis:
+  - Step 123 BLOCKED still holds.
+  - Immediate readiness issue is that the project dev servers are not running
+    or are failing before binding expected ports.
+  - Root cause below that level was not proven because this Step did not start
+    services, read runtime logs, read environment files, access a DB, or recover
+    the local stack.
+- Recommended next options:
+  - Route A: user manually restores existing local API/Web, then rerun Step 123
+    acceptance.
+  - Route B: separate non-Docker dev-server-start authorization Step.
+  - Route C: separate Docker/untracked artifact read-only inventory if the user
+    prioritizes environment sprawl review.
+- Explicitly not done:
+  - No service start/stop/restart.
+  - No Docker command.
+  - No `.env` or secret content read.
+  - No source, schema, migration, or package change.

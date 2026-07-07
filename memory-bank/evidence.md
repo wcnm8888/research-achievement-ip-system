@@ -19094,6 +19094,59 @@
   - Existing untracked local artifacts and previous `.local-step*` directories
     were not touched.
 
+## 2026-07-07 Step 124 - Local service readiness read-only diagnosis evidence
+
+- Classification:
+  - Docs-only/read-only local readiness diagnosis.
+  - No service recovery and no local UI acceptance rerun.
+- Canonical state checked before diagnosis:
+  - `git log -1 --oneline` -> `8bf4988 docs: archive secret authorization local acceptance`.
+  - `git status --short` showed only existing long-lived untracked local
+    artifacts.
+  - `git diff --stat` -> empty.
+  - `git diff --cached --stat` -> empty.
+- Required context reviewed with targeted reads:
+  - `memory-bank/progress.md` Step 123 latest section.
+  - `memory-bank/evidence.md` Step 123 latest section.
+  - `.local-step123-secret-authorization-acceptance/service-checks.txt`.
+  - root `package.json` scripts.
+  - `pnpm-workspace.yaml` workspace package list.
+  - `apps/api/package.json` scripts.
+  - `apps/web/package.json` scripts.
+  - API bootstrap and Vite proxy snippets confirming default port/proxy
+    expectations.
+- Read-only readiness checks:
+  - Port listener check for `3000`, `5173`, and `5174`: no listeners.
+  - API health request to `127.0.0.1:3000/api/health`: unavailable.
+  - Web request to `127.0.0.1:5173`: unavailable.
+  - Web request to `127.0.0.1:5174`: unavailable.
+  - Process summary check found only Codex runtime `node_repl` processes among
+    relevant node-like processes; no project API/Web dev process was active at
+    diagnosis time.
+- Diagnosis evidence:
+  - Root script `dev` runs workspace dev scripts in parallel.
+  - API dev script is `tsx watch src/main.ts`.
+  - Web dev script is Vite.
+  - API bootstrap listens on process `PORT` or defaults to `3000`.
+  - Web proxy routes `/api` to `http://localhost:3000`.
+  - Therefore the local UI acceptance remains blocked while no API listener and
+    no Web listener exist on the expected local ports.
+- Output:
+  - Added `memory-bank/local-service-readiness-diagnosis-step124.md`.
+- Recommended recovery routes recorded:
+  - Route A: user manually restores existing local services, then rerun Step
+    123 acceptance.
+  - Route B: separate non-Docker dev-server-start authorization Step.
+  - Route C: separate Docker/untracked read-only inventory if environment
+    sprawl is the priority.
+- Boundaries observed:
+  - No service was started, stopped, restarted, or modified.
+  - No Docker command was run.
+  - No `.env` or secret content was read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No source, schema, migration, package, or lockfile change.
+
 ## 2026-07-06 Step 117 - Account lifecycle Web management enhancement evidence
 
 - Canonical state checked before implementation:
