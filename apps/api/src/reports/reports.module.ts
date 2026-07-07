@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AuditModule } from "../audit/audit.module";
 import { AuthorizationModule } from "../authorization/authorization.module";
 import { DatabaseModule } from "../database/database.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -7,7 +8,7 @@ import { ReportsRepository } from "./reports.repository";
 import { ReportsService } from "./reports.service";
 
 @Module({
-  imports: [AuthorizationModule, DatabaseModule, IdentityModule],
+  imports: [AuditModule, AuthorizationModule, DatabaseModule, IdentityModule],
   controllers: [ReportsController],
   providers: [ReportsRepository, ReportsService],
 })

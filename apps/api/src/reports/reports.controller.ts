@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Header,
   Inject,
   NotFoundException,
   Param,
@@ -61,6 +62,33 @@ export class ReportsController {
   ) {
     try {
       return await this.reportsService.runTemplate(
+        currentUser,
+        templateId,
+        toCustomReportRunOptions(query),
+      );
+    } catch (error) {
+      if (error instanceof CustomReportTemplateNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof CustomReportInvalidQueryError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get("templates/:templateId/export.csv")
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  @Header("Content-Disposition", 'attachment; filename="custom-report.csv"')
+  async exportTemplateCsv(
+    @CurrentUser() currentUser: UserContext,
+    @Param("templateId") templateId: string,
+    @Query(customReportRunQueryValidationPipe) query: CustomReportRunQueryDto,
+  ) {
+    try {
+      return await this.reportsService.exportTemplateCsv(
         currentUser,
         templateId,
         toCustomReportRunOptions(query),

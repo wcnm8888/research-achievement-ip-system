@@ -63,6 +63,7 @@ type LoadedUserFixture = {
 
 type AchievementServiceMock = {
   list: ReturnType<typeof vi.fn>;
+  exportCsv: ReturnType<typeof vi.fn>;
   createDraft: ReturnType<typeof vi.fn>;
   getDetail: ReturnType<typeof vi.fn>;
   updateDraft: ReturnType<typeof vi.fn>;
@@ -163,6 +164,7 @@ const makeListResult = () => ({
 
 const createServiceMock = (): AchievementServiceMock => ({
   list: vi.fn().mockResolvedValue(makeListResult()),
+  exportCsv: vi.fn().mockResolvedValue("ID,Title\r\nachievement-1,Paper\r\n"),
   createDraft: vi.fn().mockResolvedValue(makeAggregate()),
   getDetail: vi.fn().mockResolvedValue(makeAggregate()),
   updateDraft: vi.fn().mockResolvedValue({ ...makeAggregate(), version: 2 }),
@@ -256,6 +258,30 @@ describe("AchievementController HTTP", () => {
         .expect(403);
 
       expect(service.list).not.toHaveBeenCalled();
+    });
+  });
+
+  it("exports achievements as CSV with user_context:read and list filters", async () => {
+    await withTestApp([PermissionCode.userContextRead], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/achievements/export.csv")
+        .query({
+          status: AchievementStatusCode.draft,
+          type: AchievementTypeCode.paper,
+          keyword: "Paper",
+        })
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      expect(response.headers["content-type"]).toContain("text/csv");
+      expect(response.headers["content-disposition"]).toContain("achievements.csv");
+      expect(response.text).toBe("ID,Title\r\nachievement-1,Paper\r\n");
+      expect(service.exportCsv).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
+        status: AchievementStatusCode.draft,
+        type: AchievementTypeCode.paper,
+        keyword: "Paper",
+      }));
+      expect(service.getDetail).not.toHaveBeenCalled();
     });
   });
 

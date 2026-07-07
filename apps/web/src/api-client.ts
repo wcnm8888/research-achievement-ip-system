@@ -96,7 +96,7 @@ export type ApiClient = {
   post<T>(path: string, body?: unknown): Promise<T>;
   postForm?<T>(path: string, body: FormData): Promise<T>;
   patch<T>(path: string, body?: unknown): Promise<T>;
-  downloadBlob?(path: string): Promise<Blob>;
+  downloadBlob?(path: string, query?: ApiQuery): Promise<Blob>;
 };
 
 export type AccountManagementApiClient = ApiClient & {
@@ -328,8 +328,8 @@ export const createApiClient = (
     const response = await request(path, demoUserId, { method: "PATCH", body }, options);
     return response as T;
   },
-  async downloadBlob(path: string) {
-    return requestBlob(path, demoUserId, options);
+  async downloadBlob(path: string, query?: ApiQuery) {
+    return requestBlob(path, demoUserId, query, options);
   },
   async listDepartments(query?: ListDepartmentsQuery) {
     const response = await request(
@@ -880,9 +880,10 @@ const requestForm = async (
 const requestBlob = async (
   path: string,
   demoUserId: string | null,
+  query?: ApiQuery,
   clientOptions: ApiClientOptions = {},
 ): Promise<Blob> => {
-  const url = buildUrl(path);
+  const url = buildUrl(path, query);
   const headers = new Headers();
   const trimmedUserId = demoUserId?.trim();
 

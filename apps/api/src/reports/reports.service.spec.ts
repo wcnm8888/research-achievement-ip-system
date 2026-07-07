@@ -10,6 +10,7 @@ import {
   AchievementStatusCode,
   AchievementTypeCode,
 } from "../achievements/domain/achievement-domain.types";
+import { AuditService } from "../audit/audit.service";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
@@ -115,12 +116,16 @@ const createPolicyQueryFactory = () => ({
 const createService = () => {
   const repository = createRepositoryMock();
   const policyQueryFactory = createPolicyQueryFactory();
+  const auditService = {
+    recordEvent: vi.fn().mockResolvedValue({ id: "audit-log" }),
+  };
   const service = new ReportsService(
     repository as unknown as ReportsRepository,
     policyQueryFactory as unknown as PolicyQueryFactory,
+    auditService as unknown as AuditService,
   );
 
-  return { policyQueryFactory, repository, service };
+  return { auditService, policyQueryFactory, repository, service };
 };
 
 describe("ReportsService", () => {
@@ -390,5 +395,28 @@ describe("ReportsService", () => {
     ]) {
       expect(serialized).not.toContain(forbidden);
     }
+  });
+
+  it("exports custom report CSV with safe columns and an audit summary", async () => {
+    const { auditService, service } = createService();
+
+    const csv = await service.exportTemplateCsv(
+      context,
+      CustomReportTemplateIdCode.achievementDistribution,
+    );
+
+    expect(csv).toContain("Department code,Department name,Achievement type,Count");
+    expect(csv).not.toContain("token");
+    expect(csv).not.toContain("password");
+    expect(csv).not.toContain("raw");
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "EXPORT_CSV",
+          exportType: "CUSTOM_REPORT",
+          rowLimit: 1000,
+        }),
+      }),
+    );
   });
 });

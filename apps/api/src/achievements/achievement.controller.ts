@@ -4,6 +4,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Header,
   Inject,
   NotFoundException,
   Param,
@@ -94,6 +95,21 @@ export class AchievementController {
   ) {
     try {
       return await this.achievementService.list(currentUser, query);
+    } catch (error) {
+      throw mapAchievementServiceError(error);
+    }
+  }
+
+  @Get("export.csv")
+  @RequirePermissions(PermissionCode.userContextRead)
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  @Header("Content-Disposition", 'attachment; filename="achievements.csv"')
+  async exportCsv(
+    @CurrentUser() currentUser: UserContext,
+    @Query(achievementListQueryValidationPipe) query: AchievementListQueryDto,
+  ) {
+    try {
+      return await this.achievementService.exportCsv(currentUser, query);
     } catch (error) {
       throw mapAchievementServiceError(error);
     }

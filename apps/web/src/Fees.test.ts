@@ -31,6 +31,7 @@ import {
   deriveFeeWarningSummary,
   downloadFeeVoucherAttachment,
   feeVoucherAttachmentBoundary,
+  exportFeeCsv,
   fetchFeeDetail,
   fetchFeeRecords,
   fetchFeeReviewHistory,
@@ -192,6 +193,27 @@ describe("buildFeeQuery", () => {
       feeType: undefined,
       payStatus: "PAID",
       take: 100,
+    });
+  });
+});
+
+describe("fee CSV export", () => {
+  it("downloads the fee ledger with applied filters only", async () => {
+    const downloadBlob = vi.fn(async () => new Blob(["csv"]));
+
+    await exportFeeCsv(
+      { downloadBlob },
+      {
+        achievementId: " achievement-id ",
+        feeType: "PATENT_ANNUAL",
+        payStatus: "OVERDUE",
+      },
+    );
+
+    expect(downloadBlob).toHaveBeenCalledWith("/fees/export.csv", {
+      achievementId: "achievement-id",
+      feeType: "PATENT_ANNUAL",
+      payStatus: "OVERDUE",
     });
   });
 });

@@ -5,6 +5,7 @@ import {
   buildAuditLogFilterSummary,
   buildAuditLogQuery,
   buildAuditLogQueryResult,
+  exportAuditLogsCsv,
   fetchAuditLogs,
   formatMaskedValue,
   getAuditLogListState,
@@ -191,6 +192,37 @@ describe("audit log readonly loading", () => {
     await expect(fetchAuditLogs(client, { take: 50 })).resolves.toEqual({ items: [] });
     await expect(fetchAuditLogs(malformedClient, { take: 50 })).resolves.toEqual({ items: [] });
   });
+
+  it("exports masked audit logs with validated filters", async () => {
+    const downloadBlob = vi.fn(async () => new Blob(["csv"]));
+
+    await exportAuditLogsCsv(
+      { downloadBlob },
+      {
+        action: "UPDATE",
+        targetType: "ACHIEVEMENT",
+        targetId: "20000000-0000-4000-8000-000000000001",
+        actorUserId: "40000000-0000-4000-8000-000000000003",
+        traceId: "trace-step-18b",
+        take: 10,
+      },
+    );
+
+    expect(downloadBlob).toHaveBeenCalledWith("/audit-logs/export.csv", {
+      action: "UPDATE",
+      targetType: "ACHIEVEMENT",
+      targetId: "20000000-0000-4000-8000-000000000001",
+      actorUserId: "40000000-0000-4000-8000-000000000003",
+      traceId: "trace-step-18b",
+      take: 10,
+    });
+
+    await expect(
+      exportAuditLogsCsv({ downloadBlob }, { targetId: "bad-id" }),
+    ).rejects.toMatchObject({
+      status: 400,
+    });
+  });
 });
 
 describe("audit log display boundary", () => {
@@ -265,16 +297,14 @@ describe("audit log display boundary", () => {
     expect(preview).toContain("INTERNAL");
   });
 
-  it("keeps Step 18B boundary GET-only without export, download, or unmasked features", () => {
+  it("keeps the audit boundary readonly while allowing masked CSV export", () => {
     expect(getStep18BReadOnlyBoundary()).toEqual({
       endpoint: "/audit-logs",
       method: "GET",
       permission: "audit:read_masked",
       allowedFilters: ["action", "targetType", "targetId", "actorUserId", "traceId", "take"],
       unavailableFeatures: [
-        "导出",
-        "下载",
-        "未脱敏查看",
+        "未脱敏查看或导出",
         "写入",
         "附件能力",
         "系统配置",

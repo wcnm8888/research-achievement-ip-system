@@ -17,7 +17,7 @@ describe("mapApiErrorMessage", () => {
   it("maps supported HTTP errors to user-facing messages", () => {
     expect(mapApiErrorMessage(401)).toEqual({
       kind: "unauthorized",
-      message: "请选择或切换演示用户",
+      message: "请选择或切换业务用户",
     });
     expect(mapApiErrorMessage(403)).toEqual({
       kind: "forbidden",
@@ -188,6 +188,29 @@ describe("createApiClient writes JSON requests", () => {
       "http://localhost/api/reports/templates/achievement-trend/run?dateFrom=2026-01-01&dateTo=2026-12-31&departmentId=10000000-0000-4000-8000-000000000001&achievementType=PAPER&status=ARCHIVED&groupBy=month",
     );
     expect(init.method).toBe("GET");
+    expect(headers.get("X-Demo-User-Id")).toBe("demo-user-id");
+  });
+
+  it("downloads blobs with serialized query filters", async () => {
+    const fetchMock = vi.fn(async () => new Response("a,b\n1,2\n"));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("demo-user-id");
+    const blob = await client.downloadBlob?.("/achievements/export.csv", {
+      keyword: "paper",
+      status: "ARCHIVED",
+    });
+
+    expect(blob).toBeInstanceOf(Blob);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Headers;
+
+    expect(url).toBe(
+      "http://localhost/api/achievements/export.csv?keyword=paper&status=ARCHIVED",
+    );
+    expect(init.method).toBe("GET");
+    expect(init.credentials).toBe("include");
     expect(headers.get("X-Demo-User-Id")).toBe("demo-user-id");
   });
 

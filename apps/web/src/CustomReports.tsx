@@ -20,8 +20,10 @@ import {
   isApiError,
   type AccountManagementApiClient,
   type ApiError,
+  type ApiQuery,
 } from "./api-client";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { downloadCsvExport } from "./export-download";
 import type {
   CustomReportColumn,
   CustomReportRow,
@@ -39,7 +41,7 @@ type Loadable<T> = {
 
 type CustomReportsClient = Pick<
   AccountManagementApiClient,
-  "listCustomReportTemplates" | "runCustomReport"
+  "listCustomReportTemplates" | "runCustomReport" | "downloadBlob"
 >;
 
 type CustomReportsProps = {
@@ -58,7 +60,10 @@ type CustomReportsViewProps = {
     value: CustomReportRunQuery[K] | undefined,
   ) => void;
   onRun?: () => void;
+  onExport?: () => void;
   onReloadTemplates?: () => void;
+  exporting?: boolean;
+  exportError?: ApiError | null;
 };
 
 export const customReportTemplateIds: readonly CustomReportTemplateId[] = [
@@ -138,6 +143,10 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
     emptyTemplates,
   );
   const [report, setReport] = useState<Loadable<CustomReportRunResponse>>(emptyReport);
+  const [exportState, setExportState] = useState<{ loading: boolean; error: ApiError | null }>({
+    loading: false,
+    error: null,
+  });
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [filters, setFilters] = useState<CustomReportRunQuery>({
     groupBy: "month",
@@ -215,6 +224,27 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       );
   }, [demoUserId, filters, reportsClient, selectedTemplateId]);
 
+  const exportReport = useCallback(() => {
+    if (!hasDemoUser(demoUserId) || !selectedTemplateId) {
+      return;
+    }
+
+    setExportState({ loading: true, error: null });
+    void exportCustomReportCsvForDemoUser(
+      reportsClient,
+      demoUserId,
+      selectedTemplateId,
+      buildCustomReportRunQuery(selectedTemplateId, filters),
+    )
+      .then(() => setExportState({ loading: false, error: null }))
+      .catch((error: unknown) =>
+        setExportState({
+          loading: false,
+          error: mapCustomReportErrorToDisplay(normalizeError(error)),
+        }),
+      );
+  }, [demoUserId, filters, reportsClient, selectedTemplateId]);
+
   if (!hasDemoUser(demoUserId)) {
     return (
       <Space direction="vertical" size={16} className="page-stack">
@@ -239,7 +269,10 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       onTemplateChange={changeTemplate}
       onFilterChange={changeFilter}
       onRun={runReport}
+      onExport={exportReport}
       onReloadTemplates={loadTemplates}
+      exporting={exportState.loading}
+      exportError={exportState.error}
     />
   );
 }
@@ -266,6 +299,24 @@ export const runCustomReportForDemoUser = async (
   }
 
   return client.runCustomReport(templateId, query);
+};
+
+export const exportCustomReportCsvForDemoUser = async (
+  client: CustomReportsClient,
+  demoUserId: string | null,
+  templateId: string,
+  query: CustomReportRunQuery,
+): Promise<void> => {
+  if (!hasDemoUser(demoUserId)) {
+    return;
+  }
+
+  await downloadCsvExport(
+    client,
+    `/reports/templates/${encodeURIComponent(templateId)}/export.csv`,
+    query as ApiQuery,
+    `${templateId}.csv`,
+  );
 };
 
 export const buildCustomReportRunQuery = (
@@ -346,7 +397,10 @@ export function CustomReportsView({
   onTemplateChange,
   onFilterChange,
   onRun,
+  onExport,
   onReloadTemplates,
+  exporting = false,
+  exportError = null,
 }: CustomReportsViewProps) {
   const templateItems = templates.data ?? [];
   const selectedTemplate = templateItems.find(
@@ -369,11 +423,17 @@ export function CustomReportsView({
             <Button type="primary" onClick={onRun} loading={report.loading} disabled={!selectedTemplateId}>
               生成报表
             </Button>
+            <Button onClick={onExport} loading={exporting} disabled={!selectedTemplateId}>
+              导出 CSV
+            </Button>
           </Space>
         }
       />
 
       <PermissionHint description={customReportBoundaryText} />
+      {exportError ? (
+        <Typography.Text type="danger">{exportError.message}</Typography.Text>
+      ) : null}
 
       <DataState
         loading={templates.loading}

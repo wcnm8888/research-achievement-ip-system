@@ -34,9 +34,11 @@ import {
   isApiError,
   type ApiClient,
   type ApiError,
+  type ApiQuery,
   type AuthUser,
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { downloadCsvExport } from "./export-download";
 import type {
   ApproveFeeReviewInput,
   AttachmentDetailMetadata,
@@ -284,6 +286,10 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
   const [reviewActionStatus, setReviewActionStatus] = useState<MutationState>(emptyMutationState);
   const [reviewHistoryRefreshVersion, setReviewHistoryRefreshVersion] = useState(0);
   const [reviewTaskRefreshVersion, setReviewTaskRefreshVersion] = useState(0);
+  const [exportState, setExportState] = useState<{ loading: boolean; error: ApiError | null }>({
+    loading: false,
+    error: null,
+  });
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
   const query = useMemo(() => buildFeeQuery(appliedFilters), [appliedFilters]);
   const canManageFees = canManageDepartmentFees(authUser);
@@ -344,6 +350,15 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
   const resetFilters = () => {
     setDraftFilters({});
     setAppliedFilters({});
+  };
+
+  const exportCsv = () => {
+    setExportState({ loading: true, error: null });
+    void exportFeeCsv(apiClient, appliedFilters)
+      .then(() => setExportState({ loading: false, error: null }))
+      .catch((error: unknown) =>
+        setExportState({ loading: false, error: normalizeError(error) }),
+      );
   };
 
   const openFeeDetail = useCallback((record: FeeRecord) => {
@@ -678,6 +693,9 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         }
       />
       <PermissionHint description="当前账号可查看费用台账、凭证附件和预警摘要。" />
+      {exportState.error ? (
+        <Typography.Text type="danger">{exportState.error.message}</Typography.Text>
+      ) : null}
 
       <Card className="shell-card" title="基础预警摘要" extra={<Tag>页面摘要</Tag>}>
         <Row gutter={[16, 16]}>
@@ -786,6 +804,9 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
           </Button>
           <Button onClick={resetFilters}>重置</Button>
           <Button onClick={loadFees}>刷新</Button>
+          <Button onClick={exportCsv} loading={exportState.loading}>
+            导出 CSV
+          </Button>
         </Space>
       </Card>
 
@@ -2310,6 +2331,17 @@ export const buildFeeQuery = (filters: FeeFilters): FeeQuery => ({
   ...trimFeeFilters(filters),
   take: defaultTake,
 });
+
+export const exportFeeCsv = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  filters: FeeFilters,
+): Promise<void> =>
+  downloadCsvExport(
+    client,
+    "/fees/export.csv",
+    trimFeeFilters(filters) as ApiQuery,
+    "fees.csv",
+  );
 
 export const fetchFeeRecords = async (
   client: ApiClient,

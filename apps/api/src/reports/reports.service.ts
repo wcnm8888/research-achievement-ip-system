@@ -4,11 +4,15 @@ import {
   AchievementConversionEvaluationEffectCode,
   AchievementConversionStatusCode,
 } from "../achievement-conversions/domain/achievement-conversion-domain.types";
+import { AuditService } from "../audit/audit.service";
+import { AuditActionCode } from "../audit/domain/audit-action-code";
+import { AuditTargetTypeCode } from "../audit/domain/audit-target-type-code";
 import {
   AchievementStatusCode,
   AchievementTypeCode,
 } from "../achievements/domain/achievement-domain.types";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
+import { createCsv } from "../export/csv";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { UserContext } from "../identity/user-context";
 import { WorkflowTaskStatusCode } from "../workflow/domain/workflow-domain.types";
@@ -38,6 +42,7 @@ import { ReportsRepository } from "./reports.repository";
 
 const defaultDueSoonDays = 30;
 const dateOnlyLength = 10;
+const exportRowLimit = 1000;
 
 @Injectable()
 export class ReportsService {
@@ -46,6 +51,8 @@ export class ReportsService {
     private readonly repository: ReportsRepository,
     @Inject(PolicyQueryFactory)
     private readonly policyQueryFactory: PolicyQueryFactory,
+    @Inject(AuditService)
+    private readonly auditService: AuditService,
   ) {}
 
   listTemplates(context: UserContext): readonly CustomReportTemplate[] {
@@ -77,6 +84,43 @@ export class ReportsService {
       case CustomReportTemplateIdCode.conversionFunnel:
         return this.runConversionFunnel(context, template, normalizedOptions, generatedAt);
     }
+  }
+
+  async exportTemplateCsv(
+    context: UserContext,
+    templateId: string,
+    options: CustomReportRunOptions = {},
+  ): Promise<string> {
+    const report = await this.runTemplate(context, templateId, options);
+    const rows = report.rows.slice(0, exportRowLimit);
+    const csv = createCsv(
+      report.columns.map((column) => ({
+        key: column.key,
+        header: column.label,
+      })),
+      rows,
+    );
+
+    await this.auditService.recordEvent({
+      actor: {
+        userId: context.userId,
+        departmentId: context.departmentId,
+      },
+      action: AuditActionCode.configUpdate,
+      target: {
+        type: AuditTargetTypeCode.systemConfig,
+      },
+      oldValue: null,
+      newValue: {
+        operation: "EXPORT_CSV",
+        exportType: "CUSTOM_REPORT",
+        templateId: report.metadata.templateId,
+        rowCount: rows.length,
+        rowLimit: exportRowLimit,
+      },
+    });
+
+    return csv;
   }
 
   private async runAchievementDistribution(

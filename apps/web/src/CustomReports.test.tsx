@@ -5,6 +5,7 @@ import {
   buildCustomReportRunQuery,
   CustomReports,
   CustomReportsView,
+  exportCustomReportCsvForDemoUser,
   getDefaultCustomReportTemplateId,
   loadCustomReportTemplatesForDemoUser,
   mapCustomReportErrorToDisplay,
@@ -93,6 +94,7 @@ const runResponse: CustomReportRunResponse = {
 const makeClient = () => ({
   listCustomReportTemplates: vi.fn(async () => templates),
   runCustomReport: vi.fn(async () => runResponse),
+  downloadBlob: vi.fn(async () => new Blob(["csv"])),
 });
 
 describe("CustomReports request boundaries", () => {
@@ -112,6 +114,7 @@ describe("CustomReports request boundaries", () => {
     expect(html).toContain("当前没有可用的业务用户");
     expect(client.listCustomReportTemplates).not.toHaveBeenCalled();
     expect(client.runCustomReport).not.toHaveBeenCalled();
+    expect(client.downloadBlob).not.toHaveBeenCalled();
   });
 
   it("loads templates and keeps the default selection on the first template", async () => {
@@ -172,6 +175,23 @@ describe("CustomReports request boundaries", () => {
       achievementType: "PAPER",
     });
   });
+
+  it("exports custom reports through the CSV endpoint with current filters", async () => {
+    const client = makeClient();
+
+    await exportCustomReportCsvForDemoUser(client, "demo-user-id", "achievement-trend", {
+      dateFrom: "2026-01-01",
+      groupBy: "month",
+    });
+
+    expect(client.downloadBlob).toHaveBeenCalledWith(
+      "/reports/templates/achievement-trend/export.csv",
+      {
+        dateFrom: "2026-01-01",
+        groupBy: "month",
+      },
+    );
+  });
 });
 
 describe("CustomReportsView display states", () => {
@@ -192,6 +212,7 @@ describe("CustomReportsView display states", () => {
     expect(html).not.toContain("raw export");
     expect(html).toContain("achievement-distribution");
     expect(html).toContain("报表模板");
+    expect(html).toContain("导出 CSV");
     expect(html).toContain("汇总指标");
     expect(html).toContain("Department code");
     expect(html).toContain("BIO");

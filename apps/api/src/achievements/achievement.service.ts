@@ -16,6 +16,7 @@ import {
   isRestrictedSecretLevel,
 } from "../authorization/policy/secret-access-policy.service";
 import { PrismaService } from "../database/prisma.service";
+import { createCsv } from "../export/csv";
 import { UserContext } from "../identity/user-context";
 import {
   ActiveWorkflowInstanceAlreadyExistsError,
@@ -74,6 +75,8 @@ import { PatentDetailDto } from "./dto/patent-detail.dto";
 import { SoftwareCopyrightDetailDto } from "./dto/software-copyright-detail.dto";
 import { UpdateAchievementDto } from "./dto/update-achievement.dto";
 
+const exportRowLimit = 1000;
+
 @Injectable()
 export class AchievementService {
   constructor(
@@ -125,6 +128,68 @@ export class AchievementService {
       page,
       pageSize,
     };
+  }
+
+  async exportCsv(
+    context: UserContext,
+    query: AchievementListQueryDto = {},
+  ): Promise<string> {
+    const result = await this.list(context, {
+      ...query,
+      page: 1,
+      pageSize: exportRowLimit,
+    });
+    const rows = result.items.slice(0, exportRowLimit);
+    const csv = createCsv(
+      [
+        { key: "id", header: "ID" },
+        { key: "type", header: "Type" },
+        { key: "title", header: "Title" },
+        { key: "status", header: "Status" },
+        { key: "secretLevel", header: "Secret level" },
+        { key: "departmentId", header: "Department ID" },
+        { key: "createdAt", header: "Created at", value: (row) => toExportDate(row.createdAt) },
+        { key: "updatedAt", header: "Updated at", value: (row) => toExportDate(row.updatedAt) },
+        {
+          key: "submittedAt",
+          header: "Submitted at",
+          value: (row) => toExportDate(row.submittedAt),
+        },
+        {
+          key: "archivedAt",
+          header: "Archived at",
+          value: (row) => toExportDate(row.archivedAt),
+        },
+        {
+          key: "voidedAt",
+          header: "Voided at",
+          value: (row) => toExportDate(row.voidedAt),
+        },
+        { key: "isRestricted", header: "Restricted" },
+        { key: "isRedacted", header: "Redacted" },
+      ],
+      rows,
+    );
+
+    await this.auditService.recordEvent({
+      actor: {
+        userId: context.userId,
+        departmentId: context.departmentId,
+      },
+      action: AuditActionCode.configUpdate,
+      target: {
+        type: AuditTargetTypeCode.achievement,
+      },
+      oldValue: null,
+      newValue: {
+        operation: "EXPORT_CSV",
+        exportType: "ACHIEVEMENT_LEDGER",
+        rowCount: rows.length,
+        rowLimit: exportRowLimit,
+      },
+    });
+
+    return csv;
   }
 
   async createDraft(
@@ -894,6 +959,14 @@ const toAchievementAuditSummary = (
 
 const toAuditIsoString = (value: Date | string): string =>
   value instanceof Date ? value.toISOString() : value;
+
+const toExportDate = (value: Date | string | null | undefined): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  return value instanceof Date ? value.toISOString() : value;
+};
 
 const toContributorInput = (
   contributor: CreateAchievementDto["contributors"][number],

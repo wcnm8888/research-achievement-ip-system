@@ -1,7 +1,14 @@
 import { Alert, Button, Card, Input, InputNumber, Select, Space, Tag, Typography } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createApiClient, isApiError, type ApiClient, type ApiError } from "./api-client";
+import {
+  createApiClient,
+  isApiError,
+  type ApiClient,
+  type ApiError,
+  type ApiQuery,
+} from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { downloadCsvExport } from "./export-download";
 import type {
   AuditActionCode,
   AuditLogListResult,
@@ -126,6 +133,10 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
   const [draftFilters, setDraftFilters] = useState<AuditLogFilters>(defaultAuditFilters);
   const [appliedFilters, setAppliedFilters] = useState<AuditLogFilters>(defaultAuditFilters);
   const [auditState, setAuditState] = useState<Loadable<AuditLogListResult>>(emptyLoadable);
+  const [exportState, setExportState] = useState<{ loading: boolean; error: ApiError | null }>({
+    loading: false,
+    error: null,
+  });
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
   const queryResult = useMemo(() => buildAuditLogQueryResult(appliedFilters), [appliedFilters]);
 
@@ -165,6 +176,18 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
     setAppliedFilters(defaultAuditFilters);
   };
 
+  const exportCsv = () => {
+    setExportState({ loading: true, error: null });
+    void exportAuditLogsCsv(apiClient, appliedFilters)
+      .then(() => setExportState({ loading: false, error: null }))
+      .catch((error: unknown) =>
+        setExportState({
+          loading: false,
+          error: mapAuditLogErrorToDisplay(normalizeError(error)),
+        }),
+      );
+  };
+
   if (!hasDemoUser(demoUserId)) {
     return (
       <Space direction="vertical" size={16} className="page-stack">
@@ -195,13 +218,21 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
         title="审计日志"
         description="只读展示经脱敏处理的审计列表，权限和范围由系统统一控制。"
         extra={
-          <Button onClick={loadAuditLogs} loading={auditState.loading}>
-            刷新
-          </Button>
+          <Space size={8} wrap>
+            <Button onClick={loadAuditLogs} loading={auditState.loading}>
+              刷新
+            </Button>
+            <Button onClick={exportCsv} loading={exportState.loading}>
+              导出 CSV
+            </Button>
+          </Space>
         }
       />
 
       <PermissionHint description="审计记录已脱敏展示，当前页面只提供只读查询。" />
+      {exportState.error ? (
+        <Typography.Text type="danger">{exportState.error.message}</Typography.Text>
+      ) : null}
 
       <Card className="shell-card">
         <Space className="audit-filter-bar" size={12} wrap>
@@ -408,6 +439,24 @@ export const loadValidatedAuditLogsForDemoUser = async (
   return fetchAuditLogs(client, result.query);
 };
 
+export const exportAuditLogsCsv = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  filters: AuditLogFilters,
+): Promise<void> => {
+  const result = buildAuditLogQueryResult(filters);
+
+  if (!result.valid) {
+    throw result.error;
+  }
+
+  await downloadCsvExport(
+    client,
+    "/audit-logs/export.csv",
+    result.query as ApiQuery,
+    "audit-logs.csv",
+  );
+};
+
 export const getAuditLogListState = (
   loading: boolean,
   error: ApiError | null,
@@ -510,9 +559,7 @@ export const getStep18BReadOnlyBoundary = () => ({
   permission: "audit:read_masked",
   allowedFilters: ["action", "targetType", "targetId", "actorUserId", "traceId", "take"],
   unavailableFeatures: [
-    "导出",
-    "下载",
-    "未脱敏查看",
+    "未脱敏查看或导出",
     "写入",
     "附件能力",
     "系统配置",

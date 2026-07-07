@@ -2,6 +2,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Header,
   Inject,
   Query,
   UseGuards,
@@ -50,6 +51,24 @@ export class AuditController {
   ) {
     try {
       return await this.auditService.listMasked(
+        currentUser,
+        toAuditMaskedQueryInput(query),
+      );
+    } catch (error) {
+      throw mapAuditServiceError(error);
+    }
+  }
+
+  @Get("export.csv")
+  @RequirePermissions(PermissionCode.auditReadMasked)
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  @Header("Content-Disposition", 'attachment; filename="audit-logs.csv"')
+  async exportMaskedCsv(
+    @CurrentUser() currentUser: UserContext,
+    @Query(auditMaskedQueryValidationPipe) query: AuditMaskedQueryDto = {},
+  ) {
+    try {
+      return await this.auditService.exportMaskedCsv(
         currentUser,
         toAuditMaskedQueryInput(query),
       );

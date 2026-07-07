@@ -25,6 +25,7 @@ const ids = {
 
 type AuditServiceMock = {
   listMasked: ReturnType<typeof vi.fn>;
+  exportMaskedCsv: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -87,6 +88,7 @@ const makeMaskedAuditResult = (): MaskedAuditListResult => ({
 
 const createServiceMock = (): AuditServiceMock => ({
   listMasked: vi.fn().mockResolvedValue(makeMaskedAuditResult()),
+  exportMaskedCsv: vi.fn().mockResolvedValue("ID,Has old value\r\naudit-1,true\r\n"),
 });
 
 describe("Audit routes through AppModule", () => {
@@ -195,6 +197,41 @@ describe("Audit routes through AppModule", () => {
 
       expect(response.body.message).toBe("Required permissions are missing.");
       expect(service.listMasked).not.toHaveBeenCalled();
+      expect(service.exportMaskedCsv).not.toHaveBeenCalled();
+    });
+  });
+
+  it("exports masked audit logs as CSV without raw sensitive values", async () => {
+    await withAppModule([PermissionCode.auditReadMasked], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/audit-logs/export.csv")
+        .set("X-Demo-User-Id", ids.actor)
+        .query({
+          action: AuditActionCode.update,
+          targetType: AuditTargetTypeCode.achievement,
+          targetId: ids.target,
+          take: "25",
+        })
+        .expect(200);
+
+      expect(response.headers["content-type"]).toContain("text/csv");
+      expect(response.headers["content-disposition"]).toContain("audit-logs.csv");
+      expect(response.text).toBe("ID,Has old value\r\naudit-1,true\r\n");
+      expect(response.text).not.toContain("token");
+      expect(response.text).not.toContain("password");
+      expect(response.text).not.toContain("cookie");
+      expect(service.exportMaskedCsv).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.actor,
+          departmentId: ids.department,
+        }),
+        expect.objectContaining({
+          action: AuditActionCode.update,
+          targetType: AuditTargetTypeCode.achievement,
+          targetId: ids.target,
+          take: 25,
+        }),
+      );
     });
   });
 

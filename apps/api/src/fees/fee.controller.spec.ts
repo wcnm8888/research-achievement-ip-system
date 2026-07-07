@@ -36,6 +36,7 @@ const ids = {
 
 type FeeServiceMock = {
   listFees: ReturnType<typeof vi.fn>;
+  exportCsv: ReturnType<typeof vi.fn>;
   getFeeWarnings: ReturnType<typeof vi.fn>;
   listFeeReviewHistory: ReturnType<typeof vi.fn>;
   getFee: ReturnType<typeof vi.fn>;
@@ -184,6 +185,7 @@ const makeCreatePayload = () => ({
 
 const createServiceMock = (): FeeServiceMock => ({
   listFees: vi.fn().mockResolvedValue([makeFeeRecord()]),
+  exportCsv: vi.fn().mockResolvedValue("ID,Amount\r\nfee-1,1200\r\n"),
   getFeeWarnings: vi.fn().mockResolvedValue(makeFeeWarningSummary()),
   listFeeReviewHistory: vi.fn().mockResolvedValue(makeFeeReviewHistory()),
   getFee: vi.fn().mockResolvedValue(makeFeeRecord()),
@@ -309,6 +311,36 @@ describe("FeeController HTTP", () => {
           take: 5,
         }),
       );
+    });
+  });
+
+  it("exports fees as CSV with fee:read_department and validated filters", async () => {
+    await withTestApp([PermissionCode.feeReadDepartment], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/fees/export.csv")
+        .set("X-Demo-User-Id", ids.user)
+        .query({
+          achievementId: ids.achievement,
+          feeType: FeeTypeCode.patentAnnual,
+          payStatus: PayStatusCode.pending,
+        })
+        .expect(200);
+
+      expect(response.headers["content-type"]).toContain("text/csv");
+      expect(response.headers["content-disposition"]).toContain("fees.csv");
+      expect(response.text).toBe("ID,Amount\r\nfee-1,1200\r\n");
+      expect(service.exportCsv).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          departmentId: ids.department,
+        }),
+        expect.objectContaining({
+          achievementId: ids.achievement,
+          feeType: FeeTypeCode.patentAnnual,
+          payStatus: PayStatusCode.pending,
+        }),
+      );
+      expect(service.getFee).not.toHaveBeenCalled();
     });
   });
 

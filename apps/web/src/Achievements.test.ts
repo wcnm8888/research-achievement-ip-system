@@ -16,6 +16,7 @@ import {
   canCreateAchievementDraft,
   canEditAchievementDraft,
   dryRunAchievementImport,
+  exportAchievementCsv,
   getAchievementImportApplyEligibility,
   getAchievementDisplayTitle,
   hasAchievementImportDryRunPermission,
@@ -500,6 +501,27 @@ describe("buildAchievementListQuery", () => {
       type: undefined,
       page: 1,
       pageSize: 20,
+    });
+  });
+});
+
+describe("achievement CSV export", () => {
+  it("downloads the achievement ledger with applied filters only", async () => {
+    const downloadBlob = vi.fn(async () => new Blob(["csv"]));
+
+    await exportAchievementCsv(
+      { downloadBlob },
+      {
+        keyword: "  neural interface  ",
+        status: "ARCHIVED",
+        type: "PATENT",
+      },
+    );
+
+    expect(downloadBlob).toHaveBeenCalledWith("/achievements/export.csv", {
+      keyword: "neural interface",
+      status: "ARCHIVED",
+      type: "PATENT",
     });
   });
 });

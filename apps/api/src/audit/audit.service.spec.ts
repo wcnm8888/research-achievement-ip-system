@@ -243,4 +243,37 @@ describe("AuditService.listMasked", () => {
     expect(serialized).not.toContain("raw-checksum");
     expect(serialized).not.toContain("raw-config-ref");
   });
+
+  it("exports masked audit CSV with safe summary fields only", async () => {
+    const { service, repository } = createService();
+
+    const csv = await service.exportMaskedCsv(context, {
+      targetType: AuditTargetTypeCode.achievement,
+      targetId: ids.achievement,
+      take: 25,
+    });
+
+    expect(repository.findMany).toHaveBeenCalledWith({
+      targetType: AuditTargetTypeCode.achievement,
+      targetId: ids.achievement,
+      take: 1000,
+    });
+    expect(csv).toContain("ID,Actor user ID,Actor department ID,Action");
+    expect(csv).toContain("true,true");
+    expect(csv).not.toContain("oldValue");
+    expect(csv).not.toContain("newValue");
+    expect(csv).not.toContain("token");
+    expect(csv).not.toContain("cookie");
+    expect(csv).not.toContain("password");
+    expect(csv).not.toContain("raw-");
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "EXPORT_CSV",
+          exportType: "AUDIT_LOG_MASKED",
+          rowLimit: 1000,
+        }),
+      }),
+    );
+  });
 });

@@ -10,6 +10,7 @@ import { SecretLevelCode } from "../authorization/constants/secret-level-code";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
 import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { PrismaService } from "../database/prisma.service";
+import { createCsv } from "../export/csv";
 import { UserContext } from "../identity/user-context";
 import { WorkflowService } from "../workflow/workflow.service";
 import { WorkflowTransactionClient } from "../workflow/workflow.repository";
@@ -110,6 +111,66 @@ export class FeeService {
       includeArchived: query.includeArchived,
       take: query.take,
     });
+  }
+
+  async exportCsv(
+    context: UserContext,
+    query: FeeQueryDto = {},
+  ): Promise<string> {
+    const rows = (
+      await this.listFees(context, {
+        ...query,
+        take: exportRowLimit,
+      })
+    ).slice(0, exportRowLimit);
+    const csv = createCsv(
+      [
+        { key: "id", header: "ID" },
+        { key: "achievementId", header: "Achievement ID" },
+        { key: "departmentId", header: "Department ID" },
+        { key: "feeType", header: "Fee type" },
+        { key: "fundSource", header: "Fund source" },
+        { key: "amount", header: "Amount" },
+        { key: "dueDate", header: "Due date", value: (row) => toExportDate(row.dueDate) },
+        { key: "paidDate", header: "Paid date", value: (row) => toExportDate(row.paidDate) },
+        { key: "payStatus", header: "Pay status" },
+        { key: "voucherNo", header: "Voucher no" },
+        { key: "reviewStatus", header: "Review status" },
+        {
+          key: "reviewedAt",
+          header: "Reviewed at",
+          value: (row) => toExportDate(row.reviewedAt),
+        },
+        { key: "createdAt", header: "Created at", value: (row) => toExportDate(row.createdAt) },
+        { key: "updatedAt", header: "Updated at", value: (row) => toExportDate(row.updatedAt) },
+        {
+          key: "archivedAt",
+          header: "Archived at",
+          value: (row) => toExportDate(row.archivedAt),
+        },
+      ],
+      rows,
+    );
+
+    await this.auditService.recordEvent({
+      actor: {
+        userId: context.userId,
+        departmentId: context.departmentId,
+      },
+      action: AuditActionCode.configUpdate,
+      target: {
+        type: AuditTargetTypeCode.feeRecord,
+      },
+      oldValue: null,
+      newValue: {
+        operation: "EXPORT_CSV",
+        exportType: "FEE_LEDGER",
+        rowCount: rows.length,
+        rowLimit: exportRowLimit,
+      },
+    });
+
+    return csv;
   }
 
   async getFee(context: UserContext, feeRecordId: string): Promise<FeeRecordRecord> {
@@ -769,7 +830,16 @@ const parseOptionalDate = (value: string | undefined): Date | undefined =>
 const toAuditDateString = (value: Date | string): string =>
   value instanceof Date ? value.toISOString() : value;
 
+const toExportDate = (value: Date | string | null | undefined): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  return value instanceof Date ? value.toISOString() : value;
+};
+
 const toUtcDateOnly = (value: Date): Date =>
   new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 
 const toDateOnlyString = (value: Date): string => value.toISOString().slice(0, 10);
+const exportRowLimit = 1000;

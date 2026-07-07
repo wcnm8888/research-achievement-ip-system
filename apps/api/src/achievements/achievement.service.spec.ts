@@ -221,6 +221,7 @@ const createService = () => {
     canReadResource: vi.fn().mockReturnValue({ effect: "ALLOW", reason: "allowed" }),
   };
   const auditService = {
+    recordEvent: vi.fn().mockResolvedValue({ id: "audit-log" }),
     recordEventInTransaction: vi.fn().mockResolvedValue({ id: "audit-log" }),
   };
 
@@ -401,6 +402,45 @@ describe("AchievementService.list", () => {
         title: "Granted confidential title",
         isRestricted: true,
         isRedacted: false,
+      }),
+    );
+  });
+
+  it("exports a safe achievement ledger CSV through the readable policy", async () => {
+    const { auditService, repository, service } = createService();
+    repository.list.mockResolvedValueOnce({
+      total: 1,
+      items: [
+        makeListRecord({
+          secretLevel: SecretLevelCode.secret,
+        }),
+      ],
+    });
+
+    const csv = await service.exportCsv(makeContext([PermissionCode.userContextRead]), {
+      keyword: "Paper",
+    });
+
+    expect(repository.list).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 1,
+        pageSize: 1000,
+        filters: expect.objectContaining({ keyword: "Paper" }),
+      }),
+    );
+    expect(csv).toContain("ID,Type,Title,Status,Secret level");
+    expect(csv).toContain(`${ids.achievement},PAPER,Paper draft,DRAFT,SECRET`);
+    expect(csv).not.toContain("password");
+    expect(csv).not.toContain("token");
+    expect(csv).not.toContain("cookie");
+    expect(csv).not.toContain("raw");
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "EXPORT_CSV",
+          exportType: "ACHIEVEMENT_LEDGER",
+          rowLimit: 1000,
+        }),
       }),
     );
   });

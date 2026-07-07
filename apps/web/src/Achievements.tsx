@@ -22,10 +22,12 @@ import {
   type AccountManagementApiClient,
   type ApiClient,
   type ApiError,
+  type ApiQuery,
   type AuthUser,
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import { sanitizeBusinessTitle } from "./display-text";
+import { downloadCsvExport } from "./export-download";
 import { ImportJobHistoryPanel, type ImportJobHistoryFilters } from "./ImportJobHistoryPanel";
 import {
   ImportDryRunPanelShell,
@@ -141,6 +143,10 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [achievements, setAchievements] =
     useState<Loadable<AchievementListResult>>(emptyLoadable);
+  const [exportState, setExportState] = useState<{ loading: boolean; error: ApiError | null }>({
+    loading: false,
+    error: null,
+  });
   const [formRequest, setFormRequest] = useState<FormRequest | null>(null);
   const [detailItem, setDetailItem] = useState<AchievementListItem | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -190,6 +196,15 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
     setAppliedFilters({});
     setPage(1);
     setPageSize(defaultPageSize);
+  };
+
+  const exportCsv = () => {
+    setExportState({ loading: true, error: null });
+    void exportAchievementCsv(apiClient, appliedFilters)
+      .then(() => setExportState({ loading: false, error: null }))
+      .catch((error: unknown) =>
+        setExportState({ loading: false, error: normalizeError(error) }),
+      );
   };
 
   const hasFilters = hasActiveFilters(appliedFilters);
@@ -336,6 +351,9 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
         }
       />
       <PermissionHint description="系统已按当前账号权限过滤成果数据。" />
+      {exportState.error ? (
+        <Typography.Text type="danger">{exportState.error.message}</Typography.Text>
+      ) : null}
 
       {canUseImportDryRun ? (
         <>
@@ -402,6 +420,9 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
           </Button>
           <Button onClick={resetFilters}>重置</Button>
           <Button onClick={loadAchievements}>刷新</Button>
+          <Button onClick={exportCsv} loading={exportState.loading}>
+            导出 CSV
+          </Button>
         </Space>
       </Card>
 
@@ -1428,6 +1449,17 @@ const fetchAchievementList = async (
     pageSize: typeof result.pageSize === "number" ? result.pageSize : query.pageSize,
   };
 };
+
+export const exportAchievementCsv = async (
+  client: Pick<ApiClient, "downloadBlob">,
+  filters: AchievementFilters,
+): Promise<void> =>
+  downloadCsvExport(
+    client,
+    "/achievements/export.csv",
+    trimFilters(filters) as ApiQuery,
+    "achievements.csv",
+  );
 
 const trimFilters = (filters: AchievementFilters): AchievementFilters => {
   const keyword = filters.keyword?.trim();

@@ -206,6 +206,7 @@ const createService = () => {
     $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
   };
   const auditService = {
+    recordEvent: vi.fn().mockResolvedValue({ id: "audit-log" }),
     recordEventInTransaction: vi.fn().mockResolvedValue({ id: "audit-log" }),
   };
   const workflowService = {
@@ -268,6 +269,40 @@ describe("FeeService.listFees", () => {
       FeePermissionDeniedError,
     );
     expect(repository.findMany).not.toHaveBeenCalled();
+  });
+
+  it("exports a safe fee ledger CSV through the readable policy", async () => {
+    const { auditService, repository, service } = createService();
+
+    const csv = await service.exportCsv(makeContext([PermissionCode.feeReadDepartment]), {
+      payStatus: PayStatusCode.pending,
+    });
+
+    expect(repository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: feeReadableWhere,
+        payStatus: PayStatusCode.pending,
+        take: 1000,
+      }),
+    );
+    expect(csv).toContain("ID,Achievement ID,Department ID,Fee type");
+    expect(csv).toContain(`${ids.feeRecord},${ids.achievement},${ids.department},PATENT_ANNUAL`);
+    expect(csv).not.toContain("createdById");
+    expect(csv).not.toContain("updatedById");
+    expect(csv).not.toContain("reviewedById");
+    expect(csv).not.toContain("password");
+    expect(csv).not.toContain("token");
+    expect(csv).not.toContain("cookie");
+    expect(csv).not.toContain("raw");
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "EXPORT_CSV",
+          exportType: "FEE_LEDGER",
+          rowLimit: 1000,
+        }),
+      }),
+    );
   });
 });
 

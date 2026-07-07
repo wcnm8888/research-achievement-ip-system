@@ -27,6 +27,7 @@ const ids = {
 type ReportsServiceMock = {
   listTemplates: ReturnType<typeof vi.fn>;
   runTemplate: ReturnType<typeof vi.fn>;
+  exportTemplateCsv: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -86,6 +87,7 @@ const makeRunResult = (): CustomReportRunResult => ({
 const createServiceMock = (): ReportsServiceMock => ({
   listTemplates: vi.fn().mockReturnValue(customReportTemplates),
   runTemplate: vi.fn().mockResolvedValue(makeRunResult()),
+  exportTemplateCsv: vi.fn().mockResolvedValue("Count\r\n3\r\n"),
 });
 
 describe("Reports routes through AppModule", () => {
@@ -154,6 +156,41 @@ describe("Reports routes through AppModule", () => {
       expect(response.body.message).toBe("Required permissions are missing.");
       expect(service.listTemplates).not.toHaveBeenCalled();
       expect(service.runTemplate).not.toHaveBeenCalled();
+      expect(service.exportTemplateCsv).not.toHaveBeenCalled();
+    });
+  });
+
+  it("exports a custom report template as CSV with parsed filters", async () => {
+    await withAppModule([PermissionCode.userContextRead], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/reports/templates/achievement-distribution/export.csv")
+        .set("X-Demo-User-Id", ids.user)
+        .query({
+          dateFrom: "2026-01-01",
+          dateTo: "2026-12-31",
+          departmentId: ids.department,
+        })
+        .expect(200);
+
+      expect(response.headers["content-type"]).toContain("text/csv");
+      expect(response.headers["content-disposition"]).toContain("custom-report.csv");
+      expect(response.text).toBe("Count\r\n3\r\n");
+      expect(service.exportTemplateCsv).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({
+          userId: ids.user,
+          departmentId: ids.department,
+        }),
+        CustomReportTemplateIdCode.achievementDistribution,
+        {
+          dateFrom: new Date("2026-01-01"),
+          dateTo: new Date("2026-12-31"),
+          departmentId: ids.department,
+          achievementType: undefined,
+          status: undefined,
+          groupBy: undefined,
+          dueSoonDays: undefined,
+        },
+      );
     });
   });
 

@@ -4,6 +4,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Header,
   HttpCode,
   Inject,
   NotFoundException,
@@ -91,6 +92,21 @@ export class FeeController {
   ) {
     try {
       return await this.feeService.listFees(currentUser, query);
+    } catch (error) {
+      throw mapFeeServiceError(error);
+    }
+  }
+
+  @Get("export.csv")
+  @RequirePermissions(PermissionCode.feeReadDepartment)
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  @Header("Content-Disposition", 'attachment; filename="fees.csv"')
+  async exportCsv(
+    @CurrentUser() currentUser: UserContext,
+    @Query(feeQueryValidationPipe) query: FeeQueryDto = {},
+  ) {
+    try {
+      return await this.feeService.exportCsv(currentUser, query);
     } catch (error) {
       throw mapFeeServiceError(error);
     }
