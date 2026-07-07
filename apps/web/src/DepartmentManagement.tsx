@@ -1092,7 +1092,7 @@ function DepartmentImportApplyResultView({
           <Descriptions.Item label="失败行">
             {result.summary.failedRows}
           </Descriptions.Item>
-          <Descriptions.Item label="Error count">
+          <Descriptions.Item label="错误数量">
             {result.summary.errorCount}
           </Descriptions.Item>
           <Descriptions.Item label="审计操作">
@@ -1101,7 +1101,7 @@ function DepartmentImportApplyResultView({
         </Descriptions>
         {errorCodes.length > 0 ? (
           <Space size={[6, 6]} wrap>
-            <Typography.Text strong>Rejected codes</Typography.Text>
+            <Typography.Text strong>拒绝原因代码</Typography.Text>
             {errorCodes.map((code) => (
               <Tag color="red" key={code}>
                 {code}

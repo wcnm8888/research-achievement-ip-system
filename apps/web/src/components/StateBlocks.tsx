@@ -109,7 +109,7 @@ type BoundaryNoticeProps = {
   step?: string;
 };
 
-export function BoundaryNotice({ title, description, step = "后续 Step" }: BoundaryNoticeProps) {
+export function BoundaryNotice({ title, description, step = "后续阶段" }: BoundaryNoticeProps) {
   return (
     <div className="boundary-notice">
       <Space direction="vertical" size={8}>

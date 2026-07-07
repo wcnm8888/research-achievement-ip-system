@@ -170,7 +170,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="审计日志"
-          description="选择本地演示用户后，前端才会请求后端 masked readonly 审计日志接口。"
+          description="选择本地演示用户后，前端才会请求后端脱敏只读审计日志。"
         />
         <PermissionHint description="当前没有可用的业务用户，审计日志页面不会加载业务数据。" />
         <BoundaryNotice
@@ -198,7 +198,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
         }
       />
 
-      <PermissionHint description="本页不提供导出、下载、unmasked 查看或写入入口。页面只渲染 oldValueMasked、newValueMasked、ipAddressMasked、userAgentMasked 与安全摘要字段。" />
+      <PermissionHint description="本页不提供导出、下载、未脱敏查看或写入入口。页面只渲染变更前后脱敏摘要、脱敏 IP、脱敏浏览器信息与安全摘要字段。" />
 
       <Card className="shell-card">
         <Space className="audit-filter-bar" size={12} wrap>
@@ -265,7 +265,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
           <Button onClick={resetFilters}>重置</Button>
           <Button onClick={loadAuditLogs}>刷新</Button>
           <Tag color="gold">脱敏展示</Tag>
-          <Tag>take 1-100</Tag>
+          <Tag>最多 100 条</Tag>
         </Space>
         {!queryResult.valid ? (
           <Alert
@@ -284,7 +284,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
         extra={
           <Space size={8} wrap>
             <Tag color={stateKind === "ready" ? "blue" : "default"}>{items.length} 条</Tag>
-            <Tag color="gold">audit:read_masked</Tag>
+            <Tag color="gold">脱敏审计权限</Tag>
           </Space>
         }
       >
@@ -293,7 +293,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
           loading={auditState.loading}
           error={auditState.error}
           empty={stateKind === "empty"}
-          emptyText="暂无可展示的 masked 审计日志"
+          emptyText="暂无可展示的脱敏审计日志"
           onRetry={loadAuditLogs}
         >
           <AuditLogList items={items} />
@@ -509,12 +509,12 @@ export const getStep18BReadOnlyBoundary = () => ({
   unavailableFeatures: [
     "导出",
     "下载",
-    "unmasked 查看",
+    "未脱敏查看",
     "写入",
     "附件能力",
     "系统配置",
     "真实费用写入",
-    "seed/migrate/data cleanup",
+    "本地数据重置或清理",
   ],
 });
 
@@ -522,7 +522,7 @@ const AuditSummaryPanel = ({ filters, count }: { filters: string[]; count: numbe
   <div className="audit-summary-panel">
     <div className="audit-summary-count">
       <Typography.Text type="secondary">当前返回</Typography.Text>
-      <Typography.Text strong>{count} 条 masked 记录</Typography.Text>
+      <Typography.Text strong>{count} 条脱敏记录</Typography.Text>
     </div>
     <div className="audit-filter-summary">
       <Typography.Text type="secondary">当前筛选</Typography.Text>
@@ -552,13 +552,13 @@ const AuditLogCard = ({ log }: { log: MaskedAuditLog }) => {
         <Space size={8} wrap>
           <Tag color="blue">{display.actionLabel}</Tag>
           <Tag>{display.targetTypeLabel}</Tag>
-          <Tag color="gold">masked</Tag>
+          <Tag color="gold">已脱敏</Tag>
         </Space>
         <Typography.Title level={5}>{display.id}</Typography.Title>
         <div className="audit-meta-grid">
           <MetaLine label="操作人" value={display.actorUserId} />
           <MetaLine label="对象 ID" value={display.targetId} />
-          <MetaLine label="Trace" value={display.traceId} />
+          <MetaLine label="链路标识" value={display.traceId} />
           <MetaLine label="时间" value={display.createdAt} />
           <MetaLine label="密级" value={display.targetSecretLevel} />
           <MetaLine label="IP" value={display.ipAddressMasked} />
@@ -566,8 +566,8 @@ const AuditLogCard = ({ log }: { log: MaskedAuditLog }) => {
         </div>
       </div>
       <div className="audit-masked-values">
-        <MaskedValueBlock title="oldValueMasked" value={display.oldValuePreview} />
-        <MaskedValueBlock title="newValueMasked" value={display.newValuePreview} />
+        <MaskedValueBlock title="变更前脱敏摘要" value={display.oldValuePreview} />
+        <MaskedValueBlock title="变更后脱敏摘要" value={display.newValuePreview} />
       </div>
     </article>
   );

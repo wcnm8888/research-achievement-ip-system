@@ -50,7 +50,7 @@ export const navItems: NavItem[] = [
     key: "workbench",
     label: "工作台",
     step: "工作台",
-    description: "工作台是本轮唯一主要内容，读取 summary 和我的审批待办。",
+    description: "工作台展示核心摘要和我的审批待办。",
   },
   {
     key: "achievements",
@@ -721,7 +721,7 @@ function DemoContextBanner({ demoUserId }: { demoUserId: string | null }) {
       <Space size={12} wrap>
         <Tag color="blue">当前用户</Tag>
         <Typography.Text>{preset?.label ?? demoUserId}</Typography.Text>
-        {preset ? <Tag>{preset.role}</Tag> : <Tag color="default">CUSTOM</Tag>}
+        {preset ? <Tag>{preset.role}</Tag> : <Tag color="default">自定义</Tag>}
         <Typography.Text type="secondary">
           {preset?.department ?? "自定义用户"}
         </Typography.Text>

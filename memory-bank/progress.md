@@ -15272,3 +15272,50 @@
   - No production/VPS/production DB access.
   - No real external-system call.
   - No Docker operation.
+
+## 2026-07-07 Step 144 - Client-facing visible copy polish
+
+- Status: DONE with remaining real-demo-entry browser gate.
+- Goal:
+  - Continue the client-facing audit by scanning source for ordinary JSX English
+    text and fixing visible English/engineering labels that could still appear
+    to a reviewer.
+- Web copy cleanup:
+  - Localized remaining visible import-result, conversion-ledger, fee-review,
+    audit-log, search, workbench, dashboard, settings-boundary, demo-user, and
+    attachment-version labels.
+  - Replaced visible terms such as `Rejected codes`, `Error count`,
+    `Achievement conversion ledger`, `Fee review workflow task`, `take 1-100`,
+    `take 1-50`, `masked`, `summary`, `CUSTOM`, dashboard metric keys,
+    `dashboard summary`, `warnings API`, `Task ID`, `Step`, `Token`, `Cookie`,
+    `.env`, and `v{version}` with Chinese business or security-boundary copy.
+  - Updated SettingsBoundary and AuditLogs tests to match the new Chinese
+    boundary language.
+- Scans:
+  - Ordinary JSX text scan for `>[A-Za-z][^<]{2,}<` in non-test Web source:
+    no matches.
+  - Latest build output scan stored at
+    `.local-step144-client-facing-copy-polish/latest-build-text-scan.txt`.
+  - Latest build showed zero matches for the screenshot-era/high-risk visible
+    terms including `Phase 1 frontend`, `production auth`, `GET /`, `POST /`,
+    `dryRun=true`, `Achievement CSV dry-run`, `Safe preview`, raw network
+    errors, `Custom Reports`, `Secret Authorization`, `local/demo`,
+    `not production`, `raw JSON`, `batch mutation`, `Rejected codes`,
+    `Error count`, `Achievement conversion ledger`, `Fee review workflow task`,
+    `dashboard summary`, `warnings API`, `Task ID`, `.env`, `CRUD`,
+    `take 1-100`, `take 1-50`, `masked readonly`, and `unmasked`.
+- Remaining build scan caveat:
+  - `X-Demo-User-Id`, `Status`, `Token`, `oldValueMasked`, and
+    `newValueMasked` still appear in the built artifact as internal header,
+    type/field, or safety-field names; browser DOM/screenshots must confirm
+    they are not ordinary page copy.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App AchievementDetail Fees AuditLogs Search Workbench Dashboard AccountManagement DepartmentManagement SettingsBoundary`: PASS, 10 files / 222 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web exec vite build --outDir ../../.local-step144-client-facing-copy-polish/dist --emptyOutDir false`: PASS.
+- Explicitly not done:
+  - No API, Prisma schema, migration, package, lockfile, or config change.
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No Docker operation.

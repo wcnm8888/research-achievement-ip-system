@@ -274,12 +274,12 @@ describe("audit log display boundary", () => {
       unavailableFeatures: [
         "导出",
         "下载",
-        "unmasked 查看",
+        "未脱敏查看",
         "写入",
         "附件能力",
         "系统配置",
         "真实费用写入",
-        "seed/migrate/data cleanup",
+        "本地数据重置或清理",
       ],
     });
   });

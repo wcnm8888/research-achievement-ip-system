@@ -1326,7 +1326,7 @@ function UserAccountImportApplyResultView({
         </Typography.Text>
         {errorCodes.length > 0 ? (
           <Space size={[6, 6]} wrap>
-            <Typography.Text strong>Rejected codes</Typography.Text>
+            <Typography.Text strong>拒绝原因代码</Typography.Text>
             {errorCodes.map((code) => (
               <Tag color="red" key={code}>
                 {code}

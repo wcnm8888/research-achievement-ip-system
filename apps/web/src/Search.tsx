@@ -374,7 +374,7 @@ export function Search({ demoUserId }: SearchProps) {
           </Button>
           <Button onClick={resetFilters}>重置</Button>
           <Button onClick={loadSearch}>刷新</Button>
-          <Tag>take 1-50</Tag>
+          <Tag>最多 50 条</Tag>
         </Space>
         {!queryResult.valid ? (
           <Alert

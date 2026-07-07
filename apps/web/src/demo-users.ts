@@ -32,7 +32,7 @@ export const demoUserPresets: DemoUserPreset[] = [
     role: "SYSTEM_ADMIN",
     department: "科研管理办公室",
     userId: "40000000-0000-4000-8000-000000000003",
-    note: "用于验证全局角色在当前 Step 11 边界下的提示与权限反馈。",
+    note: "用于验证全局角色在当前边界下的提示与权限反馈。",
   },
 ];
 

@@ -1168,20 +1168,20 @@ function AchievementConversionSection({
 
   return (
     <>
-      <Divider orientation="left">Achievement conversion ledger</Divider>
+      <Divider orientation="left">成果转化台账</Divider>
       <Space direction="vertical" size={12} className="full-width">
         <Alert
           showIcon
           type="info"
-          message="Local/demo conversion deepening only"
-          description="This local MVP records status details, revenue status, safe allocation summaries, and post-evaluation notes for review. It is not real contract, legal, payment, invoice, settlement, finance system, or external-system acceptance."
+          message="成果转化本地演示记录"
+          description="此处展示转化状态、收入状态、收益分配安全摘要和后评估备注；不代表真实合同、法务、付款、发票、结算、财务系统或外部系统验收。"
         />
 
         <DataState
           loading={conversions.loading}
           error={conversions.error}
           empty={!conversions.loading && !conversions.error && items.length === 0}
-          emptyText="No conversion records"
+          emptyText="暂无转化记录"
           onRetry={() => void loadConversions()}
         >
           <div className="conversion-ledger-list">
@@ -1214,34 +1214,34 @@ function AchievementConversionSection({
                     <Descriptions.Item label="Contract status">
                       {conversionContractStatusLabels[item.contractStatus] ?? item.contractStatus}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Revenue status">
+                    <Descriptions.Item label="收入状态">
                       {conversionRevenueStatusLabels[item.revenueStatus] ?? item.revenueStatus}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Revenue due date">
+                    <Descriptions.Item label="收入应收日期">
                       {formatDate(item.revenueDueDate)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Revenue received date">
+                    <Descriptions.Item label="收入到账日期">
                       {formatDate(item.revenueReceivedDate)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Contract total">
+                    <Descriptions.Item label="合同金额">
                       {formatMoney(item.contractAmount)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Revenue total">
+                    <Descriptions.Item label="收入金额">
                       {formatMoney(item.revenueAmount)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Evaluation effect">
+                    <Descriptions.Item label="后评估效果">
                       {conversionEvaluationEffectLabels[item.evaluationEffect] ?? item.evaluationEffect}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Evaluation date">
+                    <Descriptions.Item label="后评估日期">
                       {formatDate(item.evaluationDate)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Evaluation summary" span={2}>
+                    <Descriptions.Item label="后评估摘要" span={2}>
                       {formatValue(item.evaluationSummary)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Benefit allocation detail" span={2}>
+                    <Descriptions.Item label="收益分配明细" span={2}>
                       {formatBenefitDistributionJson(item.benefitDistributionJson)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Benefit summary" span={2}>
+                    <Descriptions.Item label="收益分配摘要" span={2}>
                       {formatValue(item.benefitDistributionSummary)}
                     </Descriptions.Item>
                     <Descriptions.Item label="备注" span={2}>
@@ -1425,7 +1425,7 @@ function AchievementConversionSection({
                 />
                 <Input
                   className="conversion-ledger-input"
-                  placeholder="Evaluation date YYYY-MM-DD"
+                  placeholder="后评估日期 YYYY-MM-DD"
                   value={form.evaluationDate}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -1437,7 +1437,7 @@ function AchievementConversionSection({
               </Space>
               <Space direction="vertical" size={8} className="full-width">
                 <Space size={8} wrap>
-                  <Typography.Text strong>Safe benefit allocation detail</Typography.Text>
+                  <Typography.Text strong>收益分配安全明细</Typography.Text>
                   <Button
                     size="small"
                     disabled={form.benefitDistributionJson.length >= conversionBenefitAllocationMaxRows}
@@ -1451,12 +1451,12 @@ function AchievementConversionSection({
                       }))
                     }
                   >
-                    Add allocation
+                    添加分配项
                   </Button>
                 </Space>
                 {form.benefitDistributionJson.length === 0 ? (
                   <Typography.Text type="secondary">
-                    No local allocation rows. Add only category, label, amount, and ratio.
+                    暂无本地分配行。仅填写类别、名称、金额和比例。
                   </Typography.Text>
                 ) : (
                   form.benefitDistributionJson.map((row, index) => (
@@ -1515,7 +1515,7 @@ function AchievementConversionSection({
                           }))
                         }
                       >
-                        Remove
+                        移除
                       </Button>
                     </Space>
                   ))
@@ -1523,7 +1523,7 @@ function AchievementConversionSection({
               </Space>
               <Input.TextArea
                 maxLength={1000}
-                placeholder="Post-evaluation summary"
+                placeholder="后评估摘要"
                 rows={2}
                 showCount
                 value={form.evaluationSummary}
@@ -1536,7 +1536,7 @@ function AchievementConversionSection({
               />
               <Input.TextArea
                 maxLength={1000}
-                placeholder="Benefit distribution summary"
+                placeholder="收益分配摘要"
                 rows={2}
                 showCount
                 value={form.benefitDistributionSummary}
@@ -2137,7 +2137,7 @@ function AttachmentMetadataList({
             <div className="attachment-metadata-main">
               <Space size={8} wrap>
                 <Typography.Text strong>{model.fileName}</Typography.Text>
-                <Tag>v{model.version}</Tag>
+                <Tag>版本 {model.version}</Tag>
                 <Tag color={getAttachmentStatusTagColor(attachment.status)}>
                   {model.statusLabel}
                 </Tag>

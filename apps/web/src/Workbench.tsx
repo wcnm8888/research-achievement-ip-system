@@ -79,7 +79,7 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
     <Space direction="vertical" size={16} className="page-stack">
       <SectionHeader
         title="工作台"
-        description="一期仅展示后端已提供的 summary、我的待办和明确边界入口。权限过滤以服务端为准。"
+        description="一期仅展示后端已提供的摘要、我的待办和明确边界入口。权限过滤以服务端为准。"
         extra={
           <Button
             onClick={() => {
@@ -246,7 +246,7 @@ function MyAchievementsCard({ onNavigate }: { onNavigate: (key: string) => void 
         </Typography.Text>
         <BoundaryNotice
           title="成果管理入口"
-          description="进入成果管理可查看后端返回的数据并执行当前状态允许的动作；审批、附件和费用工作流仍留到后续 Step。"
+          description="进入成果管理可查看后端返回的数据并执行当前状态允许的动作；审批、附件和费用工作流仍留到后续阶段。"
           step="成果管理"
         />
         <Button onClick={() => onNavigate("achievements")}>查看成果列表</Button>
@@ -266,7 +266,7 @@ function FeeWarningCard({
   const dueSoon = dashboard.data?.fee.deadline.value.dueSoon.count ?? 0;
 
   return (
-    <Card className="shell-card" title="费用预警" extra={<Tag color="default">summary</Tag>}>
+    <Card className="shell-card" title="费用预警" extra={<Tag color="default">摘要</Tag>}>
       <DataState loading={dashboard.loading} error={dashboard.error} onRetry={onRetry}>
         <Row gutter={12}>
           <Col span={12}>
@@ -277,7 +277,7 @@ function FeeWarningCard({
           </Col>
         </Row>
         <Typography.Paragraph type="secondary" className="card-note">
-          此处只读取 dashboard summary 的费用期限概览，不实现费用台账 CRUD。
+          此处只读取统计摘要中的费用期限概览，不在工作台直接维护费用台账。
         </Typography.Paragraph>
       </DataState>
     </Card>
@@ -304,7 +304,7 @@ function WorkbenchSkeletonBoundary({ onNavigate }: { onNavigate: (key: string) =
         <Card className="shell-card" title="工作台摘要">
           <BoundaryNotice
             title="等待演示上下文"
-            description="选择用户后再请求 dashboard summary。"
+            description="选择用户后再读取统计摘要。"
             step="工作台"
           />
         </Card>

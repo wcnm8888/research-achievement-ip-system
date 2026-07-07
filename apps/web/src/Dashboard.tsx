@@ -96,7 +96,7 @@ export function Dashboard({ demoUserId }: DashboardProps) {
       <Space direction="vertical" size={16} className="page-stack">
         <SectionHeader
           title="统计看板"
-          description="请选择本地演示用户后读取本地评分口径 dashboard summary。"
+          description="请选择本地演示用户后读取本地评分口径统计摘要。"
         />
         <PermissionHint description="当前没有可用的业务用户，统计看板不会加载业务数据。请选择有权限的用户后继续。" />
         <Card className="shell-card">
@@ -392,7 +392,7 @@ const DashboardControls = ({
         onChange={(value) => onDueSoonDaysChange(normalizeDashboardDueSoonDays(Number(value)))}
       />
       <Typography.Text type="secondary">
-        仅控制 dashboard summary 的 dueSoonDays 参数；页面不提供 today 自定义输入或趋势引擎。
+        仅控制统计摘要的到期天数范围；页面不提供自定义日期输入或趋势引擎。
       </Typography.Text>
     </Space>
   </Card>
@@ -558,7 +558,7 @@ const DashboardDepartmentRankingCard = ({
   <div className="dashboard-distribution-card">
     <div className="dashboard-distribution-header">
       <Typography.Text strong>部门成果排行</Typography.Text>
-      <Tag color="default">ACHIEVEMENT_DEPARTMENT_RANKING</Tag>
+      <Tag color="default">部门排行</Tag>
     </div>
     {departments.length === 0 ? (
       <Typography.Text type="secondary">暂无当前权限范围内部门聚合</Typography.Text>
@@ -587,7 +587,7 @@ const DashboardIntegrationRankingCard = ({
   <div className="dashboard-distribution-card">
     <div className="dashboard-distribution-header">
       <Typography.Text strong>外部接口 mock 调用</Typography.Text>
-      <Tag color="default">INTEGRATION_MOCK_BY_INTEGRATION</Tag>
+      <Tag color="default">接口调用聚合</Tag>
     </div>
     {integrations.length === 0 ? (
       <Typography.Text type="secondary">暂无最近 mock 调用聚合</Typography.Text>

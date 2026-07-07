@@ -1142,7 +1142,7 @@ function FeeDetailContent({
           showIcon
           type="info"
           message="检索中心只读边界"
-          description="本视图只补齐费用检索结果的只读详情联动；标记缴费、创建费用、warnings API、审计日志和系统配置均不在本步范围内。"
+          description="本视图只补齐费用检索结果的只读详情联动；标记缴费、创建费用、预警接口、审计日志和系统配置均不在本步范围内。"
         />
       ) : (
         <Alert
@@ -1333,26 +1333,26 @@ function FeeReviewWorkflowTaskSection({
 
   return (
     <>
-      <Divider orientation="left">Fee review workflow task</Divider>
+      <Divider orientation="left">费用审核任务</Divider>
       <Space direction="vertical" size={12} className="full-width">
         <Alert
           showIcon
           type={showReviewActions ? "info" : "warning"}
           message={
             showReviewActions
-              ? "Pending fee review task is assigned to current user"
-              : "No executable fee review task"
+              ? "当前用户可处理待审核费用任务"
+              : "暂无可执行的费用审核任务"
           }
           description={
             showReviewActions
-              ? "Approve and reject still call the existing fee review APIs; the backend completes the workflow task in the same transaction."
-              : "Review actions stay hidden unless the current user has a pending FEE_REVIEW task for this fee record."
+              ? "通过和驳回仍复用现有费用审核能力；后端会在同一事务内完成对应流程任务。"
+              : "只有当前用户拥有该费用记录的待处理费用审核任务时，才显示审核操作。"
           }
           action={
             showReviewActions ? (
               <Space>
                 <Button size="small" onClick={() => onOpenReviewAction?.("approve", feeRecord)}>
-                  Approve fee review
+                  通过费用审核
                 </Button>
                 <Button
                   size="small"
@@ -1397,13 +1397,13 @@ function FeeReviewWorkflowTaskCard({ task }: { task: WorkflowTask }) {
           {instance ? <Tag>{getWorkflowInstanceStatusLabel(instance.status)}</Tag> : null}
         </Space>
         <Typography.Text type="secondary" className="attachment-metadata-id">
-          Task ID: {task.id}
+          任务标识：{task.id}
         </Typography.Text>
       </div>
       <div className="attachment-metadata-grid">
-        <FeeVoucherMetadataLine label="Step" value={getWorkflowStepLabel(task.stepCode)} />
+        <FeeVoucherMetadataLine label="流程步骤" value={getWorkflowStepLabel(task.stepCode)} />
         <FeeVoucherMetadataLine
-          label="Status"
+          label="状态"
           value={getWorkflowTaskStatusLabel(task.status)}
         />
         <FeeVoucherMetadataLine
@@ -1734,7 +1734,7 @@ function FeeVoucherAttachmentList({
             <div className="attachment-metadata-main">
               <Space size={8} wrap>
                 <Typography.Text strong>{model.fileName}</Typography.Text>
-                <Tag>v{model.version}</Tag>
+                <Tag>版本 {model.version}</Tag>
                 <Tag color={getFeeVoucherAttachmentStatusTagColor(attachment.status)}>
                   {model.statusLabel}
                 </Tag>

@@ -19197,6 +19197,64 @@
   - No API, Prisma schema, migration, package, lockfile, or config change was
     made.
 
+## 2026-07-07 Step 144 - Client-facing visible copy polish evidence
+
+- Canonical state checked before copy-polish work:
+  - `git log -1 --oneline` -> `6a6956f fix: align production login status copy`.
+  - `git status --short` showed existing untracked local artifacts only.
+  - `git diff --stat` -> empty.
+- Source scan evidence:
+  - Initial JSX text scan found visible English labels such as `Rejected codes`,
+    `Achievement conversion ledger`, `Safe benefit allocation detail`, `Fee
+    review workflow task`, `take 1-100`, `take 1-50`, `masked`, `summary`,
+    `CUSTOM`, dashboard metric keys, and other engineering terms.
+  - After fixes, `rg -n --glob '!*.test.tsx' --glob '!*.test.ts' --glob '!*.spec.ts' --glob '!dist/**' --glob '!node_modules/**' '>[A-Za-z][^<]{2,}<' apps/web/src`
+    returned no matches.
+- Files updated:
+  - `apps/web/src/AccountManagement.tsx`.
+  - `apps/web/src/DepartmentManagement.tsx`.
+  - `apps/web/src/AchievementDetail.tsx`.
+  - `apps/web/src/Fees.tsx`.
+  - `apps/web/src/AuditLogs.tsx`.
+  - `apps/web/src/Search.tsx`.
+  - `apps/web/src/Workbench.tsx`.
+  - `apps/web/src/Dashboard.tsx`.
+  - `apps/web/src/App.tsx`.
+  - `apps/web/src/SettingsBoundary.tsx`.
+  - `apps/web/src/components/StateBlocks.tsx`.
+  - `apps/web/src/demo-users.ts`.
+  - `apps/web/src/AuditLogs.test.ts`.
+  - `apps/web/src/SettingsBoundary.test.ts`.
+  - Added `memory-bank/client-facing-visible-copy-polish-step144.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Build scan evidence:
+  - Ran `corepack pnpm --filter @research-ip/web exec vite build --outDir ../../.local-step144-client-facing-copy-polish/dist --emptyOutDir false`: PASS.
+  - Evidence file:
+    `.local-step144-client-facing-copy-polish/latest-build-text-scan.txt`.
+  - Build scan showed zero matches for the key screenshot-era and visible
+    English/engineering terms documented in
+    `memory-bank/client-facing-visible-copy-polish-step144.md`.
+  - Remaining build artifact matches (`X-Demo-User-Id`, `Status`, `Token`,
+    `oldValueMasked`, `newValueMasked`) are internal header/type/field/safety
+    names and still require browser DOM/screenshot confirmation before full UI
+    freeze.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- App AchievementDetail Fees AuditLogs Search Workbench Dashboard AccountManagement DepartmentManagement SettingsBoundary`: PASS, 10 files / 222 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Remaining caveat:
+  - This is source/test/build scan hardening.
+  - Full code/UI freeze still requires refreshing the actual `18081` demo entry
+    and running authenticated browser screenshot acceptance across the main
+    application pages.
+- Boundary evidence:
+  - No `.env` or `.env.production` content was read.
+  - No production/VPS/production DB access was performed.
+  - No real external-system call was performed.
+  - No Docker operation was performed.
+  - No API, Prisma schema, migration, package, lockfile, or config change was
+    made.
+
 ## 2026-07-07 Step 137 - Screenshot-driven client-facing Web polish evidence
 
 - Scope:
