@@ -1,5 +1,36 @@
 # Progress
 
+## 2026-07-08 Step 177 - Security and compliance negative acceptance plan
+
+- Status: PASS.
+- Goal:
+  - Confirm the 7.4 security and compliance negative acceptance补强 plan before
+    any source implementation.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Documentation:
+  - Added `memory-bank/security-compliance-negative-acceptance-plan-step177.md`.
+  - The plan separates local一期可验证项, existing test/evidence sources,
+    tests to rerun or add in Step178, explicitly not-done scope, production /
+    phase-two pending work, and safety boundaries.
+  - Covered RBAC unauthorized access, department isolation, restricted
+    achievements and attachments, attachment download/preview boundaries, audit
+    masking and export masking, account/role/department management boundaries,
+    error-state masking, unauthenticated login/session access, and local
+    backup/restore versus production pending boundaries.
+- Verification:
+  - Documentation-only change; no API/Web source tests were required in this
+    plan confirmation step.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, session value, connection string, production
+    credential, production/VPS/production DB, or real external system was
+    accessed.
+  - No source code, configuration, migration, seed, deployment, production
+    runtime setting, database data, backup artifact, screenshot, performance
+    log, or existing local artifact was changed.
+
 ## 2026-07-06 Step 111 - ImportJobItem Web row display plan
 
 - Status: DONE.

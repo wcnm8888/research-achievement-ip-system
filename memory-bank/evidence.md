@@ -1,5 +1,61 @@
 # Evidence
 
+## 2026-07-08 Step 177 - Security and compliance negative acceptance plan evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 289]`
+    with existing untracked local artifacts left untouched.
+  - Current user-provided HEAD reference: `a789f09330e467edb2253a84afb98477512dc888`
+    (`docs: record final demo smoke check`).
+- Context reviewed with targeted reads only:
+  - `memory-bank/final-acceptance-coverage-step174.md`.
+  - `memory-bank/final-demo-smoke-step176.md`.
+  - `memory-bank/testing-strategy.md`.
+  - Recent Step174-176 snippets from `memory-bank/progress.md` and
+    `memory-bank/evidence.md`.
+  - `memory-bank/local-backup-restore-acceptance-step170a.md`.
+  - `memory-bank/local-backup-restore-commands-step170a.md`.
+  - Path and test-name index for authorization, audit, attachment, auth/session,
+    account-management, department-management, secret-authorization, error
+    display, API client, and attachment backup tests.
+- Changed files:
+  - `memory-bank/security-compliance-negative-acceptance-plan-step177.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Plan coverage:
+  - RBAC unauthorized access.
+  - Department data isolation.
+  - Restricted achievement and restricted attachment unauthorized access.
+  - Attachment permission download and preview boundaries.
+  - Audit log masked display and masked export.
+  - Account, role, and department management permission boundaries.
+  - Error-state masking.
+  - Login and unauthenticated session access.
+  - Local backup/restore MVP and production pending backup/DR boundaries.
+- Recommended Step178 checks:
+  - Focused API security negative test rerun for authorization, auth, identity,
+    audit, attachments, account-management, department-management, and
+    secret-authorization.
+  - Focused Web security display rerun for api-client, error-display,
+    attachment-preview, AuditLogs, AccountManagement, and DepartmentManagement.
+  - Add a minimal API negative acceptance matrix if existing tests do not
+    provide unified 401/403/masking/no-storage-read assertions.
+- Verification:
+  - Documentation-only change; no API/Web tests required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, session value, connection string, API key,
+    provider credential, production credential, raw external payload, or raw
+    browser session material was read, displayed, logged, or committed.
+  - No production/VPS/production DB access.
+  - No real DOI, Crossref, OpenAlex, Scopus, SMTP, SMS, enterprise messaging,
+    HR/SSO, finance, patent service, or other external system call.
+  - No API/Web source, Prisma schema, migration, seed, deploy, production
+    configuration, database write, destructive restore, backup artifact,
+    screenshot, performance log, or existing untracked local artifact handling.
+
 ## 2026-07-06 Step 111 - ImportJobItem Web row display plan evidence
 
 - Goal:
