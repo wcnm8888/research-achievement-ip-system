@@ -1,5 +1,60 @@
 # Evidence
 
+## 2026-07-08 Step 178 - Local backup / restore static evidence execution
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 292]`
+    with existing untracked local artifacts left untouched.
+  - User-provided current HEAD: `1303499f3544573a29e4743b7cb82261a70e85d8`
+    (`docs: plan local backup restore evidence`).
+- Context reviewed with targeted reads only:
+  - `memory-bank/local-backup-restore-evidence-plan-step178.md`.
+  - Step170A backup / restore snippets from `memory-bank/local-backup-restore-acceptance-step170a.md` and `memory-bank/local-backup-restore-commands-step170a.md`.
+  - `deploy/validate-local-backup-artifact-list-sample.mjs`.
+  - Backup artifact-list schema / sample / metadata design snippets from `deploy/local-backup-artifact-list.schema.json`, `deploy/local-backup-artifact-list.sample.json`, and `deploy/local-backup-artifact-metadata-design.md`.
+  - Attachment backup implementation/test snippets from `apps/api/src/operations/attachment-binary-backup.ts` and `apps/api/src/operations/attachment-binary-backup.spec.ts`.
+  - Recent Step178 snippets from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+- Changed files:
+  - `memory-bank/local-backup-restore-static-evidence-step178.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Static validator:
+  - Command: `node deploy/validate-local-backup-artifact-list-sample.mjs`.
+  - Result: PASS.
+  - Output summary: `Local backup artifact-list sample validation PASS`; validated categories `POSTGRES_DUMP`, `ATTACHMENT_BINARY_ARCHIVE`, and `ATTACHMENT_BACKUP_MANIFEST`.
+  - Scope: committed schema and synthetic sample only; no Docker, `.env`, backup execution, encryption, upload, restore, production/VPS, or production DB access.
+- API test:
+  - Command: `corepack pnpm --filter @research-ip/api test -- attachment-binary-backup`.
+  - Result: PASS, 1 file / 2 tests.
+  - Coverage: attachment archive, manifest, artifact list, existing `POSTGRES_DUMP` artifact listing, digest generation, aggregate consistency status, missing-binary failure status, and sensitive metadata exclusion from manifest / artifact-list.
+  - Note: Vite CJS Node API deprecation warning was emitted; it is a non-blocking tooling warning for this evidence step.
+- Diff checks:
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - The checks emitted only existing line-ending conversion warnings for touched memory-bank files; no whitespace errors were reported.
+- Source fixes:
+  - None required.
+- Local一期 claim supported:
+  - Historical Step170A evidence covers local PostgreSQL manual `pg_dump`, manifest, SHA-256 recomputation, SQL header/schema marker checks, and restore dry-run / non-destructive boundary.
+  - Static schema/sample validator covers local backup artifact-list metadata shape and required artifact categories.
+  - Attachment backup tests cover manifest / digest / artifact-list behavior and sensitive information exclusion.
+- Not claimable:
+  - Production backup completion, production daily automatic backup, production 30-day retention automation, production restore drill, RTO/RPO acceptance, VPS/production DB acceptance, real offsite/object-storage backup, external backup service integration, alerting integration, or production audit archive / tamper-resistance completion.
+- Phase-two / production pending:
+  - Daily automatic backup scheduling.
+  - 30-day retention execution evidence.
+  - Real restore drill.
+  - RTO / RPO acceptance.
+  - Offsite backup.
+  - Production backup monitoring and alerting.
+  - Production audit log archive / tamper-resistance.
+  - Production encryption/key management, real object storage or backup vault, least-privilege backup account, retry, failure alerting, and escalation workflow.
+- Boundaries observed:
+  - No `.env`, `.env.production`, secret, Cookie, Token, production connection string, production backup file content, or production credential was read.
+  - No production/VPS/production DB, real object storage, real external backup service, or real alerting platform was accessed.
+  - No `pg_dump`, real restore, database overwrite, database clear, migration, write-type `pg_restore`, `psql < dump`, Docker prune, volume prune, volume deletion, file deletion, or `.local-step178-*` artifact creation was run.
+  - Existing untracked `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`, screenshots, performance logs, backup artifacts, and temporary files were left untouched and unstaged.
+
 ## 2026-07-08 Step 178 - Local backup / restore evidence plan evidence
 
 - Starting state:

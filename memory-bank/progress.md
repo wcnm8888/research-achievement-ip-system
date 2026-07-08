@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-07-08 Step 178 - Local backup / restore static evidence execution
+
+- Status: PASS.
+- Goal:
+  - Close local backup / restore evidence with read-only validation, static
+    checks, and existing API test rerun.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Validation:
+  - `node deploy/validate-local-backup-artifact-list-sample.mjs`: PASS.
+    Required categories validated: `POSTGRES_DUMP`,
+    `ATTACHMENT_BINARY_ARCHIVE`, and `ATTACHMENT_BACKUP_MANIFEST`.
+  - `corepack pnpm --filter @research-ip/api test -- attachment-binary-backup`:
+    PASS, 1 file / 2 tests.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Documentation:
+  - Added `memory-bank/local-backup-restore-static-evidence-step178.md`.
+  - Updated local evidence to include Step170A historical PostgreSQL backup /
+    manifest / SHA-256 / restore dry-run boundary, local artifact-list
+    schema/sample/validator validation, and attachment backup manifest /
+    digest / artifact-list sensitive-exposure test coverage.
+- Fixes:
+  - No source fixes were required.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, session value, production connection string,
+    production credential, production/VPS/production DB, real object storage,
+    external backup service, or alerting platform was accessed.
+  - No `pg_dump`, real restore, database overwrite, database clear, migration,
+    write-type `pg_restore`, `psql < dump`, Docker prune, volume prune, volume
+    deletion, file deletion, or `.local-step178-*` artifact creation was run.
+
 ## 2026-07-08 Step 178 - Local backup / restore evidence plan
 
 - Status: PASS.
