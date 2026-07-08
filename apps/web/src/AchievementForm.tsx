@@ -18,6 +18,8 @@ import type {
   AchievementDetail,
   AchievementStatusCode,
   AchievementTypeCode,
+  ApiIntegrationMockRunInput,
+  ApiIntegrationMockRunResponse,
   ContributorRoleCode,
   ContributorTypeCode,
   PaperDetail,
@@ -67,6 +69,18 @@ export type UpdateAchievementPayload = {
   patentDetail?: PatentDetail;
   softwareCopyrightDetail?: SoftwareCopyrightDetail;
 };
+
+type DoiPreviewState = {
+  loading: boolean;
+  result: ApiIntegrationMockRunResponse | null;
+  error: string | null;
+};
+
+const emptyDoiPreviewState = (): DoiPreviewState => ({
+  loading: false,
+  result: null,
+  error: null,
+});
 
 const achievementTypeOptions: Array<{ label: string; value: AchievementTypeCode }> = [
   { label: "论文", value: "PAPER" },
@@ -148,6 +162,7 @@ export function AchievementForm({
   const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [saveError, setSaveError] = useState<ApiError | null>(null);
   const [loadedDetail, setLoadedDetail] = useState<AchievementDetail | null>(null);
+  const [doiPreview, setDoiPreview] = useState<DoiPreviewState>(emptyDoiPreviewState);
   const selectedType = Form.useWatch("type", form) ?? "PAPER";
   const isEdit = mode === "edit";
 
@@ -159,6 +174,7 @@ export function AchievementForm({
     setLoadError(null);
     setSaveError(null);
     setLoadedDetail(null);
+    setDoiPreview(emptyDoiPreviewState());
 
     if (mode === "create") {
       form.setFieldsValue(defaultCreateValues);
@@ -196,6 +212,39 @@ export function AchievementForm({
       patentDetail: undefined,
       softwareCopyrightDetail: undefined,
     });
+    setDoiPreview(emptyDoiPreviewState());
+  };
+
+  const handleRunDoiPreview = async () => {
+    let payload: ApiIntegrationMockRunInput;
+
+    try {
+      payload = buildDoiPreviewPayload(form.getFieldValue(["paperDetail", "doi"]));
+    } catch (error) {
+      setDoiPreview({
+        loading: false,
+        result: null,
+        error: error instanceof Error ? error.message : "请先输入 DOI 后再生成自动补全预演。",
+      });
+      return;
+    }
+
+    setDoiPreview({ loading: true, result: null, error: null });
+
+    try {
+      const result = await apiClient.post<ApiIntegrationMockRunResponse>(
+        "/settings/api-integrations/mock-demo/run",
+        payload,
+      );
+      setDoiPreview({ loading: false, result, error: null });
+    } catch (error) {
+      const apiError = normalizeError(error);
+      setDoiPreview({
+        loading: false,
+        result: null,
+        error: apiError.message || "DOI 自动补全预演暂不可用，可继续手工录入。",
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -316,7 +365,12 @@ export function AchievementForm({
           ) : null}
 
           <Divider orientation="left">类型字段</Divider>
-          {selectedType === "PAPER" ? <PaperFields /> : null}
+          {selectedType === "PAPER" ? (
+            <PaperFields
+              doiPreview={doiPreview}
+              onRunDoiPreview={() => void handleRunDoiPreview()}
+            />
+          ) : null}
           {selectedType === "PATENT" ? <PatentFields /> : null}
           {selectedType === "SOFTWARE_COPYRIGHT" ? <SoftwareCopyrightFields /> : null}
 
@@ -328,11 +382,38 @@ export function AchievementForm({
   );
 }
 
-function PaperFields() {
+function PaperFields({
+  doiPreview,
+  onRunDoiPreview,
+}: {
+  doiPreview: DoiPreviewState;
+  onRunDoiPreview: () => void;
+}) {
   return (
     <>
       <Form.Item label="DOI" name={["paperDetail", "doi"]} rules={[{ max: 255 }]}>
         <Input />
+      </Form.Item>
+      <Form.Item label="自动补全">
+        <Space direction="vertical" size={8} className="full-width">
+          <Space wrap>
+            <Button loading={doiPreview.loading} onClick={onRunDoiPreview}>
+              自动补全预演
+            </Button>
+            <Typography.Text type="secondary">
+              仅生成可人工确认的登记摘要，不会覆盖已填写内容。
+            </Typography.Text>
+          </Space>
+          {doiPreview.error ? (
+            <Alert
+              showIcon
+              type="warning"
+              message={doiPreview.error}
+              description="可继续手工录入题名、期刊、年份和摘要。"
+            />
+          ) : null}
+          {doiPreview.result ? <DoiPreviewResult result={doiPreview.result} /> : null}
+        </Space>
       </Form.Item>
       <Form.Item label="期刊" name={["paperDetail", "journal"]} rules={[{ max: 255 }]}>
         <Input />
@@ -356,6 +437,39 @@ function PaperFields() {
         <Input.TextArea rows={4} />
       </Form.Item>
     </>
+  );
+}
+
+function DoiPreviewResult({ result }: { result: ApiIntegrationMockRunResponse }) {
+  const safeResult = result.safeResult;
+  const title = getSafeString(safeResult, "title");
+  const journal = getSafeString(safeResult, "journal");
+  const publishYear = getSafeString(safeResult, "publishYear");
+  const citationSummary = getSafeString(safeResult, "citationSummary");
+  const authors = formatSafeValue(safeResult.authors);
+  const fieldMapping = getSafeString(safeResult, "fieldMapping");
+  const statusText = result.runStatus === "SUCCESS" ? "已生成预演摘要" : "已进入降级处理";
+
+  return (
+    <Alert
+      showIcon
+      type={result.runStatus === "SUCCESS" ? "success" : "info"}
+      message={statusText}
+      description={
+        <Space direction="vertical" size={4}>
+          <Typography.Text>题名：{title || "待人工确认"}</Typography.Text>
+          <Typography.Text>作者：{authors || "待人工确认"}</Typography.Text>
+          <Typography.Text>期刊/会议：{journal || "待人工确认"}</Typography.Text>
+          <Typography.Text>发表年份：{publishYear || "待人工确认"}</Typography.Text>
+          <Typography.Text>
+            引用摘要：{citationSummary || result.summary || "可手工补充引用信息"}
+          </Typography.Text>
+          <Typography.Text>
+            字段建议：{fieldMapping || "题名、作者、期刊/会议、发表年份"}
+          </Typography.Text>
+        </Space>
+      }
+    />
   );
 }
 
@@ -532,6 +646,21 @@ export const buildCreateAchievementPayload = (
   return payload;
 };
 
+export const buildDoiPreviewPayload = (doi: unknown): ApiIntegrationMockRunInput => {
+  const subject = optionalTrim(doi);
+
+  if (!subject) {
+    throw new Error("请先输入 DOI 后再生成自动补全预演。");
+  }
+
+  return {
+    provider: "DOI",
+    scenario: "DOI_LOOKUP",
+    resultMode: "SUCCESS",
+    subject,
+  };
+};
+
 export const buildUpdateAchievementPayload = (
   values: AchievementFormValues,
   type: AchievementTypeCode,
@@ -653,6 +782,21 @@ const optionalTrim = (value: unknown): string | undefined => {
 
   const trimmed = value.trim();
   return trimmed || undefined;
+};
+
+const getSafeString = (value: Record<string, unknown>, key: string): string =>
+  formatSafeValue(value[key]);
+
+const formatSafeValue = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).join("、");
+  }
+
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value);
 };
 
 const optionalDate = (value: unknown): string | undefined => {

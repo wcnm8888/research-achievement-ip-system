@@ -217,6 +217,16 @@ describe("ApiIntegrationSettingsController HTTP", () => {
         .expect(201);
 
       await request(app.getHttpServer() as Server)
+        .post("/settings/api-integrations/mock-demo/run")
+        .set("X-Demo-User-Id", ids.user)
+        .send({
+          provider: ApiIntegrationProvider.EMAIL,
+          scenario: "EMAIL_NOTIFICATION",
+          resultMode: "SUCCESS",
+        })
+        .expect(201);
+
+      await request(app.getHttpServer() as Server)
         .post("/settings/api-integrations")
         .set("X-Demo-User-Id", ids.user)
         .send({
@@ -263,6 +273,14 @@ describe("ApiIntegrationSettingsController HTTP", () => {
         {
           provider: ApiIntegrationProvider.DOI,
           scenario: "DOI_LOOKUP",
+          resultMode: "SUCCESS",
+        },
+      );
+      expect(service.runMockDemo).toHaveBeenCalledWith(
+        expect.any(Object),
+        {
+          provider: ApiIntegrationProvider.EMAIL,
+          scenario: "EMAIL_NOTIFICATION",
           resultMode: "SUCCESS",
         },
       );

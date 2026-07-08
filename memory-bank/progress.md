@@ -15504,6 +15504,50 @@
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
 
+## 2026-07-08 Step 172 - API integration mock acceptance loop
+
+- Status: PASS.
+- Goal:
+  - Continue the final acceptance-gap plan by closing the demo-safe interface
+    mock loop for DOI enrichment and reserved email notification.
+- API changes:
+  - Added `EMAIL_NOTIFICATION` to the integration mock scenario DTO.
+  - Added optional preview `subject` support so the Achievement form can pass
+    the current DOI into the local preview result.
+  - Extended DOI mock success/degraded payloads with safe preview fields:
+    journal, publish year, citation source, citation summary, and field mapping.
+  - Added EMAIL mock definitions covering recipient scope, subject, summary,
+    reserved channel status, retry policy, timeout, fallback path, and
+    `sendsExternalMessage=false`.
+  - Local preview results now use Chinese reviewer-facing copy for DOI, email,
+    patent, finance, and HR preview scenarios.
+  - Preserved existing ApiCallLog safe-summary behavior; no external raw
+    request/response is stored or returned.
+- Web changes:
+  - Added an inline "自动补全预演" entry near the Achievement form DOI field;
+    it shows a safe Chinese summary and does not overwrite user-entered fields.
+  - Added “邮件通知预演” to the system integration preview center.
+  - Allowed EMAIL as a preview-center provider.
+  - Updated Settings preview status and safe-result labels to Chinese.
+  - Updated Web types for the new `EMAIL_NOTIFICATION` scenario and optional
+    preview subject.
+- Documentation:
+  - Added `memory-bank/api-integration-mock-acceptance-step172.md`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- settings`: PASS, 3 files / 19 tests.
+  - `corepack pnpm --filter @research-ip/web test -- SettingsApiIntegrations AchievementForm`: PASS, 2 files / 22 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, API key, provider credential,
+    or raw external payload was read, displayed, logged, or committed.
+  - No production/VPS/production DB access.
+  - No real DOI/Crossref/OpenAlex/Scopus, SMTP, SMS, enterprise messaging,
+    HR/SSO, finance, or patent-platform call.
+  - No Prisma schema, migration, seed, deploy, or production config change.
+  - This is local mock-demo acceptance, not real external integration acceptance.
+
 ## 2026-07-07 Step 148 - Authenticated deep UI copy polish
 
 - Status: PASS with caveat.

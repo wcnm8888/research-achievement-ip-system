@@ -150,6 +150,7 @@ export class ApiIntegrationReasonDto {
 
 export enum ApiIntegrationMockScenario {
   doiLookup = "DOI_LOOKUP",
+  emailNotification = "EMAIL_NOTIFICATION",
   patentStatusSync = "PATENT_STATUS_SYNC",
   financeReconcile = "FINANCE_RECONCILE",
   hrSync = "HR_SYNC",
@@ -170,6 +171,11 @@ export class RunApiIntegrationMockDemoDto {
 
   @IsEnum(ApiIntegrationMockResultMode)
   resultMode!: ApiIntegrationMockResultMode;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 255)
+  subject?: string;
 }
 
 export class ListApiCallLogsQueryDto {

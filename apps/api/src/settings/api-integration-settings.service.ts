@@ -298,7 +298,7 @@ export class ApiIntegrationSettingsService {
         definition,
         dto,
         reason:
-          "No active API integration metadata exists for this provider. Mock demo did not write ApiCallLog because there is no safe integrationCode foreign key.",
+          "当前接口类型尚未配置启用的接口元数据，已返回不可用降级说明；可继续手工处理。",
       });
     }
 
@@ -311,7 +311,7 @@ export class ApiIntegrationSettingsService {
             requestId: createMockRequestId(),
             status: ApiCallStatus.SKIPPED,
             durationMs: 0,
-            errorSummary: "Mock skipped: integration is disabled.",
+            errorSummary: "预演跳过：接口配置已停用。",
           },
         ),
       );
@@ -322,7 +322,7 @@ export class ApiIntegrationSettingsService {
         integration,
         log,
         reason:
-          "Integration metadata is disabled. Mock demo returned an unavailable fallback and did not simulate an external provider call.",
+          "接口配置已停用，已返回不可用降级说明；未模拟外部服务调用。",
       });
     }
 
@@ -348,10 +348,10 @@ export class ApiIntegrationSettingsService {
       runStatus: result.runStatus,
       integration: toMockIntegrationSummary(integration),
       summary: result.summary,
-      syntheticSubject: definition.syntheticSubject,
+      syntheticSubject: buildPreviewSubject(definition, dto),
       safeResult: result.safeResult,
       safetyNotice:
-        "Mock demo only. No real DOI, literature, patent, finance, HR, SSO, email, or SMS system was contacted.",
+        "本地预演结果仅用于评审演示；未访问真实 DOI、文献库、专利、财务、HR、SSO、邮件或短信系统。",
       callLog: toApiCallLogSummary(log),
     };
   }
@@ -445,93 +445,135 @@ const mockScenarioDefinitions: Record<
 > = {
   [ApiIntegrationMockScenario.doiLookup]: {
     provider: ApiIntegrationProvider.DOI,
-    title: "DOI lookup mock",
-    syntheticSubject: "Synthetic DOI 10.0000/mock-demo-2026",
+    title: "DOI 自动补全预演",
+    syntheticSubject: "DOI 10.0000/local-preview-2026",
     successSummary:
-      "Synthetic DOI metadata was normalized for preview only; no paper was updated.",
+      "已生成 DOI 元数据预演摘要，可作为论文成果登记的人工录入参考；未自动改写成果记录。",
     failureSummary:
-      "Synthetic DOI provider failure was returned; manual entry remains the fallback.",
+      "DOI 自动补全通道返回失败预演，当前降级为手工录入，不影响成果登记。",
     degradedSummary:
-      "Synthetic DOI lookup used cached/manual fallback fields; no external lookup happened.",
+      "DOI 自动补全通道进入降级预演，返回可人工确认的基础字段，未访问外部文献库。",
     successData: {
-      title: "Synthetic research output metadata",
-      authors: ["Synthetic Author A", "Synthetic Author B"],
-      source: "mock-adapter",
+      title: "科研成果知识产权协同管理方法研究",
+      authors: ["第一作者", "通讯作者"],
+      journal: "科研管理与知识产权研究",
+      publishYear: 2026,
+      citationSource: "本地预留 DOI 适配器",
+      citationSummary: "预演摘要显示该 DOI 可映射题名、作者、期刊和发表年份。",
+      fieldMapping: "题名、作者、期刊/会议、发表年份",
+      source: "本地预演适配器",
       writesBusinessRecord: false,
     },
     degradedData: {
-      title: "Manual-entry DOI metadata placeholder",
-      source: "mock-fallback",
-      confidence: "low",
+      title: "待人工确认的 DOI 元数据",
+      journal: "需手工录入期刊或会议",
+      publishYear: 2026,
+      citationSource: "手工录入降级方案",
+      citationSummary: "自动补全不可用时保留 DOI 字段，由登记人补录论文信息。",
+      source: "本地降级策略",
+      confidence: "低",
       writesBusinessRecord: false,
+    },
+  },
+  [ApiIntegrationMockScenario.emailNotification]: {
+    provider: ApiIntegrationProvider.EMAIL,
+    title: "邮件通知预演",
+    syntheticSubject: "成果审核待处理提醒 EMAIL-PREVIEW-2026-0001",
+    successSummary:
+      "已生成邮件通知预演内容，仅展示接收范围、主题、摘要和发送策略；未发送外部邮件。",
+    failureSummary:
+      "邮件通知通道返回失败预演，系统降级为站内提醒和人工跟进。",
+    degradedSummary:
+      "邮件通知进入降级预演，优先保留站内提醒和人工跟进路径。",
+    successData: {
+      recipientScope: "部门审核人员",
+      subject: "成果审核待处理提醒",
+      summary: "1 条成果审核任务等待处理",
+      channel: "邮件通道预留",
+      deliveryStatus: "仅生成预演",
+      retryPolicySummary: "最多 2 次重试，失败后转站内提醒",
+      timeoutMs: 3000,
+      fallback: "站内提醒与人工跟进",
+      writesBusinessRecord: false,
+      sendsExternalMessage: false,
+    },
+    degradedData: {
+      recipientScope: "部门审核人员",
+      channel: "站内提醒",
+      deliveryStatus: "人工降级",
+      retryPolicySummary: "外部邮件不可用时不重试外部服务",
+      timeoutMs: 3000,
+      fallback: "人工跟进",
+      writesBusinessRecord: false,
+      sendsExternalMessage: false,
     },
   },
   [ApiIntegrationMockScenario.patentStatusSync]: {
     provider: ApiIntegrationProvider.PATENT,
-    title: "Patent status sync mock",
-    syntheticSubject: "Synthetic patent application CN-MOCK-2026-0001",
+    title: "专利状态同步预演",
+    syntheticSubject: "专利申请 CN-PREVIEW-2026-0001",
     successSummary:
-      "Synthetic patent status was mapped to an internal preview state; no official data was synchronized.",
+      "已生成专利状态同步预演摘要，仅映射内部展示状态；未同步官方专利数据。",
     failureSummary:
-      "Synthetic patent status provider failure was returned; current records remain unchanged.",
+      "专利状态同步通道返回失败预演，当前记录保持不变。",
     degradedSummary:
-      "Synthetic patent status used stale/manual fallback data for preview only.",
+      "专利状态同步进入降级预演，使用人工复核路径。",
     successData: {
-      patentStatus: "UNDER_REVIEW",
-      annualFeeNode: "mock-year-2",
-      source: "mock-adapter",
+      patentStatus: "审查中",
+      annualFeeNode: "第 2 年年费节点",
+      source: "本地预演适配器",
       writesBusinessRecord: false,
     },
     degradedData: {
-      patentStatus: "MANUAL_REVIEW_REQUIRED",
-      source: "mock-fallback",
-      confidence: "low",
+      patentStatus: "需人工复核",
+      source: "本地降级策略",
+      confidence: "低",
       writesBusinessRecord: false,
     },
   },
   [ApiIntegrationMockScenario.financeReconcile]: {
     provider: ApiIntegrationProvider.FINANCE,
-    title: "Finance callback/reconcile mock",
-    syntheticSubject: "Synthetic finance voucher FIN-MOCK-2026-0001",
+    title: "财务回调与对账预演",
+    syntheticSubject: "财务凭证 FIN-PREVIEW-2026-0001",
     successSummary:
-      "Synthetic finance callback was reconciled into a preview summary; no payment, invoice, receipt, or voucher was created.",
+      "已生成财务回调与对账预演摘要；未创建付款、发票、收据或凭证。",
     failureSummary:
-      "Synthetic finance reconciliation failure was returned; no ledger or payment state changed.",
+      "财务对账通道返回失败预演，费用台账和付款状态未变更。",
     degradedSummary:
-      "Synthetic finance callback entered manual reconciliation fallback for preview only.",
+      "财务回调进入人工对账降级预演。",
     successData: {
-      voucherStatus: "MATCHED",
+      voucherStatus: "已匹配",
       amountCny: 0,
-      source: "mock-adapter",
+      source: "本地预演适配器",
       writesBusinessRecord: false,
     },
     degradedData: {
-      voucherStatus: "MANUAL_RECONCILE_REQUIRED",
+      voucherStatus: "需人工对账",
       amountCny: 0,
-      source: "mock-fallback",
+      source: "本地降级策略",
       writesBusinessRecord: false,
     },
   },
   [ApiIntegrationMockScenario.hrSync]: {
     provider: ApiIntegrationProvider.HR,
-    title: "HR sync mock",
-    syntheticSubject: "Synthetic department staff delta HR-MOCK-2026-0001",
+    title: "HR 同步预演",
+    syntheticSubject: "部门人员变更 HR-PREVIEW-2026-0001",
     successSummary:
-      "Synthetic HR delta was validated for preview only; no account, credential, SSO session, or production identity was created.",
+      "已生成 HR 人员变更预演摘要；未创建账号、凭证、SSO 会话或生产身份。",
     failureSummary:
-      "Synthetic HR sync failure was returned; local identities remain unchanged.",
+      "HR 同步通道返回失败预演，本地身份数据保持不变。",
     degradedSummary:
-      "Synthetic HR sync used manual account-maintenance fallback for preview only.",
+      "HR 同步进入人工账号维护降级预演。",
     successData: {
       anonymizedStaffCount: 3,
-      departmentAction: "preview-only",
-      source: "mock-adapter",
+      departmentAction: "仅预演",
+      source: "本地预演适配器",
       createsCredentials: false,
     },
     degradedData: {
       anonymizedStaffCount: 0,
-      departmentAction: "manual-review",
-      source: "mock-fallback",
+      departmentAction: "人工复核",
+      source: "本地降级策略",
       createsCredentials: false,
     },
   },
@@ -555,11 +597,11 @@ const buildEnabledMockDemoResult = (
     return {
       runStatus: "FAILED",
       durationMs: 248,
-      errorSummary: `Mock failure: ${definition.title} returned a synthetic adapter error.`,
+      errorSummary: `预演失败：${definition.title} 返回通道异常。`,
       summary: definition.failureSummary,
       safeResult: {
-        mode: "failure",
-        fallback: "manual-entry",
+        mode: "失败",
+        fallback: "手工录入或人工跟进",
         writesBusinessRecord: false,
       },
     };
@@ -569,7 +611,7 @@ const buildEnabledMockDemoResult = (
     return {
       runStatus: "DEGRADED",
       durationMs: 412,
-      errorSummary: `Mock degraded: ${definition.title} used fallback data.`,
+      errorSummary: `预演降级：${definition.title} 使用降级数据。`,
       summary: definition.degradedSummary,
       safeResult: definition.degradedData,
     };
@@ -604,16 +646,24 @@ const buildUnavailableMockDemoResult = ({
   runStatus: "UNAVAILABLE" as const,
   integration: integration ? toMockIntegrationSummary(integration) : null,
   summary: reason,
-  syntheticSubject: definition.syntheticSubject,
+  syntheticSubject: buildPreviewSubject(definition, dto),
   safeResult: {
-    mode: "unavailable",
-    fallback: "manual-entry",
+    mode: "不可用",
+    fallback: "手工录入或人工跟进",
     writesBusinessRecord: false,
   },
   safetyNotice:
-    "Mock demo only. No real DOI, literature, patent, finance, HR, SSO, email, or SMS system was contacted.",
+    "本地预演结果仅用于评审演示；未访问真实 DOI、文献库、专利、财务、HR、SSO、邮件或短信系统。",
   callLog: log ? toApiCallLogSummary(log) : null,
 });
+
+const buildPreviewSubject = (
+  definition: ApiIntegrationMockScenarioDefinition,
+  dto: RunApiIntegrationMockDemoDto,
+): string => {
+  const subject = dto.subject?.trim();
+  return subject ? subject : definition.syntheticSubject;
+};
 
 const toApiCallStatus = (
   resultMode: ApiIntegrationMockResultMode,
@@ -645,7 +695,7 @@ const toApiCallLogSummary = (log: ApiCallLogSafeRecord) => ({
   createdAt: log.createdAt,
 });
 
-const createMockRequestId = (): string => `mock-${randomUUID()}`;
+const createMockRequestId = (): string => `preview-${randomUUID()}`;
 
 const normalizeConfigRef = (configRef: string | null | undefined): string | null => {
   const normalized = configRef?.trim();

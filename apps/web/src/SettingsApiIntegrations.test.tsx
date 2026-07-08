@@ -158,16 +158,18 @@ describe("settings api integration API helpers", () => {
         enabled: true,
         archivedAt: null,
       },
-      summary: "Synthetic DOI metadata was normalized for preview only.",
-      syntheticSubject: "Synthetic DOI 10.0000/mock-demo-2026",
+      summary: "已生成 DOI 元数据预演摘要，可作为论文成果登记的人工录入参考；未自动改写成果记录。",
+      syntheticSubject: "DOI 10.0000/local-preview-2026",
       safeResult: {
-        source: "mock-adapter",
+        source: "本地预演适配器",
+        fieldMapping: "题名、作者、期刊/会议、发表年份",
         writesBusinessRecord: false,
       },
-      safetyNotice: "Mock demo only.",
+      safetyNotice:
+        "本地预演结果仅用于评审演示；未访问真实 DOI、文献库、专利、财务、HR、SSO、邮件或短信系统。",
       callLog: {
         integrationCode: "DOI_LOOKUP",
-        requestId: "mock-request-1",
+        requestId: "preview-request-1",
         status: "SUCCESS",
         durationMs: 126,
         errorSummary: null,
@@ -204,6 +206,20 @@ describe("settings api integration API helpers", () => {
     expect(client.listApiCallLogs).toHaveBeenCalledWith({ limit: 10 });
     expect(JSON.stringify(runResponse)).not.toContain("token");
     expect(JSON.stringify(runResponse)).not.toContain("rawResponse");
+  });
+
+  it("builds email notification mock demo payloads for reserved delivery preview", () => {
+    expect(
+      buildApiIntegrationMockDemoPayload({
+        provider: "EMAIL",
+        scenario: "EMAIL_NOTIFICATION",
+        resultMode: "SUCCESS",
+      }),
+    ).toEqual({
+      provider: "EMAIL",
+      scenario: "EMAIL_NOTIFICATION",
+      resultMode: "SUCCESS",
+    });
   });
 
   it("normalizes malformed list responses into stable shapes", async () => {

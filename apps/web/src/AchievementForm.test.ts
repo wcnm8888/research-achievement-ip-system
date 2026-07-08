@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCreateAchievementPayload,
+  buildDoiPreviewPayload,
   buildUpdateAchievementPayload,
   isEditableAchievementStatus,
   toAchievementFormInitialValues,
@@ -143,6 +144,21 @@ describe("buildUpdateAchievementPayload", () => {
         journal: "Journal",
       },
     });
+  });
+});
+
+describe("buildDoiPreviewPayload", () => {
+  it("builds a local DOI enrichment preview payload from the current DOI", () => {
+    expect(buildDoiPreviewPayload(" 10.1234/example ")).toEqual({
+      provider: "DOI",
+      scenario: "DOI_LOOKUP",
+      resultMode: "SUCCESS",
+      subject: "10.1234/example",
+    });
+  });
+
+  it("requires a DOI before running enrichment preview", () => {
+    expect(() => buildDoiPreviewPayload(" ")).toThrow("请先输入 DOI");
   });
 });
 

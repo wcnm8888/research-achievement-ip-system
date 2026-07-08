@@ -1996,6 +1996,7 @@ export type ApiIntegrationReasonInput = {
 
 export type ApiIntegrationMockScenario =
   | "DOI_LOOKUP"
+  | "EMAIL_NOTIFICATION"
   | "PATENT_STATUS_SYNC"
   | "FINANCE_RECONCILE"
   | "HR_SYNC";
@@ -2012,6 +2013,7 @@ export type ApiIntegrationMockRunInput = {
   provider: ApiIntegrationProvider;
   scenario: ApiIntegrationMockScenario;
   resultMode: ApiIntegrationMockResultMode;
+  subject?: string;
 };
 
 export type ApiIntegrationMockIntegrationSummary = {

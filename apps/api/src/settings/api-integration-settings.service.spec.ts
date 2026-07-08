@@ -273,7 +273,9 @@ describe("ApiIntegrationSettingsService", () => {
         enabled: true,
       },
       safeResult: expect.objectContaining({
-        source: "mock-adapter",
+        source: "本地预演适配器",
+        fieldMapping: "题名、作者、期刊/会议、发表年份",
+        citationSummary: expect.stringContaining("可映射题名"),
         writesBusinessRecord: false,
       }),
       callLog: expect.objectContaining({
@@ -317,7 +319,7 @@ describe("ApiIntegrationSettingsService", () => {
       expect.any(Object),
       expect.objectContaining({
         status: ApiCallStatus.FAILED,
-        errorSummary: expect.stringContaining("Mock failure"),
+        errorSummary: expect.stringContaining("预演失败"),
       }),
     );
     expect(repository.createApiCallLogInTransaction).toHaveBeenNthCalledWith(
@@ -325,7 +327,84 @@ describe("ApiIntegrationSettingsService", () => {
       expect.any(Object),
       expect.objectContaining({
         status: ApiCallStatus.RETRIED,
-        errorSummary: expect.stringContaining("Mock degraded"),
+        errorSummary: expect.stringContaining("预演降级"),
+      }),
+    );
+  });
+
+  it("uses the provided DOI subject for local enrichment preview", async () => {
+    const { service, repository } = createService();
+    repository.findFirstByProvider.mockResolvedValueOnce(
+      makeApiIntegration({
+        code: "DOI_LOOKUP",
+        provider: ApiIntegrationProvider.DOI,
+      }),
+    );
+
+    const result = await service.runMockDemo(adminContext, {
+      provider: ApiIntegrationProvider.DOI,
+      scenario: ApiIntegrationMockScenario.doiLookup,
+      resultMode: ApiIntegrationMockResultMode.success,
+      subject: "10.1234/example",
+    });
+
+    expect(result).toMatchObject({
+      syntheticSubject: "10.1234/example",
+      summary: expect.stringContaining("DOI 元数据预演摘要"),
+      safeResult: expect.objectContaining({
+        title: "科研成果知识产权协同管理方法研究",
+        journal: "科研管理与知识产权研究",
+        publishYear: 2026,
+        citationSummary: expect.stringContaining("可映射题名"),
+        writesBusinessRecord: false,
+      }),
+    });
+    expect(JSON.stringify(result)).not.toContain("Crossref");
+    expect(JSON.stringify(result)).not.toContain("OpenAlex");
+    expect(JSON.stringify(result)).not.toContain("Scopus");
+  });
+
+  it("previews email notifications without sending external messages", async () => {
+    const { service, repository } = createService();
+    repository.findFirstByProvider.mockResolvedValueOnce(
+      makeApiIntegration({
+        code: "EMAIL_NOTIFICATION",
+        provider: ApiIntegrationProvider.EMAIL,
+      }),
+    );
+
+    const result = await service.runMockDemo(adminContext, {
+      provider: ApiIntegrationProvider.EMAIL,
+      scenario: ApiIntegrationMockScenario.emailNotification,
+      resultMode: ApiIntegrationMockResultMode.success,
+    });
+
+    expect(result).toMatchObject({
+      mockOnly: true,
+      provider: ApiIntegrationProvider.EMAIL,
+      scenario: "EMAIL_NOTIFICATION",
+      runStatus: "SUCCESS",
+      safeResult: expect.objectContaining({
+        recipientScope: "部门审核人员",
+        channel: "邮件通道预留",
+        deliveryStatus: "仅生成预演",
+        retryPolicySummary: "最多 2 次重试，失败后转站内提醒",
+        timeoutMs: 3000,
+        sendsExternalMessage: false,
+        writesBusinessRecord: false,
+      }),
+      callLog: expect.objectContaining({
+        integrationCode: "EMAIL_NOTIFICATION",
+        status: ApiCallStatus.SUCCESS,
+      }),
+    });
+    expect(JSON.stringify(result)).not.toContain("smtp");
+    expect(JSON.stringify(result)).not.toContain("token");
+    expect(repository.createApiCallLogInTransaction).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        integrationCode: "EMAIL_NOTIFICATION",
+        status: ApiCallStatus.SUCCESS,
       }),
     );
   });
@@ -355,7 +434,7 @@ describe("ApiIntegrationSettingsService", () => {
       expect.any(Object),
       expect.objectContaining({
         status: ApiCallStatus.SKIPPED,
-        errorSummary: "Mock skipped: integration is disabled.",
+        errorSummary: "预演跳过：接口配置已停用。",
       }),
     );
 

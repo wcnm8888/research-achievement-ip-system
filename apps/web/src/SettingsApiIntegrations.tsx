@@ -128,6 +128,7 @@ const mockScenarioOptions: Array<{
   provider: ApiIntegrationProvider;
 }> = [
   { label: "DOI 查询预演", value: "DOI_LOOKUP", provider: "DOI" },
+  { label: "邮件通知预演", value: "EMAIL_NOTIFICATION", provider: "EMAIL" },
   {
     label: "专利状态同步预演",
     value: "PATENT_STATUS_SYNC",
@@ -909,7 +910,7 @@ function ApiIntegrationMockDemoCenter({
             className="settings-api-filter-select"
             value={values.provider}
             options={apiIntegrationProviderOptions.filter((option) =>
-              ["DOI", "PATENT", "FINANCE", "HR"].includes(option.value),
+              ["DOI", "EMAIL", "PATENT", "FINANCE", "HR"].includes(option.value),
             )}
             onChange={onProviderChange}
           />
@@ -1004,7 +1005,7 @@ function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse 
 
         <Descriptions bordered size="small" column={1}>
           {Object.entries(result.safeResult).map(([key, value]) => (
-            <Descriptions.Item key={key} label={key}>
+            <Descriptions.Item key={key} label={formatSafeResultLabel(key)}>
               {formatSafeResultValue(value)}
             </Descriptions.Item>
           ))}
@@ -1289,8 +1290,14 @@ const renderMockRunStatus = (status: ApiIntegrationMockRunResponse["runStatus"])
     DEGRADED: "gold",
     UNAVAILABLE: "default",
   };
+  const labelByStatus: Record<ApiIntegrationMockRunResponse["runStatus"], string> = {
+    SUCCESS: "成功",
+    FAILED: "失败",
+    DEGRADED: "降级",
+    UNAVAILABLE: "不可用",
+  };
 
-  return <Tag color={colorByStatus[status]}>{status}</Tag>;
+  return <Tag color={colorByStatus[status]}>{labelByStatus[status]}</Tag>;
 };
 
 const renderApiCallStatus = (status: ApiCallLogSummary["status"]) => {
@@ -1320,6 +1327,38 @@ const formatSafeResultValue = (value: unknown): string => {
 
   return String(value);
 };
+
+const safeResultLabelMap: Record<string, string> = {
+  title: "题名",
+  authors: "作者",
+  journal: "期刊/会议",
+  publishYear: "年份",
+  citationSource: "来源说明",
+  citationSummary: "引用摘要",
+  fieldMapping: "字段建议",
+  source: "适配器说明",
+  confidence: "置信度",
+  recipientScope: "接收范围",
+  subject: "通知主题",
+  summary: "通知摘要",
+  channel: "通知通道",
+  deliveryStatus: "投递状态",
+  retryPolicySummary: "重试策略",
+  timeoutMs: "超时设置",
+  fallback: "降级方案",
+  writesBusinessRecord: "写入业务记录",
+  sendsExternalMessage: "发送外部消息",
+  mode: "处理模式",
+  patentStatus: "专利状态",
+  annualFeeNode: "年费节点",
+  voucherStatus: "凭证状态",
+  amountCny: "金额",
+  anonymizedStaffCount: "脱敏人员数量",
+  departmentAction: "部门处理",
+  createsCredentials: "创建凭证",
+};
+
+const formatSafeResultLabel = (key: string): string => safeResultLabelMap[key] ?? key;
 
 const getOperationTitle = (operation: ApiIntegrationOperation): string =>
   operation.kind === "archive"

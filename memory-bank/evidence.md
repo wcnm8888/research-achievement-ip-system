@@ -18953,6 +18953,39 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-08 Step 172 - Interface mock acceptance evidence
+
+- Changed files:
+  - `apps/api/src/settings/dto/api-integration-settings.dto.ts`
+  - `apps/api/src/settings/api-integration-settings.service.ts`
+  - `apps/api/src/settings/api-integration-settings.service.spec.ts`
+  - `apps/api/src/settings/api-integration-settings.controller.spec.ts`
+  - `apps/web/src/types.ts`
+  - `apps/web/src/AchievementForm.tsx`
+  - `apps/web/src/AchievementForm.test.ts`
+  - `apps/web/src/SettingsApiIntegrations.tsx`
+  - `apps/web/src/SettingsApiIntegrations.test.tsx`
+  - `memory-bank/api-integration-mock-acceptance-step172.md`
+  - `memory-bank/progress.md`
+  - `memory-bank/evidence.md`
+- Verification:
+  - `corepack pnpm --filter @research-ip/api test -- settings`: PASS, 3 files / 19 tests.
+  - `corepack pnpm --filter @research-ip/web test -- SettingsApiIntegrations AchievementForm`: PASS, 2 files / 22 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Acceptance coverage:
+  - DOI mock preview now accepts the current DOI as preview subject and returns safe metadata fields suitable for manual registration assistance.
+  - Achievement form has an inline DOI "自动补全预演" entry that displays Chinese summary fields without overwriting user input.
+  - Email notification mock preview shows reserved delivery status, recipient scope, subject, summary, retry policy, timeout, fallback path, and no external message send.
+  - Settings preview results use Chinese field/status labels for reviewer-facing stability.
+  - Interface governance remains inside system settings with provider, enablement, timeout, config reference, and safe call-log summaries.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, API key, provider credential, or raw external payload recorded.
+  - No production/VPS/production DB access.
+  - No real external DOI, literature, SMTP, SMS, enterprise messaging, HR/SSO, finance, or patent call.
+  - No schema, migration, seed, deployment, or production configuration change.
+
 ## 2026-07-07 Step 147 - Client-facing hint polish evidence
 
 - Result: PASS.
