@@ -16133,3 +16133,48 @@
     deletion.
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
+
+## 2026-07-08 Step 185 - Conversion tracking closed-loop experience polish
+
+- Status: PASS with caveat.
+- Goal:
+  - Close the local-review experience gap where conversion tracking was
+    demonstrable, but contract, revenue distribution, and external conversion
+    system loops were not complete.
+- Web changes:
+  - Localized conversion type, conversion status, contract status, revenue
+    status, evaluation status, and benefit category labels to Chinese.
+  - Added local-review scope and phase-two production-access scope copy to the
+    conversion ledger section.
+  - Added Chinese loading, empty, and error states for conversion tracking,
+    including contract, revenue distribution, milestone, and follow-up wording.
+  - Added per-record contract-loop, revenue-loop, milestone, and follow-up
+    descriptions without exposing internal achievement IDs.
+  - Replaced conversion form placeholders, validation errors, and success
+    messages with Chinese business copy.
+  - Mapped conversion errors to safe Chinese messages so user-visible UI does
+    not show raw paths, structured payload details, stack traces, or engineering
+    wording.
+- Tests:
+  - Updated `apps/web/src/AchievementDetail.test.ts` for Step185 scope copy,
+    record summaries, safe benefit distribution summaries, and conversion error
+    sanitization.
+- Documentation:
+  - Added `memory-bank/conversion-tracking-polish-step185.md`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Conversion conversion-tracking`: FAIL because current Vitest argument handling found no matching test files.
+  - `corepack pnpm --filter @research-ip/web test -- src/AchievementDetail.test.ts`: PASS, 1 file / 39 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, with CRLF working-copy warnings only.
+  - `git diff --cached --check`: PASS.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real contract, finance, legal, conversion-platform, object-storage, or
+    external-system call.
+  - No API permissions, Prisma schema, migration, seed, deploy, or production
+    config change.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked
+    local artifact handling.
+  - This remains local-review / local-demo / local Docker production-like
+    experience polish, not real production closed-loop acceptance.

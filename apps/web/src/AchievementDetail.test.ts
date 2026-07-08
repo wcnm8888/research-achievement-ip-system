@@ -8,6 +8,7 @@ import {
   buildAttachmentMetadataViewModel,
   buildVoidActionPayload,
   canUploadAchievementAttachment,
+  conversionTrackingScopeCopy,
   createAchievementConversion,
   downloadAchievementAttachment,
   fetchAchievementConversions,
@@ -20,6 +21,9 @@ import {
   getAvailableAchievementActions,
   getAttachmentDetailMetadataReadonlyBoundary,
   getAttachmentMetadataReadonlyBoundary,
+  getConversionRecordReviewSummary,
+  getConversionTrackingEmptyCopy,
+  getConversionTrackingLoadingCopy,
   getDetailDisplayTitle,
   getReadonlyAchievementErrorState,
   getReadonlyAchievementActions,
@@ -27,6 +31,7 @@ import {
   mapAttachmentDownloadErrorToDisplay,
   mapAttachmentMetadataErrorToDisplay,
   mapAttachmentPreviewErrorToDisplay,
+  mapConversionErrorToDisplay,
   previewAchievementAttachment,
   uploadAchievementAttachment,
   updateAchievementConversion,
@@ -346,12 +351,76 @@ describe("Step 84 achievement conversion helpers", () => {
   it("renders safe benefit allocation summaries without raw notes or payload labels", () => {
     const summary = formatBenefitDistributionJson(conversion.benefitDistributionJson);
 
-    expect(summary).toContain("Team / Core team");
-    expect(summary).toContain("Unit / Institute");
+    expect(summary).toContain("团队 / Core team");
+    expect(summary).toContain("单位 / Institute");
     expect(summary).toContain("60%");
     expect(summary).toContain("40%");
     expect(summary).not.toContain("hidden note");
     expect(summary).not.toContain("raw");
+  });
+
+  it("describes Step 185 conversion states with local review and phase-two boundaries", () => {
+    const loadingCopy = getConversionTrackingLoadingCopy();
+    const emptyCopy = getConversionTrackingEmptyCopy();
+    const summary = getConversionRecordReviewSummary({
+      ...conversion,
+      remarks: "",
+      benefitDistributionJson: null,
+    });
+
+    expect(conversionTrackingScopeCopy.local).toContain("本地评审版");
+    expect(conversionTrackingScopeCopy.local).toContain("合同状态");
+    expect(conversionTrackingScopeCopy.phaseTwo).toContain("二期生产待接入");
+    expect(loadingCopy.description).toContain("合同状态");
+    expect(loadingCopy.description).toContain("跟进记录");
+    expect(emptyCopy.description).toContain("收益分配");
+    expect(emptyCopy.description).toContain("跨系统闭环");
+    expect(summary.contract).toContain("履行中");
+    expect(summary.contract).toContain("二期接入范围");
+    expect(summary.revenue).toContain("部分到账");
+    expect(summary.revenue).toContain("不触发财务系统核验");
+    expect(summary.milestone).toContain("当前节点：已签约");
+    expect(summary.followUp).toContain("暂无跟进记录");
+    expect(formatBenefitDistributionJson(null)).toBe("暂未登记收益分配明细");
+  });
+
+  it("maps conversion errors to Chinese business copy without exposing implementation details", () => {
+    const mapped = [
+      mapConversionErrorToDisplay({
+        kind: "bad-request",
+        message: "raw JSON /api/conversions",
+        detail: "Cannot GET /api/conversions stack",
+      }),
+      mapConversionErrorToDisplay({
+        kind: "server",
+        status: 500,
+        message: "endpoint failed",
+        detail: "stack trace",
+      }),
+      mapConversionErrorToDisplay({
+        kind: "server",
+        status: 409,
+        message: "not production MVP state",
+        detail: "raw state",
+      }),
+    ];
+    const serialized = JSON.stringify(mapped).toLowerCase();
+
+    expect(mapped[0]).toMatchObject({
+      message: "转化记录信息不完整",
+      detail: "请检查合作方、金额、日期和收益分配比例后重试。",
+    });
+    expect(mapped[1]).toMatchObject({
+      message: "转化跟踪暂不可用",
+    });
+    expect(mapped[2]).toMatchObject({
+      message: "当前成果状态暂不能维护转化记录",
+    });
+    expect(serialized).not.toContain("raw json");
+    expect(serialized).not.toContain("endpoint");
+    expect(serialized).not.toContain("stack");
+    expect(serialized).not.toContain("cannot get");
+    expect(serialized).not.toContain("not production");
   });
 
   it("does not load conversion records without a demo user or achievement id", () => {

@@ -190,52 +190,52 @@ const attachmentDefaultTake = 50;
 export const attachmentUploadMaxBytes = 10 * 1024 * 1024;
 
 const conversionTypeLabels: Record<AchievementConversionTypeCode, string> = {
-  LICENSE: "License",
-  TRANSFER: "Transfer",
-  COOPERATION: "Cooperation",
-  INDUSTRIALIZATION: "Industrialization",
-  OTHER: "Other",
+  LICENSE: "许可使用",
+  TRANSFER: "权利转让",
+  COOPERATION: "合作转化",
+  INDUSTRIALIZATION: "产业化",
+  OTHER: "其他",
 };
 
 const conversionStatusLabels: Record<AchievementConversionStatusCode, string> = {
-  LEAD_INTENT: "Lead / intent",
-  CONTRACTING: "Contracting",
-  SIGNED: "Signed",
-  PAID: "Paid",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
+  LEAD_INTENT: "意向跟进",
+  CONTRACTING: "合同洽谈",
+  SIGNED: "已签约",
+  PAID: "已到账",
+  COMPLETED: "已完成",
+  CANCELLED: "已取消",
 };
 
 const conversionContractStatusLabels: Record<AchievementConversionContractStatusCode, string> = {
-  DRAFT: "Draft",
-  SIGNED: "Signed",
-  ACTIVE: "Active",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
+  DRAFT: "草拟中",
+  SIGNED: "已签署",
+  ACTIVE: "履行中",
+  COMPLETED: "已完成",
+  CANCELLED: "已取消",
 };
 
 const conversionRevenueStatusLabels: Record<AchievementConversionRevenueStatusCode, string> = {
-  UNPAID: "Unpaid",
-  PARTIAL: "Partial",
-  PAID: "Paid",
-  OVERDUE: "Overdue",
-  WAIVED: "Waived",
+  UNPAID: "未到账",
+  PARTIAL: "部分到账",
+  PAID: "已到账",
+  OVERDUE: "逾期未到账",
+  WAIVED: "已免收",
 };
 
 const conversionEvaluationEffectLabels: Record<AchievementConversionEvaluationEffectCode, string> = {
-  NOT_EVALUATED: "Not evaluated",
-  POSITIVE: "Positive",
-  NEUTRAL: "Neutral",
-  NEGATIVE: "Negative",
-  MIXED: "Mixed",
+  NOT_EVALUATED: "未评估",
+  POSITIVE: "效果良好",
+  NEUTRAL: "效果一般",
+  NEGATIVE: "效果不佳",
+  MIXED: "结果混合",
 };
 
 const conversionBenefitCategoryLabels: Record<AchievementConversionBenefitCategoryCode, string> = {
-  UNIT: "Unit",
-  TEAM: "Team",
-  PERSON: "Person",
-  PLATFORM: "Platform",
-  OTHER: "Other",
+  UNIT: "单位",
+  TEAM: "团队",
+  PERSON: "个人",
+  PLATFORM: "平台",
+  OTHER: "其他",
 };
 
 const allowedAttachmentExtensions = new Set(["pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx"]);
@@ -1166,6 +1166,45 @@ const emptyBenefitAllocationRow = (): ConversionBenefitAllocationFormState => ({
   ratio: "",
 });
 
+export const conversionTrackingScopeCopy = {
+  local:
+    "本地评审版覆盖转化台账、合同状态、收益摘要、里程碑节点和跟进记录的查看与维护。",
+  phaseTwo:
+    "二期生产待接入真实合同签署、财务到账核验、法务流转和外部转化平台同步。",
+};
+
+export const getConversionTrackingLoadingCopy = () => ({
+  title: "正在读取转化跟踪",
+  description: "正在加载合同状态、收益分配、里程碑节点和跟进记录摘要。",
+});
+
+export const getConversionTrackingEmptyCopy = () => ({
+  title: "暂无转化记录",
+  description:
+    "本成果尚未登记转化合同、收益分配、里程碑或跟进记录；二期接入真实合同、财务和外部转化平台后再形成跨系统闭环。",
+});
+
+export const getConversionRecordReviewSummary = (
+  item: AchievementConversionRecord,
+) => {
+  const conversionStatus = conversionStatusLabels[item.status] ?? "状态待确认";
+  const contractStatus =
+    conversionContractStatusLabels[item.contractStatus] ?? "合同状态待确认";
+  const revenueStatus =
+    conversionRevenueStatusLabels[item.revenueStatus] ?? "收益状态待确认";
+  const evaluationEffect =
+    conversionEvaluationEffectLabels[item.evaluationEffect] ?? "后评估待确认";
+
+  return {
+    contract: `${contractStatus}；本地记录合同状态和金额摘要，正式合同签署与法务流转属于二期接入范围。`,
+    revenue: `${revenueStatus}；本地记录应收、到账日期和金额摘要，不触发财务系统核验。`,
+    milestone: `当前节点：${conversionStatus}；转化日期：${formatDate(item.conversionDate)}。履约里程碑细化和外部节点同步属于二期接入范围。`,
+    followUp: item.remarks?.trim()
+      ? item.remarks.trim()
+      : `暂无跟进记录；当前后评估状态为${evaluationEffect}。`,
+  };
+};
+
 function AchievementConversionSection({
   achievementId,
   apiClient,
@@ -1225,14 +1264,16 @@ function AchievementConversionSection({
   }, [achievementId]);
 
   const items = conversions.data ?? [];
+  const loadingCopy = getConversionTrackingLoadingCopy();
+  const emptyCopy = getConversionTrackingEmptyCopy();
 
   const submitConversion = async () => {
     const input = buildConversionInput(form);
     if (!input) {
-      setSaveError({
+      setSaveError(mapConversionErrorToDisplay({
         kind: "bad-request",
-        message: "Counterparty, type, status, and valid non-negative amounts are required.",
-      });
+        message: "转化记录信息不完整",
+      }));
       return;
     }
 
@@ -1242,10 +1283,10 @@ function AchievementConversionSection({
     try {
       if (editingId) {
         await updateAchievementConversion(apiClient, achievementId, editingId, input);
-        void message.success("Conversion record updated");
+        void message.success("转化记录已更新");
       } else {
         await createAchievementConversion(apiClient, achievementId, input);
-        void message.success("Conversion record created");
+        void message.success("转化记录已创建");
       }
 
       setEditingId(null);
@@ -1267,74 +1308,105 @@ function AchievementConversionSection({
             转化记录
           </Typography.Text>
           <Typography.Text type="secondary">
-            展示转化状态、收入状态、收益分配摘要和后评估备注。
+            {conversionTrackingScopeCopy.local}
+          </Typography.Text>
+          <br />
+          <Typography.Text type="secondary">
+            {conversionTrackingScopeCopy.phaseTwo}
           </Typography.Text>
         </div>
 
         {conversions.loading ? (
-          <DataState loading>{null}</DataState>
+          <div className="business-note">
+            <Typography.Text strong className="business-note-title">
+              {loadingCopy.title}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              {loadingCopy.description}
+            </Typography.Text>
+          </div>
         ) : conversions.error ? (
           <div className="business-note">
             <Typography.Text strong className="business-note-title">
-              转化记录暂不可用
+              {conversions.error.message}
             </Typography.Text>
             <Typography.Text type="secondary">
-              请稍后刷新，或联系管理员查看服务状态。
+              {conversions.error.detail ?? "本地转化跟踪暂未返回可用结果，请稍后重试。"}
             </Typography.Text>
             <Button size="small" onClick={() => void loadConversions()}>
               重试
             </Button>
           </div>
         ) : items.length === 0 ? (
-          <Empty description="暂无转化记录" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <div className="business-note">
+            <Empty description={emptyCopy.title} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Typography.Text type="secondary">
+              {emptyCopy.description}
+            </Typography.Text>
+          </div>
         ) : (
           <div className="conversion-ledger-list">
-            {items.map((item) => (
-              <div className="conversion-ledger-card" key={item.id}>
+            {items.map((item) => {
+              const reviewSummary = getConversionRecordReviewSummary(item);
+
+              return (
+                <div className="conversion-ledger-card" key={item.id}>
                   <Space direction="vertical" size={8} className="full-width">
                     <Space size={8} wrap>
                       <Tag color={getConversionStatusTagColor(item.status)}>
-                        {conversionStatusLabels[item.status] ?? item.status}
+                        {conversionStatusLabels[item.status] ?? "状态待确认"}
                       </Tag>
                       <Tag color={getConversionContractStatusTagColor(item.contractStatus)}>
-                        合同：{conversionContractStatusLabels[item.contractStatus] ?? item.contractStatus}
+                        合同：{conversionContractStatusLabels[item.contractStatus] ?? "待确认"}
                       </Tag>
                       <Tag color={getConversionRevenueStatusTagColor(item.revenueStatus)}>
-                        收入：{conversionRevenueStatusLabels[item.revenueStatus] ?? item.revenueStatus}
+                        收益：{conversionRevenueStatusLabels[item.revenueStatus] ?? "待确认"}
                       </Tag>
                       <Tag color={getConversionEvaluationEffectTagColor(item.evaluationEffect)}>
-                        后评估：{conversionEvaluationEffectLabels[item.evaluationEffect] ?? item.evaluationEffect}
+                        后评估：{conversionEvaluationEffectLabels[item.evaluationEffect] ?? "待确认"}
                       </Tag>
-                      <Tag>{conversionTypeLabels[item.conversionType] ?? item.conversionType}</Tag>
+                      <Tag>{conversionTypeLabels[item.conversionType] ?? "其他"}</Tag>
                       <Typography.Text strong>{item.counterpartyName}</Typography.Text>
                     </Space>
-                  <Descriptions bordered column={2} size="small">
+                    <Descriptions bordered column={2} size="small">
                     <Descriptions.Item label="关联成果">
-                      {item.achievementId}
+                      {sanitizeBusinessTitle(detail.title, "当前成果")}
                     </Descriptions.Item>
                     <Descriptions.Item label="转化日期">
                       {formatDate(item.conversionDate)}
                     </Descriptions.Item>
                     <Descriptions.Item label="合同状态">
-                      {conversionContractStatusLabels[item.contractStatus] ?? item.contractStatus}
+                      {conversionContractStatusLabels[item.contractStatus] ?? "待确认"}
                     </Descriptions.Item>
-                    <Descriptions.Item label="收入状态">
-                      {conversionRevenueStatusLabels[item.revenueStatus] ?? item.revenueStatus}
+                    <Descriptions.Item label="收益状态">
+                      {conversionRevenueStatusLabels[item.revenueStatus] ?? "待确认"}
                     </Descriptions.Item>
-                    <Descriptions.Item label="收入应收日期">
+                    <Descriptions.Item label="收益应收日期">
                       {formatDate(item.revenueDueDate)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="收入到账日期">
+                    <Descriptions.Item label="收益到账日期">
                       {formatDate(item.revenueReceivedDate)}
                     </Descriptions.Item>
                     <Descriptions.Item label="合同金额">
                       {formatMoney(item.contractAmount)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="收入金额">
+                    <Descriptions.Item label="收益金额">
                       {formatMoney(item.revenueAmount)}
                     </Descriptions.Item>
+                    <Descriptions.Item label="合同闭环说明" span={2}>
+                      {reviewSummary.contract}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="收益闭环说明" span={2}>
+                      {reviewSummary.revenue}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="里程碑节点" span={2}>
+                      {reviewSummary.milestone}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="跟进记录" span={2}>
+                      {reviewSummary.followUp}
+                    </Descriptions.Item>
                     <Descriptions.Item label="后评估效果">
-                      {conversionEvaluationEffectLabels[item.evaluationEffect] ?? item.evaluationEffect}
+                      {conversionEvaluationEffectLabels[item.evaluationEffect] ?? "待确认"}
                     </Descriptions.Item>
                     <Descriptions.Item label="后评估日期">
                       {formatDate(item.evaluationDate)}
@@ -1348,22 +1420,20 @@ function AchievementConversionSection({
                     <Descriptions.Item label="收益分配摘要" span={2}>
                       {formatValue(item.benefitDistributionSummary)}
                     </Descriptions.Item>
-                    <Descriptions.Item label="备注" span={2}>
-                      {formatValue(item.remarks)}
-                    </Descriptions.Item>
-                  </Descriptions>
-                  {canManage ? (
-                    <Button size="small" onClick={() => {
-                      setEditingId(item.id);
-                      setForm(toConversionForm(item));
-                      setSaveError(null);
-                    }}>
-                      编辑记录
-                    </Button>
-                  ) : null}
-                </Space>
-              </div>
-            ))}
+                    </Descriptions>
+                    {canManage ? (
+                      <Button size="small" onClick={() => {
+                        setEditingId(item.id);
+                        setForm(toConversionForm(item));
+                        setSaveError(null);
+                      }}>
+                        编辑记录
+                      </Button>
+                    ) : null}
+                  </Space>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -1415,7 +1485,7 @@ function AchievementConversionSection({
                 />
                 <Input
                   className="conversion-ledger-wide-input"
-                  placeholder="Counterparty name"
+                  placeholder="合作方名称"
                   value={form.counterpartyName}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -1430,7 +1500,7 @@ function AchievementConversionSection({
                   className="conversion-ledger-select"
                   options={Object.entries(conversionContractStatusLabels).map(([value, label]) => ({
                     value,
-                    label: `Contract: ${label}`,
+                    label: `合同：${label}`,
                   }))}
                   value={form.contractStatus}
                   onChange={(value) =>
@@ -1444,7 +1514,7 @@ function AchievementConversionSection({
                   className="conversion-ledger-select"
                   options={Object.entries(conversionRevenueStatusLabels).map(([value, label]) => ({
                     value,
-                    label: `Revenue: ${label}`,
+                    label: `收益：${label}`,
                   }))}
                   value={form.revenueStatus}
                   onChange={(value) =>
@@ -1458,7 +1528,7 @@ function AchievementConversionSection({
                   className="conversion-ledger-select"
                   options={Object.entries(conversionEvaluationEffectLabels).map(([value, label]) => ({
                     value,
-                    label: `Evaluation: ${label}`,
+                    label: `后评估：${label}`,
                   }))}
                   value={form.evaluationEffect}
                   onChange={(value) =>
@@ -1472,7 +1542,7 @@ function AchievementConversionSection({
               <Space size={8} wrap>
                 <Input
                   className="conversion-ledger-input"
-                  placeholder="Contract amount"
+                  placeholder="合同金额（元）"
                   value={form.contractAmount}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -1483,7 +1553,7 @@ function AchievementConversionSection({
                 />
                 <Input
                   className="conversion-ledger-input"
-                  placeholder="Revenue amount"
+                  placeholder="收益金额（元）"
                   value={form.revenueAmount}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -1494,7 +1564,7 @@ function AchievementConversionSection({
                 />
                 <Input
                   className="conversion-ledger-input"
-                  placeholder="Conversion date YYYY-MM-DD"
+                  placeholder="转化日期 YYYY-MM-DD"
                   value={form.conversionDate}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -1507,7 +1577,7 @@ function AchievementConversionSection({
               <Space size={8} wrap>
                 <Input
                   className="conversion-ledger-input"
-                  placeholder="Revenue due YYYY-MM-DD"
+                  placeholder="预计到账日期 YYYY-MM-DD"
                   value={form.revenueDueDate}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -1518,7 +1588,7 @@ function AchievementConversionSection({
                 />
                 <Input
                   className="conversion-ledger-input"
-                  placeholder="Revenue received YYYY-MM-DD"
+                  placeholder="实际到账日期 YYYY-MM-DD"
                   value={form.revenueReceivedDate}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -1580,7 +1650,7 @@ function AchievementConversionSection({
                       />
                       <Input
                         className="conversion-ledger-input"
-                        placeholder="Allocation label"
+                        placeholder="分配对象名称"
                         value={row.label}
                         onChange={(event) =>
                           setForm((current) =>
@@ -1590,7 +1660,7 @@ function AchievementConversionSection({
                       />
                       <Input
                         className="conversion-ledger-input"
-                        placeholder="Amount"
+                        placeholder="分配金额"
                         value={row.amount}
                         onChange={(event) =>
                           setForm((current) =>
@@ -1600,7 +1670,7 @@ function AchievementConversionSection({
                       />
                       <Input
                         className="conversion-ledger-input"
-                        placeholder="Ratio 0-1"
+                        placeholder="比例 0-1"
                         value={row.ratio}
                         onChange={(event) =>
                           setForm((current) =>
@@ -1653,7 +1723,7 @@ function AchievementConversionSection({
               />
               <Input.TextArea
                 maxLength={1000}
-                placeholder="Remarks"
+                placeholder="跟进记录 / 备注"
                 rows={2}
                 showCount
                 value={form.remarks}
@@ -1673,7 +1743,7 @@ function AchievementConversionSection({
                 />
               ) : null}
               <Button type="primary" loading={saving} onClick={() => void submitConversion()}>
-                {editingId ? "Update conversion" : "Create conversion"}
+                {editingId ? "更新转化记录" : "创建转化记录"}
               </Button>
             </Space>
           </div>
@@ -1840,24 +1910,52 @@ export const toConversionForm = (
   remarks: conversion.remarks ?? "",
 });
 
-const mapConversionErrorToDisplay = (error: ApiError): ApiError => {
+export const mapConversionErrorToDisplay = (error: ApiError): ApiError => {
+  if (error.kind === "unauthorized" || error.status === 401) {
+    return {
+      ...error,
+      message: "请先选择可用的业务用户",
+      detail: "转化跟踪需要有效用户上下文后才能读取或维护。",
+    };
+  }
+
   if (error.kind === "forbidden" || error.status === 403) {
     return {
       ...error,
       message: "当前账号无权查看转化记录",
-      detail: error.detail ?? "该成果的转化记录按部门职责范围开放。",
+      detail: "该成果的转化记录按部门职责范围开放。",
+    };
+  }
+
+  if (error.status === 404) {
+    return {
+      ...error,
+      message: "转化记录不存在或不可用",
+      detail: "请返回成果详情刷新后重试。",
     };
   }
 
   if (error.status === 409) {
     return {
       ...error,
-      message: "Conversion record is not allowed for this achievement state",
-      detail: error.detail ?? "The MVP only allows creation from archived achievements.",
+      message: "当前成果状态暂不能维护转化记录",
+      detail: "本地评审版仅允许在已归档成果范围内登记转化台账。",
     };
   }
 
-  return error;
+  if (error.kind === "bad-request" || error.status === 400) {
+    return {
+      ...error,
+      message: "转化记录信息不完整",
+      detail: "请检查合作方、金额、日期和收益分配比例后重试。",
+    };
+  }
+
+  return {
+    ...error,
+    message: "转化跟踪暂不可用",
+    detail: "本地转化跟踪暂未返回可用结果，请稍后重试或联系管理员核对服务状态。",
+  };
 };
 
 const getConversionStatusTagColor = (status: AchievementConversionStatusCode): string => {
@@ -1934,7 +2032,7 @@ export const formatBenefitDistributionJson = (
   items: AchievementConversionBenefitDistributionItem[] | null | undefined,
 ): string => {
   if (!items?.length) {
-    return "未返回";
+    return "暂未登记收益分配明细";
   }
 
   return items

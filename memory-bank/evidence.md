@@ -19599,6 +19599,39 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-08 Step 185 - 转化跟踪闭环体验补强证据
+
+- Canonical scope:
+  - Project positioning retained as “研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like”.
+  - Step185 does not claim real production launch, real external integration completion, VPS acceptance, or production DB acceptance.
+- Files changed:
+  - `apps/web/src/AchievementDetail.tsx`.
+  - `apps/web/src/AchievementDetail.test.ts`.
+  - `memory-bank/conversion-tracking-polish-step185.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- UI evidence by code/test:
+  - Conversion labels are now Chinese for type, status, contract, revenue, evaluation, and benefit categories.
+  - Conversion ledger shows local-review scope and phase-two production-access scope.
+  - Loading state explicitly mentions contract status, revenue distribution, milestone nodes, and follow-up summaries.
+  - Empty state explains that no conversion contract, revenue distribution, milestone, or follow-up record is registered yet.
+  - Error state and save validation map to Chinese business copy and avoid raw paths, structured payload details, stack traces, and engineering wording.
+  - Record details include contract-loop, revenue-loop, milestone, and follow-up sections.
+  - Internal achievement ID is not shown in the conversion detail row; the page uses a safe achievement title or “当前成果”.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Conversion conversion-tracking`: FAIL, no matching test files found by current Vitest argument handling.
+  - `corepack pnpm --filter @research-ip/web test -- src/AchievementDetail.test.ts`: PASS, 1 file / 39 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+  - `git diff --check`: PASS, with CRLF working-copy warnings only.
+  - `git diff --cached --check`: PASS.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real contract, finance, legal, conversion-platform, object-storage, or external-system call.
+  - No API permission expansion, external integration, Prisma schema change, migration, seed, deployment config, or production config change.
+  - No `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`, screenshot, performance log, backup, temporary script, or real attachment file was staged for this Step.
+  - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
+
 ## 2026-07-08 Step 184 - Attachment preview polish evidence
 
 - Classification:
