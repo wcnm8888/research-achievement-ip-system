@@ -11,6 +11,7 @@ import { PrismaService } from "../database/prisma.service";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { ReminderStatusCode } from "../reminders/domain/reminder-domain.types";
 import { WorkflowTaskStatusCode } from "../workflow/domain/workflow-domain.types";
+import { CitationAchievementInput } from "./domain/citation-analytics";
 import {
   DashboardApiCallStatusCode,
   DashboardBucket,
@@ -362,6 +363,52 @@ export class DashboardRepository {
       integrationCode: row.integrationCode,
       provider: integrationByCode.get(row.integrationCode)?.provider ?? "UNKNOWN",
       count: row.count,
+    }));
+  }
+
+  async listCitationAnalysisAchievements(
+    policyWhere: Prisma.AchievementWhereInput,
+  ): Promise<CitationAchievementInput[]> {
+    const rows = await this.prisma.achievement.findMany({
+      where: policyWhere,
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        departmentId: true,
+        ownerUserId: true,
+        department: {
+          select: {
+            code: true,
+            name: true,
+          },
+        },
+        ownerUser: {
+          select: {
+            name: true,
+          },
+        },
+        paperDetail: {
+          select: {
+            doi: true,
+            publishYear: true,
+            includedType: true,
+            impactFactor: true,
+          },
+        },
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      status: row.status,
+      departmentId: row.departmentId,
+      departmentCode: row.department.code,
+      departmentName: row.department.name,
+      ownerUserId: row.ownerUserId,
+      ownerName: row.ownerUser.name,
+      paperDetail: row.paperDetail,
     }));
   }
 }

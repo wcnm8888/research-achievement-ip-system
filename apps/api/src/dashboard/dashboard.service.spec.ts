@@ -45,6 +45,7 @@ type DashboardRepositoryMock = {
   groupAchievementsByType: ReturnType<typeof vi.fn>;
   groupAchievementsByStatus: ReturnType<typeof vi.fn>;
   groupAchievementsByDepartment: ReturnType<typeof vi.fn>;
+  listCitationAnalysisAchievements: ReturnType<typeof vi.fn>;
   countConversions: ReturnType<typeof vi.fn>;
   sumConversionAmounts: ReturnType<typeof vi.fn>;
   groupConversionsByStatus: ReturnType<typeof vi.fn>;
@@ -76,6 +77,24 @@ const createRepositoryMock = (): DashboardRepositoryMock => ({
       departmentCode: "BIO",
       departmentName: "生命科学学院",
       count: 3,
+    },
+  ]),
+  listCitationAnalysisAchievements: vi.fn().mockResolvedValue([
+    {
+      id: "paper-1",
+      type: AchievementTypeCode.paper,
+      status: AchievementStatusCode.archived,
+      departmentId: ids.department,
+      departmentCode: "BIO",
+      departmentName: "生命科学学院",
+      ownerUserId: ids.user,
+      ownerName: "张三",
+      paperDetail: {
+        doi: "10.1234/example",
+        publishYear: 2021,
+        includedType: "SCI",
+        impactFactor: "5.25",
+      },
     },
   ]),
   countConversions: vi.fn().mockResolvedValue(2),
@@ -168,6 +187,9 @@ describe("DashboardService", () => {
       { departmentId: { in: [ids.department] } },
       dashboardDepartmentRankingLimit,
     );
+    expect(repository.listCitationAnalysisAchievements).toHaveBeenCalledWith({
+      departmentId: { in: [ids.department] },
+    });
     expect(repository.countConversions).toHaveBeenCalledWith({
       departmentId: { in: [ids.department] },
     });
@@ -229,6 +251,21 @@ describe("DashboardService", () => {
         count: 3,
       },
     ]);
+    expect(summary.citationImpact.summary).toMatchObject({
+      key: DashboardMetricKeyCode.citationImpactSummary,
+      section: "ACHIEVEMENT",
+      value: {
+        source: "LOCAL_DERIVED",
+        externalSourceStatus: "RESERVED_INTERFACE",
+        overview: {
+          achievementCount: 1,
+          citableAchievementCount: 1,
+          totalCitations: 59,
+          averageCitations: 59,
+          hIndex: 1,
+        },
+      },
+    });
     expect(summary.fee.deadline.value).toEqual({
       overdue: { key: DashboardOverviewBucketCode.overdue, count: 1 },
       dueSoon: { key: DashboardOverviewBucketCode.dueSoon, count: 2 },
@@ -297,6 +334,7 @@ describe("DashboardService", () => {
     repository.groupAchievementsByType.mockResolvedValue([]);
     repository.groupAchievementsByStatus.mockResolvedValue([]);
     repository.groupAchievementsByDepartment.mockResolvedValue([]);
+    repository.listCitationAnalysisAchievements.mockResolvedValue([]);
     repository.countConversions.mockResolvedValue(0);
     repository.sumConversionAmounts.mockResolvedValue({
       contractTotal: "0.00",
@@ -325,6 +363,13 @@ describe("DashboardService", () => {
     expect(repository.groupFeesByPayStatus).toHaveBeenCalledWith({ id: { in: [] } });
     expect(summary.achievement.total.value.count).toBe(0);
     expect(summary.achievement.departmentRanking.value.buckets).toEqual([]);
+    expect(summary.citationImpact.summary.value.overview).toEqual({
+      achievementCount: 0,
+      citableAchievementCount: 0,
+      totalCitations: 0,
+      averageCitations: 0,
+      hIndex: 0,
+    });
     expect(summary.conversion.total.value.count).toBe(0);
     expect(summary.conversion.totals.value.contractTotal).toBe("0.00");
     expect(summary.conversion.funnel.value.buckets).toEqual([]);

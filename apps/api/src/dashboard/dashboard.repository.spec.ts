@@ -20,6 +20,7 @@ const ids = {
 const createFakePrisma = () => ({
   achievement: {
     count: vi.fn().mockResolvedValue(0),
+    findMany: vi.fn().mockResolvedValue([]),
     groupBy: vi.fn().mockResolvedValue([]),
   },
   department: {
@@ -345,6 +346,91 @@ describe("DashboardRepository conversion aggregations", () => {
       select: { id: true, code: true, name: true },
     });
     expect(prisma.achievement.groupBy.mock.calls[0]![0]).not.toHaveProperty("select");
+  });
+
+  it("lists only fields required for local citation analytics", async () => {
+    const { prisma, repository } = createRepository();
+    prisma.achievement.findMany.mockResolvedValue([
+      {
+        id: "achievement-1",
+        type: AchievementTypeCode.paper,
+        status: AchievementStatusCode.archived,
+        departmentId: ids.department,
+        ownerUserId: ids.user,
+        department: {
+          code: "BIO",
+          name: "生命科学学院",
+        },
+        ownerUser: {
+          name: "张三",
+        },
+        paperDetail: {
+          doi: "10.1234/example",
+          publishYear: 2021,
+          includedType: "SCI",
+          impactFactor: "5.25",
+        },
+      },
+    ]);
+
+    await expect(
+      repository.listCitationAnalysisAchievements({
+        departmentId: { in: [ids.department] },
+      }),
+    ).resolves.toEqual([
+      {
+        id: "achievement-1",
+        type: AchievementTypeCode.paper,
+        status: AchievementStatusCode.archived,
+        departmentId: ids.department,
+        departmentCode: "BIO",
+        departmentName: "生命科学学院",
+        ownerUserId: ids.user,
+        ownerName: "张三",
+        paperDetail: {
+          doi: "10.1234/example",
+          publishYear: 2021,
+          includedType: "SCI",
+          impactFactor: "5.25",
+        },
+      },
+    ]);
+
+    expect(prisma.achievement.findMany).toHaveBeenCalledWith({
+      where: { departmentId: { in: [ids.department] } },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        departmentId: true,
+        ownerUserId: true,
+        department: {
+          select: {
+            code: true,
+            name: true,
+          },
+        },
+        ownerUser: {
+          select: {
+            name: true,
+          },
+        },
+        paperDetail: {
+          select: {
+            doi: true,
+            publishYear: true,
+            includedType: true,
+            impactFactor: true,
+          },
+        },
+      },
+    });
+    expect(prisma.achievement.findMany.mock.calls[0]![0].select).not.toHaveProperty(
+      "contributors",
+    );
+    expect(prisma.achievement.findMany.mock.calls[0]![0].select).not.toHaveProperty(
+      "feeRecords",
+    );
   });
 });
 

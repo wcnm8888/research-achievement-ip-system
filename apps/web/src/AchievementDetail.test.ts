@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ApiClient, ApiError } from "./api-client";
 import {
   buildAttachmentDetailMetadataViewModel,
+  buildAchievementCitationImpact,
   buildAchievementAttachmentFormData,
   buildConversionInput,
   buildAttachmentMetadataViewModel,
@@ -34,6 +35,7 @@ import {
   shouldLoadAttachmentMetadata,
   shouldLoadAchievementConversions,
   getTypeDetailFields,
+  estimateAchievementCitationCount,
   toConversionForm,
 } from "./AchievementDetail";
 import type { AchievementConversionRecord, AchievementDetail, AttachmentMetadata } from "./types";
@@ -178,6 +180,40 @@ describe("fetchAchievementDetailById", () => {
       baseDetail,
     );
     expect(calls).toEqual(["/achievements/achievement-id"]);
+  });
+});
+
+describe("achievement citation impact helpers", () => {
+  it("derives local citation impact for paper details", () => {
+    const detail: AchievementDetail = {
+      ...baseDetail,
+      status: "ARCHIVED",
+      paperDetail: {
+        doi: "10.1234/example",
+        journal: "Journal",
+        publishYear: 2021,
+        includedType: "SCI",
+        impactFactor: "5.25",
+      },
+    };
+
+    expect(estimateAchievementCitationCount(detail, 2026)).toBe(59);
+    expect(buildAchievementCitationImpact(detail, 2026)).toMatchObject({
+      citationCount: 59,
+      sourceLabel: "本地派生统计",
+    });
+  });
+
+  it("keeps non-paper achievements outside citation count", () => {
+    expect(
+      buildAchievementCitationImpact({
+        ...baseDetail,
+        type: "PATENT",
+      }),
+    ).toMatchObject({
+      citationCount: 0,
+      sourceLabel: "本地统计",
+    });
   });
 });
 

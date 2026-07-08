@@ -4,6 +4,7 @@ import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { UserContext } from "../identity/user-context";
 import { WorkflowTaskStatusCode } from "../workflow/domain/workflow-domain.types";
 import { DashboardRepository } from "./dashboard.repository";
+import { buildCitationImpactSummary } from "./domain/citation-analytics";
 import {
   DashboardBucket,
   DashboardMetricKeyCode,
@@ -49,6 +50,7 @@ export class DashboardService {
       achievementTypeBuckets,
       achievementStatusBuckets,
       achievementDepartmentBuckets,
+      citationAnalysisAchievements,
       conversionTotal,
       conversionAmountSummary,
       conversionStatusBuckets,
@@ -72,6 +74,7 @@ export class DashboardService {
         achievementWhere,
         dashboardDepartmentRankingLimit,
       ),
+      this.repository.listCitationAnalysisAchievements(achievementWhere),
       this.repository.countConversions(achievementWhere),
       this.repository.sumConversionAmounts(achievementWhere),
       this.repository.groupConversionsByStatus(achievementWhere),
@@ -144,6 +147,17 @@ export class DashboardService {
           key: DashboardMetricKeyCode.achievementDepartmentRanking,
           section: DashboardMetricSectionCode.achievement,
           value: { buckets: achievementDepartmentBuckets },
+        },
+      },
+      citationImpact: {
+        summary: {
+          key: DashboardMetricKeyCode.citationImpactSummary,
+          section: DashboardMetricSectionCode.achievement,
+          value: buildCitationImpactSummary(citationAnalysisAchievements, {
+            departmentLimit: dashboardCitationRankingLimit,
+            researcherLimit: dashboardCitationRankingLimit,
+            achievementLimit: dashboardCitationRankingLimit,
+          }),
         },
       },
       fee: {
@@ -314,6 +328,7 @@ export const addUtcDays = (value: Date, days: number): Date => {
 
 export const dashboardDepartmentRankingLimit = 5;
 export const dashboardIntegrationRankingLimit = 5;
+export const dashboardCitationRankingLimit = 5;
 export const dashboardRecentApiCallWindowDays = 7;
 
 const countBucket = <Key extends string>(

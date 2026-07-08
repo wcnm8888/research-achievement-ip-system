@@ -1018,6 +1018,8 @@ function DetailContent({
         ))}
       </Descriptions>
 
+      <CitationImpactSection detail={detail} />
+
       <Divider orientation="left">贡献人</Divider>
       <Contributors contributors={detail.contributors} />
 
@@ -1678,6 +1680,26 @@ function AchievementConversionSection({
           </div>
         )}
       </Space>
+    </>
+  );
+}
+
+function CitationImpactSection({ detail }: { detail: AchievementDetailType }) {
+  const impact = buildAchievementCitationImpact(detail);
+
+  return (
+    <>
+      <Divider orientation="left">学术影响</Divider>
+      <Descriptions bordered column={2} size="small">
+        <Descriptions.Item label="引用次数">{impact.citationCount}</Descriptions.Item>
+        <Descriptions.Item label="统计来源">{impact.sourceLabel}</Descriptions.Item>
+        <Descriptions.Item label="影响摘要" span={2}>
+          {impact.summary}
+        </Descriptions.Item>
+      </Descriptions>
+      <Typography.Text type="secondary">
+        DOI/Crossref/Scopus/OpenAlex 为外部文献库预留接口，当前不进行真实外部同步。
+      </Typography.Text>
     </>
   );
 }
@@ -2667,6 +2689,115 @@ export const getTypeDetailFields = (
     { label: "登记日期", value: formatDate(software?.registerDate) },
     { label: "运行环境", value: formatValue(software?.runEnv) },
   ];
+};
+
+export type AchievementCitationImpactViewModel = {
+  citationCount: number;
+  sourceLabel: string;
+  summary: string;
+};
+
+export const buildAchievementCitationImpact = (
+  detail: Pick<AchievementDetailType, "paperDetail" | "status" | "type">,
+  currentYear = new Date().getUTCFullYear(),
+): AchievementCitationImpactViewModel => {
+  if (detail.type !== "PAPER" || !detail.paperDetail) {
+    return {
+      citationCount: 0,
+      sourceLabel: "本地统计",
+      summary: "当前成果类型不纳入论文引文统计，可在后续接入外部文献库后扩展。",
+    };
+  }
+
+  const citationCount = estimateAchievementCitationCount(detail, currentYear);
+  const paper = detail.paperDetail;
+  const parts = [
+    paper.includedType ? `收录：${paper.includedType}` : null,
+    paper.impactFactor ? `影响因子：${paper.impactFactor}` : null,
+    paper.publishYear ? `发表年份：${paper.publishYear}` : null,
+  ].filter(Boolean);
+
+  return {
+    citationCount,
+    sourceLabel: "本地派生统计",
+    summary:
+      parts.length > 0
+        ? `${parts.join("；")}。当前引用次数用于本地评审演示。`
+        : "当前论文缺少收录、影响因子或发表年份字段，引用次数按本地最低口径展示。",
+  };
+};
+
+export const estimateAchievementCitationCount = (
+  detail: Pick<AchievementDetailType, "paperDetail" | "status" | "type">,
+  currentYear = new Date().getUTCFullYear(),
+): number => {
+  if (detail.type !== "PAPER" || !detail.paperDetail) {
+    return 0;
+  }
+
+  const paper = detail.paperDetail;
+  const includedTypeScore = scoreIncludedType(paper.includedType);
+  const impactScore = scoreImpactFactor(paper.impactFactor);
+  const ageScore = scorePublishAge(paper.publishYear, currentYear);
+  const doiScore = paper.doi?.trim() ? 6 : 0;
+  const statusMultiplier = detail.status === "ARCHIVED" ? 1 : 0.65;
+
+  return Math.max(
+    0,
+    Math.round((includedTypeScore + impactScore + ageScore + doiScore) * statusMultiplier),
+  );
+};
+
+const scoreIncludedType = (includedType: string | null | undefined): number => {
+  const value = includedType?.toUpperCase() ?? "";
+
+  if (value.includes("CSSCI")) {
+    return 14;
+  }
+
+  if (value.includes("SSCI")) {
+    return 20;
+  }
+
+  if (value.includes("SCI")) {
+    return 22;
+  }
+
+  if (value.includes("EI")) {
+    return 16;
+  }
+
+  if (value.includes("CSCD")) {
+    return 10;
+  }
+
+  return value ? 6 : 2;
+};
+
+const scoreImpactFactor = (
+  impactFactor: number | string | null | undefined,
+): number => {
+  const numeric =
+    typeof impactFactor === "number"
+      ? impactFactor
+      : Number.parseFloat(impactFactor?.toString() ?? "");
+
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return 0;
+  }
+
+  return Math.min(30, Math.round(numeric * 4));
+};
+
+const scorePublishAge = (
+  publishYear: number | null | undefined,
+  currentYear: number,
+): number => {
+  if (!publishYear || publishYear > currentYear) {
+    return 0;
+  }
+
+  return Math.min(16, Math.max(0, currentYear - publishYear) * 2);
 };
 
 const getBaseFields = (detail: AchievementDetailType): DetailDisplayField[] => [

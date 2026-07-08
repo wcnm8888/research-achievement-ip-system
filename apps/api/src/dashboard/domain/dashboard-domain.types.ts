@@ -11,6 +11,7 @@ import {
 import { PayStatusCode } from "../../fees/domain/fee-domain.types";
 import { ReminderStatusCode } from "../../reminders/domain/reminder-domain.types";
 import { WorkflowTaskStatusCode } from "../../workflow/domain/workflow-domain.types";
+import { CitationImpactSummary } from "./citation-analytics";
 
 export const DashboardApiCallStatusCode = {
   success: "SUCCESS",
@@ -40,6 +41,9 @@ export const DashboardMetricKeyCode = {
   achievementTypeDistribution: "ACHIEVEMENT_TYPE_DISTRIBUTION",
   achievementStatusDistribution: "ACHIEVEMENT_STATUS_DISTRIBUTION",
   achievementDepartmentRanking: "ACHIEVEMENT_DEPARTMENT_RANKING",
+  citationImpactSummary: "CITATION_IMPACT_SUMMARY",
+  citationDepartmentRanking: "CITATION_DEPARTMENT_RANKING",
+  citationResearcherRanking: "CITATION_RESEARCHER_RANKING",
   conversionTotal: "CONVERSION_TOTAL",
   conversionAmountSummary: "CONVERSION_AMOUNT_SUMMARY",
   conversionStatusFunnel: "CONVERSION_STATUS_FUNNEL",
@@ -116,6 +120,13 @@ export type DashboardAchievementSummary = {
   departmentRanking: DashboardMetric<
     typeof DashboardMetricKeyCode.achievementDepartmentRanking,
     { buckets: DashboardDepartmentRankBucket[] }
+  >;
+};
+
+export type DashboardCitationImpactSummary = {
+  summary: DashboardMetric<
+    typeof DashboardMetricKeyCode.citationImpactSummary,
+    CitationImpactSummary
   >;
 };
 
@@ -230,6 +241,7 @@ export type DashboardSummary = {
     departmentId: string;
   };
   achievement: DashboardAchievementSummary;
+  citationImpact: DashboardCitationImpactSummary;
   conversion: DashboardConversionSummary;
   fee: DashboardFeeSummary;
   workflowTasks: DashboardWorkflowTaskSummary;

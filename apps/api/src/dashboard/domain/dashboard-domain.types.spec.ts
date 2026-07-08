@@ -72,6 +72,27 @@ const makeDashboardSummary = (): DashboardSummary => ({
       },
     },
   },
+  citationImpact: {
+    summary: {
+      key: DashboardMetricKeyCode.citationImpactSummary,
+      section: DashboardMetricSectionCode.achievement,
+      value: {
+        source: "LOCAL_DERIVED",
+        externalSourceStatus: "RESERVED_INTERFACE",
+        overview: {
+          achievementCount: 1,
+          citableAchievementCount: 1,
+          totalCitations: 59,
+          averageCitations: 59,
+          hIndex: 1,
+        },
+        byDepartment: [],
+        byResearcher: [],
+        topAchievements: [],
+        note: "本地引文影响力基于成果台账字段派生；DOI/Crossref/Scopus/OpenAlex 为后续可接入能力。",
+      },
+    },
+  },
   conversion: {
     total: {
       key: DashboardMetricKeyCode.conversionTotal,
@@ -259,6 +280,9 @@ describe("Dashboard metric contract", () => {
       "ACHIEVEMENT_TYPE_DISTRIBUTION",
       "ACHIEVEMENT_STATUS_DISTRIBUTION",
       "ACHIEVEMENT_DEPARTMENT_RANKING",
+      "CITATION_IMPACT_SUMMARY",
+      "CITATION_DEPARTMENT_RANKING",
+      "CITATION_RESEARCHER_RANKING",
       "CONVERSION_TOTAL",
       "CONVERSION_AMOUNT_SUMMARY",
       "CONVERSION_STATUS_FUNNEL",

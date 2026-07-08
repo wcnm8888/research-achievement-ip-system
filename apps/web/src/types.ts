@@ -16,6 +16,42 @@ export type DashboardIntegrationCallBucket = {
   count: number;
 };
 
+export type CitationOverview = {
+  achievementCount: number;
+  citableAchievementCount: number;
+  totalCitations: number;
+  averageCitations: number;
+  hIndex: number;
+};
+
+export type CitationDepartmentImpact = CitationOverview & {
+  departmentId: string;
+  departmentCode: string;
+  departmentName: string;
+};
+
+export type CitationResearcherImpact = CitationOverview & {
+  userId: string;
+  researcherName: string;
+  departmentId: string;
+  departmentName: string;
+};
+
+export type CitationAchievementImpact = {
+  achievementId: string;
+  citationCount: number;
+};
+
+export type CitationImpactSummary = {
+  source: "LOCAL_DERIVED" | string;
+  externalSourceStatus: "RESERVED_INTERFACE" | string;
+  overview: CitationOverview;
+  byDepartment: CitationDepartmentImpact[];
+  byResearcher: CitationResearcherImpact[];
+  topAchievements: CitationAchievementImpact[];
+  note: string;
+};
+
 export type DashboardMetric<Value> = {
   key: string;
   section: string;
@@ -39,6 +75,9 @@ export type DashboardSummary = {
     departmentRanking: DashboardMetric<{
       buckets: DashboardDepartmentRankBucket[];
     }>;
+  };
+  citationImpact: {
+    summary: DashboardMetric<CitationImpactSummary>;
   };
   conversion: {
     total: DashboardMetric<{ count: number }>;

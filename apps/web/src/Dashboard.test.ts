@@ -71,6 +71,55 @@ const dashboardSummary: DashboardSummary = {
       },
     },
   },
+  citationImpact: {
+    summary: {
+      key: "CITATION_IMPACT_SUMMARY",
+      section: "ACHIEVEMENT",
+      value: {
+        source: "LOCAL_DERIVED",
+        externalSourceStatus: "RESERVED_INTERFACE",
+        overview: {
+          achievementCount: 12,
+          citableAchievementCount: 8,
+          totalCitations: 286,
+          averageCitations: 23.83,
+          hIndex: 6,
+        },
+        byDepartment: [
+          {
+            departmentId: "10000000-0000-4000-8000-000000000002",
+            departmentCode: "BIO",
+            departmentName: "生命科学学院",
+            achievementCount: 8,
+            citableAchievementCount: 6,
+            totalCitations: 190,
+            averageCitations: 23.75,
+            hIndex: 5,
+          },
+        ],
+        byResearcher: [
+          {
+            userId: "40000000-0000-4000-8000-000000000002",
+            researcherName: "张三",
+            departmentId: "10000000-0000-4000-8000-000000000002",
+            departmentName: "生命科学学院",
+            achievementCount: 4,
+            citableAchievementCount: 4,
+            totalCitations: 128,
+            averageCitations: 32,
+            hIndex: 4,
+          },
+        ],
+        topAchievements: [
+          {
+            achievementId: "achievement-1",
+            citationCount: 59,
+          },
+        ],
+        note: "本地引文影响力基于成果台账字段派生；DOI/Crossref/Scopus/OpenAlex 为后续可接入能力。",
+      },
+    },
+  },
   conversion: {
     total: {
       key: "CONVERSION_TOTAL",
@@ -326,6 +375,10 @@ describe("dashboard summary helpers", () => {
       pendingReminders: 4,
       integrationMockRecentCalls: 12,
       integrationMockWindowDays: 7,
+      totalCitations: 286,
+      averageCitations: 23.83,
+      hIndex: 6,
+      citableAchievementCount: 8,
     });
   });
 
@@ -348,6 +401,10 @@ describe("dashboard summary helpers", () => {
       pendingReminders: 0,
       integrationMockRecentCalls: 0,
       integrationMockWindowDays: 7,
+      totalCitations: 0,
+      averageCitations: 0,
+      hIndex: 0,
+      citableAchievementCount: 0,
     });
   });
 

@@ -3,6 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createApiClient, isApiError, type ApiClient, type ApiError } from "./api-client";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import type {
+  CitationDepartmentImpact,
+  CitationImpactSummary,
+  CitationResearcherImpact,
   DashboardBucket,
   DashboardDepartmentRankBucket,
   DashboardIntegrationCallBucket,
@@ -36,6 +39,10 @@ export type DashboardBasicMetrics = {
   pendingReminders: number;
   integrationMockRecentCalls: number;
   integrationMockWindowDays: number;
+  totalCitations: number;
+  averageCitations: number;
+  hIndex: number;
+  citableAchievementCount: number;
 };
 
 export type DashboardDueSoonDays = (typeof allowedDashboardDueSoonDays)[number];
@@ -196,6 +203,11 @@ export const extractDashboardBasicMetrics = (
   ),
   integrationMockRecentCalls: summary?.integrationMock.recentCalls.value.count ?? 0,
   integrationMockWindowDays: summary?.integrationMock.recentCalls.value.windowDays ?? 7,
+  totalCitations: summary?.citationImpact?.summary.value.overview.totalCitations ?? 0,
+  averageCitations: summary?.citationImpact?.summary.value.overview.averageCitations ?? 0,
+  hIndex: summary?.citationImpact?.summary.value.overview.hIndex ?? 0,
+  citableAchievementCount:
+    summary?.citationImpact?.summary.value.overview.citableAchievementCount ?? 0,
 });
 
 export const countDashboardBucket = (
@@ -415,6 +427,7 @@ const DashboardSummaryCard = ({
   const distributionSections = buildDashboardDistributionSections(summary);
   const departmentRanking = summary?.achievement.departmentRanking.value.buckets ?? [];
   const integrationBuckets = summary?.integrationMock.byIntegration.value.buckets ?? [];
+  const citationImpact = summary?.citationImpact?.summary.value ?? null;
 
   return (
     <Card
@@ -436,6 +449,18 @@ const DashboardSummaryCard = ({
         <Row gutter={[16, 16]} className="dashboard-metric-grid">
           <Col xs={24} sm={12} xl={5}>
             <MetricTile title="成果总量" value={metrics.achievementTotal} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="总引用次数" value={metrics.totalCitations} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="平均引用" value={metrics.averageCitations} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="H-index" value={metrics.hIndex} />
+          </Col>
+          <Col xs={24} sm={12} xl={5}>
+            <MetricTile title="可分析成果" value={metrics.citableAchievementCount} />
           </Col>
           <Col xs={24} sm={12} xl={5}>
             <MetricTile title="转化记录" value={metrics.conversionTotal} />
@@ -512,6 +537,8 @@ const DashboardSummaryCard = ({
           integrations={integrationBuckets}
         />
 
+        <CitationImpactCard citationImpact={citationImpact} />
+
         <DashboardDistributionGrid sections={distributionSections} />
       </DataState>
     </Card>
@@ -550,6 +577,99 @@ const DashboardRankingGrid = ({
   <div className="dashboard-distribution-grid">
     <DashboardDepartmentRankingCard departments={departments} />
     <DashboardIntegrationRankingCard integrations={integrations} />
+  </div>
+);
+
+const CitationImpactCard = ({
+  citationImpact,
+}: {
+  citationImpact: CitationImpactSummary | null;
+}) => (
+  <div className="dashboard-distribution-card dashboard-citation-card">
+    <div className="dashboard-distribution-header">
+      <Typography.Text strong>引文影响力</Typography.Text>
+      <Space size={8} wrap>
+        <Tag color="blue">本地统计</Tag>
+        <Tag color="default">外部文献库预留接口</Tag>
+      </Space>
+    </div>
+    {!citationImpact ? (
+      <Typography.Text type="secondary">暂无引文影响力统计</Typography.Text>
+    ) : (
+      <Space direction="vertical" size={12} className="full-width">
+        <Row gutter={[12, 12]}>
+          <Col xs={12} md={6}>
+            <MetricTile title="总引用次数" value={citationImpact.overview.totalCitations} />
+          </Col>
+          <Col xs={12} md={6}>
+            <MetricTile title="平均引用" value={citationImpact.overview.averageCitations} />
+          </Col>
+          <Col xs={12} md={6}>
+            <MetricTile title="H-index" value={citationImpact.overview.hIndex} />
+          </Col>
+          <Col xs={12} md={6}>
+            <MetricTile title="可分析成果" value={citationImpact.overview.citableAchievementCount} />
+          </Col>
+        </Row>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <CitationDepartmentRanking departments={citationImpact.byDepartment} />
+          </Col>
+          <Col xs={24} lg={12}>
+            <CitationResearcherRanking researchers={citationImpact.byResearcher} />
+          </Col>
+        </Row>
+        <Typography.Text type="secondary">{citationImpact.note}</Typography.Text>
+      </Space>
+    )}
+  </div>
+);
+
+const CitationDepartmentRanking = ({
+  departments,
+}: {
+  departments: CitationDepartmentImpact[];
+}) => (
+  <div className="dashboard-distribution-list">
+    <Typography.Text strong>部门影响力</Typography.Text>
+    {departments.length === 0 ? (
+      <Typography.Text type="secondary">暂无部门引文统计</Typography.Text>
+    ) : (
+      departments.map((department, index) => (
+        <div className="dashboard-distribution-line" key={department.departmentId}>
+          <Typography.Text strong ellipsis>
+            {index + 1}. {department.departmentName}
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            {department.totalCitations} 次 · H-index {department.hIndex}
+          </Typography.Text>
+        </div>
+      ))
+    )}
+  </div>
+);
+
+const CitationResearcherRanking = ({
+  researchers,
+}: {
+  researchers: CitationResearcherImpact[];
+}) => (
+  <div className="dashboard-distribution-list">
+    <Typography.Text strong>科研人员影响力</Typography.Text>
+    {researchers.length === 0 ? (
+      <Typography.Text type="secondary">暂无人员引文统计</Typography.Text>
+    ) : (
+      researchers.map((researcher, index) => (
+        <div className="dashboard-distribution-line" key={researcher.userId}>
+          <Typography.Text strong ellipsis>
+            {index + 1}. {researcher.researcherName}
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            {researcher.totalCitations} 次 · 平均 {researcher.averageCitations}
+          </Typography.Text>
+        </div>
+      ))
+    )}
   </div>
 );
 
