@@ -1,5 +1,48 @@
 # Progress
 
+## 2026-07-08 Step 181 - Workflow and batch acceptance gap closure
+
+- Status: PASS.
+- Goal:
+  - Close the 7.1 acceptance wording gap for approval workflow and batch /
+    import operations without implementing a dynamic workflow engine or adding
+    new batch write capability.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Documentation:
+  - Added `memory-bank/workflow-and-batch-acceptance-gap-step181.md`.
+  - Updated this progress log and `memory-bank/evidence.md`.
+- Coverage strengthened:
+  - Current approval mainline is summarized as achievement submit, department
+    review, reject, administrator archive, pending tasks, and fee review path.
+  - Current abnormal states are summarized for achievement draft / pending
+    department review / rejected / pending archive / archived / voided,
+    workflow pending / claimed / approved / rejected / cancelled, fee pay and
+    review statuses, and import job / run / item statuses.
+  - Current batch capability is summarized as department import, user account
+    import, achievement import, import dry-run, import apply, import job
+    history, safe summaries, failed rows, warnings, idempotency boundary,
+    duplicate / conflict / validation handling, and row-level safe history.
+  - Explicit non-claims now cover dynamic workflow engines, arbitrary
+    configurable multi-level approval, dynamic routing by type / amount /
+    department / secret level, countersign / add-sign / transfer / withdraw /
+    timeout auto-flow, all-object batch write / approval / delete / rollback,
+    and production-grade queue / retry / compensation / rollback.
+  - Phase-two recommendations now cover workflow templates, node condition
+    expressions, dynamic approver resolution, batch task queue, idempotency
+    keys, failure replay, audit retention, and administrator review.
+- Verification:
+  - Documentation-only execution; API/Web tests were intentionally not run.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundary:
+  - No `.env`, `.env.production`, password, Cookie, Token, production
+    connection string, real import file content, or production data was read.
+  - No production/VPS/production DB, real HR, finance, patent, email, DOI, or
+    other external system was accessed.
+  - No real import apply, batch write, batch approval, batch rollback,
+    migration, database clear / overwrite / reset, deletion, prune, reset,
+    restore, or existing untracked local artifact staging occurred.
+
 ## 2026-07-08 Step 179 - API integration operations documentation execution
 
 - Status: PASS.

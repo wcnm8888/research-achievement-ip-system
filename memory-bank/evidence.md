@@ -1,5 +1,88 @@
 # Evidence
 
+## 2026-07-08 Step 181 - Workflow and batch acceptance gap closure evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 296]`
+    with existing untracked local artifacts left untouched.
+  - Current HEAD verified as `66fb544bcd8d1a0643b9ac316369ac4c3251c2bd`
+    (`docs: summarize final acceptance readiness`).
+- Context reviewed with targeted reads only:
+  - `memory-bank/final-acceptance-readiness-summary-step180.md`.
+  - 7.1-related rows from
+    `memory-bank/final-acceptance-coverage-step174.md`.
+  - Recent Step179 / Step178 / Step177 snippets from `memory-bank/progress.md`
+    and `memory-bank/evidence.md`, plus keyword matches for workflow, fees,
+    imports, batch, Step174, and Step180.
+  - Workflow, achievement, fee, import, account, department, import job
+    history, and import job item source/test indexes using `rg`.
+  - Focused snippets from achievement state machine, workflow state machine,
+    fee state machine, workflow / achievement / fee controllers, import job
+    history service/controller, import dry-run services, import dry-run
+    contract, import job history archive, import job item archive, and Prisma
+    import enums.
+- Changed files:
+  - `memory-bank/workflow-and-batch-acceptance-gap-step181.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Approval workflow coverage documented:
+  - Achievement submit from `DRAFT` to `PENDING_DEPARTMENT_REVIEW`.
+  - Department review through workflow pending tasks, approve, and reject.
+  - Rejected achievements can return to draft or be resubmitted.
+  - Pending archive can become archived through administrator archive.
+  - Workflow task and instance statuses cover pending / claimed / approved /
+    rejected / cancelled and active / completed / cancelled.
+  - Fee review path covers `FEE_RECORD` workflow target, `FEE_REVIEW` step,
+    approve / reject endpoints, review history, and conflict protection.
+- Batch / import coverage documented:
+  - Department import `CREATE_ONLY`.
+  - User account import `CREATE_ONLY_PENDING_NO_CREDENTIAL`.
+  - Achievement import `CREATE_DRAFT_ONLY` for paper, software copyright, and
+    patent first-slice import.
+  - Import dry-run summary with total / valid / error / warning rows and
+    row-level errors / warnings.
+  - Import apply boundary for warning/error blocking, stale or mixed input,
+    conflict / duplicate / validation errors, safe summary, and audit evidence.
+  - Import job / run history, idempotency boundary, replay / in-flight
+    protection, and row-level safe `ImportJobItem` history.
+- Explicit non-claims documented:
+  - No dynamic workflow engine.
+  - No arbitrary configurable multi-level approval.
+  - No dynamic routing by achievement type, amount, department, or secret
+    level.
+  - No countersign, add-sign, transfer, withdraw, or timeout auto-flow claim.
+  - No all-object batch write, batch approval, batch delete, or batch rollback
+    claim.
+  - No production-grade batch queue, automatic retry, compensation, rollback,
+    cleanup, or failure replay claim.
+- Phase-two recommendations documented:
+  - Workflow templates.
+  - Node condition expressions.
+  - Dynamic approver resolution.
+  - Batch task queue.
+  - Idempotency keys.
+  - Failure replay.
+  - Audit retention.
+  - Administrator review.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - API/Web tests were not run because the Step is documentation-only.
+- Explicitly not performed:
+  - No real import apply, batch write, batch approval, batch rollback,
+    migration, database clear / overwrite / reset, production import, or
+    production data operation.
+  - No production/VPS/production DB access.
+  - No real HR, finance, patent, email, DOI, or external system access.
+  - No `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`, real
+    import file, screenshot, performance log, backup file, or temporary script
+    was staged.
+- Boundaries observed:
+  - No `.env`, `.env.production`, password, Cookie, Token, private key, API key,
+    production connection string, real import file content, production data, or
+    provider credential was read, copied, displayed, saved, or committed.
+  - Existing untracked local artifacts were left untouched and unstaged.
+
 ## 2026-07-08 Step 179 - API integration operations documentation execution evidence
 
 - Starting state:
