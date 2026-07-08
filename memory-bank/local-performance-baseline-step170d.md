@@ -28,6 +28,18 @@ node scripts/local-performance-baseline-step170d.mjs
 http://127.0.0.1:18081/
 ```
 
+默认模式会使用本地 demo header。如果 `18081` 入口启用了生产化认证并拦截 demo header，可使用临时环境变量启用本地登录模式：
+
+```powershell
+$env:LOCAL_PERF_EMAIL="<local account email>"
+$env:LOCAL_PERF_PASSWORD="<local account password>"
+node scripts/local-performance-baseline-step170d.mjs
+$env:LOCAL_PERF_EMAIL=$null
+$env:LOCAL_PERF_PASSWORD=$null
+```
+
+脚本只在内存中使用登录后的 session cookie。报告不写入邮箱、密码或 cookie。
+
 脚本采样对象：
 
 - 普通页面入口：`/`
@@ -37,7 +49,7 @@ http://127.0.0.1:18081/
 - 自定义报表模板接口：`/api/reports/templates`
 - 检索接口 50 并发轻量预演：`/api/search?keyword=成果&take=20`
 
-脚本只发起 GET 请求，不写入数据库，不创建业务数据，不调用外部系统。
+脚本默认只发起 GET 请求，不写入数据库，不创建业务数据，不调用外部系统。启用本地登录模式时，会额外调用一次本地 `POST /api/auth/login` 以获取会话 cookie；该请求仅用于本地认证，不写入业务数据。
 
 运行产物默认写入：
 
@@ -83,6 +95,7 @@ http://127.0.0.1:18081/
 
 待执行：
 
+- 在临时本地账号环境变量下复跑 `node scripts/local-performance-baseline-step170d.mjs`，补齐认证 API 的业务接口基线。
 - `git diff --check`
 - `git diff --cached --check`
 

@@ -3,12 +3,16 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { join } from "node:path";
 
-const baseUrl = "http://127.0.0.1:18081";
+const baseUrl = process.env.LOCAL_PERF_BASE_URL ?? "http://127.0.0.1:18081";
+const localPerfEmail = process.env.LOCAL_PERF_EMAIL?.trim();
+const localPerfPassword = process.env.LOCAL_PERF_PASSWORD;
+const shouldLogin = Boolean(localPerfEmail && localPerfPassword);
 const demoUserId = "40000000-0000-4000-8000-000000000001";
 const outputDir = ".local-step170d-performance";
 const now = new Date();
 const timestamp = now.toISOString().replace(/[:.]/g, "-");
 const outputPath = join(outputDir, `local-performance-baseline-${timestamp}.json`);
+let sessionCookieHeader = "";
 
 const endpoints = [
   {
@@ -65,11 +69,51 @@ const concurrentProbe = {
 const headersFor = (sendDemoUserHeader) => {
   const headers = { Accept: "application/json,text/html;q=0.9,*/*;q=0.8" };
 
-  if (sendDemoUserHeader) {
+  if (sessionCookieHeader) {
+    headers.Cookie = sessionCookieHeader;
+  }
+
+  if (!sessionCookieHeader && sendDemoUserHeader) {
     headers["X-Demo-User-Id"] = demoUserId;
   }
 
   return headers;
+};
+
+const loginForLocalPerformance = async () => {
+  if (!shouldLogin) {
+    return { status: "SKIPPED" };
+  }
+
+  const response = await fetch(new URL("/api/auth/login", baseUrl), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email: localPerfEmail,
+      password: localPerfPassword,
+    }),
+  });
+
+  if (!response.ok) {
+    return {
+      status: "FAILED",
+      httpStatus: response.status,
+    };
+  }
+
+  const setCookie = response.headers.getSetCookie?.() ?? [response.headers.get("set-cookie")];
+  sessionCookieHeader = setCookie
+    .filter(Boolean)
+    .map((cookie) => cookie.split(";")[0])
+    .join("; ");
+
+  return {
+    status: sessionCookieHeader ? "AUTHENTICATED" : "NO_COOKIE",
+    httpStatus: response.status,
+  };
 };
 
 const requestOnce = async (probe) => {
@@ -165,6 +209,7 @@ const runConcurrentProbe = async (probe) => {
 };
 
 const main = async () => {
+  const auth = await loginForLocalPerformance();
   const results = [];
 
   for (const endpoint of endpoints) {
@@ -177,7 +222,8 @@ const main = async () => {
     generatedAt: now.toISOString(),
     source: "local Docker production-like performance baseline",
     baseUrl,
-    demoUserHeader: "configured local demo user",
+    authMode: auth.status === "AUTHENTICATED" ? "local session cookie" : "local demo header",
+    authStatus: auth.status,
     destructive: false,
     writeRequests: false,
     caveats: [
@@ -209,6 +255,7 @@ const main = async () => {
     );
   }
 
+  console.log(`auth=${auth.status}`);
   console.log(`report=${outputPath}`);
 
   if (!report.overallPassed) {
