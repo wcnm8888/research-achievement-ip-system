@@ -372,7 +372,7 @@ describe("dashboard summary helpers", () => {
       "费用缴费状态",
       "审批任务状态",
       "提醒任务状态",
-      "Mock 接口调用状态",
+      "预留接口调用状态",
     ]);
     expect(sections).toHaveLength(10);
     expect(sections[0]?.items).toEqual([

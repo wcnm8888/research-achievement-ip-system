@@ -74,8 +74,8 @@ describe("settings api integrations permission boundary", () => {
     expect(html).toContain("导入记录概览");
     expect(html).toContain("记录索引");
     expect(html).toContain("接口集成配置");
-    expect(html).toContain("外部接口模拟联调中心");
-    expect(html).toContain("模拟环境");
+    expect(html).toContain("外部接口预留能力中心");
+    expect(html).toContain("预演模式");
     expect(html).toContain("配置引用只是非敏感名称");
     expect(html).not.toContain("API key");
   });

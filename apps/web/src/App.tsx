@@ -492,7 +492,7 @@ function DemoIdentityControls({
 }) {
   return (
     <div className="identity-bar">
-      <Tag color="gold">演示身份</Tag>
+      <Tag color="blue">当前角色</Tag>
       <Select
         className="demo-user-select"
         allowClear
@@ -574,7 +574,7 @@ export function ProductionLoginPanel({
         <div>
           <Typography.Title level={3}>系统登录</Typography.Title>
           <Typography.Text type="secondary">
-            请使用本地已授权账号登录；此模式不提供演示身份切换。
+            请使用已授权账号登录；此模式不提供角色切换。
           </Typography.Text>
         </div>
         {authError ? <Alert type="error" showIcon message={authError} /> : null}
@@ -644,7 +644,7 @@ function LegacyDemoApp() {
           <Typography.Text type="secondary">科研成果与知识产权管理平台</Typography.Text>
         </div>
         <div className="identity-bar">
-          <Tag color="gold">业务用户上下文</Tag>
+          <Tag color="blue">当前角色</Tag>
           <Select
             className="demo-user-select"
             allowClear

@@ -291,7 +291,7 @@ export const buildDashboardDistributionSections = (
     ),
   },
   {
-    title: "Mock 接口调用状态",
+    title: "预留接口调用状态",
     metricKey: summary?.integrationMock.byStatus.key ?? "INTEGRATION_MOCK_STATUS_DISTRIBUTION",
     items: buildDashboardDistributionItems(
       summary?.integrationMock.byStatus.value.buckets,
@@ -488,7 +488,7 @@ const DashboardSummaryCard = ({
           </Col>
           <Col xs={24} sm={12} xl={5}>
             <MetricTile
-              title={`Mock 调用 ${metrics.integrationMockWindowDays} 天`}
+              title={`预留接口 ${metrics.integrationMockWindowDays} 天`}
               value={metrics.integrationMockRecentCalls}
             />
           </Col>
@@ -589,11 +589,11 @@ const DashboardIntegrationRankingCard = ({
 }) => (
   <div className="dashboard-distribution-card">
     <div className="dashboard-distribution-header">
-      <Typography.Text strong>外部接口 mock 调用</Typography.Text>
-      <Tag color="default">接口调用聚合</Tag>
+      <Typography.Text strong>预留接口调用概览</Typography.Text>
+      <Tag color="default">接口预演</Tag>
     </div>
     {integrations.length === 0 ? (
-      <Typography.Text type="secondary">暂无最近 mock 调用聚合</Typography.Text>
+      <Typography.Text type="secondary">暂无最近预留接口调用记录</Typography.Text>
     ) : (
       <div className="dashboard-distribution-list">
         {integrations.map((integration) => (

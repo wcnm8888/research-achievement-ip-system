@@ -299,7 +299,7 @@ export function Reminders({ demoUserId }: RemindersProps) {
         extra={<Button onClick={loadCenter}>刷新</Button>}
       />
 
-      <PermissionHint description="提醒中心只展示当前业务用户可访问的安全摘要；附件原文、通知正文和审计 raw JSON 不在此处展示。" />
+      <PermissionHint description="提醒中心只展示当前业务用户可访问的安全摘要；附件原文、通知正文和内部审计明细不在此处展示。" />
 
       {center.data ? <ReminderSummary response={center.data} /> : null}
 

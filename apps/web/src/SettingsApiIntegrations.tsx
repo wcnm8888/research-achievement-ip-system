@@ -127,18 +127,18 @@ const mockScenarioOptions: Array<{
   value: ApiIntegrationMockScenario;
   provider: ApiIntegrationProvider;
 }> = [
-  { label: "DOI 查询模拟", value: "DOI_LOOKUP", provider: "DOI" },
+  { label: "DOI 查询预演", value: "DOI_LOOKUP", provider: "DOI" },
   {
-    label: "专利状态同步模拟",
+    label: "专利状态同步预演",
     value: "PATENT_STATUS_SYNC",
     provider: "PATENT",
   },
   {
-    label: "财务回调与对账模拟",
+    label: "财务回调与对账预演",
     value: "FINANCE_RECONCILE",
     provider: "FINANCE",
   },
-  { label: "HR 同步模拟", value: "HR_SYNC", provider: "HR" },
+  { label: "HR 同步预演", value: "HR_SYNC", provider: "HR" },
 ];
 
 const mockScenarioProviderMap = Object.fromEntries(
@@ -310,8 +310,8 @@ export function SettingsApiIntegrations({
 
       message.success(
         formMode.kind === "create"
-          ? "API integration created."
-          : "API integration updated.",
+          ? "接口配置已创建。"
+          : "接口配置已更新。",
       );
       closeForm();
       setDetailIntegrationId(updatedIntegration.id);
@@ -353,8 +353,8 @@ export function SettingsApiIntegrations({
 
       message.success(
         operation.kind === "archive"
-          ? "API integration archived."
-          : "API integration restored.",
+          ? "接口配置已停用。"
+          : "接口配置已恢复。",
       );
       setDetailIntegrationId(updatedIntegration.id);
       setDetail({ loading: false, data: updatedIntegration, error: null });
@@ -381,7 +381,7 @@ export function SettingsApiIntegrations({
     try {
       const result = await runApiIntegrationMockDemo(apiClient, mockDemoValues);
       setMockDemoRun({ loading: false, data: result, error: null });
-      message.success("模拟调用已完成。");
+      message.success("接口预演已完成。");
       loadApiCallLogs();
     } catch (error) {
       setMockDemoRun({ loading: false, data: null, error: normalizeError(error) });
@@ -893,15 +893,15 @@ function ApiIntegrationMockDemoCenter({
   return (
     <Card
       className="shell-card settings-api-mock-demo"
-      title="外部接口模拟联调中心"
-      extra={<Tag color="orange">模拟环境</Tag>}
+      title="外部接口预留能力中心"
+      extra={<Tag color="orange">预演模式</Tag>}
     >
       <Space direction="vertical" size={16} className="full-width">
         <Alert
           type="warning"
           showIcon
-          message="模拟接口调用"
-          description="本区域用于展示外部接口适配器的模拟调用结果，不会创建付款、账号、凭证或其他业务写入。"
+          message="预留接口调用预演"
+          description="本区域用于展示外部接口适配器的预演结果，不会创建付款、账号、凭证或其他业务写入。"
         />
 
         <Space size={12} wrap>
@@ -926,7 +926,7 @@ function ApiIntegrationMockDemoCenter({
             onChange={onResultModeChange}
           />
           <Button type="primary" loading={submitting} onClick={onRun}>
-            运行模拟
+            运行预演
           </Button>
           <Button onClick={onReloadLogs}>刷新日志</Button>
         </Space>
@@ -974,7 +974,7 @@ function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse 
   return (
     <Card
       className="shell-card"
-      title="模拟调用结果"
+      title="接口预演结果"
       extra={renderMockRunStatus(result.runStatus)}
     >
       <Space direction="vertical" size={12} className="full-width">
@@ -989,8 +989,8 @@ function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse 
               ? `${result.integration.code} (${result.integration.enabled ? "已启用" : "已停用"})`
               : "缺少接口配置"}
           </Descriptions.Item>
-          <Descriptions.Item label="模拟对象">
-            {result.syntheticSubject.replace(/^Synthetic\s+/i, "模拟")}
+          <Descriptions.Item label="预演对象">
+            {result.syntheticSubject.replace(/^Synthetic\s+/i, "预演")}
           </Descriptions.Item>
           <Descriptions.Item label="摘要">{result.summary}</Descriptions.Item>
           <Descriptions.Item label="调用日志">

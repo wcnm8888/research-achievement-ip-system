@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="科研成果与知识产权管理系统">
+  <rect width="64" height="64" rx="12" fill="#1e5875"/>
+  <path d="M16 18h24c4.4 0 8 3.6 8 8v20H24c-4.4 0-8-3.6-8-8V18Z" fill="#f8fafc"/>
+  <path d="M24 27h16M24 35h14M24 43h9" stroke="#1e5875" stroke-width="4" stroke-linecap="round"/>
+  <path d="M42 16v14h14" fill="none" stroke="#d6a938" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
