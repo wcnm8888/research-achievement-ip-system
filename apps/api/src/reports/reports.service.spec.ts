@@ -56,6 +56,7 @@ type ReportsRepositoryMock = {
   countOverdueConversions: ReturnType<typeof vi.fn>;
   groupConversionsByEvaluationEffect: ReturnType<typeof vi.fn>;
   sumConversionAmounts: ReturnType<typeof vi.fn>;
+  findUserEmailById: ReturnType<typeof vi.fn>;
 };
 
 const createRepositoryMock = (): ReportsRepositoryMock => ({
@@ -102,6 +103,11 @@ const createRepositoryMock = (): ReportsRepositoryMock => ({
     contractTotal: "100000.00",
     revenueTotal: "60000.00",
   }),
+  findUserEmailById: vi.fn().mockResolvedValue({
+    id: ids.user,
+    email: "report.receiver@example.com",
+    name: "Report Receiver",
+  }),
 });
 
 const createPolicyQueryFactory = () => ({
@@ -132,14 +138,25 @@ const createService = () => {
       readAt: null,
     }),
   };
+  const reportEmailDeliveryService = {
+    send: vi.fn().mockResolvedValue({
+      status: "DRY_RUN",
+      adapter: "ALIYUN_DIRECTMAIL_DRY_RUN",
+      providerMessageId: "dry-run-report",
+      failureCategory: "SUPPRESSED",
+      attemptCount: 1,
+      dryRun: true,
+    }),
+  };
   const service = new ReportsService(
     repository as unknown as ReportsRepository,
     policyQueryFactory as unknown as PolicyQueryFactory,
     auditService as unknown as AuditService,
     notificationService as never,
+    reportEmailDeliveryService as never,
   );
 
-  return { auditService, notificationService, policyQueryFactory, repository, service };
+  return { auditService, notificationService, policyQueryFactory, repository, reportEmailDeliveryService, service };
 };
 
 describe("ReportsService", () => {
@@ -226,6 +243,45 @@ describe("ReportsService", () => {
       CustomReportTemplateNotFoundError,
     );
     expect(notificationService.sendInAppNotification).not.toHaveBeenCalled();
+  });
+
+  it("sends a scheduled report email through the delivery adapter and records masked audit", async () => {
+    const { auditService, reportEmailDeliveryService, repository, service } = createService();
+
+    const result = await service.sendScheduledPlanEmail(
+      context,
+      "monthly-achievement-distribution",
+    );
+
+    expect(result.plan.planId).toBe("monthly-achievement-distribution");
+    expect(result.delivery.email).toMatchObject({
+      status: "DRY_RUN",
+      adapter: "ALIYUN_DIRECTMAIL_DRY_RUN",
+      recipientCount: 1,
+      recipientMasks: ["r***@example.com"],
+      dryRun: true,
+      attemptCount: 1,
+    });
+    expect(repository.findUserEmailById).toHaveBeenCalledWith(ids.user);
+    expect(reportEmailDeliveryService.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toAddress: "report.receiver@example.com",
+        subject: "Research IP System - Monthly Report Summary",
+        textBody: expect.stringContaining("CSV/Excel/PDF"),
+        htmlBody: expect.stringContaining("&#25253;&#34920;&#25512;&#36865;&#25688;&#35201;"),
+      }),
+    );
+    expect(auditService.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          operation: "SEND_EMAIL",
+          exportType: "CUSTOM_REPORT_EMAIL",
+          emailMasked: "r***@example.com",
+          status: "DRY_RUN",
+          dryRun: true,
+        }),
+      }),
+    );
   });
 
   it.each([
@@ -514,7 +570,7 @@ describe("ReportsService", () => {
     expect(xlsx.subarray(0, 2).toString("utf8")).toBe("PK");
     expect(xlsxText).toContain("Department code");
     expect(pdfText.startsWith("%PDF-1.4")).toBe(true);
-    expect(pdfText).toContain("Custom Report Export");
+    expect(pdfText).toContain("/STSong-Light");
 
     for (const serialized of [xlsxText, pdfText]) {
       expect(serialized).not.toContain("token");

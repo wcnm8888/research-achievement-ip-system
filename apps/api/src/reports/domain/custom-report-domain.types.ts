@@ -150,6 +150,31 @@ export type ScheduledReportPreviewResult = {
   caveats: string[];
 };
 
+export type ScheduledReportEmailResult = {
+  plan: ScheduledReportPlan;
+  generatedAt: string;
+  report: CustomReportRunResult;
+  delivery: {
+    email: {
+      status:
+        | "SENT"
+        | "DRY_RUN"
+        | "SUPPRESSED"
+        | "FAILED"
+        | "TEMPORARY_FAILURE"
+        | "RATE_LIMITED";
+      message: string;
+      adapter: string;
+      recipientCount: number;
+      recipientMasks: string[];
+      dryRun: boolean;
+      attemptCount: number;
+      providerMessageIds: string[];
+    };
+  };
+  caveats: string[];
+};
+
 export type AchievementDistributionBucket = {
   departmentId: string;
   departmentCode: string;

@@ -94,6 +94,7 @@ export const buildAliyunDirectMailRequest = (
     fromAlias: config.fromAlias,
     replyToAddress: false,
     subject: renderAliyunDirectMailSubject(input),
+    htmlBody: renderAliyunDirectMailHtmlBody(input, buildLifecycleLink(input, config.publicBaseUrl)),
     textBody: renderAliyunDirectMailTextBody(input, buildLifecycleLink(input, config.publicBaseUrl)),
     toAddress: input.recipientEmail,
   });
@@ -158,8 +159,8 @@ const isAliyunDirectMailConfigUsable = (config: AliyunDirectMailConfig): boolean
 
 const renderAliyunDirectMailSubject = (input: AccountLifecycleDeliveryInput): string =>
   input.template === "INVITE_ACCEPT"
-    ? inviteSubject
-    : passwordResetSubject;
+    ? inviteSubjectAscii
+    : passwordResetSubjectAscii;
 
 const renderAliyunDirectMailTextBody = (
   input: AccountLifecycleDeliveryInput,
@@ -168,21 +169,49 @@ const renderAliyunDirectMailTextBody = (
   const expiresAtText = input.expiresAt.toISOString();
   if (input.template === "INVITE_ACCEPT") {
     return [
-      inviteIntro,
-      inviteInstruction,
-      `${linkLabel}${link}`,
-      `${expiresAtLabel}${expiresAtText}`,
-      expiryInstruction,
+      "Research IP System account invitation.",
+      "Open the link before it expires to activate your account.",
+      `Link: ${link}`,
+      `Expires at: ${expiresAtText}`,
     ].join("\n");
   }
 
   return [
-    passwordResetIntro,
-    passwordResetInstruction,
-    `${linkLabel}${link}`,
-    `${expiresAtLabel}${expiresAtText}`,
-    expiryInstruction,
+    "Research IP System password reset.",
+    "Open the link before it expires to reset your password.",
+    `Link: ${link}`,
+    `Expires at: ${expiresAtText}`,
   ].join("\n");
+};
+
+const renderAliyunDirectMailHtmlBody = (
+  input: AccountLifecycleDeliveryInput,
+  link: string,
+): string => {
+  const title =
+    input.template === "INVITE_ACCEPT"
+      ? "科研成果管理系统账号邀请"
+      : "科研成果管理系统密码重置";
+  const intro = input.template === "INVITE_ACCEPT" ? inviteIntro : passwordResetIntro;
+  const instruction =
+    input.template === "INVITE_ACCEPT" ? inviteInstruction : passwordResetInstruction;
+  const expiresAtText = input.expiresAt.toISOString();
+
+  return [
+    '<div style="font-family:Arial,sans-serif;line-height:1.7;color:#111827;max-width:680px;margin:0 auto;border:1px solid #dbe3ea;border-radius:8px;overflow:hidden">',
+    '<div style="background:#0f6b7d;color:#fff;padding:20px 28px">',
+    `<h1 style="font-size:20px;margin:0">${escapeLifecycleHtml(title)}</h1>`,
+    '<p style="font-size:14px;margin:8px 0 0">local-demo / DirectMail live verification</p>',
+    '</div>',
+    '<div style="padding:24px 28px">',
+    `<p>${escapeLifecycleHtml(intro)}</p>`,
+    `<p>${escapeLifecycleHtml(instruction)}</p>`,
+    `<p><a href="${escapeLifecycleHtml(link)}" style="color:#0f6b7d;font-weight:700">${escapeLifecycleHtml("打开系统链接")}</a></p>`,
+    `<p style="color:#52627a">${escapeLifecycleHtml("过期时间：")}${escapeLifecycleHtml(expiresAtText)}</p>`,
+    `<p style="color:#52627a">${escapeLifecycleHtml(expiryInstruction)}</p>`,
+    '</div>',
+    '</div>',
+  ].join("");
 };
 
 const mapAliyunDirectMailError = (error: unknown): AccountLifecycleProviderResult => {
@@ -308,16 +337,26 @@ const safeAliyunProviderErrorCodePattern = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 const unsafeAliyunProviderErrorCodePattern =
   /(@|https?:\/\/|token=|cookie=|password=|secret=|key=|-----BEGIN|[\r\n])/i;
 
-const defaultFromAlias = "\u79d1\u7814\u6210\u679c\u7ba1\u7406\u7cfb\u7edf";
-const inviteSubject = "\u79d1\u7814\u6210\u679c\u7ba1\u7406\u7cfb\u7edf\u8d26\u53f7\u9080\u8bf7";
-const passwordResetSubject = "\u79d1\u7814\u6210\u679c\u7ba1\u7406\u7cfb\u7edf\u5bc6\u7801\u91cd\u7f6e";
+const escapeLifecycleHtml = (value: string): string =>
+  value.replace(/[&<>"']/g, (char) => htmlEscapeMap[char] ?? char)
+    .replace(/[^\x20-\x7E]/g, (char) => `&#${char.codePointAt(0) ?? 0};`);
+
+const htmlEscapeMap: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+const defaultFromAlias = "Research IP System";
+const inviteSubjectAscii = "Research IP System - Account Invitation";
+const passwordResetSubjectAscii = "Research IP System - Password Reset";
 const inviteIntro = "\u60a8\u5df2\u88ab\u9080\u8bf7\u52a0\u5165\u79d1\u7814\u6210\u679c\u7ba1\u7406\u7cfb\u7edf\u3002";
 const inviteInstruction =
   "\u8bf7\u5728\u94fe\u63a5\u6709\u6548\u671f\u5185\u5b8c\u6210\u8d26\u53f7\u8bbe\u7f6e\uff1b\u5982\u94fe\u63a5\u8fc7\u671f\uff0c\u8bf7\u8054\u7cfb\u7ba1\u7406\u5458\u91cd\u65b0\u53d1\u9001\u9080\u8bf7\u3002";
 const passwordResetIntro = "\u6211\u4eec\u6536\u5230\u4e86\u60a8\u7684\u5bc6\u7801\u91cd\u7f6e\u8bf7\u6c42\u3002";
 const passwordResetInstruction =
   "\u8bf7\u5728\u94fe\u63a5\u6709\u6548\u671f\u5185\u5b8c\u6210\u5bc6\u7801\u91cd\u7f6e\uff1b\u5982\u975e\u672c\u4eba\u64cd\u4f5c\uff0c\u8bf7\u5ffd\u7565\u6b64\u90ae\u4ef6\u6216\u8054\u7cfb\u7ba1\u7406\u5458\u3002";
-const linkLabel = "\u94fe\u63a5\uff1a";
-const expiresAtLabel = "\u8fc7\u671f\u65f6\u95f4\uff1a";
 const expiryInstruction =
   "\u94fe\u63a5\u5c06\u5728\u7cfb\u7edf\u914d\u7f6e\u7684\u6709\u6548\u671f\u540e\u5931\u6548\uff0c\u8fc7\u671f\u540e\u9700\u91cd\u65b0\u7533\u8bf7\u3002";

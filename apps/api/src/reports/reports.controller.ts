@@ -86,6 +86,26 @@ export class ReportsController {
     }
   }
 
+  @Post("scheduled-plans/:planId/email")
+  async sendScheduledPlanEmail(
+    @CurrentUser() currentUser: UserContext,
+    @Param("planId") planId: string,
+  ) {
+    try {
+      return await this.reportsService.sendScheduledPlanEmail(currentUser, planId);
+    } catch (error) {
+      if (error instanceof CustomReportTemplateNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof CustomReportInvalidQueryError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get("templates/:templateId/run")
   async runTemplate(
     @CurrentUser() currentUser: UserContext,

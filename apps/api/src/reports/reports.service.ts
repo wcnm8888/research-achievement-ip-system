@@ -11,6 +11,7 @@ import {
   AchievementStatusCode,
   AchievementTypeCode,
 } from "../achievements/domain/achievement-domain.types";
+import { PermissionCode } from "../authorization/constants/permission-code";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
 import { createCsv, CsvColumn } from "../export/csv";
 import { createSimplePdf } from "../export/pdf";
@@ -33,6 +34,7 @@ import {
   CustomReportTemplate,
   CustomReportTemplateId,
   CustomReportTemplateIdCode,
+  ScheduledReportEmailResult,
   ScheduledReportPlan,
   ScheduledReportPreviewResult,
   customReportCaveats,
@@ -43,6 +45,10 @@ import {
   CustomReportInvalidQueryError,
   CustomReportTemplateNotFoundError,
 } from "./domain/custom-report-errors";
+import {
+  ReportEmailDeliveryResult,
+  ReportEmailDeliveryService,
+} from "./report-email-delivery.service";
 import { ReportsRepository } from "./reports.repository";
 
 const defaultDueSoonDays = 30;
@@ -52,6 +58,11 @@ const scheduledReportPreviewCaveats = [
   "本地定时报表预演",
   "站内信为本地摘要",
   "邮件通道为后续可接入能力",
+] as const;
+const scheduledReportEmailCaveats = [
+  "手动邮件推送",
+  "摘要正文发送，不附带原始明细",
+  "真实外发取决于服务器邮件环境变量和 dry-run 开关",
 ] as const;
 
 const scheduledReportPlans: readonly ScheduledReportPlan[] = [
@@ -101,6 +112,8 @@ export class ReportsService {
     private readonly auditService: AuditService,
     @Inject(NotificationService)
     private readonly notificationService: NotificationService,
+    @Inject(ReportEmailDeliveryService)
+    private readonly reportEmailDeliveryService: ReportEmailDeliveryService,
   ) {}
 
   listTemplates(context: UserContext): readonly CustomReportTemplate[] {
@@ -155,6 +168,68 @@ export class ReportsService {
       },
       caveats: [...scheduledReportPreviewCaveats],
     };
+  }
+
+  async sendScheduledPlanEmail(
+    context: UserContext,
+    planId: string,
+  ): Promise<ScheduledReportEmailResult> {
+    this.assertUserContext(context);
+
+    const plan = getScheduledReportPlan(planId);
+    const report = await this.runTemplate(
+      context,
+      plan.templateId,
+      getScheduledReportPreviewOptions(plan.cadence),
+    );
+    const generatedAt = new Date().toISOString();
+    const recipients = await this.resolveReportEmailRecipients(context);
+    const deliveryResults = recipients.length === 0
+      ? [createNoRecipientReportEmailResult()]
+      : await Promise.all(
+          recipients.map((recipient) =>
+            this.reportEmailDeliveryService.send({
+              deliveryId: `${plan.planId}-${generatedAt}-${recipient.maskedEmail}`,
+              toAddress: recipient.email,
+              subject: buildScheduledReportEmailSubject(plan),
+              textBody: buildScheduledReportEmailTextBody(plan, report, generatedAt),
+              htmlBody: buildScheduledReportEmailHtmlBody(plan, report, generatedAt),
+            }),
+          ),
+        );
+    const emailSummary = summarizeReportEmailDelivery(deliveryResults, recipients);
+
+    await this.recordTemplateEmailEvent(context, plan, report, emailSummary);
+
+    return {
+      plan,
+      generatedAt,
+      report,
+      delivery: {
+        email: {
+          ...emailSummary,
+          message: buildReportEmailDeliveryMessage(emailSummary),
+        },
+      },
+      caveats: [...scheduledReportEmailCaveats],
+    };
+  }
+
+  async sendDueScheduledReportEmails(
+    options: { now?: Date } = {},
+  ): Promise<ScheduledReportEmailResult[]> {
+    const now = options.now ?? new Date();
+    const duePlans = scheduledReportPlans.filter((plan) =>
+      isScheduledReportDue(plan, now),
+    );
+    const context = buildScheduledReportSystemContext();
+    const results: ScheduledReportEmailResult[] = [];
+
+    for (const plan of duePlans) {
+      results.push(await this.sendScheduledPlanEmail(context, plan.planId));
+    }
+
+    return results;
   }
 
   async runTemplate(
@@ -479,6 +554,60 @@ export class ReportsService {
       },
     });
   }
+
+  private async recordTemplateEmailEvent(
+    context: UserContext,
+    plan: ScheduledReportPlan,
+    report: CustomReportRunResult,
+    emailSummary: Omit<ScheduledReportEmailResult["delivery"]["email"], "message">,
+  ): Promise<void> {
+    await this.auditService.recordEvent({
+      actor: {
+        userId: context.userId,
+        departmentId: context.departmentId,
+      },
+      action: AuditActionCode.configUpdate,
+      target: {
+        type: AuditTargetTypeCode.systemConfig,
+      },
+      oldValue: null,
+      newValue: {
+        operation: "SEND_EMAIL",
+        exportType: "CUSTOM_REPORT_EMAIL",
+        templateId: report.metadata.templateId,
+        planId: plan.planId,
+        rowCount: report.rows.length,
+        recipientScope: plan.recipientScope,
+        recipientCount: emailSummary.recipientCount,
+        emailMasked: emailSummary.recipientMasks.join(","),
+        adapter: emailSummary.adapter,
+        status: emailSummary.status,
+        dryRun: emailSummary.dryRun,
+        attemptCount: emailSummary.attemptCount,
+      },
+    });
+  }
+
+  private async resolveReportEmailRecipients(
+    context: UserContext,
+  ): Promise<ReportEmailRecipient[]> {
+    const configuredRecipients = parseConfiguredReportEmailRecipients(process.env.REPORT_EMAIL_RECIPIENTS);
+    if (configuredRecipients.length > 0) {
+      return configuredRecipients;
+    }
+
+    const currentUser = await this.repository.findUserEmailById(context.userId);
+    if (!currentUser?.email) {
+      return [];
+    }
+
+    return [
+      {
+        email: currentUser.email,
+        maskedEmail: maskEmail(currentUser.email),
+      },
+    ];
+  }
 }
 
 type ExportFormat = "CSV" | "XLSX" | "PDF";
@@ -487,6 +616,11 @@ type CustomReportExportDataset = {
   templateId: CustomReportTemplateId;
   columns: CsvColumn<CustomReportRunResult["rows"][number]>[];
   rows: CustomReportRunResult["rows"];
+};
+
+type ReportEmailRecipient = {
+  email: string;
+  maskedEmail: string;
 };
 
 type NormalizedOptions = Omit<CustomReportRunOptions, "status"> & {
@@ -501,6 +635,46 @@ const getScheduledReportPlan = (planId: string): ScheduledReportPlan => {
   }
 
   return plan;
+};
+
+const isScheduledReportDue = (plan: ScheduledReportPlan, now: Date): boolean => {
+  if (process.env.REPORT_EMAIL_SCHEDULER_SEND_ALL_ON_TICK === "true") {
+    return true;
+  }
+
+  const dayOfMonth = now.getUTCDate();
+  const month = now.getUTCMonth();
+  if (plan.cadence === "MONTHLY") {
+    return dayOfMonth === 1;
+  }
+  if (plan.cadence === "QUARTERLY") {
+    return dayOfMonth === 1 && [0, 3, 6, 9].includes(month);
+  }
+  return dayOfMonth === 1 && month === 0;
+};
+
+const buildScheduledReportSystemContext = (): UserContext => {
+  const userId =
+    process.env.REPORT_EMAIL_SCHEDULER_ACTOR_USER_ID ??
+    "00000000-0000-4000-8000-000000000000";
+  const departmentId =
+    process.env.REPORT_EMAIL_SCHEDULER_ACTOR_DEPARTMENT_ID ??
+    "00000000-0000-4000-8000-000000000000";
+
+  return {
+    userId,
+    departmentId,
+    roleIds: [],
+    roleCodes: [],
+    permissionCodes: [
+      PermissionCode.userContextRead,
+      PermissionCode.achievementReadDepartment,
+      PermissionCode.feeReadDepartment,
+      PermissionCode.reminderReadDepartment,
+    ],
+    roleScopes: [],
+    scopedDepartmentIds: [departmentId],
+  };
 };
 
 const getTemplate = (templateId: string): CustomReportTemplate => {
@@ -543,6 +717,212 @@ const buildScheduledReportNotificationContent = (
   const countSummary = typeof totalCount === "number" ? `，汇总数量 ${totalCount}` : "";
 
   return `${plan.name}已完成本地生成预演：${report.metadata.name}，汇总行 ${rowCount}${countSummary}。邮件通道为预留接口，当前不发送外部邮件。`;
+};
+
+const buildScheduledReportEmailSubject = (plan: ScheduledReportPlan): string =>
+  `Research IP System - ${formatScheduledCadenceEn(plan.cadence)} Report Summary`;
+
+const buildScheduledReportEmailTextBody = (
+  plan: ScheduledReportPlan,
+  report: CustomReportRunResult,
+  generatedAt: string,
+): string => {
+  const totalCount = report.totals.count;
+  return [
+    "研究院科研成果与知识产权管理系统报表推送",
+    "",
+    `报表计划：${plan.name}`,
+    `报表模板：${report.metadata.name}`,
+    `生成时间：${generatedAt}`,
+    `汇总行数：${report.rows.length}`,
+    `汇总数量：${typeof totalCount === "number" ? totalCount : "未返回"}`,
+    `接收范围：${plan.recipientScope}`,
+    "",
+    "本邮件为一期本地评审提交版的手动报表推送摘要。",
+    "当前邮件正文只包含聚合摘要，不附带原始明细或敏感附件；如需 CSV/Excel/PDF，请登录系统按权限导出。",
+  ].join("\n");
+};
+
+const buildScheduledReportEmailHtmlBody = (
+  plan: ScheduledReportPlan,
+  report: CustomReportRunResult,
+  generatedAt: string,
+): string => {
+  const totalCount = report.totals.count;
+  const rows: Array<[string, string]> = [
+    ["报表计划", plan.name],
+    ["报表模板", report.metadata.name],
+    ["生成时间", generatedAt],
+    ["统计周期", formatScheduledCadence(plan.cadence)],
+    ["汇总行数", String(report.rows.length)],
+    ["汇总数量", typeof totalCount === "number" ? String(totalCount) : "未返回"],
+    ["接收范围", formatScheduledRecipientScope(plan.recipientScope)],
+    ["发送方式", "手动触发邮件推送"],
+  ];
+
+  return [
+    '<!doctype html><html><head><meta charset="UTF-8"></head>',
+    '<body style="margin:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">',
+    '<div style="max-width:720px;margin:0 auto;padding:24px;">',
+    '<div style="background:#ffffff;border:1px solid #d8e0ea;border-radius:8px;overflow:hidden;">',
+    '<div style="background:#0f5f7a;color:#ffffff;padding:18px 22px;">',
+    `<div style="font-size:18px;font-weight:700;">${htmlEscape("研究院科研成果与知识产权管理系统")}</div>`,
+    `<div style="font-size:13px;margin-top:6px;opacity:.9;">${htmlEscape("一期本地评审提交版 / local-demo / 邮件通道真实发送验证")}</div>`,
+    '</div>',
+    '<div style="padding:22px;">',
+    `<h2 style="margin:0 0 12px;font-size:20px;color:#0f172a;">${htmlEscape("报表推送摘要")}</h2>`,
+    `<p style="margin:0 0 18px;line-height:1.7;">${htmlEscape("系统已生成一份聚合报表摘要。邮件正文只包含汇总信息，不包含成果明细、涉密数据或附件。")}</p>`,
+    '<table style="width:100%;border-collapse:collapse;font-size:14px;">',
+    ...rows.map(([label, value]) =>
+      [
+        '<tr>',
+        `<td style="width:128px;padding:10px 12px;border:1px solid #e5e7eb;background:#f8fafc;color:#475569;">${htmlEscape(label)}</td>`,
+        `<td style="padding:10px 12px;border:1px solid #e5e7eb;color:#111827;">${htmlEscape(value)}</td>`,
+        '</tr>',
+      ].join(""),
+    ),
+    '</table>',
+    `<p style="margin:18px 0 0;line-height:1.7;color:#475569;">${htmlEscape("如需查看 CSV、Excel 或 PDF 文件，请登录系统并按当前账号权限导出。")}</p>`,
+    '</div>',
+    '<div style="border-top:1px solid #e5e7eb;padding:14px 22px;background:#f8fafc;color:#64748b;font-size:12px;line-height:1.6;">',
+    htmlEscape("本邮件由本地评审环境自动发送，用于验证邮件通知 API 对接能力；请勿直接回复。"),
+    '</div>',
+    '</div>',
+    '</div>',
+    '</body></html>',
+  ].join("");
+};
+
+const formatScheduledCadence = (cadence: ScheduledReportPlan["cadence"]): string => {
+  if (cadence === "MONTHLY") {
+    return "月报";
+  }
+  if (cadence === "QUARTERLY") {
+    return "季报";
+  }
+  return "年报";
+};
+
+const formatScheduledCadenceEn = (cadence: ScheduledReportPlan["cadence"]): string => {
+  if (cadence === "MONTHLY") {
+    return "Monthly";
+  }
+  if (cadence === "QUARTERLY") {
+    return "Quarterly";
+  }
+  return "Yearly";
+};
+
+const formatScheduledRecipientScope = (
+  scope: ScheduledReportPlan["recipientScope"],
+): string => {
+  if (scope === "CURRENT_USER") {
+    return "当前用户";
+  }
+  if (scope === "DEPARTMENT_MANAGERS") {
+    return "部门负责人";
+  }
+  return "院级评审人员";
+};
+
+const htmlEscape = (value: string): string =>
+  Array.from(value)
+    .map((character) => {
+      const codePoint = character.codePointAt(0);
+      if (!codePoint) {
+        return "";
+      }
+      if (character === "&") {
+        return "&amp;";
+      }
+      if (character === "<") {
+        return "&lt;";
+      }
+      if (character === ">") {
+        return "&gt;";
+      }
+      if (character === '"') {
+        return "&quot;";
+      }
+      return codePoint > 127 ? `&#${codePoint};` : character;
+    })
+    .join("");
+
+const parseConfiguredReportEmailRecipients = (
+  value: string | undefined,
+): ReportEmailRecipient[] =>
+  [...new Set((value ?? "").split(/[;,]/).map((item) => item.trim()).filter(Boolean))]
+    .filter(isValidEmailAddress)
+    .map((email) => ({ email, maskedEmail: maskEmail(email) }));
+
+const isValidEmailAddress = (email: string): boolean =>
+  email.length <= 255 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const summarizeReportEmailDelivery = (
+  results: readonly ReportEmailDeliveryResult[],
+  recipients: readonly ReportEmailRecipient[],
+): Omit<ScheduledReportEmailResult["delivery"]["email"], "message"> => ({
+  status: pickReportEmailSummaryStatus(results),
+  adapter: [...new Set(results.map((result) => result.adapter))].join(","),
+  recipientCount: recipients.length,
+  recipientMasks: recipients.map((recipient) => recipient.maskedEmail),
+  dryRun: results.every((result) => result.dryRun),
+  attemptCount: results.reduce((sum, result) => sum + result.attemptCount, 0),
+  providerMessageIds: results
+    .map((result) => result.providerMessageId)
+    .filter((value): value is string => Boolean(value)),
+});
+
+const pickReportEmailSummaryStatus = (
+  results: readonly ReportEmailDeliveryResult[],
+): ScheduledReportEmailResult["delivery"]["email"]["status"] => {
+  if (results.some((result) => result.status === "SENT")) {
+    return "SENT";
+  }
+  if (results.some((result) => result.status === "DRY_RUN")) {
+    return "DRY_RUN";
+  }
+  if (results.some((result) => result.status === "TEMPORARY_FAILURE")) {
+    return "TEMPORARY_FAILURE";
+  }
+  if (results.some((result) => result.status === "RATE_LIMITED")) {
+    return "RATE_LIMITED";
+  }
+  if (results.some((result) => result.status === "FAILED")) {
+    return "FAILED";
+  }
+  return "SUPPRESSED";
+};
+
+const buildReportEmailDeliveryMessage = (
+  summary: Omit<ScheduledReportEmailResult["delivery"]["email"], "message">,
+): string => {
+  if (summary.status === "SENT") {
+    return `邮件已提交真实发信通道，收件人 ${summary.recipientCount} 个。`;
+  }
+  if (summary.status === "DRY_RUN") {
+    return "邮件发送已走到报表推送链路，但当前为 dry-run/本地安全模式，未真实外发。";
+  }
+  if (summary.status === "SUPPRESSED") {
+    return "邮件未发送：缺少可用收件人或真实发信配置未满足。";
+  }
+  return "邮件发送失败，已记录脱敏审计；可检查邮件服务配置和服务商返回码。";
+};
+
+const createNoRecipientReportEmailResult = (): ReportEmailDeliveryResult => ({
+  status: "SUPPRESSED",
+  adapter: "REPORT_EMAIL_RECIPIENT_RESOLVER",
+  failureCategory: "CONFIGURATION",
+  attemptCount: 1,
+  dryRun: true,
+});
+
+const maskEmail = (email: string): string => {
+  const [localPart, domainPart] = email.split("@");
+  if (!localPart || !domainPart) {
+    return "[masked-email]";
+  }
+  return `${localPart.slice(0, 1)}***@${domainPart}`;
 };
 
 const normalizeOptions = (

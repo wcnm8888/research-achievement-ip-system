@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -10,6 +10,10 @@ import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory
 import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
+import {
+  ReportEmailDeliveryResult,
+  ReportEmailDeliveryService,
+} from "../reports/report-email-delivery.service";
 import {
   AchievementRepository,
   AchievementTransactionClient,
@@ -106,6 +110,15 @@ export type WorkflowTaskListResult = {
   items: WorkflowTaskWithInstance[];
 };
 
+export type WorkflowTaskEmailReminderResult = {
+  taskId: string;
+  status: ReportEmailDeliveryResult["status"] | "NO_RECIPIENT" | "SUPPRESSED";
+  adapter: string;
+  dryRun: boolean;
+  attemptCount: number;
+  emailMasked: string | null;
+};
+
 @Injectable()
 export class WorkflowService {
   constructor(
@@ -121,6 +134,9 @@ export class WorkflowService {
     private readonly prisma: PrismaService,
     @Inject(AuditService)
     private readonly auditService: AuditService,
+    @Optional()
+    @Inject(ReportEmailDeliveryService)
+    private readonly reportEmailDeliveryService?: ReportEmailDeliveryService,
   ) {}
 
   async prepareAchievementReviewOnSubmitInTransaction(
@@ -345,6 +361,80 @@ export class WorkflowService {
     this.assertWorkflowTaskTargetAccess(context, task.instance.targetType);
 
     return task;
+  }
+
+  async sendMyWorkflowTaskEmailReminder(
+    context: UserContext,
+    taskId: string,
+  ): Promise<WorkflowTaskEmailReminderResult> {
+    const task = await this.getMyWorkflowTask(context, taskId);
+    if (task.status !== WorkflowTaskStatusCode.pending) {
+      throw new WorkflowInvalidStateError("Only pending workflow tasks can be reminded.");
+    }
+
+    const recipient = await this.repository.findUserEmailById(context.userId);
+    if (!recipient) {
+      return {
+        taskId,
+        status: "NO_RECIPIENT",
+        adapter: "NO_RECIPIENT",
+        dryRun: true,
+        attemptCount: 0,
+        emailMasked: null,
+      };
+    }
+
+    if (!this.reportEmailDeliveryService) {
+      return {
+        taskId,
+        status: "SUPPRESSED",
+        adapter: "WORKFLOW_EMAIL_NOT_CONFIGURED",
+        dryRun: true,
+        attemptCount: 0,
+        emailMasked: maskWorkflowEmail(recipient.email),
+      };
+    }
+
+    const result = await this.reportEmailDeliveryService.send({
+      deliveryId: `workflow-${task.id}-${new Date().toISOString()}`,
+      toAddress: recipient.email,
+      subject: "Research IP System - Workflow Task Reminder",
+      textBody: buildWorkflowEmailTextBody(task),
+      htmlBody: buildWorkflowEmailHtmlBody(task),
+    });
+
+    await this.auditService.recordEvent({
+      actor: {
+        userId: context.userId,
+        departmentId: context.departmentId,
+      },
+      action: AuditActionCode.update,
+      target: {
+        type: AuditTargetTypeCode.workflowTask,
+        id: task.id,
+      },
+      oldValue: null,
+      newValue: {
+        operation: "SEND_EMAIL",
+        emailType: "WORKFLOW_TASK_REMINDER",
+        status: result.status,
+        adapter: result.adapter,
+        dryRun: result.dryRun,
+        attemptCount: result.attemptCount,
+        emailMasked: maskWorkflowEmail(recipient.email),
+        providerMessageIdPresent: Boolean(result.providerMessageId),
+        failureCategory: result.failureCategory,
+      },
+    });
+
+    return {
+      taskId,
+      status: result.status,
+      adapter: result.adapter,
+      dryRun: result.dryRun,
+      attemptCount: result.attemptCount,
+      emailMasked: maskWorkflowEmail(recipient.email),
+    };
   }
 
   async completeFeeReviewTaskInTransaction(
@@ -835,6 +925,67 @@ export class WorkflowService {
     };
   }
 }
+
+const buildWorkflowEmailTextBody = (task: WorkflowTaskWithInstance): string =>
+  [
+    "Research IP System workflow task reminder.",
+    `Task: ${task.id}`,
+    `Step: ${task.stepCode}`,
+    `Target type: ${task.instance.targetType}`,
+    `Status: ${task.status}`,
+    "This email contains only a summary. Please sign in to review and approve.",
+  ].join("\n");
+
+const buildWorkflowEmailHtmlBody = (task: WorkflowTaskWithInstance): string => {
+  const rows: Array<[string, string]> = [
+    ["待办任务", task.id],
+    ["审批节点", task.stepCode],
+    ["目标类型", task.instance.targetType],
+    ["当前状态", task.status],
+    ["创建时间", task.createdAt.toISOString()],
+  ];
+
+  return [
+    '<div style="font-family:Arial,sans-serif;line-height:1.7;color:#111827;max-width:680px;margin:0 auto;border:1px solid #dbe3ea;border-radius:8px;overflow:hidden">',
+    '<div style="background:#0f6b7d;color:#fff;padding:20px 28px">',
+    `<h1 style="font-size:20px;margin:0">${escapeWorkflowEmailHtml("研究院科研成果与知识产权管理系统")}</h1>`,
+    '<p style="font-size:14px;margin:8px 0 0">local-demo / workflow task email notification</p>',
+    '</div>',
+    '<div style="padding:24px 28px">',
+    `<h2 style="font-size:18px;margin:0 0 12px">${escapeWorkflowEmailHtml("审批待办提醒")}</h2>`,
+    `<p>${escapeWorkflowEmailHtml("这是一封审批待办摘要邮件，不包含涉密明细或附件。")}</p>`,
+    '<table style="border-collapse:collapse;width:100%;margin-top:16px">',
+    ...rows.map(
+      ([label, value]) =>
+        `<tr><td style="border:1px solid #dbe3ea;background:#f8fafc;padding:10px 12px;width:32%">${escapeWorkflowEmailHtml(label)}</td><td style="border:1px solid #dbe3ea;padding:10px 12px">${escapeWorkflowEmailHtml(value)}</td></tr>`,
+    ),
+    '</table>',
+    `<p style="color:#52627a;margin-top:18px">${escapeWorkflowEmailHtml("请登录系统查看详情并完成审批。")}</p>`,
+    '</div>',
+    '</div>',
+  ].join("");
+};
+
+const escapeWorkflowEmailHtml = (value: string): string =>
+  value.replace(/[&<>"']/g, (char) => workflowHtmlEscapeMap[char] ?? char)
+    .replace(/[^\x20-\x7E]/g, (char) => `&#${char.codePointAt(0) ?? 0};`);
+
+const workflowHtmlEscapeMap: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+const maskWorkflowEmail = (email: string): string => {
+  const [localPart, domainPart] = email.split("@");
+  if (!localPart || !domainPart) {
+    return "[masked-email]";
+  }
+
+  return `${localPart.slice(0, 1)}***@${domainPart}`;
+};
 
 type ReviewDepartmentTaskInput = {
   context: UserContext;

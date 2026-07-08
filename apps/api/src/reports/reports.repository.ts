@@ -17,6 +17,12 @@ import {
   CountBucket,
 } from "./domain/custom-report-domain.types";
 
+export type ReportEmailUserRecord = {
+  id: string;
+  email: string;
+  name: string;
+};
+
 @Injectable()
 export class ReportsRepository {
   constructor(
@@ -235,6 +241,13 @@ export class ReportsRepository {
       contractTotal: result._sum.contractAmount?.toFixed(2) ?? "0.00",
       revenueTotal: result._sum.revenueAmount?.toFixed(2) ?? "0.00",
     };
+  }
+
+  async findUserEmailById(userId: string): Promise<ReportEmailUserRecord | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true },
+    });
   }
 }
 

@@ -178,6 +178,23 @@ export class ReminderController {
     }
   }
 
+  @Post(":id/email-reminder")
+  @HttpCode(200)
+  @RequirePermissions(PermissionCode.reminderReadDepartment)
+  async sendReminderEmailReminder(
+    @CurrentUser() currentUser: UserContext,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) reminderTaskId: string,
+  ) {
+    try {
+      return await this.reminderService.sendReminderEmailReminder(
+        currentUser,
+        reminderTaskId,
+      );
+    } catch (error) {
+      throw mapReminderServiceError(error);
+    }
+  }
+
   @Post(":id/escalate")
   @HttpCode(200)
   @RequirePermissions(PermissionCode.reminderReadDepartment)

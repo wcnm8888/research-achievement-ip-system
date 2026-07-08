@@ -172,6 +172,7 @@ describe("secret authorization permission boundary", () => {
 
     expect(html).toContain("secret-authorization-page");
     expect(html).toContain("涉密授权管理");
+    expect(html).toContain("新增涉密授权");
     expect(html).toContain("涉密资源");
     expect(html).not.toContain("Local/demo/synthetic");
     expect(html).not.toContain("not production authorization acceptance");

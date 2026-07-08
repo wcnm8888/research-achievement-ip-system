@@ -101,6 +101,7 @@ describe("AliyunDirectMailAdapter", () => {
     expect(request.fromAlias).toBe(defaultFromAlias);
     expect(request.toAddress).toBe(input.recipientEmail);
     expect(request.subject).toBe(defaultPasswordResetSubject);
+    expect(request.htmlBody).toContain("&#31185;&#30740;&#25104;&#26524;");
     expect(request.textBody).toContain(link);
     const parsedLink = new URL(link);
     expect(parsedLink.searchParams.get("flow")).toBe("reset-password");
@@ -241,5 +242,5 @@ const makeDeliveryInput = () => ({
   correlationId: "corr-step47h",
 });
 
-const defaultFromAlias = "\u79d1\u7814\u6210\u679c\u7ba1\u7406\u7cfb\u7edf";
-const defaultPasswordResetSubject = "\u79d1\u7814\u6210\u679c\u7ba1\u7406\u7cfb\u7edf\u5bc6\u7801\u91cd\u7f6e";
+const defaultFromAlias = "Research IP System";
+const defaultPasswordResetSubject = "Research IP System - Password Reset";

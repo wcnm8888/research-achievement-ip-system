@@ -46,6 +46,22 @@ export type ReminderTransactionClient = Pick<
 export class ReminderRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  async findUserEmailById(
+    userId: string,
+  ): Promise<{ id: string; email: string; name: string } | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        status: UserStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+  }
+
   async findEligibleFeeFactsForReminder(
     today: Date | string,
     options: ReminderEligibleFeeQueryOptions = {},

@@ -294,12 +294,25 @@ export class ApiIntegrationSettingsService {
 
     const integration = await this.repository.findFirstByProvider(dto.provider);
     if (!integration) {
-      return buildUnavailableMockDemoResult({
-        definition,
-        dto,
-        reason:
-          "当前接口类型尚未配置启用的接口元数据，已返回不可用降级说明；可继续手工处理。",
-      });
+      const result = buildEnabledMockDemoResult(definition, dto.resultMode);
+
+      return {
+        mockOnly: true,
+        provider: dto.provider,
+        scenario: dto.scenario,
+        requestedResultMode: dto.resultMode,
+        runStatus: result.runStatus,
+        integration: null,
+        summary: `${result.summary} 当前未绑定真实接口配置，仅使用本地 Mock 预演。`,
+        syntheticSubject: buildPreviewSubject(definition, dto),
+        safeResult: {
+          ...result.safeResult,
+          configState: "未绑定真实接口配置",
+        },
+        safetyNotice:
+          "本地 Mock 预演结果仅用于评审演示；未访问真实 DOI、文献库、专利、财务、HR、SSO、邮件或短信系统。",
+        callLog: null,
+      };
     }
 
     if (!integration.enabled) {

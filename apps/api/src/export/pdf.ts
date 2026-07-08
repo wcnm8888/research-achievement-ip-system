@@ -27,7 +27,7 @@ export const createSimplePdf = <T>(
     "50 790 Td",
     ...lines.flatMap((line, index) => [
       index === 0 ? "/F1 13 Tf" : "/F1 9 Tf",
-      `(${escapePdfText(truncateLine(line))}) Tj`,
+      `<${toUtf16BeHex(truncateLine(line))}> Tj`,
       "0 -14 Td",
     ]),
     "ET",
@@ -37,8 +37,9 @@ export const createSimplePdf = <T>(
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
     "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    "<< /Type /Font /Subtype /Type0 /BaseFont /STSong-Light /Encoding /UniGB-UCS2-H /DescendantFonts [6 0 R] >>",
     `<< /Length ${stream.byteLength} >>\nstream\n${content}\nendstream`,
+    "<< /Type /Font /Subtype /CIDFontType0 /BaseFont /STSong-Light /CIDSystemInfo << /Registry (Adobe) /Ordering (GB1) /Supplement 2 >> >>",
   ];
   const chunks: Buffer[] = [Buffer.from("%PDF-1.4\n", "utf8")];
   const offsets = [0];
@@ -82,9 +83,14 @@ const readRecordValue = <T>(row: T, key: string): unknown =>
 const truncateLine = (line: string): string =>
   line.length > maxLineLength ? `${line.slice(0, maxLineLength - 3)}...` : line;
 
-const escapePdfText = (value: string): string =>
-  value
-    .replace(/[^\x20-\x7e]/g, "?")
-    .replace(/\\/g, "\\\\")
-    .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)");
+const toUtf16BeHex = (value: string): string => {
+  const buffer = Buffer.from(value, "utf16le");
+
+  for (let index = 0; index < buffer.length; index += 2) {
+    const low = buffer[index];
+    buffer[index] = buffer[index + 1] ?? 0;
+    buffer[index + 1] = low ?? 0;
+  }
+
+  return buffer.toString("hex").toUpperCase();
+};

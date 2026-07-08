@@ -130,6 +130,22 @@ export class WorkflowController {
       throw mapWorkflowServiceError(error);
     }
   }
+
+  @Post("tasks/:taskId/email-reminder")
+  @HttpCode(200)
+  async sendWorkflowTaskEmailReminder(
+    @CurrentUser() currentUser: UserContext,
+    @Param("taskId", new ParseUUIDPipe({ version: "4" })) taskId: string,
+  ) {
+    try {
+      return await this.workflowService.sendMyWorkflowTaskEmailReminder(
+        currentUser,
+        taskId,
+      );
+    } catch (error) {
+      throw mapWorkflowServiceError(error);
+    }
+  }
 }
 
 const mapWorkflowServiceError = (error: unknown): Error => {

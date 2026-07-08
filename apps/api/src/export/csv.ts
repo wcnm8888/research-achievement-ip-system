@@ -17,7 +17,7 @@ export const createCsv = <T>(
       .join(","),
   );
 
-  return [header, ...body].join("\r\n") + "\r\n";
+  return `\uFEFF${[header, ...body].join("\r\n")}\r\n`;
 };
 
 export const escapeCsvCell = (value: unknown): string => {

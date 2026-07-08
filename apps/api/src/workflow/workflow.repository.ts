@@ -62,6 +62,22 @@ export class WorkflowRepository {
     private readonly prisma: PrismaService,
   ) {}
 
+  async findUserEmailById(
+    userId: string,
+  ): Promise<{ id: string; email: string; name: string } | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        status: UserStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+  }
+
   async createAchievementReviewWorkflow(
     input: CreateAchievementReviewWorkflowInput,
   ): Promise<WorkflowInstanceAggregate> {

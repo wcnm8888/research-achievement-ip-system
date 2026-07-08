@@ -409,7 +409,7 @@ describe("ApiIntegrationSettingsService", () => {
     );
   });
 
-  it("returns clear unavailable states for disabled and missing integrations", async () => {
+  it("returns unavailable for disabled integrations but still runs local Mock when metadata is missing", async () => {
     const { service, repository } = createService();
     repository.findFirstByProvider.mockResolvedValueOnce(
       makeApiIntegration({
@@ -445,9 +445,14 @@ describe("ApiIntegrationSettingsService", () => {
       resultMode: ApiIntegrationMockResultMode.success,
     });
 
-    expect(missing.runStatus).toBe("UNAVAILABLE");
+    expect(missing.runStatus).toBe("SUCCESS");
     expect(missing.integration).toBeNull();
     expect(missing.callLog).toBeNull();
+    expect(missing.summary).toContain("仅使用本地 Mock 预演");
+    expect(missing.safeResult).toMatchObject({
+      configState: "未绑定真实接口配置",
+      source: "本地预演适配器",
+    });
   });
 
   it("rejects provider and scenario mismatches before logging", async () => {

@@ -9,6 +9,7 @@ import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory
 import { RbacPolicyService } from "../authorization/policy/rbac-policy.service";
 import { PrismaService } from "../database/prisma.service";
 import { UserContext } from "../identity/user-context";
+import { ReportEmailDeliveryService } from "../reports/report-email-delivery.service";
 import { AchievementRepository } from "../achievements/achievement.repository";
 import { AchievementStatusCode } from "../achievements/domain/achievement-domain.types";
 import { AchievementStatusTransitionConflictError } from "../achievements/domain/achievement-repository.errors";
@@ -263,6 +264,7 @@ describe("WorkflowService dependency injection", () => {
       PolicyQueryFactory,
       PrismaService,
       AuditService,
+      ReportEmailDeliveryService,
     ]);
   });
 });

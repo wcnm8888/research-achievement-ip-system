@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Descriptions,
+  Modal,
   Space,
   Table,
   Tag,
@@ -73,6 +74,7 @@ export function SecretAuthorization({
   const [detail, setDetail] =
     useState<Loadable<SecretAuthorizationResourceDetail>>(emptyLoadable);
   const [selectedResourceKey, setSelectedResourceKey] = useState<string | null>(null);
+  const [createPreviewOpen, setCreatePreviewOpen] = useState(false);
 
   const resourceItems = resources.data?.items ?? [];
   const selectedResource = useMemo(
@@ -194,7 +196,14 @@ export function SecretAuthorization({
       <SectionHeader
         title="涉密授权管理"
         description="查看涉密资源、授权状态、近期授权记录和审计摘要。"
-        extra={<Button onClick={refresh}>刷新</Button>}
+        extra={
+          <Space size={8} wrap>
+            <Button onClick={refresh}>刷新</Button>
+            <Button type="primary" onClick={() => setCreatePreviewOpen(true)}>
+              新增涉密授权
+            </Button>
+          </Space>
+        }
       />
 
       <PermissionHint description="本页展示涉密资源和授权状态摘要，不展示涉密正文。" />
@@ -240,6 +249,27 @@ export function SecretAuthorization({
           <Typography.Text type="secondary">尚未选择涉密资源。</Typography.Text>
         )}
       </Card>
+
+      <Modal
+        title="新增涉密授权"
+        open={createPreviewOpen}
+        okText="我知道了"
+        cancelButtonProps={{ style: { display: "none" } }}
+        onOk={() => setCreatePreviewOpen(false)}
+        onCancel={() => setCreatePreviewOpen(false)}
+      >
+        <Space direction="vertical" size={12} className="full-width">
+          <Alert
+            type="info"
+            showIcon
+            message="授权申请入口预留"
+            description="当前一期本地评审版只展示涉密资源、授权状态和审计摘要；前台新增授权闭环属于二期扩展，本弹窗不会写入授权记录。"
+          />
+          <Typography.Text type="secondary">
+            正式授权流程需要补齐申请人、授权对象、授权范围、有效期、审批意见、撤销复核和审计留痕后再启用。
+          </Typography.Text>
+        </Space>
+      </Modal>
     </Space>
   );
 }

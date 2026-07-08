@@ -14,6 +14,7 @@ import {
   CustomReportTemplateIdCode,
   CustomReportRunResult,
   ScheduledReportPlan,
+  ScheduledReportEmailResult,
   ScheduledReportPreviewResult,
   customReportTemplates,
 } from "./domain/custom-report-domain.types";
@@ -30,6 +31,7 @@ type ReportsServiceMock = {
   listTemplates: ReturnType<typeof vi.fn>;
   listScheduledPlans: ReturnType<typeof vi.fn>;
   previewScheduledPlan: ReturnType<typeof vi.fn>;
+  sendScheduledPlanEmail: ReturnType<typeof vi.fn>;
   runTemplate: ReturnType<typeof vi.fn>;
   exportTemplateCsv: ReturnType<typeof vi.fn>;
 };
@@ -119,10 +121,30 @@ const makeScheduledPreview = (): ScheduledReportPreviewResult => ({
   caveats: ["本地定时报表预演", "站内信为本地摘要", "邮件通道为后续可接入能力"],
 });
 
+const makeScheduledEmailResult = (): ScheduledReportEmailResult => ({
+  plan: makeScheduledPlan(),
+  generatedAt: "2026-06-18T00:00:00.000Z",
+  report: makeRunResult(),
+  delivery: {
+    email: {
+      status: "DRY_RUN",
+      message: "邮件发送已走到报表推送链路，但当前为 dry-run/本地安全模式，未真实外发。",
+      adapter: "ALIYUN_DIRECTMAIL_DRY_RUN",
+      recipientCount: 1,
+      recipientMasks: ["a***@example.com"],
+      dryRun: true,
+      attemptCount: 1,
+      providerMessageIds: ["dry-run-report"],
+    },
+  },
+  caveats: ["手动邮件推送"],
+});
+
 const createServiceMock = (): ReportsServiceMock => ({
   listTemplates: vi.fn().mockReturnValue(customReportTemplates),
   listScheduledPlans: vi.fn().mockReturnValue([makeScheduledPlan()]),
   previewScheduledPlan: vi.fn().mockResolvedValue(makeScheduledPreview()),
+  sendScheduledPlanEmail: vi.fn().mockResolvedValue(makeScheduledEmailResult()),
   runTemplate: vi.fn().mockResolvedValue(makeRunResult()),
   exportTemplateCsv: vi.fn().mockResolvedValue("Count\r\n3\r\n"),
 });
@@ -187,6 +209,23 @@ describe("Reports routes through AppModule", () => {
     });
   });
 
+  it("sends a scheduled report email through AppModule", async () => {
+    await withAppModule([PermissionCode.userContextRead], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .post("/reports/scheduled-plans/monthly-achievement-distribution/email")
+        .set("X-Demo-User-Id", ids.user)
+        .expect(201);
+
+      expect(response.body.plan.planId).toBe("monthly-achievement-distribution");
+      expect(response.body.delivery.email.status).toBe("DRY_RUN");
+      expect(response.body.delivery.email.recipientMasks).toEqual(["a***@example.com"]);
+      expect(service.sendScheduledPlanEmail).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({ userId: ids.user }),
+        "monthly-achievement-distribution",
+      );
+    });
+  });
+
   it("runs a custom report template with parsed query parameters", async () => {
     await withAppModule([PermissionCode.userContextRead], async (app, service) => {
       const response = await request(app.getHttpServer() as Server)
@@ -232,6 +271,7 @@ describe("Reports routes through AppModule", () => {
       expect(service.listTemplates).not.toHaveBeenCalled();
       expect(service.listScheduledPlans).not.toHaveBeenCalled();
       expect(service.previewScheduledPlan).not.toHaveBeenCalled();
+      expect(service.sendScheduledPlanEmail).not.toHaveBeenCalled();
       expect(service.runTemplate).not.toHaveBeenCalled();
       expect(service.exportTemplateCsv).not.toHaveBeenCalled();
     });

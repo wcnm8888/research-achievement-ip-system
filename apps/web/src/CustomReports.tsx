@@ -36,6 +36,7 @@ import type {
   CustomReportRunResponse,
   CustomReportTemplate,
   CustomReportTemplateId,
+  ScheduledReportEmailResult,
   ScheduledReportPlan,
   ScheduledReportPreviewResult,
 } from "./types";
@@ -52,6 +53,7 @@ type CustomReportsClient = Pick<
   | "runCustomReport"
   | "listScheduledReportPlans"
   | "previewScheduledReportPlan"
+  | "sendScheduledReportEmail"
   | "downloadBlob"
 >;
 
@@ -67,6 +69,7 @@ type CustomReportsViewProps = {
   report: Loadable<CustomReportRunResponse>;
   scheduledPlans: Loadable<ScheduledReportPlan[]>;
   scheduledPreview: Loadable<ScheduledReportPreviewResult>;
+  scheduledEmail: Loadable<ScheduledReportEmailResult>;
   selectedTemplateId: string | null;
   selectedScheduledPlanId: string | null;
   filters: CustomReportRunQuery;
@@ -81,6 +84,7 @@ type CustomReportsViewProps = {
   onExportPdf?: () => void;
   onScheduledPlanChange?: (planId: string) => void;
   onPreviewScheduledPlan?: () => void;
+  onSendScheduledEmail?: () => void;
   onReloadScheduledPlans?: () => void;
   onReloadTemplates?: () => void;
   exporting?: boolean;
@@ -117,6 +121,12 @@ const emptyScheduledPlans: Loadable<ScheduledReportPlan[]> = {
 };
 
 const emptyScheduledPreview: Loadable<ScheduledReportPreviewResult> = {
+  loading: false,
+  data: null,
+  error: null,
+};
+
+const emptyScheduledEmail: Loadable<ScheduledReportEmailResult> = {
   loading: false,
   data: null,
   error: null,
@@ -180,6 +190,8 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
     useState<Loadable<ScheduledReportPlan[]>>(emptyScheduledPlans);
   const [scheduledPreview, setScheduledPreview] =
     useState<Loadable<ScheduledReportPreviewResult>>(emptyScheduledPreview);
+  const [scheduledEmail, setScheduledEmail] =
+    useState<Loadable<ScheduledReportEmailResult>>(emptyScheduledEmail);
   const [exportState, setExportState] = useState<{ loading: boolean; error: ApiError | null }>({
     loading: false,
     error: null,
@@ -227,6 +239,7 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
     if (!hasDemoUser(demoUserId)) {
       setScheduledPlans(emptyScheduledPlans);
       setScheduledPreview(emptyScheduledPreview);
+      setScheduledEmail(emptyScheduledEmail);
       setSelectedScheduledPlanId(null);
       return;
     }
@@ -338,6 +351,28 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       );
   }, [demoUserId, reportsClient, selectedScheduledPlanId]);
 
+  const sendScheduledEmail = useCallback(() => {
+    if (!hasDemoUser(demoUserId) || !selectedScheduledPlanId) {
+      setScheduledEmail(emptyScheduledEmail);
+      return;
+    }
+
+    setScheduledEmail({ loading: true, data: null, error: null });
+    void sendScheduledReportEmailForDemoUser(
+      reportsClient,
+      demoUserId,
+      selectedScheduledPlanId,
+    )
+      .then((data) => setScheduledEmail({ loading: false, data, error: null }))
+      .catch((error: unknown) =>
+        setScheduledEmail({
+          loading: false,
+          data: null,
+          error: mapCustomReportErrorToDisplay(normalizeError(error)),
+        }),
+      );
+  }, [demoUserId, reportsClient, selectedScheduledPlanId]);
+
   if (!hasDemoUser(demoUserId)) {
     return (
       <Space direction="vertical" size={16} className="page-stack">
@@ -359,6 +394,7 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       report={report}
       scheduledPlans={scheduledPlans}
       scheduledPreview={scheduledPreview}
+      scheduledEmail={scheduledEmail}
       selectedTemplateId={selectedTemplateId}
       selectedScheduledPlanId={selectedScheduledPlanId}
       filters={filters}
@@ -370,6 +406,7 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       onExportPdf={() => exportReport("pdf")}
       onScheduledPlanChange={setSelectedScheduledPlanId}
       onPreviewScheduledPlan={previewScheduledPlan}
+      onSendScheduledEmail={sendScheduledEmail}
       onReloadScheduledPlans={loadScheduledPlans}
       onReloadTemplates={loadTemplates}
       exporting={exportState.loading}
@@ -423,6 +460,18 @@ export const previewScheduledReportForDemoUser = async (
   }
 
   return client.previewScheduledReportPlan(planId);
+};
+
+export const sendScheduledReportEmailForDemoUser = async (
+  client: CustomReportsClient,
+  demoUserId: string | null,
+  planId: string,
+): Promise<ScheduledReportEmailResult | null> => {
+  if (!hasDemoUser(demoUserId)) {
+    return null;
+  }
+
+  return client.sendScheduledReportEmail(planId);
 };
 
 export const exportCustomReportCsvForDemoUser = async (
@@ -563,6 +612,7 @@ export function CustomReportsView({
   report,
   scheduledPlans,
   scheduledPreview,
+  scheduledEmail,
   selectedTemplateId,
   selectedScheduledPlanId,
   filters,
@@ -574,6 +624,7 @@ export function CustomReportsView({
   onExportPdf,
   onScheduledPlanChange,
   onPreviewScheduledPlan,
+  onSendScheduledEmail,
   onReloadScheduledPlans,
   onReloadTemplates,
   exporting = false,
@@ -623,9 +674,11 @@ export function CustomReportsView({
       <ScheduledReportPreviewPanel
         plans={scheduledPlans}
         preview={scheduledPreview}
+        email={scheduledEmail}
         selectedPlanId={selectedScheduledPlanId}
         onPlanChange={onScheduledPlanChange}
         onPreview={onPreviewScheduledPlan}
+        onSendEmail={onSendScheduledEmail}
         onReload={onReloadScheduledPlans}
       />
 
@@ -759,16 +812,20 @@ export function CustomReportsView({
 const ScheduledReportPreviewPanel = ({
   plans,
   preview,
+  email,
   selectedPlanId,
   onPlanChange,
   onPreview,
+  onSendEmail,
   onReload,
 }: {
   plans: Loadable<ScheduledReportPlan[]>;
   preview: Loadable<ScheduledReportPreviewResult>;
+  email: Loadable<ScheduledReportEmailResult>;
   selectedPlanId: string | null;
   onPlanChange?: (planId: string) => void;
   onPreview?: () => void;
+  onSendEmail?: () => void;
   onReload?: () => void;
 }) => {
   const planItems = plans.data ?? [];
@@ -806,6 +863,13 @@ const ScheduledReportPreviewPanel = ({
             </Col>
             <Col xs={24} lg={10}>
               <Space size={8} wrap className="report-action-row">
+                <Button
+                  onClick={onSendEmail}
+                  loading={email.loading}
+                  disabled={!selectedPlan}
+                >
+                  发送邮件推送
+                </Button>
                 <Button onClick={onReload} loading={plans.loading}>
                   刷新计划
                 </Button>
@@ -875,6 +939,34 @@ const ScheduledReportPreviewPanel = ({
                   ))}
                 </Space>
               </Space>
+            ) : null}
+          </DataState>
+
+          <DataState
+            loading={email.loading}
+            error={email.error}
+            empty={!email.data}
+            emptyText="点击发送邮件推送后，这里展示真实发信通道或 dry-run 结果。"
+            onRetry={onSendEmail}
+          >
+            {email.data ? (
+              <Descriptions size="small" bordered column={1}>
+                <Descriptions.Item label="邮件发送状态">
+                  {formatScheduledEmailStatus(email.data.delivery.email.status)}
+                </Descriptions.Item>
+                <Descriptions.Item label="发送结果">
+                  {email.data.delivery.email.message}
+                </Descriptions.Item>
+                <Descriptions.Item label="邮件适配器">
+                  {email.data.delivery.email.adapter}
+                </Descriptions.Item>
+                <Descriptions.Item label="收件人">
+                  {email.data.delivery.email.recipientMasks.join(", ") || "未解析到收件人"}
+                </Descriptions.Item>
+                <Descriptions.Item label="尝试次数">
+                  {email.data.delivery.email.attemptCount}
+                </Descriptions.Item>
+              </Descriptions>
             ) : null}
           </DataState>
         </Space>
@@ -1077,6 +1169,21 @@ export const formatScheduledDeliveryLabel = (
   }
 
   return "预留接口";
+};
+
+export const formatScheduledEmailStatus = (
+  status: ScheduledReportEmailResult["delivery"]["email"]["status"],
+): string => {
+  const labels: Record<ScheduledReportEmailResult["delivery"]["email"]["status"], string> = {
+    SENT: "已提交真实发信",
+    DRY_RUN: "Dry-run 未真实外发",
+    SUPPRESSED: "已抑制发送",
+    FAILED: "发送失败",
+    TEMPORARY_FAILURE: "临时失败",
+    RATE_LIMITED: "服务限流",
+  };
+
+  return labels[status];
 };
 
 const normalizeError = (error: unknown): ApiError => {

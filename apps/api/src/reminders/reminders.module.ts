@@ -4,6 +4,11 @@ import { AuthorizationModule } from "../authorization/authorization.module";
 import { DatabaseModule } from "../database/database.module";
 import { IdentityModule } from "../identity/identity.module";
 import { NotificationsModule } from "../notifications/notifications.module";
+import {
+  createReportEmailConfigFromEnv,
+  reportEmailConfigToken,
+  ReportEmailDeliveryService,
+} from "../reports/report-email-delivery.service";
 import { WorkflowModule } from "../workflow/workflow.module";
 import { ReminderController } from "./reminder.controller";
 import { ReminderRepository } from "./reminder.repository";
@@ -27,6 +32,11 @@ import { ReminderService } from "./reminder.service";
   providers: [
     ReminderRepository,
     ReminderService,
+    ReportEmailDeliveryService,
+    {
+      provide: reportEmailConfigToken,
+      useFactory: createReportEmailConfigFromEnv,
+    },
     {
       provide: REMINDER_SLA_SCHEDULER_CONFIG,
       useFactory: () => createReminderSlaSchedulerConfig(process.env),

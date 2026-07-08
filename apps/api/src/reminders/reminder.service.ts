@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
 import { AuditTransactionClient } from "../audit/audit.repository";
 import { AuditService } from "../audit/audit.service";
 import { AuditActionCode } from "../audit/domain/audit-action-code";
@@ -10,6 +10,10 @@ import { UserContext } from "../identity/user-context";
 import { NotificationRecord } from "../notifications/domain/notification-domain.types";
 import { NotificationService } from "../notifications/notification.service";
 import { NotificationTransactionClient } from "../notifications/notification.repository";
+import {
+  ReportEmailDeliveryResult,
+  ReportEmailDeliveryService,
+} from "../reports/report-email-delivery.service";
 import { WorkflowAccessDeniedError } from "../workflow/domain/workflow-errors";
 import {
   WorkflowTaskStatusCode,
@@ -67,6 +71,15 @@ export type EscalateReminderOptions = {
 export type ReminderSendResult = {
   reminderTask: ReminderTaskStateRecord;
   notification: NotificationRecord | null;
+};
+
+export type ReminderEmailDeliveryResult = {
+  reminderTaskId: string;
+  status: ReportEmailDeliveryResult["status"] | "NO_RECIPIENT" | "SUPPRESSED";
+  adapter: string;
+  dryRun: boolean;
+  attemptCount: number;
+  emailMasked: string | null;
 };
 
 export type ReminderDepartmentEscalationResult = ReminderSendResult & {
@@ -351,6 +364,9 @@ export class ReminderService {
     private readonly auditService: AuditService,
     @Inject(WorkflowService)
     private readonly workflowService: WorkflowService,
+    @Optional()
+    @Inject(ReportEmailDeliveryService)
+    private readonly reportEmailDeliveryService?: ReportEmailDeliveryService,
   ) {}
 
   async generateFeeDueReminders(
@@ -401,7 +417,7 @@ export class ReminderService {
     const deliveryOutcome = options.deliveryOutcome ?? "SUCCESS";
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         const reminderClient = tx as ReminderTransactionClient;
         const notificationClient = tx as NotificationTransactionClient;
         const auditClient = tx as AuditTransactionClient;
@@ -474,6 +490,16 @@ export class ReminderService {
 
         return { reminderTask: next, notification };
       });
+
+      await this.sendReminderEmailBestEffort(
+        actor,
+        result.reminderTask,
+        result.reminderTask.receiverId,
+        "SEND_PENDING_REMINDER",
+        now,
+      );
+
+      return result;
     } catch (error) {
       throw this.mapReminderError(error);
     }
@@ -527,6 +553,68 @@ export class ReminderService {
     } catch (error) {
       throw this.mapReminderError(error);
     }
+  }
+
+  async sendReminderEmailReminder(
+    context: UserContext,
+    reminderTaskId: string,
+    options: { now?: Date } = {},
+  ): Promise<ReminderEmailDeliveryResult> {
+    this.assertUserContext(context);
+    const now = options.now ?? new Date();
+    const task = await this.reminderRepository.findTaskStateById(reminderTaskId);
+
+    if (!task || task.receiverId !== context.userId) {
+      throw new ReminderNotFoundError();
+    }
+
+    if (!this.reportEmailDeliveryService) {
+      return {
+        reminderTaskId,
+        status: "SUPPRESSED",
+        adapter: "REMINDER_EMAIL_NOT_CONFIGURED",
+        dryRun: true,
+        attemptCount: 0,
+        emailMasked: null,
+      };
+    }
+
+    const recipient = await this.reminderRepository.findUserEmailById(task.receiverId);
+    if (!recipient) {
+      return {
+        reminderTaskId,
+        status: "NO_RECIPIENT",
+        adapter: "NO_RECIPIENT",
+        dryRun: true,
+        attemptCount: 0,
+        emailMasked: null,
+      };
+    }
+
+    const result = await this.reportEmailDeliveryService.send({
+      deliveryId: `reminder-${task.id}-MANUAL-${now.toISOString()}`,
+      toAddress: recipient.email,
+      subject: "Research IP System - Reminder Notification",
+      textBody: buildReminderEmailTextBody(task, "MANUAL_REMINDER_EMAIL", now),
+      htmlBody: buildReminderEmailHtmlBody(task, "MANUAL_REMINDER_EMAIL", now),
+    });
+
+    await this.recordReminderEmailAuditEvent(
+      context,
+      task,
+      recipient.email,
+      "MANUAL_REMINDER_EMAIL",
+      result,
+    );
+
+    return {
+      reminderTaskId,
+      status: result.status,
+      adapter: result.adapter,
+      dryRun: result.dryRun,
+      attemptCount: result.attemptCount,
+      emailMasked: maskReminderEmail(recipient.email),
+    };
   }
 
   async getReminderCenter(context: UserContext): Promise<ReminderCenterResponse> {
@@ -673,10 +761,20 @@ export class ReminderService {
         throw new ReminderConflictError("Reminder escalation is rate limited.");
       }
 
-      return {
+      const sendResult = {
         reminderTask: result.reminderTask,
         notification: result.notification,
       };
+
+      await this.sendReminderEmailBestEffort(
+        context,
+        sendResult.reminderTask,
+        sendResult.reminderTask.receiverId,
+        "ESCALATE_REMINDER",
+        now,
+      );
+
+      return sendResult;
     } catch (error) {
       throw this.mapReminderError(error);
     }
@@ -691,7 +789,7 @@ export class ReminderService {
     const now = options.now ?? new Date();
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         const reminderClient = tx as ReminderTransactionClient;
         const notificationClient = tx as NotificationTransactionClient;
         const auditClient = tx as AuditTransactionClient;
@@ -776,6 +874,16 @@ export class ReminderService {
           resolverStrategy: escalationReceiver.resolverStrategy,
         };
       });
+
+      await this.sendReminderEmailBestEffort(
+        context,
+        result.reminderTask,
+        result.escalationReceiverId,
+        "ESCALATE_REMINDER_TO_DEPARTMENT",
+        now,
+      );
+
+      return result;
     } catch (error) {
       throw this.mapReminderError(error);
     }
@@ -1366,7 +1474,7 @@ export class ReminderService {
   ): Promise<ReminderSlaScanEscalatedItem> {
     const policyLevel = resolveSlaPolicyLevel(task, now, policy);
 
-    return await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const reminderClient = tx as ReminderTransactionClient;
       const notificationClient = tx as NotificationTransactionClient;
       const auditClient = tx as AuditTransactionClient;
@@ -1442,6 +1550,16 @@ export class ReminderService {
         resolverStrategy: escalationReceiver.resolverStrategy,
       };
     });
+
+    await this.sendReminderEmailBestEffort(
+      context,
+      task,
+      result.escalationReceiverId,
+      "ESCALATE_REMINDER_SLA_SCAN",
+      now,
+    );
+
+    return result;
   }
 
   private async resolveEscalationReceiverForPolicyLevel(
@@ -1582,6 +1700,73 @@ export class ReminderService {
     };
   }
 
+  private async sendReminderEmailBestEffort(
+    actor: ReminderSendActor,
+    task: ReminderTaskStateRecord | ReminderSlaQueueRecord,
+    receiverId: string,
+    operation: string,
+    now: Date,
+  ): Promise<void> {
+    if (!this.reportEmailDeliveryService) {
+      return;
+    }
+
+    try {
+      const recipient = await this.reminderRepository.findUserEmailById(receiverId);
+      if (!recipient) {
+        return;
+      }
+
+      const result = await this.reportEmailDeliveryService.send({
+        deliveryId: `reminder-${task.id}-${operation}-${now.toISOString()}`,
+        toAddress: recipient.email,
+        subject: "Research IP System - Reminder Notification",
+        textBody: buildReminderEmailTextBody(task, operation, now),
+        htmlBody: buildReminderEmailHtmlBody(task, operation, now),
+      });
+
+      await this.recordReminderEmailAuditEvent(
+        actor,
+        task,
+        recipient.email,
+        operation,
+        result,
+      );
+    } catch {
+      return;
+    }
+  }
+
+  private async recordReminderEmailAuditEvent(
+    actor: ReminderSendActor,
+    task: ReminderTaskStateRecord | ReminderSlaQueueRecord,
+    recipientEmail: string,
+    operation: string,
+    result: ReportEmailDeliveryResult,
+  ): Promise<void> {
+    await this.auditService.recordEvent({
+      actor: this.toAuditActor(actor),
+      action: AuditActionCode.update,
+      target: {
+        type: AuditTargetTypeCode.reminderTask,
+        id: task.id,
+      },
+      oldValue: null,
+      newValue: {
+        operation: "SEND_EMAIL",
+        emailType: "REMINDER",
+        reminderOperation: operation,
+        status: result.status,
+        adapter: result.adapter,
+        dryRun: result.dryRun,
+        attemptCount: result.attemptCount,
+        emailMasked: maskReminderEmail(recipientEmail),
+        providerMessageIdPresent: Boolean(result.providerMessageId),
+        failureCategory: result.failureCategory,
+      } as AuditJsonValue,
+    });
+  }
+
   private toAuditActor(actor: ReminderSendActor): {
     userId?: string | null;
     departmentId?: string | null;
@@ -1634,6 +1819,78 @@ type ReminderAuditSummaryExtras = {
   policyCode?: string;
   escalationLevel?: number;
   slaStatus?: string;
+};
+
+const buildReminderEmailTextBody = (
+  task: ReminderTaskStateRecord | ReminderSlaQueueRecord,
+  operation: string,
+  now: Date,
+): string =>
+  [
+    "Research IP System reminder notification.",
+    `Operation: ${operation}`,
+    `Reminder task: ${task.id}`,
+    `Target type: ${task.targetType}`,
+    `Status: ${task.status}`,
+    `Remind level: ${task.remindLevel}`,
+    `Generated at: ${now.toISOString()}`,
+    "This email contains only a summary. Please sign in to view details.",
+  ].join("\n");
+
+const buildReminderEmailHtmlBody = (
+  task: ReminderTaskStateRecord | ReminderSlaQueueRecord,
+  operation: string,
+  now: Date,
+): string => {
+  const rows: Array<[string, string]> = [
+    ["提醒类型", operation],
+    ["提醒任务", task.id],
+    ["目标类型", task.targetType],
+    ["当前状态", task.status],
+    ["提醒级别", task.remindLevel],
+    ["生成时间", now.toISOString()],
+  ];
+
+  return [
+    '<div style="font-family:Arial,sans-serif;line-height:1.7;color:#111827;max-width:680px;margin:0 auto;border:1px solid #dbe3ea;border-radius:8px;overflow:hidden">',
+    '<div style="background:#0f6b7d;color:#fff;padding:20px 28px">',
+    `<h1 style="font-size:20px;margin:0">${escapeReminderEmailHtml("研究院科研成果与知识产权管理系统")}</h1>`,
+    '<p style="font-size:14px;margin:8px 0 0">local-demo / reminder email notification</p>',
+    '</div>',
+    '<div style="padding:24px 28px">',
+    `<h2 style="font-size:18px;margin:0 0 12px">${escapeReminderEmailHtml("提醒推送摘要")}</h2>`,
+    `<p>${escapeReminderEmailHtml("这是一封费用到期、逾期或升级提醒邮件。正文只包含摘要，不包含敏感业务明细或附件。")}</p>`,
+    '<table style="border-collapse:collapse;width:100%;margin-top:16px">',
+    ...rows.map(
+      ([label, value]) =>
+        `<tr><td style="border:1px solid #dbe3ea;background:#f8fafc;padding:10px 12px;width:32%">${escapeReminderEmailHtml(label)}</td><td style="border:1px solid #dbe3ea;padding:10px 12px">${escapeReminderEmailHtml(value)}</td></tr>`,
+    ),
+    '</table>',
+    `<p style="color:#52627a;margin-top:18px">${escapeReminderEmailHtml("请登录系统查看详情并完成处理。")}</p>`,
+    '</div>',
+    '</div>',
+  ].join("");
+};
+
+const escapeReminderEmailHtml = (value: string): string =>
+  value.replace(/[&<>"']/g, (char) => reminderHtmlEscapeMap[char] ?? char)
+    .replace(/[^\x20-\x7E]/g, (char) => `&#${char.codePointAt(0) ?? 0};`);
+
+const reminderHtmlEscapeMap: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+const maskReminderEmail = (email: string): string => {
+  const [localPart, domainPart] = email.split("@");
+  if (!localPart || !domainPart) {
+    return "[masked-email]";
+  }
+
+  return `${localPart.slice(0, 1)}***@${domainPart}`;
 };
 
 const toReminderAuditSummary = (

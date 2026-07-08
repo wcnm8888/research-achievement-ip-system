@@ -16,12 +16,14 @@ import {
   normalizeDueSoonDays,
   previewScheduledReportForDemoUser,
   runCustomReportForDemoUser,
+  sendScheduledReportEmailForDemoUser,
 } from "./CustomReports";
 import type {
   CustomReportRunResponse,
   CustomReportTemplate,
   CustomReportTemplateId,
   ScheduledReportPlan,
+  ScheduledReportEmailResult,
   ScheduledReportPreviewResult,
 } from "./types";
 
@@ -153,11 +155,31 @@ const scheduledPreview: ScheduledReportPreviewResult = {
   caveats: ["本地定时报表预演", "站内信为本地摘要", "邮件通道为后续可接入能力"],
 };
 
+const scheduledEmail: ScheduledReportEmailResult = {
+  plan: scheduledPlans[0]!,
+  generatedAt: "2026-07-06T01:05:00.000Z",
+  report: runResponse,
+  delivery: {
+    email: {
+      status: "DRY_RUN",
+      message: "邮件发送已走到报表推送链路，但当前为 dry-run/本地安全模式，未真实外发。",
+      adapter: "ALIYUN_DIRECTMAIL_DRY_RUN",
+      recipientCount: 1,
+      recipientMasks: ["r***@example.com"],
+      dryRun: true,
+      attemptCount: 1,
+      providerMessageIds: ["dry-run-report"],
+    },
+  },
+  caveats: ["手动邮件推送"],
+};
+
 const makeClient = () => ({
   listCustomReportTemplates: vi.fn(async () => templates),
   runCustomReport: vi.fn(async () => runResponse),
   listScheduledReportPlans: vi.fn(async () => scheduledPlans),
   previewScheduledReportPlan: vi.fn(async () => scheduledPreview),
+  sendScheduledReportEmail: vi.fn(async () => scheduledEmail),
   downloadBlob: vi.fn(async () => new Blob(["csv"])),
 });
 
@@ -173,6 +195,9 @@ describe("CustomReports request boundaries", () => {
     await expect(
       previewScheduledReportForDemoUser(client, "", "monthly-achievement-distribution"),
     ).resolves.toBeNull();
+    await expect(
+      sendScheduledReportEmailForDemoUser(client, "", "monthly-achievement-distribution"),
+    ).resolves.toBeNull();
 
     const html = renderToStaticMarkup(
       <CustomReports demoUserId={null} apiClient={client} />,
@@ -184,6 +209,7 @@ describe("CustomReports request boundaries", () => {
     expect(client.runCustomReport).not.toHaveBeenCalled();
     expect(client.listScheduledReportPlans).not.toHaveBeenCalled();
     expect(client.previewScheduledReportPlan).not.toHaveBeenCalled();
+    expect(client.sendScheduledReportEmail).not.toHaveBeenCalled();
     expect(client.downloadBlob).not.toHaveBeenCalled();
   });
 
@@ -262,6 +288,16 @@ describe("CustomReports request boundaries", () => {
 
     expect(client.listScheduledReportPlans).toHaveBeenCalledOnce();
     expect(client.previewScheduledReportPlan).toHaveBeenCalledWith(
+      "monthly-achievement-distribution",
+    );
+    await expect(
+      sendScheduledReportEmailForDemoUser(
+        client,
+        "demo-user-id",
+        "monthly-achievement-distribution",
+      ),
+    ).resolves.toEqual(scheduledEmail);
+    expect(client.sendScheduledReportEmail).toHaveBeenCalledWith(
       "monthly-achievement-distribution",
     );
     expect(getDefaultScheduledReportPlanId(scheduledPlans, null)).toBe(
@@ -345,6 +381,8 @@ describe("CustomReportsView display states", () => {
     expect(html).toContain("邮件通道预留");
     expect(html).toContain("下次计划周期");
     expect(html).toContain("汇总指标");
+    expect(html).toContain("ALIYUN_DIRECTMAIL_DRY_RUN");
+    expect(html).toContain("r***@example.com");
     expect(html).toContain("Department code");
     expect(html).toContain("BIO");
     expect(html).toContain("PAPER");
@@ -438,6 +476,7 @@ describe("CustomReportsView display states", () => {
         report={{ loading: false, data: null, error }}
         scheduledPlans={{ loading: false, data: scheduledPlans, error: null }}
         scheduledPreview={{ loading: false, data: null, error: null }}
+        scheduledEmail={{ loading: false, data: null, error: null }}
         selectedTemplateId="achievement-distribution"
         selectedScheduledPlanId="monthly-achievement-distribution"
         filters={{}}
@@ -475,6 +514,7 @@ const renderView = (
       report={{ loading: false, data: report, error: null }}
       scheduledPlans={{ loading: false, data: scheduledPlans, error: null }}
       scheduledPreview={{ loading: false, data: scheduledPreview, error: null }}
+      scheduledEmail={{ loading: false, data: scheduledEmail, error: null }}
       selectedTemplateId={selectedTemplateId}
       selectedScheduledPlanId="monthly-achievement-distribution"
       filters={{ groupBy: "month", dueSoonDays: 30 }}
