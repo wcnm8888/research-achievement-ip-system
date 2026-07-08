@@ -19,6 +19,14 @@ import type {
   ReminderSlaScanResult,
 } from "./types";
 
+export type ReminderReceiptStatus =
+  | "PENDING_CONFIRMATION"
+  | "CONFIRMED"
+  | "READ_UNCONFIRMED"
+  | "CONFIRMATION_TIMEOUT"
+  | "CONFIRMATION_FAILED"
+  | "MANUAL_FOLLOW_UP";
+
 export const fetchReminderCenter = (
   apiClient: ApiClient,
 ): Promise<ReminderCenterResponse> => apiClient.get("/reminders/center");
@@ -114,6 +122,82 @@ export const getReminderStatusLabel = (status: string): string => {
   };
 
   return labels[status] ?? (status || "未知状态");
+};
+
+export const reminderReceiptStatusLabels: Record<ReminderReceiptStatus, string> = {
+  PENDING_CONFIRMATION: "待确认",
+  CONFIRMED: "已确认",
+  READ_UNCONFIRMED: "已读未确认",
+  CONFIRMATION_TIMEOUT: "确认超时",
+  CONFIRMATION_FAILED: "确认失败",
+  MANUAL_FOLLOW_UP: "已转人工跟进",
+};
+
+export const getReminderReceiptStatus = (
+  item: Pick<
+    ReminderCenterItem,
+    | "status"
+    | "canConfirm"
+    | "canEscalate"
+    | "canEscalateToDepartment"
+    | "escalationBlockedReason"
+  >,
+): ReminderReceiptStatus => {
+  if (item.status === "CONFIRMED") {
+    return "CONFIRMED";
+  }
+
+  if (item.status === "FAILED") {
+    return "CONFIRMATION_FAILED";
+  }
+
+  if (item.canEscalateToDepartment) {
+    return "MANUAL_FOLLOW_UP";
+  }
+
+  if (item.canEscalate || item.escalationBlockedReason === "RATE_LIMITED") {
+    return "CONFIRMATION_TIMEOUT";
+  }
+
+  if (item.status === "SENT" && item.canConfirm) {
+    return "READ_UNCONFIRMED";
+  }
+
+  return "PENDING_CONFIRMATION";
+};
+
+export const getReminderReceiptStatusLabel = (
+  status: ReminderReceiptStatus,
+): string => reminderReceiptStatusLabels[status];
+
+export const getReminderReceiptStatusColor = (
+  status: ReminderReceiptStatus,
+): string => {
+  const colors: Record<ReminderReceiptStatus, string> = {
+    PENDING_CONFIRMATION: "default",
+    CONFIRMED: "green",
+    READ_UNCONFIRMED: "blue",
+    CONFIRMATION_TIMEOUT: "orange",
+    CONFIRMATION_FAILED: "red",
+    MANUAL_FOLLOW_UP: "gold",
+  };
+
+  return colors[status];
+};
+
+export const getReminderReceiptFollowUpText = (
+  status: ReminderReceiptStatus,
+): string => {
+  const text: Record<ReminderReceiptStatus, string> = {
+    PENDING_CONFIRMATION: "等待当前处理人完成站内确认。",
+    CONFIRMED: "本地确认已闭环。",
+    READ_UNCONFIRMED: "可通过站内催办提醒处理人确认。",
+    CONFIRMATION_TIMEOUT: "建议转人工跟进，并保留站内摘要作为核对依据。",
+    CONFIRMATION_FAILED: "请确认本地服务状态，并安排人工跟进。",
+    MANUAL_FOLLOW_UP: "已进入人工跟进兜底，请线下核对处理结果。",
+  };
+
+  return text[status];
 };
 
 export const getReminderTypeLabel = (item: ReminderCenterItem): string =>

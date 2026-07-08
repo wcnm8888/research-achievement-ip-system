@@ -1,5 +1,44 @@
 # Progress
 
+## 2026-07-08 Step 186 - Notification receipt closure polish
+
+- Status: PASS.
+- Goal:
+  - Strengthen the 7.1 receipt-confirmation and notification-closure
+    experience for the local review submission.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+  - Do not add real external notification delivery or real external receipt
+    integration.
+- Documentation:
+  - Added `memory-bank/notification-receipt-polish-step186.md`.
+  - Updated this progress log and `memory-bank/evidence.md`.
+- Web changes:
+  - Reminder center now has local receipt status mapping and display for:
+    待确认, 已确认, 已读未确认, 确认超时, 确认失败, 已转人工跟进.
+  - Reminder center now shows a local-review notification-closure notice,
+    a receipt status summary card, per-row receipt status, and safe manual
+    follow-up guidance on operation failure.
+  - Settings / API integrations preview now shows email notification receipt
+    boundaries, local receipt status preview, Chinese empty state, Chinese
+    status labels, and manual follow-up guidance for failed preview results.
+  - API client tests now cover safe error mapping for notification receipt
+    preview failures.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Notifications notification receipt SettingsApiIntegrations api-client`: PASS, 2 files / 68 tests.
+  - `corepack pnpm --filter @research-ip/web test -- reminders`: PASS, 1 file / 9 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Safety:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, production connection string, provider
+    credential, production/VPS/production DB, or real notification data was
+    accessed.
+  - No real SMTP, SMS, enterprise messaging, HR, SSO, finance, patent vendor,
+    or external notification platform was called.
+  - No real email, SMS, or enterprise message was sent.
+  - No database migration, production configuration change, external system
+    integration, deletion, reset, restore, clean, or prune was performed.
+  - Existing untracked local artifacts were left untouched and unstaged.
+
 ## 2026-07-08 Step 183 - Performance acceptance gap and rerun plan closure
 
 - Status: PASS.

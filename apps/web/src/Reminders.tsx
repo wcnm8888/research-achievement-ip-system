@@ -23,6 +23,10 @@ import {
   getEscalationBlockedReasonLabel,
   getEscalationTargetLabel,
   getReminderGovernanceText,
+  getReminderReceiptFollowUpText,
+  getReminderReceiptStatus,
+  getReminderReceiptStatusColor,
+  getReminderReceiptStatusLabel,
   getReminderSeverityColor,
   getReminderSlaHealthStatusColor,
   getReminderSlaHealthStatusLabel,
@@ -36,6 +40,7 @@ import {
   runFullReminderSlaScan,
   runReminderSlaScan,
   updateReminderSlaPolicy,
+  type ReminderReceiptStatus,
 } from "./reminder-center";
 import type {
   ReminderCenterItem,
@@ -301,6 +306,12 @@ export function Reminders({ demoUserId }: RemindersProps) {
       />
 
       <PermissionHint description="提醒中心只展示当前业务用户可访问的安全摘要；附件原文、通知正文和内部审计明细不在此处展示。" />
+      <Alert
+        type="info"
+        showIcon
+        message="本地评审版通知闭环"
+        description="当前支持站内通知摘要和本地回执状态预演；邮件通知为系统配置页的本地预演，不真实外发。真实邮件、短信、企微送达回执属于二期 / 生产待接入。"
+      />
 
       {center.data ? <ReminderSummary response={center.data} /> : null}
 
@@ -309,7 +320,7 @@ export function Reminders({ demoUserId }: RemindersProps) {
           showIcon
           type="error"
           message={getDemoSafeErrorMessage(operationError)}
-          description={getDemoSafeErrorDetail(operationError)}
+          description={`${getDemoSafeErrorDetail(operationError) ?? "通知操作未完成。"} 请改用站内摘要核对接收范围，并安排人工跟进。`}
         />
       ) : null}
 
@@ -500,6 +511,8 @@ export function Reminders({ demoUserId }: RemindersProps) {
         </DataState>
       </Card>
 
+      <ReceiptStatusOverview items={items} />
+
       <Card className="shell-card" title="SLA 队列">
         <DataState
           loading={slaQueue.loading}
@@ -546,6 +559,15 @@ export function Reminders({ demoUserId }: RemindersProps) {
   );
 }
 
+const receiptStatusOrder: ReminderReceiptStatus[] = [
+  "PENDING_CONFIRMATION",
+  "CONFIRMED",
+  "READ_UNCONFIRMED",
+  "CONFIRMATION_TIMEOUT",
+  "CONFIRMATION_FAILED",
+  "MANUAL_FOLLOW_UP",
+];
+
 function ReminderSummary({ response }: { response: ReminderCenterResponse }) {
   return (
     <Card className="shell-card" title="闭环摘要">
@@ -571,6 +593,39 @@ function ReminderSummary({ response }: { response: ReminderCenterResponse }) {
   );
 }
 
+function ReceiptStatusOverview({ items }: { items: ReminderCenterItem[] }) {
+  const counts = new Map<ReminderReceiptStatus, number>(
+    receiptStatusOrder.map((status) => [status, 0]),
+  );
+
+  items.forEach((item) => {
+    const status = getReminderReceiptStatus(item);
+    counts.set(status, (counts.get(status) ?? 0) + 1);
+  });
+
+  return (
+    <Card className="shell-card" title="回执状态">
+      <Space direction="vertical" size={10} className="full-width">
+        <Typography.Text type="secondary">
+          本地评审版按站内通知摘要、确认动作、催办状态和人工兜底展示回执状态；不代表真实邮件、短信或企微送达回执。
+        </Typography.Text>
+        <Space size={8} wrap>
+          {receiptStatusOrder.map((status) => (
+            <Tag color={getReminderReceiptStatusColor(status)} key={status}>
+              {getReminderReceiptStatusLabel(status)} {counts.get(status) ?? 0}
+            </Tag>
+          ))}
+        </Space>
+        {items.length === 0 ? (
+          <Typography.Text type="secondary">
+            暂无需要确认的站内通知或提醒。
+          </Typography.Text>
+        ) : null}
+      </Space>
+    </Card>
+  );
+}
+
 const createReminderColumns = (
   onAction: (item: ReminderCenterItem, action: ReminderAction) => void,
   actingId: string | null,
@@ -586,6 +641,24 @@ const createReminderColumns = (
         <Tag>{getReminderStatusLabel(item.status)}</Tag>
       </Space>
     ),
+  },
+  {
+    title: "回执状态",
+    key: "receipt",
+    render: (_value, item) => {
+      const status = getReminderReceiptStatus(item);
+
+      return (
+        <Space direction="vertical" size={2}>
+          <Tag color={getReminderReceiptStatusColor(status)}>
+            {getReminderReceiptStatusLabel(status)}
+          </Tag>
+          <Typography.Text type="secondary">
+            {getReminderReceiptFollowUpText(status)}
+          </Typography.Text>
+        </Space>
+      );
+    },
   },
   {
     title: "事项",

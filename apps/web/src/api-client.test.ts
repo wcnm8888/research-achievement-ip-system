@@ -1680,6 +1680,50 @@ describe("settings API integration API client", () => {
     expect(JSON.stringify([run, logs])).not.toContain("token");
     expect(JSON.stringify([run, logs])).not.toContain("rawResponse");
   });
+
+  it("sanitizes notification receipt preview errors without exposing technical details", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json(
+          {
+            message:
+              "Cannot GET /api/settings/api-integrations/mock-demo/run endpoint raw JSON stack",
+          },
+          { status: 500 },
+        ),
+      ),
+    );
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("admin-user-id");
+    let thrown: unknown;
+    try {
+      await client.runApiIntegrationMockDemo({
+        provider: "EMAIL",
+        scenario: "EMAIL_NOTIFICATION",
+        resultMode: "FAILURE",
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toMatchObject({
+      kind: "server",
+      message: "服务不可用",
+      status: 500,
+    });
+    const serialized = JSON.stringify({
+      message: (thrown as { message?: string }).message,
+      detail: (thrown as { detail?: string }).detail,
+      status: (thrown as { status?: number }).status,
+    });
+    expect(serialized).not.toContain("Cannot GET");
+    expect(serialized).not.toContain("endpoint");
+    expect(serialized).not.toContain("raw");
+    expect(serialized).not.toContain("JSON");
+    expect(serialized).not.toContain("stack");
+  });
 });
 
 describe("account lifecycle public auth API client", () => {

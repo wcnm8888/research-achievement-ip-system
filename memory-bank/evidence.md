@@ -1,5 +1,70 @@
 # Evidence
 
+## 2026-07-08 Step 186 - Notification receipt closure polish evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 301]`
+    with existing untracked local artifacts left untouched.
+  - Current HEAD verified as `cfb4d6609d2e8879b6a35ac66b6f92511cdf1798`
+    (`fix: polish conversion tracking states`).
+- Context reviewed with targeted reads only:
+  - Reminder center page and helper files:
+    `apps/web/src/Reminders.tsx`, `apps/web/src/reminder-center.ts`, and
+    `apps/web/src/reminders.test.ts`.
+  - Settings / API integrations preview page and tests:
+    `apps/web/src/SettingsApiIntegrations.tsx` and
+    `apps/web/src/SettingsApiIntegrations.test.tsx`.
+  - API client error mapping:
+    `apps/web/src/api-client.ts`, `apps/web/src/api-client.test.ts`, and
+    `apps/web/src/error-display.ts`.
+  - Step172 / Step179 / Step180 notification and interface snippets from
+    `memory-bank/progress.md`, `memory-bank/evidence.md`,
+    `memory-bank/api-integration-mock-acceptance-step172.md`,
+    `memory-bank/api-integration-demo-qa-card-step179.md`,
+    `memory-bank/api-integration-operations-runbook-step179.md`,
+    `memory-bank/api-integration-operations-extension-plan-step179.md`, and
+    `memory-bank/api-integration-production-readiness-checklist-step179.md`.
+- Changed files:
+  - `apps/web/src/reminder-center.ts`.
+  - `apps/web/src/Reminders.tsx`.
+  - `apps/web/src/SettingsApiIntegrations.tsx`.
+  - `apps/web/src/reminders.test.ts`.
+  - `apps/web/src/SettingsApiIntegrations.test.tsx`.
+  - `apps/web/src/api-client.test.ts`.
+  - `memory-bank/notification-receipt-polish-step186.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Receipt / notification closure coverage:
+  - Reminder center displays all required local receipt states in Chinese:
+    待确认, 已确认, 已读未确认, 确认超时, 确认失败, 已转人工跟进.
+  - Reminder rows show a local receipt status and human follow-up text.
+  - Reminder center includes a local review boundary notice and a receipt
+    status summary card with an empty state.
+  - Operation failures add safe Chinese guidance to use the in-app summary and
+    manual follow-up.
+  - Email notification preview displays the local receipt boundary and failed
+    preview follow-up guidance, and states that real email / SMS / enterprise
+    messaging delivery receipts remain phase-two / production-pending.
+  - Settings preview result labels now favor Chinese reviewer-facing labels for
+    scenario, provider, result mode, and call status.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- Notifications notification receipt SettingsApiIntegrations api-client`: PASS, 2 files / 68 tests.
+  - `corepack pnpm --filter @research-ip/web test -- reminders`: PASS, 1 file / 9 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundaries observed:
+  - No `.env`, `.env.production`, password, Cookie, Token, private key, API key,
+    production connection string, production credential, or real notification
+    data was read.
+  - No production/VPS/production DB, real SMTP, SMS, enterprise messaging, HR,
+    SSO, finance, patent vendor, or external notification platform was
+    accessed.
+  - No real email, SMS, or enterprise message was sent.
+  - No API service, database schema, migration, seed, deployment, production
+    configuration, or external system integration change was made.
+  - No file or directory deletion, reset, restore, clean, prune, screenshot,
+    performance log, backup artifact, temporary script, or known untracked
+    local artifact handling occurred.
+
 ## 2026-07-08 Step 183 - Performance acceptance gap and rerun plan evidence
 
 - Starting state:

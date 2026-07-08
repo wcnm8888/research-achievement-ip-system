@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
 import type { ApiClient, ApiError } from "./api-client";
 import {
   confirmReminder,
@@ -19,6 +21,9 @@ import {
   getEscalationBlockedReasonLabel,
   getEscalationTargetLabel,
   getReminderGovernanceText,
+  getReminderReceiptFollowUpText,
+  getReminderReceiptStatus,
+  getReminderReceiptStatusLabel,
   getReminderSeverityColor,
   getReminderSlaHealthStatusColor,
   getReminderSlaHealthStatusLabel,
@@ -33,6 +38,7 @@ import {
   runReminderSlaScan,
   updateReminderSlaPolicy,
 } from "./reminder-center";
+import { Reminders } from "./Reminders";
 import type { ReminderCenterResponse } from "./types";
 
 const reminderTaskId = "90000000-0000-4000-8000-000000000001";
@@ -296,6 +302,60 @@ describe("reminders display helpers", () => {
         updatedAt: "2026-06-18T00:01:00.000Z",
       }),
     ).toContain("已跳过");
+  });
+
+  it("maps local notification receipt states to reviewer-facing Chinese labels", () => {
+    expect(getReminderReceiptStatusLabel("PENDING_CONFIRMATION")).toBe("待确认");
+    expect(getReminderReceiptStatusLabel("CONFIRMED")).toBe("已确认");
+    expect(getReminderReceiptStatusLabel("READ_UNCONFIRMED")).toBe("已读未确认");
+    expect(getReminderReceiptStatusLabel("CONFIRMATION_TIMEOUT")).toBe("确认超时");
+    expect(getReminderReceiptStatusLabel("CONFIRMATION_FAILED")).toBe("确认失败");
+    expect(getReminderReceiptStatusLabel("MANUAL_FOLLOW_UP")).toBe(
+      "已转人工跟进",
+    );
+
+    expect(getReminderReceiptStatus({ ...centerResponse.items[1]!, status: "PENDING" })).toBe(
+      "PENDING_CONFIRMATION",
+    );
+    expect(getReminderReceiptStatus({ ...centerResponse.items[0]!, status: "CONFIRMED" })).toBe(
+      "CONFIRMED",
+    );
+    expect(getReminderReceiptStatus({ ...centerResponse.items[0]!, status: "SENT", escalationBlockedReason: undefined })).toBe(
+      "READ_UNCONFIRMED",
+    );
+    expect(getReminderReceiptStatus(centerResponse.items[0]!)).toBe(
+      "CONFIRMATION_TIMEOUT",
+    );
+    expect(getReminderReceiptStatus({ ...centerResponse.items[0]!, status: "FAILED" })).toBe(
+      "CONFIRMATION_FAILED",
+    );
+    expect(
+      getReminderReceiptStatus({
+        ...centerResponse.items[0]!,
+        canEscalateToDepartment: true,
+        escalationBlockedReason: undefined,
+      }),
+    ).toBe("MANUAL_FOLLOW_UP");
+    expect(getReminderReceiptFollowUpText("CONFIRMATION_FAILED")).toContain(
+      "人工跟进",
+    );
+  });
+
+  it("renders local review notification receipt boundary without external delivery claims", () => {
+    const html = renderToStaticMarkup(
+      createElement(Reminders, { demoUserId: "reviewer-user-id" }),
+    );
+    const visibleMarkup = html.replace(/\sclass="[^"]*"/g, "");
+
+    expect(html).toContain("本地评审版通知闭环");
+    expect(html).toContain("当前支持站内通知摘要和本地回执状态预演");
+    expect(html).toContain("邮件通知为系统配置页的本地预演，不真实外发");
+    expect(html).toContain("真实邮件、短信、企微送达回执属于二期 / 生产待接入");
+    expect(html).toContain("待确认");
+    expect(html).toContain("已转人工跟进");
+    expect(visibleMarkup).not.toContain("endpoint");
+    expect(visibleMarkup).not.toContain("stack");
+    expect(visibleMarkup).not.toContain("JSON");
   });
 
   it("keeps invalid or empty dates stable", () => {

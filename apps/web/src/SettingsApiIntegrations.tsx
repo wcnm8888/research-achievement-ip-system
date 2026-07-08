@@ -95,6 +95,14 @@ type ApiIntegrationOperation =
   | { kind: "archive"; integration: ApiIntegrationMetadata }
   | { kind: "restore"; integration: ApiIntegrationMetadata };
 
+export type LocalNotificationReceiptStatus =
+  | "PENDING_CONFIRMATION"
+  | "CONFIRMED"
+  | "READ_UNCONFIRMED"
+  | "CONFIRMATION_TIMEOUT"
+  | "CONFIRMATION_FAILED"
+  | "MANUAL_FOLLOW_UP";
+
 const defaultPageSize = 20;
 const defaultTimeoutMs = 3000;
 const defaultMockDemoValues: ApiIntegrationMockDemoValues = {
@@ -159,6 +167,59 @@ const mockResultModeOptions: Array<{
   { label: "失败", value: "FAILURE" },
   { label: "降级", value: "DEGRADED" },
 ];
+
+const notificationReceiptStatusOrder: LocalNotificationReceiptStatus[] = [
+  "PENDING_CONFIRMATION",
+  "CONFIRMED",
+  "READ_UNCONFIRMED",
+  "CONFIRMATION_TIMEOUT",
+  "CONFIRMATION_FAILED",
+  "MANUAL_FOLLOW_UP",
+];
+
+const notificationReceiptStatusLabels: Record<LocalNotificationReceiptStatus, string> = {
+  PENDING_CONFIRMATION: "待确认",
+  CONFIRMED: "已确认",
+  READ_UNCONFIRMED: "已读未确认",
+  CONFIRMATION_TIMEOUT: "确认超时",
+  CONFIRMATION_FAILED: "确认失败",
+  MANUAL_FOLLOW_UP: "已转人工跟进",
+};
+
+const notificationReceiptStatusColors: Record<LocalNotificationReceiptStatus, string> = {
+  PENDING_CONFIRMATION: "default",
+  CONFIRMED: "green",
+  READ_UNCONFIRMED: "blue",
+  CONFIRMATION_TIMEOUT: "orange",
+  CONFIRMATION_FAILED: "red",
+  MANUAL_FOLLOW_UP: "gold",
+};
+
+export const getLocalNotificationReceiptStatusLabel = (
+  status: LocalNotificationReceiptStatus,
+): string => notificationReceiptStatusLabels[status];
+
+export const getEmailPreviewReceiptStatus = (
+  result: Pick<ApiIntegrationMockRunResponse, "scenario" | "runStatus">,
+): LocalNotificationReceiptStatus | null => {
+  if (result.scenario !== "EMAIL_NOTIFICATION") {
+    return null;
+  }
+
+  if (result.runStatus === "SUCCESS") {
+    return "CONFIRMED";
+  }
+
+  if (result.runStatus === "DEGRADED") {
+    return "MANUAL_FOLLOW_UP";
+  }
+
+  if (result.runStatus === "FAILED" || result.runStatus === "UNAVAILABLE") {
+    return "CONFIRMATION_FAILED";
+  }
+
+  return "PENDING_CONFIRMATION";
+};
 
 export function SettingsApiIntegrations({
   demoUserId,
@@ -909,6 +970,9 @@ function ApiIntegrationMockDemoCenter({
           message="预留接口调用预演"
           description="本区域用于展示外部接口适配器的预演结果，不会创建付款、账号、凭证或其他业务写入。"
         />
+        {values.scenario === "EMAIL_NOTIFICATION" ? (
+          <EmailNotificationReceiptBoundary />
+        ) : null}
 
         <Space size={12} wrap>
           <Select<ApiIntegrationProvider>
@@ -946,7 +1010,12 @@ function ApiIntegrationMockDemoCenter({
           />
         ) : null}
 
-        <DataState loading={result.loading} error={result.error}>
+        <DataState
+          loading={result.loading}
+          error={result.error}
+          empty={!result.loading && !result.error && !result.data}
+          emptyText="请选择场景并运行本地预演。"
+        >
           {result.data ? <MockDemoResultView result={result.data} /> : null}
         </DataState>
 
@@ -976,7 +1045,22 @@ function ApiIntegrationMockDemoCenter({
   );
 }
 
-function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse }) {
+function EmailNotificationReceiptBoundary() {
+  return (
+    <Alert
+      type="info"
+      showIcon
+      message="邮件通知回执边界"
+      description="当前支持站内通知摘要和本地回执状态预演；邮件通知为本地预演，不真实外发。真实邮件、短信、企微送达回执属于二期 / 生产待接入。"
+    />
+  );
+}
+
+export function MockDemoResultView({
+  result,
+}: {
+  result: ApiIntegrationMockRunResponse;
+}) {
   return (
     <Card
       className="shell-card"
@@ -985,10 +1069,14 @@ function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse 
     >
       <Space direction="vertical" size={12} className="full-width">
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="场景">{result.scenario}</Descriptions.Item>
-          <Descriptions.Item label="接口类型">{result.provider}</Descriptions.Item>
+          <Descriptions.Item label="场景">
+            {formatMockScenario(result.scenario)}
+          </Descriptions.Item>
+          <Descriptions.Item label="接口类型">
+            {providerLabels[result.provider] ?? result.provider}
+          </Descriptions.Item>
           <Descriptions.Item label="请求模式">
-            {result.requestedResultMode}
+            {formatMockResultMode(result.requestedResultMode)}
           </Descriptions.Item>
           <Descriptions.Item label="接口配置">
             {result.integration
@@ -1008,6 +1096,10 @@ function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse 
 
         <Alert type="info" showIcon message={result.safetyNotice} />
 
+        {result.scenario === "EMAIL_NOTIFICATION" ? (
+          <EmailNotificationReceiptResult result={result} />
+        ) : null}
+
         <Descriptions bordered size="small" column={1}>
           {Object.entries(result.safeResult).map(([key, value]) => (
             <Descriptions.Item key={key} label={formatSafeResultLabel(key)}>
@@ -1015,6 +1107,58 @@ function MockDemoResultView({ result }: { result: ApiIntegrationMockRunResponse 
             </Descriptions.Item>
           ))}
         </Descriptions>
+      </Space>
+    </Card>
+  );
+}
+
+function EmailNotificationReceiptResult({
+  result,
+}: {
+  result: ApiIntegrationMockRunResponse;
+}) {
+  const receiptStatus = getEmailPreviewReceiptStatus(result);
+
+  if (!receiptStatus) {
+    return null;
+  }
+
+  const isFailure =
+    receiptStatus === "CONFIRMATION_FAILED" ||
+    receiptStatus === "CONFIRMATION_TIMEOUT" ||
+    receiptStatus === "MANUAL_FOLLOW_UP";
+
+  return (
+    <Card className="shell-card" title="本地回执状态预演">
+      <Space direction="vertical" size={10} className="full-width">
+        <Space size={8} wrap>
+          <Tag color={notificationReceiptStatusColors[receiptStatus]}>
+            {getLocalNotificationReceiptStatusLabel(receiptStatus)}
+          </Tag>
+          {notificationReceiptStatusOrder.map((status) => (
+            <Tag color={notificationReceiptStatusColors[status]} key={status}>
+              {getLocalNotificationReceiptStatusLabel(status)}
+            </Tag>
+          ))}
+        </Space>
+        <Typography.Text type="secondary">
+          站内摘要用于本地评审核对接收范围、主题和处理建议；邮件通知为本地预演，不真实外发，真实外部送达、退信、已读和供应商回执不在当前版本内。
+        </Typography.Text>
+        {isFailure ? (
+          <Alert
+            type="warning"
+            showIcon
+            message="通知预演未完成"
+            description="请改用站内提醒摘要确认接收范围，并转人工跟进；不要将当前状态理解为真实外部通知回执。"
+          />
+        ) : (
+          <Alert
+            type="success"
+            showIcon
+            message="本地确认链路可演示"
+            description="当前仅表示本地预演状态已形成可核对结果，不代表真实邮件、短信或企微已送达。"
+          />
+        )}
       </Space>
     </Card>
   );
@@ -1319,6 +1463,12 @@ const renderMockRunStatus = (status: ApiIntegrationMockRunResponse["runStatus"])
   return <Tag color={colorByStatus[status]}>{labelByStatus[status]}</Tag>;
 };
 
+const formatMockScenario = (scenario: ApiIntegrationMockScenario): string =>
+  mockScenarioOptions.find((option) => option.value === scenario)?.label ?? scenario;
+
+const formatMockResultMode = (mode: ApiIntegrationMockResultMode): string =>
+  mockResultModeOptions.find((option) => option.value === mode)?.label ?? mode;
+
 const renderApiCallStatus = (status: ApiCallLogSummary["status"]) => {
   const colorByStatus: Record<string, string> = {
     SUCCESS: "green",
@@ -1327,8 +1477,15 @@ const renderApiCallStatus = (status: ApiCallLogSummary["status"]) => {
     RETRIED: "gold",
     SKIPPED: "default",
   };
+  const labelByStatus: Record<string, string> = {
+    SUCCESS: "成功",
+    FAILED: "失败",
+    TIMEOUT: "超时",
+    RETRIED: "已重试",
+    SKIPPED: "已跳过",
+  };
 
-  return <Tag color={colorByStatus[status] ?? "default"}>{status}</Tag>;
+  return <Tag color={colorByStatus[status] ?? "default"}>{labelByStatus[status] ?? "待确认"}</Tag>;
 };
 
 const formatSafeResultValue = (value: unknown): string => {
@@ -1365,6 +1522,10 @@ const safeResultLabelMap: Record<string, string> = {
   retryPolicySummary: "重试策略",
   timeoutMs: "超时设置",
   fallback: "降级方案",
+  receiptStatus: "回执状态",
+  confirmationStatus: "确认状态",
+  manualFollowUp: "人工跟进",
+  boundary: "边界说明",
   writesBusinessRecord: "写入业务记录",
   sendsExternalMessage: "发送外部消息",
   mode: "处理模式",

@@ -12,6 +12,9 @@ import {
   fetchApiIntegrationDetail,
   fetchApiIntegrations,
   fetchRecentApiCallLogs,
+  getEmailPreviewReceiptStatus,
+  getLocalNotificationReceiptStatusLabel,
+  MockDemoResultView,
   runApiIntegrationMockDemo,
   SettingsApiIntegrations,
   updateApiIntegrationFromForm,
@@ -220,6 +223,59 @@ describe("settings api integration API helpers", () => {
       scenario: "EMAIL_NOTIFICATION",
       resultMode: "SUCCESS",
     });
+  });
+
+  it("renders email notification receipt preview boundaries without external delivery claims", () => {
+    const emailResult: ApiIntegrationMockRunResponse = {
+      mockOnly: true,
+      provider: "EMAIL",
+      scenario: "EMAIL_NOTIFICATION",
+      requestedResultMode: "FAILURE",
+      runStatus: "FAILED",
+      integration: {
+        code: "EMAIL_NOTIFICATION",
+        provider: "EMAIL",
+        enabled: true,
+        archivedAt: null,
+      },
+      summary: "邮件通知本地预演未完成，已提示转人工跟进。",
+      syntheticSubject: "Synthetic email notification",
+      safeResult: {
+        recipientScope: "当前业务用户可见范围",
+        subject: "费用提醒通知",
+        summary: "站内通知摘要",
+        channel: "本地预演",
+        sendsExternalMessage: false,
+      },
+      safetyNotice:
+        "本地预演结果仅用于评审演示；未访问真实邮件、短信或企微系统。",
+      callLog: {
+        integrationCode: "EMAIL_NOTIFICATION",
+        requestId: "receipt-preview-1",
+        status: "FAILED",
+        durationMs: 120,
+        errorSummary: "已转人工跟进",
+        createdAt: "2026-06-29T00:00:00.000Z",
+      },
+    };
+
+    const html = renderToStaticMarkup(<MockDemoResultView result={emailResult} />);
+
+    expect(getEmailPreviewReceiptStatus(emailResult)).toBe("CONFIRMATION_FAILED");
+    expect(getLocalNotificationReceiptStatusLabel("CONFIRMATION_FAILED")).toBe(
+      "确认失败",
+    );
+    expect(html).toContain("本地回执状态预演");
+    expect(html).toContain("确认失败");
+    expect(html).toContain("已转人工跟进");
+    expect(html).toContain("请改用站内提醒摘要确认接收范围，并转人工跟进");
+    expect(html).toContain("不真实外发");
+    expect(html).toContain("真实外部送达、退信、已读和供应商回执不在当前版本内");
+    expect(html).not.toContain("Cannot GET");
+    expect(html).not.toContain("endpoint");
+    expect(html).not.toContain("raw");
+    expect(html).not.toContain("stack");
+    expect(html).not.toContain("JSON");
   });
 
   it("normalizes malformed list responses into stable shapes", async () => {
