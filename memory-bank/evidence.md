@@ -1,5 +1,97 @@
 # Evidence
 
+## 2026-07-08 Step 182 - Operations and compatibility acceptance gap closure evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 297]`
+    with existing untracked local artifacts left untouched.
+  - Current HEAD verified as `6b9daece42fe469d23ff3a58a0ba073dac469989`
+    (`docs: summarize workflow and batch acceptance gaps`).
+- Context reviewed with targeted reads only:
+  - `memory-bank/final-acceptance-readiness-summary-step180.md`.
+  - `memory-bank/final-demo-runbook-step175.md`.
+  - `memory-bank/final-demo-smoke-step176.md`.
+  - `memory-bank/local-backup-restore-static-evidence-step178.md`.
+  - `memory-bank/api-integration-operations-runbook-step179.md`.
+  - `memory-bank/api-integration-production-readiness-checklist-step179.md`.
+  - Recent Step178-Step181 snippets from `memory-bank/progress.md` and
+    `memory-bank/evidence.md`.
+  - Operations and compatibility indexes using `rg` for settings, API
+    integrations, audit logs, import job history, backup / restore,
+    operations, runbook, deployment, rollback, monitoring, alert, health,
+    mobile, responsive, browser, compatibility, dictionary, metadata, and
+    config.
+  - Focused source/document indexes for `apps/api/src/settings`,
+    `apps/web/src/SettingsApiIntegrations.tsx`, `apps/api/src/audit`,
+    `apps/web/src/AuditLogs.tsx`, `apps/api/src/imports`,
+    `apps/web/src/SettingsImportJobHistoryOverview.tsx`,
+    `apps/web/src/ImportJobHistoryPanel.tsx`,
+    `apps/api/src/health.controller.ts`, `docker-compose.production.yml`,
+    `apps/web/src/App.tsx`, `apps/web/src/App.css`, and
+    `memory-bank/reminder-sla-monitoring-step162.md`.
+- Changed files:
+  - `memory-bank/operations-compatibility-acceptance-gap-step182.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Operations coverage documented:
+  - System configuration entry and `system:config` boundary.
+  - API integration management with provider, enabled, `timeoutMs`,
+    `configRef`, archive / restore, Mock preview, fallback, alert-summary
+    wording, and safe `ApiCallLog` summaries.
+  - Masked audit log query, filter, export-event summary, and masked CSV
+    export boundary.
+  - Import job history overview, detail, status filters, and safe row-level
+    history view.
+  - Local backup / restore static evidence from Step178, including local
+    PostgreSQL backup history, manifest, SHA-256, artifact-list validator,
+    attachment backup manifest / digest tests, and restore dry-run boundary.
+  - Local health and alert-summary wording from `/api/health`, Docker
+    healthchecks, SLA health summary, and interface `alertSummary`.
+- Compatibility coverage documented:
+  - Mobile core UI foundation: mobile primary nav, responsive Sider, 960px /
+    640px CSS media queries, grid collapse, drawer layout, wrapped controls,
+    and table horizontal scroll.
+  - Browser foundation: Step176 local browser smoke for Web entry, SPA
+    fallback, login page, protected API error shape, and safe error copy.
+  - Explicit boundary that this is not formal multi-browser, multi-OS, or
+    multi-device acceptance.
+- Explicit non-claims documented:
+  - No full dynamic dictionary center.
+  - No production monitoring and alerting system.
+  - No DR automation.
+  - No formal multi-browser / multi-OS / multi-device acceptance.
+  - No complete production operations, deployment, or rollback handbook
+    acceptance.
+  - No completed production rollback drill.
+- Phase-two recommendations documented:
+  - Dynamic dictionary center.
+  - Production monitoring metrics and alert rules.
+  - Log aggregation and audit archive.
+  - Backup scheduling and restore drills.
+  - Compatibility acceptance matrix.
+  - Deployment, rollback, inspection, and on-call handbooks.
+  - Incident response process.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - API/Web tests were not run because the Step is documentation-only.
+- Explicitly not performed:
+  - No production deploy, production rollback, production backup / restore,
+    real monitoring alert configuration, browser-cloud matrix, migration,
+    database clear / overwrite / reset, production data operation, or external
+    interface call.
+  - No production/VPS/production DB, real monitoring platform, real object
+    storage, real external alerting system, or real external interface access.
+  - No `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`, real
+    monitoring config, real backup file, screenshot, performance log, or
+    temporary script was staged.
+- Boundaries observed:
+  - No `.env`, `.env.production`, password, Cookie, Token, private key, API key,
+    production connection string, real monitoring config, real backup file
+    content, production data, or provider credential was read, copied,
+    displayed, saved, or committed.
+  - Existing untracked local artifacts were left untouched and unstaged.
+
 ## 2026-07-08 Step 181 - Workflow and batch acceptance gap closure evidence
 
 - Starting state:
