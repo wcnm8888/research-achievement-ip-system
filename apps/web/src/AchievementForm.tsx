@@ -13,6 +13,11 @@ import {
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { isApiError, type ApiClient, type ApiError } from "./api-client";
+import {
+  getDemoSafeErrorDetail,
+  getDemoSafeErrorMessage,
+  sanitizeUnknownErrorDetail,
+} from "./error-display";
 import type {
   AchievementContributor,
   AchievementDetail,
@@ -224,7 +229,7 @@ export function AchievementForm({
       setDoiPreview({
         loading: false,
         result: null,
-        error: error instanceof Error ? error.message : "请先输入 DOI 后再生成自动补全预演。",
+        error: sanitizeUnknownErrorDetail(error) ?? "请先输入 DOI 后再生成自动补全预演。",
       });
       return;
     }
@@ -323,8 +328,22 @@ export function AchievementForm({
               : "创建草稿时，所属部门由系统根据当前用户上下文确定。"
           }
         />
-        {loadError ? <Alert showIcon type="error" message={loadError.message} description={loadError.detail} /> : null}
-        {saveError ? <Alert showIcon type="error" message={saveError.message} description={saveError.detail} /> : null}
+        {loadError ? (
+          <Alert
+            showIcon
+            type="error"
+            message={getDemoSafeErrorMessage(loadError)}
+            description={getDemoSafeErrorDetail(loadError)}
+          />
+        ) : null}
+        {saveError ? (
+          <Alert
+            showIcon
+            type="error"
+            message={getDemoSafeErrorMessage(saveError)}
+            description={getDemoSafeErrorDetail(saveError)}
+          />
+        ) : null}
 
         <Form
           form={form}
@@ -768,7 +787,7 @@ const normalizeError = (error: unknown): ApiError => {
   return {
     kind: "unknown",
     message: "请求失败",
-    detail: error instanceof Error ? error.message : undefined,
+    detail: sanitizeUnknownErrorDetail(error),
   };
 };
 

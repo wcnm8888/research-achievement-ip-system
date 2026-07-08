@@ -28,6 +28,11 @@ import {
 } from "./api-client";
 import { hasSystemConfigPermission } from "./AccountManagement";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import {
+  getDemoSafeErrorDetail,
+  getDemoSafeErrorMessage,
+  sanitizeUnknownErrorDetail,
+} from "./error-display";
 import { SettingsImportJobHistoryOverview } from "./SettingsImportJobHistoryOverview";
 import type {
   ApiIntegrationListResponse,
@@ -937,7 +942,7 @@ function ApiIntegrationMockDemoCenter({
             type="error"
             showIcon
             message="接口类型与场景不匹配"
-            description={`当前场景需要 ${expectedProvider} 类型接口，请调整后重试。`}
+            description={`当前场景需要${providerLabels[expectedProvider] ?? expectedProvider}类型接口，请调整后重试。`}
           />
         ) : null}
 
@@ -1154,7 +1159,14 @@ function ApiIntegrationFormDrawer({
       }
     >
       <Space direction="vertical" size={16} className="full-width">
-        {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
+        {error ? (
+          <Alert
+            type="error"
+            showIcon
+            message={getDemoSafeErrorMessage(error)}
+            description={getDemoSafeErrorDetail(error)}
+          />
+        ) : null}
         <div className="business-note">
           <Typography.Text strong className="business-note-title">
             配置引用
@@ -1263,7 +1275,14 @@ function ApiIntegrationOperationModal({
               : "如果该接口配置此前已停用，恢复归档状态不会自动启用。"
           }
         />
-        {error ? <Alert type="error" showIcon message={error.message} description={error.detail} /> : null}
+        {error ? (
+          <Alert
+            type="error"
+            showIcon
+            message={getDemoSafeErrorMessage(error)}
+            description={getDemoSafeErrorDetail(error)}
+          />
+        ) : null}
         <Form<ReasonFormValues> form={form} layout="vertical" requiredMark={false}>
           <Form.Item label="原因（可选）" name="reason">
             <Input.TextArea maxLength={300} rows={3} />
@@ -1373,7 +1392,7 @@ const normalizeError = (error: unknown): ApiError => {
   return {
     kind: "unknown",
     message: "请求失败。",
-    detail: error instanceof Error ? error.message : undefined,
+    detail: sanitizeUnknownErrorDetail(error),
   };
 };
 

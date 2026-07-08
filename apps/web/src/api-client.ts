@@ -68,6 +68,7 @@ import type {
   UserAccountImportDryRunInput,
   UserAccountImportDryRunResult,
 } from "./types";
+import { sanitizeErrorText } from "./error-display";
 
 export type ApiErrorKind =
   | "unauthorized"
@@ -1045,7 +1046,8 @@ const readErrorBody = async (response: Response): Promise<unknown> => {
 const readErrorDetail = (body: unknown): string | undefined => {
   if (typeof body === "object" && body !== null && "message" in body) {
     const message = (body as { message: unknown }).message;
-    return Array.isArray(message) ? message.join("; ") : String(message);
+    const detail = Array.isArray(message) ? message.join("; ") : String(message);
+    return sanitizeErrorText(detail);
   }
 
   return undefined;

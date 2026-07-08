@@ -1,5 +1,6 @@
 import { Alert, Button, Empty, Result, Skeleton, Space, Typography } from "antd";
 import type { ApiError } from "../api-client";
+import { getDemoSafeErrorDetail, getDemoSafeErrorMessage } from "../error-display";
 
 type SectionHeaderProps = {
   title: string;
@@ -74,7 +75,7 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
     <Result
       className="state-result"
       status={isPermissionError ? "403" : "warning"}
-      title={error.message}
+      title={getDemoSafeErrorMessage(error)}
       subTitle={safeDetail}
       extra={
         onRetry ? (
@@ -92,7 +93,7 @@ const getSafeErrorDetail = (error: ApiError): string | undefined => {
     return "请稍后重试，或联系管理员查看服务状态。";
   }
 
-  return error.detail;
+  return getDemoSafeErrorDetail(error);
 };
 
 type PermissionHintProps = {

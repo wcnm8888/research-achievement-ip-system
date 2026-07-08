@@ -4,6 +4,11 @@ import { ReadonlyAchievementDetail } from "./AchievementDetail";
 import { createApiClient, isApiError, type ApiClient, type ApiError } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import { sanitizeBusinessTitle } from "./display-text";
+import {
+  getDemoSafeErrorDetail,
+  getDemoSafeErrorMessage,
+  sanitizeUnknownErrorDetail,
+} from "./error-display";
 import { ReadonlyFeeDetailDrawer } from "./Fees";
 import type {
   AchievementStatusCode,
@@ -385,8 +390,8 @@ export function Search({ demoUserId }: SearchProps) {
             className="search-validation-alert"
             showIcon
             type="warning"
-            message={queryResult.error.message}
-            description={queryResult.error.detail}
+            message={getDemoSafeErrorMessage(queryResult.error)}
+            description={getDemoSafeErrorDetail(queryResult.error)}
           />
         ) : null}
       </Card>
@@ -397,7 +402,7 @@ export function Search({ demoUserId }: SearchProps) {
         extra={
           <Space size={8} wrap>
             <Tag color={stateKind === "ready" ? "blue" : "default"}>
-              total {searchState.data?.total ?? 0}
+              共 {searchState.data?.total ?? 0} 条
             </Tag>
           </Space>
         }
@@ -950,7 +955,7 @@ const normalizeError = (error: unknown): ApiError => {
   return {
     kind: "unknown",
     message: "请求失败",
-    detail: error instanceof Error ? error.message : undefined,
+    detail: sanitizeUnknownErrorDetail(error),
   };
 };
 

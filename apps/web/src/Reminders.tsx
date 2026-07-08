@@ -3,6 +3,7 @@ import type { TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createApiClient, type ApiError } from "./api-client";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { getDemoSafeErrorDetail, getDemoSafeErrorMessage } from "./error-display";
 import {
   confirmReminder,
   enqueueReminderSlaScan,
@@ -307,8 +308,8 @@ export function Reminders({ demoUserId }: RemindersProps) {
         <Alert
           showIcon
           type="error"
-          message={operationError.message}
-          description={operationError.detail}
+          message={getDemoSafeErrorMessage(operationError)}
+          description={getDemoSafeErrorDetail(operationError)}
         />
       ) : null}
 

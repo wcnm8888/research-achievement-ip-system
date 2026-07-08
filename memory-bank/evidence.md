@@ -18953,6 +18953,39 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-08 Step 173 - Demo error-state polish evidence
+
+- Changed files:
+  - `apps/web/src/error-display.ts`
+  - `apps/web/src/error-display.test.ts`
+  - `apps/web/src/api-client.ts`
+  - `apps/web/src/api-client.test.ts`
+  - `apps/web/src/components/StateBlocks.tsx`
+  - `apps/web/src/AchievementForm.tsx`
+  - `apps/web/src/SettingsApiIntegrations.tsx`
+  - `apps/web/src/Reminders.tsx`
+  - `apps/web/src/CustomReports.tsx`
+  - `apps/web/src/AuditLogs.tsx`
+  - `apps/web/src/Search.tsx`
+  - `memory-bank/demo-error-state-polish-step173.md`
+  - `memory-bank/progress.md`
+  - `memory-bank/evidence.md`
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client error-display SettingsApiIntegrations AchievementForm Reminders CustomReports AuditLogs Search`: PASS, 8 files / 136 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Acceptance coverage:
+  - Shared error display now replaces `Cannot GET`, `/api/` routes, raw/JSON/stack/endpoint, and `mock-demo` text with Chinese fallback copy.
+  - API client sanitizes backend error details before they reach page state.
+  - DataState and direct alerts on Reminder Center, Custom Reports, Audit Logs, Settings API Integrations, Search, and Achievement Form now use demo-safe error copy.
+  - Search result count now uses Chinese display text.
+  - Settings scenario/provider mismatch copy uses Chinese provider names.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external DOI, literature, SMTP, SMS, enterprise messaging, HR/SSO, finance, or patent call.
+  - No API service, database schema, migration, seed, deployment, or production configuration change.
+  - No PPT, screenshot, performance log, backup, or existing untracked local artifact handling.
+
 ## 2026-07-08 Step 172 - Interface mock acceptance evidence
 
 - Changed files:

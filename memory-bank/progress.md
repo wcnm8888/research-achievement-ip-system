@@ -15504,6 +15504,40 @@
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
 
+## 2026-07-08 Step 173 - Demo error-state polish
+
+- Status: PASS.
+- Goal:
+  - Continue Step172 by reducing reviewer-visible engineering error copy across
+    the priority demo pages before final local review.
+- Web changes:
+  - Added `apps/web/src/error-display.ts` to sanitize user-visible error titles
+    and details.
+  - Sanitized `Cannot GET`, `/api/` paths, raw/JSON/stack/endpoint,
+    `mock-demo`, and similar engineering text into Chinese fallback copy.
+  - Wired the sanitizer into `api-client` error detail parsing and the shared
+    `DataState` error renderer.
+  - Updated direct error alerts in AchievementForm, SettingsApiIntegrations,
+    Reminders, CustomReports, AuditLogs, and Search to use demo-safe messages.
+  - Changed Search result count from `total N` to `共 N 条`.
+  - Changed Settings scenario/provider mismatch copy to use Chinese provider
+    labels.
+- Documentation:
+  - Added `memory-bank/demo-error-state-polish-step173.md`.
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- api-client error-display SettingsApiIntegrations AchievementForm Reminders CustomReports AuditLogs Search`: PASS, 8 files / 136 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real DOI/Crossref/OpenAlex/Scopus, SMTP, SMS, enterprise messaging,
+    HR/SSO, finance, or patent-platform call.
+  - No API service, Prisma schema, migration, seed, deploy, or production config
+    change.
+  - No PPT, screenshot, performance log, backup, or existing untracked local
+    artifact handling.
+  - This is local reviewer-facing error-state polish, not production acceptance.
+
 ## 2026-07-08 Step 172 - API integration mock acceptance loop
 
 - Status: PASS.

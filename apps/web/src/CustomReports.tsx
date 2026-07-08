@@ -23,6 +23,7 @@ import {
   type ApiQuery,
 } from "./api-client";
 import { DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import { getDemoSafeErrorMessage, sanitizeUnknownErrorDetail } from "./error-display";
 import {
   downloadCsvExport,
   downloadPdfExport,
@@ -614,7 +615,9 @@ export function CustomReportsView({
 
       <PermissionHint description={customReportBoundaryText} />
       {exportError ? (
-        <Typography.Text type="danger">{exportError.message}</Typography.Text>
+        <Typography.Text type="danger">
+          {getDemoSafeErrorMessage(exportError)}
+        </Typography.Text>
       ) : null}
 
       <ScheduledReportPreviewPanel
@@ -1083,7 +1086,8 @@ const normalizeError = (error: unknown): ApiError => {
 
   return {
     kind: "unknown",
-    message: "Custom report request failed.",
+    message: "自定义报表请求失败",
+    detail: sanitizeUnknownErrorDetail(error),
   };
 };
 

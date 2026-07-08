@@ -260,6 +260,26 @@ describe("createApiClient writes JSON requests", () => {
     });
   });
 
+  it("hides route fallback details from user-facing API errors", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          Response.json({ message: "Cannot GET /api/settings/api-integrations/raw" }, { status: 404 }),
+      ),
+    );
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("user-id");
+
+    await expect(client.get("/settings/api-integrations/raw")).rejects.toMatchObject({
+      kind: "unknown",
+      message: "资源不存在",
+      status: 404,
+      detail: "当前信息暂不可用，请稍后重试或联系管理员处理。",
+    });
+  });
+
   it("sends achievement submit and archive action POST requests without a body", async () => {
     const fetchMock = vi.fn(async () => Response.json({ ok: true }));
     vi.stubGlobal("fetch", fetchMock);

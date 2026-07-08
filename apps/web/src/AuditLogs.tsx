@@ -8,6 +8,11 @@ import {
   type ApiQuery,
 } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
+import {
+  getDemoSafeErrorDetail,
+  getDemoSafeErrorMessage,
+  sanitizeUnknownErrorDetail,
+} from "./error-display";
 import { downloadCsvExport } from "./export-download";
 import type {
   AuditActionCode,
@@ -266,7 +271,9 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
 
       <PermissionHint description="审计记录已脱敏展示，当前页面只提供只读查询。" />
       {exportState.error ? (
-        <Typography.Text type="danger">{exportState.error.message}</Typography.Text>
+        <Typography.Text type="danger">
+          {getDemoSafeErrorMessage(exportState.error)}
+        </Typography.Text>
       ) : null}
 
       <Card className="shell-card toolbar-card audit-toolbar-card" title="查询条件" extra={<Tag>脱敏只读</Tag>}>
@@ -341,8 +348,8 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
             className="audit-validation-alert"
             showIcon
             type="warning"
-            message={queryResult.error.message}
-            description={queryResult.error.detail}
+            message={getDemoSafeErrorMessage(queryResult.error)}
+            description={getDemoSafeErrorDetail(queryResult.error)}
           />
         ) : null}
       </Card>
@@ -908,7 +915,7 @@ const normalizeError = (error: unknown): ApiError => {
   return {
     kind: "unknown",
     message: "请求失败",
-    detail: error instanceof Error ? error.message : undefined,
+    detail: sanitizeUnknownErrorDetail(error),
   };
 };
 
