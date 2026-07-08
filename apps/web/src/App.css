@@ -12,6 +12,18 @@
   --success: #2f6b4f;
   --warning: #a16207;
   --danger: #b42318;
+  --shadow-card: 0 10px 28px rgba(15, 23, 42, 0.055);
+  --shadow-lifted: 0 18px 44px rgba(15, 23, 42, 0.08);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--page-bg);
 }
 
 body {
@@ -23,6 +35,69 @@ body {
     "PingFang SC",
     "Segoe UI",
     sans-serif;
+}
+
+.ant-layout {
+  background: transparent;
+}
+
+.ant-typography,
+.ant-form-item-label > label,
+.ant-statistic-content,
+.ant-descriptions-item-content {
+  color: var(--text);
+}
+
+.ant-typography-secondary,
+.ant-form-item-extra,
+.ant-form-item-explain,
+.ant-statistic-title,
+.ant-descriptions-item-label {
+  color: var(--text-muted);
+}
+
+.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.ant-btn-default {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.ant-btn-default:not(:disabled):hover {
+  color: var(--accent-strong);
+  border-color: #9bb8c9;
+  background: #f7fbfd;
+}
+
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-select-selector,
+.ant-picker,
+.ant-segmented {
+  border-radius: var(--radius-sm) !important;
+}
+
+.ant-input:hover,
+.ant-input-affix-wrapper:hover,
+.ant-input-number:hover,
+.ant-picker:hover,
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: #b7c8d7;
+}
+
+.ant-alert {
+  border-radius: var(--radius-md);
+}
+
+.ant-divider {
+  border-color: var(--border-soft);
 }
 
 .app-shell {
@@ -92,11 +167,13 @@ body {
 .app-sider {
   background: var(--surface);
   border-right: 1px solid var(--border);
+  box-shadow: 4px 0 18px rgba(15, 23, 42, 0.025);
 }
 
 .app-sider .ant-menu {
   border-inline-end: 0;
   padding: 6px 8px 14px;
+  background: transparent;
 }
 
 .app-sider .ant-menu-item {
@@ -109,6 +186,16 @@ body {
 .app-sider .ant-menu-item-selected {
   color: var(--accent-strong);
   background: #eaf3f7;
+  font-weight: 650;
+}
+
+.app-sider .ant-menu-item-selected::after {
+  display: none;
+}
+
+.app-sider .ant-menu-item:not(.ant-menu-item-selected):hover {
+  color: var(--accent-strong);
+  background: #f5f9fb;
 }
 
 .user-panel {
@@ -120,6 +207,7 @@ body {
   background: var(--surface-warm);
   border: 1px solid #e4dccf;
   border-radius: 8px;
+  box-shadow: inset 3px 0 0 #b59b6b;
 }
 
 .app-content {
@@ -140,7 +228,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-lifted);
 }
 
 .page-stack,
@@ -154,6 +242,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.035);
 }
 
 .section-header {
@@ -161,6 +250,7 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  padding: 2px 2px 0;
 }
 
 .section-header .ant-typography {
@@ -175,7 +265,7 @@ body {
 .shell-card {
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-card);
 }
 
 .shell-card .ant-card-head {
@@ -191,6 +281,146 @@ body {
 
 .shell-card .ant-card-body {
   min-width: 0;
+}
+
+.ant-card {
+  overflow: hidden;
+}
+
+.ant-card-small > .ant-card-head {
+  min-height: 40px;
+}
+
+.ant-card-extra {
+  min-width: 0;
+}
+
+.ant-table-wrapper {
+  min-width: 0;
+}
+
+.ant-table-wrapper .ant-table {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+}
+
+.ant-table-wrapper .ant-table-container {
+  border-radius: var(--radius-md);
+}
+
+.ant-table-cell {
+  vertical-align: top;
+}
+
+.ant-table-cell .ant-typography {
+  margin-bottom: 0;
+}
+
+.ant-pagination {
+  margin-bottom: 0 !important;
+}
+
+.ant-pagination-item-active {
+  border-color: var(--accent) !important;
+}
+
+.ant-descriptions-view {
+  border-radius: var(--radius-md);
+}
+
+.ant-descriptions-item-label {
+  font-weight: 600;
+}
+
+.ant-drawer-content,
+.ant-modal-content {
+  border-radius: var(--radius-md);
+}
+
+.ant-drawer-header,
+.ant-modal-header {
+  border-bottom-color: var(--border-soft);
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+.ant-drawer-title,
+.ant-modal-title {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.ant-drawer-body,
+.ant-modal-body {
+  background: #fbfcfd;
+}
+
+.ant-form-item {
+  margin-bottom: 14px;
+}
+
+.ant-form-vertical .ant-form-item-label {
+  padding-bottom: 4px;
+}
+
+.ant-list-item {
+  border-block-end-color: var(--border-soft) !important;
+}
+
+.ant-list-item-meta-title {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.ant-list-item-meta-description {
+  color: var(--text-muted);
+}
+
+.ant-statistic-title {
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.ant-statistic-content {
+  font-variant-numeric: tabular-nums;
+}
+
+.ant-empty {
+  color: var(--text-muted);
+}
+
+.ant-result-title {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.ant-result-subtitle {
+  color: var(--text-muted);
+}
+
+.ant-tabs-tab {
+  font-weight: 600;
+}
+
+.ant-tabs-ink-bar {
+  background: var(--accent);
+}
+
+.ant-upload-list-item,
+.ant-tree,
+.ant-timeline-item-content {
+  color: var(--text);
+}
+
+.ant-badge-status-text {
+  color: var(--text-muted);
+}
+
+.ant-select-dropdown,
+.ant-dropdown-menu {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lifted);
 }
 
 .toolbar-card .ant-card-body {
@@ -237,10 +467,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 22px;
+  background: var(--surface-subtle);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
 }
 
 .state-result {
   padding: 12px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
 }
 
 .permission-hint {
@@ -280,6 +517,7 @@ body {
   background: var(--surface);
   border: 1px dashed #b7c0ca;
   border-radius: 8px;
+  box-shadow: inset 3px 0 0 #c8d8a8;
 }
 
 .boundary-step {
