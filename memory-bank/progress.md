@@ -1,5 +1,47 @@
 # Progress
 
+## 2026-07-08 Step 179 - API integration operations documentation execution
+
+- Status: PASS.
+- Goal:
+  - Close the 7.3 interface extension, degradation, operations, and
+    production-pending documentation evidence without source changes or real
+    external integration.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Documentation:
+  - Added `memory-bank/api-integration-operations-runbook-step179.md`.
+  - Added `memory-bank/api-integration-production-readiness-checklist-step179.md`.
+  - Added `memory-bank/api-integration-demo-qa-card-step179.md`.
+  - Updated this progress log and `memory-bank/evidence.md`.
+- Coverage strengthened:
+  - DOI auto-fill preview can be demonstrated locally, with manual-entry
+    fallback and explicit Crossref / OpenAlex / Scopus production-pending
+    boundary.
+  - Email notification preview can be demonstrated locally, with in-app /
+    manual-follow-up fallback and explicit SMTP / SMS / enterprise WeChat
+    production-pending boundary.
+  - Settings / API integrations page operations wording now covers switches,
+    `timeoutMs`, retry summary, alert summary, fallback, `configRef`, and safe
+    `ApiCallLog` summaries.
+  - HR / finance / patent / storage remain reserved or Mock preview
+    capabilities, not real production integrations.
+  - Production key management, supplier SLA, real alert channels, failure
+    replay, audit retention, gray release / rollback, and emergency drills are
+    documented as phase-two / production pending.
+- Verification:
+  - Documentation-only execution; API/Web tests were intentionally not run.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundary:
+  - No `.env`, `.env.production`, password, Cookie, Token, production
+    connection string, supplier credential, or real supplier config was read.
+  - No production/VPS/production DB, real DOI/Crossref/OpenAlex/Scopus, SMTP,
+    SMS, enterprise WeChat, HR, finance, patent service provider, or real
+    alerting platform was accessed.
+  - No source code, production configuration, migration, database write, real
+    external call, real message send, deletion, prune, reset, restore, or
+    existing untracked local artifact staging occurred.
+
 ## 2026-07-08 Step 179 - API integration operations extension plan
 
 - Status: PASS.

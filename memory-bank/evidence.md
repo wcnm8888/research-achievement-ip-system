@@ -1,5 +1,103 @@
 # Evidence
 
+## 2026-07-08 Step 179 - API integration operations documentation execution evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 294]`
+    with existing untracked local artifacts left untouched.
+  - User-provided current HEAD: `92c25bd0c4c478d3eda92a9f5a1d931ba57a551a`
+    (`docs: plan integration operations hardening`).
+- Context reviewed with targeted reads only:
+  - `memory-bank/api-integration-operations-extension-plan-step179.md`.
+  - `memory-bank/api-integration-mock-acceptance-step172.md` interface Mock
+    acceptance snippets.
+  - 7.3-related snippets from `memory-bank/final-acceptance-coverage-step174.md`.
+  - Interface demo and Q&A snippets from `memory-bank/final-demo-runbook-step175.md`.
+  - Interface/settings boundary snippets from `memory-bank/final-demo-smoke-step176.md`.
+  - Recent Step179 snippets from `memory-bank/progress.md` and
+    `memory-bank/evidence.md`.
+  - Settings / API integration code indexes for DTOs, controller, service,
+    repository, Prisma `ApiIntegration` / `ApiCallLog`, Web settings page,
+    AchievementForm DOI preview, and API client paths.
+- Changed files:
+  - `memory-bank/api-integration-operations-runbook-step179.md`.
+  - `memory-bank/api-integration-production-readiness-checklist-step179.md`.
+  - `memory-bank/api-integration-demo-qa-card-step179.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Runbook coverage:
+  - Local demo interface boundary.
+  - DOI auto-fill preview operation wording.
+  - Email notification preview operation wording.
+  - HR / finance / patent / storage reserved interface status.
+  - Configuration item wording for switches, `timeoutMs`, `retryPolicy`,
+    `configRef`, `alertSummary`, and `fallback`.
+  - Failure handling for timeout, supplier unavailable, missing config,
+    incomplete response, insufficient permission, and empty safe logs.
+  - Degradation paths: manual entry, in-app reminder, manual follow-up, delayed
+    sync, and manual review.
+  - Safe `ApiCallLog` visible fields and redaction boundary.
+  - Operations responsibilities for local review version, pre-production
+    integration, and production operation.
+  - Forbidden actions for secrets, real supplier credentials, and real external
+    sends.
+- Production readiness checklist coverage:
+  - Supplier account, contract, and SLA checks.
+  - Key management and rotation.
+  - Network egress and whitelist.
+  - Timeout, retry, circuit-breaker, and degradation.
+  - Failure replay and idempotency.
+  - Monitoring and alerting.
+  - Audit retention.
+  - Data redaction and minimum fields.
+  - Permission approval.
+  - Gray release and rollback.
+  - Integration acceptance records.
+  - Production drills and emergency plans.
+  - Explicit statement that Step179 does not execute those production items.
+- Demo Q&A card coverage:
+  - Whether DOI is truly connected.
+  - Whether email is truly sent.
+  - What happens on interface failure.
+  - Why Mock preview is used.
+  - What remains before launch.
+  - Whether secrets or data are leaked or externally sent.
+  - Whether HR / finance / patent systems can be connected later.
+  - What can be accepted in the current version.
+- 7.3 acceptance points strengthened:
+  - DOI preview is locally demonstrable, with real Crossref / OpenAlex /
+    Scopus pending production integration.
+  - Email preview is locally demonstrable, with real SMTP / SMS / enterprise
+    WeChat pending production integration.
+  - Settings / API integrations page evidence now has operations wording for
+    switches, timeout, retry summary, alert summary, degradation, and safe
+    call-log summaries.
+  - DOI failure fallback is manual entry.
+  - Email failure fallback is in-app reminder / manual follow-up.
+  - HR / finance / patent / storage are documented as reserved or Mock preview
+    boundaries.
+  - Production key hosting, supplier SLA, real alerting, failure replay, and
+    audit retention remain phase-two / production pending.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - API/Web tests were not run because the Step is documentation-only.
+- Explicitly not performed:
+  - No real DOI, Crossref, OpenAlex, Scopus, SMTP, SMS, enterprise WeChat, HR,
+    finance, patent, storage, or alerting provider call.
+  - No real external message send.
+  - No source code change, production configuration change, database write,
+    migration, failure replay implementation, or production monitoring setup.
+  - No `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`,
+    screenshot, performance log, backup file, temporary script, or real
+    credential artifact was staged.
+- Boundaries observed:
+  - No `.env`, `.env.production`, password, Cookie, Token, private key, API key,
+    production connection string, supplier credential, or real supplier config
+    was read, copied, displayed, saved, or committed.
+  - No production/VPS/production DB or real external provider was accessed.
+  - Existing untracked local artifacts were left untouched and unstaged.
+
 ## 2026-07-08 Step 179 - API integration operations extension plan evidence
 
 - Starting state:
