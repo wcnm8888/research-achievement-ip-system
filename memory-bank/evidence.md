@@ -1,5 +1,62 @@
 # Evidence
 
+## 2026-07-08 Step 178 - Local backup / restore evidence plan evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 291]`
+    with existing untracked local artifacts left untouched.
+  - User-provided current HEAD: `883fa4b35c11a879c52ad28f618c04166b435d72`
+    (`test: verify security negative acceptance`).
+- Context reviewed with targeted reads only:
+  - `memory-bank/final-acceptance-coverage-step174.md` 7.4 / 7.5 and Step170A-related snippets.
+  - `memory-bank/security-compliance-negative-acceptance-execution-step177.md`.
+  - `memory-bank/testing-strategy.md` headings and backup / restore keyword index; no direct backup / restore test strategy matches were found.
+  - Recent Step177 snippets and Step174 Step170A-D references from `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - `memory-bank/local-backup-restore-acceptance-step170a.md`.
+  - `memory-bank/local-backup-restore-commands-step170a.md`.
+  - Backup / restore related script, test, and document indexes for `deploy/` and `apps/api/src/operations/attachment-binary-backup.*`.
+- Changed files:
+  - `memory-bank/local-backup-restore-evidence-plan-step178.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Located backup / restore capabilities and evidence sources:
+  - Local PostgreSQL manual `pg_dump` plan and prior Step170A acceptance evidence for dump file, manifest, SHA-256 recomputation, SQL header/schema marker checks, and non-destructive restore dry-run boundary.
+  - Attachment binary backup builder and unit tests covering archive, manifest, artifact-list, existing `POSTGRES_DUMP` artifact listing, whole-artifact digests, aggregate consistency status, and sensitive metadata exclusion.
+  - Local backup artifact-list schema, synthetic sample, validator, metadata design, retention/encryption/offsite policy, production backup readiness checklist, and production cutover backup checklist under `deploy/`.
+- Recommended next Step178-execution checks:
+  - `git status --short --branch`.
+  - `node deploy/validate-local-backup-artifact-list-sample.mjs`.
+  - `corepack pnpm --filter @research-ip/api test -- attachment-binary-backup`.
+  - If separately authorized for execution, local-only `docker ps` inspection, local `pg_dump` to a `.local-step178-*` directory, manifest generation, `Get-FileHash` SHA-256 recomputation, manifest parse, and SQL header/list-only restore dry-run evidence.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - The checks emitted only existing line-ending conversion warnings for touched memory-bank files; no whitespace errors were reported.
+- Explicitly dry-run / read-only only:
+  - Manifest parsing.
+  - SHA-256 recomputation.
+  - SQL header inspection.
+  - `pg_restore --list` only if a future custom-format dump exists and only without `--dbname`.
+  - Static schema/sample validator.
+- Prohibited:
+  - Reading `.env`, `.env.production`, secrets, cookies, tokens, production connection strings, or production backup file contents.
+  - Accessing production / VPS / production DB, real object storage, real external backup service, or real alerting platform.
+  - Running real restore, DB overwrite, DB clear, migration, write-type `pg_restore`, `psql < dump`, Docker prune / volume prune, volume deletion, file deletion, `git reset`, `git restore`, `git clean`, or backup artifact cleanup.
+  - Staging `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`, real backup files, restore outputs, dump files, manifest run artifacts, screenshots, performance logs, or temporary scripts.
+- Phase-two / production pending:
+  - Daily automatic backup scheduling.
+  - 30-day retention execution evidence.
+  - Real restore drill.
+  - RTO / RPO acceptance.
+  - Offsite backup.
+  - Production backup monitoring and alerting.
+  - Production audit log archive / tamper-resistance.
+  - Production encryption/key management, real object storage or backup vault, least-privilege backup account, retry, failure alerting, and escalation workflow.
+- Boundaries observed:
+  - No real backup, restore, migration, database write, production/VPS access, production DB access, external backup service access, object storage access, alerting platform access, or Docker prune / volume operation was run.
+  - No `.env`, `.env.production`, secret, cookie, token, production connection string, or production backup file content was read.
+  - Existing untracked local artifacts were left untouched and unstaged.
+
 ## 2026-07-08 Step 177 - Security and compliance negative acceptance execution evidence
 
 - Starting state:

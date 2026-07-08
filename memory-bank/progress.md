@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-07-08 Step 178 - Local backup / restore evidence plan
+
+- Status: PASS.
+- Goal:
+  - Confirm the local backup / restore evidence补强 plan without executing
+    real backup, restore, migration, or database write operations.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Documentation:
+  - Added `memory-bank/local-backup-restore-evidence-plan-step178.md`.
+  - The plan separates local一期可验证 backup/restore capabilities, existing
+    evidence sources, next-step commands, read-only / dry-run boundaries,
+    forbidden actions, evidence recording format, and phase-two / production
+    pending work.
+- Located evidence sources:
+  - Step170A local PostgreSQL `pg_dump`, manifest, SHA-256 verification, and
+    restore dry-run documents.
+  - Attachment binary backup operation and unit tests.
+  - Local backup artifact-list schema, synthetic sample, validator, metadata
+    design, and production backup readiness boundary documents under `deploy/`.
+- Verification:
+  - Documentation-only plan confirmation; no backup, restore, migration,
+    database write, Docker prune, or volume operation was run.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, session value, production connection string,
+    production credential, production/VPS/production DB, real object storage,
+    external backup service, or alerting platform was accessed.
+  - No real backup artifact, restore output, dump file, screenshot,
+    performance log, temporary script, or existing untracked local artifact was
+    staged or changed.
+
 ## 2026-07-08 Step 177 - Security and compliance negative acceptance execution
 
 - Status: PASS.
