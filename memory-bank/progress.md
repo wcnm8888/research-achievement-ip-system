@@ -15531,6 +15531,34 @@
   - No PPT, screenshot, performance log, backup, or existing local artifact
     handling.
 
+## 2026-07-08 Step 176 - Final demo read-only smoke check
+
+- Status: PASS_WITH_AUTHENTICATED_BROWSER_CAVEAT.
+- Scope:
+  - Final read-only smoke before the on-site local demo.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Checks completed:
+  - Local Docker production-like API, Web, and Postgres containers were running healthy.
+  - `GET http://127.0.0.1:18081/` returned HTTP 200.
+  - `GET http://127.0.0.1:14001/api/health` returned HTTP 200 with `status=ok`.
+  - Direct SPA paths `/`, `/achievements`, `/search`, `/settings`, `/audit`, and `/reports` returned HTTP 200 without `Cannot GET`, `404 Not Found`, or `Internal Server Error`.
+  - `playwright-cli -s=step176` unauthenticated browser scan showed the expected login page copy and did not find forbidden engineering copy such as `Cannot GET`, raw error, stack trace, JSON, endpoint, API path, or mock/demo wording.
+  - Protected API read-only GET checks for reminders, reports, search, audit, settings, and achievements returned controlled 401 responses without stack traces or raw server pages.
+- Authenticated-browser caveat:
+  - User manually logged into the separately launched Edge window.
+  - Current automation tools could not attach to that already logged-in Edge session without crossing the cookie/session handling boundary.
+  - This Step therefore does not claim automated authenticated page-by-page browser acceptance.
+- Documentation:
+  - Added `memory-bank/final-demo-smoke-step176.md`.
+- Boundaries:
+  - No `.env` / `.env.production` content, password, cookie, token, session value, connection string, production credential, production/VPS/production DB, or real external system was accessed.
+  - No source code, configuration, migration, seed, production runtime setting, or deployment setting was changed.
+  - Existing untracked local artifacts were left untouched and uncommitted.
+- Verification:
+  - Documentation-only change after read-only smoke; no API/Web source tests were required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+
 ## 2026-07-08 Step 174 - Final acceptance coverage matrix
 
 - Status: PARTIAL PASS.

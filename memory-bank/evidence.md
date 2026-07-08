@@ -18965,15 +18965,49 @@
   - Added Q&A wording for production readiness, DOI/citation, email, performance, and backup/restore questions.
 - Verification:
   - Documentation-only change; no API/Web tests required.
+
+## 2026-07-08 Step 176 - Final demo read-only smoke evidence
+
+- Starting state:
+  - `git rev-parse HEAD` -> `eb6d41ce4d6537b176705a17ff0d7c25f64ac000`.
+  - `git log -1 --pretty=%s` -> `docs: add final demo runbook`.
+  - `git status --short --branch` showed branch `main...origin/main [ahead 288]` with existing untracked local artifacts left untouched.
+- Local Docker production-like stack:
+  - `docker compose -f docker-compose.production.yml ps` showed local API, Web, and Postgres containers running healthy.
+  - API mapped to `127.0.0.1:14001->3000`.
+  - Web mapped to `127.0.0.1:18081->80`.
+- Health checks:
+  - `GET http://127.0.0.1:18081/` -> HTTP 200.
+  - Web page title -> `科研成果与知识产权管理系统`.
+  - `GET http://127.0.0.1:14001/api/health` -> HTTP 200, body summary `status=ok`.
+- SPA fallback checks:
+  - `/`, `/achievements`, `/search`, `/settings`, `/audit`, and `/reports` returned HTTP 200.
+  - These responses did not contain `Cannot GET`, `404 Not Found`, or `Internal Server Error`.
+- Browser entry check:
+  - `playwright-cli -s=step176 open http://127.0.0.1:18081/` succeeded.
+  - `playwright-cli -s=step176 run-code ...` scanned the unauthenticated page text.
+  - Result: title `科研成果与知识产权管理系统`, `hasLogin=true`, `hasLoggedIn=false`, forbidden-copy hits `[]`.
+  - Visible login copy included `未登录`, `请先登录`, `系统登录`, `邮箱`, `密码`, `登录`, and `忘记密码`.
+- Protected API error-shape checks:
+  - `/api/reminders/center`: HTTP 401, no stack/raw server page marker.
+  - `/api/reports/templates`: HTTP 401, no stack/raw server page marker.
+  - `/api/search?q=demo`: HTTP 401, no stack/raw server page marker.
+  - `/api/audit-logs`: HTTP 401, no stack/raw server page marker.
+  - `/api/settings/api-integrations`: HTTP 401, no stack/raw server page marker.
+  - `/api/achievements`: HTTP 401, no stack/raw server page marker.
+- Authenticated-browser boundary:
+  - A separate Edge window was opened to `http://127.0.0.1:18081/`.
+  - User confirmed manual login.
+  - The automation session was not attached to the user's logged-in Edge profile, so authenticated page-by-page browser acceptance remains a manual final-show rehearsal item.
+- Verification:
+  - Documentation-only change after read-only smoke; no API/Web source tests required.
   - `git diff --check`: PASS.
   - `git diff --cached --check`: PASS.
-- Boundaries observed:
-  - No `.env` or `.env.production` content read.
-  - No password, Cookie, Token, connection string, API key, provider credential, or raw external payload recorded.
-  - No production/VPS/production DB access.
-  - No real external DOI, literature, SMTP, SMS, enterprise messaging, HR/SSO, finance, or patent call.
-  - No API/Web source, schema, migration, seed, deployment, or production configuration change.
-  - No PPT, screenshot, performance log, backup, or existing untracked local artifact handling.
+- Safety boundary:
+  - No `.env` or `.env.production` content was read.
+  - No password, cookie, token, session value, connection string, production credential, production/VPS/production DB, or real external system was accessed.
+  - No source code, configuration, migration, seed, production runtime setting, or deployment setting was changed.
+  - Existing untracked local artifacts, including `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`, screenshots, performance logs, and backup artifacts, were left untouched and uncommitted.
 
 ## 2026-07-08 Step 174 - Final acceptance coverage evidence
 
