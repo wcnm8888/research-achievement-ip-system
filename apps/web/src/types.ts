@@ -204,6 +204,208 @@ export type WorkflowTaskQuery = {
   feeRecordId?: string;
 };
 
+export type ReminderStatusCode =
+  | "PENDING"
+  | "SENT"
+  | "CONFIRMED"
+  | "CANCELLED"
+  | "FAILED";
+
+export type ReminderLevelCode = "DAYS_30" | "DAYS_15" | "DAYS_7" | "OVERDUE";
+
+export type ReminderCenterItemType = "FEE_REMINDER" | "WORKFLOW_TASK";
+
+export type ReminderCenterSeverity = "INFO" | "WARNING" | "CRITICAL";
+
+export type ReminderEscalationBlockedReason =
+  | "RATE_LIMITED"
+  | "TERMINAL_STATUS"
+  | "NOT_OVERDUE"
+  | "NOT_APPLICABLE";
+
+export type ReminderCenterItem = {
+  id: string;
+  itemType: ReminderCenterItemType;
+  title: string;
+  description: string;
+  severity: ReminderCenterSeverity;
+  status: string;
+  targetType: string;
+  targetId: string;
+  remindDate?: string | null;
+  remindLevel?: ReminderLevelCode | string | null;
+  dueAt?: string | null;
+  canConfirm: boolean;
+  canEscalate: boolean;
+  canEscalateToDepartment: boolean;
+  escalationBlockedReason?: ReminderEscalationBlockedReason | string;
+  lastSentAt?: string | null;
+  nextEscalationAvailableAt?: string | null;
+  governanceNote?: string;
+};
+
+export type ReminderCenterSummary = {
+  total: number;
+  feeReminderCount: number;
+  workflowTaskCount: number;
+  pendingCount: number;
+  sentCount: number;
+  overdueCount: number;
+  escalationEligibleCount: number;
+};
+
+export type ReminderCenterResponse = {
+  generatedAt: string;
+  summary: ReminderCenterSummary;
+  items: ReminderCenterItem[];
+};
+
+export type ReminderSlaStatus = "OVERDUE" | "DUE_SOON" | "PENDING";
+
+export type ReminderSlaQueueItem = ReminderCenterItem & {
+  slaStatus: ReminderSlaStatus | string;
+  escalationReceiverId?: string | null;
+  escalationTarget?: "DEPARTMENT_ROLE" | "SELF_MVP_FALLBACK" | string | null;
+};
+
+export type ReminderSlaQueueResponse = {
+  generatedAt: string;
+  items: ReminderSlaQueueItem[];
+};
+
+export type ReminderEscalationHistoryItem = {
+  id: string;
+  actorUserId: string | null;
+  actorDepartmentId: string | null;
+  operation: string;
+  escalationReceiverId: string | null;
+  escalationTarget: string | null;
+  resolverStrategy: string | null;
+  policyCode: string | null;
+  escalationLevel: number | null;
+  slaStatus: string | null;
+  notificationId: string | null;
+  status: string | null;
+  sentAt: string | null;
+  nextEscalationAvailableAt: string | null;
+  createdAt: string;
+};
+
+export type ReminderEscalationHistoryResponse = {
+  items: ReminderEscalationHistoryItem[];
+};
+
+export type ReminderSlaPolicyLevel = {
+  level: number;
+  code: string;
+  afterHours: number;
+  roleCodes: string[];
+  scope: "DEPARTMENT" | "GLOBAL" | string;
+};
+
+export type ReminderSlaPolicy = {
+  policyCode: string;
+  scanWindowHours: number;
+  cooldownHours: number;
+  levels: ReminderSlaPolicyLevel[];
+};
+
+export type ReminderSlaPolicyUpdateInput = ReminderSlaPolicy;
+
+export type ReminderSlaScanResult = {
+  scannedCount: number;
+  escalatedCount: number;
+  skippedCount: number;
+  escalated: Array<{
+    reminderTaskId: string;
+    escalationLevel: number;
+    escalationReceiverId: string;
+    escalationTarget: string;
+    resolverStrategy: string;
+  }>;
+  skipped: Array<{
+    reminderTaskId: string;
+    reason: string;
+  }>;
+  policy: ReminderSlaPolicy;
+};
+
+export type ReminderSlaScanRunItem = {
+  id: string;
+  policyCode: string;
+  actorUserId: string | null;
+  actorDepartmentId: string | null;
+  scanScope: string;
+  status: string;
+  triggerType: string;
+  idempotencyKey: string | null;
+  lockKey: string | null;
+  lockedAt: string | null;
+  lockedUntil: string | null;
+  attemptCount: number;
+  failureReason: string | null;
+  requestedAt: string;
+  queuedAt: string | null;
+  scannedCount: number;
+  escalatedCount: number;
+  skippedCount: number;
+  safeSummary?: unknown;
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReminderSlaScanRunsResponse = {
+  items: ReminderSlaScanRunItem[];
+};
+
+export type ReminderSlaFullScanResult = ReminderSlaScanResult & {
+  scanRun: ReminderSlaScanRunItem;
+};
+
+export type ReminderSlaScanEnqueueInput = {
+  idempotencyKey?: string;
+  triggerType?: "MANUAL" | "API_QUEUE";
+};
+
+export type ReminderSlaScanEnqueueResult = {
+  status: "QUEUED" | "EXISTING" | string;
+  scanRun: ReminderSlaScanRunItem;
+};
+
+export type ReminderSlaProcessNextResult = {
+  status: "NO_TASK" | "RUNNING" | "COMPLETED" | "FAILED" | "SKIPPED" | string;
+  reason?: string;
+  scanRun?: ReminderSlaScanRunItem;
+  result?: ReminderSlaScanResult;
+};
+
+export type ReminderTaskStateRecord = {
+  id: string;
+  targetType: string;
+  targetId: string;
+  remindDate: string;
+  remindLevel: ReminderLevelCode | string;
+  receiverId: string;
+  status: ReminderStatusCode | string;
+  sentAt?: string | null;
+  confirmedAt?: string | null;
+};
+
+export type ReminderActionResult = {
+  reminderTask: ReminderTaskStateRecord;
+  notification?: {
+    id: string;
+    receiverId: string;
+    channel: string;
+    status: string;
+    sentAt?: string | null;
+  } | null;
+  escalationTarget?: "SELF_MVP_FALLBACK" | string;
+  escalationReceiverId?: string;
+};
+
 export type ApproveWorkflowTaskPayload = {
   comment?: string;
 };

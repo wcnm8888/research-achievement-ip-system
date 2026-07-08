@@ -95,6 +95,7 @@ export type ApiClient = {
   get<T>(path: string, query?: ApiQuery): Promise<T>;
   post<T>(path: string, body?: unknown): Promise<T>;
   postForm?<T>(path: string, body: FormData): Promise<T>;
+  put?<T>(path: string, body?: unknown): Promise<T>;
   patch<T>(path: string, body?: unknown): Promise<T>;
   downloadBlob?(path: string, query?: ApiQuery): Promise<Blob>;
 };
@@ -322,6 +323,10 @@ export const createApiClient = (
   },
   async postForm<T>(path: string, body: FormData) {
     const response = await requestForm(path, demoUserId, body, options);
+    return response as T;
+  },
+  async put<T>(path: string, body?: unknown) {
+    const response = await request(path, demoUserId, { method: "PUT", body }, options);
     return response as T;
   },
   async patch<T>(path: string, body?: unknown) {
@@ -787,7 +792,7 @@ export const createAuthClient = (): AuthClient => ({
 });
 
 type RequestOptions = {
-  method: "GET" | "POST" | "PATCH";
+  method: "GET" | "POST" | "PUT" | "PATCH";
   query?: ApiQuery;
   body?: unknown;
 };
@@ -917,7 +922,7 @@ const requestBlob = async (
 };
 
 export const buildRequestInit = (
-  method: "GET" | "POST" | "PATCH",
+  method: "GET" | "POST" | "PUT" | "PATCH",
   headers: Headers,
   body?: unknown,
 ): RequestInit => {

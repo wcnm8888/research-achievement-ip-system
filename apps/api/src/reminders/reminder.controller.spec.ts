@@ -33,6 +33,18 @@ const ids = {
 
 type ReminderServiceMock = {
   confirmReminder: ReturnType<typeof vi.fn>;
+  escalateReminder: ReturnType<typeof vi.fn>;
+  escalateReminderToDepartment: ReturnType<typeof vi.fn>;
+  getReminderCenter: ReturnType<typeof vi.fn>;
+  listReminderSlaQueue: ReturnType<typeof vi.fn>;
+  listReminderEscalationHistory: ReturnType<typeof vi.fn>;
+  getReminderSlaPolicy: ReturnType<typeof vi.fn>;
+  updateReminderSlaPolicy: ReturnType<typeof vi.fn>;
+  enqueueReminderSlaScan: ReturnType<typeof vi.fn>;
+  processNextReminderSlaScan: ReturnType<typeof vi.fn>;
+  runReminderSlaScan: ReturnType<typeof vi.fn>;
+  runFullReminderSlaScan: ReturnType<typeof vi.fn>;
+  listReminderSlaScanRuns: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -74,6 +86,278 @@ const makeConfirmedReminderTask = () => ({
 
 const createServiceMock = (): ReminderServiceMock => ({
   confirmReminder: vi.fn().mockResolvedValue(makeConfirmedReminderTask()),
+  escalateReminder: vi.fn().mockResolvedValue({
+    reminderTask: {
+      ...makeConfirmedReminderTask(),
+      status: ReminderStatusCode.sent,
+      confirmedAt: null,
+    },
+    notification: {
+      id: "91000000-0000-4000-8000-000000000001",
+      receiverId: ids.user,
+      channel: "IN_APP",
+      status: "SENT",
+      sentAt: new Date("2026-06-18T09:00:00.000Z"),
+    },
+  }),
+  escalateReminderToDepartment: vi.fn().mockResolvedValue({
+    reminderTask: {
+      ...makeConfirmedReminderTask(),
+      status: ReminderStatusCode.sent,
+      remindLevel: ReminderLevelCode.overdue,
+      confirmedAt: null,
+    },
+    notification: {
+      id: "91000000-0000-4000-8000-000000000002",
+      receiverId: ids.user,
+      channel: "IN_APP",
+      status: "SENT",
+      sentAt: new Date("2026-06-18T09:00:00.000Z"),
+    },
+    escalationTarget: "SELF_MVP_FALLBACK",
+    escalationReceiverId: ids.user,
+    resolverStrategy: "SELF_MVP_FALLBACK:NO_DEPARTMENT_ROLE_CANDIDATE",
+  }),
+  getReminderCenter: vi.fn().mockResolvedValue({
+    generatedAt: "2026-06-18T09:00:00.000Z",
+    summary: {
+      total: 1,
+      feeReminderCount: 1,
+      workflowTaskCount: 0,
+      pendingCount: 0,
+      sentCount: 1,
+      overdueCount: 0,
+      escalationEligibleCount: 1,
+    },
+    items: [
+      {
+        id: ids.reminderTask,
+        itemType: "FEE_REMINDER",
+        title: "费用到期提醒",
+        description: "提醒级别：DAYS_7",
+        severity: "WARNING",
+        status: ReminderStatusCode.sent,
+        targetType: ReminderTargetTypeCode.feeRecord,
+        targetId: ids.feeRecord,
+        remindDate: "2026-06-18T00:00:00.000Z",
+        remindLevel: ReminderLevelCode.days7,
+        dueAt: "2026-06-18T00:00:00.000Z",
+        canConfirm: true,
+        canEscalate: true,
+        canEscalateToDepartment: false,
+        lastSentAt: "2026-06-18T08:00:00.000Z",
+        nextEscalationAvailableAt: null,
+      },
+    ],
+  }),
+  listReminderSlaQueue: vi.fn().mockResolvedValue({
+    generatedAt: "2026-06-18T09:00:00.000Z",
+    items: [
+      {
+        id: ids.reminderTask,
+        itemType: "FEE_REMINDER",
+        title: "费用逾期提醒",
+        description: "提醒级别：OVERDUE",
+        severity: "CRITICAL",
+        status: ReminderStatusCode.sent,
+        targetType: ReminderTargetTypeCode.feeRecord,
+        targetId: ids.feeRecord,
+        remindDate: "2026-06-18T00:00:00.000Z",
+        remindLevel: ReminderLevelCode.overdue,
+        dueAt: "2026-06-18T00:00:00.000Z",
+        canConfirm: true,
+        canEscalate: true,
+        canEscalateToDepartment: true,
+        slaStatus: "OVERDUE",
+        escalationTarget: "DEPARTMENT_ROLE",
+      },
+    ],
+  }),
+  listReminderEscalationHistory: vi.fn().mockResolvedValue({
+    items: [
+      {
+        id: "audit-id",
+        actorUserId: ids.user,
+        actorDepartmentId: ids.department,
+        operation: "ESCALATE_REMINDER_TO_DEPARTMENT",
+        escalationReceiverId: ids.user,
+        escalationTarget: "SELF_MVP_FALLBACK",
+        resolverStrategy: "SELF_MVP_FALLBACK:NO_DEPARTMENT_ROLE_CANDIDATE",
+        notificationId: "91000000-0000-4000-8000-000000000002",
+        status: ReminderStatusCode.sent,
+        sentAt: "2026-06-18T09:00:00.000Z",
+        nextEscalationAvailableAt: null,
+        createdAt: "2026-06-18T09:00:00.000Z",
+      },
+    ],
+  }),
+  getReminderSlaPolicy: vi.fn().mockReturnValue({
+    policyCode: "REMINDER_SLA_DEFAULT_MVP",
+    scanWindowHours: 24,
+    cooldownHours: 24,
+    levels: [
+      {
+        level: 1,
+        code: "DEPARTMENT_COORDINATOR",
+        afterHours: 0,
+        roleCodes: ["DEPARTMENT_ADMIN", "RESEARCH_SECRETARY"],
+        scope: "DEPARTMENT",
+      },
+    ],
+  }),
+  updateReminderSlaPolicy: vi.fn().mockImplementation(async (_context, input) => input),
+  enqueueReminderSlaScan: vi.fn().mockResolvedValue({
+    status: "QUEUED",
+    scanRun: {
+      id: "99000000-0000-4000-8000-000000000002",
+      policyCode: "REMINDER_SLA_DEFAULT_MVP",
+      actorUserId: ids.user,
+      actorDepartmentId: ids.department,
+      scanScope: "ALL_RECEIVERS",
+      status: "QUEUED",
+      triggerType: "API_QUEUE",
+      idempotencyKey: "manual-key",
+      lockKey: "REMINDER_SLA_FULL_SCAN",
+      lockedAt: null,
+      lockedUntil: null,
+      attemptCount: 0,
+      failureReason: null,
+      requestedAt: "2026-06-18T09:00:00.000Z",
+      queuedAt: "2026-06-18T09:00:00.000Z",
+      scannedCount: 0,
+      escalatedCount: 0,
+      skippedCount: 0,
+      safeSummary: null,
+      startedAt: "2026-06-18T09:00:00.000Z",
+      completedAt: null,
+      createdAt: "2026-06-18T09:00:00.000Z",
+      updatedAt: "2026-06-18T09:00:00.000Z",
+    },
+  }),
+  processNextReminderSlaScan: vi.fn().mockResolvedValue({
+    status: "COMPLETED",
+    scanRun: {
+      id: "99000000-0000-4000-8000-000000000002",
+      policyCode: "REMINDER_SLA_DEFAULT_MVP",
+      actorUserId: ids.user,
+      actorDepartmentId: ids.department,
+      scanScope: "ALL_RECEIVERS",
+      status: "COMPLETED",
+      triggerType: "API_QUEUE",
+      idempotencyKey: "manual-key",
+      lockKey: "REMINDER_SLA_FULL_SCAN",
+      lockedAt: "2026-06-18T09:00:00.000Z",
+      lockedUntil: "2026-06-18T09:15:00.000Z",
+      attemptCount: 1,
+      failureReason: null,
+      requestedAt: "2026-06-18T09:00:00.000Z",
+      queuedAt: "2026-06-18T09:00:00.000Z",
+      scannedCount: 1,
+      escalatedCount: 1,
+      skippedCount: 0,
+      safeSummary: null,
+      startedAt: "2026-06-18T09:00:00.000Z",
+      completedAt: "2026-06-18T09:00:00.000Z",
+      createdAt: "2026-06-18T09:00:00.000Z",
+      updatedAt: "2026-06-18T09:00:00.000Z",
+    },
+  }),
+  runReminderSlaScan: vi.fn().mockResolvedValue({
+    scannedCount: 1,
+    escalatedCount: 1,
+    skippedCount: 0,
+    escalated: [
+      {
+        reminderTaskId: ids.reminderTask,
+        escalationLevel: 1,
+        escalationReceiverId: ids.user,
+        escalationTarget: "SELF_MVP_FALLBACK",
+        resolverStrategy: "SLA_LEVEL_1:SELF_MVP_FALLBACK:NO_ROLE_CANDIDATE",
+      },
+    ],
+    skipped: [],
+    policy: {
+      policyCode: "REMINDER_SLA_DEFAULT_MVP",
+      scanWindowHours: 24,
+      cooldownHours: 24,
+      levels: [],
+    },
+  }),
+  runFullReminderSlaScan: vi.fn().mockResolvedValue({
+    scannedCount: 1,
+    escalatedCount: 1,
+    skippedCount: 0,
+    escalated: [
+      {
+        reminderTaskId: ids.reminderTask,
+        escalationLevel: 1,
+        escalationReceiverId: ids.user,
+        escalationTarget: "SELF_MVP_FALLBACK",
+        resolverStrategy: "SLA_LEVEL_1:SELF_MVP_FALLBACK:NO_ROLE_CANDIDATE",
+      },
+    ],
+    skipped: [],
+    policy: {
+      policyCode: "REMINDER_SLA_DEFAULT_MVP",
+      scanWindowHours: 24,
+      cooldownHours: 24,
+      levels: [],
+    },
+    scanRun: {
+      id: "99000000-0000-4000-8000-000000000001",
+      policyCode: "REMINDER_SLA_DEFAULT_MVP",
+      actorUserId: ids.user,
+      actorDepartmentId: ids.department,
+      scanScope: "ALL_RECEIVERS",
+      status: "COMPLETED",
+      triggerType: "MANUAL",
+      idempotencyKey: null,
+      lockKey: "REMINDER_SLA_FULL_SCAN",
+      lockedAt: "2026-06-18T09:00:00.000Z",
+      lockedUntil: "2026-06-18T09:15:00.000Z",
+      attemptCount: 1,
+      failureReason: null,
+      requestedAt: "2026-06-18T09:00:00.000Z",
+      queuedAt: null,
+      scannedCount: 1,
+      escalatedCount: 1,
+      skippedCount: 0,
+      safeSummary: null,
+      startedAt: "2026-06-18T09:00:00.000Z",
+      completedAt: "2026-06-18T09:00:00.000Z",
+      createdAt: "2026-06-18T09:00:00.000Z",
+      updatedAt: "2026-06-18T09:00:00.000Z",
+    },
+  }),
+  listReminderSlaScanRuns: vi.fn().mockResolvedValue({
+    items: [
+      {
+        id: "99000000-0000-4000-8000-000000000001",
+        policyCode: "REMINDER_SLA_DEFAULT_MVP",
+        actorUserId: ids.user,
+        actorDepartmentId: ids.department,
+        scanScope: "ALL_RECEIVERS",
+        status: "COMPLETED",
+        triggerType: "MANUAL",
+        idempotencyKey: null,
+        lockKey: "REMINDER_SLA_FULL_SCAN",
+        lockedAt: "2026-06-18T09:00:00.000Z",
+        lockedUntil: "2026-06-18T09:15:00.000Z",
+        attemptCount: 1,
+        failureReason: null,
+        requestedAt: "2026-06-18T09:00:00.000Z",
+        queuedAt: null,
+        scannedCount: 1,
+        escalatedCount: 1,
+        skippedCount: 0,
+        safeSummary: null,
+        startedAt: "2026-06-18T09:00:00.000Z",
+        completedAt: "2026-06-18T09:00:00.000Z",
+        createdAt: "2026-06-18T09:00:00.000Z",
+        updatedAt: "2026-06-18T09:00:00.000Z",
+      },
+    ],
+  }),
 });
 
 describe("ReminderController HTTP", () => {
@@ -135,6 +419,292 @@ describe("ReminderController HTTP", () => {
           }),
           ids.reminderTask,
         );
+      },
+    );
+  });
+
+  it("returns reminder center with reminder:read_department", async () => {
+    await withTestApp(
+      [PermissionCode.reminderReadDepartment],
+      async (app, service) => {
+        const response = await request(app.getHttpServer() as Server)
+          .get("/reminders/center")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(response.body.summary.feeReminderCount).toBe(1);
+        expect(response.body.items[0]).toMatchObject({
+          itemType: "FEE_REMINDER",
+          targetId: ids.feeRecord,
+          canConfirm: true,
+          canEscalate: true,
+        });
+        expect(service.getReminderCenter).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+        );
+      },
+    );
+  });
+
+  it("escalates a reminder with reminder:read_department and returns 200", async () => {
+    await withTestApp(
+      [PermissionCode.reminderReadDepartment],
+      async (app, service) => {
+        const response = await request(app.getHttpServer() as Server)
+          .post(`/reminders/${ids.reminderTask}/escalate`)
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(response.body.reminderTask.status).toBe(ReminderStatusCode.sent);
+        expect(service.escalateReminder).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+          ids.reminderTask,
+        );
+      },
+    );
+  });
+
+  it("escalates an overdue reminder to department fallback and returns 200", async () => {
+    await withTestApp(
+      [PermissionCode.reminderReadDepartment],
+      async (app, service) => {
+        const response = await request(app.getHttpServer() as Server)
+          .post(`/reminders/${ids.reminderTask}/escalate-to-department`)
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(response.body.escalationTarget).toBe("SELF_MVP_FALLBACK");
+        expect(response.body.escalationReceiverId).toBe(ids.user);
+        expect(service.escalateReminderToDepartment).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+          ids.reminderTask,
+        );
+      },
+    );
+  });
+
+  it("returns the reminder SLA queue with reminder:read_department", async () => {
+    await withTestApp(
+      [PermissionCode.reminderReadDepartment],
+      async (app, service) => {
+        const response = await request(app.getHttpServer() as Server)
+          .get("/reminders/sla-queue")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(response.body.items[0]).toMatchObject({
+          itemType: "FEE_REMINDER",
+          slaStatus: "OVERDUE",
+          escalationTarget: "DEPARTMENT_ROLE",
+        });
+        expect(service.listReminderSlaQueue).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+        );
+      },
+    );
+  });
+
+  it("returns reminder escalation history with reminder:read_department", async () => {
+    await withTestApp(
+      [PermissionCode.reminderReadDepartment],
+      async (app, service) => {
+        const response = await request(app.getHttpServer() as Server)
+          .get(`/reminders/${ids.reminderTask}/escalation-history`)
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(response.body.items[0]).toMatchObject({
+          operation: "ESCALATE_REMINDER_TO_DEPARTMENT",
+          escalationTarget: "SELF_MVP_FALLBACK",
+        });
+        expect(service.listReminderEscalationHistory).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+          ids.reminderTask,
+        );
+      },
+    );
+  });
+
+  it("returns SLA policy with reminder:read_department", async () => {
+    await withTestApp(
+      [PermissionCode.reminderReadDepartment],
+      async (app, service) => {
+        const response = await request(app.getHttpServer() as Server)
+          .get("/reminders/sla-policy")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(response.body.policyCode).toBe("REMINDER_SLA_DEFAULT_MVP");
+        expect(service.getReminderSlaPolicy).toHaveBeenCalledTimes(1);
+      },
+    );
+  });
+
+  it("runs SLA scan with reminder:read_department", async () => {
+    await withTestApp(
+      [PermissionCode.reminderReadDepartment],
+      async (app, service) => {
+        const response = await request(app.getHttpServer() as Server)
+          .post("/reminders/sla-scan/run")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(response.body.escalatedCount).toBe(1);
+        expect(service.runReminderSlaScan).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+        );
+      },
+    );
+  });
+
+  it("updates SLA policy with system:config", async () => {
+    await withTestApp(
+      [PermissionCode.systemConfig],
+      async (app, service) => {
+        const payload = {
+          policyCode: "REMINDER_SLA_DEFAULT_MVP",
+          scanWindowHours: 24,
+          cooldownHours: 24,
+          levels: [
+            {
+              level: 1,
+              code: "DEPARTMENT_COORDINATOR",
+              afterHours: 0,
+              roleCodes: ["DEPARTMENT_ADMIN"],
+              scope: "DEPARTMENT",
+            },
+          ],
+        };
+        const response = await request(app.getHttpServer() as Server)
+          .put("/reminders/sla-policy")
+          .set("X-Demo-User-Id", ids.user)
+          .send(payload)
+          .expect(200);
+
+        expect(response.body.policyCode).toBe("REMINDER_SLA_DEFAULT_MVP");
+        expect(service.updateReminderSlaPolicy).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+          payload,
+        );
+      },
+    );
+  });
+
+  it("runs full SLA scan and lists scan runs with system:config", async () => {
+    await withTestApp(
+      [PermissionCode.systemConfig],
+      async (app, service) => {
+        const scanResponse = await request(app.getHttpServer() as Server)
+          .post("/reminders/sla-scan/run-all")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(scanResponse.body.scanRun.scanScope).toBe("ALL_RECEIVERS");
+        expect(service.runFullReminderSlaScan).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+        );
+
+        const runsResponse = await request(app.getHttpServer() as Server)
+          .get("/reminders/sla-scan/runs")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(runsResponse.body.items[0]).toMatchObject({
+          scanScope: "ALL_RECEIVERS",
+          status: "COMPLETED",
+        });
+        expect(service.listReminderSlaScanRuns).toHaveBeenCalledTimes(1);
+      },
+    );
+  });
+
+  it("enqueues and processes SLA scan jobs with system:config", async () => {
+    await withTestApp(
+      [PermissionCode.systemConfig],
+      async (app, service) => {
+        const enqueueResponse = await request(app.getHttpServer() as Server)
+          .post("/reminders/sla-scan/enqueue")
+          .set("X-Demo-User-Id", ids.user)
+          .send({ idempotencyKey: " manual-key ", triggerType: "MANUAL" })
+          .expect(200);
+
+        expect(enqueueResponse.body.status).toBe("QUEUED");
+        expect(enqueueResponse.body.scanRun.status).toBe("QUEUED");
+        expect(service.enqueueReminderSlaScan).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+          { idempotencyKey: " manual-key ", triggerType: "MANUAL" },
+        );
+
+        const processResponse = await request(app.getHttpServer() as Server)
+          .post("/reminders/sla-scan/process-next")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(processResponse.body.status).toBe("COMPLETED");
+        expect(service.processNextReminderSlaScan).toHaveBeenCalledWith(
+          expect.objectContaining<Partial<UserContext>>({
+            userId: ids.user,
+            departmentId: ids.department,
+          }),
+        );
+      },
+    );
+  });
+
+  it("rejects full SLA governance endpoints without system:config", async () => {
+    await withTestApp(
+      [PermissionCode.reminderReadDepartment],
+      async (app, service) => {
+        await request(app.getHttpServer() as Server)
+          .post("/reminders/sla-scan/run-all")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(403);
+        await request(app.getHttpServer() as Server)
+          .put("/reminders/sla-policy")
+          .set("X-Demo-User-Id", ids.user)
+          .send({})
+          .expect(403);
+        await request(app.getHttpServer() as Server)
+          .post("/reminders/sla-scan/enqueue")
+          .set("X-Demo-User-Id", ids.user)
+          .send({})
+          .expect(403);
+        await request(app.getHttpServer() as Server)
+          .post("/reminders/sla-scan/process-next")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(403);
+
+        expect(service.runFullReminderSlaScan).not.toHaveBeenCalled();
+        expect(service.updateReminderSlaPolicy).not.toHaveBeenCalled();
+        expect(service.enqueueReminderSlaScan).not.toHaveBeenCalled();
+        expect(service.processNextReminderSlaScan).not.toHaveBeenCalled();
       },
     );
   });

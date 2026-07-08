@@ -33,6 +33,29 @@ export type AuditExportEventListResult = {
   items: AuditExportEventSummary[];
 };
 
+export type ReminderEscalationAuditSummary = {
+  id: string;
+  actorUserId: string | null;
+  actorDepartmentId: string | null;
+  operation: string;
+  reminderTaskId: string | null;
+  escalationReceiverId: string | null;
+  escalationTarget: string | null;
+  resolverStrategy: string | null;
+  policyCode: string | null;
+  escalationLevel: number | null;
+  slaStatus: string | null;
+  notificationId: string | null;
+  status: string | null;
+  sentAt: string | null;
+  nextEscalationAvailableAt: string | null;
+  createdAt: Date | string;
+};
+
+export type ReminderEscalationAuditListResult = {
+  items: ReminderEscalationAuditSummary[];
+};
+
 const auditSummaryScalarKeys = new Set([
   "version",
   "fileName",
@@ -49,6 +72,9 @@ const auditSummaryScalarKeys = new Set([
   "rowLimit",
   "revokedSessionCount",
   "scopeMigration",
+  "escalationTarget",
+  "resolverStrategy",
+  "slaStatus",
 ]);
 const exportRowLimit = 1000;
 
@@ -176,6 +202,24 @@ export class AuditService {
     };
   }
 
+  async listReminderEscalationHistory(
+    reminderTaskId: string,
+    take = 20,
+  ): Promise<ReminderEscalationAuditListResult> {
+    const records = await this.auditRepository.findMany({
+      action: AuditActionCode.update,
+      targetType: AuditTargetTypeCode.reminderTask,
+      targetId: reminderTaskId,
+      take,
+    });
+
+    return {
+      items: records
+        .map(toReminderEscalationAuditSummary)
+        .filter((item): item is ReminderEscalationAuditSummary => item !== null),
+    };
+  }
+
   private sanitizeEventInput(input: CreateAuditEventInput): CreateAuditEventInput {
     return {
       ...input,
@@ -248,6 +292,36 @@ const toExportEventSummary = (record: AuditLogRecord): AuditExportEventSummary |
     templateId: readString(newValue.templateId),
     rowCount: readNumber(newValue.rowCount),
     rowLimit: readNumber(newValue.rowLimit),
+    createdAt: record.createdAt,
+  };
+};
+
+const toReminderEscalationAuditSummary = (
+  record: AuditLogRecord,
+): ReminderEscalationAuditSummary | null => {
+  const newValue = asRecord(record.newValue);
+  const operation = readString(newValue.operation);
+
+  if (!operation?.startsWith("ESCALATE_REMINDER")) {
+    return null;
+  }
+
+  return {
+    id: record.id,
+    actorUserId: record.actorUserId,
+    actorDepartmentId: record.actorDepartmentId,
+    operation,
+    reminderTaskId: readString(newValue.reminderTaskId),
+    escalationReceiverId: readString(newValue.escalationReceiverId),
+    escalationTarget: readString(newValue.escalationTarget),
+    resolverStrategy: readString(newValue.resolverStrategy),
+    policyCode: readString(newValue.policyCode),
+    escalationLevel: readNumber(newValue.escalationLevel),
+    slaStatus: readString(newValue.slaStatus),
+    notificationId: readString(newValue.notificationId),
+    status: readString(newValue.status),
+    sentAt: readString(newValue.sentAt),
+    nextEscalationAvailableAt: readString(newValue.nextEscalationAvailableAt),
     createdAt: record.createdAt,
   };
 };

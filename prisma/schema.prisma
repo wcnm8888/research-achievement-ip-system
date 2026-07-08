@@ -956,6 +956,54 @@ model ReminderTask {
   @@map("reminder_tasks")
 }
 
+model ReminderSlaPolicyConfig {
+  id              String   @id @default(uuid()) @db.Uuid
+  policyCode      String   @unique @map("policy_code") @db.VarChar(120)
+  enabled         Boolean  @default(true)
+  scanWindowHours Int      @default(24) @map("scan_window_hours")
+  cooldownHours   Int      @default(24) @map("cooldown_hours")
+  levels          Json
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([enabled])
+  @@index([updatedAt])
+  @@map("reminder_sla_policy_configs")
+}
+
+model ReminderSlaScanRun {
+  id                String    @id @default(uuid()) @db.Uuid
+  policyCode        String    @map("policy_code") @db.VarChar(120)
+  actorUserId       String?   @map("actor_user_id") @db.Uuid
+  actorDepartmentId String?   @map("actor_department_id") @db.Uuid
+  scanScope         String    @default("ALL_RECEIVERS") @map("scan_scope") @db.VarChar(64)
+  status            String    @db.VarChar(32)
+  triggerType       String    @default("MANUAL") @map("trigger_type") @db.VarChar(32)
+  idempotencyKey    String?   @unique @map("idempotency_key") @db.VarChar(160)
+  lockKey           String?   @map("lock_key") @db.VarChar(120)
+  lockedAt          DateTime? @map("locked_at")
+  lockedUntil       DateTime? @map("locked_until")
+  attemptCount      Int       @default(0) @map("attempt_count")
+  failureReason     String?   @map("failure_reason") @db.VarChar(160)
+  requestedAt       DateTime  @default(now()) @map("requested_at")
+  queuedAt          DateTime? @map("queued_at")
+  scannedCount      Int       @default(0) @map("scanned_count")
+  escalatedCount    Int       @default(0) @map("escalated_count")
+  skippedCount      Int       @default(0) @map("skipped_count")
+  safeSummary       Json?     @map("safe_summary")
+  startedAt         DateTime  @default(now()) @map("started_at")
+  completedAt       DateTime? @map("completed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([policyCode])
+  @@index([status])
+  @@index([lockKey, status])
+  @@index([queuedAt])
+  @@index([startedAt])
+  @@map("reminder_sla_scan_runs")
+}
+
 model Notification {
   id         String              @id @default(uuid()) @db.Uuid
   receiverId String              @map("receiver_id") @db.Uuid

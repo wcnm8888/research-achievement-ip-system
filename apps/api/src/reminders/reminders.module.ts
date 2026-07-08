@@ -4,8 +4,14 @@ import { AuthorizationModule } from "../authorization/authorization.module";
 import { DatabaseModule } from "../database/database.module";
 import { IdentityModule } from "../identity/identity.module";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { WorkflowModule } from "../workflow/workflow.module";
 import { ReminderController } from "./reminder.controller";
 import { ReminderRepository } from "./reminder.repository";
+import {
+  createReminderSlaSchedulerConfig,
+  REMINDER_SLA_SCHEDULER_CONFIG,
+  ReminderSlaSchedulerProvider,
+} from "./reminder-sla-scheduler.provider";
 import { ReminderService } from "./reminder.service";
 
 @Module({
@@ -15,9 +21,18 @@ import { ReminderService } from "./reminder.service";
     DatabaseModule,
     IdentityModule,
     NotificationsModule,
+    WorkflowModule,
   ],
   controllers: [ReminderController],
-  providers: [ReminderRepository, ReminderService],
+  providers: [
+    ReminderRepository,
+    ReminderService,
+    {
+      provide: REMINDER_SLA_SCHEDULER_CONFIG,
+      useFactory: () => createReminderSlaSchedulerConfig(process.env),
+    },
+    ReminderSlaSchedulerProvider,
+  ],
   exports: [ReminderRepository, ReminderService],
 })
 export class RemindersModule {}

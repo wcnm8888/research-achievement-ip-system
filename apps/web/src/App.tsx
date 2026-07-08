@@ -28,6 +28,7 @@ import {
 import { Dashboard } from "./Dashboard";
 import { DepartmentManagement } from "./DepartmentManagement";
 import { Fees } from "./Fees";
+import { Reminders } from "./Reminders";
 import { Search } from "./Search";
 import { SecretAuthorization } from "./SecretAuthorization";
 import { SettingsApiIntegrations } from "./SettingsApiIntegrations";
@@ -69,6 +70,12 @@ export const navItems: NavItem[] = [
     label: "费用管理",
     step: "费用管理",
     description: "查看费用台账、缴费状态和预警摘要。",
+  },
+  {
+    key: "reminders",
+    label: "提醒中心",
+    step: "提醒与催办",
+    description: "集中查看费用提醒和审批待办，并完成确认或站内催办。",
   },
   {
     key: "search",
@@ -174,6 +181,7 @@ export const getDemoPermissionCodes = (role: string): string[] => {
       "achievement:read_department",
       "fee:read_department",
       "fee:review_department",
+      "reminder:read_department",
       "user_context:read",
       "system:config",
       "account:invite",
@@ -439,6 +447,8 @@ export function App() {
               <WorkflowTasks demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "fees" ? (
               <Fees demoUserId={businessContextId} authUser={effectiveAuthUser} />
+            ) : activeKey === "reminders" ? (
+              <Reminders demoUserId={businessContextId} />
             ) : activeKey === "search" ? (
               <Search demoUserId={businessContextId} />
             ) : activeKey === "dashboard" ? (
@@ -688,6 +698,8 @@ function LegacyDemoApp() {
             <WorkflowTasks demoUserId={demoUserId} />
           ) : activeKey === "fees" ? (
             <Fees demoUserId={demoUserId} />
+          ) : activeKey === "reminders" ? (
+            <Reminders demoUserId={demoUserId} />
           ) : activeKey === "search" ? (
             <Search demoUserId={demoUserId} />
           ) : activeKey === "dashboard" ? (
