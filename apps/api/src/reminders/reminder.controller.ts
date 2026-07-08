@@ -83,6 +83,18 @@ export class ReminderController {
     return await this.reminderService.listReminderSlaScanRuns();
   }
 
+  @Get("sla-scan/metrics")
+  @RequirePermissions(PermissionCode.systemConfig)
+  async getReminderSlaScanMetrics() {
+    return await this.reminderService.getReminderSlaScanMetrics();
+  }
+
+  @Get("sla-scan/health")
+  @RequirePermissions(PermissionCode.systemConfig)
+  async getReminderSlaScanHealth() {
+    return await this.reminderService.getReminderSlaScanHealth();
+  }
+
   @Post("sla-scan/enqueue")
   @HttpCode(200)
   @RequirePermissions(PermissionCode.systemConfig)

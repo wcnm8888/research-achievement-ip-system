@@ -45,6 +45,8 @@ type ReminderServiceMock = {
   runReminderSlaScan: ReturnType<typeof vi.fn>;
   runFullReminderSlaScan: ReturnType<typeof vi.fn>;
   listReminderSlaScanRuns: ReturnType<typeof vi.fn>;
+  getReminderSlaScanMetrics: ReturnType<typeof vi.fn>;
+  getReminderSlaScanHealth: ReturnType<typeof vi.fn>;
 };
 
 type TestCallback = (
@@ -358,6 +360,71 @@ const createServiceMock = (): ReminderServiceMock => ({
       },
     ],
   }),
+  getReminderSlaScanMetrics: vi.fn().mockResolvedValue({
+    generatedAt: "2026-06-18T09:00:00.000Z",
+    sampleSize: 2,
+    latestRun: null,
+    totals: {
+      queued: 1,
+      running: 0,
+      completed: 1,
+      failed: 0,
+      skipped: 0,
+      totalScanned: 5,
+      totalEscalated: 2,
+      totalSkippedItems: 3,
+      successRate: 1,
+    },
+    triggerBreakdown: [{ triggerType: "MANUAL", count: 1 }],
+    statusBreakdown: [
+      { status: "QUEUED", count: 1 },
+      { status: "COMPLETED", count: 1 },
+    ],
+    backlog: {
+      queuedCount: 1,
+      runningCount: 0,
+      oldestQueuedAt: "2026-06-18T08:00:00.000Z",
+    },
+    recentFailures: [],
+  }),
+  getReminderSlaScanHealth: vi.fn().mockResolvedValue({
+    generatedAt: "2026-06-18T09:00:00.000Z",
+    status: "WARNING",
+    reasons: [
+      {
+        code: "QUEUE_BACKLOG_HIGH",
+        severity: "WARNING",
+        message: "SLA 扫描排队任务较多，需要检查 worker 处理情况。",
+      },
+    ],
+    metricsSnapshot: {
+      generatedAt: "2026-06-18T09:00:00.000Z",
+      sampleSize: 2,
+      totals: {
+        queued: 10,
+        running: 0,
+        completed: 1,
+        failed: 0,
+        skipped: 0,
+        totalScanned: 5,
+        totalEscalated: 2,
+        totalSkippedItems: 3,
+        successRate: 1,
+      },
+      triggerBreakdown: [{ triggerType: "MANUAL", count: 1 }],
+      statusBreakdown: [
+        { status: "QUEUED", count: 10 },
+        { status: "COMPLETED", count: 1 },
+      ],
+      backlog: {
+        queuedCount: 10,
+        runningCount: 0,
+        oldestQueuedAt: "2026-06-18T08:00:00.000Z",
+      },
+      recentFailures: [],
+    },
+    recommendedActions: ["检查 scheduler 是否启用但 worker 未及时处理队列。"],
+  }),
 });
 
 describe("ReminderController HTTP", () => {
@@ -638,6 +705,42 @@ describe("ReminderController HTTP", () => {
           status: "COMPLETED",
         });
         expect(service.listReminderSlaScanRuns).toHaveBeenCalledTimes(1);
+
+        const metricsResponse = await request(app.getHttpServer() as Server)
+          .get("/reminders/sla-scan/metrics")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(metricsResponse.body.totals).toMatchObject({
+          queued: 1,
+          completed: 1,
+          successRate: 1,
+        });
+        expect(metricsResponse.body).not.toHaveProperty("safeSummary");
+        expect(service.getReminderSlaScanMetrics).toHaveBeenCalledTimes(1);
+
+        const healthResponse = await request(app.getHttpServer() as Server)
+          .get("/reminders/sla-scan/health")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(200);
+
+        expect(healthResponse.body).toMatchObject({
+          status: "WARNING",
+          reasons: [
+            expect.objectContaining({
+              code: "QUEUE_BACKLOG_HIGH",
+              severity: "WARNING",
+            }),
+          ],
+        });
+        const healthPayload = JSON.stringify(healthResponse.body).toLowerCase();
+        expect(healthResponse.body.metricsSnapshot).not.toHaveProperty("latestRun");
+        expect(healthPayload).not.toContain("safesummary");
+        expect(healthPayload).not.toContain("token");
+        expect(healthPayload).not.toContain("password");
+        expect(healthPayload).not.toContain("cookie");
+        expect(healthPayload).not.toContain("session");
+        expect(service.getReminderSlaScanHealth).toHaveBeenCalledTimes(1);
       },
     );
   });
@@ -700,11 +803,21 @@ describe("ReminderController HTTP", () => {
           .post("/reminders/sla-scan/process-next")
           .set("X-Demo-User-Id", ids.user)
           .expect(403);
+        await request(app.getHttpServer() as Server)
+          .get("/reminders/sla-scan/metrics")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(403);
+        await request(app.getHttpServer() as Server)
+          .get("/reminders/sla-scan/health")
+          .set("X-Demo-User-Id", ids.user)
+          .expect(403);
 
         expect(service.runFullReminderSlaScan).not.toHaveBeenCalled();
         expect(service.updateReminderSlaPolicy).not.toHaveBeenCalled();
         expect(service.enqueueReminderSlaScan).not.toHaveBeenCalled();
         expect(service.processNextReminderSlaScan).not.toHaveBeenCalled();
+        expect(service.getReminderSlaScanMetrics).not.toHaveBeenCalled();
+        expect(service.getReminderSlaScanHealth).not.toHaveBeenCalled();
       },
     );
   });

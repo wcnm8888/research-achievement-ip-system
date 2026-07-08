@@ -12,14 +12,19 @@ import {
   fetchReminderEscalationHistory,
   fetchReminderSlaPolicy,
   fetchReminderSlaQueue,
+  fetchReminderSlaScanHealth,
+  fetchReminderSlaScanMetrics,
   fetchReminderSlaScanRuns,
   formatReminderSlaScanRun,
+  formatReminderSlaSuccessRate,
   formatReminderSlaPolicy,
   formatReminderDate,
   getEscalationBlockedReasonLabel,
   getEscalationTargetLabel,
   getReminderGovernanceText,
   getReminderSeverityColor,
+  getReminderSlaHealthStatusColor,
+  getReminderSlaHealthStatusLabel,
   getReminderSlaScanRunStatusLabel,
   getReminderSlaStatusLabel,
   getReminderSlaTriggerTypeLabel,
@@ -38,6 +43,8 @@ import type {
   ReminderSlaPolicy,
   ReminderSlaQueueItem,
   ReminderSlaQueueResponse,
+  ReminderSlaScanHealthResponse,
+  ReminderSlaScanMetricsResponse,
   ReminderSlaScanRunsResponse,
   ReminderSlaScanResult,
 } from "./types";
@@ -71,6 +78,10 @@ export function Reminders({ demoUserId }: RemindersProps) {
     useState<Loadable<ReminderSlaPolicy>>(emptyLoadable);
   const [scanRuns, setScanRuns] =
     useState<Loadable<ReminderSlaScanRunsResponse>>(emptyLoadable);
+  const [scanMetrics, setScanMetrics] =
+    useState<Loadable<ReminderSlaScanMetricsResponse>>(emptyLoadable);
+  const [scanHealth, setScanHealth] =
+    useState<Loadable<ReminderSlaScanHealthResponse>>(emptyLoadable);
   const [scanResult, setScanResult] = useState<ReminderSlaScanResult | null>(null);
   const [operationError, setOperationError] = useState<ApiError | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
@@ -82,6 +93,8 @@ export function Reminders({ demoUserId }: RemindersProps) {
       setSlaQueue(emptyLoadable);
       setSlaPolicy(emptyLoadable);
       setScanRuns(emptyLoadable);
+      setScanMetrics(emptyLoadable);
+      setScanHealth(emptyLoadable);
       return;
     }
 
@@ -89,17 +102,23 @@ export function Reminders({ demoUserId }: RemindersProps) {
     setSlaQueue({ loading: true, data: null, error: null });
     setSlaPolicy({ loading: true, data: null, error: null });
     setScanRuns({ loading: true, data: null, error: null });
+    setScanMetrics({ loading: true, data: null, error: null });
+    setScanHealth({ loading: true, data: null, error: null });
     try {
-      const [data, queue, policy, runs] = await Promise.all([
+      const [data, queue, policy, runs, metrics, health] = await Promise.all([
         fetchReminderCenter(apiClient),
         fetchReminderSlaQueue(apiClient),
         fetchReminderSlaPolicy(apiClient),
         fetchReminderSlaScanRuns(apiClient),
+        fetchReminderSlaScanMetrics(apiClient),
+        fetchReminderSlaScanHealth(apiClient),
       ]);
       setCenter({ loading: false, data, error: null });
       setSlaQueue({ loading: false, data: queue, error: null });
       setSlaPolicy({ loading: false, data: policy, error: null });
       setScanRuns({ loading: false, data: runs, error: null });
+      setScanMetrics({ loading: false, data: metrics, error: null });
+      setScanHealth({ loading: false, data: health, error: null });
     } catch (error) {
       const normalizedError = normalizeReminderError(error);
       setCenter({
@@ -110,6 +129,8 @@ export function Reminders({ demoUserId }: RemindersProps) {
       setSlaQueue({ loading: false, data: null, error: normalizedError });
       setSlaPolicy({ loading: false, data: null, error: normalizedError });
       setScanRuns({ loading: false, data: null, error: normalizedError });
+      setScanMetrics({ loading: false, data: null, error: normalizedError });
+      setScanHealth({ loading: false, data: null, error: normalizedError });
     }
   }, [apiClient, demoUserId]);
 
@@ -311,6 +332,90 @@ export function Reminders({ demoUserId }: RemindersProps) {
             <Typography.Text>
               {slaPolicy.data ? formatReminderSlaPolicy(slaPolicy.data) : "-"}
             </Typography.Text>
+            <DataState
+              loading={scanMetrics.loading}
+              error={scanMetrics.error}
+              empty={
+                !scanMetrics.loading &&
+                !scanMetrics.error &&
+                !scanMetrics.data
+              }
+              emptyText="暂无扫描指标"
+              onRetry={loadCenter}
+            >
+              <Descriptions bordered size="small" column={{ xs: 1, md: 4 }}>
+                <Descriptions.Item label="样本数">
+                  {scanMetrics.data?.sampleSize ?? 0}
+                </Descriptions.Item>
+                <Descriptions.Item label="排队">
+                  {scanMetrics.data?.backlog.queuedCount ?? 0}
+                </Descriptions.Item>
+                <Descriptions.Item label="运行中">
+                  {scanMetrics.data?.backlog.runningCount ?? 0}
+                </Descriptions.Item>
+                <Descriptions.Item label="成功率">
+                  {formatReminderSlaSuccessRate(
+                    scanMetrics.data?.totals.successRate ?? 0,
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label="已完成">
+                  {scanMetrics.data?.totals.completed ?? 0}
+                </Descriptions.Item>
+                <Descriptions.Item label="失败">
+                  {scanMetrics.data?.totals.failed ?? 0}
+                </Descriptions.Item>
+                <Descriptions.Item label="升级数">
+                  {scanMetrics.data?.totals.totalEscalated ?? 0}
+                </Descriptions.Item>
+                <Descriptions.Item label="最早排队">
+                  {formatReminderDate(scanMetrics.data?.backlog.oldestQueuedAt)}
+                </Descriptions.Item>
+              </Descriptions>
+            </DataState>
+            <DataState
+              loading={scanHealth.loading}
+              error={scanHealth.error}
+              empty={
+                !scanHealth.loading &&
+                !scanHealth.error &&
+                !scanHealth.data
+              }
+              emptyText="暂无健康状态"
+              onRetry={loadCenter}
+            >
+              <Space direction="vertical" size={8} className="full-width">
+                <Space size={8} wrap>
+                  <Typography.Text strong>健康状态</Typography.Text>
+                  <Tag
+                    color={getReminderSlaHealthStatusColor(
+                      scanHealth.data?.status ?? "HEALTHY",
+                    )}
+                  >
+                    {getReminderSlaHealthStatusLabel(
+                      scanHealth.data?.status ?? "HEALTHY",
+                    )}
+                  </Tag>
+                </Space>
+                {scanHealth.data?.reasons.length ? (
+                  <Space direction="vertical" size={4}>
+                    {scanHealth.data.reasons.map((reason) => (
+                      <Typography.Text key={reason.code}>
+                        {reason.code}：{reason.message}
+                      </Typography.Text>
+                    ))}
+                  </Space>
+                ) : (
+                  <Typography.Text type="secondary">暂无告警原因</Typography.Text>
+                )}
+                {scanHealth.data?.recommendedActions.length ? (
+                  <Space direction="vertical" size={4}>
+                    {scanHealth.data.recommendedActions.map((action) => (
+                      <Typography.Text key={action}>{action}</Typography.Text>
+                    ))}
+                  </Space>
+                ) : null}
+              </Space>
+            </DataState>
             <Space size={8} wrap>
               <Button
                 onClick={saveSlaPolicy}

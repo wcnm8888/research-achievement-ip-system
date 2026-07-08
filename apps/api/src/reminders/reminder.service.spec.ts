@@ -1621,3 +1621,279 @@ describe("ReminderService SLA async queue", () => {
     );
   });
 });
+
+describe("ReminderService.getReminderSlaScanMetrics", () => {
+  it("aggregates recent scan runs into safe metrics", async () => {
+    const repository = createRepository({
+      listSlaScanRuns: vi.fn().mockResolvedValue([
+        makeSlaScanRunRecord({
+          id: "99000000-0000-4000-8000-000000000003",
+          status: "QUEUED",
+          triggerType: "API_QUEUE",
+          queuedAt: new Date("2026-06-18T08:00:00.000Z"),
+        }),
+        makeSlaScanRunRecord({
+          id: "99000000-0000-4000-8000-000000000002",
+          status: "FAILED",
+          triggerType: "SCHEDULED",
+          scannedCount: 0,
+          escalatedCount: 0,
+          skippedCount: 0,
+          failureReason: "SCAN_FAILED",
+          safeSummary: {
+            reason: "SCAN_FAILED",
+            rawError: "token password cookie should not be projected",
+          },
+        }),
+        makeSlaScanRunRecord({
+          id: "99000000-0000-4000-8000-000000000001",
+          status: "COMPLETED",
+          triggerType: "MANUAL",
+          scannedCount: 5,
+          escalatedCount: 2,
+          skippedCount: 3,
+        }),
+      ]),
+    } as never);
+    const { service } = createService(repository);
+
+    const result = await service.getReminderSlaScanMetrics();
+
+    expect(repository.listSlaScanRuns).toHaveBeenCalledWith(200);
+    expect(result.sampleSize).toBe(3);
+    expect(result.totals).toMatchObject({
+      queued: 1,
+      completed: 1,
+      failed: 1,
+      totalScanned: 5,
+      totalEscalated: 2,
+      totalSkippedItems: 3,
+      successRate: 0.5,
+    });
+    expect(result.backlog).toMatchObject({
+      queuedCount: 1,
+      oldestQueuedAt: "2026-06-18T08:00:00.000Z",
+    });
+    expect(result.recentFailures[0]).toEqual(
+      expect.objectContaining({
+        id: "99000000-0000-4000-8000-000000000002",
+        failureReason: "SCAN_FAILED",
+      }),
+    );
+    const payload = JSON.stringify(result).toLowerCase();
+    expect(payload).not.toContain("rawerror");
+    expect(payload).not.toContain("token");
+    expect(payload).not.toContain("password");
+    expect(payload).not.toContain("cookie");
+  });
+});
+
+describe("ReminderService.getReminderSlaScanHealth", () => {
+  it("returns healthy when no health rules match", async () => {
+    const repository = createRepository({
+      listSlaScanRuns: vi.fn().mockResolvedValue([
+        makeSlaScanRunRecord({
+          status: "COMPLETED",
+          scannedCount: 5,
+        }),
+      ]),
+    } as never);
+    const { service } = createService(repository);
+
+    const result = await service.getReminderSlaScanHealth();
+
+    expect(result.status).toBe("HEALTHY");
+    expect(result.reasons).toEqual([]);
+    expect(result.metricsSnapshot.totals.completed).toBe(1);
+    expect(result.metricsSnapshot).not.toHaveProperty("latestRun");
+  });
+
+  it("warns when queued scan backlog is high", async () => {
+    const repository = createRepository({
+      listSlaScanRuns: vi.fn().mockResolvedValue(
+        Array.from({ length: 10 }, (_, index) =>
+          makeSlaScanRunRecord({
+            id: `99000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+            status: "QUEUED",
+            queuedAt: new Date(`2026-06-18T08:${String(index).padStart(2, "0")}:00.000Z`),
+          }),
+        ),
+      ),
+    } as never);
+    const { service } = createService(repository);
+
+    const result = await service.getReminderSlaScanHealth();
+
+    expect(result.status).toBe("WARNING");
+    expect(result.reasons).toContainEqual(
+      expect.objectContaining({
+        code: "QUEUE_BACKLOG_HIGH",
+        severity: "WARNING",
+      }),
+    );
+  });
+
+  it("marks stale running locks as critical", async () => {
+    const repository = createRepository({
+      listSlaScanRuns: vi.fn().mockResolvedValue([
+        makeSlaScanRunRecord({
+          status: "RUNNING",
+          lockedUntil: new Date("2020-01-01T00:00:00.000Z"),
+        }),
+      ]),
+    } as never);
+    const { service } = createService(repository);
+
+    const result = await service.getReminderSlaScanHealth();
+
+    expect(result.status).toBe("CRITICAL");
+    expect(result.reasons).toContainEqual(
+      expect.objectContaining({
+        code: "STALE_RUNNING_LOCK",
+        severity: "CRITICAL",
+      }),
+    );
+  });
+
+  it("warns when recent failures lower success rate below threshold", async () => {
+    const repository = createRepository({
+      listSlaScanRuns: vi.fn().mockResolvedValue([
+        makeSlaScanRunRecord({ status: "COMPLETED" }),
+        makeSlaScanRunRecord({
+          id: "99000000-0000-4000-8000-000000000002",
+          status: "FAILED",
+          failureReason: "SCAN_FAILED",
+        }),
+      ]),
+    } as never);
+    const { service } = createService(repository);
+
+    const result = await service.getReminderSlaScanHealth();
+
+    expect(result.status).toBe("WARNING");
+    expect(result.reasons).toContainEqual(
+      expect.objectContaining({
+        code: "LOW_SUCCESS_RATE",
+        severity: "WARNING",
+      }),
+    );
+  });
+
+  it("marks repeated recent failures as critical", async () => {
+    const repository = createRepository({
+      listSlaScanRuns: vi.fn().mockResolvedValue(
+        Array.from({ length: 3 }, (_, index) =>
+          makeSlaScanRunRecord({
+            id: `99000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+            status: "FAILED",
+            failureReason: "SCAN_FAILED",
+          }),
+        ),
+      ),
+    } as never);
+    const { service } = createService(repository);
+
+    const result = await service.getReminderSlaScanHealth();
+
+    expect(result.status).toBe("CRITICAL");
+    expect(result.reasons).toContainEqual(
+      expect.objectContaining({
+        code: "REPEATED_FAILURES",
+        severity: "CRITICAL",
+      }),
+    );
+  });
+
+  it("uses the highest severity when multiple rules match", async () => {
+    const repository = createRepository({
+      listSlaScanRuns: vi.fn().mockResolvedValue([
+        ...Array.from({ length: 10 }, (_, index) =>
+          makeSlaScanRunRecord({
+            id: `99000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+            status: "QUEUED",
+            queuedAt: sentAt,
+          }),
+        ),
+        makeSlaScanRunRecord({
+          id: "99000000-0000-4000-8000-000000000099",
+          status: "RUNNING",
+          lockedUntil: new Date("2020-01-01T00:00:00.000Z"),
+        }),
+      ]),
+    } as never);
+    const { service } = createService(repository);
+
+    const result = await service.getReminderSlaScanHealth();
+
+    expect(result.status).toBe("CRITICAL");
+    expect(result.reasons.map((reason) => reason.code)).toEqual(
+      expect.arrayContaining(["QUEUE_BACKLOG_HIGH", "STALE_RUNNING_LOCK"]),
+    );
+  });
+
+  it("does not expose raw summaries or sensitive values in health output", async () => {
+    const repository = createRepository({
+      listSlaScanRuns: vi.fn().mockResolvedValue([
+        makeSlaScanRunRecord({
+          status: "FAILED",
+          failureReason: "SCAN_FAILED",
+          safeSummary: {
+            rawError: "token password cookie session connection string secret",
+          },
+        }),
+      ]),
+    } as never);
+    const { service } = createService(repository);
+
+    const result = await service.getReminderSlaScanHealth();
+    const payload = JSON.stringify(result).toLowerCase();
+
+    expect(payload).not.toContain("rawerror");
+    expect(payload).not.toContain("safesummary");
+    expect(payload).not.toContain("token");
+    expect(payload).not.toContain("password");
+    expect(payload).not.toContain("cookie");
+    expect(payload).not.toContain("session");
+    expect(payload).not.toContain("connection string");
+    expect(payload).not.toContain("secret");
+  });
+});
+
+const makeSlaScanRunRecord = (
+  overrides: Partial<{
+    id: string;
+    status: string;
+    triggerType: string;
+    scannedCount: number;
+    escalatedCount: number;
+    skippedCount: number;
+    failureReason: string | null;
+    safeSummary: unknown;
+    queuedAt: Date | null;
+    lockedUntil: Date | null;
+  }> = {},
+) => ({
+  id: overrides.id ?? "99000000-0000-4000-8000-000000000001",
+  policyCode: "REMINDER_SLA_DEFAULT_MVP",
+  actorUserId: ids.receiver,
+  actorDepartmentId: ids.department,
+  scanScope: "ALL_RECEIVERS",
+  status: overrides.status ?? "COMPLETED",
+  triggerType: overrides.triggerType ?? "MANUAL",
+  idempotencyKey: null,
+  lockKey: "REMINDER_SLA_FULL_SCAN",
+  lockedAt: sentAt,
+  lockedUntil: overrides.lockedUntil ?? new Date("2026-06-18T10:15:00.000Z"),
+  attemptCount: 1,
+  failureReason: overrides.failureReason ?? null,
+  requestedAt: sentAt,
+  queuedAt: overrides.queuedAt ?? null,
+  scannedCount: overrides.scannedCount ?? 0,
+  escalatedCount: overrides.escalatedCount ?? 0,
+  skippedCount: overrides.skippedCount ?? 0,
+  safeSummary: overrides.safeSummary ?? null,
+  startedAt: sentAt,
+  completedAt: sentAt,
+  createdAt: sentAt,
+  updatedAt: sentAt,
+});

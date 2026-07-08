@@ -360,6 +360,60 @@ export type ReminderSlaScanRunsResponse = {
   items: ReminderSlaScanRunItem[];
 };
 
+export type ReminderSlaScanMetricsResponse = {
+  generatedAt: string;
+  sampleSize: number;
+  latestRun: ReminderSlaScanRunItem | null;
+  totals: {
+    queued: number;
+    running: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+    totalScanned: number;
+    totalEscalated: number;
+    totalSkippedItems: number;
+    successRate: number;
+  };
+  triggerBreakdown: Array<{
+    triggerType: string;
+    count: number;
+  }>;
+  statusBreakdown: Array<{
+    status: string;
+    count: number;
+  }>;
+  backlog: {
+    queuedCount: number;
+    runningCount: number;
+    oldestQueuedAt: string | null;
+  };
+  recentFailures: Array<{
+    id: string;
+    status: string;
+    triggerType: string;
+    failureReason: string | null;
+    startedAt: string;
+    completedAt: string | null;
+  }>;
+};
+
+export type ReminderSlaHealthStatus = "HEALTHY" | "WARNING" | "CRITICAL";
+
+export type ReminderSlaHealthReason = {
+  code: string;
+  severity: "WARNING" | "CRITICAL";
+  message: string;
+};
+
+export type ReminderSlaScanHealthResponse = {
+  generatedAt: string;
+  status: ReminderSlaHealthStatus;
+  reasons: ReminderSlaHealthReason[];
+  metricsSnapshot: Omit<ReminderSlaScanMetricsResponse, "latestRun">;
+  recommendedActions: string[];
+};
+
 export type ReminderSlaFullScanResult = ReminderSlaScanResult & {
   scanRun: ReminderSlaScanRunItem;
 };

@@ -10,8 +10,11 @@ import type {
   ReminderSlaPolicyUpdateInput,
   ReminderSlaProcessNextResult,
   ReminderSlaQueueResponse,
+  ReminderSlaHealthStatus,
+  ReminderSlaScanHealthResponse,
   ReminderSlaScanEnqueueInput,
   ReminderSlaScanEnqueueResult,
+  ReminderSlaScanMetricsResponse,
   ReminderSlaScanRunsResponse,
   ReminderSlaScanResult,
 } from "./types";
@@ -70,6 +73,16 @@ export const processNextReminderSlaScan = (
 export const fetchReminderSlaScanRuns = (
   apiClient: ApiClient,
 ): Promise<ReminderSlaScanRunsResponse> => apiClient.get("/reminders/sla-scan/runs");
+
+export const fetchReminderSlaScanMetrics = (
+  apiClient: ApiClient,
+): Promise<ReminderSlaScanMetricsResponse> =>
+  apiClient.get("/reminders/sla-scan/metrics");
+
+export const fetchReminderSlaScanHealth = (
+  apiClient: ApiClient,
+): Promise<ReminderSlaScanHealthResponse> =>
+  apiClient.get("/reminders/sla-scan/health");
 
 export const confirmReminder = (
   apiClient: ApiClient,
@@ -192,6 +205,33 @@ export const formatReminderSlaScanRun = (
   run: ReminderSlaScanRunsResponse["items"][number],
 ): string =>
   `${getReminderSlaScanRunStatusLabel(run.status)} / ${run.scanScope} / ${getReminderSlaTriggerTypeLabel(run.triggerType)} / 尝试 ${run.attemptCount} / 扫描 ${run.scannedCount} / 升级 ${run.escalatedCount} / 跳过 ${run.skippedCount}`;
+
+export const formatReminderSlaSuccessRate = (value: number): string =>
+  `${Math.round(value * 100)}%`;
+
+export const getReminderSlaHealthStatusLabel = (
+  status: ReminderSlaHealthStatus | string,
+): string => {
+  const labels: Record<ReminderSlaHealthStatus, string> = {
+    HEALTHY: "正常",
+    WARNING: "预警",
+    CRITICAL: "严重",
+  };
+
+  return labels[status as ReminderSlaHealthStatus] ?? status;
+};
+
+export const getReminderSlaHealthStatusColor = (
+  status: ReminderSlaHealthStatus | string,
+): string => {
+  const colors: Record<ReminderSlaHealthStatus, string> = {
+    HEALTHY: "green",
+    WARNING: "orange",
+    CRITICAL: "red",
+  };
+
+  return colors[status as ReminderSlaHealthStatus] ?? "default";
+};
 
 export const formatReminderDate = (value?: string | null): string => {
   if (!value) {

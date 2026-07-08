@@ -227,6 +227,64 @@ export type ReminderSlaScanRunsResponse = {
   items: ReminderSlaScanRunItem[];
 };
 
+export type ReminderSlaScanMetricsResponse = {
+  generatedAt: string;
+  sampleSize: number;
+  latestRun: ReminderSlaScanRunItem | null;
+  totals: {
+    queued: number;
+    running: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+    totalScanned: number;
+    totalEscalated: number;
+    totalSkippedItems: number;
+    successRate: number;
+  };
+  triggerBreakdown: Array<{
+    triggerType: string;
+    count: number;
+  }>;
+  statusBreakdown: Array<{
+    status: string;
+    count: number;
+  }>;
+  backlog: {
+    queuedCount: number;
+    runningCount: number;
+    oldestQueuedAt: string | null;
+  };
+  recentFailures: Array<{
+    id: string;
+    status: string;
+    triggerType: string;
+    failureReason: string | null;
+    startedAt: string;
+    completedAt: string | null;
+  }>;
+};
+
+export type ReminderSlaScanHealthStatus = "HEALTHY" | "WARNING" | "CRITICAL";
+
+export type ReminderSlaScanHealthReason = {
+  code:
+    | "STALE_RUNNING_LOCK"
+    | "QUEUE_BACKLOG_HIGH"
+    | "LOW_SUCCESS_RATE"
+    | "REPEATED_FAILURES";
+  severity: Exclude<ReminderSlaScanHealthStatus, "HEALTHY">;
+  message: string;
+};
+
+export type ReminderSlaScanHealthResponse = {
+  generatedAt: string;
+  status: ReminderSlaScanHealthStatus;
+  reasons: ReminderSlaScanHealthReason[];
+  metricsSnapshot: Omit<ReminderSlaScanMetricsResponse, "latestRun">;
+  recommendedActions: string[];
+};
+
 export type ReminderSlaFullScanResult = ReminderSlaScanResult & {
   scanRun: ReminderSlaScanRunItem;
 };
@@ -815,6 +873,29 @@ export class ReminderService {
     return {
       items: runs.map(toReminderSlaScanRunItem),
     };
+  }
+
+  async getReminderSlaScanMetrics(): Promise<ReminderSlaScanMetricsResponse> {
+    const generatedAt = new Date();
+    const runs = this.reminderRepository.listSlaScanRuns
+      ? (await this.reminderRepository.listSlaScanRuns(200)).map(
+          toReminderSlaScanRunItem,
+        )
+      : [];
+
+    return buildReminderSlaScanMetrics(runs, generatedAt);
+  }
+
+  async getReminderSlaScanHealth(): Promise<ReminderSlaScanHealthResponse> {
+    const generatedAt = new Date();
+    const runs = this.reminderRepository.listSlaScanRuns
+      ? (await this.reminderRepository.listSlaScanRuns(200)).map(
+          toReminderSlaScanRunItem,
+        )
+      : [];
+    const metrics = buildReminderSlaScanMetrics(runs, generatedAt);
+
+    return buildReminderSlaScanHealth(metrics, runs, generatedAt);
   }
 
   async enqueueReminderSlaScan(
@@ -1859,6 +1940,219 @@ const makeEphemeralScanRun = (
   createdAt: now,
   updatedAt: now,
 });
+
+const buildReminderSlaScanMetrics = (
+  runs: readonly ReminderSlaScanRunItem[],
+  generatedAt: Date,
+): ReminderSlaScanMetricsResponse => {
+  const statusCounts = countBy(runs, (run) => run.status || "UNKNOWN");
+  const triggerCounts = countBy(runs, (run) => run.triggerType || "UNKNOWN");
+  const completedCount = statusCounts.get("COMPLETED") ?? 0;
+  const failedCount = statusCounts.get("FAILED") ?? 0;
+  const terminalCount =
+    completedCount + failedCount + (statusCounts.get("SKIPPED") ?? 0);
+  const queuedRuns = runs.filter((run) => run.status === "QUEUED");
+
+  return {
+    generatedAt: generatedAt.toISOString(),
+    sampleSize: runs.length,
+    latestRun: runs[0] ?? null,
+    totals: {
+      queued: statusCounts.get("QUEUED") ?? 0,
+      running: statusCounts.get("RUNNING") ?? 0,
+      completed: completedCount,
+      failed: failedCount,
+      skipped: statusCounts.get("SKIPPED") ?? 0,
+      totalScanned: sumBy(runs, (run) => run.scannedCount),
+      totalEscalated: sumBy(runs, (run) => run.escalatedCount),
+      totalSkippedItems: sumBy(runs, (run) => run.skippedCount),
+      successRate:
+        terminalCount > 0
+          ? Number((completedCount / terminalCount).toFixed(4))
+          : 0,
+    },
+    triggerBreakdown: toTriggerBreakdown(triggerCounts),
+    statusBreakdown: toStatusBreakdown(statusCounts),
+    backlog: {
+      queuedCount: statusCounts.get("QUEUED") ?? 0,
+      runningCount: statusCounts.get("RUNNING") ?? 0,
+      oldestQueuedAt: getOldestDateString(queuedRuns.map((run) => run.queuedAt)),
+    },
+    recentFailures: runs
+      .filter((run) => run.status === "FAILED" || run.failureReason)
+      .slice(0, 5)
+      .map((run) => ({
+        id: run.id,
+        status: run.status,
+        triggerType: run.triggerType,
+        failureReason: run.failureReason,
+        startedAt: run.startedAt,
+        completedAt: run.completedAt,
+      })),
+  };
+};
+
+const buildReminderSlaScanHealth = (
+  metrics: ReminderSlaScanMetricsResponse,
+  runs: readonly ReminderSlaScanRunItem[],
+  generatedAt: Date,
+): ReminderSlaScanHealthResponse => {
+  const reasons: ReminderSlaScanHealthReason[] = [];
+  const now = generatedAt.getTime();
+  const staleRunningLock = runs.some((run) => {
+    if (run.status !== "RUNNING" || !run.lockedUntil) {
+      return false;
+    }
+
+    const lockedUntil = new Date(run.lockedUntil).getTime();
+    return Number.isFinite(lockedUntil) && lockedUntil < now;
+  });
+
+  if (staleRunningLock) {
+    reasons.push({
+      code: "STALE_RUNNING_LOCK",
+      severity: "CRITICAL",
+      message: "存在已过期的运行中扫描锁，需要检查 worker 是否中断或锁未释放。",
+    });
+  }
+
+  if (metrics.backlog.queuedCount >= 10) {
+    reasons.push({
+      code: "QUEUE_BACKLOG_HIGH",
+      severity: "WARNING",
+      message: "SLA 扫描排队任务较多，可能存在 scheduler 入队快于 worker 处理的情况。",
+    });
+  }
+
+  if (metrics.totals.failed > 0 && metrics.totals.successRate < 0.8) {
+    reasons.push({
+      code: "LOW_SUCCESS_RATE",
+      severity: "WARNING",
+      message: "最近扫描成功率低于 80%，需要检查失败原因和 worker 执行情况。",
+    });
+  }
+
+  if (metrics.totals.failed >= 3) {
+    reasons.push({
+      code: "REPEATED_FAILURES",
+      severity: "CRITICAL",
+      message: "最近扫描失败次数达到 3 次或以上，需要优先排查扫描执行链路。",
+    });
+  }
+
+  const { latestRun: _latestRun, ...metricsSnapshot } = metrics;
+
+  return {
+    generatedAt: generatedAt.toISOString(),
+    status: getReminderSlaHealthStatus(reasons),
+    reasons,
+    metricsSnapshot,
+    recommendedActions: buildReminderSlaRecommendedActions(reasons),
+  };
+};
+
+const getReminderSlaHealthStatus = (
+  reasons: readonly ReminderSlaScanHealthReason[],
+): ReminderSlaScanHealthStatus => {
+  if (reasons.some((reason) => reason.severity === "CRITICAL")) {
+    return "CRITICAL";
+  }
+
+  if (reasons.length > 0) {
+    return "WARNING";
+  }
+
+  return "HEALTHY";
+};
+
+const buildReminderSlaRecommendedActions = (
+  reasons: readonly ReminderSlaScanHealthReason[],
+): string[] => {
+  if (reasons.length === 0) {
+    return ["保持 scheduler 与 worker 运行状态巡检，确认队列持续被消费。"];
+  }
+
+  const actions = new Set<string>();
+  const codes = new Set(reasons.map((reason) => reason.code));
+
+  if (codes.has("QUEUE_BACKLOG_HIGH")) {
+    actions.add("检查 scheduler 是否启用但 worker 未及时处理队列。");
+    actions.add("必要时由管理员人工触发处理下一条扫描任务。");
+  }
+
+  if (codes.has("STALE_RUNNING_LOCK")) {
+    actions.add("检查 stuck RUNNING 任务及锁过期原因。");
+    actions.add("确认没有异常退出的 worker 持续占用扫描锁。");
+  }
+
+  if (codes.has("LOW_SUCCESS_RATE") || codes.has("REPEATED_FAILURES")) {
+    actions.add("检查最近失败原因是否为 SCAN_FAILED、LOCK_ACTIVE 或 CLAIM_CONFLICT。");
+    actions.add("确认提醒升级策略、接收人解析和扫描数据范围是否正常。");
+  }
+
+  return [...actions];
+};
+
+const countBy = <T>(
+  items: readonly T[],
+  selectKey: (item: T) => string,
+): Map<string, number> => {
+  const counts = new Map<string, number>();
+
+  for (const item of items) {
+    const key = selectKey(item);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return counts;
+};
+
+const sumBy = <T>(items: readonly T[], selectValue: (item: T) => number): number =>
+  items.reduce((total, item) => total + selectValue(item), 0);
+
+const toStatusBreakdown = (
+  counts: Map<string, number>,
+): Array<{ status: string; count: number }> =>
+  [...counts.entries()]
+    .sort(
+      ([left], [right]) =>
+        getSortIndex(statusSortOrder, left) - getSortIndex(statusSortOrder, right) ||
+        left.localeCompare(right),
+    )
+    .map(([status, count]) => ({ status, count }));
+
+const toTriggerBreakdown = (
+  counts: Map<string, number>,
+): Array<{ triggerType: string; count: number }> =>
+  [...counts.entries()]
+    .sort(
+      ([left], [right]) =>
+        getSortIndex(triggerTypeSortOrder, left) -
+          getSortIndex(triggerTypeSortOrder, right) ||
+        left.localeCompare(right),
+    )
+    .map(([triggerType, count]) => ({ triggerType, count }));
+
+const getSortIndex = (sortOrder: readonly string[], value: string): number => {
+  const index = sortOrder.indexOf(value);
+
+  return index === -1 ? sortOrder.length : index;
+};
+
+const getOldestDateString = (
+  values: readonly (string | null)[],
+): string | null => {
+  const dates = values
+    .filter((value): value is string => Boolean(value))
+    .map((value) => new Date(value))
+    .filter((date) => !Number.isNaN(date.getTime()))
+    .sort((left, right) => left.getTime() - right.getTime());
+
+  return dates[0]?.toISOString() ?? null;
+};
+
+const statusSortOrder = ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "SKIPPED"];
+const triggerTypeSortOrder = ["MANUAL", "API_QUEUE", "SCHEDULED"];
 
 const compareReminderCenterItems = (
   left: ReminderCenterItem,

@@ -9,14 +9,19 @@ import {
   fetchReminderEscalationHistory,
   fetchReminderSlaPolicy,
   fetchReminderSlaQueue,
+  fetchReminderSlaScanHealth,
+  fetchReminderSlaScanMetrics,
   fetchReminderSlaScanRuns,
   formatReminderSlaScanRun,
+  formatReminderSlaSuccessRate,
   formatReminderSlaPolicy,
   formatReminderDate,
   getEscalationBlockedReasonLabel,
   getEscalationTargetLabel,
   getReminderGovernanceText,
   getReminderSeverityColor,
+  getReminderSlaHealthStatusColor,
+  getReminderSlaHealthStatusLabel,
   getReminderSlaScanRunStatusLabel,
   getReminderSlaStatusLabel,
   getReminderSlaTriggerTypeLabel,
@@ -172,6 +177,8 @@ describe("reminders api helpers", () => {
     });
     await processNextReminderSlaScan(client);
     await fetchReminderSlaScanRuns(client);
+    await fetchReminderSlaScanMetrics(client);
+    await fetchReminderSlaScanHealth(client);
 
     expect(client.get).toHaveBeenCalledWith("/reminders/sla-policy");
     expect(client.put).toHaveBeenCalledWith("/reminders/sla-policy", policy);
@@ -186,6 +193,8 @@ describe("reminders api helpers", () => {
       "/reminders/sla-scan/process-next",
     );
     expect(client.get).toHaveBeenCalledWith("/reminders/sla-scan/runs");
+    expect(client.get).toHaveBeenCalledWith("/reminders/sla-scan/metrics");
+    expect(client.get).toHaveBeenCalledWith("/reminders/sla-scan/health");
   });
 });
 
@@ -254,6 +263,13 @@ describe("reminders display helpers", () => {
         updatedAt: "2026-06-18T00:01:00.000Z",
       }),
     ).toContain("ALL_RECEIVERS");
+    expect(formatReminderSlaSuccessRate(0.875)).toBe("88%");
+    expect(getReminderSlaHealthStatusLabel("HEALTHY")).toBe("正常");
+    expect(getReminderSlaHealthStatusLabel("WARNING")).toBe("预警");
+    expect(getReminderSlaHealthStatusLabel("CRITICAL")).toBe("严重");
+    expect(getReminderSlaHealthStatusColor("HEALTHY")).toBe("green");
+    expect(getReminderSlaHealthStatusColor("WARNING")).toBe("orange");
+    expect(getReminderSlaHealthStatusColor("CRITICAL")).toBe("red");
     expect(
       formatReminderSlaScanRun({
         id: "run-id-2",
