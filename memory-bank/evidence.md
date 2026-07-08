@@ -1,5 +1,73 @@
 # Evidence
 
+## 2026-07-08 Step 179 - API integration operations extension plan evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 293]`
+    with existing untracked local artifacts left untouched.
+  - User-provided current HEAD: `58613c392d5ce02536b213bd3957da16c589c87c`
+    (`test: verify local backup restore evidence`).
+- Context reviewed with targeted reads only:
+  - `memory-bank/api-integration-mock-acceptance-step172.md`.
+  - 7.3-related snippets from `memory-bank/final-acceptance-coverage-step174.md`.
+  - DOI / email / settings / Q&A snippets from `memory-bank/final-demo-runbook-step175.md`.
+  - Interface and settings smoke snippets from `memory-bank/final-demo-smoke-step176.md`.
+  - Recent Step172 and Step174-Step178 snippets from `memory-bank/progress.md`
+    and `memory-bank/evidence.md`.
+  - Interface-related indexes and snippets from settings API integration DTO,
+    controller, service, repository, Prisma schema, Web settings integration
+    page, AchievementForm DOI preview entry, notification/reminder/account
+    lifecycle local delivery boundaries.
+- Changed files:
+  - `memory-bank/api-integration-operations-extension-plan-step179.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Located interface Mock / reserved capabilities:
+  - DOI auto-fill preview: local `DOI` provider + `DOI_LOOKUP` scenario,
+    subject-based preview, safe metadata summary, no automatic business-record
+    overwrite, manual-entry fallback.
+  - Email notification preview: local `EMAIL` provider +
+    `EMAIL_NOTIFICATION` scenario, recipient/subject/summary/channel/retry/
+    timeout/fallback fields, `sendsExternalMessage=false`, in-app/manual
+    fallback.
+  - Reserved scenarios: `PATENT_STATUS_SYNC`, `FINANCE_RECONCILE`, and
+    `HR_SYNC` Mock previews.
+  - Reserved providers: `STORAGE`, `SEARCH`, and `OTHER` are schema/provider
+    level placeholders; storage currently has local disk / backup evidence, not
+    real object storage acceptance.
+  - Governance: provider, enabled switch, timeoutMs, configRef, archive/restore,
+    result modes, and safe `ApiCallLog` summaries.
+- Recommended Step179-execution documentation outputs:
+  - `memory-bank/api-integration-operations-runbook-step179.md`.
+  - `memory-bank/api-integration-production-readiness-checklist-step179.md`.
+  - `memory-bank/api-integration-demo-qa-card-step179.md`.
+  - Update progress/evidence with the execution boundary and evidence.
+- Verification:
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+  - Documentation-only plan confirmation; no full test run was required.
+- Explicitly not performed:
+  - No real DOI, Crossref, OpenAlex, Scopus, SMTP, SMS, enterprise WeChat, HR,
+    finance, patent, storage, or alerting provider call.
+  - No real external message send.
+  - No production configuration change, database write, migration, source
+    implementation, deployment change, or failure-replay implementation.
+  - No `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`,
+    screenshot, performance log, backup file, temporary script, or real
+    credential artifact was staged.
+- Phase-two / production pending:
+  - Real DOI / literature provider integration.
+  - Real SMTP / mail provider / SMS / enterprise WeChat integration.
+  - HR/SSO, finance, patent provider, object storage, search provider,
+    production key management, supplier SLA, real monitoring/alerting, failure
+    replay, audit retention, and production operational acceptance.
+- Boundaries observed:
+  - No `.env`, `.env.production`, password, Cookie, Token, private key, API key,
+    production connection string, supplier credential, or real supplier config
+    was read, copied, displayed, saved, or committed.
+  - No production/VPS/production DB or real external provider was accessed.
+  - Existing untracked local artifacts were left untouched and unstaged.
+
 ## 2026-07-08 Step 178 - Local backup / restore static evidence execution
 
 - Starting state:

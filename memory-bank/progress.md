@@ -1,5 +1,44 @@
 # Progress
 
+## 2026-07-08 Step 179 - API integration operations extension plan
+
+- Status: PASS.
+- Goal:
+  - Confirm the interface extension and degraded-operations documentation
+    hardening plan without implementing source changes.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Documentation:
+  - Added `memory-bank/api-integration-operations-extension-plan-step179.md`.
+  - The plan separates local phase-one verifiable mock capabilities, DOI and
+    email preview boundaries, HR / finance / patent / storage reserved
+    interface status, existing configuration and safe call-log signals,
+    evidence sources, next-step documentation outputs, explicit non-goals,
+    phase-two / production pending work, and security boundaries.
+- Located evidence sources:
+  - Step172 interface mock acceptance document.
+  - Step174 7.3 acceptance coverage rows.
+  - Step175 demo runbook DOI / email / settings Q&A.
+  - Step176 read-only smoke boundary for settings and protected API shape.
+  - Settings API integration DTO / controller / service / repository, Prisma
+    `ApiIntegration` / `ApiCallLog` models, Web settings integration page,
+    AchievementForm DOI preview entry, notification/reminder/account-lifecycle
+    local stub boundaries.
+- Verification:
+  - Plan confirmation only; no source implementation or external integration
+    operation was performed.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundary:
+  - No `.env`, `.env.production`, password, Cookie, Token, production
+    connection string, provider credential, or real supplier configuration was
+    read.
+  - No production/VPS/production DB, real DOI/Crossref/OpenAlex/Scopus, SMTP,
+    SMS, enterprise WeChat, HR, finance, patent service provider, or real
+    alerting platform was accessed.
+  - No database write, migration, Docker prune / volume prune, real external
+    API call, real email/SMS/enterprise-message send, source change, or
+    existing untracked local artifact staging occurred.
+
 ## 2026-07-08 Step 178 - Local backup / restore static evidence execution
 
 - Status: PASS.
