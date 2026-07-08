@@ -1,5 +1,51 @@
 # Progress
 
+## 2026-07-08 Step 183 - Performance acceptance gap and rerun plan closure
+
+- Status: PASS.
+- Goal:
+  - Close the 7.2 performance acceptance gap wording and rerun plan without
+    executing load tests, generating performance logs, reading credentials,
+    reading Cookie / Token values, or accessing production environments.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Documentation:
+  - Added `memory-bank/performance-acceptance-gap-and-rerun-plan-step183.md`.
+  - Updated this progress log and `memory-bank/evidence.md`.
+- Coverage strengthened:
+  - Summarized current performance capability: local baseline script,
+    authentication parameter support, local short GET baseline wording, and
+    lightweight 50-concurrency search preview wording.
+  - Explicitly kept 10000-achievement full-text search, real 50-user business
+    concurrency, authenticated business API rerun, production monitoring data,
+    capacity assessment, and production-grade performance report outside the
+    completed claim.
+  - Defined authenticated rerun prerequisites: transient local account,
+    human-injected environment variables, no recorded password, no recorded
+    Cookie / Token, and aggregate metrics only.
+  - Defined formal rerun plan elements for 10000-result search and 50-user
+    concurrency: data preparation, index preparation, permission filtering,
+    query set, metrics, monitoring, ramp-up / steady / ramp-down, stop
+    conditions, error thresholds, and data isolation.
+  - Added a performance report template and demo Q&A wording for common
+    reviewer questions.
+- Verification:
+  - Documentation-only change so no API/Web tests were required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Safety:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, production connection string, production
+    credential, production/VPS/production DB, real monitoring platform, or real
+    external system accessed.
+  - No real load test, 10000-data generation, 50-user concurrency test,
+    authenticated performance rerun, database write, migration, deletion,
+    reset, restore, clean, Docker prune, or volume prune.
+  - `.local-step170d-performance/` existence was confirmed only; its log/report
+    contents were not read.
+  - No `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`,
+    performance log, screenshot, backup file, temporary script, or credential
+    artifact was staged.
+
 ## 2026-07-08 Step 182 - Operations and compatibility acceptance gap closure
 
 - Status: PASS.

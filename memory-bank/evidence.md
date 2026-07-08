@@ -1,5 +1,73 @@
 # Evidence
 
+## 2026-07-08 Step 183 - Performance acceptance gap and rerun plan evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 298]`
+    with existing untracked local artifacts left untouched.
+  - Current HEAD verified as `a3be164f266a9b3903e4e7f445ad24648d20b6fe`
+    (`docs: summarize operations compatibility gaps`).
+- Context reviewed with targeted reads only:
+  - 7.2 snippets from
+    `memory-bank/final-acceptance-readiness-summary-step180.md`.
+  - Performance snippets from
+    `memory-bank/final-acceptance-coverage-step174.md`.
+  - Monitoring / operations snippets from
+    `memory-bank/operations-compatibility-acceptance-gap-step182.md`.
+  - `scripts/local-performance-baseline-step170d.mjs`.
+  - `.local-step170d-performance/` existence only; contents were not read.
+  - Recent Step170D / Step174 / Step180 / Step182 snippets from
+    `memory-bank/progress.md` and `memory-bank/evidence.md`.
+  - Keyword indexes for local-performance-baseline, performance, baseline,
+    10000, 50 concurrent, latency, p50, p95, p99, response time, throughput,
+    error rate, search, authenticated, `LOCAL_PERF_EMAIL`,
+    `LOCAL_PERF_PASSWORD`, monitoring, and capacity.
+- Existing capability confirmed:
+  - `scripts/local-performance-baseline-step170d.mjs` supports local Docker
+    production-like short GET baselines for the Web entry, dashboard summary,
+    search, achievements list, and custom report templates.
+  - The script supports transient local authentication through
+    `LOCAL_PERF_EMAIL` / `LOCAL_PERF_PASSWORD`; when authentication succeeds,
+    it uses a local session cookie in memory for subsequent requests.
+  - The script includes `search-50-concurrency-preview` with concurrency 50,
+    but this remains a lightweight preview, not formal 50-user business
+    acceptance.
+  - The script summarizes status codes, failed count, `p50`, `p95`, `max`, and
+    target threshold status.
+- Changed files:
+  - `memory-bank/performance-acceptance-gap-and-rerun-plan-step183.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Acceptance wording closed:
+  - Current evidence covers local baseline tooling, authentication parameter
+    support, local short GET baseline wording, and lightweight concurrency
+    preview wording.
+  - Formal 10000-achievement full-text search under 1 second, real 50-user
+    business concurrency, authenticated business API rerun, production
+    monitoring data, capacity assessment, and production-grade performance
+    report remain incomplete.
+  - Authenticated rerun requires a transient local account and human-injected
+    environment variables; results should record aggregate metrics only.
+  - The formal 10000-search and 50-user concurrency plans now include data,
+    index, permission, query set, metrics, monitoring, stop condition, error
+    threshold, data isolation, reporting, and demo Q&A guidance.
+- Verification:
+  - Documentation-only change; no API/Web tests required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundaries observed:
+  - No `.env`, `.env.production`, password, Cookie, Token, private key, API key,
+    production connection string, production credential, real monitoring config,
+    or production data was read.
+  - No production/VPS/production DB, real monitoring platform, real external
+    system, or real external account was accessed.
+  - No real load test, 10000-data generation, 50-user concurrency test,
+    authenticated performance rerun, database write, migration, deletion,
+    reset, restore, clean, Docker prune, or volume prune was run.
+  - No `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`,
+    performance logs, screenshots, backup files, temporary scripts, or
+    credential artifacts were staged.
+
 ## 2026-07-08 Step 182 - Operations and compatibility acceptance gap closure evidence
 
 - Starting state:
