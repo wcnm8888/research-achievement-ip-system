@@ -433,6 +433,11 @@ export function App() {
               onClick={(event) => setActiveKey(event.key)}
             />
           </Sider>
+          <MobilePrimaryNav
+            activeKey={activeKey}
+            items={visibleNavItems}
+            onSelect={setActiveKey}
+          />
           <Content className="app-content">
             {productionAuthMode ? (
               <ProductionAuthBanner authUser={authUser} />
@@ -616,6 +621,30 @@ function ProductionAuthBanner({ authUser }: { authUser: AuthUser | null }) {
         <Typography.Text type="secondary">{authUser?.email ?? "暂无登录信息"}</Typography.Text>
       </Space>
     </div>
+  );
+}
+
+function MobilePrimaryNav({
+  activeKey,
+  items,
+  onSelect,
+}: {
+  activeKey: string;
+  items: readonly NavItem[];
+  onSelect: (key: string) => void;
+}) {
+  return (
+    <nav className="mobile-primary-nav" aria-label="移动端主导航">
+      <Menu
+        mode="horizontal"
+        selectedKeys={[activeKey]}
+        items={items.map((item) => ({
+          key: item.key,
+          label: item.label,
+        }))}
+        onClick={(event) => onSelect(event.key)}
+      />
+    </nav>
   );
 }
 
