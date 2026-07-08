@@ -15499,10 +15499,48 @@
   - No real external-system call.
   - No Prisma schema change, migration addition, migration execution, API
     behavior change, or permission relaxation.
-  - No Docker prune, volume deletion, `down -v`, orphan cleanup, or local file
+- No Docker prune, volume deletion, `down -v`, orphan cleanup, or local file
     deletion.
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
+
+## 2026-07-08 Step 174 - Final acceptance coverage matrix
+
+- Status: PARTIAL PASS.
+- Goal:
+  - Close the final acceptance narrative after Step170A-D, Step172, and Step173,
+    while checking whether authenticated local performance rerun can be executed
+    safely in the current session.
+- Performance rerun status:
+  - Existing script: `scripts/local-performance-baseline-step170d.mjs`.
+  - The script already supports transient local credentials through
+    `LOCAL_PERF_EMAIL` and `LOCAL_PERF_PASSWORD`, without writing password or
+    session cookie values into the report.
+  - Current session check found both variables missing.
+  - Authenticated business API performance rerun was not executed because no
+    user-provided transient local credentials were available.
+  - This remains a local acceptance blocker only; it must not be described as
+    production performance acceptance complete.
+- Documentation:
+  - Added `memory-bank/final-acceptance-coverage-step174.md`.
+  - Matrix classifies final scope into completed, local MVP / partial, and
+    phase-two / production pending.
+  - Explicitly places real external DOI, real email, HR/SSO, finance, patent
+    vendor integration, production backup/restore, VPS/production DB, and formal
+    high-volume performance testing outside the completed claim.
+- Verification:
+  - Documentation-only change so no API/Web tests were required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, API key, provider credential,
+    or raw external payload was read, displayed, logged, or committed.
+  - No production/VPS/production DB access.
+  - No real DOI/Crossref/OpenAlex/Scopus, SMTP, SMS, enterprise messaging,
+    HR/SSO, finance, or patent-platform call.
+  - No performance log, screenshot, backup, PPT, or existing local artifact
+    handling.
 
 ## 2026-07-08 Step 173 - Demo error-state polish
 

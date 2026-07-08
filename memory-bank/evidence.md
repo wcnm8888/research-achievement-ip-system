@@ -18953,6 +18953,33 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-08 Step 174 - Final acceptance coverage evidence
+
+- Changed files:
+  - `memory-bank/final-acceptance-coverage-step174.md`
+  - `memory-bank/progress.md`
+  - `memory-bank/evidence.md`
+- Performance rerun check:
+  - Existing performance script confirmed: `scripts/local-performance-baseline-step170d.mjs`.
+  - Current shell environment check: `LOCAL_PERF_EMAIL` missing; `LOCAL_PERF_PASSWORD` missing.
+  - Authenticated business API performance rerun was not executed because transient local credentials were not available.
+  - No credential values, session cookies, tokens, or connection strings were read or printed.
+- Acceptance coverage:
+  - Final matrix now separates completed capabilities, local MVP / partial capabilities, and phase-two / production-pending capabilities.
+  - Step170A-D, Step172, and Step173 are included in the final coverage narrative.
+  - Real DOI/literature integration, real email/notification providers, HR/SSO, finance, patent vendor integration, VPS/production DB, production backup/restore, and formal high-volume performance testing remain explicitly outside the completed claim.
+- Verification:
+  - Documentation-only change; no API/Web tests required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, API key, provider credential, or raw external payload recorded.
+  - No production/VPS/production DB access.
+  - No real external DOI, literature, SMTP, SMS, enterprise messaging, HR/SSO, finance, or patent call.
+  - No API/Web source, schema, migration, seed, deployment, or production configuration change.
+  - No performance log, screenshot, backup, PPT, or existing untracked local artifact handling.
+
 ## 2026-07-08 Step 173 - Demo error-state polish evidence
 
 - Changed files:
