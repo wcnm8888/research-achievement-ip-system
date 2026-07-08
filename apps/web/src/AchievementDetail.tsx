@@ -81,6 +81,7 @@ type Loadable<T> = {
 };
 
 type AttachmentPreviewState = {
+  attachmentId: string | null;
   error: ApiError | null;
   fileName: string;
   loading: boolean;
@@ -107,6 +108,7 @@ const emptyLoadable = <T,>(): Loadable<T> => ({
 });
 
 const emptyAttachmentPreviewState = (): AttachmentPreviewState => ({
+  attachmentId: null,
   error: null,
   fileName: "",
   loading: false,
@@ -846,48 +848,54 @@ export const mapAttachmentDownloadErrorToDisplay = (error: ApiError): ApiError =
 export const mapAttachmentPreviewErrorToDisplay = (error: ApiError): ApiError => {
   if (error.status === 401 || error.kind === "unauthorized") {
     return {
-      ...error,
+      kind: error.kind,
+      status: error.status,
       message: "请选择或切换业务用户",
-      detail: "附件预览需要有效用户上下文。",
+      detail: "附件预览需要有效用户上下文。请重新选择业务用户后再试。",
     };
   }
 
   if (error.status === 403 || error.kind === "forbidden") {
     return {
-      ...error,
+      kind: error.kind,
+      status: error.status,
       message: "当前角色无附件预览权限",
-      detail: "当前账号没有预览该附件的权限。",
+      detail: "当前账号没有预览该附件的权限。可申请授权，或联系管理员确认附件访问范围。",
     };
   }
 
   if (error.status === 404) {
     return {
-      ...error,
+      kind: error.kind,
+      status: error.status,
       message: "附件不存在或不可预览",
-      detail: "请刷新附件列表后重试。",
+      detail: "请刷新附件列表后重试。如仍不可用，请联系管理员核对附件状态。",
     };
   }
 
   if (error.status === 415 || error.status === 422) {
     return {
-      ...error,
+      kind: error.kind,
+      status: error.status,
       message: "附件格式暂不支持在线预览",
-      detail: "当前仅支持 PDF、PNG、JPG。",
+      detail: "当前仅支持 PDF、PNG、JPG 在线预览，可下载后使用本地软件查看。",
     };
   }
 
   if (error.kind === "network" || error.kind === "server" || (error.status ?? 0) >= 500) {
     return {
-      ...error,
+      kind: error.kind,
+      status: error.status,
       message: "附件预览服务暂不可用",
-      detail: "请稍后重试。",
+      detail: "请稍后重试，或尝试下载已授权附件。",
     };
   }
 
   return {
-    ...error,
-    message: error.message || "附件预览失败",
-    detail: "请稍后重试。",
+    kind: error.kind,
+    status: error.status,
+    message: "附件预览失败",
+    detail: "当前无法在线打开该附件，请稍后重试，或尝试下载已授权附件。",
   };
 };
 
@@ -2094,10 +2102,31 @@ function AttachmentMetadataSection({
 
   const onPreview = async (attachment: AttachmentMetadata) => {
     const fileName = getAttachmentDownloadFileName(attachment);
+    if (!isPreviewableAttachment(attachment.mimeType)) {
+      setPreviewState((current) => {
+        revokeAttachmentPreviewObjectUrl(current.previewUrl);
+        return {
+          attachmentId: attachment.id,
+          error: mapAttachmentPreviewErrorToDisplay({
+            kind: "bad-request",
+            status: 415,
+            message: "Unsupported attachment preview media type.",
+          }),
+          fileName,
+          loading: false,
+          mimeType: attachment.mimeType ?? null,
+          open: true,
+          previewUrl: null,
+        };
+      });
+      return;
+    }
+
     setPreviewingAttachmentId(attachment.id);
     setPreviewState((current) => {
       revokeAttachmentPreviewObjectUrl(current.previewUrl);
       return {
+        attachmentId: attachment.id,
         error: null,
         fileName,
         loading: true,
@@ -2112,6 +2141,7 @@ function AttachmentMetadataSection({
       const previewUrl = createAttachmentPreviewObjectUrl(blob);
       setPreviewState((current) => ({
         ...current,
+        attachmentId: attachment.id,
         error: null,
         loading: false,
         mimeType: blob.type || attachment.mimeType || null,
@@ -2120,6 +2150,7 @@ function AttachmentMetadataSection({
     } catch (error) {
       setPreviewState((current) => ({
         ...current,
+        attachmentId: attachment.id,
         error: mapAttachmentPreviewErrorToDisplay(normalizeError(error)),
         loading: false,
         previewUrl: null,
@@ -2204,11 +2235,19 @@ function AttachmentMetadataSection({
       </Space>
       <AttachmentPreviewModal
         error={previewState.error}
+        fallbackActionLabel="下载附件"
+        fallbackHint="如在线预览不可用，可尝试下载已授权附件；仍无法访问时请联系管理员确认权限和格式支持。"
         fileName={previewState.fileName}
         loading={previewState.loading}
         mimeType={previewState.mimeType}
         open={previewState.open}
         previewUrl={previewState.previewUrl}
+        onFallbackDownload={() => {
+          const attachment = items.find((item) => item.id === previewState.attachmentId);
+          if (attachment) {
+            void onDownload(attachment);
+          }
+        }}
         onClose={closePreview}
       />
     </>
@@ -2355,19 +2394,13 @@ function AttachmentMetadataList({
                 >
                   下载
                 </Button>
-                {isPreviewableAttachment(attachment.mimeType) ? (
-                  <Button
-                    size="small"
-                    loading={previewingAttachmentId === attachment.id}
-                    onClick={() => onPreview(attachment)}
-                  >
-                    预览
-                  </Button>
-                ) : (
-                  <Button size="small" disabled>
-                    不可预览
-                  </Button>
-                )}
+                <Button
+                  size="small"
+                  loading={previewingAttachmentId === attachment.id}
+                  onClick={() => onPreview(attachment)}
+                >
+                  {isPreviewableAttachment(attachment.mimeType) ? "预览" : "预览说明"}
+                </Button>
               </Space>
             </div>
             <div className="attachment-metadata-grid">

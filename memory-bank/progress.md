@@ -15846,6 +15846,38 @@
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
 
+## 2026-07-08 Step 184 - 附件在线预览体验补强
+
+- Status: PASS.
+- Scope:
+  - 本地评审版附件预览 / 下载路径体验优化。
+  - 覆盖成果详情附件区、费用凭证附件区、公共附件预览弹窗和 Web `downloadBlob` 错误处理。
+- Web changes:
+  - 不支持在线预览格式时，不请求 preview API，改为展示中文业务说明和下载兜底。
+  - 预览失败、权限不足、未登录 / 授权过期、服务不可用时展示安全中文提示。
+  - 预览弹窗新增下载兜底按钮；下载仍走原有受权限保护的 download route。
+  - `mapAttachmentPreviewErrorToDisplay` 不再携带后端原始 `body`。
+  - `downloadBlob` 失败不再向调用方暴露 raw response body。
+- Tests:
+  - 扩展成果附件预览错误脱敏测试。
+  - 新增 Blob preview 错误脱敏测试。
+  - 保留成果附件预览成功、费用凭证预览成功和 preview helper 支持格式测试。
+- Verification:
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail Fees attachment-preview api-client`: PASS, 4 files / 157 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Documentation:
+  - Added `memory-bank/attachment-preview-polish-step184.md`.
+  - Updated `memory-bank/progress.md`.
+  - Updated `memory-bank/evidence.md`.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No secrets, Cookie, Token, production connection string, or real attachment content read.
+  - No production / VPS / production DB access.
+  - No real object storage or external preview service integration.
+  - No attachment permission expansion or secret authorization bypass.
+  - No database migration, destructive database operation, file deletion, reset, restore, clean, prune, screenshot, performance log, backup artifact, or temporary script committed.
+  - This remains local-demo / local Docker production-like evidence, not production attachment preview or real object storage acceptance.
+
 ## 2026-07-08 Step 180 - Final acceptance readiness summary
 
 - Status: PASS.

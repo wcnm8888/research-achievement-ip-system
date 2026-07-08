@@ -19599,6 +19599,38 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-08 Step 184 - Attachment preview polish evidence
+
+- Classification:
+  - PASS for local-demo attachment preview UX polish.
+  - Evidence scope is `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Source evidence:
+  - `apps/web/src/AttachmentPreviewModal.tsx`: preview error states now include Chinese fallback guidance and a download action.
+  - `apps/web/src/AchievementDetail.tsx`: achievement attachment unsupported preview formats show safe Chinese copy without calling preview API; preview failures map to safe display errors and download fallback.
+  - `apps/web/src/Fees.tsx`: fee voucher attachment preview uses the same unsupported-format and fallback pattern.
+  - `apps/web/src/api-client.ts`: blob download / preview failures no longer expose raw response bodies to callers.
+- Test evidence:
+  - `apps/web/src/AchievementDetail.test.ts`: attachment preview error mapping covers unsupported, unauthorized, forbidden, server, and unknown failures and asserts no raw path, storageKey, stack, JSON, token, password, cookie, or raw body leakage.
+  - `apps/web/src/api-client.test.ts`: blob preview failure does not expose raw response body or sensitive/raw path fragments.
+  - Existing tests continue covering achievement attachment preview success, fee voucher attachment preview success, and supported preview MIME types.
+- Commands:
+  - `corepack pnpm --filter @research-ip/web test -- AchievementDetail Fees attachment-preview api-client`: PASS, 4 files / 157 tests.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Boundaries:
+  - No `.env` or `.env.production` content read.
+  - No secrets, Cookie, Token, production connection string, or real production attachment content read.
+  - No production / VPS / production DB access.
+  - No real object storage or external preview service integration.
+  - No attachment download / preview permission expansion.
+  - No database migration or destructive database operation.
+  - No file or directory deletion.
+  - No `.local-step*`, `.learnings`, `apps/api/deploy`, `deliverables`, screenshots, performance logs, backup files, temporary scripts, or real attachment files committed.
+- Not claimed:
+  - Not a real production launch.
+  - Not real object storage integration completion.
+  - Not production-grade full-text / all-format attachment preview completion.
+  - Not VPS / production DB / production attachment data acceptance.
+
 ## 2026-07-08 Step 180 - Final acceptance readiness summary evidence
 
 - Starting state:

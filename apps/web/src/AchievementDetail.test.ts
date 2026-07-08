@@ -546,21 +546,59 @@ describe("Step 19A attachment metadata helpers", () => {
       status: 415,
       message: "Unsupported route /internal/object-key",
       detail: "raw path /storage/object-key token password cookie",
+      body: {
+        message: "raw JSON /api/attachments/preview",
+        stack: "Error: preview failed at storageKey",
+        storageKey: "raw/object/key",
+      },
     });
     const forbidden = mapAttachmentPreviewErrorToDisplay({
       kind: "forbidden",
       status: 403,
       message: "Forbidden",
       detail: "policy route detail",
+      body: { message: "Missing token cookie", storageKey: "secret/key" },
+    });
+    const unauthorized = mapAttachmentPreviewErrorToDisplay({
+      kind: "unauthorized",
+      status: 401,
+      message: "Session expired /api/attachments/preview",
+      detail: "cookie expired",
+      body: { message: "raw auth JSON", token: "raw-token" },
+    });
+    const server = mapAttachmentPreviewErrorToDisplay({
+      kind: "server",
+      status: 500,
+      message: "Stack trace /api/attachments/preview",
+      detail: "Error: stack storageKey",
+      body: { message: "raw server JSON", stack: "line 1" },
+    });
+    const unknown = mapAttachmentPreviewErrorToDisplay({
+      kind: "unknown",
+      message: "Cannot GET /api/attachments/id/preview",
+      detail: "raw path storageKey token cookie",
     });
 
     expect(unsupported.message).toBe("附件格式暂不支持在线预览");
-    expect(unsupported.detail).toBe("当前仅支持 PDF、PNG、JPG。");
+    expect(unsupported.detail).toBe("当前仅支持 PDF、PNG、JPG 在线预览，可下载后使用本地软件查看。");
     expect(forbidden.message).toBe("当前角色无附件预览权限");
-    expect(JSON.stringify([unsupported, forbidden]).toLowerCase()).not.toContain("token");
-    expect(JSON.stringify([unsupported, forbidden]).toLowerCase()).not.toContain("password");
-    expect(JSON.stringify([unsupported, forbidden]).toLowerCase()).not.toContain("cookie");
-    expect(JSON.stringify([unsupported, forbidden])).not.toContain("/internal/object-key");
+    expect(unauthorized.message).toBe("请选择或切换业务用户");
+    expect(server.message).toBe("附件预览服务暂不可用");
+    expect(unknown.message).toBe("附件预览失败");
+    expect(unsupported).not.toHaveProperty("body");
+    expect(forbidden).not.toHaveProperty("body");
+    expect(unauthorized).not.toHaveProperty("body");
+    expect(server).not.toHaveProperty("body");
+    expect(unknown).not.toHaveProperty("body");
+    const serialized = JSON.stringify([unsupported, forbidden, unauthorized, server, unknown]).toLowerCase();
+    expect(serialized).not.toContain("token");
+    expect(serialized).not.toContain("password");
+    expect(serialized).not.toContain("cookie");
+    expect(serialized).not.toContain("storagekey");
+    expect(serialized).not.toContain("stack");
+    expect(serialized).not.toContain("raw json");
+    expect(serialized).not.toContain("/api/attachments");
+    expect(serialized).not.toContain("/internal/object-key");
   });
 
   it("gates attachment upload to the owner with update-own permission", () => {

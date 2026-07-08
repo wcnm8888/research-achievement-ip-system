@@ -927,7 +927,7 @@ const requestBlob = async (
     });
 
     if (!response.ok) {
-      throw await buildApiError(response);
+      throw toBlobApiError(await buildApiError(response));
     }
 
     return await response.blob();
@@ -1052,6 +1052,13 @@ const readErrorDetail = (body: unknown): string | undefined => {
 
   return undefined;
 };
+
+const toBlobApiError = (error: ApiError): ApiError => ({
+  kind: error.kind,
+  status: error.status,
+  message: error.message,
+  detail: error.detail,
+});
 
 export const isApiError = (error: unknown): error is ApiError =>
   typeof error === "object" &&

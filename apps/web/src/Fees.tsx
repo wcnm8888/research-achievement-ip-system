@@ -85,6 +85,7 @@ type Loadable<T> = {
 };
 
 type AttachmentPreviewState = {
+  attachmentId: string | null;
   error: ApiError | null;
   fileName: string;
   loading: boolean;
@@ -214,6 +215,7 @@ const emptyLoadable = <T,>(): Loadable<T> => ({
 });
 
 const emptyAttachmentPreviewState = (): AttachmentPreviewState => ({
+  attachmentId: null,
   error: null,
   fileName: "",
   loading: false,
@@ -1683,10 +1685,31 @@ function FeeVoucherAttachmentSection({
 
   const onPreview = async (attachment: AttachmentMetadata) => {
     const fileName = getAttachmentDownloadFileName(attachment);
+    if (!isPreviewableAttachment(attachment.mimeType)) {
+      setPreviewState((current) => {
+        revokeAttachmentPreviewObjectUrl(current.previewUrl);
+        return {
+          attachmentId: attachment.id,
+          error: mapAttachmentPreviewErrorToDisplay({
+            kind: "bad-request",
+            status: 415,
+            message: "Unsupported fee voucher attachment preview media type.",
+          }),
+          fileName,
+          loading: false,
+          mimeType: attachment.mimeType ?? null,
+          open: true,
+          previewUrl: null,
+        };
+      });
+      return;
+    }
+
     setPreviewingAttachmentId(attachment.id);
     setPreviewState((current) => {
       revokeAttachmentPreviewObjectUrl(current.previewUrl);
       return {
+        attachmentId: attachment.id,
         error: null,
         fileName,
         loading: true,
@@ -1701,6 +1724,7 @@ function FeeVoucherAttachmentSection({
       const previewUrl = blob ? createAttachmentPreviewObjectUrl(blob) : null;
       setPreviewState((current) => ({
         ...current,
+        attachmentId: attachment.id,
         error: null,
         loading: false,
         mimeType: blob?.type || attachment.mimeType || null,
@@ -1709,6 +1733,7 @@ function FeeVoucherAttachmentSection({
     } catch (error) {
       setPreviewState((current) => ({
         ...current,
+        attachmentId: attachment.id,
         error: mapAttachmentPreviewErrorToDisplay(normalizeError(error)),
         loading: false,
         previewUrl: null,
@@ -1793,11 +1818,19 @@ function FeeVoucherAttachmentSection({
       </Space>
       <AttachmentPreviewModal
         error={previewState.error}
+        fallbackActionLabel="下载凭证附件"
+        fallbackHint="如在线预览不可用，可尝试下载已授权凭证附件；仍无法访问时请联系管理员确认权限和格式支持。"
         fileName={previewState.fileName}
         loading={previewState.loading}
         mimeType={previewState.mimeType}
         open={previewState.open}
         previewUrl={previewState.previewUrl}
+        onFallbackDownload={() => {
+          const attachment = items.find((item) => item.id === previewState.attachmentId);
+          if (attachment) {
+            void onDownload(attachment);
+          }
+        }}
         onClose={closePreview}
       />
     </>
@@ -1944,19 +1977,13 @@ function FeeVoucherAttachmentList({
                 >
                   下载
                 </Button>
-                {isPreviewableAttachment(attachment.mimeType) ? (
-                  <Button
-                    size="small"
-                    loading={previewingAttachmentId === attachment.id}
-                    onClick={() => onPreview(attachment)}
-                  >
-                    预览
-                  </Button>
-                ) : (
-                  <Button size="small" disabled>
-                    不可预览
-                  </Button>
-                )}
+                <Button
+                  size="small"
+                  loading={previewingAttachmentId === attachment.id}
+                  onClick={() => onPreview(attachment)}
+                >
+                  {isPreviewableAttachment(attachment.mimeType) ? "预览" : "预览说明"}
+                </Button>
               </Space>
             </div>
             <div className="attachment-metadata-grid">

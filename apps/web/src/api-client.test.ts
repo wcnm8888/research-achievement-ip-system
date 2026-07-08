@@ -901,6 +901,44 @@ describe("createApiClient writes JSON requests", () => {
     expect(headers.get("Content-Type")).toBeNull();
   });
 
+  it("sanitizes blob preview errors without exposing raw response bodies", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json(
+          {
+            message: "Cannot GET /api/attachments/id/preview raw JSON token cookie storageKey",
+            stack: "Error: storage adapter path",
+            storageKey: "private/object/key",
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+
+    const client = createApiClient("user-id");
+    let thrown: unknown;
+    try {
+      await client.downloadBlob?.("/achievements/achievement-id/attachments/attachment-id/preview");
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toMatchObject({
+      kind: "forbidden",
+      message: "当前角色无权限",
+      status: 403,
+    });
+    expect(thrown).not.toHaveProperty("body");
+    const serialized = JSON.stringify(thrown).toLowerCase();
+    expect(serialized).not.toContain("/api/attachments");
+    expect(serialized).not.toContain("token");
+    expect(serialized).not.toContain("cookie");
+    expect(serialized).not.toContain("storagekey");
+    expect(serialized).not.toContain("private/object/key");
+  });
+
   it("posts fee review approve and reject actions with JSON payloads", async () => {
     const fetchMock = vi
       .fn()
