@@ -461,10 +461,10 @@ export function CustomReportsView({
   const isFeeRisk = selectedTemplateId === "fee-risk-summary";
 
   return (
-    <Space direction="vertical" size={16} className="page-stack">
+    <Space direction="vertical" size={16} className="page-stack custom-report-page">
       <SectionHeader
         title="自定义报表"
-        description="按模板查看当前权限范围内的聚合统计结果。"
+        description="按预设模板生成权限范围内的聚合统计，并导出评审材料所需的 CSV、Excel 或 PDF。"
         extra={
           <Space size={8} wrap>
             <Button onClick={onReloadTemplates} loading={templates.loading}>
@@ -498,33 +498,35 @@ export function CustomReportsView({
         emptyText="暂无可用报表模板。"
         onRetry={onReloadTemplates}
       >
-        <Card className="shell-card" title="报表模板">
+        <Card className="shell-card report-template-card" title="报表模板" extra={<Tag>模板驱动</Tag>}>
           <Space direction="vertical" size={12} className="full-width">
             <Select
               className="full-width"
-              aria-label="Report template"
+              aria-label="报表模板"
               value={selectedTemplateId ?? undefined}
               placeholder="选择报表模板"
               options={templateItems.map((template) => ({
-                label: `${template.templateId} - ${template.name}`,
+                label: `${template.name} / ${template.templateId}`,
                 value: template.templateId,
               }))}
               onChange={onTemplateChange}
             />
             <Space size={8} wrap>
               {templateItems.map((template) => (
-                <Tag key={template.templateId}>{template.templateId}</Tag>
+                <Tag key={template.templateId}>
+                  {template.name} / {template.templateId}
+                </Tag>
               ))}
             </Space>
             {selectedTemplate ? (
               <Typography.Text type="secondary">
-                {selectedTemplate.name}: {selectedTemplate.description}
+                {selectedTemplate.description}
               </Typography.Text>
             ) : null}
           </Space>
         </Card>
 
-        <Card className="shell-card" title="筛选条件">
+        <Card className="shell-card report-filter-card" title="筛选条件" extra={<Tag>权限内统计</Tag>}>
           <Row gutter={[12, 12]}>
             <Col xs={24} md={8}>
               <FilterLabel label="开始日期">
@@ -625,7 +627,7 @@ const CustomReportResult = ({
   rows: CustomReportRow[];
   onRetry?: () => void;
 }) => (
-  <Card className="shell-card" title="汇总结果">
+  <Card className="shell-card report-result-card" title="汇总结果" extra={<Tag>可导出</Tag>}>
     <DataState
       loading={report.loading}
       error={report.error}

@@ -743,10 +743,10 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
   const listState = getFeeListState(fees, hasFilters);
 
   return (
-    <Space direction="vertical" size={16} className="page-stack">
+    <Space direction="vertical" size={16} className="page-stack fee-page">
       <SectionHeader
         title="费用管理"
-        description="查看当前权限范围内的费用台账、缴费状态和预警摘要。"
+        description="集中查看知识产权相关费用、缴费风险、凭证附件和审核处理状态。"
         extra={
           <Space wrap>
             {canManageFees ? (
@@ -763,7 +763,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         <Typography.Text type="danger">{exportState.error.message}</Typography.Text>
       ) : null}
 
-      <Card className="shell-card" title="基础预警摘要" extra={<Tag>页面摘要</Tag>}>
+      <Card className="shell-card risk-summary-card" title="费用风险摘要" extra={<Tag>当前列表口径</Tag>}>
         <Row gutter={[16, 16]}>
           <Col xs={12} lg={6}>
             <Statistic title="当前列表" value={summary.total} suffix="条" />
@@ -787,7 +787,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         </Typography.Paragraph>
       </Card>
 
-      <Card className="shell-card" title="预警列表 / 分组" extra={<Tag>页面摘要</Tag>}>
+      <Card className="shell-card warning-groups-card" title="预警分组" extra={<Tag>按到期状态</Tag>}>
         <Typography.Paragraph type="secondary" className="card-note">
           分组基于当前费用列表的截止日期和缴费状态计算。
         </Typography.Paragraph>
@@ -829,7 +829,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         </div>
       </Card>
 
-      <Card className="shell-card">
+      <Card className="shell-card toolbar-card fee-toolbar-card" title="筛选与导出" extra={<Tag>费用台账</Tag>}>
         <Space className="fee-filter-bar" size={12} wrap>
           <Select
             allowClear
@@ -855,7 +855,7 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
             allowClear
             className="fee-achievement-input"
             enterButton="查询"
-            placeholder="按成果 ID 精确筛选"
+            placeholder="按成果标识精确筛选"
             value={draftFilters.achievementId}
             onChange={(event) =>
               setDraftFilters((current) => ({
@@ -888,7 +888,11 @@ export function Fees({ demoUserId, authUser }: FeesProps) {
         </Space>
       </Card>
 
-      <Card className="shell-card" title="费用台账">
+      <Card
+        className="shell-card ledger-card"
+        title="费用台账"
+        extra={<Tag color={items.length > 0 ? "blue" : "default"}>当前 {items.length} 条</Tag>}
+      >
         <DataState
           loading={fees.loading}
           error={fees.error}

@@ -242,10 +242,10 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
   const filterSummary = buildAuditLogFilterSummary(appliedFilters);
 
   return (
-    <Space direction="vertical" size={16} className="page-stack">
+    <Space direction="vertical" size={16} className="page-stack audit-page">
       <SectionHeader
         title="审计日志"
-        description="只读展示经脱敏处理的审计列表，权限和范围由系统统一控制。"
+        description="只读查看关键操作、导出记录和变更摘要，所有敏感字段均以脱敏信息展示。"
         extra={
           <Space size={8} wrap>
             <Button
@@ -269,7 +269,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
         <Typography.Text type="danger">{exportState.error.message}</Typography.Text>
       ) : null}
 
-      <Card className="shell-card">
+      <Card className="shell-card toolbar-card audit-toolbar-card" title="查询条件" extra={<Tag>脱敏只读</Tag>}>
         <Space className="audit-filter-bar" size={12} wrap>
           <Select
             className="audit-filter-select"
@@ -290,7 +290,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
           <Input
             allowClear
             className="audit-uuid-input"
-            placeholder="对象 ID（UUID）"
+            placeholder="对象标识"
             value={draftFilters.targetId}
             onChange={(event) =>
               setDraftFilters((current) => ({ ...current, targetId: event.target.value }))
@@ -299,7 +299,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
           <Input
             allowClear
             className="audit-uuid-input"
-            placeholder="操作人 ID（UUID）"
+            placeholder="操作人标识"
             value={draftFilters.actorUserId}
             onChange={(event) =>
               setDraftFilters((current) => ({ ...current, actorUserId: event.target.value }))
@@ -309,7 +309,7 @@ export function AuditLogs({ demoUserId }: AuditLogsProps) {
             allowClear
             className="audit-trace-input"
             maxLength={maxAuditTraceIdLength + 1}
-            placeholder="Trace ID"
+            placeholder="操作追踪号"
             value={draftFilters.traceId}
             onChange={(event) =>
               setDraftFilters((current) => ({ ...current, traceId: event.target.value }))
@@ -623,7 +623,7 @@ export const buildAuditLogFilterSummary = (filters: AuditLogFilters): string[] =
         ? getTargetTypeLabel(trimmed.targetType)
         : "全部"
     }`,
-    trimmed.targetId ? `对象 ID：${trimmed.targetId}` : null,
+    trimmed.targetId ? `对象标识：${trimmed.targetId}` : null,
     trimmed.actorUserId ? `操作人：${trimmed.actorUserId}` : null,
     trimmed.traceId ? `Trace：${trimmed.traceId}` : null,
     `数量：${trimmed.take ?? defaultAuditTake}`,
@@ -708,7 +708,7 @@ const AuditLogCard = ({ log }: { log: MaskedAuditLog }) => {
         <Typography.Title level={5}>{display.id}</Typography.Title>
         <div className="audit-meta-grid">
           <MetaLine label="操作人" value={display.actorUserId} />
-          <MetaLine label="对象 ID" value={display.targetId} />
+          <MetaLine label="对象标识" value={display.targetId} />
           <MetaLine label="链路标识" value={display.traceId} />
           <MetaLine label="时间" value={display.createdAt} />
           <MetaLine label="密级" value={display.targetSecretLevel} />

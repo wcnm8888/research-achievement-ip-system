@@ -189,6 +189,26 @@ body {
   font-weight: 650;
 }
 
+.shell-card .ant-card-body {
+  min-width: 0;
+}
+
+.toolbar-card .ant-card-body {
+  padding: 14px;
+}
+
+.ledger-card .ant-card-body,
+.report-result-card .ant-card-body {
+  padding-top: 14px;
+}
+
+.risk-summary-card .ant-statistic-title,
+.ledger-card .ant-table-cell,
+.report-result-card .ant-descriptions-item-label,
+.audit-log-card .ant-typography-secondary {
+  color: var(--text-muted);
+}
+
 .ant-table-thead > tr > th {
   color: var(--text-muted);
   font-weight: 650;
@@ -660,8 +680,8 @@ body {
   gap: 12px;
   margin-bottom: 12px;
   padding: 12px;
-  background: #fbfcfd;
-  border: 1px solid #e6ebf0;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
 }
 
@@ -684,8 +704,9 @@ body {
   gap: 14px;
   min-width: 0;
   padding: 14px;
-  background: #fbfcfd;
-  border: 1px solid #e6ebf0;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid #8aa4c8;
   border-radius: 8px;
 }
 
@@ -725,8 +746,19 @@ body {
   min-width: 0;
   padding: 10px;
   background: #ffffff;
-  border: 1px solid #edf1f5;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
+}
+
+.report-template-card,
+.report-filter-card,
+.report-result-card {
+  min-width: 0;
+}
+
+.report-template-card .ant-tag {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .audit-masked-block pre {
@@ -832,8 +864,8 @@ body {
 .fee-warning-group {
   min-width: 0;
   padding: 12px;
-  background: #fbfcfd;
-  border: 1px solid #e6ebf0;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
 }
 
@@ -855,13 +887,17 @@ body {
   color: #1f2a37;
   text-align: left;
   background: #ffffff;
-  border: 1px solid #e6ebf0;
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
 }
 
 .fee-warning-item:hover {
   border-color: #8aa4c8;
+  background: #f7fbfd;
 }
 
 .fee-warning-item span {

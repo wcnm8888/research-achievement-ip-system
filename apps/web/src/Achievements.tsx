@@ -356,10 +356,10 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
   }
 
   return (
-    <Space direction="vertical" size={16} className="page-stack">
+    <Space direction="vertical" size={16} className="page-stack achievement-page">
       <SectionHeader
         title="成果管理"
-        description="查看当前账号权限范围内的成果列表，支持筛选、分页和摘要展示。"
+        description="统一管理论文、专利和软件著作权，查看归档状态、密级边界和可操作入口。"
         extra={
           canCreateAchievementDraft(authUser) ? (
             <Button type="primary" onClick={() => setFormRequest({ mode: "create" })}>
@@ -400,7 +400,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
         </>
       ) : null}
 
-      <Card className="shell-card">
+      <Card className="shell-card toolbar-card achievement-toolbar-card" title="筛选与导出" extra={<Tag>权限内台账</Tag>}>
         <Space className="achievement-filter-bar" size={12} wrap>
           <Input.Search
             allowClear
@@ -456,7 +456,11 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
         </Space>
       </Card>
 
-      <Card className="shell-card" title="成果列表">
+      <Card
+        className="shell-card ledger-card"
+        title="成果台账"
+        extra={<Tag color={items.length > 0 ? "blue" : "default"}>当前 {items.length} 条</Tag>}
+      >
         <DataState
           loading={achievements.loading}
           error={achievements.error}
