@@ -19356,6 +19356,52 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-08 Step 180 - Final acceptance readiness summary evidence
+
+- Starting state:
+  - `git rev-parse HEAD` -> `eccb73303fe12cfc77ff74624fb3281177bfc5fd`.
+  - `git log -1 --pretty=%s` -> `docs: add integration operations runbook`.
+  - `git status --short --branch` showed branch `main...origin/main [ahead 295]`
+    with existing untracked local artifacts left untouched.
+- Changed files:
+  - `memory-bank/final-acceptance-readiness-summary-step180.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- Evidence consolidated:
+  - Step172 DOI/email mock integration acceptance.
+  - Step173 demo error-state polish.
+  - Step174 final acceptance coverage matrix.
+  - Step175 final demo runbook.
+  - Step176 final demo read-only smoke check.
+  - Step177 security negative acceptance execution.
+  - Step178 local backup/restore static evidence.
+  - Step179 integration operations runbook, production checklist, and Q&A card.
+- Readiness summary coverage:
+  - 7.1 functionality: completed/demoable local capabilities, local MVP/partial
+    capabilities, and production-pending work.
+  - 7.2 performance: local baseline tooling versus formal 10000-result search
+    and 50-user production-style concurrency gaps.
+  - 7.3 interfaces: DOI/email previews, settings/interface governance, fallback,
+    and production integration readiness gaps.
+  - 7.4 security/compliance: RBAC, department isolation, secret authorization,
+    attachment permissions, audit redaction, error redaction, local backup
+    evidence, and production compliance gaps.
+  - 7.5 operations/compatibility: configuration, audit, import history,
+    runbooks, local backup evidence, and production monitoring/DR/compatibility
+    gaps.
+- Verification:
+  - Documentation-only change; no API/Web tests required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Safety boundary:
+  - No `.env` or `.env.production` content was read.
+  - No credential, Cookie, Token, production connection string, supplier secret,
+    production/VPS/production DB, real external interface, database write,
+    migration, backup, restore, delete, clean, reset, restore, or prune action
+    was performed.
+  - Existing untracked local artifacts were not staged, modified, cleaned,
+    deleted, or committed.
+
 ## 2026-07-08 Step 175 - Final demo runbook evidence
 
 - Changed files:

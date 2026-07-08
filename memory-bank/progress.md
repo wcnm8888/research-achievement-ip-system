@@ -15713,6 +15713,43 @@
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
 
+## 2026-07-08 Step 180 - Final acceptance readiness summary
+
+- Status: PASS.
+- Goal:
+  - Consolidate the final acceptance narrative after Step174, Step177,
+    Step178, and Step179 into one reviewer-facing readiness summary.
+  - Keep the positioning as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Documentation:
+  - Added `memory-bank/final-acceptance-readiness-summary-step180.md`.
+  - Summarizes 7.1-7.5 by current state, evidence source, demo wording, and
+    prohibited overclaim wording.
+  - Explicitly separates completed / demoable local capabilities, local MVP or
+    partial capabilities, and phase-two / production-pending items.
+- Key conclusions:
+  - 7.1 core business, reminders, reports, attachments, DOI/email previews, and
+    error-state stabilization are demoable in the local-review scope.
+  - 7.2 has local baseline tooling but does not claim 10000-result search or
+    real 50-user concurrent business acceptance.
+  - 7.3 interface mock previews and operations runbook are documented, while
+    real external integrations remain production-pending.
+  - 7.4 security negative tests and local backup/restore static evidence are
+    covered for local review, while production immutability, RTO/RPO, and
+    production overreach testing remain pending.
+  - 7.5 operations views, configuration, local backup evidence, and runbooks are
+    present, while production monitoring, DR automation, and formal
+    compatibility acceptance remain pending.
+- Boundaries:
+  - No source code, API behavior, Web behavior, Prisma schema, migration, seed,
+    deployment, production configuration, real external integration, backup, or
+    restore action was changed or executed.
+  - No `.env`, `.env.production`, credential, Cookie, Token, production
+    connection string, or supplier secret was read.
+- Verification:
+  - Documentation-only change so no API/Web tests were required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+
 ## 2026-07-08 Step 175 - Final demo runbook
 
 - Status: PASS.
