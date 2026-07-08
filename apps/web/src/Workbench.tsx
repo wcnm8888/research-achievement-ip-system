@@ -64,7 +64,7 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
 
   if (!demoUserId) {
     return (
-      <Space direction="vertical" size={16} className="page-stack">
+      <Space direction="vertical" size={16} className="page-stack workbench-page">
         <SectionHeader
           title="工作台"
           description="请选择业务用户后加载工作台摘要和个人待办。"
@@ -79,7 +79,7 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
   }
 
   return (
-    <Space direction="vertical" size={16} className="page-stack">
+    <Space direction="vertical" size={16} className="page-stack workbench-page">
       <SectionHeader
         title="工作台"
         description="集中查看摘要、待办和常用业务入口。"
@@ -152,9 +152,9 @@ function DashboardOverview({
   const pendingReminders = countBucket(summary?.reminderTasks.byStatus.value.buckets, "PENDING");
 
   return (
-    <Card className="shell-card">
+    <Card className="shell-card workbench-summary-card">
       <DataState loading={dashboard.loading} error={dashboard.error} onRetry={onRetry}>
-        <Row gutter={[16, 16]}>
+        <Row gutter={[16, 16]} className="workbench-kpi-grid">
           <Col xs={12} lg={6}>
             <Statistic title="成果总量" value={achievementTotal} />
           </Col>
@@ -196,7 +196,7 @@ function TaskCard({
 
   return (
     <Card
-      className="shell-card"
+      className="shell-card workbench-task-card"
       title="我的审批待办"
     >
       <DataState
@@ -242,7 +242,7 @@ function TaskCard({
 
 function MyAchievementsCard({ onNavigate }: { onNavigate: (key: string) => void }) {
   return (
-    <Card className="shell-card" title="我的成果">
+    <Card className="shell-card workbench-entry-card" title="我的成果">
       <Space direction="vertical" size={12}>
         <Typography.Text>
           可在成果管理中登记、查看、编辑并提交科研成果。
@@ -269,7 +269,7 @@ function FeeWarningCard({
   const dueSoon = dashboard.data?.fee.deadline.value.dueSoon.count ?? 0;
 
   return (
-    <Card className="shell-card" title="费用预警" extra={<Tag color="default">摘要</Tag>}>
+    <Card className="shell-card workbench-warning-card" title="费用预警" extra={<Tag color="default">摘要</Tag>}>
       <DataState loading={dashboard.loading} error={dashboard.error} onRetry={onRetry}>
         <Row gutter={12}>
           <Col span={12}>
@@ -289,7 +289,7 @@ function FeeWarningCard({
 
 function SystemMessagesCard() {
   return (
-    <Card className="shell-card" title="系统消息">
+    <Card className="shell-card workbench-message-card" title="系统消息">
       <Alert
         type="info"
         showIcon
