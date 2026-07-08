@@ -1,5 +1,74 @@
 # Evidence
 
+## 2026-07-08 Step 177 - Security and compliance negative acceptance execution evidence
+
+- Starting state:
+  - `git status --short --branch` showed branch `main...origin/main [ahead 290]`
+    with existing untracked local artifacts left untouched.
+  - Starting HEAD: `3e6736645550c04bc62f76a7ba09d34114bac2da`
+    (`docs: plan security negative acceptance`).
+- Context reviewed with targeted reads only:
+  - `memory-bank/security-compliance-negative-acceptance-plan-step177.md`.
+  - `memory-bank/testing-strategy.md`.
+  - 7.4-related snippets from `memory-bank/final-acceptance-coverage-step174.md`.
+  - Recent Step177 snippets from `memory-bank/progress.md` and
+    `memory-bank/evidence.md`.
+  - API/Web security test file indexes for authorization, auth, identity,
+    audit, attachments, account-management, department-management,
+    secret-authorization, api-client, error-display, attachment-preview,
+    AuditLogs, AccountManagement, and DepartmentManagement.
+- Changed files:
+  - `memory-bank/security-compliance-negative-acceptance-execution-step177.md`.
+  - `memory-bank/progress.md`.
+  - `memory-bank/evidence.md`.
+- API security negative test result:
+  - Command: `corepack pnpm --filter @research-ip/api test -- authorization auth identity audit attachments account-management department-management secret-authorization`.
+  - Result: PASS; 28 test files / 246 tests.
+  - Covered RBAC guard/controller/service 401/403 behavior, production demo
+    header rejection, permission policy scope, secret policy, attachment
+    download/preview boundaries, audit masking/export, account management,
+    department management, secret authorization, auth, and session identity.
+- Web security display test result:
+  - Command: `corepack pnpm --filter @research-ip/web test -- api-client error-display attachment-preview AuditLogs AccountManagement DepartmentManagement`.
+  - Result: PASS; 6 test files / 132 tests.
+  - Covered safe API error display, route/raw/JSON/stack masking, attachment
+    preview helpers, audit log safe display/export UI behavior, account
+    management safe projections, and department management permission/error
+    display behavior.
+- Typecheck:
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Fixes:
+  - No source fixes were required.
+- Local 7.4 evidence coverage:
+  - RBAC unauthorized access.
+  - Department data isolation.
+  - Restricted achievement and restricted attachment unauthorized access.
+  - Attachment permission download and preview boundaries.
+  - Audit log masked display and masked export.
+  - Account, role, and department management permission boundaries.
+  - Error-state masking.
+  - Login and unauthenticated session access.
+  - Local backup/restore MVP boundary with production backup/DR still pending.
+- Still phase-two / production pending:
+  - Production daily backup scheduling, 30-day retention automation, real
+    restore drills, RTO/RPO, production audit immutability/archive/compliance
+    policy, production unauthorized-access专项 testing, real SSO/HR, real
+    object storage/offsite backup, real external-provider integrations, VPS /
+    production DB acceptance, and production load/security acceptance.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, session value, connection string, API key,
+    provider credential, production credential, raw external payload, or raw
+    browser session material was read, displayed, logged, or committed.
+  - No production/VPS/production DB access.
+  - No real DOI, Crossref, OpenAlex, Scopus, SMTP, SMS, enterprise messaging,
+    HR/SSO, finance, patent service, or other external system call.
+  - No API/Web source, Prisma schema, migration, seed, deploy, production
+    configuration, database write, destructive restore, backup artifact,
+    screenshot, performance log, temporary script, or existing untracked local
+    artifact handling.
+
 ## 2026-07-08 Step 177 - Security and compliance negative acceptance plan evidence
 
 - Starting state:

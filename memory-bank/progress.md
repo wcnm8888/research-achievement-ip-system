@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-07-08 Step 177 - Security and compliance negative acceptance execution
+
+- Status: PASS.
+- Goal:
+  - Execute the Step177 security and compliance negative acceptance plan by
+    rerunning focused API/Web tests and typechecks.
+  - Keep the project positioned as `研究院科研成果与知识产权管理系统一期本地评审提交版 / local-demo / local Docker production-like`.
+- Tests:
+  - `corepack pnpm --filter @research-ip/api test -- authorization auth identity audit attachments account-management department-management secret-authorization`: PASS, 28 files / 246 tests.
+  - `corepack pnpm --filter @research-ip/web test -- api-client error-display attachment-preview AuditLogs AccountManagement DepartmentManagement`: PASS, 6 files / 132 tests.
+  - `corepack pnpm --filter @research-ip/api typecheck`: PASS.
+  - `corepack pnpm --filter @research-ip/web typecheck`: PASS.
+- Documentation:
+  - Added `memory-bank/security-compliance-negative-acceptance-execution-step177.md`.
+  - Updated `memory-bank/evidence.md`.
+- Coverage:
+  - Local evidence now covers RBAC 401/403, department isolation policy, secret
+    resource and attachment denial, attachment download/preview boundaries,
+    audit masking/export masking, account/role/department management
+    boundaries, error-state masking, login/session unauthenticated access, and
+    local backup/restore pending-production boundary.
+- Fixes:
+  - No source fixes were required; all targeted tests passed.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, session value, connection string, production
+    credential, production/VPS/production DB, or real external system was
+    accessed.
+  - No API/Web source, configuration, migration, seed, production setting,
+    database data, backup artifact, screenshot, performance log, or existing
+    local artifact was changed.
+
 ## 2026-07-08 Step 177 - Security and compliance negative acceptance plan
 
 - Status: PASS.
