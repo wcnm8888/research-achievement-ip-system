@@ -206,6 +206,9 @@ describe("AchievementRepository.createDraft", () => {
         applicationNo: "CN 2026-001",
         applicationNoNormalized: "CN2026001",
         patentType: PatentTypeCode.invention,
+        filingDate: "2026-03-15",
+        grantDate: "2026-06-30",
+        nextFeeDate: "2026-07-25",
       },
       contributors: [],
     });
@@ -214,6 +217,9 @@ describe("AchievementRepository.createDraft", () => {
       data: expect.objectContaining({
         achievementId: ids.achievement,
         applicationNoNormalized: "CN2026001",
+        filingDate: new Date("2026-03-15T00:00:00.000Z"),
+        grantDate: new Date("2026-06-30T00:00:00.000Z"),
+        nextFeeDate: new Date("2026-07-25T00:00:00.000Z"),
       }),
     });
     expect(tx.paperDetail.create).not.toHaveBeenCalled();
@@ -238,6 +244,7 @@ describe("AchievementRepository.createDraft", () => {
         registrationNo: "2026SR001",
         registrationNoNormalized: "2026SR001",
         softwareType: SoftwareTypeCode.application,
+        registerDate: "2026-03-04",
       },
       contributors: [],
     });
@@ -246,6 +253,7 @@ describe("AchievementRepository.createDraft", () => {
       data: expect.objectContaining({
         achievementId: ids.achievement,
         registrationNoNormalized: "2026SR001",
+        registerDate: new Date("2026-03-04T00:00:00.000Z"),
       }),
     });
     expect(tx.paperDetail.create).not.toHaveBeenCalled();

@@ -63,9 +63,9 @@ export const toPatentDetailCreateData = (
   grantNo: detail.grantNo ?? null,
   grantNoNormalized: detail.grantNoNormalized ?? null,
   patentType: detail.patentType ?? null,
-  filingDate: detail.filingDate ?? null,
-  grantDate: detail.grantDate ?? null,
-  nextFeeDate: detail.nextFeeDate ?? null,
+  filingDate: toPrismaDateOnly(detail.filingDate),
+  grantDate: toPrismaDateOnly(detail.grantDate),
+  nextFeeDate: toPrismaDateOnly(detail.nextFeeDate),
   feeAmount: detail.feeAmount ?? null,
   legalStatus: detail.legalStatus ?? undefined,
 });
@@ -79,8 +79,8 @@ export const toSoftwareCopyrightDetailCreateData = (
   registrationNoNormalized: detail.registrationNoNormalized ?? null,
   softwareVersion: detail.softwareVersion ?? null,
   softwareType: detail.softwareType ?? null,
-  publishDate: detail.publishDate ?? null,
-  registerDate: detail.registerDate ?? null,
+  publishDate: toPrismaDateOnly(detail.publishDate),
+  registerDate: toPrismaDateOnly(detail.registerDate),
   runEnv: detail.runEnv ?? null,
 });
 
@@ -148,9 +148,9 @@ export const toPatentDetailUpdateData = (
     ? { grantNoNormalized: detail.grantNoNormalized }
     : {}),
   ...(detail.patentType !== undefined ? { patentType: detail.patentType } : {}),
-  ...(detail.filingDate !== undefined ? { filingDate: detail.filingDate } : {}),
-  ...(detail.grantDate !== undefined ? { grantDate: detail.grantDate } : {}),
-  ...(detail.nextFeeDate !== undefined ? { nextFeeDate: detail.nextFeeDate } : {}),
+  ...(detail.filingDate !== undefined ? { filingDate: toPrismaDateOnly(detail.filingDate) } : {}),
+  ...(detail.grantDate !== undefined ? { grantDate: toPrismaDateOnly(detail.grantDate) } : {}),
+  ...(detail.nextFeeDate !== undefined ? { nextFeeDate: toPrismaDateOnly(detail.nextFeeDate) } : {}),
   ...(detail.feeAmount !== undefined ? { feeAmount: detail.feeAmount } : {}),
   ...(detail.legalStatus !== undefined ? { legalStatus: detail.legalStatus ?? undefined } : {}),
 });
@@ -164,8 +164,8 @@ export const toSoftwareCopyrightDetailUpdateData = (
     : {}),
   ...(detail.softwareVersion !== undefined ? { softwareVersion: detail.softwareVersion } : {}),
   ...(detail.softwareType !== undefined ? { softwareType: detail.softwareType } : {}),
-  ...(detail.publishDate !== undefined ? { publishDate: detail.publishDate } : {}),
-  ...(detail.registerDate !== undefined ? { registerDate: detail.registerDate } : {}),
+  ...(detail.publishDate !== undefined ? { publishDate: toPrismaDateOnly(detail.publishDate) } : {}),
+  ...(detail.registerDate !== undefined ? { registerDate: toPrismaDateOnly(detail.registerDate) } : {}),
   ...(detail.runEnv !== undefined ? { runEnv: detail.runEnv } : {}),
 });
 
@@ -202,4 +202,20 @@ export const getRequiredDetailForType = (
   }
 
   throw new Error(`Missing detail payload for achievement type ${input.type}.`);
+};
+
+const toPrismaDateOnly = (value: Date | string | null | undefined): Date | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T00:00:00.000Z`);
+  }
+
+  return new Date(value);
 };
