@@ -15499,10 +15499,37 @@
   - No real external-system call.
   - No Prisma schema change, migration addition, migration execution, API
     behavior change, or permission relaxation.
-- No Docker prune, volume deletion, `down -v`, orphan cleanup, or local file
+  - No Docker prune, volume deletion, `down -v`, orphan cleanup, or local file
     deletion.
   - This is local Docker production-like / synthetic UI polish acceptance, not
     production acceptance.
+
+## 2026-07-08 Step 175 - Final demo runbook
+
+- Status: PASS.
+- Goal:
+  - Convert the final acceptance status into a practical 7-minute on-site demo
+    route and Q&A boundary script without creating PPT artifacts.
+- Documentation:
+  - Added `memory-bank/final-demo-runbook-step175.md`.
+  - Covers recommended 7-minute route: workbench, achievements, DOI preview,
+    reminders, custom reports, dashboard/citation, audit/secret authorization,
+    and settings API integrations.
+  - Includes "do not click" boundaries for real external systems, `.env`,
+    credentials, production DB/VPS, destructive operations, local artifacts, and
+    temporary PPT/performance/backup outputs.
+  - Includes Q&A wording for production readiness, DOI/citation, email,
+    performance, and backup/restore questions.
+- Verification:
+  - Documentation-only change so no API/Web tests were required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundary:
+  - No `.env` or `.env.production` content read.
+  - No production/VPS/production DB access.
+  - No real external-system call.
+  - No PPT, screenshot, performance log, backup, or existing local artifact
+    handling.
 
 ## 2026-07-08 Step 174 - Final acceptance coverage matrix
 

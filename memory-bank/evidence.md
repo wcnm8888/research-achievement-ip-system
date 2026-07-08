@@ -18953,6 +18953,28 @@
   - No raw token, cookie, session, password, password hash, `DATABASE_URL`, connection string, API key, provider credential, invite/reset link, raw payload, or raw request/response was captured in report text.
   - No deletion, reset, restore, checkout, clean, prune, or existing untracked local artifact handling.
 
+## 2026-07-08 Step 175 - Final demo runbook evidence
+
+- Changed files:
+  - `memory-bank/final-demo-runbook-step175.md`
+  - `memory-bank/progress.md`
+  - `memory-bank/evidence.md`
+- Acceptance coverage:
+  - Added a 7-minute on-site demo route covering workbench, achievements, DOI preview, reminders, custom reports, dashboard/citation, audit/secret authorization, and settings API integrations.
+  - Added explicit "do not click" boundaries for external systems, `.env`, credentials, production DB/VPS, destructive operations, local artifacts, and temporary outputs.
+  - Added Q&A wording for production readiness, DOI/citation, email, performance, and backup/restore questions.
+- Verification:
+  - Documentation-only change; no API/Web tests required.
+  - `git diff --check`: PASS.
+  - `git diff --cached --check`: PASS.
+- Boundaries observed:
+  - No `.env` or `.env.production` content read.
+  - No password, Cookie, Token, connection string, API key, provider credential, or raw external payload recorded.
+  - No production/VPS/production DB access.
+  - No real external DOI, literature, SMTP, SMS, enterprise messaging, HR/SSO, finance, or patent call.
+  - No API/Web source, schema, migration, seed, deployment, or production configuration change.
+  - No PPT, screenshot, performance log, backup, or existing untracked local artifact handling.
+
 ## 2026-07-08 Step 174 - Final acceptance coverage evidence
 
 - Changed files:
