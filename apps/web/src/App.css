@@ -1068,13 +1068,32 @@ body {
 
 .report-template-card,
 .report-filter-card,
-.report-result-card {
+.report-result-card,
+.scheduled-report-card {
   min-width: 0;
 }
 
 .report-template-card .ant-tag {
   max-width: 100%;
   white-space: normal;
+}
+
+.scheduled-report-summary {
+  min-width: 0;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+}
+
+.scheduled-report-summary .ant-tag {
+  margin-inline-end: 0;
+  white-space: normal;
+}
+
+.report-action-row {
+  width: 100%;
+  justify-content: flex-end;
 }
 
 .audit-masked-block pre {

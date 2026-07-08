@@ -35,6 +35,8 @@ import type {
   CustomReportRunResponse,
   CustomReportTemplate,
   CustomReportTemplateId,
+  ScheduledReportPlan,
+  ScheduledReportPreviewResult,
 } from "./types";
 
 type Loadable<T> = {
@@ -45,7 +47,11 @@ type Loadable<T> = {
 
 type CustomReportsClient = Pick<
   AccountManagementApiClient,
-  "listCustomReportTemplates" | "runCustomReport" | "downloadBlob"
+  | "listCustomReportTemplates"
+  | "runCustomReport"
+  | "listScheduledReportPlans"
+  | "previewScheduledReportPlan"
+  | "downloadBlob"
 >;
 
 type CustomReportsProps = {
@@ -58,7 +64,10 @@ type CustomReportExportFormat = "csv" | "xlsx" | "pdf";
 type CustomReportsViewProps = {
   templates: Loadable<CustomReportTemplate[]>;
   report: Loadable<CustomReportRunResponse>;
+  scheduledPlans: Loadable<ScheduledReportPlan[]>;
+  scheduledPreview: Loadable<ScheduledReportPreviewResult>;
   selectedTemplateId: string | null;
+  selectedScheduledPlanId: string | null;
   filters: CustomReportRunQuery;
   onTemplateChange?: (templateId: string) => void;
   onFilterChange?: <K extends keyof CustomReportRunQuery>(
@@ -69,6 +78,9 @@ type CustomReportsViewProps = {
   onExportCsv?: () => void;
   onExportXlsx?: () => void;
   onExportPdf?: () => void;
+  onScheduledPlanChange?: (planId: string) => void;
+  onPreviewScheduledPlan?: () => void;
+  onReloadScheduledPlans?: () => void;
   onReloadTemplates?: () => void;
   exporting?: boolean;
   exportError?: ApiError | null;
@@ -92,6 +104,18 @@ const emptyTemplates: Loadable<CustomReportTemplate[]> = {
 };
 
 const emptyReport: Loadable<CustomReportRunResponse> = {
+  loading: false,
+  data: null,
+  error: null,
+};
+
+const emptyScheduledPlans: Loadable<ScheduledReportPlan[]> = {
+  loading: false,
+  data: null,
+  error: null,
+};
+
+const emptyScheduledPreview: Loadable<ScheduledReportPreviewResult> = {
   loading: false,
   data: null,
   error: null,
@@ -151,11 +175,18 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
     emptyTemplates,
   );
   const [report, setReport] = useState<Loadable<CustomReportRunResponse>>(emptyReport);
+  const [scheduledPlans, setScheduledPlans] =
+    useState<Loadable<ScheduledReportPlan[]>>(emptyScheduledPlans);
+  const [scheduledPreview, setScheduledPreview] =
+    useState<Loadable<ScheduledReportPreviewResult>>(emptyScheduledPreview);
   const [exportState, setExportState] = useState<{ loading: boolean; error: ApiError | null }>({
     loading: false,
     error: null,
   });
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [selectedScheduledPlanId, setSelectedScheduledPlanId] = useState<string | null>(
+    null,
+  );
   const [filters, setFilters] = useState<CustomReportRunQuery>({
     groupBy: "month",
     dueSoonDays: 30,
@@ -190,6 +221,36 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
   useEffect(() => {
     loadTemplates();
   }, [loadTemplates]);
+
+  const loadScheduledPlans = useCallback(() => {
+    if (!hasDemoUser(demoUserId)) {
+      setScheduledPlans(emptyScheduledPlans);
+      setScheduledPreview(emptyScheduledPreview);
+      setSelectedScheduledPlanId(null);
+      return;
+    }
+
+    setScheduledPlans({ loading: true, data: null, error: null });
+    void loadScheduledReportPlansForDemoUser(reportsClient, demoUserId)
+      .then((items) => {
+        const nextPlans = items ?? [];
+        setScheduledPlans({ loading: false, data: nextPlans, error: null });
+        setSelectedScheduledPlanId((current) =>
+          getDefaultScheduledReportPlanId(nextPlans, current),
+        );
+      })
+      .catch((error: unknown) =>
+        setScheduledPlans({
+          loading: false,
+          data: null,
+          error: mapCustomReportErrorToDisplay(normalizeError(error)),
+        }),
+      );
+  }, [demoUserId, reportsClient]);
+
+  useEffect(() => {
+    loadScheduledPlans();
+  }, [loadScheduledPlans]);
 
   const changeTemplate = useCallback((templateId: string) => {
     setSelectedTemplateId(templateId);
@@ -254,6 +315,28 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       );
   }, [demoUserId, filters, reportsClient, selectedTemplateId]);
 
+  const previewScheduledPlan = useCallback(() => {
+    if (!hasDemoUser(demoUserId) || !selectedScheduledPlanId) {
+      setScheduledPreview(emptyScheduledPreview);
+      return;
+    }
+
+    setScheduledPreview({ loading: true, data: null, error: null });
+    void previewScheduledReportForDemoUser(
+      reportsClient,
+      demoUserId,
+      selectedScheduledPlanId,
+    )
+      .then((data) => setScheduledPreview({ loading: false, data, error: null }))
+      .catch((error: unknown) =>
+        setScheduledPreview({
+          loading: false,
+          data: null,
+          error: mapCustomReportErrorToDisplay(normalizeError(error)),
+        }),
+      );
+  }, [demoUserId, reportsClient, selectedScheduledPlanId]);
+
   if (!hasDemoUser(demoUserId)) {
     return (
       <Space direction="vertical" size={16} className="page-stack">
@@ -273,7 +356,10 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
     <CustomReportsView
       templates={templates}
       report={report}
+      scheduledPlans={scheduledPlans}
+      scheduledPreview={scheduledPreview}
       selectedTemplateId={selectedTemplateId}
+      selectedScheduledPlanId={selectedScheduledPlanId}
       filters={filters}
       onTemplateChange={changeTemplate}
       onFilterChange={changeFilter}
@@ -281,6 +367,9 @@ export function CustomReports({ demoUserId, apiClient }: CustomReportsProps) {
       onExportCsv={() => exportReport("csv")}
       onExportXlsx={() => exportReport("xlsx")}
       onExportPdf={() => exportReport("pdf")}
+      onScheduledPlanChange={setSelectedScheduledPlanId}
+      onPreviewScheduledPlan={previewScheduledPlan}
+      onReloadScheduledPlans={loadScheduledPlans}
       onReloadTemplates={loadTemplates}
       exporting={exportState.loading}
       exportError={exportState.error}
@@ -310,6 +399,29 @@ export const runCustomReportForDemoUser = async (
   }
 
   return client.runCustomReport(templateId, query);
+};
+
+export const loadScheduledReportPlansForDemoUser = async (
+  client: CustomReportsClient,
+  demoUserId: string | null,
+): Promise<ScheduledReportPlan[] | null> => {
+  if (!hasDemoUser(demoUserId)) {
+    return null;
+  }
+
+  return client.listScheduledReportPlans();
+};
+
+export const previewScheduledReportForDemoUser = async (
+  client: CustomReportsClient,
+  demoUserId: string | null,
+  planId: string,
+): Promise<ScheduledReportPreviewResult | null> => {
+  if (!hasDemoUser(demoUserId)) {
+    return null;
+  }
+
+  return client.previewScheduledReportPlan(planId);
 };
 
 export const exportCustomReportCsvForDemoUser = async (
@@ -413,6 +525,14 @@ export const getDefaultCustomReportTemplateId = (
     ? currentTemplateId
     : templates[0]?.templateId ?? null;
 
+export const getDefaultScheduledReportPlanId = (
+  plans: readonly ScheduledReportPlan[],
+  currentPlanId: string | null,
+): string | null =>
+  currentPlanId && plans.some((plan) => plan.planId === currentPlanId)
+    ? currentPlanId
+    : plans[0]?.planId ?? null;
+
 export const mapCustomReportErrorToDisplay = (error: ApiError): ApiError => {
   if (error.kind === "unauthorized") {
     return { ...error, message: "请先选择或切换有权限的用户。", detail: undefined };
@@ -440,7 +560,10 @@ export const mapCustomReportErrorToDisplay = (error: ApiError): ApiError => {
 export function CustomReportsView({
   templates,
   report,
+  scheduledPlans,
+  scheduledPreview,
   selectedTemplateId,
+  selectedScheduledPlanId,
   filters,
   onTemplateChange,
   onFilterChange,
@@ -448,6 +571,9 @@ export function CustomReportsView({
   onExportCsv,
   onExportXlsx,
   onExportPdf,
+  onScheduledPlanChange,
+  onPreviewScheduledPlan,
+  onReloadScheduledPlans,
   onReloadTemplates,
   exporting = false,
   exportError = null,
@@ -490,6 +616,15 @@ export function CustomReportsView({
       {exportError ? (
         <Typography.Text type="danger">{exportError.message}</Typography.Text>
       ) : null}
+
+      <ScheduledReportPreviewPanel
+        plans={scheduledPlans}
+        preview={scheduledPreview}
+        selectedPlanId={selectedScheduledPlanId}
+        onPlanChange={onScheduledPlanChange}
+        onPreview={onPreviewScheduledPlan}
+        onReload={onReloadScheduledPlans}
+      />
 
       <DataState
         loading={templates.loading}
@@ -617,6 +752,133 @@ export function CustomReportsView({
     </Space>
   );
 }
+
+const ScheduledReportPreviewPanel = ({
+  plans,
+  preview,
+  selectedPlanId,
+  onPlanChange,
+  onPreview,
+  onReload,
+}: {
+  plans: Loadable<ScheduledReportPlan[]>;
+  preview: Loadable<ScheduledReportPreviewResult>;
+  selectedPlanId: string | null;
+  onPlanChange?: (planId: string) => void;
+  onPreview?: () => void;
+  onReload?: () => void;
+}) => {
+  const planItems = plans.data ?? [];
+  const selectedPlan = planItems.find((plan) => plan.planId === selectedPlanId);
+
+  return (
+    <Card
+      className="shell-card scheduled-report-card"
+      title="定时报表预演"
+      extra={<Tag color="blue">月 / 季 / 年计划</Tag>}
+    >
+      <DataState
+        loading={plans.loading}
+        error={plans.error}
+        empty={planItems.length === 0}
+        emptyText="暂无可用定时报表计划。"
+        onRetry={onReload}
+      >
+        <Space direction="vertical" size={14} className="full-width">
+          <Row gutter={[12, 12]} align="middle">
+            <Col xs={24} lg={14}>
+              <FilterLabel label="报表计划">
+                <Select
+                  className="full-width"
+                  aria-label="定时报表计划"
+                  value={selectedPlanId ?? undefined}
+                  placeholder="选择月报、季报或年报计划"
+                  options={planItems.map((plan) => ({
+                    label: `${formatScheduledCadenceLabel(plan.cadence)} · ${plan.name}`,
+                    value: plan.planId,
+                  }))}
+                  onChange={onPlanChange}
+                />
+              </FilterLabel>
+            </Col>
+            <Col xs={24} lg={10}>
+              <Space size={8} wrap className="report-action-row">
+                <Button onClick={onReload} loading={plans.loading}>
+                  刷新计划
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={onPreview}
+                  loading={preview.loading}
+                  disabled={!selectedPlan}
+                >
+                  生成预演
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+
+          {selectedPlan ? (
+            <div className="scheduled-report-summary">
+              <Space size={8} wrap>
+                <Tag color="geekblue">{formatScheduledCadenceLabel(selectedPlan.cadence)}</Tag>
+                <Tag>报表类型：{formatScheduledTemplateLabel(selectedPlan.templateId)}</Tag>
+                <Tag>接收范围：{formatScheduledRecipientScope(selectedPlan.recipientScope)}</Tag>
+                <Tag>下次计划周期：{selectedPlan.nextPeriodLabel}</Tag>
+                <Tag color="green">
+                  站内信状态：{formatScheduledDeliveryLabel(selectedPlan.inAppDelivery)}
+                </Tag>
+                <Tag color="gold">
+                  邮件通道：{formatScheduledDeliveryLabel(selectedPlan.emailDelivery)}
+                </Tag>
+              </Space>
+            </div>
+          ) : null}
+
+          <DataState
+            loading={preview.loading}
+            error={preview.error}
+            empty={!preview.data}
+            emptyText="选择计划后点击生成预演，页面将展示报表摘要与站内信摘要。"
+            onRetry={onPreview}
+          >
+            {preview.data ? (
+              <Space direction="vertical" size={12} className="full-width">
+                <Descriptions size="small" bordered column={1}>
+                  <Descriptions.Item label="预演计划">
+                    {preview.data.plan.name}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="生成时间">
+                    {formatCustomReportDateTime(preview.data.generatedAt)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="报表类型">
+                    {preview.data.report.metadata.name}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="汇总行数">
+                    {preview.data.report.rows.length}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="站内信摘要">
+                    {preview.data.delivery.inApp.content}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="邮件通道预留">
+                    {preview.data.delivery.email.message}
+                  </Descriptions.Item>
+                </Descriptions>
+                <Space size={8} wrap>
+                  {preview.data.caveats.map((caveat) => (
+                    <Tag key={caveat} color="gold">
+                      {caveat}
+                    </Tag>
+                  ))}
+                </Space>
+              </Space>
+            ) : null}
+          </DataState>
+        </Space>
+      </DataState>
+    </Card>
+  );
+};
 
 const CustomReportResult = ({
   report,
@@ -760,6 +1022,58 @@ export const formatCustomReportDateTime = (value: string | undefined): string =>
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+};
+
+export const formatScheduledCadenceLabel = (
+  cadence: ScheduledReportPlan["cadence"],
+): string => {
+  if (cadence === "MONTHLY") {
+    return "月报";
+  }
+
+  if (cadence === "QUARTERLY") {
+    return "季报";
+  }
+
+  return "年报";
+};
+
+export const formatScheduledTemplateLabel = (
+  templateId: ScheduledReportPlan["templateId"],
+): string => {
+  const labels: Record<ScheduledReportPlan["templateId"], string> = {
+    "achievement-distribution": "成果分布",
+    "achievement-trend": "成果趋势",
+    "fee-risk-summary": "费用风险",
+    "workflow-efficiency": "审批效率",
+    "conversion-funnel": "成果转化",
+  };
+
+  return labels[templateId];
+};
+
+export const formatScheduledRecipientScope = (
+  scope: ScheduledReportPlan["recipientScope"],
+): string => {
+  if (scope === "CURRENT_USER") {
+    return "当前用户";
+  }
+
+  if (scope === "DEPARTMENT_MANAGERS") {
+    return "部门负责人";
+  }
+
+  return "院级评审人员";
+};
+
+export const formatScheduledDeliveryLabel = (
+  delivery: ScheduledReportPlan["inAppDelivery"] | ScheduledReportPlan["emailDelivery"],
+): string => {
+  if (delivery === "LOCAL_PREVIEW") {
+    return "本地预演";
+  }
+
+  return "预留接口";
 };
 
 const normalizeError = (error: unknown): ApiError => {

@@ -17,6 +17,7 @@ import { createSimplePdf } from "../export/pdf";
 import { createXlsx } from "../export/xlsx";
 import { PayStatusCode } from "../fees/domain/fee-domain.types";
 import { UserContext } from "../identity/user-context";
+import { NotificationService } from "../notifications/notification.service";
 import { WorkflowTaskStatusCode } from "../workflow/domain/workflow-domain.types";
 import {
   maxCustomReportDueSoonDays,
@@ -32,6 +33,8 @@ import {
   CustomReportTemplate,
   CustomReportTemplateId,
   CustomReportTemplateIdCode,
+  ScheduledReportPlan,
+  ScheduledReportPreviewResult,
   customReportCaveats,
   customReportTemplates,
 } from "./domain/custom-report-domain.types";
@@ -45,6 +48,47 @@ import { ReportsRepository } from "./reports.repository";
 const defaultDueSoonDays = 30;
 const dateOnlyLength = 10;
 const exportRowLimit = 1000;
+const scheduledReportPreviewCaveats = [
+  "本地定时报表预演",
+  "站内信为本地摘要",
+  "邮件通道为后续可接入能力",
+] as const;
+
+const scheduledReportPlans: readonly ScheduledReportPlan[] = [
+  {
+    planId: "monthly-achievement-distribution",
+    name: "科研成果月报",
+    cadence: "MONTHLY",
+    templateId: CustomReportTemplateIdCode.achievementDistribution,
+    recipientScope: "DEPARTMENT_MANAGERS",
+    nextPeriodLabel: "下月初",
+    channels: ["IN_APP", "EMAIL_RESERVED"],
+    inAppDelivery: "LOCAL_PREVIEW",
+    emailDelivery: "RESERVED_INTERFACE",
+  },
+  {
+    planId: "quarterly-fee-risk-summary",
+    name: "费用风险季报",
+    cadence: "QUARTERLY",
+    templateId: CustomReportTemplateIdCode.feeRiskSummary,
+    recipientScope: "INSTITUTE_REVIEWERS",
+    nextPeriodLabel: "下季度首月",
+    channels: ["IN_APP", "EMAIL_RESERVED"],
+    inAppDelivery: "LOCAL_PREVIEW",
+    emailDelivery: "RESERVED_INTERFACE",
+  },
+  {
+    planId: "yearly-workflow-efficiency",
+    name: "审批效率年报",
+    cadence: "YEARLY",
+    templateId: CustomReportTemplateIdCode.workflowEfficiency,
+    recipientScope: "CURRENT_USER",
+    nextPeriodLabel: "下一年度初",
+    channels: ["IN_APP", "EMAIL_RESERVED"],
+    inAppDelivery: "LOCAL_PREVIEW",
+    emailDelivery: "RESERVED_INTERFACE",
+  },
+];
 
 @Injectable()
 export class ReportsService {
@@ -55,12 +99,62 @@ export class ReportsService {
     private readonly policyQueryFactory: PolicyQueryFactory,
     @Inject(AuditService)
     private readonly auditService: AuditService,
+    @Inject(NotificationService)
+    private readonly notificationService: NotificationService,
   ) {}
 
   listTemplates(context: UserContext): readonly CustomReportTemplate[] {
     this.assertUserContext(context);
 
     return customReportTemplates;
+  }
+
+  listScheduledPlans(context: UserContext): readonly ScheduledReportPlan[] {
+    this.assertUserContext(context);
+
+    return scheduledReportPlans;
+  }
+
+  async previewScheduledPlan(
+    context: UserContext,
+    planId: string,
+  ): Promise<ScheduledReportPreviewResult> {
+    this.assertUserContext(context);
+
+    const plan = getScheduledReportPlan(planId);
+    const report = await this.runTemplate(
+      context,
+      plan.templateId,
+      getScheduledReportPreviewOptions(plan.cadence),
+    );
+    const generatedAt = new Date().toISOString();
+    const notificationTitle = `${plan.name}生成预演`;
+    const notificationContent = buildScheduledReportNotificationContent(plan, report);
+    const notification = await this.notificationService.sendInAppNotification({
+      receiverId: context.userId,
+      title: notificationTitle,
+      content: notificationContent,
+      sentAt: new Date(generatedAt),
+    });
+
+    return {
+      plan,
+      generatedAt,
+      report,
+      delivery: {
+        inApp: {
+          status: "LOCAL_PREVIEW_CREATED",
+          notificationId: notification.id,
+          title: notificationTitle,
+          content: notificationContent,
+        },
+        email: {
+          status: "RESERVED_INTERFACE",
+          message: "邮件通道预留，当前本地预演不连接真实邮件服务。",
+        },
+      },
+      caveats: [...scheduledReportPreviewCaveats],
+    };
   }
 
   async runTemplate(
@@ -399,6 +493,16 @@ type NormalizedOptions = Omit<CustomReportRunOptions, "status"> & {
   status?: CustomReportRunFilters["status"];
 };
 
+const getScheduledReportPlan = (planId: string): ScheduledReportPlan => {
+  const plan = scheduledReportPlans.find((item) => item.planId === planId);
+
+  if (!plan) {
+    throw new CustomReportTemplateNotFoundError(planId);
+  }
+
+  return plan;
+};
+
 const getTemplate = (templateId: string): CustomReportTemplate => {
   const template = customReportTemplates.find((item) => item.templateId === templateId);
 
@@ -407,6 +511,38 @@ const getTemplate = (templateId: string): CustomReportTemplate => {
   }
 
   return template;
+};
+
+const getScheduledReportPreviewOptions = (
+  cadence: ScheduledReportPlan["cadence"],
+): CustomReportRunOptions => {
+  const today = new Date();
+  const dateTo = toUtcDateOnly(today);
+  const dateFrom = new Date(dateTo);
+
+  if (cadence === "MONTHLY") {
+    dateFrom.setUTCMonth(dateFrom.getUTCMonth() - 1);
+    return { dateFrom, dateTo };
+  }
+
+  if (cadence === "QUARTERLY") {
+    dateFrom.setUTCMonth(dateFrom.getUTCMonth() - 3);
+    return { dateFrom, dateTo, dueSoonDays: defaultDueSoonDays };
+  }
+
+  dateFrom.setUTCFullYear(dateFrom.getUTCFullYear() - 1);
+  return { dateFrom, dateTo };
+};
+
+const buildScheduledReportNotificationContent = (
+  plan: ScheduledReportPlan,
+  report: CustomReportRunResult,
+): string => {
+  const rowCount = report.rows.length;
+  const totalCount = report.totals.count;
+  const countSummary = typeof totalCount === "number" ? `，汇总数量 ${totalCount}` : "";
+
+  return `${plan.name}已完成本地生成预演：${report.metadata.name}，汇总行 ${rowCount}${countSummary}。邮件通道为预留接口，当前不发送外部邮件。`;
 };
 
 const normalizeOptions = (

@@ -9,15 +9,20 @@ import {
   exportCustomReportPdfForDemoUser,
   exportCustomReportXlsxForDemoUser,
   getDefaultCustomReportTemplateId,
+  getDefaultScheduledReportPlanId,
   loadCustomReportTemplatesForDemoUser,
+  loadScheduledReportPlansForDemoUser,
   mapCustomReportErrorToDisplay,
   normalizeDueSoonDays,
+  previewScheduledReportForDemoUser,
   runCustomReportForDemoUser,
 } from "./CustomReports";
 import type {
   CustomReportRunResponse,
   CustomReportTemplate,
   CustomReportTemplateId,
+  ScheduledReportPlan,
+  ScheduledReportPreviewResult,
 } from "./types";
 
 const templates: CustomReportTemplate[] = [
@@ -93,9 +98,66 @@ const runResponse: CustomReportRunResponse = {
   ],
 };
 
+const scheduledPlans: ScheduledReportPlan[] = [
+  {
+    planId: "monthly-achievement-distribution",
+    name: "科研成果月报",
+    cadence: "MONTHLY",
+    templateId: "achievement-distribution",
+    recipientScope: "DEPARTMENT_MANAGERS",
+    nextPeriodLabel: "下月初",
+    channels: ["IN_APP", "EMAIL_RESERVED"],
+    inAppDelivery: "LOCAL_PREVIEW",
+    emailDelivery: "RESERVED_INTERFACE",
+  },
+  {
+    planId: "quarterly-fee-risk-summary",
+    name: "费用风险季报",
+    cadence: "QUARTERLY",
+    templateId: "fee-risk-summary",
+    recipientScope: "INSTITUTE_REVIEWERS",
+    nextPeriodLabel: "下季度首月",
+    channels: ["IN_APP", "EMAIL_RESERVED"],
+    inAppDelivery: "LOCAL_PREVIEW",
+    emailDelivery: "RESERVED_INTERFACE",
+  },
+  {
+    planId: "yearly-workflow-efficiency",
+    name: "审批效率年报",
+    cadence: "YEARLY",
+    templateId: "workflow-efficiency",
+    recipientScope: "CURRENT_USER",
+    nextPeriodLabel: "下一年度初",
+    channels: ["IN_APP", "EMAIL_RESERVED"],
+    inAppDelivery: "LOCAL_PREVIEW",
+    emailDelivery: "RESERVED_INTERFACE",
+  },
+];
+
+const scheduledPreview: ScheduledReportPreviewResult = {
+  plan: scheduledPlans[0]!,
+  generatedAt: "2026-07-06T01:00:00.000Z",
+  report: runResponse,
+  delivery: {
+    inApp: {
+      status: "LOCAL_PREVIEW_CREATED",
+      notificationId: "notification-id",
+      title: "科研成果月报生成预演",
+      content: "科研成果月报已完成本地生成预演，站内信摘要可供评审查看。",
+    },
+    email: {
+      status: "RESERVED_INTERFACE",
+      message: "邮件通道预留，当前本地预演不连接真实邮件服务。",
+    },
+  },
+  caveats: ["本地定时报表预演", "站内信为本地摘要", "邮件通道为后续可接入能力"],
+};
+
 const makeClient = () => ({
   listCustomReportTemplates: vi.fn(async () => templates),
   runCustomReport: vi.fn(async () => runResponse),
+  listScheduledReportPlans: vi.fn(async () => scheduledPlans),
+  previewScheduledReportPlan: vi.fn(async () => scheduledPreview),
   downloadBlob: vi.fn(async () => new Blob(["csv"])),
 });
 
@@ -107,6 +169,10 @@ describe("CustomReports request boundaries", () => {
     await expect(
       runCustomReportForDemoUser(client, "   ", "achievement-distribution", {}),
     ).resolves.toBeNull();
+    await expect(loadScheduledReportPlansForDemoUser(client, null)).resolves.toBeNull();
+    await expect(
+      previewScheduledReportForDemoUser(client, "", "monthly-achievement-distribution"),
+    ).resolves.toBeNull();
 
     const html = renderToStaticMarkup(
       <CustomReports demoUserId={null} apiClient={client} />,
@@ -116,6 +182,8 @@ describe("CustomReports request boundaries", () => {
     expect(html).toContain("当前没有可用的业务用户");
     expect(client.listCustomReportTemplates).not.toHaveBeenCalled();
     expect(client.runCustomReport).not.toHaveBeenCalled();
+    expect(client.listScheduledReportPlans).not.toHaveBeenCalled();
+    expect(client.previewScheduledReportPlan).not.toHaveBeenCalled();
     expect(client.downloadBlob).not.toHaveBeenCalled();
   });
 
@@ -176,6 +244,32 @@ describe("CustomReports request boundaries", () => {
     expect(client.runCustomReport).toHaveBeenCalledWith("achievement-distribution", {
       achievementType: "PAPER",
     });
+  });
+
+  it("loads and previews scheduled report plans through the injected client", async () => {
+    const client = makeClient();
+
+    await expect(loadScheduledReportPlansForDemoUser(client, "demo-user-id")).resolves.toEqual(
+      scheduledPlans,
+    );
+    await expect(
+      previewScheduledReportForDemoUser(
+        client,
+        "demo-user-id",
+        "monthly-achievement-distribution",
+      ),
+    ).resolves.toEqual(scheduledPreview);
+
+    expect(client.listScheduledReportPlans).toHaveBeenCalledOnce();
+    expect(client.previewScheduledReportPlan).toHaveBeenCalledWith(
+      "monthly-achievement-distribution",
+    );
+    expect(getDefaultScheduledReportPlanId(scheduledPlans, null)).toBe(
+      "monthly-achievement-distribution",
+    );
+    expect(getDefaultScheduledReportPlanId(scheduledPlans, "yearly-workflow-efficiency")).toBe(
+      "yearly-workflow-efficiency",
+    );
   });
 
   it("exports custom reports through the CSV endpoint with current filters", async () => {
@@ -245,6 +339,11 @@ describe("CustomReportsView display states", () => {
     expect(html).toContain("导出 CSV");
     expect(html).toContain("导出 Excel");
     expect(html).toContain("导出 PDF");
+    expect(html).toContain("定时报表预演");
+    expect(html).toContain("生成预演");
+    expect(html).toContain("站内信摘要");
+    expect(html).toContain("邮件通道预留");
+    expect(html).toContain("下次计划周期");
     expect(html).toContain("汇总指标");
     expect(html).toContain("Department code");
     expect(html).toContain("BIO");
@@ -337,7 +436,10 @@ describe("CustomReportsView display states", () => {
       <CustomReportsView
         templates={{ loading: false, data: templates, error: null }}
         report={{ loading: false, data: null, error }}
+        scheduledPlans={{ loading: false, data: scheduledPlans, error: null }}
+        scheduledPreview={{ loading: false, data: null, error: null }}
         selectedTemplateId="achievement-distribution"
+        selectedScheduledPlanId="monthly-achievement-distribution"
         filters={{}}
       />,
     );
@@ -371,7 +473,10 @@ const renderView = (
     <CustomReportsView
       templates={{ loading: false, data: templates, error: null }}
       report={{ loading: false, data: report, error: null }}
+      scheduledPlans={{ loading: false, data: scheduledPlans, error: null }}
+      scheduledPreview={{ loading: false, data: scheduledPreview, error: null }}
       selectedTemplateId={selectedTemplateId}
+      selectedScheduledPlanId="monthly-achievement-distribution"
       filters={{ groupBy: "month", dueSoonDays: 30 }}
     />,
   );

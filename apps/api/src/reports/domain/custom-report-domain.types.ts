@@ -102,6 +102,54 @@ export type CustomReportRunResult = {
   caveats: string[];
 };
 
+export const ScheduledReportCadenceCode = {
+  monthly: "MONTHLY",
+  quarterly: "QUARTERLY",
+  yearly: "YEARLY",
+} as const;
+
+export type ScheduledReportCadence =
+  (typeof ScheduledReportCadenceCode)[keyof typeof ScheduledReportCadenceCode];
+
+export const ScheduledReportChannelCode = {
+  inApp: "IN_APP",
+  emailReserved: "EMAIL_RESERVED",
+} as const;
+
+export type ScheduledReportChannel =
+  (typeof ScheduledReportChannelCode)[keyof typeof ScheduledReportChannelCode];
+
+export type ScheduledReportPlan = {
+  planId: string;
+  name: string;
+  cadence: ScheduledReportCadence;
+  templateId: CustomReportTemplateId;
+  recipientScope: "CURRENT_USER" | "DEPARTMENT_MANAGERS" | "INSTITUTE_REVIEWERS";
+  nextPeriodLabel: string;
+  channels: ScheduledReportChannel[];
+  inAppDelivery: "LOCAL_PREVIEW";
+  emailDelivery: "RESERVED_INTERFACE";
+};
+
+export type ScheduledReportPreviewResult = {
+  plan: ScheduledReportPlan;
+  generatedAt: string;
+  report: CustomReportRunResult;
+  delivery: {
+    inApp: {
+      status: "LOCAL_PREVIEW_CREATED";
+      notificationId: string;
+      title: string;
+      content: string;
+    };
+    email: {
+      status: "RESERVED_INTERFACE";
+      message: string;
+    };
+  };
+  caveats: string[];
+};
+
 export type AchievementDistributionBucket = {
   departmentId: string;
   departmentCode: string;

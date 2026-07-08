@@ -119,13 +119,27 @@ const createService = () => {
   const auditService = {
     recordEvent: vi.fn().mockResolvedValue({ id: "audit-log" }),
   };
+  const notificationService = {
+    sendInAppNotification: vi.fn().mockResolvedValue({
+      id: "notification-id",
+      receiverId: ids.user,
+      title: "report notification",
+      content: "report content",
+      channel: "IN_APP",
+      status: "SENT",
+      createdAt: new Date("2026-06-18T10:30:00.000Z"),
+      sentAt: new Date("2026-06-18T10:30:00.000Z"),
+      readAt: null,
+    }),
+  };
   const service = new ReportsService(
     repository as unknown as ReportsRepository,
     policyQueryFactory as unknown as PolicyQueryFactory,
     auditService as unknown as AuditService,
+    notificationService as never,
   );
 
-  return { auditService, policyQueryFactory, repository, service };
+  return { auditService, notificationService, policyQueryFactory, repository, service };
 };
 
 describe("ReportsService", () => {
@@ -149,6 +163,69 @@ describe("ReportsService", () => {
       CustomReportTemplateIdCode.workflowEfficiency,
       CustomReportTemplateIdCode.conversionFunnel,
     ]);
+  });
+
+  it("returns monthly, quarterly, and yearly scheduled report preview plans", () => {
+    const { service } = createService();
+
+    const plans = service.listScheduledPlans(context);
+
+    expect(plans.map((plan) => plan.cadence)).toEqual([
+      "MONTHLY",
+      "QUARTERLY",
+      "YEARLY",
+    ]);
+    expect(plans.map((plan) => plan.templateId)).toEqual([
+      CustomReportTemplateIdCode.achievementDistribution,
+      CustomReportTemplateIdCode.feeRiskSummary,
+      CustomReportTemplateIdCode.workflowEfficiency,
+    ]);
+    expect(plans.every((plan) => plan.channels.includes("EMAIL_RESERVED"))).toBe(true);
+    expect(plans.every((plan) => plan.emailDelivery === "RESERVED_INTERFACE")).toBe(true);
+  });
+
+  it("previews a scheduled report and creates a local in-app notification summary", async () => {
+    const { notificationService, service } = createService();
+
+    const preview = await service.previewScheduledPlan(
+      context,
+      "monthly-achievement-distribution",
+    );
+
+    expect(preview.plan.planId).toBe("monthly-achievement-distribution");
+    expect(preview.report.metadata.templateId).toBe(
+      CustomReportTemplateIdCode.achievementDistribution,
+    );
+    expect(preview.delivery.inApp).toMatchObject({
+      status: "LOCAL_PREVIEW_CREATED",
+      notificationId: "notification-id",
+      title: "科研成果月报生成预演",
+    });
+    expect(preview.delivery.email).toEqual({
+      status: "RESERVED_INTERFACE",
+      message: "邮件通道预留，当前本地预演不连接真实邮件服务。",
+    });
+    expect(preview.caveats).toEqual([
+      "本地定时报表预演",
+      "站内信为本地摘要",
+      "邮件通道为后续可接入能力",
+    ]);
+    expect(notificationService.sendInAppNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        receiverId: ids.user,
+        title: "科研成果月报生成预演",
+        content: expect.stringContaining("邮件通道为预留接口"),
+      }),
+    );
+  });
+
+  it("rejects an unknown scheduled report plan id", async () => {
+    const { notificationService, service } = createService();
+
+    await expect(service.previewScheduledPlan(context, "unknown-plan")).rejects.toThrow(
+      CustomReportTemplateNotFoundError,
+    );
+    expect(notificationService.sendInAppNotification).not.toHaveBeenCalled();
   });
 
   it.each([

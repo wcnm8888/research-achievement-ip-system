@@ -6,6 +6,7 @@ import {
   Inject,
   NotFoundException,
   Param,
+  Post,
   Query,
   Res,
   StreamableFile,
@@ -58,6 +59,31 @@ export class ReportsController {
   @Get("templates")
   listTemplates(@CurrentUser() currentUser: UserContext) {
     return this.reportsService.listTemplates(currentUser);
+  }
+
+  @Get("scheduled-plans")
+  listScheduledPlans(@CurrentUser() currentUser: UserContext) {
+    return this.reportsService.listScheduledPlans(currentUser);
+  }
+
+  @Post("scheduled-plans/:planId/preview")
+  async previewScheduledPlan(
+    @CurrentUser() currentUser: UserContext,
+    @Param("planId") planId: string,
+  ) {
+    try {
+      return await this.reportsService.previewScheduledPlan(currentUser, planId);
+    } catch (error) {
+      if (error instanceof CustomReportTemplateNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof CustomReportInvalidQueryError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
   }
 
   @Get("templates/:templateId/run")

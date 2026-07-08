@@ -59,6 +59,8 @@ import type {
   SecretAuthorizationOverview,
   SecretAuthorizationResourceDetail,
   SecretAuthorizationResourceList,
+  ScheduledReportPlan,
+  ScheduledReportPreviewResult,
   UpdateApiIntegrationInput,
   UpdateDepartmentInput,
   UserAccountImportApplyInput,
@@ -148,6 +150,8 @@ export type AccountManagementApiClient = ApiClient & {
     templateId: string,
     query?: CustomReportRunQuery,
   ): Promise<CustomReportRunResponse>;
+  listScheduledReportPlans(): Promise<ScheduledReportPlan[]>;
+  previewScheduledReportPlan(planId: string): Promise<ScheduledReportPreviewResult>;
   listAccountUsers(query?: ListAccountUsersQuery): Promise<AccountUserListResponse>;
   getAccountUser(userId: string): Promise<AccountUserDetail>;
   createAccountUser(payload: CreateAccountUserInput): Promise<AccountUserDetail>;
@@ -502,6 +506,24 @@ export const createApiClient = (
       options,
     );
     return response as CustomReportRunResponse;
+  },
+  async listScheduledReportPlans() {
+    const response = await request(
+      "/reports/scheduled-plans",
+      demoUserId,
+      { method: "GET" },
+      options,
+    );
+    return response as ScheduledReportPlan[];
+  },
+  async previewScheduledReportPlan(planId: string) {
+    const response = await request(
+      `/reports/scheduled-plans/${encodeURIComponent(planId)}/preview`,
+      demoUserId,
+      { method: "POST" },
+      options,
+    );
+    return response as ScheduledReportPreviewResult;
   },
   async listAccountUsers(query?: ListAccountUsersQuery) {
     const response = await request(

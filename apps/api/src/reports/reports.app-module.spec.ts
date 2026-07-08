@@ -13,6 +13,8 @@ import { UserContext } from "../identity/user-context";
 import {
   CustomReportTemplateIdCode,
   CustomReportRunResult,
+  ScheduledReportPlan,
+  ScheduledReportPreviewResult,
   customReportTemplates,
 } from "./domain/custom-report-domain.types";
 import { CustomReportTemplateNotFoundError } from "./domain/custom-report-errors";
@@ -26,6 +28,8 @@ const ids = {
 
 type ReportsServiceMock = {
   listTemplates: ReturnType<typeof vi.fn>;
+  listScheduledPlans: ReturnType<typeof vi.fn>;
+  previewScheduledPlan: ReturnType<typeof vi.fn>;
   runTemplate: ReturnType<typeof vi.fn>;
   exportTemplateCsv: ReturnType<typeof vi.fn>;
 };
@@ -84,8 +88,41 @@ const makeRunResult = (): CustomReportRunResult => ({
   ],
 });
 
+const makeScheduledPlan = (): ScheduledReportPlan => ({
+  planId: "monthly-achievement-distribution",
+  name: "科研成果月报",
+  cadence: "MONTHLY",
+  templateId: CustomReportTemplateIdCode.achievementDistribution,
+  recipientScope: "DEPARTMENT_MANAGERS",
+  nextPeriodLabel: "下月初",
+  channels: ["IN_APP", "EMAIL_RESERVED"],
+  inAppDelivery: "LOCAL_PREVIEW",
+  emailDelivery: "RESERVED_INTERFACE",
+});
+
+const makeScheduledPreview = (): ScheduledReportPreviewResult => ({
+  plan: makeScheduledPlan(),
+  generatedAt: "2026-06-18T00:00:00.000Z",
+  report: makeRunResult(),
+  delivery: {
+    inApp: {
+      status: "LOCAL_PREVIEW_CREATED",
+      notificationId: "notification-id",
+      title: "科研成果月报生成预演",
+      content: "科研成果月报已完成本地生成预演。",
+    },
+    email: {
+      status: "RESERVED_INTERFACE",
+      message: "邮件通道预留，当前本地预演不连接真实邮件服务。",
+    },
+  },
+  caveats: ["本地定时报表预演", "站内信为本地摘要", "邮件通道为后续可接入能力"],
+});
+
 const createServiceMock = (): ReportsServiceMock => ({
   listTemplates: vi.fn().mockReturnValue(customReportTemplates),
+  listScheduledPlans: vi.fn().mockReturnValue([makeScheduledPlan()]),
+  previewScheduledPlan: vi.fn().mockResolvedValue(makeScheduledPreview()),
   runTemplate: vi.fn().mockResolvedValue(makeRunResult()),
   exportTemplateCsv: vi.fn().mockResolvedValue("Count\r\n3\r\n"),
 });
@@ -109,6 +146,44 @@ describe("Reports routes through AppModule", () => {
         ],
       );
       expect(service.listTemplates).toHaveBeenCalledOnce();
+    });
+  });
+
+  it("exposes scheduled report plans through AppModule", async () => {
+    await withAppModule([PermissionCode.userContextRead], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .get("/reports/scheduled-plans")
+        .set("X-Demo-User-Id", ids.user)
+        .expect(200);
+
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0]).toMatchObject({
+        planId: "monthly-achievement-distribution",
+        cadence: "MONTHLY",
+        inAppDelivery: "LOCAL_PREVIEW",
+        emailDelivery: "RESERVED_INTERFACE",
+      });
+      expect(service.listScheduledPlans).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({ userId: ids.user }),
+      );
+    });
+  });
+
+  it("previews a scheduled report without external delivery through AppModule", async () => {
+    await withAppModule([PermissionCode.userContextRead], async (app, service) => {
+      const response = await request(app.getHttpServer() as Server)
+        .post("/reports/scheduled-plans/monthly-achievement-distribution/preview")
+        .set("X-Demo-User-Id", ids.user)
+        .expect(201);
+
+      expect(response.body.plan.planId).toBe("monthly-achievement-distribution");
+      expect(response.body.delivery.inApp.status).toBe("LOCAL_PREVIEW_CREATED");
+      expect(response.body.delivery.email.status).toBe("RESERVED_INTERFACE");
+      expect(response.body.delivery.email.message).toContain("邮件通道预留");
+      expect(service.previewScheduledPlan).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<UserContext>>({ userId: ids.user }),
+        "monthly-achievement-distribution",
+      );
     });
   });
 
@@ -155,6 +230,8 @@ describe("Reports routes through AppModule", () => {
 
       expect(response.body.message).toBe("Required permissions are missing.");
       expect(service.listTemplates).not.toHaveBeenCalled();
+      expect(service.listScheduledPlans).not.toHaveBeenCalled();
+      expect(service.previewScheduledPlan).not.toHaveBeenCalled();
       expect(service.runTemplate).not.toHaveBeenCalled();
       expect(service.exportTemplateCsv).not.toHaveBeenCalled();
     });
