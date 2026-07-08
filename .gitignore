@@ -17,3 +17,12 @@ yarn-error.log*
 Thumbs.db
 .playwright-cli/
 deploy/artifacts/
+
+# Local acceptance and Codex run artifacts
+.learnings/
+.local-*/
+.local-*
+deliverables/
+apps/api/deploy/
+local-prod-preview-proxy.cjs
+memory-bank/*.png
