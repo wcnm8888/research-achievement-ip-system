@@ -19,8 +19,19 @@ E:\研究院科研成果管理系统
 ├─ README.md    项目入口说明
 ├─ .env*        环境变量模板或本地环境文件
 └─ docker-compose*.yml
-               不同环境的服务编排配置
+              不同环境的服务编排配置
 ~~~
+
+当前文档入口：
+
+- [项目文档索引](docs/README.md)
+- [项目路线图](docs/project-management/roadmap.md)
+- [当前任务](docs/project-management/current-task.md)
+- [当前架构](docs/architecture/architecture.md)
+- [当前 UI 设计规格](docs/design/design-spec.md)
+- [测试策略](docs/testing/testing-strategy.md)
+
+阶段档案和方法论工作区不是当前项目工作树的权威来源。Git/GitHub 交付动作统一遵循 `E:\Vibe coding\vibe-methodology\07-git-delivery.md`。
 
 
 

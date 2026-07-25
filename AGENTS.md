@@ -14,3 +14,11 @@ This repository follows the workspace safety rules plus the project rules below.
 - Do not store or print passwords, password hashes, cookies, session tokens, reset tokens, or invite tokens in docs, logs, test output, commits, or chat.
 - If a login is needed for local acceptance, prefer a user-provided credential or user-provided active browser session.
 - If a password repair is explicitly authorized, record only non-sensitive evidence such as account email, account status, credential status, role summary, and boolean verification results.
+
+## Current Documentation Boundaries
+
+- `docs/` is the current project's long-term documentation area.
+- `docs/operations/` contains long-term operations, backup, recovery, production-readiness, and security runbooks; it is not a prompt-history or temporary-log directory.
+- `docs/project-management/roadmap.md` is the project-level route entry, and `docs/project-management/current-task.md` is the single current-task entry.
+- The external stage archive is for historical traceability and handoff only; it is not the current worktree or current architecture authority.
+- Prompt histories, complete terminal output, raw browser profiles, cookies, repeated screenshots, and temporary build artifacts must not be added to current long-term docs.
