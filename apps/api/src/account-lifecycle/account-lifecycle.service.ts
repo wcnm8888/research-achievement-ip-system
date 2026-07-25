@@ -32,7 +32,7 @@ import {
   LifecycleTokenRecord,
   LifecycleUserRecord,
 } from "./account-lifecycle.repository";
-import { AccountLifecycleRoleDto, CreateInviteDto } from "./dto/account-lifecycle.dto";
+import { CreateInviteDto } from "./dto/account-lifecycle.dto";
 
 const inviteTtlMs = 7 * 24 * 60 * 60 * 1000;
 const passwordResetTtlMs = 60 * 60 * 1000;

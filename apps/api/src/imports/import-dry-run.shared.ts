@@ -227,7 +227,7 @@ export const appendColumnValidationIssues = <
     }
 
     if (options.forbiddenCode && options.forbiddenMessage) {
-      for (const _header of forbiddenHeaders) {
+      for (let index = 0; index < forbiddenHeaders.length; index += 1) {
         row.errors.push({
           field: "(sensitive)",
           code: options.forbiddenCode,

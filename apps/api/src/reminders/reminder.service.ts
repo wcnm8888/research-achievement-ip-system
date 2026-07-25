@@ -2101,7 +2101,10 @@ const normalizeManualSlaScanTriggerType = (
   return "API_QUEUE";
 };
 
-const sanitizeSlaScanFailureReason = (_error: unknown): string => "SCAN_FAILED";
+const sanitizeSlaScanFailureReason = (error: unknown): string => {
+  void error;
+  return "SCAN_FAILED";
+};
 
 const toReminderSlaPolicy = (
   record: ReminderSlaPolicyConfigRecord,
@@ -2297,7 +2300,8 @@ const buildReminderSlaScanHealth = (
     });
   }
 
-  const { latestRun: _latestRun, ...metricsSnapshot } = metrics;
+  const { latestRun, ...metricsSnapshot } = metrics;
+  void latestRun;
 
   return {
     generatedAt: generatedAt.toISOString(),

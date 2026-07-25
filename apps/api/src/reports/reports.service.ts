@@ -9,7 +9,6 @@ import { AuditActionCode } from "../audit/domain/audit-action-code";
 import { AuditTargetTypeCode } from "../audit/domain/audit-target-type-code";
 import {
   AchievementStatusCode,
-  AchievementTypeCode,
 } from "../achievements/domain/achievement-domain.types";
 import { PermissionCode } from "../authorization/constants/permission-code";
 import { PolicyQueryFactory } from "../authorization/policy/policy-query.factory";
