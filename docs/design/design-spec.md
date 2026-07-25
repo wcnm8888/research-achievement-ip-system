@@ -57,7 +57,7 @@
 
 ### Browser Evidence
 
-- Screenshots and browser acceptance script are under `.local-step46g/`.
+- Screenshots and browser acceptance artifacts are archived under `阶段一档案/qa-evidence/raw-local-artifacts/current-main/.local-step46g/`.
 - Acceptance used browser-layer `/api/*` interception with synthetic data only.
 - Browser checks covered page text, static HTML, console messages, and intercepted API responses for sensitive marker leakage.
 

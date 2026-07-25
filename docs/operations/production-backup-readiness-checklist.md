@@ -4,7 +4,7 @@
 
 This checklist defines when backup readiness can be claimed for production.
 
-It aligns `deploy/backup-retention-encryption-offsite-policy.md` and `deploy/backup-policy-implementation-gap-review.md`. It is a readiness checklist only. It does not authorize backup execution, encryption of real artifacts, offsite upload, restore, cleanup, Docker operations, VPS access, production DB access, or environment-file content reads.
+It aligns `docs/operations/backup-retention-encryption-offsite-policy.md` and `docs/operations/backup-policy-implementation-gap-review.md`. It is a readiness checklist only. It does not authorize backup execution, encryption of real artifacts, offsite upload, restore, cleanup, Docker operations, VPS access, production DB access, or environment-file content reads.
 
 ## Readiness Levels
 

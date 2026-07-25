@@ -24,7 +24,7 @@ display, real external-system calls, or local artifact cleanup.
 - Runtime/API/Web/schema/migration/package/lockfile/config files remain out of
   scope for this Step.
 - Route A formal demo preparation is now finally handed off in
-  `memory-bank/phase-one-route-a-final-handoff.md`; by default, do not add more
+  `阶段一档案/process-records/current-main-memory-bank/phase-one-route-a-final-handoff.md`; by default, do not add more
   demo-preparation documents unless the user asks for them.
 - The next phase should be selected by the user as Route B, Route C, or Route D.
 
@@ -55,8 +55,8 @@ The current archived mainline includes:
   - Local synthetic backend-only acceptance.
   - Local synthetic Web UI acceptance and closure.
   - Production read-only preflight documentation.
-- Prompt 39 handoff archive in `memory-bank/prompt-39-handoff.md`.
-- Phase-one final archive in `memory-bank/phase-one-final-archive.md`.
+- Prompt 39 handoff archive in `阶段一档案/process-records/current-main-memory-bank/prompt-39-handoff.md`.
+- Phase-one final archive in `阶段一档案/process-records/current-main-memory-bank/phase-one-final-archive.md`.
 
 ## Route A - Formal Demo Rehearsal
 
@@ -86,9 +86,9 @@ order, evidence references, and fallback preparation.
 
 Completed:
 
-- Step 98-A: `memory-bank/phase-one-demo-rehearsal-plan.md`.
-- Step 99-A: `memory-bank/phase-one-demo-onsite-card.md`.
-- Step 100: `memory-bank/phase-one-route-a-final-handoff.md`.
+- Step 98-A: `阶段一档案/process-records/current-main-memory-bank/phase-one-demo-rehearsal-plan.md`.
+- Step 99-A: `阶段一档案/process-records/current-main-memory-bank/phase-one-demo-onsite-card.md`.
+- Step 100: `阶段一档案/process-records/current-main-memory-bank/phase-one-route-a-final-handoff.md`.
 
 Default next action: stop adding Route A demo-preparation docs unless the user
 explicitly asks for more.
@@ -107,47 +107,47 @@ explicitly asks for more.
 
 Status: selected for Step 101-B planning. Current recommended first slice is
 custom reports / advanced reports MVP, documented in
-`memory-bank/phase-two-feature-priority-plan.md`.
+`阶段一档案/process-records/current-main-memory-bank/phase-two-feature-priority-plan.md`.
 Step 102-B adds the executable technical plan and interface contract in
-`memory-bank/custom-reports-mvp-technical-plan.md`.
+`阶段一档案/process-records/current-main-memory-bank/custom-reports-mvp-technical-plan.md`.
 Steps 103-B to 105-B close the first custom reports MVP loop with the backend
 read-only API, Web `Custom Reports` page, and closure archive in
-`memory-bank/custom-reports-mvp-closure.md`.
+`阶段一档案/process-records/current-main-memory-bank/custom-reports-mvp-closure.md`.
 Step 106-B-A adds localhost/local-demo/synthetic UI/browser acceptance evidence
-in `memory-bank/custom-reports-local-ui-acceptance.md`; screenshots and logs
-remain untracked under `.local-step106-custom-reports-acceptance/`.
+in `阶段一档案/process-records/current-main-memory-bank/custom-reports-local-ui-acceptance.md`; screenshots and logs
+are archived under `阶段一档案/qa-evidence/raw-local-artifacts/current-main/.local-step106-custom-reports-acceptance/`.
 Step 107-B-C adds the docs-only technical plan for the next Route B line,
 achievement conversion deepening MVP, in
-`memory-bank/conversion-deepening-mvp-technical-plan.md`.
+`阶段一档案/process-records/current-main-memory-bank/conversion-deepening-mvp-technical-plan.md`.
 Steps 108-B-C to 110-B-C close that local/demo MVP loop with additive
 schema/backend fields, Web display/edit fields, Dashboard/Custom Reports
 aggregate enhancement, and localhost/local-demo/synthetic UI acceptance in
-`memory-bank/conversion-deepening-local-ui-acceptance.md` and
-`memory-bank/conversion-deepening-mvp-closure.md`.
+`阶段一档案/process-records/current-main-memory-bank/conversion-deepening-local-ui-acceptance.md` and
+`阶段一档案/process-records/current-main-memory-bank/conversion-deepening-mvp-closure.md`.
 Step 111 adds the docs-only safety and UX plan for optionally connecting the
 existing backend-only `ImportJobItem` read API to Web as a strictly allowlisted
 safe row display in
-`memory-bank/import-job-item-web-row-display-plan.md`.
+`阶段一档案/process-records/current-main-memory-bank/import-job-item-web-row-display-plan.md`.
 Steps 112-113 implement and locally accept that safe display in the current Web
-detail drawer, archived in
-`memory-bank/import-job-item-web-local-ui-acceptance.md` and
-`memory-bank/import-job-item-web-display-closure.md`.
+  detail drawer, archived in
+`阶段一档案/process-records/current-main-memory-bank/import-job-item-web-local-ui-acceptance.md` and
+`阶段一档案/process-records/current-main-memory-bank/import-job-item-web-display-closure.md`.
 Step 114 reselects the next Route B product slice as more complete account
 lifecycle local/demo enhancement, with the next recommended step documented in
-`memory-bank/route-b-next-slice-selection.md`.
+`阶段一档案/process-records/current-main-memory-bank/route-b-next-slice-selection.md`.
 Step 115 adds the docs-only account lifecycle enhancement technical plan in
-`memory-bank/account-lifecycle-enhancement-technical-plan.md`; it recommends
+`阶段一档案/process-records/current-main-memory-bank/account-lifecycle-enhancement-technical-plan.md`; it recommends
 Step 116 as API projection hardening with no schema/migration for the first MVP.
 Steps 116-118 close the account lifecycle local/demo loop with API projection
 hardening, Web management display, and local UI acceptance archived in
-`.local-step118-account-lifecycle-acceptance/`. The result is local/demo
+`阶段一档案/qa-evidence/raw-local-artifacts/current-main/.local-step118-account-lifecycle-acceptance/`. The result is local/demo
 synthetic PASS with caveat, not production identity acceptance.
 Step 119 reselects the next Route B slice in
-`memory-bank/route-b-next-slice-selection-after-account-lifecycle.md`; the
+`阶段一档案/process-records/current-main-memory-bank/route-b-next-slice-selection-after-account-lifecycle.md`; the
 recommended product next step is a docs-only Secret authorization management
 enhancement safety plan.
 Step 120 adds that docs-only safety plan in
-`memory-bank/secret-authorization-management-safety-plan.md`; it recommends a
+`docs/operations/secret-authorization-management-safety-plan.md`; it recommends a
 read-only safe projection MVP before any grant mutation workflow and keeps
 schema/migration changes out of the first slice.
 

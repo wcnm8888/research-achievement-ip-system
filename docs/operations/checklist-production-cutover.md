@@ -33,7 +33,7 @@ This checklist is for a single VPS production cutover. It must not contain real 
 
 ## 3. Backup
 
-- [ ] `deploy/production-backup-readiness-checklist.md` reviewed.
+- [ ] `docs/operations/production-backup-readiness-checklist.md` reviewed.
 - [ ] Current demo/staging application directory backup completed if rollback to demo/staging is required.
 - [ ] Production database backup completed.
 - [ ] Production attachment binary archive completed as part of the same backup set.
@@ -43,15 +43,15 @@ This checklist is for a single VPS production cutover. It must not contain real 
 - [ ] Offsite status recorded with redacted evidence.
 - [ ] Restore-drill plan status recorded; actual restore remains separately authorized.
 - [ ] Restore path is known without exposing credentials.
-- [ ] If import task history readiness is in scope, `memory-bank/import-job-history-production-readonly-preflight-runbook.md` is reviewed as a read-only reference only.
-- [ ] If `ImportJobItem` row-level safe history readiness is in scope, `memory-bank/import-job-item-production-readonly-preflight-runbook.md` is reviewed as a read-only reference only.
+- [ ] If import task history readiness is in scope, `docs/operations/import-job-history-production-readonly-preflight-runbook.md` is reviewed as a read-only reference only.
+- [ ] If `ImportJobItem` row-level safe history readiness is in scope, `docs/operations/import-job-item-production-readonly-preflight-runbook.md` is reviewed as a read-only reference only.
 - [ ] Backup evidence is脱敏 and contains no passwords or connection strings.
 
 ## 4. Migration Target Confirmation
 
 - [ ] Migration target is confirmed as production DB using脱敏 summary only.
 - [ ] Migration files reviewed.
-- [ ] If applying the employee-number migration, `deploy/employee-no-production-migration-readiness.md` is reviewed and its stop conditions are accepted.
+- [ ] If applying the employee-number migration, `docs/operations/employee-no-production-migration-readiness.md` is reviewed and its stop conditions are accepted.
 - [ ] If import task history readiness is in scope, its runbook is referenced only for read-only migration-state and table-structure checks; it does not authorize migration execution.
 - [ ] If `ImportJobItem` row-level safe history readiness is in scope, its runbook is referenced only for read-only migration-state and `import_job_items` table/API/Web aggregate-only boundary checks; it does not authorize migration execution.
 - [ ] No demo users or demo business data will be imported as production data.
@@ -124,9 +124,9 @@ This checklist is for a single VPS production cutover. It must not contain real 
 - [ ] Readonly search endpoint checked.
 - [ ] Readonly workflow tasks endpoint checked if authorized.
 - [ ] Readonly masked audit logs endpoint checked if authorized.
-- [ ] If import task history readonly checks are authorized, `memory-bank/import-job-history-production-readonly-preflight-runbook.md` boundaries are followed and only safe aggregate evidence is recorded.
+- [ ] If import task history readonly checks are authorized, `docs/operations/import-job-history-production-readonly-preflight-runbook.md` boundaries are followed and only safe aggregate evidence is recorded.
 - [ ] Import history detail checks are skipped unless a safe sample alias is separately authorized; raw production sample ids and raw audit ids are not recorded.
-- [ ] If `ImportJobItem` row-level safe history readonly checks are authorized, `memory-bank/import-job-item-production-readonly-preflight-runbook.md` boundaries are followed for read-only migration-state, table-structure, GET-only item API, response allowlist, and Web aggregate-only checks only.
+- [ ] If `ImportJobItem` row-level safe history readonly checks are authorized, `docs/operations/import-job-item-production-readonly-preflight-runbook.md` boundaries are followed for read-only migration-state, table-structure, GET-only item API, response allowlist, and Web aggregate-only checks only.
 - [ ] `ImportJobItem` checks do not execute migrations, run real imports, write to DB, enable Web row-level display, export, download, or record raw production sample ids, raw item ids, `targetId`, `jobId`, `runId`, raw CSV, personal identifiers, achievement identifiers, account identifiers, credentials, or connection strings.
 - [ ] `X-Demo-User-Id` without session cannot bypass auth.
 - [ ] No POST/PATCH/PUT/DELETE executed in readonly smoke.

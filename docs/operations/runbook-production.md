@@ -22,8 +22,8 @@ This runbook covers the single VPS production cutover route for the research ach
 - Do not treat demo/staging evidence as production/live smoke evidence.
 - Do not run `docker-compose.demo.yml` as the production stack.
 - Do not remove demo containers, images, volumes, or directories until production `GO` and explicit cleanup confirmation.
-- Do not treat `memory-bank/import-job-history-production-readonly-preflight-runbook.md` as production apply authorization, production/VPS access authorization, or migration execution authorization.
-- Do not treat `memory-bank/import-job-item-production-readonly-preflight-runbook.md` as production apply authorization, production/VPS/DB access authorization, or migration execution authorization.
+- Do not treat `docs/operations/import-job-history-production-readonly-preflight-runbook.md` as production apply authorization, production/VPS access authorization, or migration execution authorization.
+- Do not treat `docs/operations/import-job-item-production-readonly-preflight-runbook.md` as production apply authorization, production/VPS/DB access authorization, or migration execution authorization.
 
 ## Production Environment Preparation
 
@@ -72,12 +72,12 @@ Do not reuse demo ports, demo env files, demo database volumes, or demo Compose 
 ## Backup Prerequisites
 
 Retention, encryption, offsite storage, and restore-drill boundaries are defined in
-`deploy/backup-retention-encryption-offsite-policy.md`. That policy is required
+`docs/operations/backup-retention-encryption-offsite-policy.md`. That policy is required
 reading before any production backup acceptance, offsite upload, production cleanup,
 or restore drill Step.
 
 Production backup readiness levels and acceptance checklist are defined in
-`deploy/production-backup-readiness-checklist.md`. Do not claim production
+`docs/operations/production-backup-readiness-checklist.md`. Do not claim production
 backup-ready until that checklist is satisfied with redacted production/VPS evidence.
 
 Before migration or deployment:
@@ -97,7 +97,7 @@ Before running production migration:
 - Confirm `DATABASE_URL` points to the intended production database using a脱敏 target summary.
 - Confirm backup exists and restore path is known.
 - Confirm migration files have been reviewed.
-- For the employee-number migration, review `deploy/employee-no-production-migration-readiness.md` before any production `prisma migrate deploy`, real-data preflight, or backfill.
+- For the employee-number migration, review `docs/operations/employee-no-production-migration-readiness.md` before any production `prisma migrate deploy`, real-data preflight, or backfill.
 - Confirm no demo/staging seed data will be imported as production data.
 - Run `prisma migrate deploy` only in the authorized production migration step.
 - With Docker Compose, prefer running migration through the production API image after the production env file is in place:
@@ -111,7 +111,7 @@ Do not run migration against demo/staging Compose or any unconfirmed database ta
 ## Import Job History Readonly Preflight Reference
 
 If import task history readiness is in scope for a production readiness review,
-first review `memory-bank/import-job-history-production-readonly-preflight-runbook.md`.
+first review `docs/operations/import-job-history-production-readonly-preflight-runbook.md`.
 
 That document is a read-only preflight runbook for `ImportJob` / `ImportRun`,
 history API health, `system:config` permission confirmation, and Web visibility
@@ -132,13 +132,13 @@ or credentials in chat, docs, logs, screenshots, or commits while using that
 runbook.
 
 If `ImportJobItem` row-level safe history readiness is separately in scope,
-also review `memory-bank/import-job-item-production-readonly-preflight-runbook.md`.
+also review `docs/operations/import-job-item-production-readonly-preflight-runbook.md`.
 
 That document is distinct from the aggregate import-history runbook above:
 
-- `memory-bank/import-job-history-production-readonly-preflight-runbook.md`
+- `docs/operations/import-job-history-production-readonly-preflight-runbook.md`
   covers `ImportJob` / `ImportRun` aggregate history readiness.
-- `memory-bank/import-job-item-production-readonly-preflight-runbook.md`
+- `docs/operations/import-job-item-production-readonly-preflight-runbook.md`
   covers `ImportJobItem` row-level safe history readiness only.
 
 The `ImportJobItem` runbook is a read-only reference for migration-state,
@@ -225,14 +225,14 @@ Suggested GET-only checks:
 - readonly masked audit logs endpoint for authorized admin
 
 If import task history readonly checks are explicitly authorized as part of
-production smoke, use `memory-bank/import-job-history-production-readonly-preflight-runbook.md`
+production smoke, use `docs/operations/import-job-history-production-readonly-preflight-runbook.md`
 as the boundary reference. Keep the check GET-only, record only aggregate status,
 counts, HTTP status, and safe machine codes, and skip detail checks unless a safe
 sample alias is separately authorized.
 
 If `ImportJobItem` row-level safe history readonly checks are explicitly
 authorized as part of production smoke, use
-`memory-bank/import-job-item-production-readonly-preflight-runbook.md` as the
+`docs/operations/import-job-item-production-readonly-preflight-runbook.md` as the
 separate boundary reference. Keep the check read-only and limited to
 migration-state, table-structure, GET-only item API, response allowlist, and Web
 aggregate-only checks. Do not execute migrations, run real imports, write to the

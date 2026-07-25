@@ -2,7 +2,7 @@
 
 ## Scope
 
-This review checks the implementation gap between `deploy/backup-retention-encryption-offsite-policy.md` and the current repository.
+This review checks the implementation gap between `docs/operations/backup-retention-encryption-offsite-policy.md` and the current repository.
 
 It is documentation only. It does not implement backup logic, run backups, encrypt artifacts, upload offsite, run restore drills, access VPS/production, or inspect environment file contents.
 
@@ -11,7 +11,7 @@ It is documentation only. It does not implement backup logic, run backups, encry
 ### DB Dump
 
 - Current support is runbook-level only.
-- `deploy/runbook-production.md` requires a production database backup before migration/deployment.
+- `docs/operations/runbook-production.md` requires a production database backup before migration/deployment.
 - Historical local evidence recorded a `pg_dump -Fc` artifact and `pg_restore --list` validation, but there is no committed DB backup script, package command, or typed operation module for creating a DB dump.
 - Root package scripts do not expose a DB backup command.
 
@@ -27,8 +27,8 @@ It is documentation only. It does not implement backup logic, run backups, encry
 
 ### Production Runbooks
 
-- `deploy/runbook-production.md` links the Step 63A policy and now requires DB plus attachment binary coverage before backup readiness can be accepted.
-- `deploy/checklist-production-cutover.md` still has a narrower backup section: demo/staging directory backup, production database backup, restore path known, and redacted evidence. It does not yet require attachment binary coverage, encryption status, offsite status, retention class, or restore-drill boundary review.
+- `docs/operations/runbook-production.md` links the Step 63A policy and now requires DB plus attachment binary coverage before backup readiness can be accepted.
+- `docs/operations/checklist-production-cutover.md` still has a narrower backup section: demo/staging directory backup, production database backup, restore path known, and redacted evidence. It does not yet require attachment binary coverage, encryption status, offsite status, retention class, or restore-drill boundary review.
 - `docker-compose.production.yml` defines a named Postgres volume but no dedicated API attachment-storage volume. Attachment binary durability and production backup targeting therefore still need an explicit storage design before production readiness can be claimed.
 
 ## Gap Review
@@ -54,7 +54,7 @@ Risk:
 
 Recommended small Steps:
 
-1. Documentation-only: update `deploy/checklist-production-cutover.md` backup section to require DB dump plus attachment archive plus manifest plus artifact-list.
+1. Documentation-only: update `docs/operations/checklist-production-cutover.md` backup section to require DB dump plus attachment archive plus manifest plus artifact-list.
 2. Local-only implementation: add a non-production dry-run aggregator that validates an existing DB dump path plus attachment artifact outputs without executing `pg_dump`.
 3. Separately authorized local production-like Step: create one complete local backup set and verify artifact-list categories without restore.
 

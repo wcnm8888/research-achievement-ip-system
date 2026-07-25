@@ -8,13 +8,13 @@
 
 - 原始需求说明：`E:\Vibe coding\production-github-main-20260626\研究院科研成果管理系统说明.html`
 - 同名外部原始资料目录：`E:\研究院科研成果管理系统\研究院科研成果管理系统说明.html`
-- 项目产品计划：`memory-bank/product-brief.md`
-- 项目实施计划：`memory-bank/implementation-plan.md`
-- 架构与模块记录：`memory-bank/architecture.md`
-- 当前进度记录：`memory-bank/progress.md`
-- 最新交接文档：`memory-bank/prompt-39-handoff.md`
-- 下一阶段路线：`memory-bank/next-phase-options.md`
-- 一期最终归档：`memory-bank/phase-one-final-archive.md`
+- 项目产品计划：`docs/requirements/product-brief.md`
+- 当前实施计划：`docs/project-management/implementation-plan.md`
+- 架构与模块记录：`docs/architecture/architecture.md`
+- 当前进度记录：`docs/project-management/progress.md`
+- 阶段一交接文档：`阶段一档案/process-records/current-main-memory-bank/prompt-39-handoff.md`
+- 下一阶段路线：`docs/overview/next-phase-options.md`
+- 一期最终归档：`阶段一档案/process-records/current-main-memory-bank/phase-one-final-archive.md`
 
 说明：当前 HTML 与早期 memory-bank 文档存在编码显示问题，但章节结构和项目范围可对应到“科研成果与知识产权管理系统需求规格说明书”。后续如要正式对外交付，建议单独做一次文档编码修复或重新导出。
 

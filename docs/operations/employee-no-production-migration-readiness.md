@@ -31,7 +31,7 @@ This Step does not provide a production readiness conclusion. The only valid sta
 
 Before any production employee-number migration is considered:
 
-- Review `deploy/production-backup-readiness-checklist.md`.
+- Review `docs/operations/production-backup-readiness-checklist.md`.
 - Confirm a production backup Step is explicitly authorized.
 - Confirm the backup target is the intended production VPS and production database using a redacted target summary only.
 - Create a backup set that includes the Postgres dump and attachment binary artifacts, or record the missing category as `NO_GO` / `CONDITIONAL_GO`.
@@ -111,7 +111,7 @@ Before the window:
 During the window:
 
 - Pause unrelated production writes if the operator judges `users` table writes risky.
-- Run only the reviewed migration command through the production Compose/API image as described in `deploy/runbook-production.md`.
+- Run only the reviewed migration command through the production Compose/API image as described in `docs/operations/runbook-production.md`.
 - Preserve migration command category result and migration name only.
 - Do not print environment variables or connection strings.
 
@@ -131,7 +131,7 @@ Prefer forward-only recovery:
 - Do not remove nullable columns while any deployed code may read or write them.
 - Do not combine rollback with real-data cleanup.
 
-Database restore from backup is reserved for explicit emergency rollback authorization and must follow `deploy/production-backup-readiness-checklist.md`.
+Database restore from backup is reserved for explicit emergency rollback authorization and must follow `docs/operations/production-backup-readiness-checklist.md`.
 
 ## Failure And Stop Conditions
 

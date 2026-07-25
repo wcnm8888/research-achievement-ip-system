@@ -55,7 +55,7 @@ UI 验收优先使用：
 ```powershell
 playwright-cli -s=<step-name> open http://127.0.0.1:18081/
 playwright-cli -s=<step-name> snapshot
-playwright-cli -s=<step-name> run-code --filename=memory-bank/<step>-browser-acceptance.js
+playwright-cli -s=<step-name> run-code --filename=tests/acceptance/phase-1/<step>-browser-acceptance.js
 ```
 
 ## Local Acceptance Credential Boundary
@@ -63,7 +63,7 @@ playwright-cli -s=<step-name> run-code --filename=memory-bank/<step>-browser-acc
 - Local production-like acceptance may use an explicitly authorized previously logged-in account password or an existing browser login session when the user grants that boundary for the current Step.
 - Do not change, reset, print, store, or commit any account password, cookie, token, secret, connection string, private key, or AccessKey.
 - Prefer transient local test sessions or synthetic local users for multi-role API matrices when that avoids handling a real password.
-- Record only the credential handling boundary and redacted pass/fail evidence in `memory-bank/evidence.md`; never record the credential value or session value.
+- Record only the credential handling boundary and redacted pass/fail evidence in `docs/project-management/evidence.md`; never record the credential value or session value.
 
 ## Local Session / 401 Diagnostics
 
@@ -88,12 +88,12 @@ playwright-cli -s=<step-name> run-code --filename=memory-bank/<step>-browser-acc
 ## 浏览器验收规则
 
 - 优先使用 `playwright-cli`。
-- 复杂流程写成 `memory-bank/<step>-browser-acceptance.js`，沿用现有 `step21b`、`step23b`、`step24b` browser acceptance 模式。
+- 复杂流程写成 `tests/acceptance/phase-1/<step>-browser-acceptance.js`，沿用现有 `step21b`、`step23b`、`step24b` browser acceptance 模式。
 - 使用 named session，例如 `-s=step56d-manager`，避免默认 session 混乱。
 - 文件上传使用 `playwright-cli upload` 或 `run-code` 中的 Playwright API。
 - 不记录 cookie、token、密码、连接串。
 - 不读取 `.env` 内容。
-- 验收结果写入 `memory-bank/evidence.md`，只记录状态码、功能结果和脱敏 ID。
+- 验收结果写入 `docs/project-management/evidence.md`，只记录状态码、功能结果和脱敏 ID。
 
 ## Step 56D 归类
 
