@@ -168,7 +168,7 @@ const runBrowser = async (session, url) => {
   try {
     const output = await runAsync(
       "playwright-cli",
-      [`-s=${session}`, "--raw", "run-code", "--filename=memory-bank/step65f-browser-acceptance.js"],
+      [`-s=${session}`, "--raw", "run-code", "--filename=tests/acceptance/phase-1/step65f-browser-acceptance.js"],
       { timeout: 120000 },
     );
     try {
@@ -193,7 +193,7 @@ const main = async () => {
   const targetCodes = [`S65F_PARENT_${suffix}`, `S65F_CHILD_${suffix}`];
 
   logStep("copying local db helper into api container");
-  dockerCompose(["cp", "memory-bank/step65f-db-helper.mjs", "api:/app/step65f-db-helper.mjs"]);
+  dockerCompose(["cp", "tests/acceptance/phase-1/step65f-db-helper.mjs", "api:/app/step65f-db-helper.mjs"]);
   logStep("building web static assets");
   run("corepack", ["pnpm", "--filter", "@research-ip/web", "build"], { timeout: 300000 });
   logStep("refreshing local web container assets");

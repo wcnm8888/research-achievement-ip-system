@@ -2,14 +2,13 @@ import { spawn, spawnSync } from "node:child_process";
 import http from "node:http";
 
 const composeFile = "docker-compose.production.yml";
-const adminPort = 19581;
-const limitedPort = 19582;
+const adminPort = 19381;
+const limitedPort = 19382;
 const localHttp = ["http", "://127.0.0.1"].join("");
 const webBaseUrl = `${localHttp}:18081`;
-const apiBaseUrl = `${localHttp}:14001/api`;
 
 const logStep = (message) => {
-  process.stderr.write(`[step70f] ${message}\n`);
+  process.stderr.write(`[step68f] ${message}\n`);
 };
 
 const scrub = (value) =>
@@ -30,9 +29,7 @@ const run = (command, args, options = {}) => {
 
   if (result.status !== 0) {
     throw new Error(
-      `${command} ${args.join(" ")} failed with exit ${
-        result.status ?? "null"
-      } signal ${result.signal ?? "none"} ${scrub(result.stderr)}`,
+      `${command} ${args.join(" ")} failed with exit ${result.status ?? "null"} signal ${result.signal ?? "none"} ${scrub(result.stderr)}`,
     );
   }
 
@@ -71,9 +68,7 @@ const runAsync = (command, args, options = {}) =>
       }
       reject(
         new Error(
-          `${command} ${args.join(" ")} failed with exit ${code ?? "null"} signal ${
-            signal ?? "none"
-          } ${scrub(stderr)}`,
+          `${command} ${args.join(" ")} failed with exit ${code ?? "null"} signal ${signal ?? "none"} ${scrub(stderr)}`,
         ),
       );
     });
@@ -86,12 +81,12 @@ const dockerCompose = (args, options = {}) =>
 
 const runDbHelper = (payload) => {
   const output = dockerCompose(
-    ["exec", "-T", "api", "node", "/app/step70f-db-helper.mjs"],
+    ["exec", "-T", "api", "node", "/app/step68f-db-helper.mjs"],
     { input: JSON.stringify(payload), timeout: payload.action === "prepare" ? 120000 : 90000 },
   );
   const parsed = JSON.parse(output);
   if (typeof parsed.status !== "number") {
-    throw new Error(`Step 70F helper returned invalid envelope for ${payload.action}.`);
+    throw new Error(`Step 68F helper returned invalid envelope for ${payload.action}.`);
   }
   return parsed;
 };
@@ -213,14 +208,14 @@ const handleApi = async ({ req, res, actorUserId, authUser, prepared, startedAt,
       action,
       actorUserId,
       csv: parsed.files.file?.text ?? "",
-      fileName: parsed.files.file?.fileName ?? "step70f-achievements.csv",
+      fileName: parsed.files.file?.fileName ?? "step68f-achievements.csv",
       mode: parsed.fields.mode,
     });
     sendJson(res, result.status, result.body);
     return;
   }
 
-  if (url.pathname === "/step70f/evidence" && req.method === "POST") {
+  if (url.pathname === "/step68f/evidence" && req.method === "POST") {
     await readRequestBody(req);
     const result = runDbHelper({
       action: "evidence",
@@ -232,11 +227,11 @@ const handleApi = async ({ req, res, actorUserId, authUser, prepared, startedAt,
     return;
   }
 
-  sendJson(res, 404, { message: "Step 70F harness route not found." });
+  sendJson(res, 404, { message: "Step 68F harness route not found." });
 };
 
 const proxyRequest = async ({ req, res, actorUserId, authUser, prepared, startedAt, state }) => {
-  if (req.url?.startsWith("/api/") || req.url?.startsWith("/step70f/")) {
+  if (req.url?.startsWith("/api/") || req.url?.startsWith("/step68f/")) {
     await handleApi({ req, res, actorUserId, authUser, prepared, startedAt, state });
     return;
   }
@@ -280,9 +275,7 @@ const runBrowser = async (session, url) => {
   await wait(5000);
   if (openExit?.code && openExit.code !== 0) {
     throw new Error(
-      `playwright-cli ${session} open exited with ${openExit.code} signal ${
-        openExit.signal ?? "none"
-      }`,
+      `playwright-cli ${session} open exited with ${openExit.code} signal ${openExit.signal ?? "none"}`,
     );
   }
 
@@ -293,7 +286,7 @@ const runBrowser = async (session, url) => {
         `-s=${session}`,
         "--raw",
         "run-code",
-        "--filename=memory-bank/step70f-browser-acceptance.js",
+        "--filename=tests/acceptance/phase-1/step68f-browser-acceptance.js",
       ],
       { timeout: 240000 },
     );
@@ -319,7 +312,7 @@ const assertNoForbiddenSideEffects = (delta) => {
     Object.entries(delta).filter(([, value]) => value !== 0),
   );
   if (Object.keys(changed).length > 0) {
-    throw new Error(`Step 70F forbidden side effect delta mismatch: ${JSON.stringify(changed)}`);
+    throw new Error(`Step 68F forbidden side effect delta mismatch: ${JSON.stringify(changed)}`);
   }
 };
 
@@ -331,11 +324,10 @@ const main = async () => {
   logStep("building and starting local docker services");
   dockerCompose(["up", "-d", "--build", "postgres", "api", "web"], { timeout: 600000 });
   logStep("copying local db helper into api container");
-  dockerCompose(["cp", "memory-bank/step70f-db-helper.mjs", "api:/app/step70f-db-helper.mjs"]);
-  logStep("checking local web and api health");
-  const webHealth = await fetch(`${webBaseUrl}/healthz`);
-  const apiHealth = await fetch(`${apiBaseUrl}/health`);
-  logStep("preparing synthetic Step 70F data");
+  dockerCompose(["cp", "tests/acceptance/phase-1/step68f-db-helper.mjs", "api:/app/step68f-db-helper.mjs"]);
+  logStep("checking local web health");
+  const health = await fetch(`${webBaseUrl}/healthz`);
+  logStep("preparing synthetic Step 68F data");
   const preparedEnvelope = runDbHelper({ action: "prepare", suffix });
   const prepared = preparedEnvelope.body;
   const sideEffectsBefore = runDbHelper({ action: "sideEffects" }).body;
@@ -360,12 +352,12 @@ const main = async () => {
   try {
     logStep("running admin browser acceptance");
     const adminBrowser = await runBrowser(
-      "step70f-admin",
+      "step68f-admin",
       `${localHttp}:${adminPort}/?s=${suffix}`,
     );
     logStep("running limited browser acceptance");
     const limitedBrowser = await runBrowser(
-      "step70f-limited",
+      "step68f-limited",
       `${localHttp}:${limitedPort}/?s=${suffix}`,
     );
     const finalEvidence = runDbHelper({
@@ -380,25 +372,20 @@ const main = async () => {
 
     console.log(
       JSON.stringify({
-        step: "70F",
+        step: "68F",
         scope: "local-production-like-web-api-db-acceptance",
         productionVpcAcceptance: false,
         productionSessionCookieAcceptance: false,
         authHarness: "proxy-auth-me-without-credential-or-session-output",
-        webHealthStatus: webHealth.status,
-        apiHealthStatus: apiHealth.status,
+        webHealthStatus: health.status,
         adminBrowser,
         limitedBrowser,
         listAchievementRequests: state.listAchievementRequests,
         finalCounts: {
           achievementCount: finalEvidence.achievementCount,
-          patentDraftCount: finalEvidence.patentDraftCount,
-          patentDetailCount: finalEvidence.patentDetailCount,
-          normalizedApplicationPersistedCount:
-            finalEvidence.normalizedApplicationPersistedCount,
-          normalizedGrantPersistedCount: finalEvidence.normalizedGrantPersistedCount,
-          nextFeeDatePersistedCount: finalEvidence.nextFeeDatePersistedCount,
-          feeAmountPersistedCount: finalEvidence.feeAmountPersistedCount,
+          paperDraftCount: finalEvidence.paperDraftCount,
+          paperDetailCount: finalEvidence.paperDetailCount,
+          normalizedDoiPersistedCount: finalEvidence.normalizedDoiPersistedCount,
           contributorCount: finalEvidence.contributorCount,
           stateChangeCount: finalEvidence.stateChangeCount,
           auditOperation: finalEvidence.auditOperation,

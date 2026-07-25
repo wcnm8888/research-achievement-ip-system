@@ -2,14 +2,14 @@ import { spawn, spawnSync } from "node:child_process";
 import http from "node:http";
 
 const composeFile = "docker-compose.production.yml";
-const adminPort = 19481;
-const limitedPort = 19482;
+const adminPort = 19581;
+const limitedPort = 19582;
 const localHttp = ["http", "://127.0.0.1"].join("");
 const webBaseUrl = `${localHttp}:18081`;
 const apiBaseUrl = `${localHttp}:14001/api`;
 
 const logStep = (message) => {
-  process.stderr.write(`[step69g] ${message}\n`);
+  process.stderr.write(`[step70f] ${message}\n`);
 };
 
 const scrub = (value) =>
@@ -86,12 +86,12 @@ const dockerCompose = (args, options = {}) =>
 
 const runDbHelper = (payload) => {
   const output = dockerCompose(
-    ["exec", "-T", "api", "node", "/app/step69g-db-helper.mjs"],
+    ["exec", "-T", "api", "node", "/app/step70f-db-helper.mjs"],
     { input: JSON.stringify(payload), timeout: payload.action === "prepare" ? 120000 : 90000 },
   );
   const parsed = JSON.parse(output);
   if (typeof parsed.status !== "number") {
-    throw new Error(`Step 69G helper returned invalid envelope for ${payload.action}.`);
+    throw new Error(`Step 70F helper returned invalid envelope for ${payload.action}.`);
   }
   return parsed;
 };
@@ -213,14 +213,14 @@ const handleApi = async ({ req, res, actorUserId, authUser, prepared, startedAt,
       action,
       actorUserId,
       csv: parsed.files.file?.text ?? "",
-      fileName: parsed.files.file?.fileName ?? "step69g-achievements.csv",
+      fileName: parsed.files.file?.fileName ?? "step70f-achievements.csv",
       mode: parsed.fields.mode,
     });
     sendJson(res, result.status, result.body);
     return;
   }
 
-  if (url.pathname === "/step69g/evidence" && req.method === "POST") {
+  if (url.pathname === "/step70f/evidence" && req.method === "POST") {
     await readRequestBody(req);
     const result = runDbHelper({
       action: "evidence",
@@ -232,11 +232,11 @@ const handleApi = async ({ req, res, actorUserId, authUser, prepared, startedAt,
     return;
   }
 
-  sendJson(res, 404, { message: "Step 69G harness route not found." });
+  sendJson(res, 404, { message: "Step 70F harness route not found." });
 };
 
 const proxyRequest = async ({ req, res, actorUserId, authUser, prepared, startedAt, state }) => {
-  if (req.url?.startsWith("/api/") || req.url?.startsWith("/step69g/")) {
+  if (req.url?.startsWith("/api/") || req.url?.startsWith("/step70f/")) {
     await handleApi({ req, res, actorUserId, authUser, prepared, startedAt, state });
     return;
   }
@@ -293,7 +293,7 @@ const runBrowser = async (session, url) => {
         `-s=${session}`,
         "--raw",
         "run-code",
-        "--filename=memory-bank/step69g-browser-acceptance.js",
+        "--filename=tests/acceptance/phase-1/step70f-browser-acceptance.js",
       ],
       { timeout: 240000 },
     );
@@ -319,7 +319,7 @@ const assertNoForbiddenSideEffects = (delta) => {
     Object.entries(delta).filter(([, value]) => value !== 0),
   );
   if (Object.keys(changed).length > 0) {
-    throw new Error(`Step 69G forbidden side effect delta mismatch: ${JSON.stringify(changed)}`);
+    throw new Error(`Step 70F forbidden side effect delta mismatch: ${JSON.stringify(changed)}`);
   }
 };
 
@@ -331,11 +331,11 @@ const main = async () => {
   logStep("building and starting local docker services");
   dockerCompose(["up", "-d", "--build", "postgres", "api", "web"], { timeout: 600000 });
   logStep("copying local db helper into api container");
-  dockerCompose(["cp", "memory-bank/step69g-db-helper.mjs", "api:/app/step69g-db-helper.mjs"]);
+  dockerCompose(["cp", "tests/acceptance/phase-1/step70f-db-helper.mjs", "api:/app/step70f-db-helper.mjs"]);
   logStep("checking local web and api health");
   const webHealth = await fetch(`${webBaseUrl}/healthz`);
   const apiHealth = await fetch(`${apiBaseUrl}/health`);
-  logStep("preparing synthetic Step 69G data");
+  logStep("preparing synthetic Step 70F data");
   const preparedEnvelope = runDbHelper({ action: "prepare", suffix });
   const prepared = preparedEnvelope.body;
   const sideEffectsBefore = runDbHelper({ action: "sideEffects" }).body;
@@ -360,12 +360,12 @@ const main = async () => {
   try {
     logStep("running admin browser acceptance");
     const adminBrowser = await runBrowser(
-      "step69g-admin",
+      "step70f-admin",
       `${localHttp}:${adminPort}/?s=${suffix}`,
     );
     logStep("running limited browser acceptance");
     const limitedBrowser = await runBrowser(
-      "step69g-limited",
+      "step70f-limited",
       `${localHttp}:${limitedPort}/?s=${suffix}`,
     );
     const finalEvidence = runDbHelper({
@@ -380,7 +380,7 @@ const main = async () => {
 
     console.log(
       JSON.stringify({
-        step: "69G",
+        step: "70F",
         scope: "local-production-like-web-api-db-acceptance",
         productionVpcAcceptance: false,
         productionSessionCookieAcceptance: false,
@@ -392,10 +392,13 @@ const main = async () => {
         listAchievementRequests: state.listAchievementRequests,
         finalCounts: {
           achievementCount: finalEvidence.achievementCount,
-          softwareDraftCount: finalEvidence.softwareDraftCount,
-          softwareDetailCount: finalEvidence.softwareDetailCount,
-          normalizedRegistrationPersistedCount:
-            finalEvidence.normalizedRegistrationPersistedCount,
+          patentDraftCount: finalEvidence.patentDraftCount,
+          patentDetailCount: finalEvidence.patentDetailCount,
+          normalizedApplicationPersistedCount:
+            finalEvidence.normalizedApplicationPersistedCount,
+          normalizedGrantPersistedCount: finalEvidence.normalizedGrantPersistedCount,
+          nextFeeDatePersistedCount: finalEvidence.nextFeeDatePersistedCount,
+          feeAmountPersistedCount: finalEvidence.feeAmountPersistedCount,
           contributorCount: finalEvidence.contributorCount,
           stateChangeCount: finalEvidence.stateChangeCount,
           auditOperation: finalEvidence.auditOperation,

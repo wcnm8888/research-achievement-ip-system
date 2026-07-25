@@ -1,4 +1,3 @@
-/* global window, document */
 /* eslint-disable @typescript-eslint/no-unused-expressions -- Playwright CLI consumes this top-level async function expression. */
 async (page) => {
   const evidence = {

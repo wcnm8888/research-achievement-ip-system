@@ -1,4 +1,3 @@
-/* global window, document */
 /*
  * Step 21B Playwright/browser acceptance artifact.
  * The Playwright CLI consumes this top-level async arrow expression directly.
