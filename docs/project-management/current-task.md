@@ -4,7 +4,7 @@
 
 ## 任务状态
 
-任务卡已建立，尚未开始实现。当前仍需先将 GitHub Actions、PR 模板和本批长期文档按 Git 规范提交；实现时使用独立功能分支，不直接在 `main` 开发。
+任务卡已建立，尚未开始实现。架构/UI/项目基线、GitHub Actions 和 PR 模板已按 Git 规范提交并推送到 `agent/engineering-baseline`；等待 PR 触发远程 CI 和基线确认后，再使用独立功能分支实现，不直接在 `main` 开发。
 
 ## 用户目标
 
@@ -26,9 +26,9 @@
 ## 前置条件
 
 - 当前项目：`E:\研究院科研成果管理系统`；
-- 当前基线：`main`，现有长期文档修改尚未提交；
+- 当前基线：`main`；本任务卡及工程基线位于 `agent/engineering-baseline`，基于 `main` 增加 3 个已推送提交；
 - 当前权威文档：架构、UI 设计规格、需求矩阵、测试策略、路线图和本任务卡；
-- 工程基线：`.github/workflows/quality-gates.yml` 和 `.github/pull_request_template.md` 已在本地建立，尚未在 GitHub 上验证；
+- 工程基线：`.github/workflows/quality-gates.yml` 和 `.github/pull_request_template.md` 已提交并推送，尚未通过 Pull Request 在 GitHub 上验证；
 - 环境：local/demo/synthetic 和受控测试数据；不使用真实生产数据或真实外部系统；
 - 数据库：必须使用可复现的本地测试/验收数据库或明确的 synthetic fixture；数据库不可用时任务阻塞，不得用 mock 冒充持久化通过。
 

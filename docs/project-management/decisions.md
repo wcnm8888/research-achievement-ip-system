@@ -31,7 +31,7 @@
 - 决定：后续整改统一按“产品定义 → 架构与 UI 定向 → 工程基线 → 用户价值切片迭代 → 发布验收 → 复盘归档”推进。
 - 原因：原有流程按大量技术 Step 和聊天输出递归，导致上下文放大、职责混杂和阶段无法结束；六阶段路线把长期产物、门禁和人工确认点固定下来。
 - 执行规则：一个功能只维护一张任务卡，一个分支对应一张任务卡；任务结束更新短进度和证据摘要，不把 Prompt 历史作为长期项目记录。
-- 当前映射：阶段一、阶段二和阶段三 Step 0/Step 1 已完成；阶段三 Step 2 先完成 UI 设计基线，GitHub Actions、分支保护和首个垂直切片仍属于后续工程基线工作。
+- 当前映射：阶段一、阶段二和阶段三 Step 0/Step 1 已完成；阶段三 Step 2 完成 UI 设计基线，GitHub Actions、PR 模板和首个垂直切片任务卡已进入工程基线分支，分支保护和远程 CI 验证仍待完成。
 
 ## D008：阶段三 Step 2 的 UI 基线方向
 
@@ -55,7 +55,7 @@
 
 - 决定：使用 `docs/project-management/roadmap.md` 记录项目级路线，使用 `docs/project-management/current-task.md` 记录唯一当前任务。
 - 原因：避免 `implementation-plan.md`、`progress.md`、聊天历史和 Prompt 历史同时承担下一步决策职责。
-- 当前状态：第四阶段收口已完成，当前没有进入功能实现阶段的正式任务卡。
+- 当前状态：第四阶段收口已完成，`current-task.md` 已建立首个垂直切片任务卡；功能实现仍等待工程基线 PR 的远程 CI 验证。
 
 ## D012：方法论采用唯一入口和职责单一化
 
@@ -63,7 +63,7 @@
 - 决定：测试选择统一使用 `06-test-selection-matrix.md`，上下文和 Token 预算统一使用 `08-context-and-token-budget.md`。
 - 决定：继续保留 `07-git-delivery.md`、`05-ui-design-system.md` 和 `12-阶段复盘与归档.md` 分别作为 Git/GitHub、UI、复盘归档的唯一规范，不新增同义的 `07-git`、`05-ui` 或 `09-retrospective` 文档。
 - 原因：此前任务方向依赖聊天输出和重复 Step 文档，导致上下文放大、职责混杂和测试自证；职责单一的入口能让后续任务只读取必要内容，并把下一步锁定到已确认路线和验收标准。
-- 当前状态：第五阶段方法论入口已形成并映射到本项目；GitHub Actions、PR 门禁和首个垂直切片仍属于后续工程基线，不在本次执行。
+- 当前状态：第五阶段方法论入口已形成并映射到本项目；GitHub Actions、PR 门禁和首个垂直切片任务卡已进入工程基线分支，远程 CI 验证待 PR 触发。
 
 ## D013：阶段六架构基线最终评审
 
@@ -89,4 +89,4 @@
 - 决定：本项目新增 `.github/workflows/quality-gates.yml` 作为 GitHub Actions 质量门禁入口，新增 `.github/pull_request_template.md` 作为 PR 信息和验收清单入口。
 - 决定：首个用户价值切片使用 `docs/project-management/current-task.md` 作为唯一任务卡，不另建重复的功能任务文档。
 - 切片范围：科研人员创建 `DRAFT` 成果、持久化并在刷新后恢复、验证越权拒绝、提交为 `PENDING_DEPARTMENT_REVIEW`，并产生可核验的工作流和审计结果。
-- 约束：CI 和 PR 文件仅在本地建立，未提交、推送或配置远程分支保护；功能实现必须等待任务卡批准和工程基线远程验证。
+- 约束：CI 和 PR 文件已分别由 `baa5f2c` 提交，工程基线分支 `agent/engineering-baseline` 已推送；尚未创建 PR、合并或配置远程分支保护，功能实现必须等待任务卡批准和工程基线远程验证。

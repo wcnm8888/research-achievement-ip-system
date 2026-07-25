@@ -62,10 +62,18 @@
 | 检查对象 | 结果 |
 | --- | --- |
 | UI 决策 | 用户已确认视觉方向、Token 起点、字体候选和五个核心页面优先级 |
-| GitHub Actions | 已创建 `.github/workflows/quality-gates.yml`，配置测试、typecheck、build 和 lint；尚未提交或在远程运行 |
+| GitHub Actions | 已创建并提交 `.github/workflows/quality-gates.yml`（`baa5f2c`），配置测试、typecheck、build 和 lint；等待 PR 触发远程运行 |
 | PR 规范 | 已创建 `.github/pull_request_template.md`，包含范围、验收、门禁、浏览器证据、安全和回滚栏目 |
-| 首个垂直切片 | 已写入 `docs/project-management/current-task.md`，尚未建立功能分支或修改业务代码 |
-| 远程状态 | 未执行 commit、push、PR 创建、合并或分支保护配置 |
+| 首个垂直切片 | 已写入并提交 `docs/project-management/current-task.md`（`3674ecb`），尚未建立功能实现分支或修改业务代码 |
+| 远程状态 | `agent/engineering-baseline` 已推送并跟踪 `origin/agent/engineering-baseline`；尚未创建 PR、合并或配置分支保护 |
+
+### 工程基线发布证据
+
+- 发布分支：`agent/engineering-baseline`。
+- 相对 `origin/main` 的新增提交：`340f715`、`baa5f2c`、`3674ecb`。
+- 推送后本地与远程分支差异：`0 0`；工作区干净。
+- 本地门禁：测试、typecheck、build、lint 和 `git diff --check` 均通过；Web 大 bundle 警告仍存在。
+- 远程 CI：尚未因 PR 触发；当前工作流仅对 `main` push 和面向 `main` 的 PR 运行。
 
 ### 当前任务卡验收边界
 
