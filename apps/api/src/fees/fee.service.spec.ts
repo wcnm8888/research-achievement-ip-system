@@ -510,7 +510,7 @@ describe("FeeService.getFeeWarnings", () => {
 
 describe("FeeService.createFee", () => {
   it("denies create when the user only has fee read permission", async () => {
-    const { auditService, repository, service, workflowService } = createService();
+    const { auditService, repository, service } = createService();
 
     await expect(
       service.createFee(makeContext([PermissionCode.feeReadDepartment]), {
@@ -696,7 +696,6 @@ describe("FeeService.markFeePaid", () => {
       policyQueryFactory,
       repository,
       service,
-      workflowService,
     } = createService();
     const context = makeContext([PermissionCode.feeManageDepartment]);
 

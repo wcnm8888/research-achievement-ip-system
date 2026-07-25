@@ -41,8 +41,12 @@ describe("public account lifecycle helpers", () => {
       message: "User is not eligible.",
     };
 
-    expect(getSafeLifecycleErrorMessage(unauthorized)).toContain("invalid or expired");
-    expect(getSafeLifecycleErrorMessage(conflict)).toContain("invalid or expired");
+    expect(getSafeLifecycleErrorMessage(unauthorized)).toContain(
+      "该链接无效或已过期，请从登录页或管理员处重新获取链接。",
+    );
+    expect(getSafeLifecycleErrorMessage(conflict)).toContain(
+      "该链接无效或已过期，请从登录页或管理员处重新获取链接。",
+    );
   });
 
   it("trims token/email inputs and delegates to auth client methods", async () => {
@@ -101,8 +105,8 @@ describe("public account lifecycle helpers", () => {
       />,
     );
 
-    expect(resetHtml).toContain("Set a new password");
-    expect(inviteHtml).toContain("Accept invitation");
+    expect(resetHtml).toContain("设置新密码");
+    expect(inviteHtml).toContain("接受邀请");
     expect(resetHtml).not.toContain("raw-reset-token-from-link");
     expect(inviteHtml).not.toContain("raw-invite-token-from-link");
     expect(resetHtml).not.toContain("http://");

@@ -19,10 +19,12 @@ import { FeeService } from "./fees/fee.service";
 import { MockNotificationAdapter } from "./notifications/adapters/mock-notification.adapter";
 import { NotificationRepository } from "./notifications/notification.repository";
 import { NotificationService } from "./notifications/notification.service";
+import { ReportEmailDeliveryService } from "./reports/report-email-delivery.service";
 import { ReminderRepository } from "./reminders/reminder.repository";
 import { ReminderService } from "./reminders/reminder.service";
 import { SEARCH_ADAPTER } from "./search/adapters/search-adapter";
 import { SearchService } from "./search/search.service";
+import { WorkflowService } from "./workflow/workflow.service";
 
 type ExplicitDependency = { index: number; param: unknown };
 
@@ -40,6 +42,7 @@ describe("service provider dependency injection", () => {
       AttachmentAccessPolicyService,
       PolicyQueryFactory,
       SecretAccessPolicyService,
+      RbacPolicyService,
       PrismaService,
       AuditService,
       ATTACHMENT_STORAGE_ADAPTER,
@@ -68,6 +71,7 @@ describe("service provider dependency injection", () => {
       PolicyQueryFactory,
       PrismaService,
       AuditService,
+      WorkflowService,
     ]);
   });
 
@@ -84,6 +88,8 @@ describe("service provider dependency injection", () => {
       PrismaService,
       NotificationService,
       AuditService,
+      WorkflowService,
+      ReportEmailDeliveryService,
     ]);
   });
 

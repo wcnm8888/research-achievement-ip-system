@@ -217,7 +217,7 @@ describe("mapWorkflowErrorToDisplay", () => {
   it("maps workflow API errors without changing api-client semantics", () => {
     const cases: Array<[ApiError, string]> = [
       [{ kind: "bad-request", status: 400, message: "请求参数错误" }, "审批请求参数错误"],
-      [{ kind: "unauthorized", status: 401, message: "请选择或切换演示用户" }, "请选择或切换演示用户"],
+      [{ kind: "unauthorized", status: 401, message: "请选择或切换业务用户" }, "请选择或切换业务用户"],
       [{ kind: "forbidden", status: 403, message: "当前角色无权限" }, "当前用户无权处理该审批待办"],
       [{ kind: "unknown", status: 404, message: "资源不存在" }, "审批待办不存在"],
       [{ kind: "unknown", status: 409, message: "数据状态冲突" }, "待办状态已变化，请刷新后重试"],
