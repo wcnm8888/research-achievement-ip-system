@@ -1,3 +1,0 @@
-PASS: no forbidden field-family markers were found in this Step 123 evidence directory.
-
-Note: the product feature name itself contains the ordinary word "Secret"; the scan result above refers to sensitive material and forbidden UI/control field families, not the feature label.

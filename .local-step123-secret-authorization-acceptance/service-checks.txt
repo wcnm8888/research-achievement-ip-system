@@ -1,9 +1,0 @@
-Step 123 local service checks
-
-api_health_http_127_0_0_1_3000: unavailable
-web_http_127_0_0_1_5173: unavailable
-web_http_127_0_0_1_5174: unavailable
-expected_ports_with_listener: none for 3000, 5173, 5174
-existing_api_watch_processes_seen: yes
-acceptance_result: BLOCKED
-blocker: local API endpoint unavailable; no Docker operation allowed in this step
