@@ -90,3 +90,15 @@
 - 决定：首个用户价值切片使用 `docs/project-management/current-task.md` 作为唯一任务卡，不另建重复的功能任务文档。
 - 切片范围：科研人员创建 `DRAFT` 成果、持久化并在刷新后恢复、验证越权拒绝、提交为 `PENDING_DEPARTMENT_REVIEW`，并产生可核验的工作流和审计结果。
 - 约束：CI 和 PR 文件已分别由 `baa5f2c` 提交，工程基线分支 `agent/engineering-baseline` 已推送；尚未创建 PR、合并或配置远程分支保护，功能实现必须等待任务卡批准和工程基线远程验证。
+
+## D017：首个垂直切片使用本地 staging API 做真实数据库验收
+
+- 决定：浏览器验收继续访问现有 Web 容器，但通过 Playwright 路由将本次 `/api` 请求发送到临时 staging API；staging API 连接现有本地 Docker PostgreSQL。
+- 原因：当前 production API 采用生产身份模式，不接受开发 demo 身份头；直接修改生产容器或生产配置会扩大风险。临时 staging API 可以验证真实持久化、权限、审批和审计，同时保持生产容器不变。
+- 边界：该验收证明的是本地 synthetic 环境闭环，不代表生产身份、生产部署、真实外部系统或生产数据验收完成。临时 staging 容器只用于运行期间，停止后不作为长期资产提交。
+
+## D018：CI 在测试前显式生成 Prisma Client
+
+- 决定：GitHub Actions 在安装依赖后、运行测试前执行 `corepack pnpm exec prisma generate`。
+- 原因：CI 是干净环境，不应依赖开发者本机残留的生成目录；首轮 PR CI 已证明缺少该步骤会导致 API 测试无法加载 `.prisma/client/default`。
+- 验证：补充步骤后 PR #4 的第二轮远程 Quality Gates 已通过；本地全仓测试也再次通过。

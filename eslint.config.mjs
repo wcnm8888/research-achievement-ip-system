@@ -25,6 +25,7 @@ export default [
   {
     files: [
       "tests/acceptance/phase-1/**/*-browser-acceptance.js",
+      "tests/acceptance/phase-1/achievement-draft-submit-browser.js",
     ],
     languageOptions: {
       globals: {
