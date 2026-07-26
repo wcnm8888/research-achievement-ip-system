@@ -36,7 +36,9 @@
 - 浏览器结果：`1440 × 900`、`1024 × 768`、`390 × 844` 均完成页面操作/尺寸检查，无页面级横向溢出；部分接口返回 403 为预期权限拒绝。
 - 全量门禁：API 1031、Web 440、Shared 1 个测试通过；typecheck、lint、build 通过。
 - 构建边界：Web 仍有约 1.5 MB 主 bundle 警告，未作为本任务扩大范围处理。
-- 当前未完成：本地提交、推送、PR 和远程 GitHub Actions 验证。
+- Git 交付：已完成两次功能提交和一次 CI 修复提交，已推送 `feat/achievement-draft-submit` 并创建 PR #4。
+- 远程 CI：PR #4 的 `Quality Gates / Test, typecheck, build and lint` 已通过；修复点为在 CI 测试前生成 Prisma Client。
+- 当前状态：PR #4 保持 Draft、无合并冲突、检查通过，等待用户审阅后决定是否转为 Ready for review 和合并。
 
 ## 当前风险
 

@@ -173,6 +173,6 @@
 - 浏览器尺寸已检查：`1440 × 900`、`1024 × 768`、`390 × 844`；三种尺寸均未发现页面级横向溢出。
 - 全量门禁已通过：API 1031 个、Web 440 个、Shared 1 个测试通过；typecheck、lint、build 通过。
 - 浏览器运行日志中的部分 `403` 属于当前 synthetic 研究人员身份访问无权限接口的预期结果，未记录为系统崩溃；页面错误为 0。
-- 仍未执行：本地提交、推送、创建 PR、GitHub CI 远程验证；这些动作需在本地变更审查完成后按 `07-git-delivery.md` 执行。
+- Git 交付已完成到 PR/CI：本地提交、推送、PR #4 创建和 GitHub Actions 均已完成；PR #4 当前为 Draft、检查通过、未合并 `main`。
 
-本任务下一步：显式暂存本任务文件和长期证据，分主题提交，推送 `feat/achievement-draft-submit`，创建 PR 并等待 GitHub Actions。当前不合并 `main`。
+本任务下一步：由用户审阅 PR #4 的变更和验收证据，决定是否转为 Ready for review 以及是否合并 `main`。当前不自动合并。

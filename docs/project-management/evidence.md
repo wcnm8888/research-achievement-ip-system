@@ -201,4 +201,11 @@
 
 本次只保留结构化运行结果和长期摘要，不把 Cookie、Token、密码、私钥、连接串、完整错误堆栈或原始浏览器 Profile 写入项目。没有把本地临时容器、浏览器痕迹或旧输出目录作为本次提交内容。
 
-远程 GitHub PR 和远程 CI 尚未执行，待本地提交审查后按 Git 交付规范完成。
+## GitHub 远程交付
+
+- 分支：`feat/achievement-draft-submit`，已推送。
+- PR：`#4`，目标 `main`，当前为 Draft，未合并。
+- 远程检查：`Quality Gates / Test, typecheck, build and lint` 通过；运行时间约 3 分 22 秒。
+- 首轮远程失败原因：干净 CI 环境未生成 Prisma Client，导致 API 测试无法加载 `.prisma/client/default`。
+- 修复提交：`510b9ff`，在依赖安装后执行 `corepack pnpm exec prisma generate`；第二轮 GitHub Actions 已通过。
+- 本地 `output/` 临时目录未加入提交。
