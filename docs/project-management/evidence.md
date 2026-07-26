@@ -2,6 +2,10 @@
 
 更新时间：2026-07-26
 
+## 当前证据摘要
+
+最新证据属于第二个垂直切片“部门审核成果”，结果以文末该切片章节为准；前面的阶段三和首个切片内容保留为历史证据。
+
 ## 阶段三 Step 1 证据
 
 | 检查对象 | 结果 |
@@ -158,6 +162,54 @@
 ## Step 2 结论
 
 本 Step 的浏览器基线已部分建立，但不能标记为完整通过。应先恢复可验证的本地 API/demo 数据运行条件，并处理两个 UI 后续问题，再重新执行正常数据和核心业务流程验收。
+
+## 第二个垂直切片：部门审核成果（2026-07-26）
+
+### 验收范围
+
+任务：部门审核人员查看分配任务，审核通过或驳回成果。
+
+环境：本地 Docker Web、临时 staging API、本地 PostgreSQL、synthetic 身份和数据；`productionAcceptance: false`。没有访问生产数据、真实外部系统或真实身份系统。
+
+### 真实数据库与权限闭环
+
+验收运行器：`tests/acceptance/phase-1/department-review-achievement-acceptance.mjs`。
+
+- 审核人员可以读取自己的待审核任务并打开关联成果详情；
+- 审核通过后成果为 `PENDING_ARCHIVE`，工作流为 `ACTIVE/ARCHIVE`，任务为 `APPROVED`；
+- 审核驳回后成果为 `DEPARTMENT_REJECTED`，工作流为 `COMPLETED`，任务为 `REJECTED`；
+- 无关部门任务列表为空，同部门非指派人和跨部门访问被拒绝，未登录返回 `401`；
+- 驳回原因为空返回 `422`；重复通过和重复驳回返回 `409`；
+- 2 个审核任务分别只有 1 个审核动作和 1 个审核审计记录，未产生重复记录；
+- 审核动作、任务、工作流和成果状态均在真实本地 PostgreSQL 中持久化。
+
+### 浏览器证据
+
+脚本：`tests/acceptance/phase-1/department-review-achievement-browser.js`。
+
+| 尺寸 | 操作 | 结果 |
+| --- | --- | --- |
+| 1440 × 900 | 打开详情、查看关联成果、审核通过、刷新 | 通过；任务不再出现在待审核列表；无横向溢出 |
+| 1024 × 768 | 打开详情、查看关联成果、检查操作区 | 通过；无横向溢出 |
+| 390 × 844 | 空驳回原因拦截、填写原因驳回、刷新 | 通过；任务不再出现在待审核列表；无横向溢出 |
+
+三种尺寸均无控制台错误和页面错误。截图证据：
+
+- `output/playwright/department-review-desktop.png`；
+- `output/playwright/department-review-tablet.png`；
+- `output/playwright/department-review-mobile.png`。
+
+### 全量质量门禁
+
+- API 1031、Web 440、Shared 1 个测试通过；
+- typecheck、lint、build 通过；
+- Web 仍有既有主 bundle 约 1.5 MB 的构建警告，未扩大本切片范围处理；
+- 三个验收脚本语法检查和 ESLint 通过；
+- `git diff --check` 通过。
+
+### 交付边界
+
+本次只完成本地分支上的实现、验收脚本和长期证据更新，尚未提交、推送、创建 PR 或合并；本地临时 staging 容器停止后不作为长期资产，临时截图目录不加入 Git。
 # 首个垂直切片本地验收证据（2026-07-26）
 
 ## 验收范围
