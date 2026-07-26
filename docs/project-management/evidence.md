@@ -158,3 +158,47 @@
 ## Step 2 结论
 
 本 Step 的浏览器基线已部分建立，但不能标记为完整通过。应先恢复可验证的本地 API/demo 数据运行条件，并处理两个 UI 后续问题，再重新执行正常数据和核心业务流程验收。
+# 首个垂直切片本地验收证据（2026-07-26）
+
+## 验收范围
+
+任务：科研人员创建成果草稿并提交审批。
+
+环境：本地 Docker Web、临时 staging API、本地 PostgreSQL、synthetic 身份和数据；`productionAcceptance: false`。没有访问生产数据、真实外部系统或真实身份系统。
+
+## 真实数据库闭环
+
+验收运行器：`tests/acceptance/phase-1/achievement-draft-submit-acceptance.mjs`。
+
+- 创建成果草稿并返回持久化 ID：通过。
+- 刷新页面后恢复成果：通过。
+- 提交后状态为 `PENDING_DEPARTMENT_REVIEW`：通过。
+- 审批实例、审批任务、提交动作、`SUBMIT` 审计记录各 1 条：通过。
+- 重复提交返回 `409` 并未生成重复审批：通过。
+- 跨部门读取和修改分别返回 `404`，未越权暴露资源：通过。
+
+## 浏览器尺寸证据
+
+浏览器脚本：`tests/acceptance/phase-1/achievement-draft-submit-browser.js`。
+
+| 尺寸 | 操作 | 结果 |
+| --- | --- | --- |
+| 1440 × 900 | 创建、刷新恢复、打开详情、提交审批 | 通过；无页面级横向溢出 |
+| 1024 × 768 | 进入成果页面并检查布局 | 通过；无页面级横向溢出 |
+| 390 × 844 | 进入成果页面并检查移动端布局 | 通过；无页面级横向溢出 |
+
+运行日志记录到部分权限接口返回 `403`。该结果与研究人员身份的权限边界一致，作为预期 permission-denied 证据，不作为页面崩溃；三种尺寸的 `pageErrors` 均为 0。
+
+## 全量质量门禁
+
+- `corepack pnpm test`：通过；API 1031、Web 440、Shared 1，共 1472 个测试通过。
+- `corepack pnpm typecheck`：通过。
+- `corepack pnpm lint`：通过。
+- `corepack pnpm build`：通过；保留既有 Web 大 bundle 警告。
+- `git diff --check`：通过。
+
+## 证据边界
+
+本次只保留结构化运行结果和长期摘要，不把 Cookie、Token、密码、私钥、连接串、完整错误堆栈或原始浏览器 Profile 写入项目。没有把本地临时容器、浏览器痕迹或旧输出目录作为本次提交内容。
+
+远程 GitHub PR 和远程 CI 尚未执行，待本地提交审查后按 Git 交付规范完成。
