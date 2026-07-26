@@ -6,7 +6,7 @@
 
 ## 当前任务状态
 
-第二个垂直切片已完成本地实现、真实数据库闭环验收、三尺寸浏览器验收、独立 QA 和全量质量门禁，当前等待 Git 交付审查。功能分支为 `feat/department-review-achievement`；本 Step 未提交、未推送、未创建 PR。
+第二个垂直切片已完成本地实现、真实数据库闭环验收、三尺寸浏览器验收、独立 QA、全量质量门禁和 GitHub 交付，PR #5 已合并到 `main`。当前整改交付已收口；本地后续只需继续按任务卡进入正常功能迭代。
 
 ## 当前用户目标
 
@@ -199,7 +199,7 @@
 
 ## 2026-07-26 第二个垂直切片 Step 2 执行结果
 
-本任务已完成本地实现和验收，当前状态为“本地验收通过，等待 Git 交付审查”。
+本任务已完成本地实现、验收和 Git 交付，当前状态为“已合并到 `main`”。
 
 - 功能分支：`feat/department-review-achievement`；
 - 真实数据库：本地 Docker PostgreSQL + 临时 staging API，使用 synthetic 身份和数据，`productionAcceptance: false`；
@@ -211,6 +211,7 @@
 - 证据脚本：`tests/acceptance/phase-1/department-review-achievement-acceptance.mjs`、`department-review-achievement-browser.js`、`department-review-achievement-db-helper.mjs`；
 - 截图：`output/playwright/department-review-desktop.png`、`department-review-tablet.png`、`department-review-mobile.png`；该目录为本地临时证据，未加入提交；
 - 全量门禁：API 1031、Web 440、Shared 1 个测试通过；typecheck、lint、build 通过；Web 仍有既有大 bundle 警告；
-- 当前未执行：提交、推送、创建 PR、合并、生产操作或真实外部系统操作。
+- Git 交付：PR #5 已创建、CI 已通过并合并到 `main`，合并提交为 `6e9630b`；
+- 当前未执行：生产操作或真实外部系统操作。
 
-下一步：按唯一 Git/GitHub 交付规范审阅当前差异，确认后再分批提交、推送、创建 PR 并等待远程 CI。
+下一步：同步本地 `main` 后，选择是否进入第三个产品功能切片；第三个切片不再属于本轮整改。
