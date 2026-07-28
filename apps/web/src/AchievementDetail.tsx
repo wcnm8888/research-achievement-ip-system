@@ -14,6 +14,17 @@ import {
   Typography,
   message,
 } from "antd";
+import {
+  CheckOutlined,
+  CloseOutlined,
+  FileTextOutlined,
+  InboxOutlined,
+  PaperClipOutlined,
+  TeamOutlined,
+  SwapOutlined,
+  BarChartOutlined,
+  StopOutlined,
+} from "@ant-design/icons";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
@@ -432,7 +443,7 @@ export function AchievementDetail({
     <>
       <Drawer
         className="achievement-detail-drawer"
-        destroyOnClose
+        destroyOnHidden
         extra={
           detail ? (
             <Space wrap>
@@ -441,6 +452,7 @@ export function AchievementDetail({
                 return (
                   <Button
                     danger={action === "void"}
+                    icon={getAchievementActionIcon(action)}
                     key={action}
                     type={action === "submit" ? "primary" : "default"}
                     onClick={() => {
@@ -453,10 +465,14 @@ export function AchievementDetail({
                   </Button>
                 );
               })}
-              <Button onClick={onClose}>关闭</Button>
+              <Button icon={<CloseOutlined />} onClick={onClose}>
+                关闭
+              </Button>
             </Space>
           ) : (
-            <Button onClick={onClose}>关闭</Button>
+            <Button icon={<CloseOutlined />} onClick={onClose}>
+              关闭
+            </Button>
           )
         }
         open={open}
@@ -567,8 +583,12 @@ export function ReadonlyAchievementDetail({
   return (
     <Drawer
       className="achievement-detail-drawer"
-      destroyOnClose
-      extra={<Button onClick={onClose}>关闭</Button>}
+      destroyOnHidden
+      extra={
+        <Button icon={<CloseOutlined />} onClick={onClose}>
+          关闭
+        </Button>
+      }
       open={open}
       title={getDetailDisplayTitle(detail)}
       width="min(820px, 100vw)"
@@ -979,7 +999,7 @@ function DetailContent({
   const isReadonly = mode !== "management";
 
   return (
-    <Space direction="vertical" size={18} className="full-width">
+    <Space direction="vertical" size={18} className="full-width achievement-detail-content achievement-detail-v3">
       <PermissionHint
         description={
           isReadonly
@@ -987,6 +1007,23 @@ function DetailContent({
             : "可用操作会随账号职责和成果状态自动调整。"
         }
       />
+
+      <div className="achievement-detail-summary" role="status" aria-label="成果档案摘要">
+        <div className="achievement-detail-summary-item">
+          <Typography.Text type="secondary">成果类型</Typography.Text>
+          <Typography.Text strong>{typeLabels[detail.type] ?? detail.type}</Typography.Text>
+        </div>
+        <div className="achievement-detail-summary-item">
+          <Typography.Text type="secondary">当前状态</Typography.Text>
+          <Tag color={detail.status === "ARCHIVED" ? "success" : "processing"}>
+            {statusLabels[detail.status] ?? detail.status}
+          </Tag>
+        </div>
+        <div className="achievement-detail-summary-item achievement-detail-summary-technical">
+          <Typography.Text type="secondary">档案编号</Typography.Text>
+          <Typography.Text className="technical-field">{detail.id}</Typography.Text>
+        </div>
+      </div>
 
       {detail.isRedacted ? (
         <Alert
@@ -1008,8 +1045,12 @@ function DetailContent({
         getStatusBoundaryNotice(detail.status)
       )}
 
-      <Divider orientation="left">基础信息</Divider>
-      <Descriptions bordered column={2} size="small">
+      <Divider orientation="left">
+        <span className="achievement-section-label">
+          <FileTextOutlined /> 基础信息
+        </span>
+      </Divider>
+      <Descriptions className="achievement-detail-descriptions" bordered column={{ xs: 1, sm: 2 }} size="small">
         {getBaseFields(detail).map((field) => (
           <Descriptions.Item key={field.label} label={field.label}>
             {field.value}
@@ -1017,8 +1058,12 @@ function DetailContent({
         ))}
       </Descriptions>
 
-      <Divider orientation="left">类型详情</Divider>
-      <Descriptions bordered column={2} size="small">
+      <Divider orientation="left">
+        <span className="achievement-section-label">
+          <FileTextOutlined /> 类型详情
+        </span>
+      </Divider>
+      <Descriptions className="achievement-detail-descriptions" bordered column={{ xs: 1, sm: 2 }} size="small">
         {getTypeDetailFields(detail).map((field) => (
           <Descriptions.Item key={field.label} label={field.label}>
             {field.value}
@@ -1028,7 +1073,11 @@ function DetailContent({
 
       <CitationImpactSection detail={detail} />
 
-      <Divider orientation="left">贡献人</Divider>
+      <Divider orientation="left">
+        <span className="achievement-section-label">
+          <TeamOutlined /> 贡献人
+        </span>
+      </Divider>
       <Contributors contributors={detail.contributors} />
 
       <AchievementConversionSection
@@ -1301,7 +1350,11 @@ function AchievementConversionSection({
 
   return (
     <>
-      <Divider orientation="left">成果转化台账</Divider>
+      <Divider orientation="left">
+        <span className="achievement-section-label">
+          <SwapOutlined /> 成果转化台账
+        </span>
+      </Divider>
       <Space direction="vertical" size={12} className="full-width">
         <div className="business-note">
           <Typography.Text strong className="business-note-title">
@@ -1767,7 +1820,11 @@ function CitationImpactSection({ detail }: { detail: AchievementDetailType }) {
 
   return (
     <>
-      <Divider orientation="left">学术影响</Divider>
+      <Divider orientation="left">
+        <span className="achievement-section-label">
+          <BarChartOutlined /> 学术影响
+        </span>
+      </Divider>
       <Descriptions bordered column={2} size="small">
         <Descriptions.Item label="引用次数">{impact.citationCount}</Descriptions.Item>
         <Descriptions.Item label="统计来源">{impact.sourceLabel}</Descriptions.Item>
@@ -2260,7 +2317,11 @@ function AttachmentMetadataSection({
 
   return (
     <>
-      <Divider orientation="left">附件</Divider>
+      <Divider orientation="left">
+        <span className="achievement-section-label">
+          <PaperClipOutlined /> 附件
+        </span>
+      </Divider>
       <Space direction="vertical" size={12} className="full-width">
         {canUpload ? (
           <AttachmentUploadPanel
@@ -2700,6 +2761,18 @@ export const getAvailableAchievementActions = (
   }
 
   return [];
+};
+
+const getAchievementActionIcon = (action: AchievementAction) => {
+  if (action === "submit") {
+    return <CheckOutlined />;
+  }
+
+  if (action === "archive") {
+    return <InboxOutlined />;
+  }
+
+  return <StopOutlined />;
 };
 
 export const getActionConfirmConfig = (action: AchievementAction) => {

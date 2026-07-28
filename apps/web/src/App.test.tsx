@@ -11,6 +11,8 @@ import {
   mapAuthCheckErrorToStatus,
   mapLoginErrorMessage,
   navItems,
+  hasWorkflowAccess,
+  resolveCustomDemoUserId,
   shouldShowDemoIdentityControls,
 } from "./App";
 
@@ -25,6 +27,12 @@ const authUser: AuthUser = {
 };
 
 describe("production auth mode helpers", () => {
+  it("keeps the selected demo user when applying an empty custom user field", () => {
+    expect(resolveCustomDemoUserId("researcher-id", "   ")).toBe("researcher-id");
+    expect(resolveCustomDemoUserId(null, "   ")).toBeNull();
+    expect(resolveCustomDemoUserId("researcher-id", "secretary-id")).toBe("secretary-id");
+  });
+
   it("hides demo identity controls in production mode", () => {
     expect(shouldShowDemoIdentityControls(true)).toBe(false);
     expect(shouldShowDemoIdentityControls(false)).toBe(true);
@@ -209,6 +217,13 @@ describe("production auth mode helpers", () => {
       ]),
     });
     expect(getDemoAuthUser(null)).toBeNull();
+  });
+
+  it("allows workflow access for achievement or fee reviewers", () => {
+    expect(hasWorkflowAccess({ permissionCodes: ["achievement:review_department"] })).toBe(true);
+    expect(hasWorkflowAccess({ permissionCodes: ["fee:review_department"] })).toBe(true);
+    expect(hasWorkflowAccess({ permissionCodes: ["system:config"] })).toBe(false);
+    expect(hasWorkflowAccess(null)).toBe(false);
   });
 
   it("keeps phase-one demo role projections aligned with visible walkthrough actions", () => {

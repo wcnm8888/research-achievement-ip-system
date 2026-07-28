@@ -18,6 +18,23 @@ import {
   type FormInstance,
 } from "antd";
 import type { TableProps } from "antd";
+import {
+  CloseOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  EditOutlined,
+  EyeOutlined,
+  ExperimentOutlined,
+  FileProtectOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  SettingOutlined,
+  SaveOutlined,
+  StopOutlined,
+  UndoOutlined,
+} from "@ant-design/icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createApiClient,
@@ -495,15 +512,20 @@ export function SettingsApiIntegrations({
     );
   }
 
+  const enabledCount = rows.filter((row) => row.enabled).length;
+  const archivedCount = rows.filter((row) => row.archivedAt).length;
+
   return (
-    <Space direction="vertical" size={16} className="page-stack settings-api-page">
+    <Space direction="vertical" size={16} className="page-stack settings-api-page settings-v3">
       <SectionHeader
         title="系统接口配置"
         description="管理外部接口配置元数据；配置引用只是非敏感名称，不是密钥值。"
         extra={
           <Space size={8} wrap>
-            <Button onClick={refresh}>刷新</Button>
-            <Button type="primary" onClick={openCreate}>
+            <Button icon={<ReloadOutlined />} onClick={refresh}>
+              刷新
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
               新增接口配置
             </Button>
           </Space>
@@ -512,31 +534,69 @@ export function SettingsApiIntegrations({
 
       <PermissionHint description="本页维护接口编码、供应商、启用状态、超时设置和配置引用名称。" />
 
-      <SettingsImportJobHistoryOverview demoUserId={demoUserId} authUser={authUser} />
+      <div className="settings-summary-strip" aria-label="系统配置概览">
+        <div className="settings-summary-item">
+          <span className="settings-summary-icon"><SettingOutlined /></span>
+          <div>
+            <Typography.Text type="secondary">接口配置</Typography.Text>
+            <Typography.Title level={3}>{rows.length}</Typography.Title>
+          </div>
+        </div>
+        <div className="settings-summary-item">
+          <span className="settings-summary-icon settings-summary-icon-success"><CheckCircleOutlined /></span>
+          <div>
+            <Typography.Text type="secondary">当前启用</Typography.Text>
+            <Typography.Title level={3}>{enabledCount}</Typography.Title>
+          </div>
+        </div>
+        <div className="settings-summary-item">
+          <span className="settings-summary-icon settings-summary-icon-muted"><ClockCircleOutlined /></span>
+          <div>
+            <Typography.Text type="secondary">已归档</Typography.Text>
+            <Typography.Title level={3}>{archivedCount}</Typography.Title>
+          </div>
+        </div>
+        <div className="settings-summary-note">
+          <Typography.Text strong>配置引用是非敏感名称</Typography.Text>
+          <Typography.Text type="secondary">运行密钥、令牌和完整连接串不在本页面展示。</Typography.Text>
+        </div>
+      </div>
 
-      <ApiIntegrationMockDemoCenter
-        values={mockDemoValues}
-        result={mockDemoRun}
-        logs={apiCallLogs}
-        submitting={mockDemoRun.loading}
-        onProviderChange={(provider) =>
-          setMockDemoValues((current) => ({ ...current, provider }))
-        }
-        onScenarioChange={handleMockScenarioChange}
-        onResultModeChange={(resultMode) =>
-          setMockDemoValues((current) => ({ ...current, resultMode }))
-        }
-        onRun={handleMockDemoRun}
-        onReloadLogs={loadApiCallLogs}
-      />
+      <div className="settings-v3-operations">
+        <SettingsImportJobHistoryOverview demoUserId={demoUserId} authUser={authUser} />
 
-      <Card className="shell-card">
+        <ApiIntegrationMockDemoCenter
+          values={mockDemoValues}
+          result={mockDemoRun}
+          logs={apiCallLogs}
+          submitting={mockDemoRun.loading}
+          onProviderChange={(provider) =>
+            setMockDemoValues((current) => ({ ...current, provider }))
+          }
+          onScenarioChange={handleMockScenarioChange}
+          onResultModeChange={(resultMode) =>
+            setMockDemoValues((current) => ({ ...current, resultMode }))
+          }
+          onRun={handleMockDemoRun}
+          onReloadLogs={loadApiCallLogs}
+        />
+      </div>
+
+      <Card
+        className="shell-card settings-api-filter-card"
+        title={
+          <span className="settings-card-title">
+            <FilterOutlined /> 筛选接口配置
+          </span>
+        }
+        extra={<Tag>系统配置权限</Tag>}
+      >
         <Space className="settings-api-filter-bar" size={12} wrap>
           <Input.Search
             allowClear
             className="settings-api-keyword"
             placeholder="搜索编码或配置引用"
-            enterButton="查询"
+            enterButton={<span><SearchOutlined /> 查询</span>}
             value={draftFilters.keyword}
             onChange={(event) =>
               setDraftFilters((current) => ({ ...current, keyword: event.target.value }))
@@ -578,7 +638,7 @@ export function SettingsApiIntegrations({
             />
             <Typography.Text>包含已归档</Typography.Text>
           </Space>
-          <Button type="primary" onClick={applyFilters}>
+          <Button type="primary" icon={<SearchOutlined />} onClick={applyFilters}>
             查询
           </Button>
           <Button onClick={resetFilters}>重置</Button>
@@ -587,7 +647,12 @@ export function SettingsApiIntegrations({
 
       <Card
         className="shell-card"
-        title="接口集成配置"
+        title={
+          <span className="settings-card-title">
+            <FileProtectOutlined /> 接口集成配置
+          </span>
+        }
+        extra={<Tag color={rows.length > 0 ? "blue" : "default"}>当前 {rows.length} 条</Tag>}
       >
         <DataState
           loading={integrations.loading}
@@ -616,6 +681,7 @@ export function SettingsApiIntegrations({
                 setPageSize(nextPageSize);
               },
             }}
+            size="middle"
             scroll={{ x: 1080 }}
           />
         </DataState>
@@ -858,7 +924,9 @@ const createApiIntegrationColumns = ({
     render: (_, integration) => (
       <Space direction="vertical" size={2}>
         <Typography.Text strong>{integration.code}</Typography.Text>
-        <Typography.Text type="secondary">{integration.id}</Typography.Text>
+        <Typography.Text className="technical-field" type="secondary">
+          {integration.id}
+        </Typography.Text>
       </Space>
     ),
   },
@@ -905,26 +973,28 @@ const createApiIntegrationColumns = ({
     width: 260,
     render: (_, integration) => (
       <Space size={8} wrap>
-        <Button size="small" onClick={() => onViewDetail(integration.id)}>
+        <Button size="small" icon={<EyeOutlined />} onClick={() => onViewDetail(integration.id)}>
           查看
         </Button>
-        <Button size="small" onClick={() => onEdit(integration)}>
+        <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(integration)}>
           编辑
         </Button>
         {integration.archivedAt ? (
           <Button
             size="small"
+            icon={<UndoOutlined />}
             onClick={() => onOperation({ kind: "restore", integration })}
           >
-            Restore
+            恢复
           </Button>
         ) : (
           <Button
             danger
             size="small"
+            icon={<StopOutlined />}
             onClick={() => onOperation({ kind: "archive", integration })}
           >
-            Archive
+            归档
           </Button>
         )}
       </Space>
@@ -960,7 +1030,11 @@ function ApiIntegrationMockDemoCenter({
   return (
     <Card
       className="shell-card settings-api-mock-demo"
-      title="外部接口预留能力中心"
+      title={
+        <span className="settings-card-title">
+          <ExperimentOutlined /> 外部接口预留能力中心
+        </span>
+      }
       extra={<Tag color="orange">预演模式</Tag>}
     >
       <Space direction="vertical" size={16} className="full-width">
@@ -995,10 +1069,17 @@ function ApiIntegrationMockDemoCenter({
             options={mockResultModeOptions}
             onChange={onResultModeChange}
           />
-          <Button type="primary" loading={submitting} onClick={onRun}>
+          <Button
+            type="primary"
+            icon={<ExperimentOutlined />}
+            loading={submitting}
+            onClick={onRun}
+          >
             运行预演
           </Button>
-          <Button onClick={onReloadLogs}>刷新日志</Button>
+          <Button icon={<ReloadOutlined />} onClick={onReloadLogs}>
+            刷新日志
+          </Button>
         </Space>
 
         {providerMismatch ? (
@@ -1021,7 +1102,11 @@ function ApiIntegrationMockDemoCenter({
 
         <Card
           className="shell-card"
-          title="近期安全调用日志"
+          title={
+            <span className="settings-card-title">
+              <FileProtectOutlined /> 近期安全调用日志
+            </span>
+          }
         >
           <DataState
             loading={logs.loading}
@@ -1250,15 +1335,31 @@ function ApiIntegrationDetailView({
         description="配置引用用于匹配运行配置，请勿在此输入供应商凭证或运行密钥。"
       />
 
-      <Card className="shell-card" title="操作">
+      <Card
+        className="shell-card"
+        title={
+          <span className="settings-card-title">
+            <FileProtectOutlined /> 操作
+          </span>
+        }
+      >
         <Space size={8} wrap>
-          <Button onClick={() => onEdit(integration)}>编辑元数据</Button>
+          <Button icon={<EditOutlined />} onClick={() => onEdit(integration)}>
+            编辑元数据
+          </Button>
           {integration.archivedAt ? (
-            <Button onClick={() => onOperation({ kind: "restore", integration })}>
+            <Button
+              icon={<UndoOutlined />}
+              onClick={() => onOperation({ kind: "restore", integration })}
+            >
               恢复
             </Button>
           ) : (
-            <Button danger onClick={() => onOperation({ kind: "archive", integration })}>
+            <Button
+              danger
+              icon={<StopOutlined />}
+              onClick={() => onOperation({ kind: "archive", integration })}
+            >
               归档
             </Button>
           )}
@@ -1292,11 +1393,18 @@ function ApiIntegrationFormDrawer({
       width={560}
       open={Boolean(mode)}
       onClose={onClose}
-      destroyOnClose
+      destroyOnHidden
       extra={
         <Space>
-          <Button onClick={onClose}>取消</Button>
-          <Button type="primary" loading={submitting} onClick={() => form.submit()}>
+          <Button icon={<CloseOutlined />} onClick={onClose}>
+            取消
+          </Button>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            loading={submitting}
+            onClick={() => form.submit()}
+          >
             保存
           </Button>
         </Space>
@@ -1357,7 +1465,7 @@ function ApiIntegrationFormDrawer({
             name="timeoutMs"
             rules={[{ required: true, message: "请输入超时时间。" }]}
           >
-            <InputNumber min={100} max={120000} addonAfter="ms" className="full-width" />
+            <InputNumber min={100} max={120000} suffix="ms" className="full-width" />
           </Form.Item>
           <Form.Item
             label="配置引用名称"

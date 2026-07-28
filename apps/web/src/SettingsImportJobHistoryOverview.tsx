@@ -373,7 +373,7 @@ export function SettingsImportJobHistoryOverviewView({
         width={720}
         open={detailOpen}
         onClose={onCloseDetail}
-        destroyOnClose
+        destroyOnHidden
       >
         <ImportJobHistoryDetailView detail={detail} itemHistoryClient={itemHistoryClient} />
       </Drawer>

@@ -231,7 +231,7 @@ export function ImportJobHistoryPanelView({
         width={720}
         open={detailOpen}
         onClose={onCloseDetail}
-        destroyOnClose
+        destroyOnHidden
       >
         <ImportJobHistoryDetailView detail={detail} itemHistoryClient={itemHistoryClient} />
       </Drawer>

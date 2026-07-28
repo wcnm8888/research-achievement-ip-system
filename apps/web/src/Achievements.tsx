@@ -12,6 +12,16 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import {
+  DownloadOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FileTextOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import type { TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { AchievementDetail } from "./AchievementDetail";
@@ -138,6 +148,19 @@ const typeLabels = Object.fromEntries(
 const statusLabels = Object.fromEntries(
   statusOptions.map((option) => [option.value, option.label]),
 ) as Record<AchievementStatusCode, string>;
+
+const getAchievementStatusColor = (status: AchievementStatusCode): string => {
+  const colors: Partial<Record<AchievementStatusCode, string>> = {
+    DRAFT: "default",
+    PENDING_DEPARTMENT_REVIEW: "processing",
+    DEPARTMENT_REJECTED: "error",
+    PENDING_ARCHIVE: "warning",
+    ARCHIVED: "success",
+    VOIDED: "default",
+  };
+
+  return colors[status] ?? "default";
+};
 
 const secretLevelLabels: Record<AchievementListItem["secretLevel"], string> = {
   PUBLIC: "公开",
@@ -356,13 +379,17 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
   }
 
   return (
-    <Space direction="vertical" size={16} className="page-stack achievement-page">
+    <Space direction="vertical" size={20} className="page-stack achievement-page achievement-v3">
       <SectionHeader
-        title="成果管理"
-        description="统一管理论文、专利和软件著作权，查看归档状态、密级边界和可操作入口。"
+        title="成果列表"
+        description="集中查看、筛选和维护科研成果档案。"
         extra={
           canCreateAchievementDraft(authUser) ? (
-            <Button type="primary" onClick={() => setFormRequest({ mode: "create" })}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setFormRequest({ mode: "create" })}
+            >
               登记成果
             </Button>
           ) : undefined
@@ -373,8 +400,10 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
         <Typography.Text type="danger">{exportState.error.message}</Typography.Text>
       ) : null}
 
-      {canUseImportDryRun ? (
-        <>
+      {/* Secondary import tools are rendered after the primary archive table. */}
+      <div className="achievement-secondary-tools">
+        {canUseImportDryRun ? (
+          <>
           <AchievementImportDryRunPanel
             file={importFile}
             loading={importLoading}
@@ -397,16 +426,29 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
             filters={achievementImportHistoryFilters}
             achievementTypeFilter
           />
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </div>
 
-      <Card className="shell-card toolbar-card achievement-toolbar-card" title="筛选与导出" extra={<Tag>权限内台账</Tag>}>
+      <Card
+        className="shell-card toolbar-card achievement-toolbar-card"
+        title={
+          <span className="achievement-card-title">
+            <FilterOutlined /> 筛选成果
+          </span>
+        }
+        extra={<Tag>权限内台账</Tag>}
+      >
         <Space className="achievement-filter-bar" size={12} wrap>
           <Input.Search
             allowClear
             className="achievement-keyword"
             placeholder="按标题关键词筛选"
-            enterButton="查询"
+            enterButton={
+              <span>
+                <SearchOutlined /> 查询
+              </span>
+            }
             value={draftFilters.keyword}
             onChange={(event) =>
               setDraftFilters((current) => ({ ...current, keyword: event.target.value }))
@@ -433,11 +475,11 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
               setDraftFilters((current) => ({ ...current, status: value }))
             }
           />
-          <Button type="primary" onClick={applyFilters}>
+          <Button type="primary" icon={<SearchOutlined />} onClick={applyFilters}>
             查询
           </Button>
           <Button onClick={resetFilters}>重置</Button>
-          <Button onClick={loadAchievements}>刷新</Button>
+          <Button icon={<ReloadOutlined />} onClick={loadAchievements}>刷新</Button>
           <Select<AchievementExportField[]>
             mode="multiple"
             className="achievement-filter-select"
@@ -447,18 +489,46 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
             value={exportFields}
             onChange={(value) => setExportFields(value.length > 0 ? value : defaultAchievementExportFields)}
           />
-          <Button onClick={() => exportLedger("csv")} loading={exportState.loading}>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => exportLedger("csv")}
+            loading={exportState.loading}
+          >
             导出 CSV
           </Button>
-          <Button onClick={() => exportLedger("xlsx")} loading={exportState.loading}>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => exportLedger("xlsx")}
+            loading={exportState.loading}
+          >
             导出 Excel
           </Button>
         </Space>
       </Card>
 
+      <div className="achievement-summary-strip" role="status" aria-label="成果列表摘要">
+        <div className="achievement-summary-item">
+          <Typography.Text type="secondary">当前结果</Typography.Text>
+          <Typography.Text strong>{achievements.data?.total ?? items.length} 项成果</Typography.Text>
+        </div>
+        <div className="achievement-summary-item">
+          <Typography.Text type="secondary">当前范围</Typography.Text>
+          <Typography.Text strong>权限范围内档案</Typography.Text>
+        </div>
+        <div className="achievement-summary-item achievement-summary-note">
+          <Typography.Text type="secondary">
+            {hasFilters ? "已应用筛选条件，结果可继续按页面分页查看" : "可按标题、类型和状态快速定位科研成果"}
+          </Typography.Text>
+        </div>
+      </div>
+
       <Card
         className="shell-card ledger-card"
-        title="成果台账"
+        title={
+          <span className="achievement-card-title">
+            <FileTextOutlined /> 科研成果档案
+          </span>
+        }
         extra={<Tag color={items.length > 0 ? "blue" : "default"}>当前 {items.length} 条</Tag>}
       >
         <DataState
@@ -477,6 +547,7 @@ export function Achievements({ demoUserId, authUser }: AchievementsProps) {
               authUser,
             )}
             dataSource={items}
+            size="middle"
             pagination={{
               current: achievements.data?.page ?? page,
               pageSize: achievements.data?.pageSize ?? pageSize,
@@ -1585,14 +1656,18 @@ const createColumns = (
     dataIndex: "type",
     key: "type",
     width: 136,
-    render: (value: AchievementTypeCode) => typeLabels[value] ?? value,
+    render: (value: AchievementTypeCode) => (
+      <Tag className="achievement-type-tag">{typeLabels[value] ?? value}</Tag>
+    ),
   },
   {
     title: "状态",
     dataIndex: "status",
     key: "status",
     width: 152,
-    render: (value: AchievementStatusCode) => <Tag>{statusLabels[value] ?? value}</Tag>,
+    render: (value: AchievementStatusCode) => (
+      <Tag color={getAchievementStatusColor(value)}>{statusLabels[value] ?? value}</Tag>
+    ),
   },
   {
     title: "密级",
@@ -1610,14 +1685,22 @@ const createColumns = (
     dataIndex: "departmentId",
     key: "departmentId",
     width: 220,
-    render: (value: string) => <Typography.Text ellipsis>{value}</Typography.Text>,
+    render: (value: string) => (
+      <Typography.Text className="technical-field" ellipsis={{ tooltip: value }}>
+        {value}
+      </Typography.Text>
+    ),
   },
   {
     title: "负责人",
     dataIndex: "ownerUserId",
     key: "ownerUserId",
     width: 220,
-    render: (value: string) => <Typography.Text ellipsis>{value}</Typography.Text>,
+    render: (value: string) => (
+      <Typography.Text className="technical-field" ellipsis={{ tooltip: value }}>
+        {value}
+      </Typography.Text>
+    ),
   },
   {
     title: "更新时间",
@@ -1640,7 +1723,7 @@ const createColumns = (
     render: (_, item) => (
       <Space>
         {renderEditAction(item, onEdit, authUser)}
-        <Button size="small" onClick={() => onViewDetail(item)}>
+        <Button size="small" icon={<EyeOutlined />} onClick={() => onViewDetail(item)}>
           查看详情
         </Button>
       </Space>
@@ -1655,7 +1738,7 @@ const renderEditAction = (
 ) => {
   if (canEditAchievementDraft(authUser, item)) {
     return (
-      <Button size="small" type="link" onClick={() => onEdit(item)}>
+      <Button size="small" type="link" icon={<EditOutlined />} onClick={() => onEdit(item)}>
         编辑草稿
       </Button>
     );
@@ -1664,7 +1747,7 @@ const renderEditAction = (
   if (canSeeRejectedDraftEditBoundary(authUser, item)) {
     return (
       <Tooltip title="当前状态暂不支持编辑">
-        <Button disabled size="small" type="link">
+        <Button disabled size="small" type="link" icon={<EditOutlined />}>
           编辑
         </Button>
       </Tooltip>
