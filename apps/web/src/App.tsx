@@ -1,3 +1,19 @@
+import {
+  ApartmentOutlined,
+  AppstoreOutlined,
+  AuditOutlined,
+  BarChartOutlined,
+  BellOutlined,
+  BookOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
+  KeyOutlined,
+  PieChartOutlined,
+  SearchOutlined,
+  SettingOutlined,
+  TeamOutlined,
+  WalletOutlined,
+} from "@ant-design/icons";
 import { Alert, Button, Form, Input, Layout, Menu, Select, Space, Spin, Tag, Typography } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { appName } from "./app-meta";
@@ -129,6 +145,27 @@ export const navItems: NavItem[] = [
 
 const fallbackNavItem = navItems[0] as NavItem;
 
+const navIconMap = {
+  workbench: AppstoreOutlined,
+  achievements: FileTextOutlined,
+  workflow: AuditOutlined,
+  fees: WalletOutlined,
+  reminders: BellOutlined,
+  search: SearchOutlined,
+  dashboard: BarChartOutlined,
+  "custom-reports": PieChartOutlined,
+  audit: HistoryOutlined,
+  settings: SettingOutlined,
+  "secret-authorization": KeyOutlined,
+  "account-management": TeamOutlined,
+  "department-management": ApartmentOutlined,
+} as const;
+
+const getNavIcon = (key: string) => {
+  const Icon = navIconMap[key as keyof typeof navIconMap] ?? AppstoreOutlined;
+  return <Icon aria-hidden="true" />;
+};
+
 export const isProductionAuthMode = (): boolean => import.meta.env.PROD;
 
 export const shouldShowDemoIdentityControls = (productionAuthMode: boolean): boolean =>
@@ -143,6 +180,18 @@ export const getBusinessContextId = ({
   demoUserId: string | null;
   authUser: Pick<AuthUser, "id"> | null;
 }): string | null => (productionAuthMode ? authUser?.id ?? null : demoUserId);
+
+export const resolveCustomDemoUserId = (currentUserId: string | null, input: string): string | null =>
+  input.trim() || currentUserId;
+
+export const hasWorkflowAccess = (
+  authUser: Pick<AuthUser, "permissionCodes"> | null | undefined,
+): boolean =>
+  Boolean(
+    authUser?.permissionCodes.some((permission) =>
+      ["achievement:review_department", "fee:review_department"].includes(permission),
+    ),
+  );
 
 export const getVisibleNavItems = (
   items: readonly NavItem[],
@@ -278,6 +327,7 @@ export function App() {
   const activeUser = useMemo(() => findDemoUserPreset(demoUserId), [demoUserId]);
   const demoAuthUser = useMemo(() => getDemoAuthUser(demoUserId), [demoUserId]);
   const effectiveAuthUser = productionAuthMode ? authUser : demoAuthUser;
+  const canAccessWorkflow = hasWorkflowAccess(effectiveAuthUser);
   const businessContextId = getBusinessContextId({
     productionAuthMode,
     demoUserId,
@@ -333,7 +383,7 @@ export function App() {
   };
 
   const applyCustomUser = () => {
-    updateDemoUser(customUserId.trim() || null);
+    updateDemoUser(resolveCustomDemoUserId(demoUserId, customUserId));
   };
 
   const handleLogin = async (values: LoginRequest) => {
@@ -369,9 +419,14 @@ export function App() {
   return (
     <Layout className="app-shell">
       <Header className="app-header">
-        <div className="brand-block">
-          <Typography.Title level={4}>{appName}</Typography.Title>
-          <Typography.Text type="secondary">科研成果与知识产权管理平台</Typography.Text>
+        <div className="brand-lockup">
+          <span className="brand-mark" aria-hidden="true">
+            <BookOutlined />
+          </span>
+          <div className="brand-block">
+            <Typography.Title level={4}>{appName}</Typography.Title>
+            <Typography.Text type="secondary">科研成果与知识产权管理平台</Typography.Text>
+          </div>
         </div>
         {shouldShowDemoIdentityControls(productionAuthMode) ? (
           <DemoIdentityControls
@@ -428,6 +483,7 @@ export function App() {
               selectedKeys={[activeKey]}
               items={visibleNavItems.map((item) => ({
                 key: item.key,
+                icon: getNavIcon(item.key),
                 label: item.label,
               }))}
               onClick={(event) => setActiveKey(event.key)}
@@ -445,7 +501,11 @@ export function App() {
               <DemoContextBanner demoUserId={demoUserId} />
             )}
             {activeKey === "workbench" ? (
-              <Workbench demoUserId={businessContextId} onNavigate={setActiveKey} />
+              <Workbench
+                canAccessWorkflow={canAccessWorkflow}
+                demoUserId={businessContextId}
+                onNavigate={setActiveKey}
+              />
             ) : activeKey === "achievements" ? (
               <Achievements demoUserId={businessContextId} authUser={effectiveAuthUser} />
             ) : activeKey === "workflow" ? (
@@ -640,6 +700,7 @@ function MobilePrimaryNav({
         selectedKeys={[activeKey]}
         items={items.map((item) => ({
           key: item.key,
+          icon: getNavIcon(item.key),
           label: item.label,
         }))}
         onClick={(event) => onSelect(event.key)}
@@ -662,7 +723,7 @@ function LegacyDemoApp() {
   };
 
   const applyCustomUser = () => {
-    updateDemoUser(customUserId.trim() || null);
+    updateDemoUser(resolveCustomDemoUserId(demoUserId, customUserId));
   };
 
   return (

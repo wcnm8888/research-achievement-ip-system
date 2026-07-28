@@ -15,6 +15,17 @@ import {
   Typography,
   message,
 } from "antd";
+import {
+  ApartmentOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  EyeOutlined,
+  FileTextOutlined,
+  FilterOutlined,
+  LinkOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import type { TableProps } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReadonlyAchievementDetail } from "./AchievementDetail";
@@ -342,15 +353,42 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
     : null;
 
   return (
-    <Space direction="vertical" size={16} className="page-stack">
+    <Space direction="vertical" size={20} className="page-stack workflow-page workflow-v3">
       <SectionHeader
         title="审批管理"
         description="展示当前账号可处理的审批事项，并支持按状态和对象筛选。"
-        extra={<Button onClick={() => void loadTasks()}>刷新</Button>}
+        extra={
+          <Button icon={<ReloadOutlined />} onClick={() => void loadTasks()}>
+            刷新
+          </Button>
+        }
       />
       <PermissionHint description="当前账号仅显示可处理的审批事项。" />
 
-      <Card className="shell-card">
+      <div className="workflow-summary-strip" role="status" aria-label="审批任务摘要">
+        <div className="workflow-summary-item">
+          <Typography.Text type="secondary">待我处理</Typography.Text>
+          <Typography.Text strong>{rows.filter((row) => row.statusLabel === "待处理").length} 项</Typography.Text>
+        </div>
+        <div className="workflow-summary-item">
+          <Typography.Text type="secondary">已领取</Typography.Text>
+          <Typography.Text strong>{rows.filter((row) => row.statusLabel === "已领取").length} 项</Typography.Text>
+        </div>
+        <div className="workflow-summary-item workflow-summary-note">
+          <Typography.Text type="secondary">当前范围</Typography.Text>
+          <Typography.Text strong>当前账号可处理的审批任务</Typography.Text>
+        </div>
+      </div>
+
+      <Card
+        className="shell-card workflow-filter-card"
+        title={
+          <span className="workflow-card-title">
+            <FilterOutlined /> 筛选审批任务
+          </span>
+        }
+        extra={<Tag>我的权限范围</Tag>}
+      >
         <Space className="workflow-filter-bar" size={12} wrap>
           <Select
             allowClear
@@ -380,7 +418,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
           <Input.Search
             allowClear
             className="workflow-target-input"
-            enterButton="查询"
+            enterButton={<span><SearchOutlined /> 查询</span>}
             placeholder="按成果 ID 精确筛选"
             value={draftFilters.achievementId}
             onChange={(event) =>
@@ -394,7 +432,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
           <Input.Search
             allowClear
             className="workflow-target-input"
-            enterButton="筛选"
+            enterButton={<span><SearchOutlined /> 筛选</span>}
             placeholder="按费用记录 ID 筛选"
             value={draftFilters.feeRecordId}
             onChange={(event) =>
@@ -405,15 +443,25 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
             }
             onSearch={applyFilters}
           />
-          <Button type="primary" onClick={applyFilters}>
+          <Button type="primary" icon={<SearchOutlined />} onClick={applyFilters}>
             查询
           </Button>
           <Button onClick={resetFilters}>重置</Button>
-          <Button onClick={() => void loadTasks()}>刷新</Button>
+          <Button icon={<ReloadOutlined />} onClick={() => void loadTasks()}>
+            刷新
+          </Button>
         </Space>
       </Card>
 
-      <Card className="shell-card" title="我的待办列表">
+      <Card
+        className="shell-card workflow-list-card"
+        title={
+          <span className="workflow-card-title">
+            <FileTextOutlined /> 我的待办列表
+          </span>
+        }
+        extra={<Tag color={rows.length > 0 ? "blue" : "default"}>当前 {rows.length} 条</Tag>}
+      >
         {tasks.loading ? (
           <div className="state-box">
             <Typography.Text type="secondary">正在加载审批待办...</Typography.Text>
@@ -425,7 +473,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
             title={errorDisplay.title}
             subTitle={errorDisplay.description}
             extra={
-              <Button type="primary" onClick={() => void loadTasks()}>
+              <Button type="primary" icon={<ReloadOutlined />} onClick={() => void loadTasks()}>
                 重试
               </Button>
             }
@@ -442,6 +490,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
             pagination={false}
             rowKey="id"
             scroll={{ x: 1120 }}
+            size="middle"
             onRow={(row) => ({
               onClick: () => openDetail(row.id),
             })}
@@ -451,7 +500,7 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
 
       <Drawer
         className="workflow-task-detail-drawer"
-        destroyOnClose
+        destroyOnHidden
         extra={
           <WorkflowTaskDrawerActions
             detail={detailState.data}
@@ -498,7 +547,10 @@ export function WorkflowTasks({ demoUserId, authUser }: WorkflowTasksProps) {
 
       <Modal
         confirmLoading={acting}
-        okButtonProps={{ danger: activeAction === "reject" }}
+        okButtonProps={{
+          danger: activeAction === "reject",
+          icon: activeAction === "reject" ? <CloseOutlined /> : <CheckOutlined />,
+        }}
         okText={activeAction === "reject" ? "驳回" : "通过"}
         open={Boolean(activeAction)}
         title={activeAction === "reject" ? "确认驳回审批待办" : "确认通过审批待办"}
@@ -706,22 +758,36 @@ function WorkflowTaskDrawerActions({
   onOpenAction: (action: WorkflowActionKind) => void;
 }) {
   if (!detail || !viewModel) {
-    return <Button onClick={onClose}>关闭</Button>;
+    return (
+      <Button icon={<CloseOutlined />} onClick={onClose}>
+        关闭
+      </Button>
+    );
   }
 
   return (
     <Space wrap>
       {viewModel.actionPresentation.actions.includes("approve") ? (
-        <Button type="primary" onClick={() => onOpenAction("approve")}>
-          通过
-        </Button>
+                <Button
+                  type="primary"
+                  icon={<CheckOutlined />}
+                  onClick={() => onOpenAction("approve")}
+                >
+                  通过
+                </Button>
       ) : null}
       {viewModel.actionPresentation.actions.includes("reject") ? (
-        <Button danger onClick={() => onOpenAction("reject")}>
+        <Button
+          danger
+          icon={<CloseOutlined />}
+          onClick={() => onOpenAction("reject")}
+        >
           驳回
         </Button>
       ) : null}
-      <Button onClick={onClose}>关闭</Button>
+      <Button icon={<CloseOutlined />} onClick={onClose}>
+        关闭
+      </Button>
     </Space>
   );
 }
@@ -736,8 +802,27 @@ function WorkflowTaskDetailContent({
   onOpenLinkedAchievement: (achievementId: string) => void;
 }) {
   return (
-    <Space direction="vertical" size={16} className="full-width">
+    <Space direction="vertical" size={16} className="full-width workflow-task-detail-content workflow-task-detail-v3">
       <PermissionHint description="系统会根据任务状态和当前账号权限展示可用操作。" />
+
+      <div className="workflow-detail-summary" role="status" aria-label="审批任务摘要">
+        <div className="workflow-detail-summary-item">
+          <Typography.Text type="secondary">任务状态</Typography.Text>
+          <Tag color={task.status === "PENDING" ? "processing" : "default"}>
+            {getWorkflowTaskStatusLabel(task.status)}
+          </Tag>
+        </div>
+        <div className="workflow-detail-summary-item">
+          <Typography.Text type="secondary">审批对象</Typography.Text>
+          <Typography.Text strong>
+            {task.instance ? getWorkflowTargetTypeLabel(task.instance.targetType) : "未返回"}
+          </Typography.Text>
+        </div>
+        <div className="workflow-detail-summary-item workflow-detail-summary-technical">
+          <Typography.Text type="secondary">任务编号</Typography.Text>
+          <Typography.Text className="technical-field">{task.id}</Typography.Text>
+        </div>
+      </div>
 
       {viewModel.actionPresentation.readonlyReason ? (
         <Alert
@@ -755,8 +840,12 @@ function WorkflowTaskDetailContent({
         />
       )}
 
-      <Divider orientation="left">任务字段</Divider>
-      <Descriptions bordered column={2} size="small">
+      <Divider orientation="left">
+        <span className="workflow-section-label">
+          <FileTextOutlined /> 任务字段
+        </span>
+      </Divider>
+      <Descriptions className="workflow-detail-descriptions" bordered column={2} size="small">
         {viewModel.detailFields.taskFields.map((field) => (
           <Descriptions.Item key={field.label} label={field.label}>
             {field.value}
@@ -764,8 +853,12 @@ function WorkflowTaskDetailContent({
         ))}
       </Descriptions>
 
-      <Divider orientation="left">流程实例字段</Divider>
-      <Descriptions bordered column={2} size="small">
+      <Divider orientation="left">
+        <span className="workflow-section-label">
+          <ApartmentOutlined /> 流程实例字段
+        </span>
+      </Divider>
+      <Descriptions className="workflow-detail-descriptions" bordered column={2} size="small">
         <Descriptions.Item label="流程实例 ID">{task.instanceId}</Descriptions.Item>
         {viewModel.detailFields.instanceFields.map((field) => (
           <Descriptions.Item key={field.label} label={field.label}>
@@ -776,7 +869,11 @@ function WorkflowTaskDetailContent({
 
       {!viewModel.linkedAchievement.available ? (
         <>
-          <Divider orientation="left">关联成果</Divider>
+          <Divider orientation="left">
+            <span className="workflow-section-label">
+              <LinkOutlined /> 关联成果
+            </span>
+          </Divider>
           <Alert
             className="workflow-linked-achievement-alert"
             showIcon
@@ -789,7 +886,11 @@ function WorkflowTaskDetailContent({
 
       {viewModel.linkedAchievementId ? (
         <>
-          <Divider orientation="left">关联成果</Divider>
+          <Divider orientation="left">
+            <span className="workflow-section-label">
+              <LinkOutlined /> 关联成果
+            </span>
+          </Divider>
           <Alert
             showIcon
             type="info"
@@ -797,6 +898,7 @@ function WorkflowTaskDetailContent({
             description="审批上下文仅提供成果详情只读查看，不提供提交、作废或归档动作。"
             action={
               <Button
+                icon={<EyeOutlined />}
                 type="primary"
                 onClick={() => onOpenLinkedAchievement(viewModel.linkedAchievementId!)}
               >
@@ -826,7 +928,7 @@ const columns: TableProps<WorkflowTaskListDisplayRow>["columns"] = [
       <Space direction="vertical" size={2}>
         <Typography.Text strong>{row.stepLabel}</Typography.Text>
         <Typography.Text type="secondary" ellipsis>
-          {row.id}
+          <span className="technical-field">{row.id}</span>
         </Typography.Text>
       </Space>
     ),
@@ -836,7 +938,9 @@ const columns: TableProps<WorkflowTaskListDisplayRow>["columns"] = [
     dataIndex: "statusLabel",
     key: "statusLabel",
     width: 120,
-    render: (value: string) => <Tag>{value}</Tag>,
+    render: (value: string) => (
+      <Tag color={getWorkflowTaskStatusColor(value)}>{value}</Tag>
+    ),
   },
   {
     title: "目标",
@@ -846,7 +950,7 @@ const columns: TableProps<WorkflowTaskListDisplayRow>["columns"] = [
       <Space direction="vertical" size={2}>
         <Typography.Text>{row.targetTypeLabel}</Typography.Text>
         <Typography.Text type="secondary" ellipsis>
-          {row.targetId}
+          <span className="technical-field">{row.targetId}</span>
         </Typography.Text>
       </Space>
     ),
@@ -859,7 +963,7 @@ const columns: TableProps<WorkflowTaskListDisplayRow>["columns"] = [
       <Space direction="vertical" size={2}>
         <Typography.Text>{row.instanceStatusLabel}</Typography.Text>
         <Typography.Text type="secondary" ellipsis>
-          {row.instanceId}
+          <span className="technical-field">{row.instanceId}</span>
         </Typography.Text>
         <Typography.Text type="secondary">当前步骤：{row.instanceStepLabel}</Typography.Text>
       </Space>
@@ -889,6 +993,18 @@ const normalizeError = (error: unknown): ApiError => {
     message: "请求失败",
     detail: error instanceof Error ? error.message : undefined,
   };
+};
+
+const getWorkflowTaskStatusColor = (status: string): string => {
+  const colors: Record<string, string> = {
+    待处理: "processing",
+    已领取: "warning",
+    已通过: "success",
+    已驳回: "error",
+    已取消: "default",
+  };
+
+  return colors[status] ?? "default";
 };
 
 const formatDateTime = (value: string | undefined): string => {

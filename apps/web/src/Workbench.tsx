@@ -1,9 +1,24 @@
+import {
+  ArrowRightOutlined,
+  AuditOutlined,
+  BellOutlined,
+  BookOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  FileTextOutlined,
+  ReloadOutlined,
+  WarningOutlined,
+} from "@ant-design/icons";
 import { Alert, Button, Card, Col, List, Row, Space, Statistic, Tag, Typography } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createApiClient, isApiError, type ApiClient, type ApiError } from "./api-client";
 import { BoundaryNotice, DataState, PermissionHint, SectionHeader } from "./components/StateBlocks";
 import type { DashboardBucket, DashboardSummary, WorkflowTaskListResult } from "./types";
-import { fetchMyWorkflowTasks } from "./workflow-tasks";
+import {
+  fetchMyWorkflowTasks,
+  getWorkflowStepLabel,
+  getWorkflowTaskStatusLabel,
+} from "./workflow-tasks";
 import { getWorkbenchWorkflowNavKey } from "./WorkflowTasks";
 
 type Loadable<T> = {
@@ -15,6 +30,7 @@ type Loadable<T> = {
 type WorkbenchProps = {
   demoUserId: string | null;
   onNavigate: (key: string) => void;
+  canAccessWorkflow?: boolean;
 };
 
 const emptyLoadable = <T,>(): Loadable<T> => ({
@@ -23,7 +39,7 @@ const emptyLoadable = <T,>(): Loadable<T> => ({
   error: null,
 });
 
-export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
+export function Workbench({ demoUserId, onNavigate, canAccessWorkflow = true }: WorkbenchProps) {
   const [dashboard, setDashboard] = useState<Loadable<DashboardSummary>>(emptyLoadable);
   const [tasks, setTasks] = useState<Loadable<WorkflowTaskListResult>>(emptyLoadable);
   const apiClient = useMemo(() => createApiClient(demoUserId), [demoUserId]);
@@ -49,13 +65,26 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
       return;
     }
 
+    if (!canAccessWorkflow) {
+      setTasks({
+        loading: false,
+        data: null,
+        error: {
+          kind: "forbidden",
+          status: 403,
+          message: "当前角色无审批待办权限。",
+        },
+      });
+      return;
+    }
+
     setTasks({ loading: true, data: null, error: null });
     void loadMyTasks(apiClient)
       .then((data) => setTasks({ loading: false, data, error: null }))
       .catch((error: unknown) =>
         setTasks({ loading: false, data: null, error: normalizeError(error) }),
       );
-  }, [apiClient, demoUserId]);
+  }, [apiClient, canAccessWorkflow, demoUserId]);
 
   useEffect(() => {
     loadDashboard();
@@ -64,7 +93,7 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
 
   if (!demoUserId) {
     return (
-      <Space direction="vertical" size={16} className="page-stack workbench-page">
+      <Space direction="vertical" size={16} className="page-stack workbench-page workbench-v3">
         <SectionHeader
           title="工作台"
           description="请选择业务用户后加载工作台摘要和个人待办。"
@@ -79,25 +108,49 @@ export function Workbench({ demoUserId, onNavigate }: WorkbenchProps) {
   }
 
   return (
-    <Space direction="vertical" size={16} className="page-stack workbench-page">
+    <Space direction="vertical" size={16} className="page-stack workbench-page workbench-v3">
       <SectionHeader
         title="工作台"
         description="集中查看摘要、待办和常用业务入口。"
         extra={
-          <Button
-            onClick={() => {
-              loadDashboard();
-              loadTasks();
-            }}
-          >
-            刷新
-          </Button>
+          <Space size={12} wrap>
+            <Tag className="workbench-status-tag" icon={<CheckCircleOutlined />}>
+              系统运行正常
+            </Tag>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                loadDashboard();
+                loadTasks();
+              }}
+            >
+              刷新数据
+            </Button>
+          </Space>
         }
       />
 
+      <div className="workbench-scope-bar" role="group" aria-label="工作台数据范围">
+        <div className="workbench-scope-field">
+          <Typography.Text type="secondary">统计对象</Typography.Text>
+          <Typography.Text strong>科研成果与审批</Typography.Text>
+        </div>
+        <div className="workbench-scope-field">
+          <Typography.Text type="secondary">时间范围</Typography.Text>
+          <Typography.Text strong>近 30 天</Typography.Text>
+        </div>
+        <div className="workbench-scope-field">
+          <Typography.Text type="secondary">数据范围</Typography.Text>
+          <Typography.Text strong>{getWorkbenchDepartmentLabel(dashboard.data)}</Typography.Text>
+        </div>
+        <Typography.Text type="secondary" className="workbench-scope-note">
+          数据仅展示当前账号有权访问的摘要
+        </Typography.Text>
+      </div>
+
       <DashboardOverview dashboard={dashboard} onRetry={loadDashboard} />
 
-      <Row gutter={[16, 16]}>
+      <Row gutter={[20, 20]} className="workbench-content-grid">
         <Col xs={24} xl={14}>
           <TaskCard tasks={tasks} onNavigate={onNavigate} onRetry={loadTasks} />
         </Col>
@@ -152,34 +205,68 @@ function DashboardOverview({
   const pendingReminders = countBucket(summary?.reminderTasks.byStatus.value.buckets, "PENDING");
 
   return (
-    <Card className="shell-card workbench-summary-card">
+    <Card className="shell-card workbench-summary-card" bordered={false}>
       <DataState loading={dashboard.loading} error={dashboard.error} onRetry={onRetry}>
-        <Row gutter={[16, 16]} className="workbench-kpi-grid">
+        <Row gutter={[14, 14]} className="workbench-kpi-grid">
           <Col xs={12} lg={6}>
-            <Statistic title="成果总量" value={achievementTotal} />
+            <KpiTile icon={<BookOutlined />} title="成果总量" value={achievementTotal} note="归档与在研成果" />
           </Col>
           <Col xs={12} lg={6}>
-            <Statistic title="待处理任务" value={pendingTasks} />
+            <KpiTile icon={<AuditOutlined />} title="待处理任务" value={pendingTasks} note="待审核审批事项" />
           </Col>
           <Col xs={12} lg={6}>
-            <Statistic
+            <KpiTile
+              icon={<WarningOutlined />}
               title="逾期费用"
               value={overdueFees}
-              valueStyle={{ color: overdueFees > 0 ? "#b42318" : undefined }}
+              note="需要关注的费用项"
+              tone={overdueFees > 0 ? "warning" : "default"}
             />
           </Col>
           <Col xs={12} lg={6}>
-            <Statistic title="30 天内到期" value={dueSoonFees + pendingReminders} />
+            <KpiTile
+              icon={<ClockCircleOutlined />}
+              title="30 天内到期"
+              value={dueSoonFees + pendingReminders}
+              note="费用与提醒事项"
+            />
           </Col>
         </Row>
         <div className="summary-meta">
           <Typography.Text type="secondary">
             生成时间：{formatDateTime(summary?.generatedAt)}；范围：
-            {summary?.scope.departmentId ?? "未返回部门"}
+            {getWorkbenchDepartmentLabel(summary)}
           </Typography.Text>
         </div>
       </DataState>
     </Card>
+  );
+}
+
+function KpiTile({
+  icon,
+  title,
+  value,
+  note,
+  tone = "default",
+}: {
+  icon: React.ReactNode;
+  title: string;
+  value: number;
+  note: string;
+  tone?: "default" | "warning";
+}) {
+  return (
+    <div className={`workbench-kpi-tile workbench-kpi-tile-${tone}`}>
+      <div className="workbench-kpi-heading">
+        <Typography.Text>{title}</Typography.Text>
+        <span className="workbench-kpi-icon" aria-hidden="true">
+          {icon}
+        </span>
+      </div>
+      <Statistic value={value} />
+      <Typography.Text className="workbench-kpi-note">{note}</Typography.Text>
+    </div>
   );
 }
 
@@ -197,7 +284,7 @@ function TaskCard({
   return (
     <Card
       className="shell-card workbench-task-card"
-      title="我的审批待办"
+      title={<span className="workbench-card-title"><AuditOutlined /> 我的审批待办</span>}
     >
       <DataState
         loading={tasks.loading}
@@ -214,8 +301,8 @@ function TaskCard({
               <List.Item.Meta
                 title={
                   <Space wrap>
-                    <Typography.Text strong>{task.stepCode}</Typography.Text>
-                    <Tag>{task.status}</Tag>
+                    <Typography.Text strong>{getWorkflowStepLabel(task.stepCode)}</Typography.Text>
+                    <Tag>{getWorkflowTaskStatusLabel(task.status)}</Tag>
                   </Space>
                 }
                 description={
@@ -233,7 +320,7 @@ function TaskCard({
           )}
         />
       </DataState>
-      <Button className="boundary-action" onClick={() => onNavigate(getWorkbenchWorkflowNavKey())}>
+      <Button className="boundary-action" icon={<ArrowRightOutlined />} onClick={() => onNavigate(getWorkbenchWorkflowNavKey())}>
         进入审批管理
       </Button>
     </Card>
@@ -242,8 +329,8 @@ function TaskCard({
 
 function MyAchievementsCard({ onNavigate }: { onNavigate: (key: string) => void }) {
   return (
-    <Card className="shell-card workbench-entry-card" title="我的成果">
-      <Space direction="vertical" size={12}>
+    <Card className="shell-card workbench-entry-card" title={<span className="workbench-card-title"><FileTextOutlined /> 我的成果</span>}>
+      <Space direction="vertical" size={12} className="workbench-entry-content">
         <Typography.Text>
           可在成果管理中登记、查看、编辑并提交科研成果。
         </Typography.Text>
@@ -252,7 +339,7 @@ function MyAchievementsCard({ onNavigate }: { onNavigate: (key: string) => void 
           description="进入成果管理可查看成果数据，并执行当前状态允许的操作。"
           step="成果管理"
         />
-        <Button onClick={() => onNavigate("achievements")}>查看成果列表</Button>
+        <Button icon={<ArrowRightOutlined />} onClick={() => onNavigate("achievements")}>查看成果列表</Button>
       </Space>
     </Card>
   );
@@ -269,7 +356,7 @@ function FeeWarningCard({
   const dueSoon = dashboard.data?.fee.deadline.value.dueSoon.count ?? 0;
 
   return (
-    <Card className="shell-card workbench-warning-card" title="费用预警" extra={<Tag color="default">摘要</Tag>}>
+    <Card className="shell-card workbench-warning-card" title={<span className="workbench-card-title"><WarningOutlined /> 费用预警</span>} extra={<Tag color="default">摘要</Tag>}>
       <DataState loading={dashboard.loading} error={dashboard.error} onRetry={onRetry}>
         <Row gutter={12}>
           <Col span={12}>
@@ -289,7 +376,7 @@ function FeeWarningCard({
 
 function SystemMessagesCard() {
   return (
-    <Card className="shell-card workbench-message-card" title="系统消息">
+    <Card className="shell-card workbench-message-card" title={<span className="workbench-card-title"><BellOutlined /> 系统消息</span>}>
       <Alert
         type="info"
         showIcon
@@ -342,6 +429,21 @@ function WorkbenchSkeletonBoundary({ onNavigate }: { onNavigate: (key: string) =
 
 const countBucket = (buckets: DashboardBucket[] | undefined, key: string): number =>
   buckets?.find((bucket) => bucket.key === key)?.count ?? 0;
+
+export const getWorkbenchDepartmentLabel = (
+  summary: DashboardSummary | null | undefined,
+): string => {
+  const departmentId = summary?.scope.departmentId;
+  if (!departmentId) {
+    return "当前组织";
+  }
+
+  const rankedDepartment = summary.achievement.departmentRanking.value.buckets.find(
+    (bucket) => bucket.departmentId === departmentId,
+  );
+
+  return rankedDepartment?.departmentName || "当前组织";
+};
 
 const formatDateTime = (value: string | undefined): string => {
   if (!value) {

@@ -11,6 +11,14 @@ import {
   Typography,
   message,
 } from "antd";
+import {
+  CloseOutlined,
+  DeleteOutlined,
+  FileTextOutlined,
+  PlusOutlined,
+  SaveOutlined,
+  ThunderboltOutlined,
+} from "@ant-design/icons";
 import { useEffect, useMemo, useState } from "react";
 import { isApiError, type ApiClient, type ApiError } from "./api-client";
 import {
@@ -298,12 +306,15 @@ export function AchievementForm({
   return (
     <Drawer
       className="achievement-form-drawer"
-      destroyOnClose
+      destroyOnHidden
       extra={
         <Space>
-          <Button onClick={onClose}>关闭</Button>
+          <Button icon={<CloseOutlined />} onClick={onClose}>
+            关闭
+          </Button>
           <Button
             disabled={Boolean(loadError)}
+            icon={<SaveOutlined />}
             loading={saving}
             type="primary"
             onClick={() => void handleSubmit()}
@@ -317,7 +328,7 @@ export function AchievementForm({
       width={760}
       onClose={onClose}
     >
-      <Space direction="vertical" size={16} className="full-width">
+      <Space direction="vertical" size={16} className="full-width achievement-form-content achievement-form-v3">
         <Alert
           showIcon
           type="info"
@@ -346,36 +357,44 @@ export function AchievementForm({
         ) : null}
 
         <Form
+          className="achievement-form"
           form={form}
           layout="vertical"
           requiredMark="optional"
           disabled={loading}
         >
-          <Divider orientation="left">基础信息</Divider>
-          <Form.Item
-            label="成果类型"
-            name="type"
-            rules={[{ required: true, message: "请选择成果类型" }]}
-          >
-            <Select
-              disabled={isEdit}
-              options={achievementTypeOptions}
-              onChange={handleTypeChange}
-            />
-          </Form.Item>
-          <Form.Item
-            label="成果标题"
-            name="title"
-            rules={[
-              { required: true, message: "请输入成果标题" },
-              { max: 500, message: "成果标题不能超过 500 个字符" },
-            ]}
-          >
-            <Input placeholder="请输入成果标题" />
-          </Form.Item>
-          <Form.Item label="密级" name="secretLevel">
-            <Select options={secretLevelOptions} />
-          </Form.Item>
+          <Divider orientation="left">
+            <span className="achievement-section-label">
+              <FileTextOutlined /> 基础信息
+            </span>
+          </Divider>
+          <div className="achievement-form-grid achievement-form-grid-basic">
+            <Form.Item
+              label="成果类型"
+              name="type"
+              rules={[{ required: true, message: "请选择成果类型" }]}
+            >
+              <Select
+                disabled={isEdit}
+                options={achievementTypeOptions}
+                onChange={handleTypeChange}
+              />
+            </Form.Item>
+            <Form.Item label="密级" name="secretLevel">
+              <Select options={secretLevelOptions} />
+            </Form.Item>
+            <Form.Item
+              className="achievement-form-grid-span-2"
+              label="成果标题"
+              name="title"
+              rules={[
+                { required: true, message: "请输入成果标题" },
+                { max: 500, message: "成果标题不能超过 500 个字符" },
+              ]}
+            >
+              <Input placeholder="请输入成果标题" />
+            </Form.Item>
+          </div>
 
           {loadedDetail ? (
             <Typography.Text type="secondary">
@@ -383,7 +402,11 @@ export function AchievementForm({
             </Typography.Text>
           ) : null}
 
-          <Divider orientation="left">类型字段</Divider>
+          <Divider orientation="left">
+            <span className="achievement-section-label">
+              <FileTextOutlined /> 类型字段
+            </span>
+          </Divider>
           {selectedType === "PAPER" ? (
             <PaperFields
               doiPreview={doiPreview}
@@ -393,7 +416,11 @@ export function AchievementForm({
           {selectedType === "PATENT" ? <PatentFields /> : null}
           {selectedType === "SOFTWARE_COPYRIGHT" ? <SoftwareCopyrightFields /> : null}
 
-          <Divider orientation="left">贡献人</Divider>
+          <Divider orientation="left">
+            <span className="achievement-section-label">
+              <PlusOutlined /> 贡献人
+            </span>
+          </Divider>
           <ContributorFields readonly={isEdit} />
         </Form>
       </Space>
@@ -409,14 +436,18 @@ function PaperFields({
   onRunDoiPreview: () => void;
 }) {
   return (
-    <>
+    <div className="achievement-form-grid">
       <Form.Item label="DOI" name={["paperDetail", "doi"]} rules={[{ max: 255 }]}>
         <Input />
       </Form.Item>
       <Form.Item label="自动补全">
         <Space direction="vertical" size={8} className="full-width">
           <Space wrap>
-            <Button loading={doiPreview.loading} onClick={onRunDoiPreview}>
+            <Button
+              icon={<ThunderboltOutlined />}
+              loading={doiPreview.loading}
+              onClick={onRunDoiPreview}
+            >
               自动补全预演
             </Button>
             <Typography.Text type="secondary">
@@ -455,7 +486,7 @@ function PaperFields({
       <Form.Item label="摘要" name={["paperDetail", "abstract"]} rules={[{ max: 5000 }]}>
         <Input.TextArea rows={4} />
       </Form.Item>
-    </>
+    </div>
   );
 }
 
@@ -494,7 +525,7 @@ function DoiPreviewResult({ result }: { result: ApiIntegrationMockRunResponse })
 
 function PatentFields() {
   return (
-    <>
+    <div className="achievement-form-grid">
       <Form.Item label="申请号" name={["patentDetail", "applicationNo"]} rules={[{ max: 120 }]}>
         <Input />
       </Form.Item>
@@ -519,13 +550,13 @@ function PatentFields() {
       <Form.Item label="法律状态" name={["patentDetail", "legalStatus"]}>
         <Select allowClear options={patentLegalStatusOptions} />
       </Form.Item>
-    </>
+    </div>
   );
 }
 
 function SoftwareCopyrightFields() {
   return (
-    <>
+    <div className="achievement-form-grid">
       <Form.Item
         label="登记号"
         name={["softwareCopyrightDetail", "registrationNo"]}
@@ -552,7 +583,7 @@ function SoftwareCopyrightFields() {
       <Form.Item label="运行环境" name={["softwareCopyrightDetail", "runEnv"]} rules={[{ max: 255 }]}>
         <Input />
       </Form.Item>
-    </>
+    </div>
   );
 }
 
@@ -609,7 +640,7 @@ function ContributorFields({ readonly }: { readonly: boolean }) {
                 <InputNumber className="full-width" disabled={readonly} min={1} precision={0} />
               </Form.Item>
               {!readonly ? (
-                <Button danger onClick={() => remove(field.name)}>
+                <Button danger icon={<DeleteOutlined />} onClick={() => remove(field.name)}>
                   移除
                 </Button>
               ) : null}
@@ -617,6 +648,7 @@ function ContributorFields({ readonly }: { readonly: boolean }) {
           ))}
           {!readonly ? (
             <Button
+              icon={<PlusOutlined />}
               onClick={() =>
                 add({
                   name: "",
